@@ -40,17 +40,19 @@ public class GLMUtils {
     return tempGinfo;
   }
 
-  public static TwoDimTable combineScoringHistory(TwoDimTable glmSc1, TwoDimTable earlyStopSc2, 
-                                                  List<Integer> scoreIterationList) {
+  public static TwoDimTable combineScoringHistory(TwoDimTable glmSc1, TwoDimTable earlyStopSc2) {
     String[] esColTypes = earlyStopSc2.getColTypes();
     String[] esColFormats = earlyStopSc2.getColFormats();
     List<String> finalColHeaders = new ArrayList<>(Arrays.asList(glmSc1.getColHeaders()));
+    final List<String> earlyStopScHeaders = new ArrayList<>(Arrays.asList(earlyStopSc2.getColHeaders()));
+    final int overlapSize = 3; // for "Timestamp", "Duration", "Iterations
+    int earlyStopSCIterIndex = earlyStopScHeaders.indexOf("Iterations");
     int indexOfIter = finalColHeaders.indexOf("iteration");
     if (indexOfIter < 0)
       indexOfIter = finalColHeaders.indexOf("iterations");
     List<String> finalColTypes = new ArrayList<>(Arrays.asList(glmSc1.getColTypes()));
     List<String> finalColFormats = new ArrayList<>(Arrays.asList(glmSc1.getColFormats()));
-    List<Integer> earlyStopColIndices = new ArrayList<Integer>();
+    List<Integer> earlyStopColIndices = new ArrayList<>();
 
     int colCounter = 0;
     for (String colName : earlyStopSc2.getColHeaders()) { // collect final table colHeaders, RowHeaders, ColFormats, ColTypes
@@ -63,12 +65,31 @@ public class GLMUtils {
       colCounter++;
     }
     final int tableSize = finalColHeaders.size();
+    String[] rowHeaders = generateRowHeaders(glmSc1, earlyStopSc2, indexOfIter, earlyStopSCIterIndex);
     TwoDimTable res = new TwoDimTable("Scoring History", "",
-            glmSc1.getRowHeaders(), finalColHeaders.toArray(new String[tableSize]),
-            finalColTypes.toArray(new String[tableSize]), finalColFormats.toArray(new String[tableSize]),
-            "");
-    res = combineTableContents(glmSc1, earlyStopSc2, res, earlyStopColIndices, scoreIterationList, indexOfIter);
+            rowHeaders, finalColHeaders.toArray(new String[tableSize]), finalColTypes.toArray(new String[tableSize]),
+            finalColFormats.toArray(new String[tableSize]), "");
+    res = combineTableContents(glmSc1, earlyStopSc2, res, earlyStopColIndices, indexOfIter, earlyStopSCIterIndex,
+            overlapSize);
     return res;
+  }
+  
+  public static String[] generateRowHeaders(TwoDimTable glmSc1, TwoDimTable earlyStopSc2, int glmIterIndex, 
+                                            int earlyStopIterIndex) {
+    int glmRowSize = glmSc1.getRowDim();
+    int earlyStopRowSize = earlyStopSc2.getRowDim();
+    List<Integer> iterList = new ArrayList<>();
+    for (int index = 0; index < glmRowSize; index++)
+      iterList.add((Integer) glmSc1.get(index, glmIterIndex));
+    for (int index = 0; index < earlyStopRowSize; index++) {
+      Integer iter = (Integer) earlyStopSc2.get(index, earlyStopIterIndex);
+      if (!iterList.contains(iter))
+        iterList.add(iter);
+    }
+    String[] rowHeader = new String[iterList.size()];
+    for (int index=0; index < rowHeader.length; index++)
+      rowHeader[index] = "";
+    return rowHeader;
   }
   
   // glmSc1 is updated for every iteration while earlyStopSc2 is updated per scoring interval.  Hence, glmSc1 is
@@ -76,33 +97,79 @@ public class GLMUtils {
   // indices align with each other.
   public static TwoDimTable combineTableContents(final TwoDimTable glmSc1, final TwoDimTable earlyStopSc2,
                                                  TwoDimTable combined, final List<Integer> earlyStopColIndices,
-                                                 List<Integer> scoreIterationList, final int indexOfIter) {
-    final int rowSize = glmSc1.getRowDim();
-    final int rowSize2 = earlyStopSc2.getRowDim();
+                                                 final int indexOfIter, final int indexOfIterEarlyStop, 
+                                                 final int overlapSize) {
+    final int rowSize = glmSc1.getRowDim();         // array size from GLM Scoring, contains more iterations
+    final int rowSize2 = earlyStopSc2.getRowDim();  // array size from scoringHistory
     final int glmColSize = glmSc1.getColDim();
     final int earlyStopColSize = earlyStopColIndices.size();
     int sc2RowIndex = 0;
-    for (int rowIndex = 0; rowIndex < rowSize; rowIndex++) {
-      for (int colIndex = 0; colIndex < glmColSize; colIndex++) { // add contents of glm Scoring history first
-        combined.set(rowIndex, colIndex, glmSc1.get(rowIndex, colIndex));
-      }
-      if (sc2RowIndex < rowSize2) {
-        final int glmSc1Iteration = (int) glmSc1.get(rowIndex, indexOfIter);
-        if (scoreIterationList.contains(glmSc1Iteration)) {
-          int sc2Index = scoreIterationList.indexOf(glmSc1Iteration);
-          final int earlyStopIteration = scoreIterationList.get(sc2Index);
-          scoreIterationList.remove(sc2Index);
-          if (glmSc1Iteration == earlyStopIteration) { // combine scoring histories when iteration number match
-            for (int colIndex = 0; colIndex < earlyStopColSize; colIndex++) { // add early stop scoring history content
-              int trueColIndex = colIndex + glmColSize;
-              combined.set(rowIndex, trueColIndex, earlyStopSc2.get(sc2RowIndex, earlyStopColIndices.get(colIndex)));
-            }
-            sc2RowIndex++;
-          }
+    int glmRowIndex = 0;
+    int rowIndex = 0;
+    List<Integer> iterRecorded = new ArrayList<>();
+    while ((sc2RowIndex < rowSize2) && (glmRowIndex < rowSize)) {
+      int glmScIter = (int) glmSc1.get(glmRowIndex, indexOfIter);
+      int earlyStopScIter = (int) earlyStopSc2.get(sc2RowIndex, indexOfIterEarlyStop);
+      if (glmScIter == earlyStopScIter) {
+        if (!iterRecorded.contains(glmScIter)) {
+          addOneRow2ScoringHistory(glmSc1, earlyStopSc2, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex,
+                  rowIndex, true, true, earlyStopColIndices, combined, overlapSize);
+          iterRecorded.add(glmScIter);
         }
+        sc2RowIndex++;
+        glmRowIndex++;
+      } else if (glmScIter < earlyStopScIter) { // add GLM scoring history
+        if (!iterRecorded.contains(glmScIter)) {
+          addOneRow2ScoringHistory(glmSc1, earlyStopSc2, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex, rowIndex,
+                  true, false, earlyStopColIndices, combined, overlapSize);
+          iterRecorded.add(glmScIter);
+        }
+        glmRowIndex++;
+      } else if (glmScIter > earlyStopScIter) { // add GLM scoring history
+        if (!iterRecorded.contains(earlyStopScIter)) {
+          addOneRow2ScoringHistory(glmSc1, earlyStopSc2, glmColSize, earlyStopColSize, glmRowIndex, sc2RowIndex, rowIndex,
+                  false, true, earlyStopColIndices, combined, overlapSize);
+          iterRecorded.add(earlyStopScIter);
+        }
+        sc2RowIndex++;
+      }
+      rowIndex++;
+    }
+    for (int index = glmRowIndex; index < rowSize; index++) { // add left over glm scoring history
+      int iter = (int) glmSc1.get(index, indexOfIter);
+      if (!iterRecorded.contains(iter) && iterRecorded.get(iterRecorded.size()-1) < iter) {
+        addOneRow2ScoringHistory(glmSc1, earlyStopSc2, glmColSize, earlyStopColSize, index, -1,
+                rowIndex++, true, false, earlyStopColIndices, combined, overlapSize);
+        iterRecorded.add(iter);
+      }
+    }
+    for (int index = sc2RowIndex; index < rowSize2; index++) { // add left over scoring history
+      int iter = (int) earlyStopSc2.get(index, indexOfIterEarlyStop);
+      if (!iterRecorded.contains(iter) && iterRecorded.get(iterRecorded.size()-1) < iter) {
+        addOneRow2ScoringHistory(glmSc1, earlyStopSc2, glmColSize, earlyStopColSize, -1, index, rowIndex++,
+                false, true, earlyStopColIndices, combined, overlapSize);
+        iterRecorded.add(iter);
       }
     }
     return combined;
+  }
+
+  public static void addOneRow2ScoringHistory(final TwoDimTable glmSc1, final TwoDimTable earlyStopSc2, int glmColSize,
+                                              int earlyStopColSize, int glmRowIndex, int earlyStopRowIndex, int rowIndex,
+                                              boolean addGlmSC, boolean addEarlyStopSC,
+                                              final List<Integer> earlyStopColIndices, TwoDimTable combined, 
+                                              final int overlapSize) {
+    if (addGlmSC)
+      for (int glmIndex = 0; glmIndex < glmColSize; glmIndex++)
+        combined.set(rowIndex, glmIndex, glmSc1.get(glmRowIndex, glmIndex));
+    if (addEarlyStopSC)
+      for (int earlyStopIndex = 0; earlyStopIndex < earlyStopColSize; earlyStopIndex++) {
+        if (!addGlmSC && earlyStopIndex < overlapSize)
+          combined.set(rowIndex, earlyStopIndex, earlyStopSc2.get(earlyStopRowIndex, earlyStopIndex));
+
+        combined.set(rowIndex, earlyStopIndex + glmColSize, earlyStopSc2.get(earlyStopRowIndex,
+                earlyStopColIndices.get(earlyStopIndex)));
+      }
   }
   
   public static void updateGradGam(double[] gradient, double[][][] penalty_mat, int[][] gamBetaIndices, double[] beta,

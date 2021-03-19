@@ -2,7 +2,10 @@ package hex.glm;
 
 import hex.*;
 import hex.glm.GLMModel.GLMOutput;
-import hex.glm.GLMModel.GLMParameters.*;
+import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
+import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMModel.Submodel;
 import hex.glm.GLMTask.*;
@@ -41,11 +44,11 @@ import java.text.NumberFormat;
 import java.util.*;
 
 import static hex.ModelMetrics.calcVarImp;
-import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
+import static hex.glm.GLMModel.GLMParameters.Family.binomial;
+import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.glm.GLMUtils.*;
-import static water.fvec.Vec.T_STR;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -111,9 +114,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
   private int _bestCVSubmodel;  // best submodel index found during cv
   private boolean _doInit = true;  // flag setting whether or not to run init
-  private double [] _xval_deviances;
-  private double [] _xval_sd;
-
+  private double [] _xval_deviances;  // store cross validation average deviance
+  private double [] _xval_sd;         // store the standard deviation of cross-validation
+  private double [] _xval_deviances_generate_SH;// store cv average deviance for generate_scoring_history=True
+  private double [] _xval_sd_generate_SH; // store the standard deviation of cv for generate_scoring_historty=True
+  private int[] _xval_iters_generate_SH; // store cv iterations combined from the various cv models
+  private boolean _insideCVCheck = false; // detect if we are running inside cv_computeAndSetOptimalParameters
   /**
    * GLM implementation of N-fold cross-validation.
    * We need to compute the sequence of lambdas for the main model so the folds share the same lambdas.
@@ -143,13 +149,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override
   public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
     if(_parms._max_runtime_secs != 0) _parms._max_runtime_secs = 0;
-      _xval_deviances = new double[_parms._lambda.length*_parms._alpha.length];
-      _xval_sd = new double [_parms._lambda.length*_parms._alpha.length];
+      _xval_deviances = new double[_parms._lambda.length * _parms._alpha.length];
+      _xval_sd = new double[_parms._lambda.length * _parms._alpha.length];
       double bestTestDev = Double.POSITIVE_INFINITY;
       int lmin_max = 0;
       for (int i = 0; i < cvModelBuilders.length; ++i) {  // find the highest best_submodel_idx we need to go through
         GLM g = (GLM) cvModelBuilders[i];
-        lmin_max = Math.max(lmin_max,g._model._output._selected_submodel_idx);
+        lmin_max = Math.max(lmin_max, g._model._output._selected_submodel_idx);
       }
       int lidx = 0; // index into submodel
       int bestId = 0;   // submodel indedx with best Deviance from xval
@@ -161,34 +167,36 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           GLM g = (GLM) cvModelBuilders[i];
           if (g._model._output._submodels[lidx] != null) {
             double lambda = g._model._output._submodels[lidx].lambda_value;
+            g._insideCVCheck = true;
             g._driver.computeSubmodel(lidx, lambda, Double.NaN, Double.NaN);
+            g._insideCVCheck = false;
             testDev += g._model._output._submodels[lidx].devianceValid;
             testDevSq += g._model._output._submodels[lidx].devianceValid * g._model._output._submodels[lidx].devianceValid;
           }
         }
         double testDevAvg = testDev / cvModelBuilders.length; // average testDevAvg for fixed submodel index
-        double testDevSE = testDevSq - testDevAvg*testDev;
-        _xval_sd[lidx] = Math.sqrt(testDevSE/((cvModelBuilders.length-1)*cvModelBuilders.length));
+        double testDevSE = testDevSq - testDevAvg * testDev;
+        _xval_sd[lidx] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
         _xval_deviances[lidx] = testDevAvg;
-        if(testDevAvg < bestTestDev) {
+        if (testDevAvg < bestTestDev) {
           bestTestDev = testDevAvg;
           bestId = lidx;
         }
         // early stopping - no reason to move further if we're overfitting
-        if(testDevAvg > bestTestDev && ++cnt == 3) {
+        if (testDevAvg > bestTestDev && ++cnt == 3) {
           lmin_max = lidx;
           break;
         }
       }
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
-        if(g._toRemove != null)
-          for(Key k:g._toRemove)
+        if (g._toRemove != null)
+          for (Key k : g._toRemove)
             Keyed.remove(k);
       }
-      _parms._lambda = Arrays.copyOf(_parms._lambda,lmin_max+1);
-      _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max+1);
-      _xval_sd = Arrays.copyOf(_xval_sd, lmin_max+1);
+      _parms._lambda = Arrays.copyOf(_parms._lambda, lmin_max + 1);
+      _xval_deviances = Arrays.copyOf(_xval_deviances, lmin_max + 1);
+      _xval_sd = Arrays.copyOf(_xval_sd, lmin_max + 1);
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
         g._model._output.setSubmodelIdx(bestId);
@@ -196,12 +204,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double bestDev = _xval_deviances[bestId];
       double bestDev1se = bestDev + _xval_sd[bestId];
       int bestId1se = bestId;
-      while(bestId1se > 0 && _xval_deviances[bestId1se-1] <= bestDev1se)
+      while (bestId1se > 0 && _xval_deviances[bestId1se - 1] <= bestDev1se)
         --bestId1se;
-      _lambdaCVEstimate = ((GLM) cvModelBuilders[0])._model. _output._submodels[bestId].lambda_value;
+      _lambdaCVEstimate = ((GLM) cvModelBuilders[0])._model._output._submodels[bestId].lambda_value;
       _bestCVSubmodel = bestId;
       _model._output._lambda_1se = bestId1se; // submodel ide with bestDev+one sigma
       _model._output._selected_submodel_idx = bestId; // set best submodel id here
+
+    if (_parms._generate_scoring_history)
+      generateCVScoringHistory(cvModelBuilders);
+    
     for (int i = 0; i < cvModelBuilders.length; ++i) {
       GLM g = (GLM) cvModelBuilders[i];
       GLMModel gm = g._model;
@@ -212,6 +224,90 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     _doInit = false;
   }
 
+  /***
+   * This method is only called when _parms.generate_scoring_hisory=True.  We left the xval-deviance, xval-se 
+   * generation alone and create new xval-deviance and xval-se.
+   * 
+   * @param cvModelBuilders: store model keys from models generated by cross validation.
+   */
+  private void generateCVScoringHistory(ModelBuilder[] cvModelBuilders) {
+    int devianceTestLength = Integer.MAX_VALUE;
+    List<Integer>[] cvModelIters = new List[cvModelBuilders.length];
+    // find correct length for _xval_deviances_generate_SH, _xval_sd_generate_SH
+    for (int i = 0; i < cvModelBuilders.length; ++i) {  // find length of deviances from fold models
+      GLM g = (GLM) cvModelBuilders[i];
+      if (_parms._lambda_search) {
+        if (g._lambdaSearchScoringHistory._lambdaDevTest.size() < devianceTestLength)
+          devianceTestLength = g._lambdaSearchScoringHistory._lambdaDevTest.size();
+        cvModelIters[i] = new ArrayList<>(g._lambdaSearchScoringHistory._lambdaIters);
+      } else {
+        if (g._scoringHistory._lambdaDevTest.size() < devianceTestLength)
+          devianceTestLength = g._scoringHistory._lambdaDevTest.size();
+        cvModelIters[i] = new ArrayList<>(g._scoringHistory._scoringIters);
+      }
+    }
+    _xval_deviances_generate_SH = new double[devianceTestLength];
+    _xval_sd_generate_SH = new double[devianceTestLength];
+    _xval_iters_generate_SH = new int[devianceTestLength];
+    int countIndex = 0;
+    for (int index = 0; index < devianceTestLength; index++) {  // access deviance for each fold and calculate average
+      double testDev = 0;                                       // and sd
+      double testDevSq = 0;
+      int[] foldIterIndex = findIterIndexAcrossFolds(cvModelIters, index);  // find common iteration indices from folds
+      if (foldIterIndex != null) {
+        _xval_iters_generate_SH[countIndex] = cvModelIters[0].get(index);
+        for (int modelIndex = 0; modelIndex < cvModelBuilders.length; modelIndex++) {
+          GLM g = (GLM) cvModelBuilders[modelIndex];
+          if (_parms._lambda_search) {
+            testDev += g._lambdaSearchScoringHistory._lambdaDevTest.get(foldIterIndex[modelIndex]);
+            testDevSq += g._lambdaSearchScoringHistory._lambdaDevTest.get(foldIterIndex[modelIndex]) *
+                    g._lambdaSearchScoringHistory._lambdaDevTest.get(foldIterIndex[modelIndex]);
+          } else {
+            testDev += g._scoringHistory._lambdaDevTest.get(foldIterIndex[modelIndex]);
+            testDevSq += g._scoringHistory._lambdaDevTest.get(foldIterIndex[modelIndex]) * 
+                    g._scoringHistory._lambdaDevTest.get(foldIterIndex[modelIndex]);
+          }
+        }
+        double testDevAvg = testDev / cvModelBuilders.length;
+        double testDevSE = testDevSq - testDevAvg * testDevAvg;
+        _xval_sd_generate_SH[countIndex] = Math.sqrt(testDevSE / ((cvModelBuilders.length - 1) * cvModelBuilders.length));
+        _xval_deviances_generate_SH[countIndex++] = testDevAvg;
+      }
+    }
+    _xval_sd_generate_SH = Arrays.copyOf(_xval_sd_generate_SH, countIndex);
+    _xval_deviances_generate_SH = Arrays.copyOf(_xval_deviances_generate_SH, countIndex);
+    _xval_iters_generate_SH = Arrays.copyOf(_xval_iters_generate_SH, countIndex);
+  }
+
+  /***
+   * This method is used to locate common iteration indices across all folds.  Since scoring history is scored by
+   * user specifying the scoring interval and by a time interval determined by system computation speed, there can
+   * be scoring history with different scoring indices across folds.  This method is used to find the commen iteration
+   * indices and return it.
+   * 
+   * @param cvModelIters: store model keys from models generated by cross validation.
+   * @param fold0Index: iteration index of fold 0 model
+   * @return: array containing the indices into deviance_test for all folds
+   */
+  public static int[] findIterIndexAcrossFolds(List<Integer>[] cvModelIters, int fold0Index) {
+    int numFolds = cvModelIters.length;
+    int[] iterIndexAcrossFolds = new int[numFolds];
+    int fold0Iter = cvModelIters[0].get(fold0Index);
+    iterIndexAcrossFolds[0] = fold0Index;
+    for (int foldIndex = 1; foldIndex < numFolds; foldIndex++) {
+      if (cvModelIters[foldIndex].get(fold0Index) == fold0Iter) { // 
+        iterIndexAcrossFolds[foldIndex] = fold0Index;
+      } else {  // current fold model iteration index differs from fold0Iter, need to search
+        int currFoldIterIndex = ArrayUtils.find(cvModelIters[foldIndex].toArray(), fold0Iter);
+        if (currFoldIterIndex < 0)
+          return null;
+        else
+          iterIndexAcrossFolds[foldIndex] = currFoldIterIndex;
+      }
+    }
+    return iterIndexAcrossFolds;
+  }
+  
   protected void checkMemoryFootPrint(DataInfo activeData) {
     if (_parms._solver == Solver.IRLSM || _parms._solver == Solver.COORDINATE_DESCENT) {
       int p = activeData.fullN();
@@ -243,23 +339,56 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private ArrayList<Double> _objectives = new ArrayList<>();
     private ArrayList<Double> _convergence = new ArrayList<>(); // HGLM: ratio of sum(eta0-eta.i)^2/sum(eta.i^2)
     private ArrayList<Double> _sumEtaiSquare = new ArrayList<>();  // HGLM: sum(eta.i^2)
+    private ArrayList<Double> _lambdas; // thest are only used when _parms.generate_scoring_history=true
+    private ArrayList<Double> _lambdaDevTrain;
+    private ArrayList<Double> _lambdaDevTest;
+    private ArrayList<Double> _alphas;
     
     public ArrayList<Integer> getScoringIters() { return _scoringIters;}
     public ArrayList<Long> getScoringTimes() { return _scoringTimes;}
     public ArrayList<Double> getLikelihoods() { return _likelihoods;}
     public ArrayList<Double> getObjectives() { return _objectives;}
+
+    public ScoringHistory(boolean hasTest, boolean hasXval, boolean generate_scoring_historty) {
+      if(hasTest)_lambdaDevTest = new ArrayList<>();
+      if (generate_scoring_historty) {
+        _lambdas = new ArrayList<>(); // these are only used when _parms.generate_scoring_history=true
+        _lambdaDevTrain = new ArrayList<>();
+        if (hasTest)
+          _lambdaDevTest = new ArrayList<>();
+         _alphas = new ArrayList<>();
+      }
+    }
     
     public synchronized void addIterationScore(int iter, double likelihood, double obj) {
-      if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) == iter)
-        return; // do not record twice, happens for the last iteration, need to record scoring history in checkKKTs because of gaussian fam.
+      if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) >= iter)
+        return; // do not record result of the same iterations more than once
       _scoringIters.add(iter);
       _scoringTimes.add(System.currentTimeMillis());
       _likelihoods.add(likelihood);
       _objectives.add(obj);
     }
 
+    public synchronized void addIterationScore(boolean updateTrain, boolean updateValid, int iter, double likelihood, 
+                                               double obj, double dev, double devValid, long nobs, long nobsValid, 
+                                               double lambda, double alpha) {
+      if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) >= iter)
+        return; // do not record twice, happens for the last iteration, need to record scoring history in checkKKTs because of gaussian fam.
+      if (updateTrain) {
+        _scoringIters.add(iter);
+        _scoringTimes.add(System.currentTimeMillis());
+        _likelihoods.add(likelihood);
+        _objectives.add(obj);
+        _lambdaDevTrain.add(dev / nobs);
+        _lambdas.add(lambda);
+        _alphas.add(alpha);
+      }
+      if (updateValid) 
+        _lambdaDevTest.add(devValid/nobsValid);
+    }
+
     public synchronized void addIterationScore(int iter, double[] sumEtaInfo) {
-      if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) == iter)
+      if (_scoringIters.size() > 0 && _scoringIters.get(_scoringIters.size() - 1) >= iter)
         return; // do not record twice, happens for the last iteration, need to record scoring history in checkKKTs because of gaussian fam.
       _scoringIters.add(iter);
       _scoringTimes.add(System.currentTimeMillis());
@@ -267,10 +396,26 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _convergence.add(sumEtaInfo[0]/sumEtaInfo[1]);
     }
 
-    public synchronized TwoDimTable to2dTable() {
+    public synchronized TwoDimTable to2dTable(GLMParameters parms, double[] xvalDev, double[] xvalSE) {
       String[] cnames = new String[]{"timestamp", "duration", "iterations", "negative_log_likelihood", "objective"};
       String[] ctypes = new String[]{"string", "string", "int", "double", "double"};
       String[] cformats = new String[]{"%s", "%s", "%d", "%.5f", "%.5f"};
+      if (parms._generate_scoring_history) {
+        cnames = ArrayUtils.append(cnames, new String[]{"alpha", "lambda", "deviance_train"});
+        ctypes = ArrayUtils.append(ctypes, new String[]{"double", "double", "double"});
+        cformats= ArrayUtils.append(cformats, new String[]{"%.5f", "%.5f", "%.5f"});
+        if (_lambdaDevTest != null) {
+          cnames = ArrayUtils.append(cnames, new String[]{"deviance_test"});
+          ctypes = ArrayUtils.append(ctypes, new String[]{"double"});
+          cformats = ArrayUtils.append(cformats, new String[]{"%.5f"});
+        }
+        if (xvalDev != null && xvalDev.length > 0) {
+          cnames = ArrayUtils.append(cnames, new String[]{"deviance_xval", "deviance_se"});
+          ctypes = ArrayUtils.append(ctypes, new String[]{"double", "double"});
+          cformats = ArrayUtils.append(cformats, new String[]{"%.5f", "%.5f"});
+        }
+      }
+      
       TwoDimTable res = new TwoDimTable("Scoring History", "", new String[_scoringIters.size()], cnames, ctypes, cformats, "");
       for (int i = 0; i < _scoringIters.size(); ++i) {
         int col = 0;
@@ -279,6 +424,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res.set(i, col++, _scoringIters.get(i));
         res.set(i, col++, _likelihoods.get(i));
         res.set(i, col++, _objectives.get(i));
+        if (parms._generate_scoring_history) {
+          res.set(i, col++, _alphas.get(i));
+          res.set(i, col++, _lambdas.get(i));
+          res.set(i, col++, _lambdaDevTrain.get(i));
+          if (_lambdaDevTest != null) 
+            res.set(i, col++, _lambdaDevTest.get(i));
+          if (xvalDev != null && (i < xvalDev.length)) {  // cv model may run with fewer iterations
+            res.set(i, col++, xvalDev[i]);
+            res.set(i, col, xvalSE[i]);
+          }
+        }
       }
       return res;
     }
@@ -312,7 +468,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
       }
     }
-    
   }
 
   static class LambdaSearchScoringHistory {
@@ -327,7 +482,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private ArrayList<Double> _alphas = new ArrayList<>();
 
     public LambdaSearchScoringHistory(boolean hasTest, boolean hasXval) {
-      if(hasTest || true)_lambdaDevTest = new ArrayList<>();
+      if(hasTest) _lambdaDevTest = new ArrayList<>();
       if(hasXval){
         _lambdaDevXval = new ArrayList<>();
         _lambdaDevXvalSE = new ArrayList<>();
@@ -342,8 +497,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public ArrayList<Double> getDevTest() { return _lambdaDevTest;}
     public ArrayList<Integer> getPredictors() { return _lambdaPredictors;}
     
-
-    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, double devRatioTest, double devRatioXval, double devRatoioXvalSE, double alpha) {
+    public synchronized void addLambdaScore(int iter, int predictors, double lambda, double devRatioTrain, 
+                                            double devRatioTest, double devRatioXval, double devRatoioXvalSE, 
+                                            double alpha) {
+      if (_lambdaIters.size() > 0 && (iter <= _lambdaIters.get(_lambdaIters.size()-1)))  { // prevent duplicated records
+          return;
+      }
       _scoringTimes.add(System.currentTimeMillis());
       _lambdaIters.add(iter);
       _alphas.add(alpha);
@@ -354,6 +513,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if(_lambdaDevXval != null)_lambdaDevXval.add(devRatioXval);
       if(_lambdaDevXvalSE != null)_lambdaDevXvalSE.add(devRatoioXvalSE);
     }
+    
     public synchronized TwoDimTable to2dTable() {
 
       String[] cnames = new String[]{"timestamp", "duration", "iteration", "lambda", "predictors", "deviance_train"};
@@ -383,7 +543,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         res.set(i, col++, lambdaFormatter.format(_lambdas.get(i)));
         res.set(i, col++, _lambdaPredictors.get(i));
         res.set(i, col++, _lambdaDevTrain.get(i));
-        if(_lambdaDevTest != null && _lambdaDevTest.size() > i)
+        if(_lambdaDevTest != null)
           res.set(i, col++, _lambdaDevTest.get(i));
         if(_lambdaDevXval != null && _lambdaDevXval.size() > i) {
           res.set(i, col++, _lambdaDevXval.get(i));
@@ -403,7 +563,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _alphas.add((Double) sHist.get(rowInd, colIndices[6]));
         _lambdaPredictors.add((int) sHist.get(rowInd, colIndices[3]));
         _lambdaDevTrain.add((double) sHist.get(rowInd, colIndices[4]));
-        _lambdaDevTest.add((double) sHist.get(rowInd, colIndices[5]));
+        if (colIndices[5] > -1) // may not have deviance test, check before applying
+          _lambdaDevTest.add((double) sHist.get(rowInd, colIndices[5]));
       }
     }
   }
@@ -428,7 +589,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public int nclasses() {
     if (_parms._family == Family.multinomial || _parms._family == Family.ordinal || _parms._family == Family.AUTO)
       return _nclass;
-    if (Family.binomial == _parms._family || Family.quasibinomial == _parms._family
+    if (binomial == _parms._family || Family.quasibinomial == _parms._family
             || Family.fractionalbinomial == _parms._family)
       return 2;
     return 1;
@@ -579,7 +740,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
           _parms._nlambdas = _parms._alpha[0] == 0?30:100; // fewer lambdas needed for ridge
       _lambdaSearchScoringHistory = new LambdaSearchScoringHistory(_parms._valid != null,_parms._nfolds > 1);
-      _scoringHistory = new ScoringHistory();
+      _scoringHistory = new ScoringHistory(_parms._valid != null,_parms._nfolds > 1, 
+              _parms._generate_scoring_history);
       _train.bulkRollups(); // make sure we have all the rollups computed in parallel
       _t0 = System.currentTimeMillis();
       if ((_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0) && !_parms._HGLM)
@@ -588,7 +750,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_nclass == 1) {
           _parms._family = Family.gaussian;
         } else if (_nclass == 2) {
-          _parms._family = Family.binomial;
+          _parms._family = binomial;
         } else {
           _parms._family = Family.multinomial;
         }
@@ -1012,44 +1174,45 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private transient Cholesky _chol;
     private transient L1Solver _lslvr;
 
-    private double[] ADMM_solve(Gram gram, double [] xy) {
-      if(_parms._remove_collinear_columns || _parms._compute_p_values) {
-        if(!_parms._intercept) throw H2O.unimpl();
+    private double[] ADMM_solve(Gram gram, double[] xy) {
+      if (_parms._remove_collinear_columns || _parms._compute_p_values) {
+        if (!_parms._intercept) throw H2O.unimpl();
         ArrayList<Integer> ignoredCols = new ArrayList<>();
-        Cholesky chol = ((_state._iter == 0)?gram.qrCholesky(ignoredCols, _parms._standardize):gram.cholesky(null));
-        if(!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
-          int [] collinear_cols = new int[ignoredCols.size()];
-          for(int i = 0; i < collinear_cols.length; ++i)
+        Cholesky chol = ((_state._iter == 0) ? gram.qrCholesky(ignoredCols, _parms._standardize) : gram.cholesky(null));
+        if (!ignoredCols.isEmpty() && !_parms._remove_collinear_columns) {
+          int[] collinear_cols = new int[ignoredCols.size()];
+          for (int i = 0; i < collinear_cols.length; ++i)
             collinear_cols[i] = ignoredCols.get(i);
-          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove collinear columns automatically. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(),collinear_cols)));
+          throw new Gram.CollinearColumnsException("Found collinear columns in the dataset. P-values can not be computed with collinear columns in the dataset. Set remove_collinear_columns flag to true to remove collinear columns automatically. Found collinear columns " + Arrays.toString(ArrayUtils.select(_dinfo.coefNames(), collinear_cols)));
         }
-        if(!chol.isSPD()) throw new NonSPDMatrixException();
+        if (!chol.isSPD()) throw new NonSPDMatrixException();
         _chol = chol;
-        if(!ignoredCols.isEmpty()) { // got some redundant cols
-          int [] collinear_cols = new int[ignoredCols.size()];
-          for(int i = 0; i < collinear_cols.length; ++i)
+        if (!ignoredCols.isEmpty()) { // got some redundant cols
+          int[] collinear_cols = new int[ignoredCols.size()];
+          for (int i = 0; i < collinear_cols.length; ++i)
             collinear_cols[i] = ignoredCols.get(i);
-          String [] collinear_col_names = ArrayUtils.select(_state.activeData().coefNames(),collinear_cols);
+          String[] collinear_col_names = ArrayUtils.select(_state.activeData().coefNames(), collinear_cols);
           // need to drop the cols from everywhere
           _model.addWarning("Removed collinear columns " + Arrays.toString(collinear_col_names));
           Log.warn("Removed collinear columns " + Arrays.toString(collinear_col_names));
           _state.removeCols(collinear_cols);
           gram.dropCols(collinear_cols);
-          xy = ArrayUtils.removeIds(xy,collinear_cols);
+          xy = ArrayUtils.removeIds(xy, collinear_cols);
         }
         xy = xy.clone();
         chol.solve(xy);
       } else {
         gram = gram.deep_clone();
         xy = xy.clone();
-        GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(),_state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+        GramSolver slvr = new GramSolver(gram.clone(), xy.clone(), _parms._intercept, _state.l2pen(), _state.l1pen(), _state.activeBC()._betaGiven, _state.activeBC()._rho, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _chol = slvr._chol;
-        if(_state.l1pen() == 0 && !_state.activeBC().hasBounds()) {
+        if (_state.l1pen() == 0 && !_state.activeBC().hasBounds()) {
           slvr.solve(xy);
         } else {
           xy = MemoryManager.malloc8d(xy.length);
-          if(_state._u == null && (_parms._family != Family.multinomial)) _state._u = MemoryManager.malloc8d(_state.activeData().fullN()+1);
-            (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
+          if (_state._u == null && (_parms._family != Family.multinomial))
+            _state._u = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
+          (_lslvr = new ADMM.L1Solver(1e-4, 10000, _state._u)).solve(slvr, xy, _state.l1pen(), _parms._intercept, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         }
       }
       return xy;
@@ -1061,37 +1224,37 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
       do {
         beta = beta.clone();
-           for (int c = 0; c < _nclass; ++c) {
-            _state.setActiveClass(c);
-            boolean onlyIcpt = _state.activeDataMultinomial(c).fullN() == 0;
+        for (int c = 0; c < _nclass; ++c) {
+          _state.setActiveClass(c);
+          boolean onlyIcpt = _state.activeDataMultinomial(c).fullN() == 0;
 
-            if (_state.l1pen()==0) {
-              if (_state.ginfoNull())
-                _state.updateState(beta, _state.gslvr().getGradient(beta));
-              ls = new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c));
-            } else
-              ls = new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
-            new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta, c).doAll(_state.activeDataMultinomial()._adaptedFrame);
-            ComputationState.GramXY gram = _state.computeGram(_state.betaMultinomial(c, beta), s);
-            double[] betaCnd = COD_solve(gram, _state._alpha, _state.lambda());
+          if (_state.l1pen() == 0) {
+            if (_state.ginfoNull())
+              _state.updateState(beta, _state.gslvr().getGradient(beta));
+            ls = new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c));
+          } else
+            ls = new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
+          new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta, c).doAll(_state.activeDataMultinomial()._adaptedFrame);
+          ComputationState.GramXY gram = _state.computeGram(_state.betaMultinomial(c, beta), s);
+          double[] betaCnd = COD_solve(gram, _state._alpha, _state.lambda());
 
-            if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
-              Log.info(LogMsg("Ls failed " + ls));
-              continue;
-            }
-            _state.setBetaMultinomial(c, beta, ls.getX());  // set new beta
+          if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+            Log.info(LogMsg("Ls failed " + ls));
+            continue;
           }
+          _state.setBetaMultinomial(c, beta, ls.getX());  // set new beta
+        }
 
         _state.setActiveClass(-1); // only reset after going through a whole set of classes.  Not sure about this
       } while (progress(beta, _state.gslvr().getMultinomialLikelihood(beta))); // only need likelihood inside loop
-      if (_parms._lambda_search ) {
+      if (_parms._lambda_search) {
         _state.updateState(beta, _state.gslvr().getGradient(beta));  // only calculate _gradient here when needed
       }
     }
-    
+
     public Frame makeZeroOrOneFrame(long rowNumber, int colNumber, int val, String[] columnNames) {
-      Vec tempVec = val==0?Vec.makeZero(rowNumber):Vec.makeOne(rowNumber);
-      Frame madeFrame = val==0?new Frame(tempVec.makeZeros(colNumber)):new Frame(tempVec.makeOnes(colNumber));
+      Vec tempVec = val == 0 ? Vec.makeZero(rowNumber) : Vec.makeOne(rowNumber);
+      Frame madeFrame = val == 0 ? new Frame(tempVec.makeZeros(colNumber)) : new Frame(tempVec.makeOnes(colNumber));
       if (columnNames != null) {
         if (columnNames.length == colNumber)
           madeFrame.setNames(columnNames);
@@ -1103,8 +1266,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     /**
-     * This method will estimate beta, ubeta as described in step 2 of HGLM fitting algorithm.  Details can be found in 
+     * This method will estimate beta, ubeta as described in step 2 of HGLM fitting algorithm.  Details can be found in
      * the appendix.
+     *
      * @param randCatLevels
      * @param totRandCatLevels
      * @param returnFrame: will contain the calculation of dev, hv which will be used in step 3 and later.
@@ -1117,25 +1281,25 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * @param cholR
      * @return
      */
-    private double[] fitCoeffs(int[] randCatLevels, int totRandCatLevels, Frame returnFrame, int[] dinfoWCol, int[] wCol, 
-                           int etaOColIndexReturnFrame, int dinfoResponseColID, double[] sumEtaInfo, Frame augXZ, 
+    private double[] fitCoeffs(int[] randCatLevels, int totRandCatLevels, Frame returnFrame, int[] dinfoWCol, int[] wCol,
+                               int etaOColIndexReturnFrame, int dinfoResponseColID, double[] sumEtaInfo, Frame augXZ,
                                double[][] cholR) {
       // qMatrix is used to store the Q matrix from QR decomposition of augXZ.  It is used in the loop here.
-      Frame qMatrix=makeZeroOrOneFrame(_dinfo._adaptedFrame.numRows() + ArrayUtils.sum(_randC),
+      Frame qMatrix = makeZeroOrOneFrame(_dinfo._adaptedFrame.numRows() + ArrayUtils.sum(_randC),
               _state.beta().length + _state.ubeta().length, 0, null);
       Frame augZW = makeZeroOrOneFrame(augXZ.numRows(), 1, 0, new String[]{"AugZ*W"});
       int betaLength = _state.beta().length;
       int ubetaLength = _state.ubeta().length;
       CalculateW4Data calculateW4Data;
       double[] start_delta = MemoryManager.malloc8d(betaLength + ubetaLength);
-      int iteration=0;
+      int iteration = 0;
       // store eta at the beginning and move it from _dinfo response columns to returnFrame for metrics calculation
-      new CopyPartsOfFrame(_dinfo._adaptedFrame, new int[]{etaOColIndexReturnFrame}, 
+      new CopyPartsOfFrame(_dinfo._adaptedFrame, new int[]{etaOColIndexReturnFrame},
               new int[]{_dinfo.responseChunkId(dinfoResponseColID)}, _dinfo._adaptedFrame.numRows()).doAll(returnFrame);
       new CalculateW4Rand(_job, _parms, randCatLevels, _state.get_psi(), _state.get_phi(),
               _state.ubeta()).doAll(_state.get_priorw_wpsi());
       new RandColAddW2AugXZ(_job, _randC, _state.get_priorw_wpsi(), 1, _dinfo._adaptedFrame.numRows(),
-              augXZ.numCols()-ArrayUtils.sum(_randC), augXZ.numCols()).doAll(augXZ);
+              augXZ.numCols() - ArrayUtils.sum(_randC), augXZ.numCols()).doAll(augXZ);
       do {  // start loop GLM.MME loop in R
         start_delta = calculate_all_beta(start_delta, augXZ, augZW, totRandCatLevels, cholR); // calculate new beta, ubeta
         new CopyPartsOfFrame(augXZ, null, null, qMatrix.numRows()).doAll(qMatrix); // copy Q matrix from augXZ to qMatrix
@@ -1144,28 +1308,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         iteration++; // update iteration count
         // generate weight for data part and AugXZ with the new weights
         calculateW4Data = calculateNewWAugXZ(augXZ, _randC);
-      } while (progressHGLMGLMMME(calculateW4Data._sumEtaDiffSq, calculateW4Data._sumEtaSq, iteration, true, 
+      } while (progressHGLMGLMMME(calculateW4Data._sumEtaDiffSq, calculateW4Data._sumEtaSq, iteration, true,
               null, null, null, null, null, null, null, null));
-      if (iteration > _parms._max_iterations) 
-        Log.debug(LogMsg("HGLM GLM.MME did not converge in "+iteration+" iterations."));
-      ReturnGLMMMERunInfoData glmRunInfoData = new ReturnGLMMMERunInfoData(_job, _dinfo, qMatrix, dinfoWCol, 
+      if (iteration > _parms._max_iterations)
+        Log.debug(LogMsg("HGLM GLM.MME did not converge in " + iteration + " iterations."));
+      ReturnGLMMMERunInfoData glmRunInfoData = new ReturnGLMMMERunInfoData(_job, _dinfo, qMatrix, dinfoWCol,
               _parms).doAll(returnFrame);
       ReturnGLMMMERunInfoRandCols glmRunInfo = new ReturnGLMMMERunInfoRandCols(_job, _dinfo, _state.get_priorw_wpsi(),
               qMatrix, wCol, _parms, _state.get_psi(), _state.ubeta(),
               ArrayUtils.cumsum(randCatLevels)).doAll(returnFrame);
       glmRunInfo._sumDev += glmRunInfoData._sumDev;
-      new GenerateResid(_job, 
-              1.0/Math.sqrt(glmRunInfo._sumDev/(returnFrame.numRows()-(betaLength+ubetaLength))),
+      new GenerateResid(_job,
+              1.0 / Math.sqrt(glmRunInfo._sumDev / (returnFrame.numRows() - (betaLength + ubetaLength))),
               1, 4, _dinfo._adaptedFrame.numRows()).doAll(returnFrame); // generate resid
       sumEtaInfo[0] = glmRunInfoData._sumEtaDiffSq;
       sumEtaInfo[1] = glmRunInfoData._sumEtaSq;
       cleanupHGLMMemory(null, new Frame[]{augZW, qMatrix}, null, null);
       return sumEtaInfo;
     }
-    
+
     public CalculateW4Data calculateNewWAugXZ(Frame augXZ, int[] randCatLevels) {
       // generate weight for data part
-      CalculateW4Data calculateW4Data =  new CalculateW4Data(_job, _dinfo, _parms, randCatLevels, _state.beta(), _state.ubeta(),
+      CalculateW4Data calculateW4Data = new CalculateW4Data(_job, _dinfo, _parms, randCatLevels, _state.beta(), _state.ubeta(),
               _state.get_psi(), _state.get_phi(), _state.get_tau(),
               _state.get_correction_HL()).doAll(_dinfo._adaptedFrame);
       // generate weight for lower part of AugXZ
@@ -1173,14 +1337,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _state.ubeta()).doAll(_state.get_priorw_wpsi());
       // generate AugXZ as [X | Z] * wdata for top half and bottom half as [0 | I]*wpsi
       new DataAddW2AugXZ(_job, _dinfo, _randC).doAll(augXZ);
-      new RandColAddW2AugXZ(_job, _randC, _state.get_priorw_wpsi(), 1, _dinfo._adaptedFrame.numRows(), augXZ.numCols()-ArrayUtils.sum(_randC), augXZ.numCols()).doAll(augXZ);
+      new RandColAddW2AugXZ(_job, _randC, _state.get_priorw_wpsi(), 1, _dinfo._adaptedFrame.numRows(), augXZ.numCols() - ArrayUtils.sum(_randC), augXZ.numCols()).doAll(augXZ);
       return calculateW4Data;
     }
-    
+
     public void copyOver(double[][] cholR, double[][] cholRcopy) {
       int dim1 = cholR.length;
       int dim2 = cholR[0].length;
-      for (int index=0; index < dim1; index++)
+      for (int index = 0; index < dim1; index++)
         System.arraycopy(cholR[index], 0, cholRcopy[index], 0, dim2);
     }
 
@@ -1193,7 +1357,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * @param cholRcopy
      * @return
      */
-    public double[] calculate_all_beta(double[] start_delta, Frame augXZ, Frame augZW, int totRandCatLevels, 
+    public double[] calculate_all_beta(double[] start_delta, Frame augXZ, Frame augZW, int totRandCatLevels,
                                        double[][] cholRcopy) {
       // perform QR decomposition on augXZ and store R as a double[][] array, Q back in augXZ
       DataInfo augXZInfo = new DataInfo(augXZ, null, true, DataInfo.TransformType.NONE,
@@ -1205,7 +1369,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame qTransposed = DMatrix.transpose(augXZ); // transpose Q (stored in Q) and store in qTransposed
       // generate frame augZW, it is one column only
       new CalculateAugZWData(_job, _dinfo, _dinfo.responseChunkId(1)).doAll(augZW);
-      new CalculateAugZWRandCols(_job, _state.get_priorw_wpsi(), 1, 
+      new CalculateAugZWRandCols(_job, _state.get_priorw_wpsi(), 1,
               _dinfo._adaptedFrame.numRows()).doAll(augZW);
       double[][] augZWTransposed = new double[1][];
       augZWTransposed[0] = FrameUtils.asDoubles(augZW.vec(0)); // store augZW as array
@@ -1218,21 +1382,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] qtaugzw = new FrameUtils.Vec2ArryTsk((int) qTAugZW.numRows()).doAll(qTAugZW.vec(0)).res;
       // backward solve to get new coefficients for fixed and random columns
       start_delta = LinearAlgebraUtils.backwardSolve(cholR, qtaugzw, start_delta);
-      cleanupHGLMMemory(new DataInfo[]{qTinfo, augXZInfo}, new Frame[]{qTransposed, qTAugZW}, null, 
-              new Key[] {qTinfo._key, augXZInfo._key});
+      cleanupHGLMMemory(new DataInfo[]{qTinfo, augXZInfo}, new Frame[]{qTransposed, qTAugZW}, null,
+              new Key[]{qTinfo._key, augXZInfo._key});
       return start_delta; // return newly estimated coefficients
     }
 
     /***
      * Method to clean up memories like Frames, DataInfos and Vectors after usage.
-     * 
+     *
      * @param tempdInfo
      * @param tempFrames
      * @param tempVectors
      */
     private void cleanupHGLMMemory(DataInfo[] tempdInfo, Frame[] tempFrames, Vec[] tempVectors, Key[] dkvKeys) {
       if (tempdInfo != null) {
-        for (int index=0; index < tempdInfo.length; index++)
+        for (int index = 0; index < tempdInfo.length; index++)
           if (tempdInfo[index] != null)
             tempdInfo[index].remove();
       }
@@ -1247,13 +1411,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             tempVectors[index].remove();
       }
       if (dkvKeys != null) {
-        for (int index=0; index < dkvKeys.length; index++) {
-          if (dkvKeys[index]!= null)
+        for (int index = 0; index < dkvKeys.length; index++) {
+          if (dkvKeys[index] != null)
             DKV.remove(dkvKeys[index]);
         }
       }
     }
-    
+
     private void fitHGLM() {
       // figure out random columns categorical levels
       int numRandCols = _parms._random_columns.length;
@@ -1262,16 +1426,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // glmmmeReturnFrame is pre-allocated and stays alive for the whole HGLM model building process.  Hence, instead
       // of allocating and de-allocating it, I kept it around.  It has _nobs+number of expanded random columns in rows.
       // eta.i = Xi*beta, etao contains the old eta.i
-      Frame glmmmeReturnFrame = makeZeroOrOneFrame(totRandCatLevels+_dinfo._adaptedFrame.numRows(),
-              6,   0, new String[]{"AugZ", "hv", "dev", "eta.i", "resid", "etao"});
+      Frame glmmmeReturnFrame = makeZeroOrOneFrame(totRandCatLevels + _dinfo._adaptedFrame.numRows(),
+              6, 0, new String[]{"AugZ", "hv", "dev", "eta.i", "resid", "etao"});
       // hvDataOnly stores the shortened hv column in glmmmeReturnFrame
       Frame hvDataOnly = makeZeroOrOneFrame(_dinfo._adaptedFrame.numRows(), 1, 0, new String[]{"hv_data"});
       // store column indices that contains HGLM info: response, zi, etaOld, prior_weight or response, zi, etaOld
-      int[] dinfoWCol = _dinfo._weights?new int[]{_dinfo.responseChunkId(0), _dinfo.responseChunkId(2), 
-              _dinfo.responseChunkId(3), _dinfo.weightChunkId()}:new int[]{_dinfo.responseChunkId(0), 
+      int[] dinfoWCol = _dinfo._weights ? new int[]{_dinfo.responseChunkId(0), _dinfo.responseChunkId(2),
+              _dinfo.responseChunkId(3), _dinfo.weightChunkId()} : new int[]{_dinfo.responseChunkId(0),
               _dinfo.responseChunkId(2), _dinfo.responseChunkId(3)};
       int[] wCol = new int[]{0, 2}; // in w_prior_wpsi, col 0 is prior weight, col 2 is zmi
-      int[] devHvColIdx = new int[]{2,1}; // refer to column indices of dev, hv from glmmmeReturnFrame
+      int[] devHvColIdx = new int[]{2, 1}; // refer to column indices of dev, hv from glmmmeReturnFrame
       double[] sumEtaInfo = new double[2];  // first element is sum(eta.i-etao)^2, second element: sum(eta.i^2)
       long numDataRows = _dinfo._adaptedFrame.numRows();
       double[][] VC2 = new double[numRandCols][2];// store estimates and standard error of the random effects in the dispersion model
@@ -1282,7 +1446,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _state.beta().length + _state.ubeta().length, 0, null);
       // generate weights for [X | Z] part of AugXZ and stored it in _dinfo
       // generate weight for data part
-      CalculateW4Data calculateW4Data =  new CalculateW4Data(_job, _dinfo, _parms, _randC, _state.beta(), _state.ubeta(),
+      CalculateW4Data calculateW4Data = new CalculateW4Data(_job, _dinfo, _parms, _randC, _state.beta(), _state.ubeta(),
               _state.get_psi(), _state.get_phi(), _state.get_tau(),
               _state.get_correction_HL()).doAll(_dinfo._adaptedFrame);
       // generate AugXZ as [X | Z] * wdata for top half and bottom half as [0 | I]*wpsi
@@ -1292,7 +1456,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.set_sumEtaSquareConvergence(sumEtaInfo);
       GLMModel fixedModel;
       GLMModel[] randModels = new GLMModel[numRandCols];
-      updateProgress(null, null, null, null, null, null, 
+      updateProgress(null, null, null, null, null, null,
               Double.NaN, Double.NaN, false, null, null);
       double[][] cholR = new double[augXZ.numCols()][augXZ.numCols()];  // store R from QR decomposition of augXZ
 
@@ -1304,15 +1468,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                   _state.get_correction_HL()).doAll(_dinfo._adaptedFrame);
           new DataAddW2AugXZ(_job, _dinfo, _randC).doAll(augXZ);
         }
-        sumEtaInfo = fitCoeffs(_randC, totRandCatLevels, glmmmeReturnFrame, dinfoWCol, wCol, 
+        sumEtaInfo = fitCoeffs(_randC, totRandCatLevels, glmmmeReturnFrame, dinfoWCol, wCol,
                 5, 3, sumEtaInfo, augXZ, cholR);
         // step 3, estimate init_sig_e
         fixedModel = fitDataDispersion(glmmmeReturnFrame, devHvColIdx, VC1);
         // step 4, estimate init_sig_u
         estimateRandomCoeffCh(glmmmeReturnFrame, devHvColIdx, cumSumRandLevels, numRandCols, numDataRows, randModels, VC2);
-      } while (progressHGLMGLMMME(sumEtaInfo[0], sumEtaInfo[1], iter, false, fixedModel, randModels, 
+      } while (progressHGLMGLMMME(sumEtaInfo[0], sumEtaInfo[1], iter, false, fixedModel, randModels,
               glmmmeReturnFrame, hvDataOnly, VC1, VC2, cholR, augXZ));
-      scoreAndUpdateModelHGLM(fixedModel, randModels, glmmmeReturnFrame, hvDataOnly, VC1, VC2, sumEtaInfo[0], 
+      scoreAndUpdateModelHGLM(fixedModel, randModels, glmmmeReturnFrame, hvDataOnly, VC1, VC2, sumEtaInfo[0],
               sumEtaInfo[1], cholR, augXZ, true);
       fixedModel.remove();
       cleanupHGLMMemory(null, new Frame[]{glmmmeReturnFrame, hvDataOnly, augXZ, _state.get_priorw_wpsi()}, null, null);
@@ -1321,28 +1485,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     /***
      * This method will estimate the characteristics of the random coefficients for each random column.
      */
-    private void estimateRandomCoeffCh(Frame returnFrame, int[] devHvColIdx, int[] cumSumRandLevels, int numRandCols, 
+    private void estimateRandomCoeffCh(Frame returnFrame, int[] devHvColIdx, int[] cumSumRandLevels, int numRandCols,
                                        long numDataRows, GLMModel[] gRandModels, double[][] VC2) {
       long dev2UseStart = numDataRows;
       int startIndex = 0;
       double[] phi = _state.get_phi();
-      for (int colIndex=0; colIndex < numRandCols; colIndex++) {
+      for (int colIndex = 0; colIndex < numRandCols; colIndex++) {
         Frame constXYWeight = new Frame(makeZeroOrOneFrame(cumSumRandLevels[colIndex], 3, 1,
                 new String[]{"response", "X", "weights"}));
         DKV.put(constXYWeight._key, constXYWeight);
-        gRandModels[colIndex] = buildGammaGLM(returnFrame, constXYWeight, devHvColIdx, dev2UseStart, 
+        gRandModels[colIndex] = buildGammaGLM(returnFrame, constXYWeight, devHvColIdx, dev2UseStart,
                 (long) cumSumRandLevels[colIndex], true);  // generate frame to build glm model
-         // update phi value with glmRand fitted value
+        // update phi value with glmRand fitted value
         double sigma2u = Math.exp(gRandModels[colIndex].coefficients().get("Intercept"));
         double newPhi = sigma2u;
-        for (int index=startIndex; index < cumSumRandLevels[colIndex]; index++)
+        for (int index = startIndex; index < cumSumRandLevels[colIndex]; index++)
           phi[index] = newPhi;
         _state.set_phi(phi);
         startIndex = cumSumRandLevels[colIndex];
         // set phi with new value in _state
         dev2UseStart += cumSumRandLevels[colIndex];
         assignEstStdErr(gRandModels[colIndex], VC2[colIndex]);
-        cleanupHGLMMemory(null, new Frame[]{constXYWeight}, null, new Key[] {constXYWeight._key});
+        cleanupHGLMMemory(null, new Frame[]{constXYWeight}, null, new Key[]{constXYWeight._key});
         gRandModels[colIndex].remove();
       }
     }
@@ -1359,16 +1523,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame constXYWeight = new Frame(makeZeroOrOneFrame(_dinfo._adaptedFrame.numRows(), 3, 1,
               new String[]{"response", "X", "weights"}));
       DKV.put(constXYWeight._key, constXYWeight);
-      GLMModel gfixed = buildGammaGLM(returnFrame, constXYWeight, devHvColIdx, 0, 
+      GLMModel gfixed = buildGammaGLM(returnFrame, constXYWeight, devHvColIdx, 0,
               _dinfo._adaptedFrame.numRows(), true);  // build a gamma GLM
       double sigma2e = Math.exp(gfixed.coefficients().get("Intercept"));  // extra dispersion parameter
       _state.set_tau(sigma2e);
       assignEstStdErr(gfixed, VC1);
-      cleanupHGLMMemory(null, new Frame[]{constXYWeight}, null, new Key[] {constXYWeight._key});
+      cleanupHGLMMemory(null, new Frame[]{constXYWeight}, null, new Key[]{constXYWeight._key});
       gfixed.remove();
       return gfixed;  // return gamma GLM model
     }
-    
+
     private void assignEstStdErr(GLMModel glm, double[] VC) {
       double[] stdErr = glm._output.stdErr();
       VC[0] = glm.coefficients().get("Intercept");
@@ -1378,7 +1542,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     /**
      * This method will generate a training frame according to HGLM doc, build a gamma GLM model with dispersion
      * factor set to 1 if enabled and calcluate the p-value if enabled.  It will return the GLM model.
-     * 
+     *
      * @param returnFrame
      * @param constXYWeight
      * @param devHvColIdx
@@ -1387,7 +1551,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * @param computePValues
      * @return
      */
-    public GLMModel buildGammaGLM(Frame returnFrame, Frame constXYWeight, int[] devHvColIdx, long startRowIndex, 
+    public GLMModel buildGammaGLM(Frame returnFrame, Frame constXYWeight, int[] devHvColIdx, long startRowIndex,
                                   long numRows, boolean computePValues) {
       // generate training frame constXYWeight from returnFrame
       new ExtractFrameFromSourceWithProcess(returnFrame, devHvColIdx, startRowIndex, numRows).doAll(constXYWeight);
@@ -1397,7 +1561,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _parms._compute_p_values = computePValues;
       _parms._useDispersion1 = computePValues;  // set dispersion to 1 if needed
       GLMModel g11 = runGLMModel(_parms._standardize, Family.gamma, Link.log, constXYWeight._key, "response",
-              "weights",null, computePValues);  // generate gamma GLM model
+              "weights", null, computePValues);  // generate gamma GLM model
       _parms._compute_p_values = originalPValues;
       _parms._useDispersion1 = originalDispersion;
       return g11;
@@ -1447,12 +1611,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               "expected 3 response vecs, got " + _dinfo._responses;
       double[] beta = _state.betaMultinomial();
       int predSize = _dinfo.fullN();
-      int predSizeP1 = predSize+1;
+      int predSizeP1 = predSize + 1;
       int numClass = _state._nclasses;
-      int numIcpt = numClass-1;
+      int numIcpt = numClass - 1;
       double[] betaCnd = new double[predSize];  // number of predictors
       _state.gslvr().getGradient(beta); // get new gradient info with correct l2pen value.
-      double l1pen =  _state.lambda() * _state._alpha;  // l2pen already calculated in gradient
+      double l1pen = _state.lambda() * _state._alpha;  // l2pen already calculated in gradient
       boolean stopNow = false;
 
       do {
@@ -1460,18 +1624,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // perform updates only on the betas excluding the intercept
         double[] grads = _state.ginfo()._gradient;
 
-        for (int pindex=0; pindex<numIcpt; pindex++) {  // check and then update the intercepts
-          int icptindex = (pindex+1)*predSizeP1-1;
+        for (int pindex = 0; pindex < numIcpt; pindex++) {  // check and then update the intercepts
+          int icptindex = (pindex + 1) * predSizeP1 - 1;
           beta[icptindex] -= grads[icptindex];
           if (pindex > 0) {
-            int previousIcpt = pindex*predSizeP1-1;
+            int previousIcpt = pindex * predSizeP1 - 1;
             if (beta[icptindex] < beta[previousIcpt]) {
               warn("Ordinal regression training: ", " intercepts of previous class exceed that " +
                       "of current class.  Make sure your training parameters are set properly.  Training will " +
                       "stop now with the last eligible parameters.");
               stopNow = true;
               for (int index = 0; index <= pindex; index++) { // restore threshold value to old ones
-                icptindex = (index+1)*predSizeP1-1;
+                icptindex = (index + 1) * predSizeP1 - 1;
                 beta[icptindex] += grads[icptindex];
               }
               break;
@@ -1483,17 +1647,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
 
         // update all parameters with new gradient;
-        for (int pindex=0; pindex<predSize; pindex++) { // add l1pen is necessary and coefficient updates
-          betaCnd[pindex]=grads[pindex];
-          if (l1pen>0) {
-            betaCnd[pindex] += beta[pindex]>0?l1pen:(beta[pindex]==0?0:-l1pen);
+        for (int pindex = 0; pindex < predSize; pindex++) { // add l1pen is necessary and coefficient updates
+          betaCnd[pindex] = grads[pindex];
+          if (l1pen > 0) {
+            betaCnd[pindex] += beta[pindex] > 0 ? l1pen : (beta[pindex] == 0 ? 0 : -l1pen);
           }
           beta[pindex] -= betaCnd[pindex]; // take the negative of the gradient and stuff
         }
 
         for (int indC = 1; indC < numIcpt; indC++) {
           int indOffset = indC * predSizeP1;
-          for (int index=0; index < predSize; index++) {  // copy beta to all classes
+          for (int index = 0; index < predSize; index++) {  // copy beta to all classes
             beta[indOffset + index] = beta[index];
           }
         }
@@ -1502,39 +1666,39 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } while (progress(beta, _state.gslvr().getGradient(beta)));
     }
 
-    private void fitLSM(Solver s){
+    private void fitLSM(Solver s) {
       long t0 = System.currentTimeMillis();
-      ComputationState.GramXY gramXY = _state.computeGram(_state.beta(),s);
-      Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis()-t0) + "ms"));
-      double [] beta = _parms._solver == Solver.COORDINATE_DESCENT?COD_solve(gramXY,_state._alpha,_state.lambda())
-              :ADMM_solve(gramXY.gram,gramXY.xy);
+      ComputationState.GramXY gramXY = _state.computeGram(_state.beta(), s);
+      Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis() - t0) + "ms"));
+      double[] beta = _parms._solver == Solver.COORDINATE_DESCENT ? COD_solve(gramXY, _state._alpha, _state.lambda())
+              : ADMM_solve(gramXY.gram, gramXY.xy);
       // compute mse
-      double [] x = ArrayUtils.mmul(gramXY.gram.getXX(),beta);
-      for(int i = 0; i < x.length; ++i)
-        x[i] = (x[i] - 2*gramXY.xy[i]);
-      double l = .5*(ArrayUtils.innerProduct(x,beta)/_parms._obj_reg + gramXY.yy );
+      double[] x = ArrayUtils.mmul(gramXY.gram.getXX(), beta);
+      for (int i = 0; i < x.length; ++i)
+        x[i] = (x[i] - 2 * gramXY.xy[i]);
+      double l = .5 * (ArrayUtils.innerProduct(x, beta) / _parms._obj_reg + gramXY.yy);
       _state._iter++;
       _state.updateState(beta, l);
     }
 
     private void fitIRLSM(Solver s) {
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
-      double [] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
+      double[] betaCnd = _checkPointFirstIter ? _model._betaCndCheckpoint : _state.beta();
       LineSearchSolver ls = null;
-      int iterCnt = _checkPointFirstIter?_state._iter:0;
+      int iterCnt = _checkPointFirstIter ? _state._iter : 0;
       boolean firstIter = iterCnt == 0;
       try {
         while (true) {
           iterCnt++;
           long t1 = System.currentTimeMillis();
-          ComputationState.GramXY gram = _state.computeGram(betaCnd,s);
+          ComputationState.GramXY gram = _state.computeGram(betaCnd, s);
           long t2 = System.currentTimeMillis();
-          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) > 
+          if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) >
                   _state.objective() + _parms._objective_epsilon) && !_checkPointFirstIter) {
             _state._lsNeeded = true;
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
-              Log.info("DONE after " + (iterCnt-1) + " iterations (1)");
+              Log.info("DONE after " + (iterCnt - 1) + " iterations (1)");
               _model._betaCndCheckpoint = betaCnd;
               return;
             }
@@ -1545,11 +1709,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           firstIter = false;
           _checkPointFirstIter = false;
           long t3 = System.currentTimeMillis();
-          if(_state._lsNeeded) {
-            if(ls == null)
+          if (_state._lsNeeded) {
+            if (ls == null)
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
-                 ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
-                 : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
+                      ? new MoreThuente(_state.gslvr(), _state.beta(), _state.ginfo())
+                      : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
             double[] oldBetaCnd = ls.getX();
             if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
               betaCnd = _state.extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
@@ -1559,27 +1723,27 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               return;
             }
             betaCnd = ls.getX();
-            if(!progress(betaCnd,ls.ginfo()))
+            if (!progress(betaCnd, ls.ginfo()))
               return;
             long t4 = System.currentTimeMillis();
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           } else
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
         }
-      } catch(NonSPDMatrixException e) {
+      } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
       }
     }
-    
+
     private void fitLBFGS() {
-      double [] beta = _state.beta();
+      double[] beta = _state.beta();
       final double l1pen = _state.l1pen();
       GLMGradientSolver gslvr = _state.gslvr();
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       if (beta == null && (_parms._family == Family.multinomial || _parms._family == Family.ordinal)) {
         beta = MemoryManager.malloc8d((_state.activeData().fullN() + 1) * _nclass);
         int P = _state.activeData().fullN() + 1;
-        if(_parms._intercept)
+        if (_parms._intercept)
           for (int i = 0; i < _nclass; ++i)
             beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
       }
@@ -1604,28 +1768,28 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         double[] direction = ArrayUtils.mult(ginfo._gradient.clone(), -1);
         double t = 1;
         if (l1pen > 0) {
-          MoreThuente mt = new MoreThuente(gslvr,nullBeta);
+          MoreThuente mt = new MoreThuente(gslvr, nullBeta);
           mt.evaluate(direction);
           t = mt.step();
         }
         double[] rho = MemoryManager.malloc8d(beta.length);
-        double r = _state.activeBC().hasBounds()?1:.1;
+        double r = _state.activeBC().hasBounds() ? 1 : .1;
         BetaConstraint bc = _state.activeBC();
         // compute rhos
         for (int i = 0; i < rho.length - 1; ++i)
-          rho[i] = r * ADMM.L1Solver.estimateRho(nullBeta[i] + t * direction[i], l1pen, 
-                  bc._betaLB == null ? Double.NEGATIVE_INFINITY : bc._betaLB[i], 
+          rho[i] = r * ADMM.L1Solver.estimateRho(nullBeta[i] + t * direction[i], l1pen,
+                  bc._betaLB == null ? Double.NEGATIVE_INFINITY : bc._betaLB[i],
                   bc._betaUB == null ? Double.POSITIVE_INFINITY : bc._betaUB[i]);
         for (int ii = P; ii < rho.length; ii += P + 1)
-          rho[ii] = r * ADMM.L1Solver.estimateRho(nullBeta[ii] + t * direction[ii], 0, 
-                  bc._betaLB == null ? Double.NEGATIVE_INFINITY : bc._betaLB[ii], bc._betaUB == null ? 
+          rho[ii] = r * ADMM.L1Solver.estimateRho(nullBeta[ii] + t * direction[ii], 0,
+                  bc._betaLB == null ? Double.NEGATIVE_INFINITY : bc._betaLB[ii], bc._betaUB == null ?
                           Double.POSITIVE_INFINITY : bc._betaUB[ii]);
         final double[] objvals = new double[2];
         objvals[1] = Double.POSITIVE_INFINITY;
         double reltol = L1Solver.DEFAULT_RELTOL;
         double abstol = L1Solver.DEFAULT_ABSTOL;
         double ADMM_gradEps = 1e-3;
-        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho, 
+        ProximalGradientSolver innerSolver = new ProximalGradientSolver(gslvr, beta, rho,
                 _parms._objective_epsilon * 1e-1, _parms._gradient_epsilon, _state.ginfo(), this);
 //        new ProgressMonitor() {
 //          @Override
@@ -1637,32 +1801,32 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         l1Solver._pm = this;
         l1Solver.solve(innerSolver, beta, l1pen, true, _state.activeBC()._betaLB, _state.activeBC()._betaUB);
         _state._u = l1Solver._u;
-        _state.updateState(beta,gslvr.getGradient(beta));
+        _state.updateState(beta, gslvr.getGradient(beta));
       } else {
-        if(!_parms._lambda_search && _state._iter == 0 && !_parms._HGLM)
+        if (!_parms._lambda_search && _state._iter == 0 && !_parms._HGLM)
           updateProgress(false);
         Result r = lbfgs.solve(gslvr, beta, _state.ginfo(), new ProgressMonitor() {
           @Override
           public boolean progress(double[] beta, GradientInfo ginfo) {
-            if(_state._iter < 4 || ((_state._iter & 3) == 0))
+            if (_state._iter < 4 || ((_state._iter & 3) == 0))
               Log.info(LogMsg("LBFGS, gradient norm = " + ArrayUtils.linfnorm(ginfo._gradient, false)));
-            return GLMDriver.this.progress(beta,ginfo);
+            return GLMDriver.this.progress(beta, ginfo);
           }
         });
         Log.info(LogMsg(r.toString()));
-        _state.updateState(r.coefs,(GLMGradientInfo)r.ginfo);
+        _state.updateState(r.coefs, (GLMGradientInfo) r.ginfo);
       }
     }
 
     private void fitCOD() {
-      double [] beta = _state.beta();
-      int p = _state.activeData().fullN()+ 1;
-      double wsum,wsumu; // intercept denum
-      double [] denums;
+      double[] beta = _state.beta();
+      int p = _state.activeData().fullN() + 1;
+      double wsum, wsumu; // intercept denum
+      double[] denums;
       boolean skipFirstLevel = !_state.activeData()._useAllFactorLevels;
-      double [] betaold = beta.clone();
+      double[] betaold = beta.clone();
       double objold = _state.objective();
-      int iter2=0; // total cd iters
+      int iter2 = 0; // total cd iters
       // get reweighted least squares vectors
       Vec[] newVecs = _state.activeData()._adaptedFrame.anyVec().makeZeros(3);
       Vec w = newVecs[0]; // fixed before each CD loop
@@ -1692,74 +1856,73 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           fr2.add("z", z);
           fr2.add("zTilda", zTilda); // original x%*%beta if first iteration
 
-          for(int i=0; i < _state.activeData()._cats; i++) {
+          for (int i = 0; i < _state.activeData()._cats; i++) {
             Frame fr3 = new Frame(fr2);
-            int level_num = _state.activeData()._catOffsets[i+1]-_state.activeData()._catOffsets[i];
+            int level_num = _state.activeData()._catOffsets[i + 1] - _state.activeData()._catOffsets[i];
             int prev_level_num = 0;
             fr3.add("xj", _state.activeData()._adaptedFrame.vec(i));
 
             boolean intercept = (i == 0); // prev var is intercept
-            if(!intercept) {
-              prev_level_num = _state.activeData()._catOffsets[i]-_state.activeData()._catOffsets[i-1];
-              fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(i-1)); // add previous categorical variable
+            if (!intercept) {
+              prev_level_num = _state.activeData()._catOffsets[i] - _state.activeData()._catOffsets[i - 1];
+              fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(i - 1)); // add previous categorical variable
             }
             int start_old = _state.activeData()._catOffsets[i];
             GLMCoordinateDescentTaskSeqNaive stupdate;
-            if(intercept)
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 4 , Arrays.copyOfRange(betaold, start_old, start_old+level_num),
-                new double [] {beta[p-1]}, _state.activeData()._catLvls[i], null, null, null, null, null, skipFirstLevel).doAll(fr3);
+            if (intercept)
+              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 4, Arrays.copyOfRange(betaold, start_old, start_old + level_num),
+                      new double[]{beta[p - 1]}, _state.activeData()._catLvls[i], null, null, null, null, null, skipFirstLevel).doAll(fr3);
             else
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 1 , Arrays.copyOfRange(betaold, start_old,start_old+level_num),
-                Arrays.copyOfRange(beta, _state.activeData()._catOffsets[i-1], _state.activeData()._catOffsets[i]) ,  _state.activeData()._catLvls[i] ,
-                _state.activeData()._catLvls[i-1], null, null, null, null, skipFirstLevel ).doAll(fr3);
+              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, 1, Arrays.copyOfRange(betaold, start_old, start_old + level_num),
+                      Arrays.copyOfRange(beta, _state.activeData()._catOffsets[i - 1], _state.activeData()._catOffsets[i]), _state.activeData()._catLvls[i],
+                      _state.activeData()._catLvls[i - 1], null, null, null, null, skipFirstLevel).doAll(fr3);
 
-            for(int j=0; j < level_num; ++j)
-              beta[_state.activeData()._catOffsets[i]+j] = ADMM.shrinkage(stupdate._temp[j] / wsumu, _state.lambda() * _parms._alpha[0])
-                / (denums[_state.activeData()._catOffsets[i]+j] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
+            for (int j = 0; j < level_num; ++j)
+              beta[_state.activeData()._catOffsets[i] + j] = ADMM.shrinkage(stupdate._temp[j] / wsumu, _state.lambda() * _parms._alpha[0])
+                      / (denums[_state.activeData()._catOffsets[i] + j] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
           }
 
           int cat_num = 2; // if intercept, or not intercept but not first numeric, then both are numeric .
           for (int i = 0; i < _state.activeData()._nums; ++i) {
             GLMCoordinateDescentTaskSeqNaive stupdate;
             Frame fr3 = new Frame(fr2);
-            fr3.add("xj", _state.activeData()._adaptedFrame.vec(i+_state.activeData()._cats)); // add current variable col
+            fr3.add("xj", _state.activeData()._adaptedFrame.vec(i + _state.activeData()._cats)); // add current variable col
             boolean intercept = (i == 0 && _state.activeData().numStart() == 0); // if true then all numeric case and doing beta_1
 
-            double [] meannew=null, meanold=null, varnew=null, varold=null;
-            if(i > 0 || intercept) {// previous var is a numeric var
+            double[] meannew = null, meanold = null, varnew = null, varold = null;
+            if (i > 0 || intercept) {// previous var is a numeric var
               cat_num = 3;
-              if(!intercept)
+              if (!intercept)
                 fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(i - 1 + _state.activeData()._cats)); // add previous one if not doing a beta_1 update, ow just pass it the intercept term
-              if( _state.activeData()._normMul!=null ) {
+              if (_state.activeData()._normMul != null) {
                 varold = new double[]{_state.activeData()._normMul[i]};
                 meanold = new double[]{_state.activeData()._normSub[i]};
-                if (i!= 0){
-                  varnew = new double []{ _state.activeData()._normMul[i-1]};
-                  meannew = new double [] { _state.activeData()._normSub[i-1]};
+                if (i != 0) {
+                  varnew = new double[]{_state.activeData()._normMul[i - 1]};
+                  meannew = new double[]{_state.activeData()._normSub[i - 1]};
                 }
               }
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, cat_num , new double [] { betaold[_state.activeData().numStart()+ i]},
-                new double []{ beta[ (_state.activeData().numStart()+i-1+p)%p ]}, null, null,
-                varold, meanold, varnew, meannew, skipFirstLevel ).doAll(fr3);
+              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, cat_num, new double[]{betaold[_state.activeData().numStart() + i]},
+                      new double[]{beta[(_state.activeData().numStart() + i - 1 + p) % p]}, null, null,
+                      varold, meanold, varnew, meannew, skipFirstLevel).doAll(fr3);
 
-              beta[i+_state.activeData().numStart()] = ADMM.shrinkage(stupdate._temp[0] / wsumu, _state.lambda() * _parms._alpha[0])
-                / (denums[i+_state.activeData().numStart()] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
-            }
-            else if (i == 0 && !intercept){ // previous one is the last categorical variable
-              int prev_level_num = _state.activeData().numStart()-_state.activeData()._catOffsets[_state.activeData()._cats-1];
-              fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(_state.activeData()._cats-1)); // add previous categorical variable
-              if( _state.activeData()._normMul!=null){
-                varold = new double []{ _state.activeData()._normMul[i]};
-                meanold =  new double [] { _state.activeData()._normSub[i]};
+              beta[i + _state.activeData().numStart()] = ADMM.shrinkage(stupdate._temp[0] / wsumu, _state.lambda() * _parms._alpha[0])
+                      / (denums[i + _state.activeData().numStart()] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
+            } else if (i == 0 && !intercept) { // previous one is the last categorical variable
+              int prev_level_num = _state.activeData().numStart() - _state.activeData()._catOffsets[_state.activeData()._cats - 1];
+              fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(_state.activeData()._cats - 1)); // add previous categorical variable
+              if (_state.activeData()._normMul != null) {
+                varold = new double[]{_state.activeData()._normMul[i]};
+                meanold = new double[]{_state.activeData()._normSub[i]};
               }
-              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, cat_num , new double [] {betaold[ _state.activeData().numStart()]},
-                Arrays.copyOfRange(beta,_state.activeData()._catOffsets[_state.activeData()._cats-1],_state.activeData().numStart() ), null, _state.activeData()._catLvls[_state.activeData()._cats-1],
-                varold, meanold, null, null, skipFirstLevel ).doAll(fr3);
+              stupdate = new GLMCoordinateDescentTaskSeqNaive(intercept, false, cat_num, new double[]{betaold[_state.activeData().numStart()]},
+                      Arrays.copyOfRange(beta, _state.activeData()._catOffsets[_state.activeData()._cats - 1], _state.activeData().numStart()), null, _state.activeData()._catLvls[_state.activeData()._cats - 1],
+                      varold, meanold, null, null, skipFirstLevel).doAll(fr3);
               beta[_state.activeData().numStart()] = ADMM.shrinkage(stupdate._temp[0] / wsumu, _state.lambda() * _parms._alpha[0])
-                / (denums[_state.activeData().numStart()] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
+                      / (denums[_state.activeData().numStart()] / wsumu + _state.lambda() * (1 - _parms._alpha[0]));
             }
           }
-          if(_state.activeData()._nums + _state.activeData()._cats > 0) {
+          if (_state.activeData()._nums + _state.activeData()._cats > 0) {
             // intercept update: preceded by a categorical or numeric variable
             Frame fr3 = new Frame(fr2);
             fr3.add("xjm1", _state.activeData()._adaptedFrame.vec(_state.activeData()._cats + _state.activeData()._nums - 1)); // add last variable updated in cycle to the frame
@@ -1767,8 +1930,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             if (_state.activeData()._adaptedFrame.vec(_state.activeData()._cats + _state.activeData()._nums - 1).isCategorical()) { // only categorical vars
               cat_num = 2;
               iupdate = new GLMCoordinateDescentTaskSeqNaive(false, true, cat_num, new double[]{betaold[betaold.length - 1]},
-                Arrays.copyOfRange(beta, _state.activeData()._catOffsets[_state.activeData()._cats - 1], _state.activeData()._catOffsets[_state.activeData()._cats]),
-                null, _state.activeData()._catLvls[_state.activeData()._cats - 1], null, null, null, null, skipFirstLevel).doAll(fr3);
+                      Arrays.copyOfRange(beta, _state.activeData()._catOffsets[_state.activeData()._cats - 1], _state.activeData()._catOffsets[_state.activeData()._cats]),
+                      null, _state.activeData()._catLvls[_state.activeData()._cats - 1], null, null, null, null, skipFirstLevel).doAll(fr3);
             } else { // last variable is numeric
               cat_num = 3;
               double[] meannew = null, varnew = null;
@@ -1777,8 +1940,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 meannew = new double[]{_state.activeData()._normSub[_state.activeData()._normSub.length - 1]};
               }
               iupdate = new GLMCoordinateDescentTaskSeqNaive(false, true, cat_num,
-                new double[]{betaold[betaold.length - 1]}, new double[]{beta[beta.length - 2]}, null, null,
-                null, null, varnew, meannew, skipFirstLevel).doAll(fr3);
+                      new double[]{betaold[betaold.length - 1]}, new double[]{beta[beta.length - 2]}, null, null,
+                      null, null, varnew, meannew, skipFirstLevel).doAll(fr3);
             }
             if (_parms._intercept)
               beta[beta.length - 1] = iupdate._temp[0] / wsum;
@@ -1789,20 +1952,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             break;
         }
 
-        double percdiff = Math.abs((objold - objVal)/objold);
-        if (percdiff < _parms._objective_epsilon & iter2 >1 )
+        double percdiff = Math.abs((objold - objVal) / objold);
+        if (percdiff < _parms._objective_epsilon & iter2 > 1)
           break;
-        objold=objVal;
+        objold = objVal;
         Log.debug("iter1 = " + iter1);
       }
       Log.debug("iter2 = " + iter2);
       long endTimeTotalNaive = System.currentTimeMillis();
-      long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive)/1000;
+      long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive) / 1000;
       Log.info("Time to run Naive Coordinate Descent " + durationTotalNaive);
       _state._iter = iter2;
       for (Vec v : newVecs) v.remove();
-      _state.updateState(beta,objold);
+      _state.updateState(beta, objold);
     }
+
     private void fitModel() {
       Solver solver = (_parms._solver == Solver.AUTO) ? defaultSolver() : _parms._solver;
       if (_parms._HGLM) {
@@ -1835,12 +1999,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             throw H2O.unimpl();
         }
       }
-      if(_parms._compute_p_values) { // compute p-values
+      if (_parms._compute_p_values) { // compute p-values
         double se = 1;
         boolean seEst = false;
-        double [] beta = _state.beta();
+        double[] beta = _state.beta();
 
-        if(_parms._family != Family.binomial && _parms._family != Family.poisson) {
+        if (_parms._family != binomial && _parms._family != Family.poisson) {
           seEst = true;
           ComputeSETsk ct = new ComputeSETsk(null, _state.activeData(), _job._key, beta, _parms).doAll(_state.activeData()._adaptedFrame);
           if (_parms._useDispersion1)
@@ -1848,30 +2012,33 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           else
             se = ct._sumsqe / (_nobs - 1 - _state.activeData().fullN());  // this is the dispersion parameter estimate
         }
-        double [] zvalues = MemoryManager.malloc8d(_state.activeData().fullN()+1);
+        double[] zvalues = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         Cholesky chol = _chol;
-        if(_parms._standardize){ // compute non-standardized t(X)%*%W%*%X
+        if (_parms._standardize) { // compute non-standardized t(X)%*%W%*%X
           DataInfo activeData = _state.activeData();
-          double [] beta_nostd = activeData.denormalizeBeta(beta);
+          double[] beta_nostd = activeData.denormalizeBeta(beta);
           DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
-          Gram g = new GLMIterationTask(_job._key,activeData,new GLMWeightsFun(_parms),beta_nostd).doAll(activeData._adaptedFrame)._gram;
+          Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame)._gram;
           activeData.setPredictorTransform(transform); // just in case, restore the trasnform
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
         }
-        double [][] inv = chol.getInv();
-        ArrayUtils.mult(inv,_parms._obj_reg*se);
+        double[][] inv = chol.getInv();
+        ArrayUtils.mult(inv, _parms._obj_reg * se);
         _vcov = inv;
-        for(int i = 0; i < zvalues.length; ++i)
-          zvalues[i] = beta[i]/Math.sqrt(inv[i][i]);
-        _model.setZValues(expandVec(zvalues,_state.activeData()._activeCols,_dinfo.fullN()+1,Double.NaN),se, seEst);
+        for (int i = 0; i < zvalues.length; ++i)
+          zvalues[i] = beta[i] / Math.sqrt(inv[i][i]);
+        _model.setZValues(expandVec(zvalues, _state.activeData()._activeCols, _dinfo.fullN() + 1, Double.NaN), se, seEst);
       }
     }
 
     private long _lastScore = System.currentTimeMillis();
-    private long timeSinceLastScoring(){return System.currentTimeMillis() - _lastScore;}
+
+    private long timeSinceLastScoring() {
+      return System.currentTimeMillis() - _lastScore;
+    }
 
     /***
      * performm score and update for HGLM models.  However, here, there is no scoring, only metrics update.
@@ -1879,13 +2046,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * @param randModels
      * @param glmmmeReturns
      */
-    private void scoreAndUpdateModelHGLM(GLMModel fixedModel, GLMModel[] randModels, Frame glmmmeReturns, 
-                                         Frame hvDataOnly, double[] VC1, double[][] VC2, double sumDiff2, 
+    private void scoreAndUpdateModelHGLM(GLMModel fixedModel, GLMModel[] randModels, Frame glmmmeReturns,
+                                         Frame hvDataOnly, double[] VC1, double[][] VC2, double sumDiff2,
                                          double convergence, double[][] cholR, Frame augXZ, boolean compute_hlik) {
       Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
       long t1 = System.currentTimeMillis();
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
-      String[] domain = new String[]{"HGLM_"+_parms._family.toString()+"_"+_parms._rand_family.toString()};
+      String[] domain = new String[]{"HGLM_" + _parms._family.toString() + "_" + _parms._rand_family.toString()};
       ModelMetrics.MetricBuilder mb = _model.makeMetricBuilder(domain);
       ModelMetricsHGLM.MetricBuilderHGLM mmHGLMBd = (ModelMetricsHGLM.MetricBuilderHGLM) (((GLMMetricBuilder) mb)._metricBuilder);
       updateSimpleHGLMMetrics(fixedModel, randModels, VC1, VC2, mmHGLMBd, sumDiff2, convergence);
@@ -1898,18 +2065,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       mb.makeModelMetrics(_model, train, _dinfo._adaptedFrame, null);  // add generated metric to DKV
       scorePostProcessing(train, t1);
     }
-    
+
     private void calHlikStuff(ModelMetricsHGLM.MetricBuilderHGLM mmHGLMBd, Frame glmmmeReturns, Frame augXZ) {
       calculateNewWAugXZ(augXZ, _randC);
       double cond_hlik = calculatecAIC(mmHGLMBd, glmmmeReturns);
       Frame hlikH = formHMatrix(augXZ);
       mmHGLMBd._hlik = cond_hlik;
-      mmHGLMBd._pvh = cond_hlik-0.5*calcLogDeterminant(hlikH);  // logdet(H/(2pi)) is correct
+      mmHGLMBd._pvh = cond_hlik - 0.5 * calcLogDeterminant(hlikH);  // logdet(H/(2pi)) is correct
       Frame hlikA = formAMatrix(hlikH, augXZ);
-      mmHGLMBd._pbvh = cond_hlik-0.5*calcLogDeterminant(hlikA);
+      mmHGLMBd._pbvh = cond_hlik - 0.5 * calcLogDeterminant(hlikA);
       cleanupHGLMMemory(null, new Frame[]{hlikH, hlikA}, null, null);
     }
-    
+
     private double calcLogDeterminant(Frame frame) {  // calculate the log determinant for frame/(2*Math.PI)
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = frame._key;
@@ -1919,13 +2086,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       parms._nv = frame.numCols();
       SVDModel model = new SVD(parms).trainModel().get();
       double[] singular_values = model._output._d;
-      double cond = ArrayUtils.minValue(singular_values)/ArrayUtils.maxValue(singular_values);
+      double cond = ArrayUtils.minValue(singular_values) / ArrayUtils.maxValue(singular_values);
       if (cond < 0.00000001)  // value copied from R
         warn("pbvh", "The Hessian used for computing pbvh is ill-conditioned.");
       double sumLog = 0.0;
-      double log2Pi = Math.log(2*Math.PI);
-      for (int index=0; index < parms._nv; index++)
-        sumLog += Math.log(singular_values[index])-log2Pi;
+      double log2Pi = Math.log(2 * Math.PI);
+      for (int index = 0; index < parms._nv; index++)
+        sumLog += Math.log(singular_values[index]) - log2Pi;
       model.delete(); // clean up model before proceeding.
       return sumLog;
     }
@@ -1942,7 +2109,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       tX.add(new Frame(makeZeroOrOneFrame(tX.numRows(), expandedRandColNum, 0, null)));
       DKV.put(augzW1._key, augzW1);
       new LinearAlgebraUtils.BMulTaskMatrices(augzW1).doAll(tX);
-      Frame tXW1z = tX.subframe(tX.numCols()-expandedRandColNum, tX.numCols());
+      Frame tXW1z = tX.subframe(tX.numCols() - expandedRandColNum, tX.numCols());
       leftUp.add(tXW1z);
       Frame leftDown = DMatrix.transpose(tXW1z);
       leftDown._key = Key.make();
@@ -1960,10 +2127,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private Frame getXW1(Frame augXZ) {
-      int numDataCols = augXZ.numCols()-ArrayUtils.sum(_randC);
+      int numDataCols = augXZ.numCols() - ArrayUtils.sum(_randC);
       int[] colIndices = new int[numDataCols];
-      for (int index=0; index<numDataCols; index++)
-        colIndices[index]=index;
+      for (int index = 0; index < numDataCols; index++)
+        colIndices[index] = index;
       Frame dataFrame = new Frame(makeZeroOrOneFrame(_nobs, numDataCols, 0, null));
       new CopyPartsOfFrame(augXZ, colIndices, colIndices, _nobs).doAll(dataFrame);
       return dataFrame;
@@ -1977,38 +2144,38 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Gram.GramTask dgram = new Gram.GramTask(_job._key, augZW1Info, false, false).doAll(augZW1Info._adaptedFrame);
       Frame wranddata = _state.get_priorw_wpsi();
       double[][] W2 = null;
-      W2 = ArrayUtils.transpose(new ArrayUtils.FrameToArray(1,1, wranddata.numRows(), W2).doAll(wranddata).getArray());
+      W2 = ArrayUtils.transpose(new ArrayUtils.FrameToArray(1, 1, wranddata.numRows(), W2).doAll(wranddata).getArray());
       ArrayUtils.mult(W2[0], W2[0]);        // generate W2 square
       dgram._gram.addDiag(W2[0]);
       cleanupHGLMMemory(new DataInfo[]{augZW1Info}, new Frame[]{augZW1, wranddata}, null, null);
       return new ArrayUtils().frame(dgram._gram.getXX());
     }
-    
+
     private Frame getaugZW1(Frame augXZ) {
       int numRandExpandedCols = ArrayUtils.sum(_randC);
-      int randIndexStart = augXZ.numCols()-numRandExpandedCols;
+      int randIndexStart = augXZ.numCols() - numRandExpandedCols;
       Frame augZW1 = new Frame(makeZeroOrOneFrame(_nobs, numRandExpandedCols, 0, null));
       int[] colIndices = new int[numRandExpandedCols];
       int colNum = augXZ.numCols();
-      for (int index=randIndexStart; index<colNum; index++) {
-        colIndices[index-randIndexStart] = index;
+      for (int index = randIndexStart; index < colNum; index++) {
+        colIndices[index - randIndexStart] = index;
       }
-      new CopyPartsOfFrame(augXZ, null, colIndices,_nobs).doAll(augZW1);
+      new CopyPartsOfFrame(augXZ, null, colIndices, _nobs).doAll(augZW1);
       return augZW1;
     }
-    
+
     private double calculatecAIC(ModelMetricsHGLM.MetricBuilderHGLM mmHGLMBd, Frame glmmmeReturns) {
       Frame hv_dev_pw = new Frame(makeZeroOrOneFrame(_nobs, 2, 0, new String[]{"hv", "dev"}));
-      new CopyPartsOfFrame(glmmmeReturns, new int[]{0,1}, new int[]{1,2},_nobs).doAll(hv_dev_pw);
-      if (_dinfo._weights) 
+      new CopyPartsOfFrame(glmmmeReturns, new int[]{0, 1}, new int[]{1, 2}, _nobs).doAll(hv_dev_pw);
+      if (_dinfo._weights)
         hv_dev_pw.add("weights", _dinfo._adaptedFrame.vec(_dinfo.weightChunkId())); // frame could have 2 or 3 columns
       HelpercAIC calcAIC = new HelpercAIC(_dinfo._weights, mmHGLMBd._varfix).doAll(hv_dev_pw);
-      double constance = -0.5*calcAIC._constT;
-      double cond_hlik = constance-0.5*calcAIC._devOphi;
-      mmHGLMBd._caic = -2*cond_hlik+2*calcAIC._p;
+      double constance = -0.5 * calcAIC._constT;
+      double cond_hlik = constance - 0.5 * calcAIC._devOphi;
+      mmHGLMBd._caic = -2 * cond_hlik + 2 * calcAIC._p;
       // add contribution from lfv and sum(log(abs(du_dv))) which is zero for Gaussian
       double[] lfvals = lfv_du_dv(_parms._rand_family, _parms._rand_link, _state.get_phi(), _state.ubeta());
-      cond_hlik += lfvals[0]+lfvals[1];
+      cond_hlik += lfvals[0] + lfvals[1];
       hv_dev_pw.remove();
       return cond_hlik;
     }
@@ -2016,20 +2183,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     public double[] lfv_du_dv(Family[] family, Link[] link, double[] phi, double[] u) {
       double[] vals = new double[2];  // first element stores lfv, second for du_dv
       int numRandCols = _randC.length;
-      for (int k=0; k < numRandCols; k++) { // go over each random column
+      for (int k = 0; k < numRandCols; k++) { // go over each random column
         Family tfamily = family[k];
         Link tlink = tfamily.defaultLink;
-        if (!(link==null))
-          tlink=link[k];
+        if (!(link == null))
+          tlink = link[k];
         GLMWeightsFun glmfun = new GLMWeightsFun(tfamily, tlink,
                 0, 0, 0);
         int colLength = _randC[k];
-        for (int col=0; col < colLength; col++) {
-          int index = k*colLength+col;
+        for (int col = 0; col < colLength; col++) {
+          int index = k * colLength + col;
           if (Family.gaussian.equals(tfamily)) {  // only implementation now
             if (Link.identity.equals(tlink)) {
               vals[1] += Math.log(Math.abs(glmfun.linkInvDeriv(glmfun.link(u[index]))));
-              vals[0] -= Math.log(Math.sqrt(2*Math.PI))+Math.log(Math.sqrt(phi[index]))+u[index]*u[index]/(2*phi[index]);
+              vals[0] -= Math.log(Math.sqrt(2 * Math.PI)) + Math.log(Math.sqrt(phi[index])) + u[index] * u[index] / (2 * phi[index]);
             }
           }
         }
@@ -2046,7 +2213,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double[] seFeRe = LinearAlgebraUtils.sqrtDiag(RTRInv);
       int sefelen = _state.beta().length;
       int serelen = _state.ubeta().length;
-      if (mmHGLMBd._sefe ==null)
+      if (mmHGLMBd._sefe == null)
         mmHGLMBd._sefe = new double[sefelen];
       System.arraycopy(seFeRe, 0, mmHGLMBd._sefe, 0, sefelen);
       if (mmHGLMBd._sere == null)
@@ -2054,34 +2221,34 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       System.arraycopy(seFeRe, sefelen, mmHGLMBd._sere, 0, serelen);
       Frame augZ = new Frame(makeZeroOrOneFrame(_nobs, augXZ.numCols(), 0,
               null));
-      new CopyPartsOfFrame(augXZ, null, null,_nobs).doAll(augZ);
-      DataInfo augzInfo = new DataInfo(augZ, null, true, DataInfo.TransformType.NONE, 
+      new CopyPartsOfFrame(augXZ, null, null, _nobs).doAll(augZ);
+      DataInfo augzInfo = new DataInfo(augZ, null, true, DataInfo.TransformType.NONE,
               true, false, false);
       Gram.GramTask dgram = new Gram.GramTask(_job._key, augzInfo, false, false).doAll(augzInfo._adaptedFrame);
       double[][] gramMatrix = dgram._gram.getXX();
       double pd = ArrayUtils.sum(ArrayUtils.diagArray(LinearAlgebraUtils.matrixMultiply(RTRInv, gramMatrix)));
-      mmHGLMBd._dfrefe = Math.round(_nobs-pd);
-      cleanupHGLMMemory(new DataInfo[] {augzInfo}, new Frame[]{augZ}, null, null);
+      mmHGLMBd._dfrefe = Math.round(_nobs - pd);
+      cleanupHGLMMemory(new DataInfo[]{augzInfo}, new Frame[]{augZ}, null, null);
     }
-  
+
     private void calBad(Frame glmmeReturns, Frame hvFrameOnly, ModelMetricsHGLM.MetricBuilderHGLM mmHGLMBd) {
-      new CopyPartsOfFrame(glmmeReturns, new int[]{0}, new int[]{1},_nobs).doAll(hvFrameOnly);
+      new CopyPartsOfFrame(glmmeReturns, new int[]{0}, new int[]{1}, _nobs).doAll(hvFrameOnly);
       Vec vec = hvFrameOnly.vec(0);
-      double sigma6 = vec.mean()+6*vec.sigma();
+      double sigma6 = vec.mean() + 6 * vec.sigma();
       double maxVec = vec.max();
       if (maxVec > sigma6) {
-         mmHGLMBd._bad = (new FindMaxIndex(0, maxVec).doAll(hvFrameOnly))._maxIndex;
+        mmHGLMBd._bad = (new FindMaxIndex(0, maxVec).doAll(hvFrameOnly))._maxIndex;
       } else
-        mmHGLMBd._bad=-1;
+        mmHGLMBd._bad = -1;
     }
-    
-    private void updateSimpleHGLMMetrics(GLMModel fixedModel, GLMModel[] randModels, double[] VC1, double[][] VC2, 
+
+    private void updateSimpleHGLMMetrics(GLMModel fixedModel, GLMModel[] randModels, double[] VC1, double[][] VC2,
                                          ModelMetricsHGLM.MetricBuilderHGLM mmHGLMBd, double sumDiff2, double convergence) {
       mmHGLMBd.updateCoeffs(_state.beta(), _state.ubeta()); // update coefficients
       mmHGLMBd.updateSummVC(VC1, VC2, _randC);                      // update summVC1 and summVC2
       mmHGLMBd._varfix = Math.exp(fixedModel.coefficients().get("Intercept"));  // update sigmas for coefficients
       int randColNum = mmHGLMBd._randc.length;
-      if (mmHGLMBd._varranef ==null)
+      if (mmHGLMBd._varranef == null)
         mmHGLMBd._varranef = new double[randColNum];
       boolean converged = true;
       double sumSigma2u = 0;
@@ -2089,8 +2256,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         mmHGLMBd._varranef[index] = Math.exp(randModels[index].coefficients().get("Intercept"));
         sumSigma2u += mmHGLMBd._varranef[index];
       }
-      for (int index = 0; index < randColNum; index++)  {
-        if ((mmHGLMBd._varranef[index]/(sumSigma2u+mmHGLMBd._varfix)) > 0.9999) { // 0.9999 from R
+      for (int index = 0; index < randColNum; index++) {
+        if ((mmHGLMBd._varranef[index] / (sumSigma2u + mmHGLMBd._varfix)) > 0.9999) { // 0.9999 from R
           converged = false;
           break;
         }
@@ -2101,8 +2268,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       mmHGLMBd._iterations = _state._iter;
       mmHGLMBd._nobs = _nobs;
     }
-    
-    private void scoreAndUpdateModel(){
+
+    private void scoreAndUpdateModel() {
       // compute full validation on train and test
       Log.info(LogMsg("Scoring after " + timeSinceLastScoring() + "ms"));
       long t1 = System.currentTimeMillis();
@@ -2110,20 +2277,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model.score(train).delete();
       scorePostProcessing(train, t1);
     }
-    
+
     private void scorePostProcessing(Frame train, long t1) {
-//      _scoreIterationList.add(_state._iter);
       ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
       long t2 = System.currentTimeMillis();
-      if (_parms._lambda_search)
-        _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
-      else if (_parms._HGLM)
-        _model._output._scoring_history = _scoringHistory.to2dTableHGLM();
-      else
-        _model._output._scoring_history = _scoringHistory.to2dTable();
       if (!(mtrain == null)) {
         _model._output._training_metrics = mtrain;
-        _model._output._training_time_ms = t2-_model._output._start_time; // remember training time
+        _model._output._training_time_ms = t2 - _model._output._start_time; // remember training time         
         ScoreKeeper trainScore = new ScoreKeeper(Double.NaN);
         trainScore.fillFrom(mtrain);
         Log.info(LogMsg(mtrain.toString()));
@@ -2138,18 +2298,61 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         ScoreKeeper validScore = new ScoreKeeper(Double.NaN);
         validScore.fillFrom(_model._output._validation_metrics);
       }
+      _model.addScoringInfo(_parms, nclasses(), t2, _state._iter);  // add to scoringInfo for early stopping
+
+      if (_parms._generate_scoring_history) { // update scoring history with deviance train and valid if available
+        double xval_deviance = Double.NaN;
+        double xval_se = Double.NaN;
+        if (_xval_deviances_generate_SH != null) {
+          int xval_iter_index = ArrayUtils.find(_xval_iters_generate_SH, _state._iter);
+          if (xval_iter_index > -1) {
+            xval_deviance = _xval_deviances_generate_SH[xval_iter_index];
+            xval_se = _xval_sd_generate_SH[xval_iter_index];
+          }
+        }
+        if (!(mtrain == null) && !(_valid == null)) {
+          if (_parms._lambda_search) {
+            double trainDev = _state.deviance() / mtrain._nobs;
+            double validDev = ((GLMMetrics) _model._output._validation_metrics).residual_deviance() /
+                    _model._output._validation_metrics._nobs;
+            _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
+                    _state.lambda(), trainDev, validDev, xval_deviance, xval_se, _state.alpha());
+          } else {
+            _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
+                    _state.objective(), _state.deviance(), ((GLMMetrics) _model._output._validation_metrics).residual_deviance(),
+                    mtrain._nobs, _model._output._validation_metrics._nobs, _state.lambda(), _state.alpha());
+          }
+        } else if (!(mtrain == null)) { // only doing training deviance
+          if (_parms._lambda_search) {
+            _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()),
+                    _state.lambda(), _state.deviance() / mtrain._nobs, Double.NaN, xval_deviance,
+                    xval_se, _state.alpha());
+          } else {
+            _scoringHistory.addIterationScore(!(mtrain == null), !(_valid == null), _state._iter, _state.likelihood(),
+                    _state.objective(), _state.deviance(), Double.NaN, mtrain._nobs, 1, _state.lambda(),
+                    _state.alpha());
+          }
+        }
+        _job.update(_workPerIteration, _state.toString());
+      }
+      if (_parms._lambda_search)
+        _model._output._scoring_history = _lambdaSearchScoringHistory.to2dTable();
+      else if (_parms._HGLM)
+        _model._output._scoring_history = _scoringHistory.to2dTableHGLM();
+      else
+        _model._output._scoring_history = _scoringHistory.to2dTable(_parms, _xval_deviances_generate_SH, 
+                _xval_sd_generate_SH);
       
-      _model.addScoringInfo(_parms, nclasses(), t2);  // add to scoringInfo for early stopping
       _model.update(_job._key);
       if (_parms._HGLM)
-        _model.generateSummaryHGLM(_parms._train,_state._iter);
+        _model.generateSummaryHGLM(_parms._train, _state._iter);
       else
-        _model.generateSummary(_parms._train,_state._iter);
+        _model.generateSummary(_parms._train, _state._iter);
       _lastScore = System.currentTimeMillis();
       long scoringTime = System.currentTimeMillis() - t1;
-      _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
+      _scoringInterval = Math.max(_scoringInterval, 20 * scoringTime); // at most 5% overhead for scoring
     }
-    
+
     private void coldStart(double[] devHistoryTrain, double[] devHistoryTest) {
       _state.setBeta(_betaStart);  // reset beta to original starting condition
       _state.setIter(0);
@@ -2164,17 +2367,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _state.setActiveDataMultinomialNull();
       _state.setActiveDataNull();
       int histLen = devHistoryTrain.length;
-      for (int ind=0; ind < histLen; ind++) {
-        devHistoryTrain[ind]=0;
-        devHistoryTest[ind]=0;
+      for (int ind = 0; ind < histLen; ind++) {
+        devHistoryTrain[ind] = 0;
+        devHistoryTest[ind] = 0;
       }
     }
-    
-    protected Submodel computeSubmodel(int i,double lambda, double nullDevTrain, double nullDevValid) {
+
+    protected Submodel computeSubmodel(int i, double lambda, double nullDevTrain, double nullDevValid) {
       Submodel sm;
-      boolean continueFromPreviousSubmodel = _parms.hasCheckpoint() && (_parms._alpha.length > 1 || 
+      boolean continueFromPreviousSubmodel = _parms.hasCheckpoint() && (_parms._alpha.length > 1 ||
               _parms._lambda.length > 1) && _checkPointFirstIter && !Family.gaussian.equals(_parms._family);
-      if(lambda >= _lmax && _state.l1pen() > 0) {
+      if (lambda >= _lmax && _state.l1pen() > 0) {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
         else
@@ -2192,7 +2395,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (!_checkPointFirstIter)
             _state.setLambda(lambda);
         }
-        
+
         checkMemoryFootPrint(_state.activeData());
         do {
           if (_parms._family == Family.multinomial || _parms._family == Family.ordinal)
@@ -2205,7 +2408,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if (_parms._HGLM) {
           sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid);
-          sm.ubeta = Arrays.copyOf(_state.ubeta(),_state.ubeta().length);
+          sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.updateSubmodel(sm);
         } else {
           double trainDev = _state.deviance() / _nobs;
@@ -2221,15 +2424,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           Log.info(LogMsg("train deviance = " + trainDev + ", valid deviance = " + validDev));
           double xvalDev = ((_xval_deviances == null) || (_xval_deviances.length <= i)) ? -1 : _xval_deviances[i];
           double xvalDevSE = ((_xval_sd == null) || (_xval_deviances.length <= i)) ? -1 : _xval_sd[i];
-          _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
-                  _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
-          _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter, 
+          if (_parms._lambda_search)
+            _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
+                    _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
+          _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
                   trainDev, validDev));
         }
       }
       return sm;
     }
-    
+
     @Override
     public void computeImpl() {
       try {
@@ -2238,35 +2442,35 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_model != null) _model.unlock(_job);
       }
     }
-    
+
     private void doCompute() {
       double nullDevTrain = Double.NaN;
       double nullDevValid = Double.NaN;
-      if(_doInit)
+      if (_doInit)
         init(true);
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
-      if(_parms._lambda_search) {
+      if (_parms._lambda_search) {
         if (_parms._family == Family.ordinal)
           nullDevTrain = new GLMResDevTaskOrdinal(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
         else
-        nullDevTrain =  _parms._family == Family.multinomial
-          ?new GLMResDevTaskMultinomial(_job._key,_state._dinfo,getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev()
-          :new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame).avgDev();
-        if(_validDinfo != null) {
+          nullDevTrain = _parms._family == Family.multinomial
+                  ? new GLMResDevTaskMultinomial(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev()
+                  : new GLMResDevTask(_job._key, _state._dinfo, _parms, getNullBeta()).doAll(_state._dinfo._adaptedFrame).avgDev();
+        if (_validDinfo != null) {
           if (_parms._family == Family.ordinal)
             nullDevValid = new GLMResDevTaskOrdinal(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev();
           else
-          nullDevValid = _parms._family == Family.multinomial
-                  ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
-                  : new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame).avgDev();
+            nullDevValid = _parms._family == Family.multinomial
+                    ? new GLMResDevTaskMultinomial(_job._key, _validDinfo, getNullBeta(), _nclass).doAll(_validDinfo._adaptedFrame).avgDev()
+                    : new GLMResDevTask(_job._key, _validDinfo, _parms, getNullBeta()).doAll(_validDinfo._adaptedFrame).avgDev();
         }
-        _workPerIteration = WORK_TOTAL/_parms._nlambdas;
+        _workPerIteration = WORK_TOTAL / _parms._nlambdas;
       } else
-        _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
+        _workPerIteration = 1 + (WORK_TOTAL / _parms._max_iterations);
 
-      if((_parms._family == Family.multinomial || _parms._family == Family.ordinal) && _parms._solver != Solver.L_BFGS ) {
+      if ((_parms._family == Family.multinomial || _parms._family == Family.ordinal) && _parms._solver != Solver.L_BFGS) {
         double[] nb = getNullBeta();
         double maxRow = ArrayUtils.maxValue(nb);
         double sumExp = 0;
@@ -2276,10 +2480,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for (int i = 1; i < _nclass; ++i)
             sumExp += Math.exp(nb[i * N + P] - maxRow);
         }
-        Vec [] vecs = _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow});
-        if(_parms._lambda_search && _parms._is_cv_model) {
+        Vec[] vecs = _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp, maxRow});
+        if (_parms._lambda_search && _parms._is_cv_model) {
           Scope.untrack(vecs[0]._key, vecs[1]._key);
-          removeLater(vecs[0]._key,vecs[1]._key);
+          removeLater(vecs[0]._key, vecs[1]._key);
         }
 
         if (_parms._family == Family.ordinal)
@@ -2287,15 +2491,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         else
           _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, vecs);
       }
-      
+
       if (_parms._HGLM) { // add w, augZ, etaOld and random columns to response for easy access inside _dinfo
         addWdataZiEtaOld2Response();
       }
-      
+
       double oldDevTrain = nullDevTrain;
       double oldDevTest = nullDevValid;
-      double [] devHistoryTrain = new double[5];
-      double [] devHistoryTest = new double[5];
+      double[] devHistoryTrain = new double[5];
+      double[] devHistoryTest = new double[5];
 
       if (!_parms._HGLM) {  // only need these for non HGLM
         _ginfoStart = GLMUtils.copyGInfo(_state.ginfo());
@@ -2308,16 +2512,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _model._output._submodels = null; // null out submodel only for single alpha/lambda values
       }
 
-      if(!_parms._lambda_search & !_parms._HGLM)
+      if (!_parms._lambda_search & !_parms._HGLM)
         updateProgress(false);
-      
+
       // alpha, lambda search loop
       int alphaStart = 0;
       int lambdaStart = 0;
       int submodelCount = 0;
       if (_parms.hasCheckpoint() && _model._output._submodels != null) {  // multiple alpha/lambdas or lambda search
-        submodelCount = Family.gaussian.equals(_parms._family)?_model._output._submodels.length
-                :_model._output._submodels.length-1;
+        submodelCount = Family.gaussian.equals(_parms._family) ? _model._output._submodels.length
+                : _model._output._submodels.length - 1;
         alphaStart = submodelCount / _parms._lambda.length;
         lambdaStart = submodelCount % _parms._lambda.length;
       }
@@ -2329,9 +2533,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = lambdaStart; i < _parms._lambda.length; ++i) {  // for lambda search, can quit before it is done
           if (_job.stop_requested() || (timeout() && _model._output._submodels.length > 0))
             break;  //need at least one submodel on timeout to avoid issues.
-          if (_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations) 
+          if (_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations)
             break;  // iterations accumulate across all lambda/alpha values when coldstart = false
-          if ((!_parms._HGLM && (_parms._cold_start || (!_parms._lambda_search && _parms._cold_start))) && (i > 0) 
+          if ((!_parms._HGLM && (_parms._cold_start || (!_parms._lambda_search && _parms._cold_start))) && (i > 0)
                   && !_checkPointFirstIter) // default: cold_start for non lambda_search
             coldStart(devHistoryTrain, devHistoryTest);
           Submodel sm = computeSubmodel(submodelCount, _parms._lambda[i], nullDevTrain, nullDevValid);
@@ -2339,38 +2543,40 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _checkPointFirstIter = false;
           double trainDev = sm.devianceTrain; // this is stupid, they are always -1 except for lambda_search=True
           double testDev = sm.devianceValid;
-          devHistoryTest[submodelCount % devHistoryTest.length] = 
+          devHistoryTest[submodelCount % devHistoryTest.length] =
                   (oldDevTest - testDev) / oldDevTest; // only remembers 5
           oldDevTest = testDev;
-          devHistoryTrain[submodelCount % devHistoryTrain.length] = 
+          devHistoryTrain[submodelCount % devHistoryTrain.length] =
                   (oldDevTrain - trainDev) / oldDevTrain;
           oldDevTrain = trainDev;
           if (_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
             if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
               double s = ArrayUtils.maxValue(devHistoryTrain);
               if (s < 1e-4) {
-                Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i]+ "alpha[" + alphaInd + "] = "
-                        + _parms._alpha[alphaInd]+ ", improvement on train = " + s));
+                Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd + "] = "
+                        + _parms._alpha[alphaInd] + ", improvement on train = " + s));
                 break; // started overfitting
               }
               if (_validDinfo != null && _parms._nfolds <= 1) { // check for early stopping on test with no xval
                 s = ArrayUtils.maxValue(devHistoryTest);
                 if (s < 0) {
-                  Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] +  "alpha[" + alphaInd +
-                          "] = " + _parms._alpha[alphaInd]+", improvement on test = " + s));
+                  Log.info(LogMsg("converged at lambda[" + i + "] = " + _parms._lambda[i] + "alpha[" + alphaInd +
+                          "] = " + _parms._alpha[alphaInd] + ", improvement on test = " + s));
                   break; // started overfitting
                 }
               }
             }
           }
 
-          if (_parms._lambda_search && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
+          if ((_parms._lambda_search || _parms._generate_scoring_history) && (_parms._score_each_iteration || 
+                  timeSinceLastScoring() > _scoringInterval || ((_parms._score_iteration_interval > 0) &&
+                  ((_state._iter % _parms._score_iteration_interval) == 0)))) {
             _model._output.setSubmodelIdx(_model._output._best_submodel_idx = submodelCount); // quick and easy way to set submodel parameters
             scoreAndUpdateModel(); // update partial results
           }
-          _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" + 
-                  lambdaFormatter.format(_state.lambda()) + " alpha=" + lambdaFormatter.format(_state.alpha())+ 
-                  "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) + 
+          _job.update(_workPerIteration, "iter=" + _state._iter + " lmb=" +
+                  lambdaFormatter.format(_state.lambda()) + " alpha=" + lambdaFormatter.format(_state.alpha()) +
+                  "deviance trn/tst= " + devFormatter.format(trainDev) + "/" + devFormatter.format(testDev) +
                   " P=" + ArrayUtils.countNonzeros(_state.beta()));
           submodelCount++;  // updata submodel index count here
         }
@@ -2385,13 +2591,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           throw new Job.JobCancelledException();
         }
       }
-      if(_state._iter >= _parms._max_iterations)
+      if (_state._iter >= _parms._max_iterations)
         _job.warn("Reached maximum number of iterations " + _parms._max_iterations + "!");
-      if(_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
-        _model._output.setSubmodelIdx(_model._output._best_submodel_idx=_bestCVSubmodel);  // reset best_submodel_idx to what xval has found
+      if (_parms._nfolds > 1 && !Double.isNaN(_lambdaCVEstimate))
+        _model._output.setSubmodelIdx(_model._output._best_submodel_idx = _bestCVSubmodel);  // reset best_submodel_idx to what xval has found
       else
         _model._output.pickBestModel();
-      if(_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
+      if (_vcov != null) { // should move this up, otherwise, scoring will never use info in _vcov
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }
@@ -2400,7 +2606,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       TwoDimTable scoring_history_early_stop = ScoringInfo.createScoringHistoryTable(_model.getScoringInfo(),
               (null != _parms._valid), false, _model._output.getModelCategory(), false);
       _model._output._scoring_history = combineScoringHistory(_model._output._scoring_history,
-              scoring_history_early_stop, (_parms._lambda_search ? _lambdaSearchScoringHistory._lambdaIters : _scoringHistory._scoringIters));
+              scoring_history_early_stop);
       _model._output._varimp = _model._output.calculateVarimp();
       _model._output._variable_importances = calcVarImp(_model._output._varimp);
       _model.update(_job._key);
@@ -2408,15 +2614,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         _model.setVcov(_vcov);
         _model.update(_job._key);
       }*/
-      if(!(_parms)._lambda_search && _state._iter < _parms._max_iterations){
-        _job.update(_workPerIteration*(_parms._max_iterations - _state._iter));
+      if (!(_parms)._lambda_search && _state._iter < _parms._max_iterations) {
+        _job.update(_workPerIteration * (_parms._max_iterations - _state._iter));
       }
-      if(_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
+      if (_iceptAdjust != 0) { // apply the intercept adjust according to prior probability
         assert _parms._intercept;
-        double [] b = _model._output._global_beta;
-        b[b.length-1] += _iceptAdjust;
-        for(Submodel sm:_model._output._submodels)
-          sm.beta[sm.beta.length-1] += _iceptAdjust;
+        double[] b = _model._output._global_beta;
+        b[b.length - 1] += _iceptAdjust;
+        for (Submodel sm : _model._output._submodels)
+          sm.beta[sm.beta.length - 1] += _iceptAdjust;
         _model.update(_job._key);
       }
     }
@@ -2436,12 +2642,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       colNames[1] = "zi";
       colNames[2] = "etaOld";
       int[] randColIndices = _parms._random_columns;
-      for (int index=3; index < moreColnum; index++) {
-        colNames[index] = _parms.train().name(index-3);
-        vecs[index] = _parms.train().vec(randColIndices[index-3]).makeCopy();
+      for (int index = 3; index < moreColnum; index++) {
+        colNames[index] = _parms.train().name(index - 3);
+        vecs[index] = _parms.train().vec(randColIndices[index - 3]).makeCopy();
       }
       _dinfo.addResponse(colNames, vecs);
-      for (int index=0; index < moreColnum; index++ ) {
+      for (int index = 0; index < moreColnum; index++) {
         Scope.untrack(vecs[index]._key);
         removeLater(vecs[index]._key);
       }
@@ -2453,15 +2659,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       super.onCompletion(caller);
     }
 
-    @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
+    @Override
+    public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
       doCleanup();
       return super.onExceptionalCompletion(t, caller);
     }
 
 
-    @Override public boolean progress(double [] beta, GradientInfo ginfo) {
+    @Override
+    public boolean progress(double[] beta, GradientInfo ginfo) {
       _state._iter++;
-      if(ginfo instanceof ProximalGradientInfo) {
+      if (ginfo instanceof ProximalGradientInfo) {
         ginfo = ((ProximalGradientInfo) ginfo)._origGinfo;
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
         _state.updateState(beta, gginfo);
@@ -2470,11 +2678,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         return !stop_requested() && _state._iter < _parms._max_iterations && !_earlyStop;
       } else {
         GLMGradientInfo gginfo = (GLMGradientInfo) ginfo;
-        if(gginfo._gradient == null)
-          _state.updateState(beta,gginfo._likelihood);
+        if (gginfo._gradient == null)
+          _state.updateState(beta, gginfo._likelihood);
         else
           _state.updateState(beta, gginfo);
-        if (!_parms._lambda_search)
+        if (!_parms._lambda_search || (_parms._generate_scoring_history && !_insideCVCheck))
           updateProgress(true);
         boolean converged = !_earlyStopEnabled && _state.converged(); // GLM specific early stop.  Disabled if early stop is enabled
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
@@ -2482,53 +2690,61 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    public boolean progressHGLMGLMMME(double sumDiff2, double sumeta2, int iteration, boolean atGLMMME, GLMModel 
+    public boolean progressHGLMGLMMME(double sumDiff2, double sumeta2, int iteration, boolean atGLMMME, GLMModel
             fixedModel, GLMModel[] randModels, Frame glmmmeReturns, Frame hvDataOnly, double[] VC1, double[][] VC2,
                                       double[][] cholR, Frame augZ) {
-      boolean converged = !_earlyStopEnabled && (sumDiff2 < (_parms._objective_epsilon*sumeta2));
+      boolean converged = !_earlyStopEnabled && (sumDiff2 < (_parms._objective_epsilon * sumeta2));
       if (atGLMMME) {
         _state._iterHGLM_GLMMME++;
       } else {
-          _state._iter++;
-          updateProgress(fixedModel, randModels, glmmmeReturns, hvDataOnly, VC1, VC2, sumDiff2,
-                  sumDiff2 / sumeta2, true, cholR, augZ);
+        _state._iter++;
+        updateProgress(fixedModel, randModels, glmmmeReturns, hvDataOnly, VC1, VC2, sumDiff2,
+                sumDiff2 / sumeta2, true, cholR, augZ);
       }
       return !stop_requested() && !converged && (iteration < _parms._max_iterations) && !_earlyStop;
     }
-    
-    public boolean progress(double [] beta, double likelihood) {
+
+    public boolean progress(double[] beta, double likelihood) {
       _state._iter++;
-      _state.updateState(beta,likelihood);
-      if(!_parms._lambda_search)
+      _state.updateState(beta, likelihood);
+      // updateProgress is not run originally when lambda_search is not enabled inside or outside of 
+      // cv_computeAndSetOptimalParameters.  However, with generate_scoring_history on, I am adding deviance_* and
+      // hence I need to make sure that updateProgress is not run inside cv_computeAndSetOptimalParameters.
+      if (!_parms._lambda_search || (_parms._generate_scoring_history && !_insideCVCheck))
         updateProgress(true);
       boolean converged = !_earlyStopEnabled && _state.converged();
-      if(converged) Log.info(LogMsg(_state.convergenceMsg));
+      if (converged) Log.info(LogMsg(_state.convergenceMsg));
       return !stop_requested() && !converged && _state._iter < _parms._max_iterations && !_earlyStop;
     }
 
     private transient long _scoringInterval = SCORING_INTERVAL_MSEC;
 
-    protected void updateProgress(GLMModel fixedModel, GLMModel[] randModels, Frame glmmmeReturns, Frame hvDataOnly, 
+    protected void updateProgress(GLMModel fixedModel, GLMModel[] randModels, Frame glmmmeReturns, Frame hvDataOnly,
                                   double[] VC1, double[][] VC2, double sumDiff2, double convergence, boolean canScore,
                                   double[][] cholR, Frame augXZ) {
       _scoringHistory.addIterationScore(_state._iter, _state._sumEtaSquareConvergence);
-      if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval || 
+      if (canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval ||
               ((_parms._score_iteration_interval > 0) && ((_state._iter % _parms._score_iteration_interval) == 0)))) {
-        _model.update(_state.expandBeta(_state.beta()), _state.ubeta(),-1, -1, _state._iter);
-        scoreAndUpdateModelHGLM(fixedModel, randModels, glmmmeReturns, hvDataOnly, VC1, VC2, sumDiff2, convergence, 
+        _model.update(_state.expandBeta(_state.beta()), _state.ubeta(), -1, -1, _state._iter);
+        scoreAndUpdateModelHGLM(fixedModel, randModels, glmmmeReturns, hvDataOnly, VC1, VC2, sumDiff2, convergence,
                 cholR, augXZ, false);
-        _earlyStop = updateEarlyStop();
+        _earlyStop = _earlyStopEnabled && updateEarlyStop();
       }
     }
+
     // update user visible progress
-    protected void updateProgress(boolean canScore){
-      assert !_parms._lambda_search;
-      _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
-      _job.update(_workPerIteration,_state.toString());
-      if(canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval)) {
+    protected void updateProgress(boolean canScore) {
+      assert !_parms._lambda_search || _parms._generate_scoring_history;
+      if (!_parms._generate_scoring_history && !_parms._lambda_search) { // same as before, _state._iter is not updated
+        _scoringHistory.addIterationScore(_state._iter, _state.likelihood(), _state.objective());
+        _job.update(_workPerIteration, _state.toString());  // glm specific scoring history is updated every iteration
+      }
+
+      if (canScore && (_parms._score_each_iteration || timeSinceLastScoring() > _scoringInterval ||
+              ((_parms._score_iteration_interval > 0) && ((_state._iter % _parms._score_iteration_interval) == 0)))) {
         _model.update(_state.expandBeta(_state.beta()), -1, -1, _state._iter);
         scoreAndUpdateModel();
-        _earlyStop = updateEarlyStop();
+        _earlyStop = _earlyStopEnabled && updateEarlyStop();
       }
     }
   }
@@ -3076,7 +3292,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert beta.length == _dinfo.fullN() + 1;
         assert _parms._intercept || (beta[beta.length-1] == 0);
         GLMGradientTask gt;
-        if((_parms._family == Family.binomial && _parms._link == Link.logit) ||
+        if((_parms._family == binomial && _parms._link == Link.logit) ||
                 (_parms._family == Family.fractionalbinomial && _parms._link == Link.logit))
           gt = new GLMBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta, _penaltyMatrix, 
                   _gamColIndices).doAll(_dinfo._adaptedFrame);
