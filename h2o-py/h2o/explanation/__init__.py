@@ -15,6 +15,7 @@ def _register_dummy_methods():
     h2o.model.ModelBase.explain_row = _complain_about_matplotlib
     h2o.model.ModelBase.pd_plot = _complain_about_matplotlib
     h2o.model.ModelBase.ice_plot = _complain_about_matplotlib
+    h2o.model.ModelBase.learning_curve_plot = _complain_about_matplotlib
 
     h2o.automl._base.H2OAutoMLBaseMixin.pd_multi_plot = _complain_about_matplotlib
     h2o.automl._base.H2OAutoMLBaseMixin.varimp_heatmap = _complain_about_matplotlib
