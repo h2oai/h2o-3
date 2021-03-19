@@ -34,7 +34,7 @@ where:
 - :math:`f = [f(x_1),f(x_2),...,f(x_n)]^T`,
 - :math:`J_{md}(f)` is a penalty measure of wiggliness of :math:`f`,
 - :math:`\lambda` is the smoothing parameter (scale parameter) controlling the tradeoff between data fitting and smoothness of :math:`f`,
-- :math:`J_{md}(f) = {\int_{R^d}{\sum_{\gamma_1+\gamma_2+...+\gamma_d}=m{\frac{m!}{\gamma_1! \gamma_2!...\gamma_d!}{({\frac{d^mf}{dx_1dx_2...dx_d}})}^2}}}dx_1 dx_2...dx_d`, 
+- :math:`J_{md}(f) = {\int_{R^d}{\sum_{\gamma_1+\gamma_2+...+\gamma_d=m}{\frac{m!}{\gamma_1! \gamma_2!...\gamma_d!}{({\frac{d^mf}{dx_1dx_2...dx_d}})}^2}}}dx_1 dx_2...dx_d`, 
 - :math:`m = floor(\frac{d+1}{2})+1`.
 
 The function :math:`f` that minimizes Equation 1 has the following form:
@@ -172,7 +172,7 @@ For R:
 For Python:
 
 - ``gam_col1 = ["C11",["C12","C13"],["C14","C15","C16"],"C17","C18"]`` or
-- ``gam_col1 = [["C11"],["C12","C13"],["C14","C15","C16"],["C17"],["C18"]``
+- ``gam_col1 = [["C11"],["C12","C13"],["C14","C15","C16"],["C17"],["C18"]]``
 
 When using a grid search, the GAM columns are specified inside of the ``subspaces`` hyperparameter. Otherwise, the ``gam_column`` parameter is entered on its own when building a GAM model. 
 
