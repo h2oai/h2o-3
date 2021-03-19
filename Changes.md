@@ -8,6 +8,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-NAME/1/index.h
 
 #### Bug
 <ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-6356'>PUBDEV-6356</a>] -         GBM histograms now ignore rows with NA responses.
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7841'>PUBDEV-7841</a>] -         Existing frame no longer overwritten when data with the same query is loaded.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7979'>PUBDEV-7979</a>] -         All trees now supported for XGBoost Print MOJO in Java.
@@ -35,6 +37,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-NAME/1/index.h
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7969'>PUBDEV-7969</a>] -         Added CDP7.1 support.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7978'>PUBDEV-7978</a>] -         Added support for XGBoost to Print MOJO as JSON.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8021'>PUBDEV-8021</a>] -         Added support for refreshing HDFS delegation tokens.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8035'>PUBDEV-8035</a>] -         Reverted XGBoost categorical encodings for contributions.
 </li>
 </ul>
     
