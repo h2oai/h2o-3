@@ -219,20 +219,20 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      * @return ModelMetricsBinomial
      */
-    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, 
-                                                   Frame frameWithExtraColumns, final Frame preds) {
+    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, Frame frameWithExtraColumns, final Frame preds) {
       Vec resp = null;
       Vec weight = null;
-      if (_wcount > 0 || m._output.hasUplift()) {
-        if (preds!=null) {
-          if (frameWithExtraColumns == null) 
+      if (_wcount > 0) {
+        if (preds != null) {
+          if (frameWithExtraColumns == null) {
             frameWithExtraColumns = f;
-          resp = m==null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ? 
+          }
+          resp = m == null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ? 
                   frameWithExtraColumns.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
                   :
                   frameWithExtraColumns.vec(m._parms._response_column);
           if (resp != null) {
-            weight = m==null?null : frameWithExtraColumns.vec(m._parms._weights_column);
+            weight = m==null ? null : frameWithExtraColumns.vec(m._parms._weights_column);
           }
         }
       }
