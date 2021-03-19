@@ -17,9 +17,12 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
         int baseModelNum = readkv("base_models_num", 0);
         _model._baseModelNum = baseModelNum;
         _model._metaLearner = getModel((String) readkv("metalearner"));
-        _model._metaLearnerTransform = (String) readkv("metalearner_transform", "NONE");
-        if (!_model._metaLearnerTransform.equals("NONE") && !_model._metaLearnerTransform.equals("Logit"))
-            throw new UnsupportedOperationException("Metalearner Transform \"" + _model._metaLearnerTransform + "\" is not supported!");
+
+        final String metaLearnerTransform = readkv("metalearner_transform", "NONE");
+        if (!metaLearnerTransform.equals("NONE") && !metaLearnerTransform.equals("Logit"))
+            throw new UnsupportedOperationException("Metalearner Transform \"" + metaLearnerTransform + "\" is not supported!");
+        _model._useLogitMetaLearnerTransform = metaLearnerTransform.equals("Logit");
+
         _model._baseModels = new StackedEnsembleMojoModel.StackedEnsembleMojoSubModel[baseModelNum];
         final String[] columnNames = readkv("[columns]");
         for (int i = 0; i < baseModelNum; i++) {

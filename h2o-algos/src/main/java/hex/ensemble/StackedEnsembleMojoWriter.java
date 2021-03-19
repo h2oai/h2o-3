@@ -17,7 +17,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
 
     public StackedEnsembleMojoWriter(StackedEnsembleModel model) {
         super(model);
-        // White list supported metalearning transform
+        // White list supported metalearning transforms
         if (!(model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE ||
                 model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.Logit)) {
             throw new UnsupportedOperationException("Cannot save Stacked Ensemble with metalearner_transform = \"" +

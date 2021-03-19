@@ -1512,7 +1512,7 @@ public class StackedEnsembleTest extends TestUtil {
             seParams._train = trainingFrame._key;
             seParams._response_column = "RainTomorrow";
             seParams._metalearner_algorithm = Algorithm.AUTO;
-            seParams._base_models = new Key[]{grid._key};
+            seParams._base_models = grid.getModelKeys();
             seParams._keep_levelone_frame = true;
             seParams._seed = 0xFEED;
 
@@ -1543,6 +1543,27 @@ public class StackedEnsembleTest extends TestUtil {
             assertFrameEquals(expectedPercentileRank,
                     new Frame(sePercentileRank._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
                     1e-5);
+
+            Frame training_clone = new Frame(trainingFrame);
+            DKV.put(training_clone);
+            Scope.track(training_clone);
+            Frame preds = se.score(training_clone);
+            Scope.track(preds);
+            final boolean predsTheSame = se.testJavaScoring(training_clone, preds, 1e-15, 0.01);
+            Assert.assertTrue(predsTheSame);
+
+            Frame predsLogit = seLogit.score(training_clone);
+            Scope.track(predsLogit);
+            final boolean predsLogitTheSame = seLogit.testJavaScoring(training_clone, predsLogit, 1e-15, 0.01);
+            Assert.assertTrue(predsLogitTheSame);
+
+            /*
+            // No MOJO support for percentile rank yet
+            Frame predsPR = sePercentileRank.score(training_clone);
+            Scope.track(predsPR);
+            final boolean predsPRTheSame = sePercentileRank.testJavaScoring(training_clone, predsPR, 1e-15, 0.01);
+            Assert.assertTrue(predsPRTheSame);
+             */
         } finally {
             Scope.exit();
         }

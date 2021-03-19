@@ -8,7 +8,7 @@ import java.util.Arrays;
 public class StackedEnsembleMojoModel extends MojoModel {
 
     MojoModel _metaLearner; //Currently only a GLM. May change to be DRF, GBM, XGBoost, or DL in the future
-    String _metaLearnerTransform;
+    boolean _useLogitMetaLearnerTransform;
     StackedEnsembleMojoSubModel[] _baseModels; //An array of base models
     int _baseModelNum; //Number of base models
 
@@ -38,7 +38,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
                     basePreds[i * _nclasses + j] = _baseModels[i]._mojoModel.score0(_baseModels[i].remapRow(row), basePredsRow)[j + 1];
                 }
             }
-            if (_metaLearnerTransform.equals("Logit"))
+            if (_useLogitMetaLearnerTransform)
                 logitTransformRow(basePreds);
         }else if(_nclasses == 2){ //Binomial
             for(int i = 0; i < _baseModelNum; ++i) {
@@ -46,7 +46,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
                 _baseModels[i]._mojoModel.score0(_baseModels[i].remapRow(row), basePredsRow);
                 basePreds[i] = basePredsRow[2];
             }
-            if (_metaLearnerTransform.equals("Logit"))
+            if (_useLogitMetaLearnerTransform)
                 logitTransformRow(basePreds);
         }else{ //Regression
             for(int i = 0; i < _baseModelNum; ++i) { //Regression
