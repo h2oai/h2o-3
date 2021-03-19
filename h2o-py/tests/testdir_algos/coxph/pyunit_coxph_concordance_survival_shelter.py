@@ -143,9 +143,9 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
 
 # There are different API versions for concordance in lifelines library
 def concordance_for_lifelines(cph):
-    if ("_model" in cph.__dict__.keys()):
+    if "_model" in cph.__dict__.keys():
         py_concordance = cph._model._concordance_index_
-    elif ("_concordance_index_" in cph.__dict__.keys()):
+    elif "_concordance_index_" in cph.__dict__.keys():
         py_concordance = cph._concordance_index_
     else:
         py_concordance = cph._concordance_score_
