@@ -543,13 +543,14 @@ MAIN_LOOP:
   public static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
-  /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
-  private static int[] determineSeparatorCounts(String from, byte singleQuote) {
+  /** Determines the number of separators in given line.  Correctly handles quoted tokens. */
+  private static int[] determineSeparatorCounts(String from, byte quote) {
     int[] result = new int[separators.length];
     byte[] bits = StringUtils.bytesOf(from);
     boolean inQuote = false;
-    for( byte c : bits ) {
-      if( (c == singleQuote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
+    for( int bi=0; bi < bits.length; bi++) {
+      byte c = bits[bi];
+      if( c == quote && bi > 0 && bits[bi-1] != '\\')
         inQuote ^= true;
       if( !inQuote || c == HIVE_SEP )
         for( int i = 0; i < separators.length; ++i )
@@ -615,7 +616,7 @@ MAIN_LOOP:
 
 
   public static byte guessSeparator(String l1, String l2, boolean singleQuotes) {
-    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
+    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : CsvParser.CHAR_DOUBLE_QUOTE;
     int[] s1 = determineSeparatorCounts(l1, singleQuote);
     int[] s2 = determineSeparatorCounts(l2, singleQuote);
     // Now we have the counts - if both lines have the same number of
