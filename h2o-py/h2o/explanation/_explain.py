@@ -1839,14 +1839,18 @@ def learning_curve_plot(
     if model.algo in ("glm", "gam"):
         if model.actual_params["lambda_search"]:
             import h2o.two_dim_table
-            allowed_metrics = ["deviance"]
             allowed_timesteps = ["iteration"]
         elif model.actual_params.get("HGLM"):
             allowed_timesteps = ["iterations", "duration"]
-            allowed_metrics = ["convergence", "sumetaieta02"]
         else:
             allowed_timesteps = ["iterations", "duration"]
-            allowed_metrics = ["objective", "negative_log_likelihood"]
+
+        allowed_metrics = ["deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
+                           "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae"]
+        allowed_metrics = [m for m in allowed_metrics
+                           if m in scoring_history.col_header or
+                              "training_{}".format(m) in scoring_history.col_header or
+                              "{}_train".format(m) in scoring_history.col_header]
     elif model.algo == "glrm":
         allowed_metrics = ["objective"]
         allowed_timesteps = ["iterations"]
@@ -1875,7 +1879,7 @@ def learning_curve_plot(
     if metric.lower() == "auto":
         metric = allowed_metrics[0]
     else:
-        metric = metric_mapping[metric.lower()]
+        metric = metric_mapping.get(metric.lower())
 
     if metric not in allowed_metrics:
         raise H2OValueError("for {}, metric must be one of: {}".format(
@@ -1885,7 +1889,7 @@ def learning_curve_plot(
 
     timestep = allowed_timesteps[0]
 
-    if "deviance" == metric and model.algo in ["glm", "gam"]:
+    if "deviance" == metric and model.algo in ["glm", "gam"] and not model.actual_params.get("HGLM", False):
         training_metric = "deviance_train"
         validation_metric = "deviance_test"
     elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
@@ -1912,6 +1916,9 @@ def learning_curve_plot(
     else:
         col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
 
+    # Get scoring history with only filled in entries
+    scoring_history = _preprocess_scoring_history(model, scoring_history, training_metric)
+
     plt.figure(figsize=figsize)
     plt.grid(True)
 
@@ -1920,7 +1927,7 @@ def learning_curve_plot(
             cvsh_train = defaultdict(list)
             cvsh_valid = defaultdict(list)
             for cvsh in model._model_json["output"]["cv_scoring_history"]:
-                cvsh = _preprocess_scoring_history(model, cvsh)
+                cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
                 for i in range(len(cvsh[timestep])):
                     cvsh_train[cvsh[timestep][i]].append(cvsh[training_metric][i])
                 if validation_metric in cvsh.col_header:
@@ -1939,7 +1946,7 @@ def learning_curve_plot(
                 [(k, len(v)) for k, v in cvsh_train.items()],
                 key=lambda k: k[0]
             ))[:, 1]
-            if cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5:
+            if len(len_train) > 1 and (cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5):
                 plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
                          label="Training (CV Models)")
                 plt.fill_between(mean_train[:, 0],
@@ -1966,7 +1973,7 @@ def learning_curve_plot(
 
         if cv_lines:
             for cvsh in model._model_json["output"]["cv_scoring_history"]:
-                cvsh = _preprocess_scoring_history(model, cvsh)
+                cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
                 plt.plot(cvsh[timestep],
                          cvsh[training_metric],
                          label="Training (CV Models)",
@@ -2009,7 +2016,18 @@ def learning_curve_plot(
     return plt.gcf()
 
 
-def _preprocess_scoring_history(model, scoring_history):
+def _preprocess_scoring_history(model, scoring_history, training_metric=None):
+    empty_columns = [all(row[col_idx] == "" for row in scoring_history.cell_values)
+                     for col_idx in range(len(scoring_history.col_header))]
+
+    scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+        table_header=scoring_history._table_header,
+        table_description=scoring_history._table_description,
+        col_header=[ch for i, ch in enumerate(scoring_history.col_header) if not empty_columns[i]],
+        col_types=[ct for i, ct in enumerate(scoring_history.col_types) if not empty_columns[i]],
+        cell_values=[[v for i, v in enumerate(vals) if not empty_columns[i]]
+                     for vals in scoring_history.cell_values])
+
     if model.algo in ("glm", "gam") and model.actual_params["lambda_search"]:
         alpha_best = model._model_json["output"]["alpha_best"]
         alpha_idx = scoring_history.col_header.index("alpha")
@@ -2021,6 +2039,17 @@ def _preprocess_scoring_history(model, scoring_history):
             col_types=scoring_history.col_types,
             cell_values=sorted([list(v) for v in scoring_history.cell_values if v[alpha_idx] == alpha_best],
                                key=lambda row: row[iteration_idx]))
+
+    if training_metric is not None:
+        # Remove empty metric values, e.g., from GLM when score_each_iteration = False
+        training_metric_idx = scoring_history.col_header.index(training_metric)
+        scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+            table_header=scoring_history._table_header,
+            table_description=scoring_history._table_description,
+            col_header=scoring_history.col_header,
+            col_types=scoring_history.col_types,
+            cell_values=[list(v) for v in scoring_history.cell_values if v[training_metric_idx] != ""])
+
     return scoring_history
 
 
@@ -2028,7 +2057,7 @@ def _is_tree_model(model):
     # type: (Union[str, h2o.model.ModelBase]) -> bool
     """
     Is the model a tree model id?
-    :param model: model or astring containing a model_id
+    :param model: model or a string containing a model_id
     :returns: bool
     """
     return _get_algorithm(model) in ["drf", "gbm", "xgboost"]

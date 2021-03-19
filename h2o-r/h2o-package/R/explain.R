@@ -2435,9 +2435,13 @@ h2o.learning_curve_plot <- function(model,
                                     cv_ribbon = NULL,
                                     cv_lines = NULL
                                     ) {
-  .preprocess_scoring_history <- function(model, scoring_history) {
+  .preprocess_scoring_history <- function(model, scoring_history, training_metric=NULL) {
+    scoring_history <- scoring_history[, !sapply(scoring_history, function(col) all(is.na(col)))]
     if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
       scoring_history <- scoring_history[scoring_history["alpha"] == model@model$alpha_best,]
+    }
+    if (!is.null(training_metric)) {
+      scoring_history <- scoring_history[!is.na(scoring_history[[training_metric]]),]
     }
     return(scoring_history)
   }
@@ -2481,17 +2485,20 @@ h2o.learning_curve_plot <- function(model,
 
   sh <- .preprocess_scoring_history(model, sh)
   if (model@algorithm %in% c("glm", "gam")) {
-    hglm <- model@parameters$HGLM
+    hglm <- !is.null(model@parameters$HGLM) && model@parameters$HGLM
     if (model@allparameters$lambda_search) {
-      allowed_metrics <- "deviance"
       allowed_timesteps <- "iteration"
     } else if (!is.null(hglm) && hglm) {
-      allowed_metrics <- c("convergence", "sumetaieta02")
       allowed_timesteps <- "iterations"
     } else {
-      allowed_metrics <- c("objective", "negative_log_likelihood")
       allowed_timesteps <- "iterations"
     }
+    allowed_metrics <- c("deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
+                         "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae")
+    allowed_metrics <- Filter(
+      function(m)
+        paste0("training_", m) %in% names(sh) || paste0(m, "_train") %in% names(sh),
+      allowed_metrics)
   } else if (model@algorithm == "glrm") {
     allowed_metrics <- c("objective")
     allowed_timesteps <- "iterations"
@@ -2534,7 +2541,7 @@ h2o.learning_curve_plot <- function(model,
   if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
     training_metric <- metric
     validation_metric <- "UNDEFINED"
-  } else if ("deviance" == metric && model@algorithm %in% c("gam", "glm")) {
+  } else if ("deviance" == metric && model@algorithm %in% c("gam", "glm") && !hglm) {
     training_metric <- "deviance_train"
     validation_metric <- "deviance_test"
   } else {
@@ -2551,6 +2558,7 @@ h2o.learning_curve_plot <- function(model,
   if ("coxph" == model@algorithm)
     selected_timestep_value <- model@model$iter
 
+  sh <- .preprocess_scoring_history(model, sh, training_metric)
   scoring_history <-
     data.frame(
       model = "Main Model",
@@ -2574,7 +2582,7 @@ h2o.learning_curve_plot <- function(model,
   if (!is.null(model@model$cv_scoring_history)) {
     cv_scoring_history <- data.frame()
     for (csh_idx in seq_along(model@model$cv_scoring_history)) {
-      csh <- .preprocess_scoring_history(model, as.data.frame(model@model$cv_scoring_history[[csh_idx]]))
+      csh <- .preprocess_scoring_history(model, as.data.frame(model@model$cv_scoring_history[[csh_idx]]), training_metric)
       cv_scoring_history <- rbind(
         cv_scoring_history,
         data.frame(
