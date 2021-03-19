@@ -70,6 +70,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  uplift_column=None,  # type: Optional[str]
                  uplift_metric=None,  # type: Optional[Literal["auto", "kl", "euclidean", "chi_squared"]]
+                 auuc_type=None,  # type: Optional[Literal["auto", "qini", "lift", "gain"]]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -249,6 +250,9 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
                Defaults to ``None``.
         :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"], optional
+        :param auuc_type: AUUC metric used to calculate Area under Uplift.
+               Defaults to ``None``.
+        :type auuc_type: Literal["auto", "qini", "lift", "gain"], optional
         """
         super(H2OUpliftRandomForestEstimator, self).__init__()
         self._parms = {}
@@ -301,6 +305,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.gainslift_bins = gainslift_bins
         self.uplift_column = uplift_column
         self.uplift_metric = uplift_metric
+        self.auuc_type = auuc_type
 
     @property
     def training_frame(self):
@@ -991,5 +996,19 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def uplift_metric(self, uplift_metric):
         assert_is_type(uplift_metric, None, Enum("auto", "kl", "euclidean", "chi_squared"))
         self._parms["uplift_metric"] = uplift_metric
+
+    @property
+    def auuc_type(self):
+        """
+        AUUC metric used to calculate Area under Uplift.
+
+        Type: ``Literal["auto", "qini", "lift", "gain"]``.
+        """
+        return self._parms.get("auuc_type")
+
+    @auuc_type.setter
+    def auuc_type(self, auuc_type):
+        assert_is_type(auuc_type, None, Enum("auto", "qini", "lift", "gain"))
+        self._parms["auuc_type"] = auuc_type
 
 

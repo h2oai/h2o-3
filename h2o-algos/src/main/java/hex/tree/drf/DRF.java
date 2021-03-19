@@ -1,7 +1,6 @@
 package hex.tree.drf;
 
 import hex.ModelCategory;
-import hex.genmodel.attributes.parameters.ModelParameter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
