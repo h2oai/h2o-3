@@ -1751,32 +1751,14 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OBinomialUpliftModelMetrics, self).__init__(metric_json, on, algo)
         
-    def auuc_qini(self):
+    def auuc(self):
         """
         Retrieve Qini AUUC value
 
         :examples:
         TODO
         """
-        return self._metric_json['AUUC_qini']
-
-    def auuc_lift(self):
-        """
-        Retrieve Lift AUUC value
-
-        :examples:
-        TODO
-        """
-        return self._metric_json['AUUC_lift']
-
-    def auuc_gain(self):
-        """
-        Retrieve Gain AUUC value
-
-        :examples:
-        TODO
-        """
-        return self._metric_json['AUUC_gain']
+        return self._metric_json['AUUC']
 
     def find_idx_by_threshold(self, threshold):
         """
