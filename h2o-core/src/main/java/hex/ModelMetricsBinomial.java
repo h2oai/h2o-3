@@ -223,7 +223,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
                                                    Frame frameWithExtraColumns, final Frame preds) {
       Vec resp = null;
       Vec weight = null;
-      Vec uplift = null;
       if (_wcount > 0 || m._output.hasUplift()) {
         if (preds!=null) {
           if (frameWithExtraColumns == null) 
