@@ -26,7 +26,7 @@ def test_extended_isolation_forest_categorical():
     anomaly_score = eif_model.predict(train)
     anomaly = anomaly_score['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
 
-    assert 0.36 < anomaly.mean() < 0.38, \
+    assert 0.36 < anomaly.mean() < 0.39, \
         "Not expected output: Mean anomaly score is suspiciously different." + str(anomaly.mean())
 
     print(anomaly_score)
