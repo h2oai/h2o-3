@@ -2,10 +2,7 @@ package hex.tree.uplift;
 
 import hex.ModelCategory;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.DHistogram;
-import hex.tree.DTree;
-import hex.tree.Sample;
-import hex.tree.ScoreBuildHistogram;
+import hex.tree.*;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import water.Job;
@@ -19,23 +16,23 @@ import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
 
-public class UpliftDRF extends DRF {
+public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
     public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
     public UpliftMetricType _uplift_metric;
 
     // Called from an http request
-    public UpliftDRF(hex.tree.drf.DRFModel.DRFParameters parms) {
+    public UpliftDRF(hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters parms) {
         super(parms);
         init(false);
     }
 
-    public UpliftDRF(hex.tree.drf.DRFModel.DRFParameters parms, Key<DRFModel> key) {
+    public UpliftDRF(hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters parms, Key<UpliftDRFModel> key) {
         super(parms, key);
         init(false);
     }
 
-    public UpliftDRF(hex.tree.drf.DRFModel.DRFParameters parms, Job job) {
+    public UpliftDRF(hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters parms, Job job) {
         super(parms, job);
         init(false);
     }
@@ -47,14 +44,17 @@ public class UpliftDRF extends DRF {
     @Override
     public ModelCategory[] can_build() {
         return new ModelCategory[]{
-                ModelCategory.Regression, 
-                ModelCategory.Binomial,
+                ModelCategory.BinomialUplift
         };
     }
-
+    
     /** Start the DRF training Job on an F/J thread. */
     @Override protected Driver trainModelImpl() { return new UpliftDRFDriver(); }
-    
+
+
+    @Override public boolean scoreZeroTrees() { return false; }
+
+
     /** Initialize the ModelBuilder, validating all arguments and preparing the
      *  training frame.  This call is expected to be overridden in the subclasses
      *  and each subclass will start with "super.init();".  This call is made
@@ -64,6 +64,20 @@ public class UpliftDRF extends DRF {
     @Override public void init(boolean expensive) {
         super.init(expensive);
         // Initialize local variables
+        if( _parms._mtries < 1 && _parms._mtries != -1 && _parms._mtries != -2 )
+            error("_mtries", "mtries must be -1 (converted to sqrt(features)) or -2 (All features) or >= 1 but it is " + _parms._mtries);
+        if( _train != null ) {
+            int ncols = _train.numCols();
+            if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
+                error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
+        }
+        if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
+            warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
+        if (hasOffsetCol())
+            error("_offset_column", "Offsets are not yet supported for DRF.");
+        if (_nclass == 1) {
+            error("_distribution", "UpliftDRF currently support only classification problems.");
+        }
         if (_nclass > 2 || _parms._distribution.equals(DistributionFamily.multinomial)) {
             error("_distribution", "UpliftDRF currently does not support multinomial distribution.");
         }
@@ -71,9 +85,45 @@ public class UpliftDRF extends DRF {
             error("_uplift_column", "The uplift column has to be defined.");
         }
     }
+    
+    
 
     // ----------------------
-    private class UpliftDRFDriver extends DRFDriver {
+    private class UpliftDRFDriver extends Driver {
+
+        @Override
+        protected boolean doOOBScoring() {
+            return true;
+        }
+
+        @Override protected void initializeModelSpecifics() {
+            _mtry_per_tree = Math.max(1, (int) (_parms._col_sample_rate_per_tree * _ncols));
+            if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols))
+                throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1," + _ncols + "> but it is " + _mtry_per_tree);
+            if (_parms._mtries == -2) { //mtries set to -2 would use all columns in each split regardless of what column has been dropped during train
+                _mtry = _ncols;
+            } else if (_parms._mtries == -1) {
+                _mtry = (isClassifier() ? Math.max((int) Math.sqrt(_ncols), 1) : Math.max(_ncols / 3, 1)); // classification: mtry=sqrt(_ncols), regression: mtry=_ncols/3
+            } else {
+                _mtry = _parms._mtries;
+            }
+            if (!(1 <= _mtry && _mtry <= _ncols)) {
+                throw new IllegalArgumentException("Computed mtry should be in interval <1," + _ncols + "> but it is " + _mtry);
+            }
+            if (_model != null && _model.evalAutoParamsEnabled) {
+                _model.initActualParamValuesAfterOutputSetup(isClassifier());
+            }
+            new MRTask() {
+                @Override public void map(Chunk chks[]) {
+                    Chunk cy = chk_resp(chks);
+                    for (int i = 0; i < cy._len; i++) {
+                        if (cy.isNA(i)) continue;
+                        int cls = (int) cy.at8(i);
+                        chk_work(chks, cls).set(i, 1L);
+                    }
+                }
+            }.doAll(_train);
+        }
 
         // --------------------------------------------------------------------------
         // Build the next random k-trees representing tid-th tree
@@ -232,8 +282,8 @@ public class UpliftDRF extends DRF {
 
 
 
-        @Override protected DRFModel makeModel( Key modelKey, DRFModel.DRFParameters parms) {
-            return new DRFModel(modelKey,parms,new DRFModel.DRFOutput(UpliftDRF.this));
+        @Override protected UpliftDRFModel makeModel( Key modelKey, UpliftDRFModel.UpliftDRFParameters parms) {
+            return new UpliftDRFModel(modelKey,parms,new UpliftDRFModel.UpliftDRFOutput(UpliftDRF.this));
         }
 
     }
@@ -243,15 +293,9 @@ public class UpliftDRF extends DRF {
     // turns the results into a probability distribution.
     @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
         double sum = 0;
-        if(nclasses() == 2) {
-            fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
-            fs[2] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
-            fs[0] = fs[1] - fs[2];
-        } else { //regression
-            // average per trees voted for this row (only trees which have row in "out-of-bag"
-            sum += (fs[0] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row) );
-            fs[1] = 0;
-        }
+        fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
+        fs[2] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
+        fs[0] = fs[1] - fs[2];
         return sum;
     }
 

@@ -1,6 +1,5 @@
 package hex;
 
-import hex.genmodel.GenModel;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
@@ -14,16 +13,15 @@ import java.util.Arrays;
 import java.util.Optional;
 
 public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
-    // auuc
-    // Gains curve
-    // Qini curve
+    public final AUUC _auuc;
     public final GainsUplift _gainsUplift;
 
     public ModelMetricsBinomialUplift(Model model, Frame frame, long nobs, String[] domain,
-                                      double sigma, GainsUplift uplift,
+                                      double sigma, AUUC auuc, GainsUplift uplift,
                                       CustomMetric customMetric) {
         super(model, frame,  nobs, 0, domain, sigma, customMetric);
         _gainsUplift = uplift;
+        _auuc = auuc;
     }
 
     public static ModelMetricsBinomialUplift getFromDKV(Model model, Frame frame) {
@@ -38,12 +36,17 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
+        if(_auuc != null){
+            sb.append("AUUC").append((float) _auuc._auuc).append("\n");
+        }
         if (_gainsUplift != null) sb.append(_gainsUplift);
         return sb.toString();
-
     }
 
-    public GainsUplift gainsLift() { return _gainsUplift; }
+    public GainsUplift gainsUplift() { return _gainsUplift; }
+    
+    public double auuc() {return _auuc.auuc();}
+    
 
     /**
      * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
@@ -121,10 +124,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             for (int i=0; i<chks[0]._len;++i) {
                 ds[2] = chks[0].atd(i); //class 1 probs (user-given)
                 ds[1] = chks[1].atd(i); //class 0 probs
-                ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
+                ds[0] = ds[1] - ds[2];
                 acts[0] = (float) actuals.atd(i);
                 double weight = weights != null ? weights.atd(i) : 1;
-                _mb.perRow(ds, acts, weight, 0,null);
+                double u = uplift.atd(i);
+                _mb.perRow(ds, acts, weight, u,0,null);
             }
         }
         @Override public void reduce(UpliftBinomialMetrics mrt) { _mb.reduce(mrt._mb); }
@@ -132,24 +136,36 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
     public static class MetricBuilderBinomialUplift<T extends MetricBuilderBinomialUplift<T>> extends MetricBuilderSupervised<T> {
         
-        protected double _auuc;
+        protected AUUC.AUUCBuilder _auuc;
 
-        public MetricBuilderBinomialUplift( String[] domain ) { super(2,domain); }
+        public MetricBuilderBinomialUplift( String[] domain ) { 
+            super(2,domain); 
+            _auuc = new AUUC.AUUCBuilder(AUUC.NBINS);
+        }
 
 
         // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
         // distribution;
-        @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(ds, yact, Double.NaN,1, 0, m);}
-        @Override public double[] perRow(double ds[], float[] yact, double u, double w, double o, Model m) {
-            if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+        @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(
+                ds, yact, Double.NaN,1, 0, m);
+        }
+        @Override public double[] perRow(double ds[], float[] yact, double uplift, double weight, double offset, Model m) {
+            if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
-            if(w == 0 || Double.isNaN(w)) return ds;
-            int iact = (int)yact[0];
+            if(weight == 0 || Double.isNaN(weight)) return ds;
+            int y = (int)yact[0];
+            if (y != 0 && y != 1) return ds; // The actual is effectively a NaN
+            _wY += weight * y;
+            _wYY += weight * y * y;
+            _count++;
+            _wcount += weight;
+            _auuc.perRow(ds[0], weight, y, uplift);
             return ds;
         }
 
         @Override public void reduce( T mb ) {
-            super.reduce(mb); // sumseq, count
+            super.reduce(mb);
+            _auuc.reduce(mb._auuc);
         }
 
         /**
@@ -165,7 +181,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             Vec resp = null;
             Vec weight = null;
             Vec uplift = null;
-            if (_wcount > 0 || m._output.hasUplift()) {
+            if (_wcount > 0) {
                 if (preds!=null) {
                     if (frameWithExtraColumns == null)
                         frameWithExtraColumns = f;
@@ -187,7 +203,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,
                                               final Vec resp, final Vec weight, Vec uplift) {
             GainsUplift gul = null;
-            if (_wcount > 0 || m._output.hasUplift()) {
+            if (_wcount > 0) {
                 if (preds != null) {
                     if (resp != null) {
                         final Optional<GainsUplift> optionalGainsUplift = calculateGainsUplift(m, preds, resp, weight, uplift);
@@ -202,7 +218,15 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
         private ModelMetrics makeModelMetrics(Model m, Frame f, GainsUplift gul) {
             double sigma = Double.NaN;
-            ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, gul, _customMetric);
+            final AUUC auuc;
+            if(_wcount > 0) {
+                sigma = weightedSigma();
+                // TODO propagate auuc metric through API
+                auuc = new AUUC(_auuc, AUUC.AUUCType.AUTO);
+            } else {
+                auuc = new AUUC();
+            }
+            ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, auuc, gul, _customMetric);
             if (m!=null) m.addModelMetrics(mm);
             return mm;
         }

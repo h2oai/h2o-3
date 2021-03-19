@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.AUUC;
 import hex.tree.uplift.UpliftDRF;
 import hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters;
 import water.api.API;
@@ -56,7 +57,8 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "check_constant_response",
                 "gainslift_bins",
                 "uplift_column",
-                "uplift_metric"
+                "uplift_metric",
+                "auuc_type"
         };
 
         // Input fields
@@ -74,6 +76,10 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
 
         @API(help = "Divergence metric used to find best split when building an upplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
         public UpliftDRFParameters.UpliftMetricType uplift_metric;
+
+        @API(help = "AUUC metric used to calculate Area under Uplift.", level = API.Level.secondary, values = { "AUTO", "Qini", "Lift", "Gain"})
+        public AUUC.AUUCType auuc_type;
+
 
     }
 }

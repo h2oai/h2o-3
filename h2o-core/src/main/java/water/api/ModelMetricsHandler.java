@@ -383,6 +383,7 @@ class ModelMetricsHandler extends Handler {
       }
       if(uplift != null){
         ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), weights, s.domain);
+        s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
       }
       ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
       s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);

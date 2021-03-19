@@ -20,4 +20,5 @@ public enum ModelCategory {
   CoxPH,
   AnomalyDetection,
   KLime,
+  BinomialUplift
 }

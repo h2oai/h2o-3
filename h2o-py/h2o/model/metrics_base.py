@@ -1746,8 +1746,77 @@ class H2OBinomialModelMetrics(MetricsBase):
         return None
 
 
+class H2OBinomialUpliftModelMetrics(MetricsBase):
+    
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OBinomialUpliftModelMetrics, self).__init__(metric_json, on, algo)
+        
+    def auuc_qini(self):
+        """
+        Retrieve Qini AUUC value
 
+        :examples:
+        TODO
+        """
+        return self._metric_json['AUUC_qini']
 
+    def auuc_lift(self):
+        """
+        Retrieve Lift AUUC value
+
+        :examples:
+        TODO
+        """
+        return self._metric_json['AUUC_lift']
+
+    def auuc_gain(self):
+        """
+        Retrieve Gain AUUC value
+
+        :examples:
+        TODO
+        """
+        return self._metric_json['AUUC_gain']
+
+    def find_idx_by_threshold(self, threshold):
+        """
+        Retrieve the index in this metric's threshold list at which the given threshold is located.
+
+        :param threshold: Find the index of this input threshold.
+        :returns: the index
+        :raises ValueError: if no such index can be found.
+
+        :examples:
+        TODO
+        """
+        assert_is_type(threshold, numeric)
+        thresh2d = self._metric_json['thresholds_and_metric_scores']
+        # print(thresh2d)
+        for i, e in enumerate(thresh2d.cell_values):
+            t = float(e[0])
+            if abs(t - threshold) < 1e-8 * max(t, threshold):
+                return i
+        if 0 <= threshold <= 1:
+            thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
+            threshold_diffs = [abs(t - threshold) for t in thresholds]
+            closest_idx = threshold_diffs.index(min(threshold_diffs))
+            closest_threshold = thresholds[closest_idx]
+            print("Could not find exact threshold {0}; using closest threshold found {1}."
+                  .format(threshold, closest_threshold))
+            return closest_idx
+        raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
+
+    def gains_uplift(self):
+        """Retrieve the Gains/Lift table.
+
+        :examples:
+        TODO
+        """
+        if 'gains_uplift_table' in self._metric_json:
+            return self._metric_json['gains_uplift_table']
+        return None
+    
+    
 class H2OAutoEncoderModelMetrics(MetricsBase):
     """
     :examples:

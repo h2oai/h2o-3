@@ -65,6 +65,7 @@ public class Score extends CMetricScoringTask<Score> {
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
+    Chunk upliftChunk = m._output.hasUplift() ? chks[m._output.upliftIdx()] : null;
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
@@ -117,8 +118,9 @@ public class Score extends CMetricScoringTask<Score> {
           cdists[0] = -1;
         }
       }
+      double uplift = upliftChunk != null ? upliftChunk.atd(row) : Double.NaN;
       val[0] = (float)ys.atd(row);
-      _mb.perRow(cdists, val, weight, offset, m);
+      _mb.perRow(cdists, val, uplift,  weight, offset, m);
 
       if (_preds != null) {
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);
