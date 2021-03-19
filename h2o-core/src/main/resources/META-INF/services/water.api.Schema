@@ -70,6 +70,7 @@ water.api.schemas3.ModelMetricsBinomialGLMV3
 water.api.schemas3.ModelMetricsBinomialGLMGenericV3
 water.api.schemas3.ModelMetricsBinomialV3
 water.api.schemas3.ModelMetricsBinomialGenericV3
+water.api.schemas3.ModelMetricsBinomialUpliftV3
 water.api.schemas3.ModelMetricsClusteringV3
 water.api.schemas3.ModelMetricsHGLMV3
 water.api.schemas3.ModelMetricsHGLMGenericV3

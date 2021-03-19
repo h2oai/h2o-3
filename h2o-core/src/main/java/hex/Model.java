@@ -1122,7 +1122,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     public double defaultThreshold() {
-      if (nclasses() != 2 || _training_metrics == null)
+      if (nclasses() != 2 || _training_metrics == null || _training_metrics instanceof ModelMetricsBinomialUplift)
         return 0.5;
       if(_defaultThreshold == -1) {
         if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)

@@ -1,5 +1,6 @@
 package hex.util;
 
+import hex.AUUC;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
