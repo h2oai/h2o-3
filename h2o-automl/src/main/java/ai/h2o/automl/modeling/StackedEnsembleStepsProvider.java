@@ -113,9 +113,6 @@ public class StackedEnsembleStepsProvider
                 stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
                 stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
 
-                if (aml().getResponseColumn().isCategorical())
-                    stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
-
                 stackedEnsembleParameters.initMetalearnerParams();
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
