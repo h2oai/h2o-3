@@ -27,6 +27,7 @@ def coxph_concordance_and_baseline():
 
     without_strata(shelter)
     with_strata(shelter)
+    with_strata_one_column(shelter)
     with_strata_and_weights(shelter)
 
 
@@ -46,6 +47,16 @@ def with_strata(shelter):
                                  "intake_condition2 + animal_breed + chip_status + "
                                  "strata(intake_type) + strata(intake_condition1)"
               )
+    
+    
+def with_strata_one_column(shelter):
+    check_cox(shelter
+              , x=["intake_condition1", "intake_condition2", "intake_type", "animal_breed", "chip_status", "surv_hours"]
+              , stratify_by=["intake_type"]
+              , expected_formula="Surv(surv_hours, event) ~ "
+                                 "intake_condition1 + intake_condition2 + animal_breed + chip_status + "
+                                 "strata(intake_type)"
+              )
    
     
 def with_strata_and_weights(shelter):
@@ -63,13 +74,9 @@ def with_strata_and_weights(shelter):
 
 
 def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
-    
     shelter = shelter[x + ['event'] + ([weight] if weight else [])]
     
-    if stratify_by:
-        cph_py = CoxPHFitter(strata=stratify_by)
-    else:
-        cph_py = CoxPHFitter()
+    cph_py = CoxPHFitter(strata=stratify_by) if stratify_by else CoxPHFitter()
 
     for col in stratify_by:
         shelter[col] = shelter[col].astype('category')
@@ -86,7 +93,8 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     cph_h2o.train(x=x, y="event", weights_column=weight, training_frame=shelter_h2o)
     
     assert cph_h2o.model_id != ""
-    assert cph_h2o.formula() == expected_formula, f"Expected formula to be '{expected_formula}' but it was " + cph_h2o.formula()
+    assert cph_h2o.formula() == \
+           expected_formula, f"Expected formula to be '{expected_formula}' but it was " + cph_h2o.formula()
     
     pred_h2o = cph_h2o.predict(test_data=shelter_h2o)
     assert len(pred_h2o) == len(shelter)
@@ -99,10 +107,17 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     hazard_py = cph_py.baseline_hazard_
     
     for col_name in hazard_py.columns:
-        hazard_py.rename(columns={col_name: str(col_name)}, inplace=True)
+        if (isinstance(col_name, int)):
+            new_name = f"({col_name})"
+        else:
+            new_name = str(col_name)
+        hazard_py.rename(columns={col_name: new_name}, inplace=True)
     
-    hazard_py_reordered_columns = hazard_py.reset_index(drop=True).sort_index(axis=1)
-    hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
+    hazard_py_reordered_columns = hazard_py.reset_index(drop=True)\
+                                           .sort_index(axis=1)
+    hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns")\
+                                                       .reset_index( drop=True)\
+                                                       .sort_index(axis=1)
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False)
@@ -111,9 +126,13 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     survival_h2o_as_pandas = survival_h2o.as_data_frame(use_pandas=True)
 
     survival_py = cph_py.baseline_survival_
-    
+
     for col_name in survival_py.columns:
-        survival_py.rename(columns={col_name: str(col_name)}, inplace=True)
+        if (isinstance(col_name, int)):
+            new_name = f"({col_name})"
+        else:
+            new_name = str(col_name)
+        survival_py.rename(columns={col_name: new_name}, inplace=True)
 
     survival_py_reordered_columns = survival_py.reset_index(drop=True).sort_index(axis=1)
     survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
