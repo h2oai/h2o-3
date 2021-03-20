@@ -3,6 +3,7 @@ package water.api;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.NotImplementedException;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -32,6 +33,9 @@ class ModelMetricsHandler extends Handler {
     public int _exemplar_index = -1;
     public String _custom_metric_func;
     public String _auc_type;
+    public int _top_n;
+    public int _top_bottom_n;
+    public boolean _abs;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -136,6 +140,15 @@ class ModelMetricsHandler extends Handler {
             "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
     public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
 
+    @API(help = "Predict the feature contributions - Shapley values - return top_n highest", json = false)
+    public int top_n;
+
+    @API(help = "Predict the feature contributions - Shapley values - return top_bottom_n lowest", json = false)
+    public int top_bottom_n;
+
+    @API(help = "Predict the feature contributions - Shapley values - compare as absolute values", json = false)
+    public boolean abs;
+
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
     public boolean feature_frequencies;
 
@@ -171,6 +184,9 @@ class ModelMetricsHandler extends Handler {
       mml._exemplar_index = this.exemplar_index;
       mml._deviances = this.deviances;
       mml._auc_type = this.auc_type;
+      mml._top_n = this.top_n;
+      mml._top_bottom_n = this.top_bottom_n;
+      mml._abs = this.abs;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -200,6 +216,9 @@ class ModelMetricsHandler extends Handler {
       this.exemplar_index = mml._exemplar_index;
       this.deviances = mml._deviances;
       this.auc_type = mml._auc_type;
+      this.top_n = mml._top_n;
+      this.top_bottom_n = mml._top_bottom_n;
+      this.abs = mml._abs;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -414,10 +433,15 @@ class ModelMetricsHandler extends Handler {
             throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
           }
           Model.Contributions mc = (Model.Contributions) parms._model;
-          Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
-                  Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
-          Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
-          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
+          if (parms._top_n == 0 && parms._top_bottom_n == 0 && !parms._abs) {
+            Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
+                    Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
+            Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
+            mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
+          } else {
+            throw new NotImplementedException("Sorting of shap value is not yet implemented");
+            //mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), parms._top_n, parms._top_bottom_n, parms._abs, j);
+          }
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         } else if (s.deep_features_hidden_layer_name != null){

@@ -173,14 +173,14 @@ class ModelBase(h2o_meta(Keyed)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original"):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, top_bottom_n=None, abs_val=False):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost and DRF models).
         
         Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
         feature, the last column is the model bias (same value for each row). The sum of the feature contributions
         and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
-        of the predictions of the individual trees before before the inverse link function is applied to get the actual
+        of the predictions of the individual trees before the inverse link function is applied to get the actual
         prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
 
         Note: Multinomial classification models are currently not supported.
@@ -189,14 +189,20 @@ class ModelBase(h2o_meta(Keyed)):
         :param Enum output_format: Specify how to output feature contributions in XGBoost - XGBoost by default outputs 
             contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
             contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
-
+        :param top_n: Return only #top_n highest contributions + bias.
+        :param top_bottom_n: Return only #top_bottom_n lowest contributions + bias
+                             If top_n and top_bottom_n are defined together then return array of #top_n + #top_bottom_n + bias
+        :param abs_val: True to compare absolute values of contributions
         :returns: A new H2OFrame made of feature contributions.
         """
         assert_is_type(output_format, None, Enum("Original", "Compact"))
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True, "predict_contributions_output_format": output_format}),
-                   "contributions")
+                           data={"predict_contributions": True,
+                                 "predict_contributions_output_format": output_format,
+                                 "top_n": top_n,
+                                 "top_bottom_n": top_bottom_n,
+                                 "abs": abs_val}), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)
 
