@@ -482,9 +482,8 @@ class H2OFrame(Keyed):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
-             "custom_non_data_line_markers": None,
-             "partition_by": None,
-             "single_quotes": None
+             "custom_non_data_line_markers": setup["custom_non_data_line_markers"],
+             "partition_by": setup["partition_by"]
              }
 
         if setup["column_names"]: p["column_names"] = None
