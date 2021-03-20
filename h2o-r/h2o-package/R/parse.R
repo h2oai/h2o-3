@@ -39,13 +39,13 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
                          col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL,
                          decrypt_tool = NULL, skipped_columns = NULL, custom_non_data_line_markers = NULL, partition_by=NULL,
                          quotechar = NULL) {
-  single_qouotes <- if (is.null(quotechar) || quotechar != "'") FALSE else TRUE
+  single_quotes <- if (is.null(quotechar) || quotechar != "'") FALSE else TRUE
   # Check and parse col.types in case col.types is supplied col.name = col.type vec
   if( length(names(col.types)) > 0 & typeof(col.types) != "list" ) {
     parse.params <- h2o.parseSetup(data, pattern="", destination_frame, header, sep, col.names, col.types = NULL,
                                    na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
                                    decrypt_tool = decrypt_tool, skipped_columns=skipped_columns,
-                                   custom_non_data_line_markers = custom_non_data_line_markers, partition_by = partition_by, single_quotes = single_qouotes)
+                                   custom_non_data_line_markers = custom_non_data_line_markers, partition_by = partition_by, single_quotes = single_quotes)
     idx = match(names(col.types), parse.params$column_names)
     parse.params$column_types[idx] = as.character(col.types)
   } else {
@@ -53,7 +53,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
                                    na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size,
                                    decrypt_tool = decrypt_tool, skipped_columns=skipped_columns,
                                    custom_non_data_line_markers = custom_non_data_line_markers,
-                                   partition_by = partition_by, single_quotes = single_qouotes)
+                                   partition_by = partition_by, single_quotes = single_quotes)
   }
   for(w in parse.params$warnings){
     cat('WARNING:',w,'\n')
@@ -74,7 +74,8 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
             blocking = blocking,
             decrypt_tool = .decrypt_tool_id(parse.params$decrypt_tool),
             skipped_columns = paste0("[", paste(parse.params$skipped_columns, collapse=','), "]"),
-            partition_by = .collapse.array(parse.params$partition_by)
+            partition_by = .collapse.array(parse.params$partition_by),
+            single_quotes = parse.params$single_quotes
             )
   if(!is.null(custom_non_data_line_markers)){
     parse.params <- append(parse.params,list(custom_non_data_line_markers = custom_non_data_line_markers))
