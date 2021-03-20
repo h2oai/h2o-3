@@ -3,10 +3,11 @@ package hex.genmodel.algos.tree;
 import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.utils.ArrayUtils;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class ContributionComposer {
+public class ContributionComposer implements Serializable {
     
     /**
      * Sort shapley values and compose desired output
