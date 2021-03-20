@@ -15,12 +15,12 @@ import static hex.Model.Contributions.*;
 
 public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
 
-  private final DataInfo _di;
-  private final XGBoostModelInfo _modelInfo;
-  private final XGBoostOutput _output;
-  private final boolean _outputAggregated;
+  protected final DataInfo _di;
+  protected final XGBoostModelInfo _modelInfo;
+  protected final XGBoostOutput _output;
+  protected final boolean _outputAggregated;
 
-  private transient XGBoostJavaMojoModel _mojo;
+  protected transient XGBoostJavaMojoModel _mojo;
 
   public PredictTreeSHAPTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
                              ContributionsOptions options) {
@@ -61,7 +61,7 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
         rowFVec.decodeAggregate(contribs, output);
         output[output.length - 1] = contribs[contribs.length - 1]; // bias term
       }
-      
+
       for (int i = 0; i < nc.length; i++) {
         nc[i].addNum(output[i]);
       }
