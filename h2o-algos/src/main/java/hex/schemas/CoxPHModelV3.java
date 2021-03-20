@@ -66,7 +66,11 @@ public class CoxPHModelV3 extends ModelSchemaV3<CoxPHModel,
     @API(help = "component of var(cumhaz)")
     double[] var_cumhaz_1;
     @API(help = "component of var(cumhaz)")
-    KeyV3.FrameKeyV3 var_cumhaz_2;
+    KeyV3.FrameKeyV3 var_cumhaz_2; 
+    @API(help = "Baseline Hazard")
+    KeyV3.FrameKeyV3 baseline_hazard;
+    @API(help = "Baseline Survival")
+    KeyV3.FrameKeyV3 baseline_survival;
     @API(help = "formula")
     String formula;
     @API(help = "ties", values = {"efron", "breslow"})

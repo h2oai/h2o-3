@@ -233,6 +233,12 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] _var_cumhaz_1;
     FrameMatrix _var_cumhaz_2_matrix;
     Key<Frame> _var_cumhaz_2;
+    
+    Key<Frame> _baseline_hazard;
+    FrameMatrix _baseline_hazard_matrix;
+
+    Key<Frame> _baseline_survival;
+    FrameMatrix _baseline_survival_matrix;
 
     CoxPHParameters.CoxPHTies _ties;
     String _formula;
@@ -364,11 +370,18 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   protected Futures remove_impl(Futures fs, boolean cascade) {
-    Frame varCumhaz2 = _output._var_cumhaz_2 != null ? _output._var_cumhaz_2.get() : null;
-    if (varCumhaz2 != null)
-      varCumhaz2.remove(fs);
+    remove(fs, _output._var_cumhaz_2);
+    remove(fs, _output._baseline_hazard);
+    remove(fs, _output._baseline_survival);
     super.remove_impl(fs, cascade);
     return fs;
+  }
+
+  private void remove(Futures fs, Key<Frame> key) {
+    Frame fr = key != null ? key.get() : null;
+    if (fr != null) {
+      fr.remove(fs);
+    }
   }
 
   @Override

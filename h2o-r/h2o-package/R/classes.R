@@ -480,6 +480,7 @@ function(formula, newdata, ...)
               surv      = NULL,
               type      = ifelse(length(as.formula(formula@model$formula)[[2L]]) == 3L, "right", "counting"),
               cumhaz    = formula@model$cumhaz_0,
+              baseline_hazard    = formula@model$bazeline_hazard,
               std.err   = NULL,
               upper     = NULL,
               lower     = NULL,

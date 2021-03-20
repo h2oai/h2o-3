@@ -36,7 +36,7 @@ import static org.junit.Assert.*;
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GenericModelTest extends TestUtil {
-    
+
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -504,12 +504,12 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
-    
+
     /**
      * Create a GBM model and writes a MOJO into a temporary zip file. Then, it creates a Generic model out of that
      * temporary zip file and re-downloads the underlying MOJO again. The byte arrays representing both MOJOs are tested
      * to be the same.
-     * 
+     *
      */
     @Test
     public void downloadable_mojo_gbm() throws IOException {
@@ -544,7 +544,7 @@ public class GenericModelTest extends TestUtil {
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
             genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
             assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
-            
+
         } finally {
             Scope.exit();
         }
@@ -803,6 +803,7 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
+
 
     private void testJavaScoringCoxPH(Frame trainingFrame, Frame testFrame, String[] stratifyBy) throws IOException {
         CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
@@ -1070,7 +1071,7 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = stackedEnsembleModel.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(predictions, originalModelPredictions));
-            
+
             assertTrue(equallyScored);
         } finally {
             Scope.exit();
@@ -1095,8 +1096,8 @@ public class GenericModelTest extends TestUtil {
         Scope.track_generic(key.get());
         return key;
     }
-    
-    
+
+
     @Test
     public void isAlgoNamePresent() throws IOException {
         try {
@@ -1124,12 +1125,11 @@ public class GenericModelTest extends TestUtil {
             final Generic generic = new Generic(genericModelParameters);
             final GenericModel genericModel = trainAndCheck(generic);
             Scope.track_generic(genericModel);
-            
+
             assertEquals("gbm",genericModel._output._original_model_identifier);
             assertEquals("Gradient Boosting Machine", genericModel._output._original_model_full_name);
         } finally {
             Scope.exit();
         }
     }
-
 }
