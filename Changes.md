@@ -42,6 +42,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-NAME/1/index.h
 <ul>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7706'>PUBDEV-7706</a>] -         Ignored columns that are actually used for model training are unignored and no longer prevent model training to start in Flow.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7735'>PUBDEV-7735</a>] -         Added baseline hazard function estimate to CoxPH model.
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7748'>PUBDEV-7748</a>] -         Target Encoding now supports feature interactions.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7805'>PUBDEV-7805</a>] -         Added CoxPH concordance to both Flow and R/Python CoxPH summaries.
