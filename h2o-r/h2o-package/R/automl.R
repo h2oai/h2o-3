@@ -45,6 +45,7 @@
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated.
+#' @param mode One of "explore", "compete". Default to "explore".
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
 #'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble".
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
@@ -100,6 +101,7 @@ h2o.automl <- function(x, y, training_frame,
                        stopping_rounds = 3,
                        seed = NULL,
                        project_name = NULL,
+                       mode = c("esplore", "compete"),
                        exclude_algos = NULL,
                        include_algos = NULL,
                        modeling_plan = NULL,

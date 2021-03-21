@@ -9,7 +9,7 @@ from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.shared_utils import check_id
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
+from h2o.utils.typechecks import Enum, assert_is_type, is_type, numeric
 
 
 class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
@@ -68,6 +68,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  stopping_rounds=3,
                  seed=None,
                  project_name=None,
+                 mode=None,
                  exclude_algos=None,
                  include_algos=None,
                  exploitation_ratio=0,
@@ -113,6 +114,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
           a project name will be auto-generated based on the training frame ID.  More models can be trained on an
           existing AutoML project by specifying the same project name in muliple calls to the AutoML function
           (as long as the same training frame is used in subsequent runs).
+        :param mode: One of:
+          ``'explore'`` (default)
+          ``'compete'``
         :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase. 
           An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``, and the full list of options is: ``"DRF"`` 
           (Random Forest and Extremely-Randomized Trees), ``"GLM"``, ``"XGBoost"``, ``"GBM"``, ``"DeepLearning"`` and ``"StackedEnsemble"``. 
@@ -233,6 +237,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         self.seed = self.build_control["stopping_criteria"]["seed"] = seed
 
         # build models params #
+        assert_is_type(mode, None, Enum('explore', 'compete'))
+        self.mode = self.build_models['mode'] = mode
 
         assert_is_type(exclude_algos, None, [str])
         self.exclude_algos = self.build_models['exclude_algos'] = exclude_algos

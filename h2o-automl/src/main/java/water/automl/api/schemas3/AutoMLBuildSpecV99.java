@@ -4,6 +4,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.Mode;
 import hex.KeyValue;
 import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
@@ -183,6 +184,12 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
   }
 
+  public static final class ModeProvider extends EnumValuesProvider<Mode> {
+    public ModeProvider() {
+      super(Mode.class);
+    }
+  }
+  
   public static final class AutoMLMetricProvider extends EnumValuesProvider<StoppingMetric> {
     public AutoMLMetricProvider() {
       // list all metrics currently supported in leaderboard, and by all algos used in AutoML, incl. corresponding gris searches.
@@ -236,6 +243,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   }
 
   public static final class AutoMLBuildModelsV99 extends SchemaV3<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
+      
+    @API(help="The training mode. BLAH BLAH BLAH", 
+            valuesProvider = ModeProvider.class)
+    public Mode mode;
 
     @API(help="A list of algorithms to skip during the model-building phase.",
             valuesProvider=AlgoProvider.class,

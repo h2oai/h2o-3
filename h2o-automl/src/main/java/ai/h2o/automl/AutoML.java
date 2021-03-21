@@ -43,27 +43,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     MODEL_COUNT,
     TIMEOUT
   }
+  
+  public enum ProblemType {
+    binary,
+    multiclass,
+    regression
+  }
 
   public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
   public static final String keySeparator = "@@";
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
-
-  private static StepDefinition[] defaultModelingPlan = {
-          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
-          new StepDefinition(Algo.GLM.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
-          new StepDefinition(Algo.GBM.name(), Alias.defaults),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
-          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), Alias.grids),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
-          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
-          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
-  };
 
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
@@ -161,6 +152,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Frame _blendingFrame;    // optional blending frame for SE (usually if xval is disabled).
   Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics.
 
+  ProblemType _problem;
   Vec _responseColumn;
   Vec _foldColumn;
   Vec _weightsColumn;
@@ -309,7 +301,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
     }
     if (modelBuilding.modeling_plan == null) {
-      modelBuilding.modeling_plan = defaultModelingPlan;
+      modelBuilding.modeling_plan = _buildSpec.build_models.mode.getModelingPlan();
     }
   }
 
@@ -573,6 +565,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _responseColumn = _trainingFrame.vec(input.response_column);
     _foldColumn = _trainingFrame.vec(input.fold_column);
     _weightsColumn = _trainingFrame.vec(input.weights_column);
+    _problem = _responseColumn.cardinality() == 2 ? ProblemType.binary 
+            : _responseColumn.cardinality() > 2 ? ProblemType.multiclass 
+            : ProblemType.regression;
 
     eventLog().info(Stage.DataImport,
         "training frame: "+_trainingFrame.toString().replace("\n", " ")+" checksum: "+_trainingFrame.checksum());
