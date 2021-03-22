@@ -25,7 +25,7 @@ abstract class GlmMojoModelBase extends MojoModel {
   void init() { /* do nothing by default */ }
 
   @Override
-  public final double[] score0(double[] data, double[] preds) {
+  public double[] score0(double[] data, double[] preds) {
     if (_meanImputation)
       imputeMissingWithMeans(data);
 
