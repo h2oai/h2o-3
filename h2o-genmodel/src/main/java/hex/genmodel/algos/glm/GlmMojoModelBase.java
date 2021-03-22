@@ -1,10 +1,12 @@
 package hex.genmodel.algos.glm;
 
+import com.sun.corba.se.spi.orb.StringPair;
 import hex.genmodel.MojoModel;
 
 abstract class GlmMojoModelBase extends MojoModel {
 
   boolean _useAllFactorLevels;
+  public StringPair[] _interaction_pairs;
 
   int _cats;
   int[] _catModes;

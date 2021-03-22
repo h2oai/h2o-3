@@ -1,6 +1,7 @@
 package hex.genmodel.algos.glm;
 
 import com.google.gson.JsonObject;
+import com.sun.corba.se.spi.orb.StringPair;
 import hex.genmodel.ModelMojoReader;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelAttributesGLM;
@@ -18,6 +19,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   @Override
   protected void readModelData() throws IOException {
     _model._useAllFactorLevels = readkv("use_all_factor_levels", false);
+    _model._interaction_pairs = readkv("interaction_pairs", new StringPair[0]);
 
     _model._cats = readkv("cats", -1);
     _model._catModes = readkv("cat_modes", new int[0]);
