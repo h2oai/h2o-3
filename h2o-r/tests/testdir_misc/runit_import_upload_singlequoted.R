@@ -54,8 +54,6 @@ test.upload_fails_on_unsupported_quotechar <- function() {
   }, "`quotechar` must be either NULL or single \\('\\) or double \\(\"\\) quotes")
 }
 
-# doTest("foobar", test.import_single_quoted)
-
 doSuite("Test single quotes import/upload file", makeSuite(
     test.import_single_quoted,
     test.upload_single_quoted,
