@@ -90,6 +90,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.h
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8017'>PUBDEV-8017</a>] -         Added validation checks for sampling rates for XGBoost for the R/Python clients.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8032'>PUBDEV-8032</a>] -         Added the `metalearner_transform` option to Stacked Ensemble. 
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8057'>PUBDEV-8057</a>] -         GBM main model now built in parallel to the CV models.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8060'>PUBDEV-8060</a>] -         Removed redundant extraction weights from GBM/DRF histogram.
