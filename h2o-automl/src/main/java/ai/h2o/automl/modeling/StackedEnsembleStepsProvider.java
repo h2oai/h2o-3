@@ -112,10 +112,11 @@ public class StackedEnsembleStepsProvider
                 // Add cross-validation args
                 stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
                 stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
-
                 stackedEnsembleParameters.initMetalearnerParams();
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
+                // Add logit transform
+                stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
                 return stackedEnsembleParameters;
             }
 
