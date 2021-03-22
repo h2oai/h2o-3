@@ -103,7 +103,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     @API(level = API.Level.critical, direction = API.Direction.INOUT,
             help = "Transformation used for the level one frame.",
-            values = {"NONE", "Logit", "PercentileRank"}
+            values = {"NONE", "Logit"}
     )
     public StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform metalearner_transform;
 

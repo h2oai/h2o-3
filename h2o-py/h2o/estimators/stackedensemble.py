@@ -558,13 +558,13 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Transformation used for the level one frame.
 
-        One of: ``"none"``, ``"logit"``, ``"percentile_rank"``  (default: ``"none"``).
+        One of: ``"none"``, ``"logit"``  (default: ``"none"``).
         """
         return self._parms.get("metalearner_transform")
 
     @metalearner_transform.setter
     def metalearner_transform(self, metalearner_transform):
-        assert_is_type(metalearner_transform, None, Enum("none", "logit", "percentile_rank"))
+        assert_is_type(metalearner_transform, None, Enum("none", "logit"))
         self._parms["metalearner_transform"] = metalearner_transform
 
 

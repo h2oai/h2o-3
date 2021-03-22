@@ -79,8 +79,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
     public enum MetalearnerTransform {
       NONE,
-      Logit,
-      PercentileRank;
+      Logit;
 
       public Frame transform(StackedEnsembleModel model, Frame frame) {
         if (this == Logit) {
@@ -92,51 +91,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
                 for (int i = 0; i < cs[c]._len; i++) {
                   final double p = Math.min(1 - 1e-9, Math.max(cs[c].atd(i), 1e-9)); // 0 and 1 don't work well with logit
                   ncs[c].addNum(logitLink.link(p));
-                }
-              }
-            }
-          }.doAll(frame.numCols(), Vec.T_NUM, frame)
-                  .outputFrame(frame._key, frame._names, null);
-        } else if (this == PercentileRank) {
-          int N = 128;
-          // quantile indices, e.g., 0.5 is median etc
-          double[] probs = new double[N+1];
-          for (int i = 0; i <= N; i++)
-            probs[i] = i/(double)N;
-          if (null == model._output._metalearner_percentile_rank_precomputed_quantiles) {
-            // Compute quantiles for specified probs
-            DKV.put(frame);
-            QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
-            qp._train = frame._key;
-            qp._probs = probs;
-            QuantileModel qm = new Quantile(qp).trainModel().get();
-            model.write_lock();
-            model._output._metalearner_percentile_rank_precomputed_quantiles = qm._output._quantiles;
-            model.update();
-            model.unlock();
-            qm.remove();
-          }
-          // For each value do linear interpolation of the "percentile rank"
-          return new MRTask() {
-            @Override
-            public void map(Chunk[] cs, NewChunk[] ncs) {
-              for (int c = 0; c < cs.length; c++) {
-                for (int i = 0; i < cs[c]._len; i++) {
-                  final double val = cs[c].atd(i);
-                  final double[] quantiles = model._output._metalearner_percentile_rank_precomputed_quantiles[c];
-                  int idx = Arrays.binarySearch(quantiles, val);
-                  if (idx >= 0) {
-                    ncs[c].addNum(probs[idx]);
-                  } else if (idx == -1) {
-                    ncs[c].addNum(0);
-                  } else if (idx == -probs.length-1) {
-                    ncs[c].addNum(1);
-                  } else {
-                    idx = -idx - 1;
-                    final double quantDiff = quantiles[idx] - quantiles[idx-1];
-                    final double probDiff = probs[idx] - probs[idx-1];
-                    ncs[c].addNum(probs[idx] - (((quantiles[idx] - val)/quantDiff) * probDiff));
-                  }
                 }
               }
             }
@@ -195,8 +149,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     //This especially useful when building SE models incrementally (e.g. in AutoML).
     //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
     public Key<Frame>[] _base_model_predictions_keys;
-
-    public double[][] _metalearner_percentile_rank_precomputed_quantiles;
 
     @Override
     public int nfeatures() {
