@@ -4,45 +4,61 @@ setwd(normalizePath(dirname(
 source("../../scripts/h2o-r-test-setup.R")
 
 
-test.upload.import.singlequotes <- function() {
-  imported_frame <-
-    h2o.importFile(
-      path = locate("smalldata/parser/single_quotes_mixed.csv"),
+test.import_single_quoted <- function() {
+  path <- locate("smalldata/parser/single_quotes_mixed.csv")   
+  hdf <- h2o.importFile(
+      path = path,
       quotechar = "'"
-    )
-  expect_true(h2o.ncol(imported_frame) == 20)
-  expect_true(h2o.nrow(imported_frame) == 7)
-  
-  uploaded_frame <-
-    h2o.uploadFile(
-      path = locate("smalldata/parser/single_quotes_mixed.csv"),
+  )
+  expect_true(h2o.ncol(hdf) == 20)
+  expect_true(h2o.nrow(hdf) == 7)
+    
+  df <- read.csv(path, quote="'")
+  hddf <- as.data.frame(hdf)
+  # comparing last column only as it's difficult to compare dataframes in R (always cryptic errors on some column): 
+    # if parsing was ok, last column should be identical, otherwise it should be shifted
+  expect_equal(df['status'], hddf['status'])
+}
+    
+test.upload_single_quoted <- function() {
+    path <- locate("smalldata/parser/single_quotes_mixed.csv")
+    hdf <- h2o.uploadFile(
+      path = path,
       quotechar =  "'"
     )
-  expect_true(h2o.ncol(uploaded_frame) == 20)
-  expect_true(h2o.nrow(uploaded_frame) == 7)
-  
-  e <- tryCatch({
+  expect_true(h2o.ncol(hdf) == 20)
+  expect_true(h2o.nrow(hdf) == 7)
+    
+  df <- read.csv(path, quote="'")
+  hddf <- as.data.frame(hdf)
+  expect_equal(df['status'], hddf['status'])
+}
+
+test.import_fails_on_unsupported_quotechar <- function() {
+  expect_error({
     h2o.importFile(
       path = locate("smalldata/parser/single_quotes_mixed.csv"),
       quotechar = "f"
     )
-    stop("Incorrect quote character accepted by importFile")
-  }, error = function(err) {
-    print(err)
-  })
-  
-  e <- tryCatch({
+    stop("Incorrect quote character should not have been accepted by importFile")
+  }, "`quotechar` must be either NULL or single \\('\\) or double \\(\"\\) quotes")
+}
+
+test.upload_fails_on_unsupported_quotechar <- function() {
+  expect_error({
     h2o.uploadFile(
       path = locate("smalldata/parser/single_quotes_mixed.csv"),
       quotechar = "f"
     )
-    stop("Incorrect quote character accepted by uploadFile")
-  }, error = function(err) {
-    print(err)
-  })
-  
-  
+    stop("Incorrect quote character should not have been accepted by uploadFile")
+  }, "`quotechar` must be either NULL or single \\('\\) or double \\(\"\\) quotes")
 }
 
-doTest("Test single quotes import/upload file",
-       test.upload.import.singlequotes)
+# doTest("foobar", test.import_single_quoted)
+
+doSuite("Test single quotes import/upload file", makeSuite(
+    test.import_single_quoted,
+    test.upload_single_quoted,
+    test.import_fails_on_unsupported_quotechar,
+    test.upload_fails_on_unsupported_quotechar
+))
