@@ -70,6 +70,11 @@ public class EasyPredictModelWrapper implements Serializable {
   private final int glrmIterNumber; // allow user to set GLRM mojo iteration number in constructing x.
 
   private final PredictContributions predictContributions;
+
+  public boolean getEnableLeafAssignment() { return enableLeafAssignment; }
+  public boolean getEnableGLRMReconstruct() { return enableGLRMReconstruct; }
+  public boolean getEnableStagedProbabilities() { return enableStagedProbabilities; }
+  public boolean getEnableContributions() { return enableContributions; }
   
   /**
    * Observer interface with methods corresponding to errors during the prediction.
