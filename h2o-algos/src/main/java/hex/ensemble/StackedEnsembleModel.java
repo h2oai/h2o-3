@@ -1,15 +1,18 @@
 package hex.ensemble;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.glm.GLMModel;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.MRUtils;
@@ -52,7 +55,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       _parms._metalearner_fold_assignment = Random;
     }
   }
-  
+
   public static class StackedEnsembleParameters extends Model.Parameters {
     public String algoName() { return "StackedEnsemble"; }
     public String fullName() { return "Stacked Ensemble"; }
@@ -73,6 +76,33 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String _metalearner_fold_column;
     //the training frame used for blending (from which predictions columns are computed)
     public Key<Frame> _blending;
+
+    public enum MetalearnerTransform {
+      NONE,
+      Logit;
+
+      public Frame transform(StackedEnsembleModel model, Frame frame) {
+        if (this == Logit) {
+          return new MRTask() {
+            @Override
+            public void map(Chunk[] cs, NewChunk[] ncs) {
+              LinkFunction logitLink = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
+              for (int c = 0; c < cs.length; c++) {
+                for (int i = 0; i < cs[c]._len; i++) {
+                  final double p = Math.min(1 - 1e-9, Math.max(cs[c].atd(i), 1e-9)); // 0 and 1 don't work well with logit
+                  ncs[c].addNum(logitLink.link(p));
+                }
+              }
+            }
+          }.doAll(frame.numCols(), Vec.T_NUM, frame)
+                  .outputFrame(frame._key, frame._names, null);
+        } else {
+          throw new RuntimeException();
+        }
+      }
+    }
+
+    public MetalearnerTransform _metalearner_transform = MetalearnerTransform.NONE;
 
     public Metalearner.Algorithm _metalearner_algorithm = Metalearner.Algorithm.AUTO;
     public String _metalearner_params = new String(); //used for clients code-gen only.
@@ -168,6 +198,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
 
+    if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
+      if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
+        throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
+
+      Frame oldLOF = levelOneFrame;
+      levelOneFrame = _parms._metalearner_transform.transform(this, levelOneFrame);
+      oldLOF.delete(true);
+    }
     // Add response column, weights columns to level one frame
     StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
     // TODO: what if we're running multiple in parallel and have a name collision?
