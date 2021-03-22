@@ -15,6 +15,7 @@ def _register_dummy_methods():
     h2o.model.ModelBase.explain_row = _complain_about_matplotlib
     h2o.model.ModelBase.pd_plot = _complain_about_matplotlib
     h2o.model.ModelBase.ice_plot = _complain_about_matplotlib
+    h2o.model.ModelBase.learning_curve_plot = _complain_about_matplotlib
 
     h2o.automl._base.H2OAutoMLBaseMixin.pd_multi_plot = _complain_about_matplotlib
     h2o.automl._base.H2OAutoMLBaseMixin.varimp_heatmap = _complain_about_matplotlib
@@ -27,7 +28,7 @@ try:
     import numpy
     import matplotlib
     from ._explain import varimp_heatmap, model_correlation_heatmap, shap_explain_row_plot, shap_summary_plot,\
-        explain, explain_row, pd_plot, pd_multi_plot, ice_plot, residual_analysis_plot
+        explain, explain_row, pd_plot, pd_multi_plot, ice_plot, residual_analysis_plot, learning_curve_plot
 
     __all__ = [
         "explain",
@@ -52,6 +53,7 @@ def register_explain_methods():
     h2o.model.ModelBase.explain_row = explain_row
     h2o.model.ModelBase.pd_plot = pd_plot
     h2o.model.ModelBase.ice_plot = ice_plot
+    h2o.model.ModelBase.learning_curve_plot = learning_curve_plot
 
     h2o.automl._base.H2OAutoMLBaseMixin.pd_multi_plot = pd_multi_plot
     h2o.automl._base.H2OAutoMLBaseMixin.varimp_heatmap = varimp_heatmap

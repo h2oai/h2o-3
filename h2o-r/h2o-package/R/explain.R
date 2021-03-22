@@ -2387,6 +2387,357 @@ h2o.ice_plot <- function(model,
   })
 }
 
+#' Learning Curve Plot
+#'
+#' Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
+#' learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+#' showing Training, Validation, Training on CV Models, and Cross-validation error.
+#'
+#' @param model an H2O model
+#' @param metric Metric to be used for the learning curve plot. These should mostly correspond with stopping metric.
+#' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
+#'                  if NULL, it will attempt to automatically determine if this is suitable visualisation
+#' @param cv_lines if True, plot scoring history for individual CV models, if NULL, it will attempt to
+#'                 automatically determine if this is suitable visualisation
+#'
+#' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the learning curve plot
+#' learning_curve <- h2o.learning_curve_plot(gbm)
+#' print(learning_curve)
+#' }
+#' @export
+h2o.learning_curve_plot <- function(model,
+                                    metric = c("AUTO", "auc", "aucpr", "mae", "rmse", "anomaly_score",
+                                               "convergence", "custom", "custom_increasing", "deviance",
+                                               "lift_top_group", "logloss", "misclassification",
+                                               "negative_log_likelihood", "objective", "sumetaieta02"),
+                                    cv_ribbon = NULL,
+                                    cv_lines = NULL
+                                    ) {
+  .preprocess_scoring_history <- function(model, scoring_history, training_metric=NULL) {
+    scoring_history <- scoring_history[, !sapply(scoring_history, function(col) all(is.na(col)))]
+    if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
+      scoring_history <- scoring_history[scoring_history["alpha"] == model@model$alpha_best,]
+    }
+    if (!is.null(training_metric)) {
+      scoring_history <- scoring_history[!is.na(scoring_history[[training_metric]]),]
+    }
+    return(scoring_history)
+  }
+
+  metric_mapping <- list(
+    anomaly_score = "mean_anomaly_score",
+    custom = "custom",
+    custom_increasing = "custom",
+    deviance = "deviance",
+    logloss = "logloss",
+    rmse = "rmse",
+    mae = "mae",
+    auc = "auc",
+    aucpr = "pr_auc",
+    lift_top_group = "lift",
+    misclassification = "classification_error",
+    objective = "objective",
+    convergence = "convergence",
+    negative_log_likelihood = "negative_log_likelihood",
+    sumetaieta02 = "sumetaieta02"
+  )
+  inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
+  inverse_metric_mapping[["custom"]] <- "custom, custom_increasing"
+
+  metric <- match.arg(arg = if (missing(metric) || tolower(metric) == "auto") "AUTO" else tolower(metric),
+                      choices = eval(formals()$metric))
+
+  if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "deeplearning",
+                              "drf", "gbm", "xgboost", "coxph", "isolationforest")) {
+    stop("Algorithm ", model@algorithm, " doesn't support learning curve plot!")
+  }
+
+  if ("stackedensemble" == model@algorithm)
+    model <- model@model$metalearner_model
+
+  allowed_metrics <- c()
+  allowed_timesteps <- c()
+  sh <- model@model$scoring_history
+  if (is.null(sh))
+    stop("Scoring history not found!")
+
+  sh <- .preprocess_scoring_history(model, sh)
+  if (model@algorithm %in% c("glm", "gam")) {
+    hglm <- !is.null(model@parameters$HGLM) && model@parameters$HGLM
+    if (model@allparameters$lambda_search) {
+      allowed_timesteps <- "iteration"
+    } else if (!is.null(hglm) && hglm) {
+      allowed_timesteps <- "iterations"
+    } else {
+      allowed_timesteps <- "iterations"
+    }
+    allowed_metrics <- c("deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
+                         "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae")
+    allowed_metrics <- Filter(
+      function(m)
+        paste0("training_", m) %in% names(sh) || paste0(m, "_train") %in% names(sh),
+      allowed_metrics)
+  } else if (model@algorithm == "glrm") {
+    allowed_metrics <- c("objective")
+    allowed_timesteps <- "iterations"
+  } else if (model@algorithm %in% c("deeplearning", "drf", "gbm", "xgboost")) {
+    if (is(model, "H2OBinomialModel")) {
+      allowed_metrics <- c("logloss", "auc", "classification_error", "rmse", "lift", "auc", "pr_auc")
+    } else if (is(model, "H2OMultinomialModel") || is(model, "H2OOrdinalModel")) {
+        allowed_metrics <- c("logloss", "classification_error", "rmse", "auc", "pr_auc")
+    } else if (is(model, "H2ORegressionModel")) {
+        allowed_metrics <- c("rmse", "deviance", "mae")
+    }
+    if (model@algorithm %in% c("drf", "gbm")) {
+      allowed_metrics <- c(allowed_metrics, "custom")
+    }
+  } else if (model@algorithm == "coxph") {
+    allowed_timesteps <- "iterations"
+    allowed_metrics <- "loglik"
+  } else if (model@algorithm == "isolationforest") {
+    allowed_timesteps <- "number_of_trees"
+    allowed_metrics <- "mean_anomaly_score"
+  }
+
+  if (model@algorithm == "deeplearning") {
+    allowed_timesteps <- c("epochs", "iterations", "samples")
+  } else if (model@algorithm %in% c("drf", "gbm", "xgboost")) {
+    allowed_timesteps <- c("number_of_trees")
+  }
+  if (metric == "AUTO") {
+    metric <- allowed_metrics[[1]]
+  } else {
+    metric <- metric_mapping[[metric]]
+  }
+
+  if (!(metric %in% allowed_metrics)) {
+    stop("Metric must be one of: ", paste(inverse_metric_mapping[allowed_metrics], collapse = ", "))
+  }
+
+  timestep <- allowed_timesteps[[1]]
+
+  if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
+    training_metric <- metric
+    validation_metric <- "UNDEFINED"
+  } else if ("deviance" == metric && model@algorithm %in% c("gam", "glm") && !hglm) {
+    training_metric <- "deviance_train"
+    validation_metric <- "deviance_test"
+  } else {
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+  }
+
+  selected_timestep_value <- switch(timestep,
+                                    number_of_trees = model@allparameters$ntrees,
+                                    iterations = model@model$model_summary$number_of_iterations,
+                                    iteration = model@model$model_summary$number_of_iterations,
+                                    epochs = model@allparameters$epochs,
+  )
+  if ("coxph" == model@algorithm)
+    selected_timestep_value <- model@model$iter
+
+  sh <- .preprocess_scoring_history(model, sh, training_metric)
+  scoring_history <-
+    data.frame(
+      model = "Main Model",
+      type = "Training",
+      x = sh[[timestep]],
+      metric = sh[[training_metric]],
+      stringsAsFactors = FALSE
+    )
+  if (validation_metric %in% names(sh)) {
+    scoring_history <- rbind(
+      scoring_history,
+      data.frame(
+        model = "Main Model",
+        type = "Validation",
+        x = sh[[timestep]],
+        metric = sh[[validation_metric]]
+      )
+    )
+  }
+
+  if (!is.null(model@model$cv_scoring_history)) {
+    cv_scoring_history <- data.frame()
+    for (csh_idx in seq_along(model@model$cv_scoring_history)) {
+      csh <- .preprocess_scoring_history(model, as.data.frame(model@model$cv_scoring_history[[csh_idx]]), training_metric)
+      cv_scoring_history <- rbind(
+        cv_scoring_history,
+        data.frame(
+          model = paste0("CV-", csh_idx),
+          type = "Training (CV Models)",
+          x = csh[[timestep]],
+          metric = csh[[training_metric]],
+          stringsAsFactors = FALSE
+        )
+      )
+      if (validation_metric %in% names(csh)) {
+        cv_scoring_history <- rbind(
+          cv_scoring_history,
+          data.frame(
+            model = paste0("CV-", csh_idx),
+            type = "Cross-validation",
+            x = csh[[timestep]],
+            metric = csh[[validation_metric]],
+            stringsAsFactors = FALSE
+          )
+        )
+      }
+    }
+
+    cvsh_mean <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], mean, na.rm = TRUE))
+    names(cvsh_mean) <- paste0(names(cvsh_mean), "_mean")
+    cvsh_sd <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], sd, na.rm = TRUE))
+    names(cvsh_sd) <- paste0(names(cvsh_sd), "_sd")
+
+    cvsh_len <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], length))
+
+    if (nrow(cvsh_len)  <= 1) {
+      cv_ribbon <- FALSE
+      cv_lines <- FALSE
+    } else if (mean(cvsh_len[["Training (CV Models)"]][-nrow(cvsh_len)] == cvsh_len$`Training (CV Models)`[-1]) < 0.5 ||
+        mean(cvsh_len$`Training (CV Models)`) < 2) {
+      if (is.null(cv_ribbon)) {
+        cv_ribbon <- FALSE
+      }
+      cv_lines <- is.null(cv_lines) || cv_lines
+    } else {
+      cv_lines <- !is.null(cv_lines) && cv_lines
+      cv_ribbon <- is.null(cv_ribbon) || cv_ribbon
+    }
+
+    cvsh <- cbind(cvsh_mean, cvsh_sd)
+    cvsh$x <- as.numeric(row.names(cvsh))
+
+    cvsh <- rbind(
+      data.frame(
+        x = cvsh$x,
+        mean = cvsh[["Training (CV Models)_mean"]],
+        type = "Training (CV Models)",
+        lower_bound = cvsh[["Training (CV Models)_mean"]] - cvsh[["Training (CV Models)_sd"]],
+        upper_bound = cvsh[["Training (CV Models)_mean"]] + cvsh[["Training (CV Models)_sd"]]
+      ),
+      if ("Cross-validation_mean" %in% names(cvsh))
+        data.frame(
+          x = cvsh$x,
+          mean = cvsh[["Cross-validation_mean"]],
+          type = "Cross-validation",
+          lower_bound = cvsh[["Cross-validation_mean"]] - cvsh[["Cross-validation_sd"]],
+          upper_bound = cvsh[["Cross-validation_mean"]] + cvsh[["Cross-validation_sd"]]
+        )
+    )
+    cv_scoring_history <- cv_scoring_history[!(is.na(cv_scoring_history$x) |
+      is.na(cv_scoring_history$metric) |
+      is.na(cv_scoring_history$type)
+    ), ]
+  } else {
+    cv_ribbon <- FALSE
+    cv_lines <- FALSE
+  }
+
+  colors <- c("Training" = "#785ff0", "Training (CV Models)" = "#648fff",
+              "Validation"  = "#ff6000", "Cross-validation" = "#ffb000")
+  shape <- c("Training" = 16, "Training (CV Models)" = NA,
+             "Validation" = 16, "Cross-validation" = NA)
+  fill <- c("Training" = NA, "Training (CV Models)" = "#648fff",
+            "Validation" = NA, "Cross-validation" = "#ffb000")
+
+  scoring_history <- scoring_history[!(is.na(scoring_history$x) |
+    is.na(scoring_history$metric) |
+    is.na(scoring_history$type)
+  ), ]
+
+
+  if (cv_ribbon || cv_lines)
+    labels <- c(sort(unique(cv_scoring_history$type)), sort(unique(scoring_history$type)))
+  else
+    labels <- sort(unique(scoring_history$type))
+
+  labels <- names(colors)[names(colors) %in% labels]
+  p <- ggplot2::ggplot(ggplot2::aes_string(
+    x = "x",
+    y = "metric",
+    color = "type",
+    fill = "type"
+  ),
+                  data = scoring_history)
+  if (cv_ribbon) {
+    cvsh <- cvsh[!is.na(cvsh$lower_bound) &
+                   !is.na(cvsh$upper_bound),]
+    p <- p + ggplot2::geom_line(ggplot2::aes_string(y = "mean"), data = cvsh) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes_string(
+        ymin = "lower_bound",
+        ymax = "upper_bound",
+        y = NULL,
+        color = NULL
+      ),
+      alpha = 0.25,
+      data = cvsh
+    )
+  }
+  if (cv_lines) {
+    type <- NULL
+    p <- p + ggplot2::geom_line(ggplot2::aes(group = paste(model, type)),
+                                linetype = "dotted",
+                                data = cv_scoring_history)
+  }
+  p <- p +
+    ggplot2::geom_line() +
+    ggplot2::geom_point() +
+    ggplot2::geom_vline(ggplot2::aes_(
+      xintercept = selected_timestep_value,
+      linetype = paste0("Selected\n", timestep)
+    ), color = "#2FBB24") +
+    ggplot2::labs(
+      x = timestep,
+      y = metric,
+      title = "Learning Curve",
+      subtitle = paste("for", .shorten_model_ids(model@model_id))
+    ) +
+   ggplot2::scale_color_manual(values = colors, breaks=names(colors), labels = names(colors)) +
+   ggplot2::scale_fill_manual(values = colors, breaks=names(colors), labels = names(colors)) +
+    ggplot2::guides(color=ggplot2::guide_legend(
+      override.aes = list(
+        shape=shape[labels],
+        fill=fill[labels]
+      )
+    )) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5)
+    )
+
+  return(p)
+}
+
 ######################################## Explain ###################################################
 
 #' Generate Model Explanations
