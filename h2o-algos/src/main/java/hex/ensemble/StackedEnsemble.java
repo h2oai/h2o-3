@@ -259,9 +259,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
 
       if (transform != null) {
-        Frame oldLOF = levelOneFrame;
         levelOneFrame = _parms._metalearner_transform.transform(_model, levelOneFrame, Key.make(levelOneKey));
-        oldLOF.remove();
       }
 
       // Add metalearner fold column, weights column to level one frame if it exists
