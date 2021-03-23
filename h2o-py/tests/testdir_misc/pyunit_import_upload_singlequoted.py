@@ -57,9 +57,9 @@ def test_upload_fails_on_unsupported_quotechar():
 
 
 pyunit_utils.run_tests([
-    # test_import_single_quoted,
-    # test_upload_single_quoted,
+    test_import_single_quoted,
+    test_upload_single_quoted,
     test_import_single_quoted_with_escaped_quotes,
-    # test_import_fails_on_unsupported_quotechar,
-    # test_upload_fails_on_unsupported_quotechar,
+    test_import_fails_on_unsupported_quotechar,
+    test_upload_fails_on_unsupported_quotechar,
 ])
