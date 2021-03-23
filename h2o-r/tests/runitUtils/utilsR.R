@@ -373,7 +373,19 @@ alignData <- function(df, center = FALSE, scale = FALSE, ignore_const_cols = TRU
 
 doTest<-
 function(testDesc, test) {
-    tryCatch(test_that(testDesc, withWarnings(test())), warning = function(w) WARN(w), error =function(e) FAIL(e))
+    reporter <- MultiReporter$new(list(
+        CheckReporter$new(),
+        # SummaryReporter$new(),
+        FailReporter$new()
+    ))
+    tryCatch(with_reporter(reporter, {
+        test_that(testDesc, {
+            withWarnings(test())
+        })
+      }), 
+      warning = function(w) WARN(w), 
+      error =function(e) FAIL(e)
+    )
     PASS()
 }
 
@@ -390,16 +402,18 @@ function(suiteDesc, suite, run_in_isolation=TRUE, time_monitor=FALSE) {
           cat("Running", test_name, "\n")
           if(run_in_isolation) h2o.removeAll()
           tryCatch(
-              test_that(test_name, withWarnings(call_func(test_name, list(), envir=suite$envir))),
+              test_that(test_name, {
+                  withWarnings(call_func(test_name, list(), envir=suite$envir))
+              }),
               warning = function(w) warnings <<- c(warnings, w),
               error = function(e) errors <<- c(errors, e$message)
           )  
-          # do.call(test_name, list(), envir=envir)
         })
         if(length(warnings) > 0)
             warning(paste("\n", warnings, "\n"))
         if(length(errors) > 0)
-            stop(paste("Failing tests:\n", errors, "\n"), call. = FALSE)
+            fail(paste("Failing tests:\n", errors, "\n"))
+        expect_true(TRUE)  # need at least one expectation to avoid having the suite marked as an empty test
     }
     doTest(suiteDesc, suiteTest)
 }
