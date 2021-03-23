@@ -1,18 +1,17 @@
 package hex.ensemble;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelCategory;
+import hex.*;
 
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
+import hex.glm.GLMModel;
 import hex.grid.Grid;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.Scope;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.util.*;
@@ -216,8 +215,21 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (baseModels.length != baseModelPredictions.length)
         throw new H2OIllegalArgumentException("Base models and prediction arrays are different lengths.");
 
-      if (null == levelOneKey) levelOneKey = "levelone_" + _model._key.toString();
-      Frame levelOneFrame = new Frame(Key.<Frame>make(levelOneKey));
+      if (null == levelOneKey) levelOneKey = "levelone_" + _model._key.toString() + "_" + _parms._metalearner_transform.toString();
+
+      // TODO: what if we're running multiple in parallel and have a name collision?
+      Frame old = DKV.getGet(levelOneKey);
+      if (old != null && old instanceof Frame) {
+        Frame oldFrame = (Frame) old;
+        oldFrame.write_lock(_job);
+        // Remove ALL the columns so we don't delete them in remove_impl.  Their
+        // lifetime is controlled by their model.
+        oldFrame.removeAll();
+        oldFrame.update(_job);
+        oldFrame.unlock(_job);
+      }
+
+      Frame levelOneFrame = new Frame(Key.make(levelOneKey));
 
       for (int i = 0; i < baseModels.length; i++) {
         Model baseModel = baseModels[i];
@@ -232,22 +244,22 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           continue;
         }
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
+        Scope.untrack(baseModelPredictions);
       }
+      if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
+        if (!(_model._output.isBinomialClassifier() || _model._output.isMultinomialClassifier()))
+          throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
+
+        Frame oldLOF = levelOneFrame;
+        levelOneFrame = _parms._metalearner_transform.transform(_model, levelOneFrame);
+        oldLOF.write_lock(_job);
+        oldLOF.removeAll();
+        oldLOF.update(_job);
+        oldLOF.unlock(_job);
+      }
+
       // Add metalearner fold column, weights column to level one frame if it exists
       addMiscColumnsToLevelOneFrame(_model._parms, actuals, levelOneFrame, true);
-
-      // TODO: what if we're running multiple in parallel and have a name collision?
-
-      Frame old = DKV.getGet(levelOneFrame._key);
-      if (old != null && old instanceof Frame) {
-        Frame oldFrame = (Frame) old;
-        // Remove ALL the columns so we don't delete them in remove_impl.  Their
-        // lifetime is controlled by their model.
-        oldFrame.removeAll();
-        oldFrame.write_lock(_job);
-        oldFrame.update(_job);
-        oldFrame.unlock(_job);
-      }
 
       levelOneFrame.delete_and_lock(_job);
       levelOneFrame.unlock(_job);

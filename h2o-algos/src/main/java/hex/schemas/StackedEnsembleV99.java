@@ -43,6 +43,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_fold_assignment",
       "metalearner_fold_column",
       "metalearner_params",
+      "metalearner_transform",
       "max_runtime_secs",
       "weights_column",
       "offset_column",
@@ -50,7 +51,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "score_training_samples",
       "keep_levelone_frame",
       "export_checkpoints_dir", 
-      "auc_type"     
+      "auc_type"
     };
 
     public static class AlgorithmValuesProvider extends EnumValuesProvider<Algorithm> {
@@ -99,6 +100,12 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             is_mutually_exclusive_with = {"ignored_columns", "response_column"},
             help = "Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.")
     public FrameV3.ColSpecifierV3 metalearner_fold_column;
+
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+            help = "Transformation used for the level one frame.",
+            values = {"NONE", "Logit"}
+    )
+    public StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform metalearner_transform;
 
     @API(level = API.Level.secondary,
             help = "Keep level one frame used for metalearner training.")

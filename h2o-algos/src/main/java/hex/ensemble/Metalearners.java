@@ -209,6 +209,9 @@ public class Metalearners {
             //add GLM custom params
             super.setCustomParams(parms);
 
+            parms._generate_scoring_history = true;
+            parms._score_iteration_interval = (parms._valid == null) ? 5 : -1;
+
             //specific to AUTO mode
             parms._non_negative = true;
             //parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};

@@ -50,6 +50,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public TwoDimTableV3 scoring_history;
 
+  @API(help="Cross-Validation scoring history", direction=API.Direction.OUTPUT, level=API.Level.secondary)
+  public TwoDimTableV3 cv_scoring_history[];
+
   @API(help="Model reproducibility information", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public TwoDimTableV3[] reproducibility_information_table;
   

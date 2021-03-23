@@ -2,12 +2,12 @@
 
 import random
 from contextlib import contextmanager
-from collections import OrderedDict, Counter
+from collections import OrderedDict, Counter, defaultdict
 
 import h2o
 import numpy as np
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
-
+from h2o.exceptions import H2OValueError
 
 
 def _display(object):
@@ -1687,7 +1687,7 @@ def residual_analysis_plot(
 
     :param model: H2OModel
     :param frame: H2OFrame
-    :param figsize: figsize: figure size; passed directly to matplotlib
+    :param figsize: figure size; passed directly to matplotlib
     :returns: a matplotlib figure object
 
     :examples:
@@ -1752,11 +1752,312 @@ def residual_analysis_plot(
     return fig
 
 
+def learning_curve_plot(
+        model,  # type: h2o.model.ModelBase
+        metric="AUTO",  # type: str
+        cv_ribbon=None,  # type: Optional[bool]
+        cv_lines=None,  # type: Optional[bool]
+        figsize=(16,9),  # type: Tuple[float]
+        colormap=None  # type: Optional[str]
+):
+    # type: (...) -> plt.Figure
+    """
+    Learning curve
+
+    Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
+    learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+    showing Training, Validation, Training on CV Models, and Cross-validation error.
+
+    :param model: an H2O model
+    :param metric: a stopping metric
+    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
+                      if None, it will attempt to automatically determine if this is suitable visualisation
+    :param cv_lines: if True, plot scoring history for individual CV models, if None, it will attempt to
+                     automatically determine if this is suitable visualisation
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap to use
+    :return: a matplotlib figure
+
+    :examples:
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
+    >>>
+    >>> # Set the response
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = df.split_frame([0.8])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(y=response, training_frame=train)
+    >>>
+    >>> # Create the learning curve plot
+    >>> gbm.learning_curve_plot()
+    """
+    if model.algo == "stackedensemble":
+        model = model.metalearner()
+
+    if model.algo not in ("stackedensemble", "glm", "gam", "glrm", "deeplearning",
+                          "drf", "gbm", "xgboost", "coxph", "isolationforest"):
+        raise H2OValueError("Algorithm {} doesn't support learning curve plot!".format(model.algo))
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+
+    metric_mapping = {'anomaly_score': 'mean_anomaly_score',
+                      'custom': 'custom',
+                      'custom_increasing': 'custom',
+                      'deviance': 'deviance',
+                      'logloss': 'logloss',
+                      'rmse': 'rmse',
+                      'mae': 'mae',
+                      'auc': 'auc',
+                      'aucpr': 'pr_auc',
+                      'lift_top_group': 'lift',
+                      'misclassification': 'classification_error',
+                      'objective': 'objective',
+                      'convergence': 'convergence',
+                      'negative_log_likelihood': 'negative_log_likelihood',
+                      'sumetaieta02': 'sumetaieta02'}
+    inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
+    inverse_metric_mappping["custom"] = "custom, custom_increasing"
+
+    # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
+    scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
+    if scoring_history is None:
+        raise RuntimeError("Could not retrieve scoring history for {}".format(model.algo))
+    scoring_history = _preprocess_scoring_history(model, scoring_history)
+
+    allowed_metrics = []
+    allowed_timesteps = []
+    if model.algo in ("glm", "gam"):
+        if model.actual_params["lambda_search"]:
+            import h2o.two_dim_table
+            allowed_timesteps = ["iteration"]
+        elif model.actual_params.get("HGLM"):
+            allowed_timesteps = ["iterations", "duration"]
+        else:
+            allowed_timesteps = ["iterations", "duration"]
+
+        allowed_metrics = ["deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
+                           "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae"]
+        allowed_metrics = [m for m in allowed_metrics
+                           if m in scoring_history.col_header or
+                              "training_{}".format(m) in scoring_history.col_header or
+                              "{}_train".format(m) in scoring_history.col_header]
+    elif model.algo == "glrm":
+        allowed_metrics = ["objective"]
+        allowed_timesteps = ["iterations"]
+    elif model.algo in ("deeplearning", "drf", "gbm", "xgboost"):
+        model_category = model._model_json["output"]["model_category"]
+        if "Binomial" == model_category:
+            allowed_metrics = ["logloss", "auc", "classification_error", "rmse", "lift", "pr_auc"]
+        elif model_category in ["Multinomial", "Ordinal"]:
+            allowed_metrics = ["logloss", "classification_error", "rmse", "pr_auc", "auc"]
+        elif "Regression" == model_category:
+            allowed_metrics = ["rmse", "deviance", "mae"]
+        if model.algo in ["drf", "gbm"]:
+            allowed_metrics += ["custom"]
+    elif model.algo == "coxph":
+        allowed_metrics = ["loglik"]
+        allowed_timesteps = ["iterations"]
+    elif model.algo == "isolationforest":
+        allowed_timesteps = ["number_of_trees"]
+        allowed_metrics = ["mean_anomaly_score"]
+
+    if model.algo == "deeplearning":
+        allowed_timesteps = ["epochs", "iterations", "samples"]
+    elif model.algo in ["drf", "gbm", "xgboost"]:
+        allowed_timesteps = ["number_of_trees"]
+
+    if metric.lower() == "auto":
+        metric = allowed_metrics[0]
+    else:
+        metric = metric_mapping.get(metric.lower())
+
+    if metric not in allowed_metrics:
+        raise H2OValueError("for {}, metric must be one of: {}".format(
+            model.algo.upper(),
+            ", ".join(inverse_metric_mappping[m.lower()] for m in allowed_metrics)
+        ))
+
+    timestep = allowed_timesteps[0]
+
+    if "deviance" == metric and model.algo in ["glm", "gam"] and not model.actual_params.get("HGLM", False):
+        training_metric = "deviance_train"
+        validation_metric = "deviance_test"
+    elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
+        training_metric = metric
+        validation_metric = "UNDEFINED"
+    else:
+        training_metric = "training_{}".format(metric)
+        validation_metric = "validation_{}".format(metric)
+
+    selected_timestep_value = None
+    if "number_of_trees" == timestep:
+        selected_timestep_value = model.actual_params["ntrees"]
+    elif timestep in ["iteration", "iterations"]:
+        if "coxph" == model.algo:
+            selected_timestep_value = model._model_json["output"]["iter"]
+        else:
+            selected_timestep_value = model.summary()["number_of_iterations"][0]
+    elif "epochs" == timestep:
+        selected_timestep_value = model.actual_params["epochs"]
+
+    if colormap is None:
+        col_train, col_valid = "#785ff0", "#ff6000"
+        col_cv_train, col_cv_valid = "#648fff", "#ffb000"
+    else:
+        col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
+
+    # Get scoring history with only filled in entries
+    scoring_history = _preprocess_scoring_history(model, scoring_history, training_metric)
+
+    plt.figure(figsize=figsize)
+    plt.grid(True)
+
+    if model._model_json["output"].get("cv_scoring_history"):
+        if cv_ribbon or cv_ribbon is None:
+            cvsh_train = defaultdict(list)
+            cvsh_valid = defaultdict(list)
+            for cvsh in model._model_json["output"]["cv_scoring_history"]:
+                cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
+                for i in range(len(cvsh[timestep])):
+                    cvsh_train[cvsh[timestep][i]].append(cvsh[training_metric][i])
+                if validation_metric in cvsh.col_header:
+                    for i in range(len(cvsh[timestep])):
+                        cvsh_valid[cvsh[timestep][i]].append(cvsh[validation_metric][i])
+            mean_train = np.array(sorted(
+                [(k, np.mean(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))
+            sd_train = np.array(sorted(
+                [(k, np.std(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))[:, 1]
+
+            len_train = np.array(sorted(
+                [(k, len(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))[:, 1]
+            if len(len_train) > 1 and (cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5):
+                plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
+                         label="Training (CV Models)")
+                plt.fill_between(mean_train[:, 0],
+                                 mean_train[:, 1] - sd_train,
+                                 mean_train[:, 1] + sd_train,
+                                 color=col_cv_train, alpha=0.25)
+                if len(cvsh_valid) > 0:
+                    mean_valid = np.array(sorted(
+                        [(k, np.mean(v)) for k, v in cvsh_valid.items()],
+                        key=lambda k: k[0]
+                    ))
+                    sd_valid = np.array(sorted(
+                        [(k, np.std(v)) for k, v in cvsh_valid.items()],
+                        key=lambda k: k[0]
+                    ))[:, 1]
+                    plt.plot(mean_valid[:, 0], mean_valid[:, 1], c=col_cv_valid,
+                             label="Cross-validation")
+                    plt.fill_between(mean_valid[:, 0],
+                                     mean_valid[:, 1] - sd_valid,
+                                     mean_valid[:, 1] + sd_valid,
+                                     color=col_cv_valid, alpha=0.25)
+            else:
+                cv_lines = cv_lines is None or cv_lines
+
+        if cv_lines:
+            for cvsh in model._model_json["output"]["cv_scoring_history"]:
+                cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
+                plt.plot(cvsh[timestep],
+                         cvsh[training_metric],
+                         label="Training (CV Models)",
+                         c=col_cv_train,
+                         linestyle="dotted")
+                if validation_metric in cvsh.col_header:
+                    plt.plot(cvsh[timestep],
+                             cvsh[validation_metric],
+                             label="Cross-validation",
+                             c=col_cv_valid,
+                             linestyle="dotted"
+                             )
+
+    plt.plot(scoring_history[timestep],
+             scoring_history[training_metric],
+             "o-",
+             label="Training",
+             c=col_train)
+    if validation_metric in scoring_history.col_header:
+        plt.plot(scoring_history[timestep],
+                 scoring_history[validation_metric],
+                 "o-",
+                 label="Validation",
+                 c=col_valid)
+
+    if selected_timestep_value is not None:
+        plt.axvline(x=selected_timestep_value, label="Selected\n{}".format(timestep), c="#2FBB24")
+
+    plt.title("Learning Curve\nfor {}".format(_shorten_model_ids([model.model_id])[0]))
+    plt.xlabel(timestep)
+    plt.ylabel(metric)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    labels_and_handles = dict(zip(labels, handles))
+    labels_and_handles_ordered = OrderedDict()
+    for lbl in ["Training", "Training (CV Models)", "Validation", "Cross-validation", "Selected\n{}".format(timestep)]:
+        if lbl in labels_and_handles:
+            labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
+    plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
+
+    return plt.gcf()
+
+
+def _preprocess_scoring_history(model, scoring_history, training_metric=None):
+    empty_columns = [all(row[col_idx] == "" for row in scoring_history.cell_values)
+                     for col_idx in range(len(scoring_history.col_header))]
+
+    scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+        table_header=scoring_history._table_header,
+        table_description=scoring_history._table_description,
+        col_header=[ch for i, ch in enumerate(scoring_history.col_header) if not empty_columns[i]],
+        col_types=[ct for i, ct in enumerate(scoring_history.col_types) if not empty_columns[i]],
+        cell_values=[[v for i, v in enumerate(vals) if not empty_columns[i]]
+                     for vals in scoring_history.cell_values])
+
+    if model.algo in ("glm", "gam") and model.actual_params["lambda_search"]:
+        alpha_best = model._model_json["output"]["alpha_best"]
+        alpha_idx = scoring_history.col_header.index("alpha")
+        iteration_idx = scoring_history.col_header.index("iteration")
+        scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+            table_header=scoring_history._table_header,
+            table_description=scoring_history._table_description,
+            col_header=scoring_history.col_header,
+            col_types=scoring_history.col_types,
+            cell_values=sorted([list(v) for v in scoring_history.cell_values if v[alpha_idx] == alpha_best],
+                               key=lambda row: row[iteration_idx]))
+
+    if training_metric is not None:
+        # Remove empty metric values, e.g., from GLM when score_each_iteration = False
+        training_metric_idx = scoring_history.col_header.index(training_metric)
+        scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+            table_header=scoring_history._table_header,
+            table_description=scoring_history._table_description,
+            col_header=scoring_history.col_header,
+            col_types=scoring_history.col_types,
+            cell_values=[list(v) for v in scoring_history.cell_values if v[training_metric_idx] != ""])
+
+    return scoring_history
+
+
 def _is_tree_model(model):
     # type: (Union[str, h2o.model.ModelBase]) -> bool
     """
     Is the model a tree model id?
-    :param model: model or astring containing a model_id
+    :param model: model or a string containing a model_id
     :returns: bool
     """
     return _get_algorithm(model) in ["drf", "gbm", "xgboost"]

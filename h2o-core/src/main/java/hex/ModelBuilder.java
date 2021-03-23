@@ -936,6 +936,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info(mainModel._output._cross_validation_metrics.toString());
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
+    // Put cross-validation scoring history to the main model
+    if (mainModel._output._scoring_history != null) { // check if scoring history is supported (e.g., NaiveBayes doesn't)
+      mainModel._output._cv_scoring_history = new TwoDimTable[cvModKeys.length];
+      for (int i = 0; i < cvModKeys.length; i++) {
+        TwoDimTable sh = cvModKeys[i].get()._output._scoring_history;
+        String[] rowHeaders = sh.getRowHeaders();
+        String[] colTypes = sh.getColTypes();
+        int tableSize = rowHeaders.length;
+        int colSize = colTypes.length;
+        TwoDimTable copiedScoringHistory = new TwoDimTable(
+                sh.getTableHeader(),
+                sh.getTableDescription(),
+                sh.getRowHeaders(),
+                sh.getColHeaders(),
+                sh.getColTypes(),
+                sh.getColFormats(),
+                sh.getColHeaderForRowHeaders());
+        for (int rowIndex = 0; rowIndex < tableSize; rowIndex++)  {
+          for (int colIndex = 0; colIndex < colSize; colIndex++) {
+            copiedScoringHistory.set(rowIndex, colIndex,sh.get(rowIndex, colIndex));
+          }
+        }
+        mainModel._output._cv_scoring_history[i] = copiedScoringHistory;
+      }
+    }
+
     if (!_parms._keep_cross_validation_models) {
       int count = Model.deleteAll(cvModKeys);
       Log.info(count+" CV models were removed");

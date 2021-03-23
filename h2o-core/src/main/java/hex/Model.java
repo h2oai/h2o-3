@@ -928,6 +928,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * User-facing model scoring history - 2D table with modeling accuracy as a function of time/trees/epochs/iterations, etc.
      */
     public TwoDimTable _scoring_history;
+    public TwoDimTable[] _cv_scoring_history;
 
     public double[] _distribution;
     public double[] _modelClassDist;
