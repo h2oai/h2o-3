@@ -5,7 +5,7 @@ test.model.gam.overlapped.knots <- function() {
     data <- data.frame(C1=sample(8, size=1000, replace = TRUE), target=sample(0:1, size=1000, replace = TRUE))
     data$target <- as.factor(data$target)
     
-    splits <- h2o.splitFrame(data = data, ratios = 0.8)
+    splits <- h2o.splitFrame(data = as.h2o(data), ratios = 0.8)
     train <- splits[[1]]
     test <- splits[[2]]
     
