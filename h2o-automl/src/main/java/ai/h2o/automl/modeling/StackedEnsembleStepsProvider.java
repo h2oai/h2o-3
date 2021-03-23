@@ -115,8 +115,12 @@ public class StackedEnsembleStepsProvider
                 stackedEnsembleParameters.initMetalearnerParams();
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
-                // Add logit transform
-                stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
+
+                if (aml().getResponseColumn().isCategorical()) {
+                    // Add logit transform
+                    stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
+                }
+
                 return stackedEnsembleParameters;
             }
 
