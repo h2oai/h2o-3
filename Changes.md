@@ -50,6 +50,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.h
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7820'>PUBDEV-7820</a>] -         Added a `topbasemodel` attribute to AutoML.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7831'>PUBDEV-7831</a>] -         Added new learning curve plotting function to R/Python.
+</li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7854'>PUBDEV-7854</a>] -         Added script for estimating the memory usage of a dataset.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7859'>PUBDEV-7859</a>] -         Added fault protections to grid search allowing saving of data and parameters, model checkpointing, and auto-recovery.
