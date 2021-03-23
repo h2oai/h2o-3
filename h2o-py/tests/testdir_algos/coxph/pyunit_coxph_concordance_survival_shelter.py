@@ -94,7 +94,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     
     assert cph_h2o.model_id != ""
     assert cph_h2o.formula() == \
-           expected_formula, f"Expected formula to be '{expected_formula}' but it was " + cph_h2o.formula()
+           expected_formula, "Expected formula to be '" + expected_formula + "' but it was " + cph_h2o.formula()
     
     pred_h2o = cph_h2o.predict(test_data=shelter_h2o)
     assert len(pred_h2o) == len(shelter)
@@ -108,7 +108,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     
     for col_name in hazard_py.columns:
         if (isinstance(col_name, int)):
-            new_name = f"({col_name})"
+            new_name = "({0})".format(col_name)
         else:
             new_name = str(col_name)
         hazard_py.rename(columns={col_name: new_name}, inplace=True)
@@ -129,7 +129,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
 
     for col_name in survival_py.columns:
         if (isinstance(col_name, int)):
-            new_name = f"({col_name})"
+            new_name = "({0})".format(col_name)
         else:
             new_name = str(col_name)
         survival_py.rename(columns={col_name: new_name}, inplace=True)
