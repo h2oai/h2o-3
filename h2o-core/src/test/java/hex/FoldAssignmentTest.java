@@ -80,7 +80,7 @@ public class FoldAssignmentTest {
     }
 
     @Test
-    public void fromUserFoldSpecification() {
+    public void fromUserFoldSpecification_categorical() {
         try {
             Scope.enter();
             Vec fold = Scope.track(ivec(1, 3));
@@ -94,6 +94,24 @@ public class FoldAssignmentTest {
 
             assertEquals(0.0, foldIndices.at(0), 0);
             assertEquals(1.0, foldIndices.at(1), 0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void fromUserFoldSpecification_indices() {
+        try {
+            Scope.enter();
+            Vec fold = Scope.track(ivec(1, 2, 3));
+            Scope.track(fold);
+
+            FoldAssignment fa = FoldAssignment.fromUserFoldSpecification(3, fold);
+            Vec foldIndices = fa.getAdaptedFold();
+            Scope.track(foldIndices);
+
+            Vec expectedFoldIndices = Scope.track(ivec(0, 1, 2));
+            assertVecEquals(expectedFoldIndices, foldIndices, 0);
         } finally {
             Scope.exit();
         }
