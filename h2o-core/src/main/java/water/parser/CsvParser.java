@@ -136,10 +136,13 @@ MAIN_LOOP:
           }
           if ((!isEOL(c) && c != CHAR_SEPARATOR) || quoteCount == 1) {
             if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
-            str.addChar();
+            escaped = !escaped && c == CHAR_ESCAPE;
+            if (escaped) 
+              str.skipIndex(offset);
+            else
+              str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
-            escaped = !escaped && c == CHAR_ESCAPE;
             break;
           }
           

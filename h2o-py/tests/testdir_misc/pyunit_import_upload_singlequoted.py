@@ -30,6 +30,14 @@ def test_upload_single_quoted():
     pd.testing.assert_frame_equal(pdf, hdf.as_data_frame(), check_dtype=False)
 
 
+def test_import_single_quoted_with_escaped_quotes():
+    path = pyunit_utils.locate("smalldata/parser/single_quotes_with_escaped_quotes.csv")
+    hdf = h2o.import_file(path=path, quotechar="'")
+    
+    pdf = pd.read_csv(path, quotechar="'", escapechar="\\")
+    pd.testing.assert_frame_equal(pdf, hdf.as_data_frame(), check_dtype=False)
+
+
 def test_import_fails_on_unsupported_quotechar():
     try:
         h2o.import_file(path=pyunit_utils.locate("smalldata/parser/single_quotes_mixed.csv"),
@@ -49,8 +57,9 @@ def test_upload_fails_on_unsupported_quotechar():
 
 
 pyunit_utils.run_tests([
-    test_import_single_quoted,
-    test_upload_single_quoted,
-    test_import_fails_on_unsupported_quotechar,
-    test_upload_fails_on_unsupported_quotechar,
+    # test_import_single_quoted,
+    # test_upload_single_quoted,
+    test_import_single_quoted_with_escaped_quotes,
+    # test_import_fails_on_unsupported_quotechar,
+    # test_upload_fails_on_unsupported_quotechar,
 ])
