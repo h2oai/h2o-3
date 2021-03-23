@@ -82,6 +82,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_confusion_matrix_size",
             "max_runtime_secs",
             "custom_metric_func",
+            "generate_scoring_history",
             "auc_type"
     };
 
@@ -250,6 +251,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
+    @API(help="If set to true, will generate scoring history for GLM.  This may significantly slow down the algo.", 
+            level = Level.secondary, direction = Direction.INPUT)
+    public boolean generate_scoring_history;  // if enabled, will generate scoring history for iterations specified in
+                                              // scoring_iteration_interval and score_every_iteration
     /////////////////////
   }
 }

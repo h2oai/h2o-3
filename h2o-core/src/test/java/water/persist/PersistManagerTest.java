@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
+import water.fvec.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -88,6 +89,67 @@ public class PersistManagerTest extends TestUtil {
             }
         }
     }
+
+    @Test
+    public void testIsHexPath() {
+        assertTrue(persistManager.isHexPath("hex://anything"));
+        assertFalse(persistManager.isHexPath("http://anything"));
+    }
+
+    @Test
+    public void testToHexPath() {
+        Scope.enter();
+        try {
+            Frame f = TestFrameCatalog.oneChunkFewRows();
+            Key chunkKey = f.anyVec().chunkKey(0);
+            String hexPath = persistManager.toHexPath(chunkKey);
+            assertTrue(hexPath.startsWith("hex://"));
+            assertTrue(persistManager.isHexPath(hexPath));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testOpenHexPath() throws IOException {
+        Scope.enter();
+        try {
+            Vec v = Vec.makeConN(10, 1);
+            Scope.track(v);
+            byte[] data = new byte[(int) v.length()];
+            Key chunkKey = v.chunkKey(0);
+            DKV.put(chunkKey, new C1NChunk(data));
+
+            InputStream is = persistManager.open(persistManager.toHexPath(chunkKey));
+            assertTrue(is instanceof ByteArrayInputStream);
+            assertEquals(data.length, is.available());
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testCreateHexPath() throws IOException {
+        Scope.enter();
+        try {
+            Vec v = Vec.makeConN(10, 1);
+            Key chunkKey = v.chunkKey(0);
+            Scope.track(v);
+
+            byte[] newData = new byte[v.chunkLen(0)];
+            for (int i = 0; i < newData.length; i++)
+                newData[i] = (byte) i;
+            try (OutputStream os = persistManager.create(persistManager.toHexPath(chunkKey), true)) {
+                os.write(newData);
+            }
+            Chunk c = v.chunkForChunkIdx(0);
+            assertTrue(c instanceof C1NChunk);
+            assertArrayEquals(newData, c.asBytes());
+        } finally {
+            Scope.exit();
+        }
+    }
+
     
     @Test
     public void testDeltaLakeMetadataFilter() {

@@ -45,7 +45,7 @@ public class SSLEncryptionTest extends TestUtil {
         try {
             Date start = new Date();
 
-            fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            fr = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
             parms._distribution = gaussian;

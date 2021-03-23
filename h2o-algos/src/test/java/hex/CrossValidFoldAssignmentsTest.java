@@ -31,7 +31,7 @@ public class CrossValidFoldAssignmentsTest extends TestUtil {
     Frame foldId = null;
     GBMModel gbm = null;
     try {
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tfr = parseTestFile("smalldata/iris/iris_wheader.csv");
       foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
       tfr.add(foldId);
       DKV.put(tfr);
@@ -70,7 +70,7 @@ public class CrossValidFoldAssignmentsTest extends TestUtil {
     Frame foldId = null;
     GBMModel gbm = null;
     try {
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tfr = parseTestFile("smalldata/iris/iris_wheader.csv");
       foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
       tfr.add(foldId);
       DKV.put(tfr);
@@ -109,7 +109,7 @@ public class CrossValidFoldAssignmentsTest extends TestUtil {
     Frame cvFoldAssignmentFrame = null;
     GBMModel gbm = null;
     try {
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tfr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = tfr._key;

@@ -32,7 +32,7 @@ import water.util.Log;
 import static org.junit.Assert.*;
 import static water.TestUtil.ar;
 import static water.TestUtil.assertFrameEquals;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
@@ -252,7 +252,7 @@ public class ModelSerializationTest {
   }
   
   private GBMModel prepareGBMModel(String dataset, GBMModel.GBMParameters gbmParams, String response) {
-    Frame f = parse_test_file(dataset);
+    Frame f = parseTestFile(dataset);
     try {
       if (!f.vec(response).isCategorical()) {
         f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
@@ -269,7 +269,7 @@ public class ModelSerializationTest {
   }
 
   private DRFModel prepareDRFModel(String dataset, String[] ignoredColumns, String response, boolean classification, int ntrees) {
-    Frame f = parse_test_file(dataset);
+    Frame f = parseTestFile(dataset);
     try {
       if (classification && !f.vec(response).isCategorical()) {
         f.replace(f.find(response), f.vec(response).toCategoricalVec()).remove();
@@ -288,7 +288,7 @@ public class ModelSerializationTest {
   }
 
   private IsolationForestModel prepareIsoForModel(String dataset, String[] ignoredColumns, int ntrees) {
-    Frame f = parse_test_file(dataset);
+    Frame f = parseTestFile(dataset);
     try {
       IsolationForestModel.IsolationForestParameters ifParams = new IsolationForestModel.IsolationForestParameters();
       ifParams._train = f._key;
@@ -315,7 +315,7 @@ public class ModelSerializationTest {
   }  
 
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
-    Frame f = parse_test_file(dataset);
+    Frame f = parseTestFile(dataset);
     try {
       GLMModel.GLMParameters params = new GLMModel.GLMParameters();
       params._train = f._key;
@@ -329,7 +329,7 @@ public class ModelSerializationTest {
   }
 
   private GLRMModel prepareGLRMModel(String dataset, String[] ignoredColumns, String response) {
-    Frame f = parse_test_file(dataset);
+    Frame f = parseTestFile(dataset);
     try {
       GLRMModel.GLRMParameters params = new GLRMModel.GLRMParameters();
       params._train = f._key;

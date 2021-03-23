@@ -604,6 +604,17 @@ public class ArrayUtils {
     return res;
   }
 
+  public static double[][] expandArray(double[][] ary, int newColNum) {
+    if(ary == null) return null;
+    assert ary.length < newColNum : "new array should be greater than original array in second dimension.";
+    int oldMatRow = ary.length;
+    double[][] res = new double[newColNum][newColNum];
+    for(int i = 0; i < oldMatRow; i++) {
+      System.arraycopy(ary[i], 0, res[i], 0, oldMatRow);
+    }
+    return res;
+  }
+
   /***
    * This function will perform transpose of triangular matrices only.  If the original matrix is lower triangular,
    * the return matrix will be upper triangular and vice versa.
@@ -778,25 +789,38 @@ public class ArrayUtils {
     }
     return result;
   }
-
+  
   public static String toStringQuotedElements(Object[] a) {
+    return toStringQuotedElements(a, -1);
+  }
+  
+  public static String toStringQuotedElements(Object[] a, int maxItems) {
     if (a == null)
       return "null";
 
-    int iMax = a.length - 1;
-    if (iMax == -1)
+    if (a.length == 0)
       return "[]";
+    
+    int max = a.length;
+    int ellipsisIdx = max+1;
+    if (maxItems > 0 && maxItems < a.length)  {
+      max = maxItems + 1;
+      ellipsisIdx = max / 2;
+    }
 
     StringBuilder b = new StringBuilder();
     b.append('[');
-    for (int i = 0; ; i++) {
-      b.append('"');
-      b.append(a[i]);
-      b.append('"');
-      if (i == iMax)
-        return b.append(']').toString();
-      b.append(", ");
+    for (int i = 0; i < max; i++) {
+      int idx = i == ellipsisIdx ? -1 
+              : i < ellipsisIdx ? i 
+              : a.length - max + i;
+      if (idx >= 0)
+        b.append('"').append(a[idx]).append('"');
+      else
+        b.append("...").append(a.length - maxItems).append(" not listed...");
+      if (i < max-1) b.append(", ");
     }
+    return b.append(']').toString();
   }
 
   public static <T> boolean contains(T[] arr, T target) {
@@ -957,10 +981,7 @@ public class ArrayUtils {
     return result;
   }
   public static double minValue(double[] from) {
-    double result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]<result) result = from[i];
-    return result;
+    return Arrays.stream(from).min().getAsDouble();
   }
 
   /**
@@ -979,23 +1000,24 @@ public class ArrayUtils {
   }
 
   public static long maxValue(long[] from) {
-    long result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
-    return result;
+    return Arrays.stream(from).max().getAsLong();
   }
-  public static long maxValue(int[] from) {
-    int result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
-    return result;
+
+  public static int maxValue(Integer[] from) {
+    return Arrays.stream(from).max(Integer::compare).get();
   }
+  
+  public static int maxValue(int[] from) {
+    return Arrays.stream(from).max().getAsInt();
+  }
+  
   public static long minValue(long[] from) {
     long result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]<result) result = from[i];
     return result;
   }
+  
   public static long minValue(int[] from) {
     int result = from[0];
     for (int i = 1; i<from.length; ++i)
@@ -1664,6 +1686,21 @@ public class ArrayUtils {
   public static double [] subtract (double [] a, double [] b) {
     double [] c = MemoryManager.malloc8d(a.length);
     subtract(a,b,c);
+    return c;
+  }
+  
+  public static double [][] subtract (double [][] a, double [][] b) {
+    double [][] c = MemoryManager.malloc8d(a.length, a[0].length);
+    for (int rowIndex = 0; rowIndex < c.length; rowIndex++) {
+      c[rowIndex] = subtract(a[rowIndex], b[rowIndex], c[rowIndex]);
+    }
+    return c;
+  }
+
+  public static int [] subtract (int [] a, int [] b) {
+    int [] c = MemoryManager.malloc4 (a.length);
+    for (int i = 0; i < a.length; i++)
+      c[i] = a[i]-b[i];
     return c;
   }
 

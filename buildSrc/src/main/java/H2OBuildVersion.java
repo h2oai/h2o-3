@@ -224,7 +224,7 @@ public class H2OBuildVersion {
             if (b) {
               found++;
               String v = m.group(1);
-              if (!value.equals(v)) {
+              if (value == null || !value.equals(v)) {
                 System.out.print("NOTE: emitBuildVersionJava found a mismatch, emitting new file (" + value + " not equal " + v + ")");
                 needToEmit = true;
                 break;
@@ -265,7 +265,7 @@ public class H2OBuildVersion {
       System.out.println("");
       System.out.println("ERROR:  H2OBuildVersion emitBuildVersionJavaFileIfNecessary failed");
       System.out.println("");
-      System.out.println(e);
+      e.printStackTrace();
       System.out.println("");
       System.exit(1);
     }

@@ -32,7 +32,7 @@ public class ModelingStepRegistryTest extends TestUtil {
 
     @Before
     public void createAutoML() {
-        fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+        fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
         AutoMLBuildSpec buildSpec = new AutoMLBuildSpec();
         buildSpec.input_spec.training_frame = fr._key;
         buildSpec.input_spec.response_column = "CAPSULE";

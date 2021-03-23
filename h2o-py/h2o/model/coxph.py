@@ -8,7 +8,11 @@ class H2OCoxPHModel(ModelBase):
 
     def formula(self):
         """Survival formula."""
-        return self._model_json["output"]["formula"]
+        return self._model_json["output"]["formula"] 
+        
+    def concordance(self):
+        """Concordance"""
+        return self._model_json["output"]["concordance"]
 
     def coefficients_table(self):
         """Coefficients table."""
@@ -21,5 +25,6 @@ class H2OCoxPHModel(ModelBase):
         print(self.coefficients_table())
         output = self._model_json["output"]
         print("Likelihood ratio test=%f" % (output["loglik_test"]))
+        print("Concordance=%f" % (output["loglik_test"]))
         print("n=%d, number of events=%d" % (output["n"], output["total_event"]))
 

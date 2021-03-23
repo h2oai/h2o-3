@@ -100,7 +100,7 @@ def test_target_encoded_frame_does_not_contain_fold_column():
                                    seed=1234)
     te.train(training_frame=trainingFrame, x=teColumns, y=targetColumnName)
     model_summary = te._model_json['output']['model_summary'].as_data_frame()
-    encoded_column_names = model_summary['encoded_column_name']
+    encoded_column_names = model_summary['encoded_column_names']
 
     # Checking that we don't have empty entries in TwoDim table
     assert len(model_summary) == 2

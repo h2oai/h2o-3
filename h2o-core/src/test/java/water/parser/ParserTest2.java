@@ -140,7 +140,7 @@ public class ParserTest2 extends TestUtil {
   }
 
   @Test public void testSingleQuotes2() {
-    Frame fr = parse_test_file("smalldata/junit/test_quote.csv");
+    Frame fr = parseTestFile("smalldata/junit/test_quote.csv");
     Assert.assertEquals(fr.numCols(),11);
     Assert.assertEquals(fr.numRows(), 7);
     fr.delete();

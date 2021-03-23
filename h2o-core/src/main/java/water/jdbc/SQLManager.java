@@ -2,13 +2,13 @@ package water.jdbc;
 
 import water.*;
 import water.fvec.*;
-import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.Log;
 
-import java.math.BigDecimal;
 import java.sql.*;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SQLManager {
 
@@ -30,6 +30,19 @@ public class SQLManager {
 
   private static final String TMP_TABLE_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "sql.tmp_table.enabled";
 
+  private static AtomicLong NEXT_TABLE_NUM = new AtomicLong(0);
+  
+  static Key<Frame> nextTableKey(String prefix, String postfix) {
+    Objects.requireNonNull(prefix);
+    Objects.requireNonNull(postfix);
+
+    final long num = NEXT_TABLE_NUM.incrementAndGet();
+    final String s = prefix + "_" + num +  "_" + postfix;
+    final String withoutWhiteChars = s.replaceAll("\\W", "_");
+
+    return Key.make(withoutWhiteChars);
+  }
+  
   /**
    * @param connection_url (Input)
    * @param table (Input)
@@ -46,7 +59,7 @@ public class SQLManager {
       final Boolean useTempTable, final String tempTableName,
       final SqlFetchMode fetchMode, final Integer numChunksHint) {
 
-    final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
+    final Key<Frame> destination_key = nextTableKey(table, "sql_to_hex");
     final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
 
     final String databaseType = getDatabaseType(connection_url);

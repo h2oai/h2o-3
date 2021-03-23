@@ -1,5 +1,6 @@
 package water.api;
 
+import hex.faulttolerance.Recovery;
 import hex.Model;
 import hex.ModelExportOption;
 import hex.grid.Grid;
@@ -7,6 +8,7 @@ import water.*;
 import water.api.schemas3.GridExportV3;
 import water.api.schemas3.GridImportV3;
 import water.api.schemas3.KeyV3;
+import water.fvec.persist.PersistUtils;
 import water.persist.Persist;
 import water.util.FileUtils;
 
@@ -32,23 +34,8 @@ public class GridImportExportHandler extends Handler {
   public KeyV3.GridKeyV3 importGrid(final int version, final GridImportV3 gridImportV3) throws IOException {
     Objects.requireNonNull(gridImportV3);
     validateGridImportParameters(gridImportV3);
-
-    final URI gridUri = FileUtils.getURI(gridImportV3.grid_path);
-    final Persist persist = H2O.getPM().getPersistForURI(gridUri);
-    try (final InputStream inputStream = persist.open(gridUri.toString())) {
-      final AutoBuffer gridAutoBuffer = new AutoBuffer(inputStream);
-      final Freezable freezable = gridAutoBuffer.get();
-      if (!(freezable instanceof Grid)) {
-        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridImportV3.grid_path));
-      }
-      final Grid grid = (Grid) freezable;
-
-      final String gridDirectory = persist.getParent(gridUri.toString());
-      loadGridModels(grid, gridDirectory);
-      DKV.put(grid);
-      return new KeyV3.GridKeyV3(grid._key);
-    }
-
+    Grid grid = Grid.importBinary(gridImportV3.grid_path, gridImportV3.load_params_references);
+    return new KeyV3.GridKeyV3(grid._key);
   }
 
   @SuppressWarnings("unused")
@@ -63,9 +50,11 @@ public class GridImportExportHandler extends Handler {
     }
 
     final Grid serializedGrid = (Grid) possibleGrid;
-    serializedGrid.exportBinary(gridExportV3.grid_directory);
     ModelExportOption[] options = gridExportV3.getModelExportOptions();
-    serializedGrid.exportModelsBinary(gridExportV3.grid_directory, options);
+    serializedGrid.exportBinary(gridExportV3.grid_directory, true, options);
+    if (gridExportV3.save_params_references) {
+      new Recovery<Grid>(gridExportV3.grid_directory).exportReferences(serializedGrid);
+    }
 
     return new KeyV3.GridKeyV3(serializedGrid._key);
   }
@@ -101,10 +90,4 @@ public class GridImportExportHandler extends Handler {
     }
   }
 
-  private static void loadGridModels(final Grid grid, final String gridDirectory) throws IOException {
-    for (Key<Model> k : grid.getModelKeys()) {
-      final Model<?, ?, ?> model = Model.importBinaryModel(gridDirectory + "/" + k.toString());
-      assert model != null;
-    }
-  }
 }

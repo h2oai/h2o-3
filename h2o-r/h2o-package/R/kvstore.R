@@ -298,15 +298,19 @@ h2o.getModel <- function(model_id) {
   # Convert ignored_columns/response_column to valid R x/y
 
 
-  parameters$x <- json$output$names
-  allparams$x  <- json$output$names
+  parameters$x <- if (is.null(json$output$original_names)) json$output$names else json$output$original_names
+  allparams$x  <- if (is.null(json$output$original_names)) json$output$names else json$output$original_names
     
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
     allparams$y <- allparams$response_column
-    parameters$x <- setdiff(parameters$x, parameters$y)
-    allparams$x <- setdiff(allparams$x, allparams$y)
+    .not_x <- function(params) {
+       c(params$y, params$ignored_columns, params$fold_column$column_name, params$weights_column$column_name,
+         params$offset_column$column_name)
+    }
+    parameters$x <- setdiff(parameters$x, .not_x(parameters))
+    allparams$x <- setdiff(allparams$x, .not_x(allparams))
   }
   allparams$ignored_columns <- NULL
   allparams$response_column <- NULL

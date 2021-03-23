@@ -50,6 +50,7 @@ test.CoxPH.heart <- function() {
       "    exp(coef) exp(-coef) lower .? upper .?",
       "age     ?.?     ?.?     ?.?      ?.?",
       "",
+      "Concordance= ?.?  (se = NA )",
       "Likelihood ratio test= ?.?  on ? df,   p=?.?",
       "Wald test            = ?.?  on ? df,   p=?.?",
       "Score (logrank) test = ?.?  on ? df,   p=?.?",

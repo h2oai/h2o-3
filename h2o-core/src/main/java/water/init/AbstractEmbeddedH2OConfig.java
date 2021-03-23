@@ -1,6 +1,10 @@
 package water.init;
 
+import hex.faulttolerance.Recovery;
+import water.H2O;
+
 import java.net.InetAddress;
+import java.util.Optional;
 
 /**
  * This class is a small shim between a main java program (such as a
@@ -62,6 +66,15 @@ public abstract class AbstractEmbeddedH2OConfig {
    */
   public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
     notifyAboutCloudSize(ip, port, size);
+  }
+
+  /**
+   * Must be called by subclass when clouding is finished.
+   */
+  protected final void cloudingFinished() {
+    if (H2O.SELF.isLeaderNode()) {
+      Recovery.autoRecover(Optional.ofNullable(H2O.ARGS.auto_recovery_dir));
+    }
   }
 
   /**

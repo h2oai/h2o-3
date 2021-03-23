@@ -30,14 +30,14 @@ Terms
 |                                     | mapper instance and one YARN    |
 |                                     | container.                      |
 +-------------------------------------+---------------------------------+
-| **H2O embedded web port**           | Each Each H2O node contains an  |
+| **H2O embedded web port**           | Each H2O node contains an  |
 |                                     | embedded web port (by default   |
 |                                     | port 54321). This web port      |
 |                                     | hosts H2O Flow as well as the   |
 |                                     | H2O REST API. The user interacts|
 |                                     | directly with this web port.    |
 +-------------------------------------+---------------------------------+
-| **H2O Internal communication port** | Each Each H2O node also has an  |
+| **H2O Internal communication port** | Each H2O node also has an  |
 |                                     | internal port (web port+1, so by| 
 |                                     | default port 54322) for internal| 
 |                                     | node-to-node communication. This| 

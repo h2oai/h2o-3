@@ -256,7 +256,7 @@ def endpoints(raw=False):
 
             # For these special cases, the actual input schema is not the one reported by the endpoint, but the schema
             # of the 'parameters' field (which is fake).
-            if (e["class_name"], method) in {("Grid", "train"), ("ModelBuilders", "train"),
+            if (e["class_name"], method) in {("Grid", "train"), ("Grid", "resume"), ("ModelBuilders", "train"),
                                              ("ModelBuilders", "validate_parameters")}:
                 pieces = path.split("/")
                 assert len(pieces) >= 4, "Expected to see algo name in the path: " + path

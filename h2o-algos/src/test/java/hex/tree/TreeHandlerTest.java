@@ -5,8 +5,6 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
@@ -38,7 +36,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+            tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -112,7 +110,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/iris/iris2.csv");
+            tfr = parseTestFile("./smalldata/iris/iris2.csv");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -160,7 +158,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/iris/iris2.csv");
+            tfr = parseTestFile("./smalldata/iris/iris2.csv");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -252,7 +250,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/iris/iris2.csv");
+            tfr = parseTestFile("./smalldata/iris/iris2.csv");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -293,7 +291,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/testng/airlines_train.csv");
+            tfr = parseTestFile("./smalldata/testng/airlines_train.csv");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -342,7 +340,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/testng/airlines_train.csv");
+            tfr = parseTestFile("./smalldata/testng/airlines_train.csv");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -387,7 +385,7 @@ public class TreeHandlerTest extends TestUtil {
 
         Scope.enter();
         try {
-            tfr = parse_test_file("./smalldata/junit/cars_nice_header.csv");
+            tfr = parseTestFile("./smalldata/junit/cars_nice_header.csv");
             DKV.put(tfr);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = tfr._key;
@@ -470,7 +468,7 @@ public class TreeHandlerTest extends TestUtil {
     public void testEmptyInheritedCategoricalLevels() {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track_generic(trainingFrame);
             IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
             parms._train = trainingFrame._key;

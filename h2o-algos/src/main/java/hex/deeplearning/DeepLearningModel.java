@@ -3,8 +3,6 @@ package hex.deeplearning;
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
 import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -557,7 +555,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param computeMetrics
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  @Override protected PredictScoreResult predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     if (!get_params()._autoencoder) {
       return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics, customMetricFunc);
     } else {
@@ -585,8 +583,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
       Frame of = new Frame(Key.<Frame>make(destination_key), names, f.vecs());
       DKV.put(of);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
-      return of;
+      ModelMetrics.MetricBuilder<?> mb = makeMetricBuilder(null);
+      return new PredictScoreResult(mb, of, of);
     }
   }
 

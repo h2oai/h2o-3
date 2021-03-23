@@ -67,7 +67,7 @@ public class ExternalXGBoostConsistencyTest {
     public void ProstateRegression() {
         Scope.enter();
         try {
-            Frame df = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame df = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
             Scope.track(df.replace(1, df.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
             Scope.track(df.replace(3, df.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical
             DKV.put(df);
@@ -92,7 +92,7 @@ public class ExternalXGBoostConsistencyTest {
     public void MNIST() {
         Scope.enter();
         try {
-            Frame df = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+            Frame df = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
             Scope.track(df.replace(784, df.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
             DKV.put(df);
             Scope.track(df);
@@ -115,7 +115,7 @@ public class ExternalXGBoostConsistencyTest {
     public void HIGGS() {
         Scope.enter();
         try {
-            Frame df = parse_test_file("bigdata/laptop/higgs_head_2M.csv");
+            Frame df = parseTestFile("bigdata/laptop/higgs_head_2M.csv");
             Scope.track(df);
             TestUtil.Frames parts = split(df, 0.1);
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();

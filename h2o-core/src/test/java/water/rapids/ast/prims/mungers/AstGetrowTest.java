@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -58,6 +59,7 @@ public class AstGetrowTest extends TestUtil {
       vv = f.vec(0).makeCons(5, 0, ar(ar("N", "Y"), ar("a", "b", "c"), null, null, null),
               ar(Vec.T_CAT, Vec.T_CAT, Vec.T_TIME, Vec.T_STR, Vec.T_UUID));
       f.add(ar("C1", "C2", "T1", "S1", "U1"), vv);
+      DKV.put(f);
       Val v = Rapids.exec("(getrow " + f._key + ")");
       assertTrue(v instanceof ValRow);
       double[] row = v.getRow();

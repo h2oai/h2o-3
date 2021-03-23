@@ -65,11 +65,15 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   
   public ScoringInfo[] getScoringInfo() { return scoringInfo;}
   
-  public void addScoringInfo(GLMParameters parms, int nclasses, long currTime) {
-    ScoringInfo currInfo = new ScoringInfo();
+  public void addScoringInfo(GLMParameters parms, int nclasses, long currTime, int iter) {
+    if (scoringInfo != null && (((GLMScoringInfo) scoringInfo[scoringInfo.length-1]).iterations() >= iter)) {  // no duplication
+      return;
+    }
+    GLMScoringInfo currInfo = new GLMScoringInfo();
     currInfo.is_classification = nclasses > 1;
     currInfo.validation = parms.valid() != null;
     currInfo.cross_validation = parms._nfolds > 1;
+    currInfo.iterations = iter;
     currInfo.time_stamp_ms = scoringInfo==null?_output._start_time:currTime;
     currInfo.total_training_time_ms = _output._training_time_ms;
     if (_output._training_metrics != null) {
@@ -252,7 +256,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String fullName() { return "Generalized Linear Modeling"; }
     public String javaName() { return GLMModel.class.getName(); }
     @Override public long progressUnits() { return GLM.WORK_TOTAL; }
-    // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
     public boolean _useDispersion1 = false; // internal use only, not for users
     public Family _family;
@@ -298,6 +301,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _stdOverride; // standardization override by beta constraints
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
     public GLMType _glmType = GLMType.glm;
+    public boolean _generate_scoring_history = false; // if true, will generate scoring history but will slow algo down
     
     public void validate(GLM glm) {
       if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE) && _family.equals(Family.multinomial))
@@ -1859,16 +1863,21 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j, computeMetrics);
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     gs.doAll(names.length,Vec.T_NUM,gs._dinfo._adaptedFrame);
-    if (gs._computeMetrics)
-      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    ModelMetrics.MetricBuilder<?> mb = null;
+    Frame rawFrame = null;
+    if (gs._computeMetrics) {
+      mb = gs._mb;
+      rawFrame = gs.outputFrame();
+    }
     domains[0] = gs._domain;
-    return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
+    Frame outputFrame = gs.outputFrame(Key.make(destination_key), names, domains);
+    return new PredictScoreResult(mb, rawFrame, outputFrame);
   }
 
   @Override public String [] makeScoringNames(){

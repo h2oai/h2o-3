@@ -2,11 +2,9 @@ package water;
 
 import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
-import water.util.Log;
+import water.util.*;
 
 import java.util.Arrays;
-
-import static water.Weaver.classForName;
 
 /** Internal H2O class used to build and maintain the cloud-wide type mapping.
  *  Only public to expose a few constants to subpackages.  No exposed user
@@ -15,7 +13,7 @@ public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
 
   // This list contains all classes that are needed at cloud initialization time.
-  static final String BOOTSTRAP_CLASSES[] = {
+  static final String[] BOOTSTRAP_CLASSES = {
     " BAD",
     "[B",                               // 1 -
     water.Iced.class.getName(),         // 2 - Base serialization class
@@ -57,6 +55,11 @@ public class TypeMap {
     NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
 
     // Beginning to hunt for files
+    water.util.IcedLong.class.getName(),
+    water.util.IcedAtomicInt.class.getName(),
+    water.util.IcedDouble.class.getName(),
+    water.util.IcedBitSet.class.getName(),
+    water.util.IcedHashSet.class.getName(),
     water.util.IcedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMapGeneric.class.getName(),
@@ -118,8 +121,7 @@ public class TypeMap {
     if (I != null)
       return I;
     try {
-      Class<?> clz = classForName(className);
-      assert clz != null;
+      Class.forName(className);
     } catch (ClassNotFoundException e) {
       throw new IllegalArgumentException("Class " + className + " is not known to H2O.", e);
     }
@@ -239,20 +241,20 @@ public class TypeMap {
    * @return new instance of Freezable object
    */
   public static Freezable newFreezable(String className) {
-    return (Freezable)theFreezable(onIce(className)).clone();
+    return theFreezable(onIce(className)).clone();
   }
   /** The single golden instance of an Iced, used for cloning and instanceof
    *  tests, do-not-modify since it's The Golden Instance and shared. */
   public static Freezable theFreezable(int id) {
     try {
       Icer f = goForGold(id);
-      return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
+      return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) {
       throw Log.throwErr(e);
     }
   }
   public static Freezable getTheFreezableOrThrow(int id) throws ClassNotFoundException {
     Icer f = goForGold(id);
-    return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
+    return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
   }
 }

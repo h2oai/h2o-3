@@ -3,6 +3,7 @@ import sys
 sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 from h2o.estimators.xgboost import *
+import numpy as np
 
 #testing default setup of following parameters:
 #distribution (available in Deep Learning, XGBoost, GBM):
@@ -23,16 +24,16 @@ def test_xgboost_effective_parameters():
     training_frame = h2o.get_frame('prostate_training')
     test_frame = h2o.get_frame('prostate_validation')
 
-    xgb1 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=2, stopping_rounds=5)
+    xgb1 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=100, stopping_rounds=2, score_each_iteration=True)
     xgb1.train(x=x, y=y, training_frame=training_frame, validation_frame=test_frame)
 
-    xgb2 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=2, distribution="bernoulli",
-                               categorical_encoding="OneHotInternal", stopping_rounds =5, stopping_metric='logloss')
+    xgb2 = H2OXGBoostEstimator(training_frame=training_frame, learn_rate=0.7, booster='gbtree', seed=1, ntrees=100, distribution="bernoulli",
+                               categorical_encoding="OneHotInternal", stopping_rounds=2, stopping_metric='logloss', score_each_iteration=True)
     xgb2.train(x=x, y=y, training_frame=training_frame, validation_frame=test_frame)
 
     assert xgb1.parms['distribution']['input_value'] == 'AUTO'
     assert xgb1.parms['distribution']['actual_value'] == xgb2.parms['distribution']['actual_value']
-    assert xgb1.logloss() == xgb2.logloss()
+    np.testing.assert_almost_equal(xgb1.logloss(), xgb2.logloss())
     assert xgb1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert xgb1.parms['stopping_metric']['actual_value'] == xgb2.parms['stopping_metric']['actual_value']
     assert xgb1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -50,7 +51,7 @@ def test_xgboost_effective_parameters():
 
     assert xgb1.parms['distribution']['input_value'] == 'AUTO'
     assert xgb1.parms['distribution']['actual_value'] == xgb2.parms['distribution']['actual_value']
-    assert xgb1.logloss() == xgb2.logloss()
+    np.testing.assert_almost_equal(xgb1.logloss(), xgb2.logloss())
     assert xgb1.parms['stopping_metric']['input_value'] == 'AUTO'
     assert xgb1.parms['stopping_metric']['actual_value'] is None
     assert xgb1.parms['categorical_encoding']['input_value'] == 'AUTO'
@@ -69,7 +70,7 @@ def test_xgboost_effective_parameters():
 
         assert xgb1.parms['distribution']['input_value'] == 'AUTO'
         assert xgb1.parms['distribution']['actual_value'] == 'AUTO'
-        assert xgb1.logloss() == xgb2.logloss()
+        np.testing.assert_almost_equal(xgb1.logloss(), xgb2.logloss())
         assert xgb1.parms['stopping_metric']['input_value'] == 'AUTO'
         assert xgb1.parms['stopping_metric']['actual_value'] == 'AUTO'
         assert xgb1.parms['categorical_encoding']['input_value'] == 'AUTO'

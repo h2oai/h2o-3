@@ -1,6 +1,7 @@
 package water;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import jsr166y.ForkJoinPool;
@@ -107,6 +108,24 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _pojo = null;
   }
 
+  public final boolean isConsistent() {
+    byte[] mem = _mem;          // Read once!
+    if (mem == null)
+      return true;
+    Freezable<?> pojo = _pojo;  // Read once!
+    if (pojo == null)
+      return true;
+    if (pojo instanceof Keyed) {
+      Freezable<?> reloaded = TypeMap.newInstance(_type);
+      reloaded = reloaded.reloadFromBytes(mem);
+      return reloaded instanceof Keyed && 
+              ((Keyed<?>) reloaded).checksum(true) == ((Keyed<?>) pojo).checksum(true);  
+    } else {
+      byte[] pojoBytes = pojo.asBytes();
+      return Arrays.equals(pojoBytes, mem);
+    }
+  }
+  
   /** The FAST path get-byte-array - final method for speed.  Will (re)build
    *  the mem array from either the POJO or disk.  Never returns NULL.
    *  @return byte[] holding the serialized POJO  */

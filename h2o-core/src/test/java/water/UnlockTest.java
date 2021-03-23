@@ -12,7 +12,7 @@ public class UnlockTest extends TestUtil {
   @Test
   public void run() {
     // Put chunks into KV store
-    Frame f = new TestUtil().parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
+    Frame f = new TestUtil().parseTestFile("smalldata/junit/syn_2659x1049.csv.gz");
     // Create two lockable frames in KV store
     Frame fr1 = new Frame(Key.<Frame>make(), f.names(), f.vecs());
     Frame fr2 = new Frame(Key.<Frame>make(), f.names(), f.vecs());

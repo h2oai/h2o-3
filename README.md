@@ -284,6 +284,8 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+Note that this packages don't cover running tests, they for building H2O only.
+
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
@@ -353,6 +355,8 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+Note that this packages don't cover running tests, they for building H2O only.
+
 ##### Step 4. Install python and the required packages:
 
 Install python:
@@ -363,7 +367,7 @@ Install pip package manager:
 
     sudo easy_install pip
 
-Next install required pakcages:
+Next install required packages:
 
     sudo pip install wheel requests 'colorama>=0.3.8' future tabulate  
 
@@ -684,26 +688,16 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.32.0.1 - October 2020
-
-* RuleFit algorithm
-* GAM Improvements (Cross Validation, MOJO support)
-* Target Encoding for Regression and Multinomial problems
-* Target Encoding minimal integration into AutoML
-* Kubernetes Improvements (Helm Charts)
-* GBM monotone constraints for quantile and tweedie distributions
-* Performance optimizations (lower memory usage)
-* Model Explainability
-* Upgrade XGBoost to 1.2
-
 ### H2O 3.34.0.1 - January 2021
 
 * Extended Isolation Forest Algorithm
-* Uplift Trees in GBM
+* Uplift Trees
 * Extracting & ranking feature interactions from GBM and XGBoost models
-* Externalized XGBoost on Kubernetes clusters
-* RuleFit MOJO
+* RuleFit MOJO, CoxPH MOJO
 * Support for MOJO2 Scoring
+* Grid-Search fault Tolerance
+* Kubernetes Operator
+* Externalized XGBoost on Kubernetes clusters
 
 <a name="Community"></a>
 ## 11. Community

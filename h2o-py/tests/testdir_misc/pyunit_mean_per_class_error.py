@@ -22,8 +22,8 @@ def pyunit_mean_per_class_error():
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
     print(gbm)
     mpce = gbm.mean_per_class_error([0.5,0.8]) ## different thresholds
-    assert (abs(mpce[0][1] - 0.004132231404958664) < 1e-5)
-    assert (abs(mpce[1][1] - 0.021390374331550777) < 1e-5)
+    assert (abs(mpce[0][1] - 0.008264) < 1e-5)
+    assert (abs(mpce[1][1] - 0.018716) < 1e-5)
 
     ## score on train first
     print(gbm.model_performance(train).mean_per_class_error(thresholds=[0.3,0.5]))

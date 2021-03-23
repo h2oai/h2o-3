@@ -9,6 +9,7 @@ import org.junit.runner.RunWith;
 import water.H2O;
 import water.Job;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -22,7 +23,7 @@ import java.util.Optional;
 import static hex.steam.SteamMessenger.ID;
 import static hex.steam.SteamMessenger.TYPE;
 import static org.junit.Assert.*;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -84,7 +85,7 @@ public class SteamExecutorStarterTest {
         Scope.enter();
         final WebsocketClient steam = new WebsocketClient();
         try {
-            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
             XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
             params._train = train._key;
@@ -122,7 +123,7 @@ public class SteamExecutorStarterTest {
         Scope.enter();
         final WebsocketClient steam = new WebsocketClient();
         try {
-            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
             XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
             params._train = train._key;
@@ -160,7 +161,7 @@ public class SteamExecutorStarterTest {
         final WebsocketClient steam = new WebsocketClient();
         System.setProperty("sys.ai.h2o.steam.notification.timeout", "2000");
         try {
-            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
             XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
             params._train = train._key;
@@ -215,7 +216,7 @@ public class SteamExecutorStarterTest {
         Scope.enter();
         final WebsocketClient steam = new WebsocketClient();
         try {
-            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
             XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
             params._train = train._key;
@@ -283,7 +284,7 @@ public class SteamExecutorStarterTest {
         Scope.enter();
         final WebsocketClient steam = new WebsocketClient();
         try {
-            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
             XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
             params._train = train._key;
             params._ntrees = 200;

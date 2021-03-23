@@ -38,6 +38,21 @@ public class MathUtils {
     return y * Math.log(y) - y + .5*Math.log(2*Math.PI*y);
   }
 
+  public static int combinatorial(int num, int d) {
+    if (num < 0 || d < 0)
+      throw new H2OIllegalArgumentException("argument to combinatorial must be >= 0!");
+    int denom1 = num-d;
+    int maxDenom = Math.max(d, denom1);
+    int minDenom = Math.min(d, denom1);
+    int prodNum = 1;
+    for (int index = maxDenom+1; index <= num; index++)
+      prodNum *= index;
+    int prodDenom = 1;
+    for (int index = 1; index <= minDenom; index++)
+      prodDenom *= index;
+    return (prodNum/prodDenom);
+  }
+
   static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame tempFrame = weight == null ?
@@ -383,17 +398,34 @@ public class MathUtils {
     return Math.abs(actual - expected) <= (n-1) * Math.ulp(actual) * absum;
   }
 
-  /** Compare 2 doubles within a tolerance
+  /** 
+   * Compare 2 doubles within a tolerance. True iff the numbers difference within a absolute tolerance or
+   * within an relative tolerance.
+   * 
    *  @param a double
    *  @param b double
-   *  @param abseps - Absolute allowed tolerance
-   *  @param releps - Relative allowed tolerance
+   *  @param absoluteTolerance - Absolute allowed tolerance
+   *  @param relativeTolerance - Relative allowed tolerance
    *  @return true if equal within tolerances  */
-  public static boolean compare(double a, double b, double abseps, double releps) {
-    return
-      Double.compare(a, b) == 0 || // check for equality
-      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
-      Math.abs(a - b) <= abseps; // check for small absolute error
+  public static boolean compare(double a, double b, double absoluteTolerance, double relativeTolerance) {
+    assert absoluteTolerance >= 0;
+    assert relativeTolerance >= 0;
+    
+    final boolean equal = Double.compare(a, b) == 0;
+    
+    if (equal) {
+      return true;
+    }
+    
+    final double absoluteError = Math.abs(a - b);
+    
+    if (absoluteError <= absoluteTolerance) {
+      return true;
+    }
+    
+    final double relativeError = Math.abs(absoluteError / Math.max(Math.abs(a), Math.abs(b)));
+
+    return relativeError < relativeTolerance;
   }
 
   // some common Vec ops

@@ -40,7 +40,7 @@ public class StackedEnsembleTest extends TestUtil {
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  public transient ExpectedException expectedException = ExpectedException.none();
 
     private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -341,7 +341,7 @@ public class StackedEnsembleTest extends TestUtil {
       try {
         Scope.enter();
         long seed = 6 << 6 << 6;
-        Frame train = parse_test_file("./smalldata/junit/cars.csv");
+        Frame train = parseTestFile("./smalldata/junit/cars.csv");
         String target = "economy (mpg)";
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
             train,
@@ -439,8 +439,8 @@ public class StackedEnsembleTest extends TestUtil {
       List<Lockable> deletables = new ArrayList<>();
       try {
         final int seed = 62832;
-        final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
-        final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+        final Frame fr = parseTestFile("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+        final Frame test = parseTestFile("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
 
         final String target = "CAPSULE";
         int tidx = fr.find(target);
@@ -493,8 +493,8 @@ public class StackedEnsembleTest extends TestUtil {
       List<Lockable> deletables = new ArrayList<>();
       try {
         final int seed = 62832;
-        final Frame train = parse_test_file("./smalldata/testng/cars_train.csv"); deletables.add(train);
-        final Frame test = parse_test_file("./smalldata/testng/cars_test.csv"); deletables.add(test);
+        final Frame train = parseTestFile("./smalldata/testng/cars_train.csv"); deletables.add(train);
+        final Frame test = parseTestFile("./smalldata/testng/cars_test.csv"); deletables.add(test);
         final String target = "economy (mpg)";
         int cyl_idx = test.find("cylinders");
         Assert.assertTrue(test.vec(cyl_idx).isInt());
@@ -574,8 +574,8 @@ public class StackedEnsembleTest extends TestUtil {
         List<Lockable> deletables = new ArrayList<>();
         try {
             final int seed = 1;
-            final Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
-            final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+            final Frame train = parseTestFile("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
+            final Frame test = parseTestFile("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
 
             final String target = "CAPSULE";
             int tidx = train.find(target);
@@ -656,9 +656,9 @@ public class StackedEnsembleTest extends TestUtil {
         long seed = 42*42;
         try {
             Scope.enter();
-            training_frame = parse_test_file(training_file);
+            training_frame = parseTestFile(training_file);
             if (null != validation_file)
-                validation_frame = parse_test_file(validation_file);
+                validation_frame = parseTestFile(validation_file);
 
             int idx = prep.prep(training_frame); // hack frame per-test
             if (null != validation_frame)
@@ -761,6 +761,7 @@ public class StackedEnsembleTest extends TestUtil {
 
             Frame training_clone = new Frame(training_frame);
             DKV.put(training_clone);
+            Scope.track(training_clone);
             preds = stackedEnsembleModel.score(training_clone);
             final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
             Assert.assertTrue(predsTheSame);
@@ -775,6 +776,7 @@ public class StackedEnsembleTest extends TestUtil {
                 ModelMetrics validation_metrics = stackedEnsembleModel._output._validation_metrics;
                 Frame validation_clone = new Frame(validation_frame);
                 DKV.put(validation_clone);
+                Scope.track(validation_clone);
                 stackedEnsembleModel.score(validation_clone).remove();
                 ModelMetrics validation_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, validation_clone);
                 Assert.assertEquals(validation_metrics.mse(), validation_clone_metrics.mse(), 1e-15);
@@ -835,8 +837,8 @@ public class StackedEnsembleTest extends TestUtil {
         List<Lockable> deletables = new ArrayList<>();
         try {
             final int seed = 1;
-            final Frame train = parse_test_file("./smalldata/testng/prostate_train.csv"); deletables.add(train);
-            final Frame test = parse_test_file("./smalldata/testng/prostate_test.csv"); deletables.add(test);
+            final Frame train = parseTestFile("./smalldata/testng/prostate_train.csv"); deletables.add(train);
+            final Frame test = parseTestFile("./smalldata/testng/prostate_test.csv"); deletables.add(test);
             final String target = "CAPSULE";
             int target_idx = train.find(target);
             train.replace(target_idx, train.vec(target_idx).toCategoricalVec()).remove();
@@ -904,9 +906,9 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
-      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      final Frame partialFrame = parseTestFile("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
       Scope.track(partialFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -953,9 +955,9 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
-      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      final Frame partialFrame = parseTestFile("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
       Scope.track(partialFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -1004,9 +1006,9 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
-      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      final Frame partialFrame = parseTestFile("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
       Scope.track(partialFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -1054,7 +1056,7 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -1104,7 +1106,7 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/junit/weather.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/junit/weather.csv");
       Scope.track(trainingFrame);
       trainingFrame.toCategoricalCol("RainTomorrow");
 
@@ -1164,9 +1166,9 @@ public class StackedEnsembleTest extends TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 1;
-      final Frame train = parse_test_file("./smalldata/testng/prostate_train.csv");
+      final Frame train = parseTestFile("./smalldata/testng/prostate_train.csv");
       deletables.add(train);
-      final Frame test = parse_test_file("./smalldata/testng/prostate_test.csv");
+      final Frame test = parseTestFile("./smalldata/testng/prostate_test.csv");
       deletables.add(test);
       final String target = "CAPSULE";
       int target_idx = train.find(target);
@@ -1244,9 +1246,9 @@ public class StackedEnsembleTest extends TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 1;
-      final Frame train = parse_test_file("./smalldata/iris/iris_train.csv");
+      final Frame train = parseTestFile("./smalldata/iris/iris_train.csv");
       deletables.add(train);
-      final Frame test = parse_test_file("./smalldata/iris/iris_test.csv");
+      final Frame test = parseTestFile("./smalldata/iris/iris_test.csv");
       deletables.add(test);
       final String target = "petal_wid";
       int target_idx = train.find(target);
@@ -1300,9 +1302,9 @@ public class StackedEnsembleTest extends TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 1;
-      final Frame train = parse_test_file("./smalldata/iris/iris_train.csv");
+      final Frame train = parseTestFile("./smalldata/iris/iris_train.csv");
       deletables.add(train);
-      final Frame test = parse_test_file("./smalldata/iris/iris_test.csv");
+      final Frame test = parseTestFile("./smalldata/iris/iris_test.csv");
       deletables.add(test);
       final String target = "petal_wid";
       int target_idx = train.find(target);
@@ -1406,4 +1408,28 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
   }
+
+  @Test
+  public void showEnsembleCannotAssumeSameColumnHandlingForBaseModelsAndOuterModel() {
+    expectedException.expectMessage("has non-standard number of columns"); // this is wrong => PUBDEV-7842
+    try {
+      Scope.enter();
+      basicEnsemble("./smalldata/junit/cars.csv",
+              null,
+              new StackedEnsembleTest.PrepData() {
+                int prep(Frame fr) {
+                  fr.remove("name").remove();
+                  Vec acVec = fr.anyVec().makeCon(Math.PI); // this is what breaks SE - SE will ignore this column, DRF not
+                  Scope.track(acVec);
+                  acVec.setNA(0);
+                  fr.insertVec(0, "almost_constant", acVec);
+                  return ~fr.find("economy (mpg)");
+                }
+              },
+              false, DistributionFamily.gaussian, Algorithm.glm, false);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

@@ -25,7 +25,7 @@ def compare_preds(train, test, x, y, booster, ntrees, max_depth, max_error):
     pyunit_utils.compare_frames_local(pred_h2o, pred_pojo, 1, tol=max_error)
 
 
-def test_booster(booster, max_error=1e-10):
+def test_booster(booster, max_error=1e-6):
     assert H2OXGBoostEstimator.available()
 
     # prostate - regression without categoricals

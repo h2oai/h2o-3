@@ -34,7 +34,7 @@ public class DKVManagerTest extends TestUtil {
         NaiveBayesModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
             List<Key> retainedKeys = new ArrayList<>();
             retainedKeys.add(trainingFrame._key);
             // Test the training frame has not been deleted
@@ -70,7 +70,7 @@ public class DKVManagerTest extends TestUtil {
         GBMModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            trainingFrame = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
 
             // Test the training frame has not been deleted
             testRetainFrame(trainingFrame);
@@ -165,7 +165,7 @@ public class DKVManagerTest extends TestUtil {
     public void testRetainModels_sharedFrames() {
         try {
             Scope.enter();
-            Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
             Scope.track(trainingFrame);
 
             // A little integration test
@@ -198,7 +198,7 @@ public class DKVManagerTest extends TestUtil {
     public void testdeleteModel_retainFrame() {
         try {
             Scope.enter();
-            Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
             Scope.track(trainingFrame);
 
           NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
@@ -234,7 +234,7 @@ public class DKVManagerTest extends TestUtil {
     Frame frame = null;
 
     try {
-      frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      frame = parseTestFile("./smalldata/testng/airlines_train.csv");
       DKVManager.retain(new Key[]{frame._key});
       assertNotNull(DKV.get(frame._key));
 
@@ -256,7 +256,7 @@ public class DKVManagerTest extends TestUtil {
     Frame frame = null;
 
     try {
-      frame = parse_test_file("smalldata/testng/airlines_train.csv");
+      frame = parseTestFile("smalldata/testng/airlines_train.csv");
       DKVManager.retain(new Key[]{});
       assertNull(DKV.get(frame._key));
 

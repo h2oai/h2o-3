@@ -1,20 +1,21 @@
 package hex.grid;
 
 import hex.*;
+import hex.faulttolerance.Recoverable;
+import hex.faulttolerance.Recovery;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
+import water.fvec.persist.PersistUtils;
 import water.persist.Persist;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 
 import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
@@ -25,14 +26,14 @@ import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model>, Recoverable<Grid<MP>> {
 
   /**
    * Publicly available Grid prototype - used by REST API.
    *
    * @see hex.schemas.GridSchemaV99
    */
-  public static final Grid GRID_PROTO = new Grid(null, null, null, null);
+  public static final Grid GRID_PROTO = new Grid(null, null, null, new HashMap<>(), null, null, 0);
 
   // A cache of double[] hyper-parameters mapping to Models.
   private final IcedHashMap<IcedLong, Key<Model>> _models = new IcedHashMap<>();
@@ -44,6 +45,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
   // Names of used hyper parameters for this grid search.
   private final String[] _hyper_names;
+  private HyperParameters _hyper_params;
+  private int _parallelism;
+  private HyperSpaceSearchCriteria _search_criteria;
 
   private final FieldNaming _field_naming_strategy;
 
@@ -173,12 +177,50 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param params     initial parameters used by grid search
    * @param hyperNames names of used hyper parameters
    */
-  protected Grid(Key key, MP params, String[] hyperNames, FieldNaming fieldNaming) {
+  protected Grid(
+      Key key, MP params, 
+      String[] hyperNames,
+      Map<String, Object[]> hyperParams,
+      HyperSpaceSearchCriteria searchCriteria,
+      FieldNaming fieldNaming,
+      int parallelism
+  ) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-      _field_naming_strategy = fieldNaming;
-      _failures = new IcedHashMap<>();
+    _failures = new IcedHashMap<>();
+    _field_naming_strategy = fieldNaming;
+    update(hyperParams, searchCriteria, parallelism);
+  }
+  
+  protected Grid(Key key, HyperSpaceWalker<MP, ?> walker, int parallelism) {
+    this(
+        key,
+        walker.getParams(),
+        walker.getAllHyperParamNames(),
+        walker.getHyperParams(),
+        walker.search_criteria(),
+        walker.getParametersBuilderFactory().getFieldNamingStrategy(),
+        parallelism
+    );
+  }
+
+  public void update(Map<String,Object[]> hyperParams, HyperSpaceSearchCriteria searchCriteria, int parallelism) {
+    _hyper_params = new HyperParameters(hyperParams);
+    _search_criteria = searchCriteria;
+    _parallelism = parallelism;
+  }
+  
+  public Map<String, Object[]> getHyperParams() {
+    return _hyper_params.getValues();
+  }
+
+  public HyperSpaceSearchCriteria getSearchCriteria() {
+    return _search_criteria;
+  }
+
+  public int getParallelism() {
+    return _parallelism;
   }
 
   /**
@@ -429,17 +471,6 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     return super.writeAll_impl(ab);
   }
 
-  /**
-   * By default, the method writeAll_impl saves all the Grid models as well into the binary file. For some use-cases,
-   * this is undesired (Grid checkpointing).
-   *
-   * @param autoBuffer AutoBuffer to serialize this instance of {@link Grid} to
-   * @return Reference to the instance of {@link AutoBuffer} given as a method argument.
-   */
-  protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
-    return super.writeAll_impl(autoBuffer.put(this));
-  }
-
   @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     throw H2O.unimpl();
@@ -511,35 +542,89 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * Exports this Grid in a binary format using {@link AutoBuffer}. Related models are not saved.
    *
    * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
+   * @return Path of the file written
    * @throws IOException Error serializing the grid.
    */
-  public void exportBinary(final String gridExportDir) throws IOException {
+  public List<String> exportBinary(final String gridExportDir, final boolean exportModels, ModelExportOption... options) {
     Objects.requireNonNull(gridExportDir);
-    final String gridFilePath = gridExportDir + "/" + _key.toString();
     assert _key != null;
+    final String gridFilePath = gridExportDir + "/" + _key;
     final URI gridUri = FileUtils.getURI(gridFilePath);
+    PersistUtils.write(gridUri, (ab) -> ab.put(this));
+    List<String> result = new ArrayList<>();
+    result.add(gridFilePath);
+    if (exportModels) {
+      exportModelsBinary(result, gridExportDir, options);
+    }
+    return result;
+  }
+
+  private void exportModelsBinary(final List<String> files, final String exportDir, ModelExportOption... options) {
+    Objects.requireNonNull(exportDir);
+    for (Model model : getModels()) {
+      try {
+        String modelFile = exportDir + "/" + model._key.toString();
+        files.add(modelFile);
+        model.exportBinaryModel(modelFile, true, options);
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to write grid model " + model._key.toString(), e);
+      }
+    }
+  }
+  
+  public static Grid importBinary(final String gridPath, final boolean loadReferences) {
+    final URI gridUri = FileUtils.getURI(gridPath);
+    if (!PersistUtils.exists(gridUri)) {
+      throw new IllegalArgumentException("Grid file not found " + gridUri);
+    }
     final Persist persist = H2O.getPM().getPersistForURI(gridUri);
-    try (final OutputStream outputStream = persist.create(gridUri.toString(), true)) {
-      final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
-      writeWithoutModels(autoBuffer);
-      autoBuffer.close();
+    final String gridDirectory = persist.getParent(gridUri.toString());
+    final Grid grid = readGridBinary(gridUri, persist);
+    final Recovery<Grid> recovery = new Recovery<>(gridDirectory);
+    URI gridReferencesUri = FileUtils.getURI(recovery.referencesMetaFile(grid));
+    if (loadReferences && !PersistUtils.exists(gridReferencesUri)) {
+      throw new IllegalArgumentException("Requested to load with references, but the grid was saved without references.");
+    }
+    grid.importModelsBinary(gridDirectory);
+    if (loadReferences) {
+      recovery.loadReferences(grid);
+    }
+    DKV.put(grid);
+    return grid;
+  }
+  
+  private static Grid readGridBinary(final URI gridUri, Persist persist) {
+    try (final InputStream inputStream = persist.open(gridUri.toString())) {
+      final AutoBuffer gridAutoBuffer = new AutoBuffer(inputStream);
+      final Freezable freezable = gridAutoBuffer.get();
+      if (!(freezable instanceof Grid)) {
+        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridUri.toString()));
+      }
+      return (Grid) freezable;
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to open grid file.", e);
     }
   }
 
-  /**
-   * Saves all of the models present in this Grid. Models are named by their keys.
-   *
-   * @param exportDir Directory to export all the models to.
-   * @throws IOException Error exporting the models
-   */
-  public void exportModelsBinary(final String exportDir, ModelExportOption... options) throws IOException {
-    Objects.requireNonNull(exportDir);
-    for (Model model : getModels()) {
-      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true, options);
+  private void importModelsBinary(final String exportDir) {
+    for (Key<Model> k : _models.values()) {
+      String modelFile = exportDir + "/" + k.toString();
+      try {
+        final Model<?, ?, ?> model = Model.importBinaryModel(modelFile);
+        assert model != null;
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to load model from " + modelFile, e);
+      }
     }
+  }
+
+  @Override
+  public Set<Key<?>> getDependentKeys() {
+    return _params.getDependentKeys();
   }
 
   public MP getParams() {
     return _params;
   }
+
 }

@@ -63,7 +63,7 @@ public class FrameTest {
     Set<Vec> removedVecs = new HashSet<>();
 
     try {
-      Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+      Frame testData = parseTestFile(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
       Scope.track(testData);
 
       // dataset to split
@@ -91,13 +91,13 @@ public class FrameTest {
   @Test public void testDeepSelectSparse() {
     Scope.enter();
     // dataset to split
-    Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+    Frame testData = parseTestFile(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
     // premade splits from R
-    Frame subset1 = parse_test_file(Key.make("test_deep_select_2"), "smalldata/sparse/data_split_1.svm.zip");
+    Frame subset1 = parseTestFile(Key.make("test_deep_select_2"), "smalldata/sparse/data_split_1.svm.zip");
     // subset2 commented out to save time
-//    Frame subset2 = parse_test_file(Key.make("test_deep_select_3"),"smalldata/sparse/data_split_2.svm");
+//    Frame subset2 = parseTestFile(Key.make("test_deep_select_3"),"smalldata/sparse/data_split_2.svm");
     // predicates (0: runif 1:runif < .5 2: runif >= .5
-    Frame rnd = parse_test_file(Key.make("test_deep_select_4"), "smalldata/sparse/rnd_r.csv");
+    Frame rnd = parseTestFile(Key.make("test_deep_select_4"), "smalldata/sparse/rnd_r.csv");
     Frame x = null;
     Frame y = null;
     try {

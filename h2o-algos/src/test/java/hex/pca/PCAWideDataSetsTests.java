@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertTrue;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 /**
 	* Created by wendycwong on 2/27/17.
@@ -195,7 +195,7 @@ class ActualPCATests {
 				PCAModel modelW = null;     // store PCA models generated with wideDataSet set to true
 				Frame train = null, scoreN = null, scoreW = null;
 				try {
-						train = parse_test_file(Key.make(datafile), datafile);
+						train = parseTestFile(Key.make(datafile), datafile);
 						Scope.track(train);
 						if (removeColumns) {
 								train.remove(12).remove();    // remove categorical columns

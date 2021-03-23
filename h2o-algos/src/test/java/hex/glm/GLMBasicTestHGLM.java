@@ -28,7 +28,7 @@ public class GLMBasicTestHGLM extends TestUtil {
   public void testSemiconductor(){
     try {
       Scope.enter();
-      Frame fr = parse_test_file("smalldata/glm_test/semiconductor.csv");
+      Frame fr = parseTestFile("smalldata/glm_test/semiconductor.csv");
       fr.replace(0, fr.vec(0).toCategoricalVec()).remove();
       DKV.put(fr);
       Scope.track(fr);
@@ -61,7 +61,7 @@ public class GLMBasicTestHGLM extends TestUtil {
   public void testMultiChunkData(){
     try {
       Scope.enter();
-      Frame fr = parse_test_file("smalldata/glm_test/HGLM_5KRows_100Z.csv");
+      Frame fr = parseTestFile("smalldata/glm_test/HGLM_5KRows_100Z.csv");
       fr.replace(0, fr.vec(0).toCategoricalVec()).remove();
       fr.replace(1, fr.vec(1).toCategoricalVec()).remove();
       fr.replace(2, fr.vec(2).toCategoricalVec()).remove();

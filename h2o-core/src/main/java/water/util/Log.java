@@ -9,6 +9,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Properties;
 
+import static water.util.StringUtils.fixedLength;
+
 /** 
  * Log for H2O. 
  *
@@ -379,23 +381,6 @@ abstract public class Log {
     }
     
     return (_logger = Logger.getLogger("water.default"));
-  }
-
-  public static String fixedLength(String s, int length) {
-    String r = padRight(s, length);
-    if (r.length() > length) {
-      int a = Math.max(r.length() - length + 1, 0);
-      int b = Math.max(a, r.length());
-      r = "#" + r.substring(a, b);
-    }
-    return r;
-  }
-  
-  static String padRight(String stringToPad, int size) {
-    StringBuilder strb = new StringBuilder(stringToPad);
-    while (strb.length() < size)
-      if (strb.length() < size) strb.append(' ');
-    return strb.toString();
   }
 
   public static void ignore(Throwable e) {

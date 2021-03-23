@@ -1,16 +1,13 @@
 package hex.tree;
 
 import hex.*;
-
-import static hex.genmodel.GenModel.createAuxKey;
-import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
-
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
+import org.apache.log4j.Logger;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -25,11 +22,16 @@ import water.util.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static hex.genmodel.GenModel.createAuxKey;
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
+
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
         > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
+
+  private static final Logger LOG = Logger.getLogger(SharedTreeModel.class);
 
   @Override
   public String[] getMostImportantFeatures(int n) {
@@ -85,10 +87,12 @@ public abstract class SharedTreeModel<
     public double _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level
     public double _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
+    public boolean _parallel_main_model_building = false;
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
-    static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
 
     @Override
     public int getNTrees() {
@@ -382,7 +386,7 @@ public abstract class SharedTreeModel<
         DKV.put(res);
       }
       if (hasInvalidPaths) {
-        Log.warn("Some of the leaf node assignments were skipped (NA), " +
+        LOG.warn("Some of the leaf node assignments were skipped (NA), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return res;
@@ -416,7 +420,7 @@ public abstract class SharedTreeModel<
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
       Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
       if (result.vec(0).min() < 0) {
-        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
+        LOG.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return result;

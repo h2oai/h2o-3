@@ -28,12 +28,13 @@ def coxph_smoke():
     assert cphH2O.formula() == "Surv(week, arrest) ~ fin + age + race + wexp + mar + paro + prio", \
         "Expected formula to be 'Surv(week, arrest) ~ fin + age + race + wexp + mar + paro + prio' but it was " + cphH2O.formula()
 
-    predH2O = cphH2O.predict(test_data=rossiH2O)
+    predH2O = cphH2O.predict(test_data=rossiH2O)   # the same dataset as training
     assert len(predH2O) == len(rossi)
-
-    metricsH2O = cphH2O.model_performance(rossiH2O)
-    py_concordance = concordance_for_lifelines(cph)
     
+    metricsH2O = cphH2O.model_performance(rossiH2O)
+    assert abs(metricsH2O.concordance() - cphH2O.concordance()) < 0.001
+    
+    py_concordance = concordance_for_lifelines(cph)
     assert abs(py_concordance - metricsH2O.concordance()) < 0.001
 
 

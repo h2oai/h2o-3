@@ -11,18 +11,23 @@ import water.fvec.NewChunk;
 
 import java.util.Arrays;
 
+import static hex.Model.Contributions.*;
+
 public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
 
   private final DataInfo _di;
   private final XGBoostModelInfo _modelInfo;
   private final XGBoostOutput _output;
+  private final boolean _outputAggregated;
 
-  private transient XGBoostJavaMojoModel _mojo; 
+  private transient XGBoostJavaMojoModel _mojo;
 
-  public PredictTreeSHAPTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output) {
+  public PredictTreeSHAPTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
+                             ContributionsOptions options) {
     _di = di;
     _modelInfo = modelInfo;
     _output = output;
+    _outputAggregated = ContributionsOutputFormat.Compact.equals(options._outputFormat);
   }
 
   @Override
@@ -37,7 +42,8 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
     MutableOneHotEncoderFVec rowFVec = new MutableOneHotEncoderFVec(_di, _output._sparse);
 
     double[] input = MemoryManager.malloc8d(chks.length);
-    float[] contribs = MemoryManager.malloc4f(nc.length);
+    float[] contribs = MemoryManager.malloc4f(_di.fullN() + 1);
+    float[] output = _outputAggregated ? MemoryManager.malloc4f(nc.length) : contribs;
 
     Object workspace = _mojo.makeContributionsWorkspace();
 
@@ -51,8 +57,13 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
       // calculate Shapley values
       _mojo.calculateContributions(rowFVec, contribs, workspace);
 
+      if (_outputAggregated) {
+        rowFVec.decodeAggregate(contribs, output);
+        output[output.length - 1] = contribs[contribs.length - 1]; // bias term
+      }
+      
       for (int i = 0; i < nc.length; i++) {
-        nc[i].addNum(contribs[i]);
+        nc[i].addNum(output[i]);
       }
     }
   }

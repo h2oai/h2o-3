@@ -11,7 +11,6 @@ import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.FeatureInteraction;
 import hex.FeatureInteractions;
 import hex.FeatureInteractionsCollector;
 import hex.tree.PlattScalingHelper;
@@ -28,13 +27,13 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
+import static hex.tree.xgboost.util.GpuUtils.hasGPU;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
@@ -140,7 +139,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _rate_drop = 0;
     public boolean _one_drop = false;
     public float _skip_drop = 0;
-    public int _gpu_id = 0; // which GPU to use
+    public int[] _gpu_id; // which GPU to use
     public Backend _backend = Backend.auto;
 
     public String algoName() { return "XGBoost"; }
@@ -275,17 +274,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p, boolean verbose) {
     Consumer<String> log = verbose ? LOG::info : LOG::debug;
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node) {
+      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node && !XGBoost.allowMultiGPU()) {
         log.accept("GPU backend not supported in distributed mode. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       } else if (! p.gpuIncompatibleParams().isEmpty()) {
         log.accept("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
-      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
-        log.accept("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+      } else if (hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
+        log.accept("Using GPU backend (gpu_id: " + Arrays.toString(p._gpu_id) + ").");
         return XGBoostParameters.Backend.gpu;
       } else {
-        log.accept("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
+        log.accept("No GPU (gpu_id: " + Arrays.toString(p._gpu_id) + ") found. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       }
     } else {
@@ -374,7 +373,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     XGBoostParameters.Backend actualBackend = getActualBackend(p, true);
     XGBoostParameters.TreeMethod actualTreeMethod = getActualTreeMethod(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
-      params.put("gpu_id", p._gpu_id);
+      if (p._gpu_id != null && p._gpu_id.length > 0) {
+        params.put("gpu_id", p._gpu_id[0]);
+      } else {
+        params.put("gpu_id", 0);
+      }
       // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
       if (p._booster == XGBoostParameters.Booster.gblinear) {
         LOG.info("Using gpu_coord_descent updater."); 
@@ -659,19 +662,21 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    return scoreContributions(frame, destination_key, null);
+    return scoreContributions(frame, destination_key, null, new ContributionsOptions());
   }
 
   @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
     DataInfo di = model_info().dataInfo();
     assert di != null;
-    final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
+    final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ? 
+            _output.features() : di.coefNames();
+    final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
-    return new PredictTreeSHAPTask(di, model_info(), _output)
+    return new PredictTreeSHAPTask(di, model_info(), _output, options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);

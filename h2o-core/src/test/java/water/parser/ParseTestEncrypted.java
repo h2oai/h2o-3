@@ -160,7 +160,7 @@ public class ParseTestEncrypted extends TestUtil {
       Frame decrypted = Scope.track(ParseDataset.parse(fKey, new Key[]{encVec._key}, false, guessedSetup));
 
       // 7. Compare with source dataset
-      Frame plaintext = Scope.track(parse_test_file(PLAINTEXT_FILE));
+      Frame plaintext = Scope.track(parseTestFile(PLAINTEXT_FILE));
       assertArrayEquals(plaintext._names, decrypted._names);
       for (String n : plaintext._names) {
         switch (plaintext.vec(n).get_type_str()) {

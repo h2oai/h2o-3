@@ -1,9 +1,7 @@
 package hex.tree.xgboost;
 
 import hex.Model;
-import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
-import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.attributes.parameters.ModelParameter;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,6 +20,7 @@ import java.util.Map;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static water.TestUtil.parseTestFile;
 import static water.TestUtil.toMojo;
 
 @RunWith(H2ORunner.class)
@@ -80,7 +79,7 @@ public class XGBoostModelTest {
   public void testCrossValidationWithWeights() {
     Scope.enter();
     try {
-      final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
+      final Frame airlinesFrame = Scope.track(parseTestFile("./smalldata/testng/airlines.csv"));
       airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
 
       final Vec weightsVector = TestUtil.createRandomBinaryWeightsVec(airlinesFrame.numRows(), 0xFEED);
@@ -111,7 +110,7 @@ public class XGBoostModelTest {
   public void testIncludeInteractionConstraints() {
     Scope.enter();
     try {
-      final Frame airlinesFrame = Scope.track(TestUtil.parse_test_file("./smalldata/testng/airlines.csv"));
+      final Frame airlinesFrame = Scope.track(parseTestFile("./smalldata/testng/airlines.csv"));
       airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
       
       DKV.put(airlinesFrame);

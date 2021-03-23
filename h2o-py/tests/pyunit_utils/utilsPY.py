@@ -1633,15 +1633,19 @@ def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=
             val1 = table1.cell_values[cellind][colindex]
             val2 = table2.cell_values[cellind][colindex]
 
-            if isinstance(val1, float) and isinstance(val2, float):
-                assert abs(val1-val2) < tolerance, \
+            if isinstance(val1, float) and isinstance(val2, float) and not(math.isnan(val1) and math.isnan(val2)):
+                    assert abs(val1-val2) < tolerance, \
                     "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
                     "{3}".format(val1, val2, cname, tolerance)
-            else:
-                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+            elif not(isinstance(val1, float) and isinstance(val2, float)) :
+                    assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
                                    "{3}".format(val1, val2, cname, tolerance)
     print("******* Congrats!  Test passed. ")
 
+def assert_equal_scoring_history(model1, model2, col_compare_list, tolerance=1e-6):
+    scoring_hist1 = model1._model_json["output"]["scoring_history"]
+    scoring_hist2 = model2._model_json["output"]["scoring_history"]
+    assert_H2OTwoDimTable_equal_upto(scoring_hist1, scoring_hist2, col_compare_list, tolerance=tolerance)
 
 def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
                                 num_per_dim=10):
@@ -3490,16 +3494,16 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
         if (typeDict[frameNames[colInd]]==u'enum'):
             if returnResult:
                 result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
             else:
                 result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
         elif (typeDict[frameNames[colInd]]==u'string'):
             if returnResult:
                 result =  compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
             else:
                 compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
@@ -3508,7 +3512,7 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
         else:
             if returnResult:
                 result = compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
             else:
                 compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
@@ -4354,6 +4358,36 @@ def extractNextCoeff(cs_norm, orderedCoeffNames, startVal):
         startVal[ind] = cs_norm[orderedCoeffNames[ind]]
     return startVal
 
+def assertEqualScoringHistoryIteration(model_long, model_short, col_list_compare, tolerance=1e-6):
+    scoring_history_long = model_long._model_json["output"]["scoring_history"]
+    scoring_history_short = model_short._model_json["output"]["scoring_history"]
+    cv_4th_len = len(scoring_history_short.cell_values) - 1 # ignore last iteration, scoring is performed at different spots
+    cv_len = len(scoring_history_long.cell_values)
+    col_2D = scoring_history_short.col_header
+    iterInd = col_2D.index('iterations')
+    count = 0
+    for index in range(cv_4th_len):
+        iterInd4th = scoring_history_short.cell_values[index][iterInd]
+        iterIndlong = scoring_history_long.cell_values[count][iterInd]
+        while not(iterInd4th == None) and (iterInd4th > iterIndlong):
+            count = count+1
+            if count >= cv_len:
+                break
+            iterIndlong = scoring_history_long.cell_values[count][iterInd]
+
+        if not(iterInd4th == None) and not(iterInd4th == '') and (iterInd4th == iterIndlong):
+            for col_header in col_list_compare:
+                ind = col_2D.index(col_header)
+                val_short = scoring_history_short.cell_values[index][ind]
+                val_long = scoring_history_long.cell_values[count][ind]
+                if not(val_short == '' or math.isnan(val_short) or val_long == '' or math.isnan(val_long)):
+                    assert abs(scoring_history_short.cell_values[index][ind]-
+                               scoring_history_long.cell_values[count][ind]) < tolerance, \
+                        "{0} expected: {1}, actual: {2}".format(col_header, scoring_history_short.cell_values[index][ind],
+                                                                scoring_history_long.cell_values[count][ind])
+        count = count+1
+
+
 def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
     for key in regCoeff:
         temp = key.split('_')
@@ -4363,4 +4397,12 @@ def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
         assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
         diff = abs(val1-val2)
         print("val1: {0}, val2: {1}, tol: {2}".format(val1, val2, tol))
+        assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
+
+def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
+    for key in regCoeff:
+        val1 = regCoeff[key]
+        val2 = coeff[key]
+        assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
+        diff = abs(val1-val2)
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)

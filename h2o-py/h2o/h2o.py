@@ -325,6 +325,21 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
 
+
+def resume(recovery_dir=None):
+    """
+    Triggers auto-recovery resume - this will look into configured recovery dir and resume and
+    tasks that were interrupted by unexpected cluster stopping.
+
+    :param recovery_dir: A path to where cluster recovery data is stored, if blank, will use cluster's configuration.
+    """
+
+    params = {
+        "recovery_dir": recovery_dir
+    }
+    api(endpoint="POST /3/Recovery/resume", data=params)
+
+
 def lazy_import(path, pattern=None):
     """
     Import a single file or collection of files.
@@ -490,12 +505,14 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                                         skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
 
 
-def load_grid(grid_file_path):
+def load_grid(grid_file_path, load_params_references=False):
     """
     Loads previously saved grid with all its models from the same folder
 
     :param grid_file_path: A string containing the path to the file with grid saved.
      Grid models are expected to be in the same folder.
+    :param load_params_references: If true will attemt to reload saved objects referenced by grid parameters
+      (e.g. training frame, calibration frame), will fail if grid was saved without referenced objects.
 
     :return: An instance of H2OGridSearch
 
@@ -526,18 +543,23 @@ def load_grid(grid_file_path):
     """
 
     assert_is_type(grid_file_path, str)
-    response = api("POST /3/Grid.bin/import", {"grid_path": grid_file_path})
+    response = api(
+        "POST /3/Grid.bin/import", 
+        {"grid_path": grid_file_path, "load_params_references": load_params_references}
+    )
     return get_grid(response["name"])
 
 
-def save_grid(grid_directory, grid_id, export_cross_validation_predictions=False):
+def save_grid(grid_directory, grid_id, save_params_references=False, export_cross_validation_predictions=False):
     """
     Export a Grid and it's all its models into the given folder
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
     :param grid_id: A character string with identification of the Grid in H2O.
+    :param save_params_references: True if objects referenced by grid parameters
+      (e.g. training frame, calibration frame) should also be saved. 
     :param export_cross_validation_predictions: A boolean flag indicating whether the models exported from the grid 
-        should be saved with CV Holdout Frame predictions. Default is not to export the predictions. 
+      should be saved with CV Holdout Frame predictions. Default is not to export the predictions.
 
     :examples:
 
@@ -566,10 +588,16 @@ def save_grid(grid_directory, grid_id, export_cross_validation_predictions=False
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
+    assert_is_type(save_params_references, bool)
     assert_is_type(export_cross_validation_predictions, bool)
-    params = {"grid_directory": grid_directory, "export_cross_validation_predictions": export_cross_validation_predictions}
+    params = {
+        "grid_directory": grid_directory,
+        "save_params_references": save_params_references,
+        "export_cross_validation_predictions": export_cross_validation_predictions
+    }
     api("POST /3/Grid.bin/" + grid_id + "/export", params)
     return grid_directory + "/" + grid_id
+
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
     """
@@ -1527,7 +1555,7 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, parallel=False):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
@@ -1544,6 +1572,8 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
         Default is ``parts = 1``, which is to export to a single file.
     :param header: if True, write out column names in the header line.
     :param quote_header: if True, quote column names in the header.
+    :param parallel: use a parallel export to a single file (doesn't apply when num_parts != 1, 
+        might create temporary files in the destination directory).
 
     :examples:
 
@@ -1568,10 +1598,35 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     assert_is_type(compression, str, None)
     assert_is_type(header, bool)
     assert_is_type(quote_header, bool)
+    assert_is_type(parallel, bool)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
                data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
-                     "header": header, "quote_header": quote_header}), "Export File").poll()
+                     "header": header, "quote_header": quote_header, "parallel": parallel}), "Export File").poll()
+
+
+def load_frame(frame_id, path, force=True):
+    """
+    Load frame previously stored in H2O's native format.
+
+    This will load a data frame from file-system location. Stored data can be loaded only with a cluster of the same
+    size and same version the the one which wrote the data. The provided directory must be accessible from all nodes 
+    (HDFS, NFS). Provided frame_id must be the same as the one used when writing the data.
+    
+    :param frame_id: the frame ID of the original frame
+    :param path: a filesystem location where to look for frame data
+    :param force: overwrite an already existing frame (defaults to true)
+    :returns: A Frame object.
+    
+    :examples:
+    
+    >>> iris = h2o.load_frame("iris_weather.hex", "hdfs://namenode/h2o_data")
+    """
+    H2OJob(api(
+        "POST /3/Frames/load",
+        data={"frame_id": frame_id, "dir": path, "force": force}
+    ), "Load frame data").poll()
+    return get_frame(frame_id)
 
 
 def cluster():
@@ -2289,6 +2344,85 @@ def print_mojo(mojo_path, format="json", tree_index=None):
         return output
     else:
         raise H2OError("Unable to print MOJO: %s" % output)
+
+def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0, time_cols = 0, uuid_cols = 0):
+    """
+    Computes an estimate for cluster memory usage in GB.
+    
+    Number of columns and number of rows are required. For a better estimate you can provide a counts of different
+    types of columns in the dataset.
+
+    :param ncols: total number of columns in a dataset. An required parameter, integer, can't be negative
+    :param nrows: total number of rows in a dataset. An required parameter, integer, can't be negative 
+    :param num_cols: number of numeric columns in a dataset. Integer, can't be negative.
+    :param string_cols: number of string columns in a dataset. Integer, can't be negative.
+    :param cat_cols: number of categorical columns in a dataset. Integer, can't be negative.
+    :param time_cols: number of time columns in a dataset. Integer, can't be negative.
+    :param uuid_cols: number of uuid columns in a dataset. Integer, can't be negative.
+    :return: An memory estimate in GB.
+
+    :example:
+
+    >>> from h2o import estimate_cluster_mem
+    >>> ### I will load an parquet file with 18 columns and 2 million lines
+    >>> estimate_cluster_mem(18, 2000000)
+    >>> ### I will load an other parquet file with 16 columns and 2 million lines, I ask for a more precise estimate 
+    >>> ### because I know 12 of 16 columns are categorical and one of 16 columns consist of uuids.
+    >>> estimate_cluster_mem(18, 2000000, cat_cols=12, uuid_cols=1)
+    >>> ### I will load an parquet file with 8 columns and 31 million lines, I ask for a more precise estimate 
+    >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
+    >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
+    
+    """    
+    import math
+    
+    if (ncols < 0):
+        raise ValueError("ncols can't be a negative number")
+    
+    if (nrows < 0):
+        raise ValueError("nrows can't be a negative number")
+    
+    if (num_cols < 0):
+        raise ValueError("num_cols can't be a negative number")
+    
+    if (string_cols < 0):
+        raise ValueError("string_cols can't be a negative number")
+    
+    if (cat_cols < 0):
+        raise ValueError("cat_cols can't be a negative number")
+    
+    if (time_cols < 0):
+        raise ValueError("time_cols can't be a negative number")
+    
+    if (uuid_cols < 0):
+        raise ValueError("uuid_cols can't be a negative number")
+    
+    BASE_MEM_REQUIREMENT_MB = 32
+    SAFETY_FACTOR = 4
+    BYTES_IN_MB = 1024 * 1024
+    BYTES_IN_GB = 1024 * BYTES_IN_MB
+
+    known_cols = num_cols + string_cols + uuid_cols + cat_cols + time_cols
+    
+    if (known_cols > ncols):
+        raise ValueError("There can not be more specific columns then columns in total")
+
+    unknown_cols = ncols - known_cols
+    unknown_size = 8
+    unknown_requirement = unknown_cols * nrows * unknown_size
+    num_size = 8
+    num_requirement = num_cols * nrows * num_size
+    string_size = 128
+    string_requirement = string_size * string_cols * nrows
+    uuid_size = 16
+    uuid_requirement = uuid_size * uuid_cols * nrows
+    cat_size = 2
+    cat_requirement = cat_size * cat_cols * nrows
+    time_size = 8
+    time_requirement = time_size * time_cols * nrows
+    data_requirement = unknown_requirement + num_requirement + string_requirement + uuid_requirement + cat_requirement + time_requirement
+    mem_req = (BASE_MEM_REQUIREMENT_MB * BYTES_IN_MB + data_requirement) * SAFETY_FACTOR / BYTES_IN_GB
+    return math.ceil(mem_req)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Private

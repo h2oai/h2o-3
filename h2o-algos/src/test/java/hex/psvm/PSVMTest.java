@@ -25,7 +25,7 @@ public class PSVMTest extends TestUtil {
   public void testSplice() {
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/splice/splice.svm");
+      Frame fr = parseTestFile("./smalldata/splice/splice.svm");
       Scope.track(fr);
 
       PSVMModel.PSVMParameters parms = new PSVMModel.PSVMParameters();
@@ -43,7 +43,7 @@ public class PSVMTest extends TestUtil {
       assertNotNull(model._output._compressed_svs);
       assertNotEquals(0, model._output._compressed_svs.length);
 
-      Frame expected = parse_test_file("./smalldata/splice/splice_icf100_preds.csv");
+      Frame expected = parseTestFile("./smalldata/splice/splice_icf100_preds.csv");
       Scope.track(expected);
       expected.replace(
               expected.find("predict"),
@@ -88,11 +88,11 @@ public class PSVMTest extends TestUtil {
   public void testProstate() {
     try {
       Scope.enter();
-      Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv")
+      Frame train = parseTestFile("./smalldata/logreg/prostate_train.csv")
               .toCategoricalCol("CAPSULE");
       Scope.track(train);
 
-      Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv")
+      Frame test = parseTestFile("./smalldata/logreg/prostate_test.csv")
               .toCategoricalCol("CAPSULE");
       Scope.track(test);
 
@@ -141,7 +141,7 @@ public class PSVMTest extends TestUtil {
       Frame train;
       Frame valid;
       {
-        Frame fr = parse_test_file("./smalldata/logreg/prostate.csv")
+        Frame fr = parseTestFile("./smalldata/logreg/prostate.csv")
                 .toCategoricalCol("CAPSULE")
                 .toCategoricalCol("RACE");
         Scope.track(fr);
@@ -184,7 +184,7 @@ public class PSVMTest extends TestUtil {
   public void testSVMGuide1() {
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/svm_test/svmguide1.svm")
+      Frame fr = parseTestFile("./smalldata/svm_test/svmguide1.svm")
               .toCategoricalCol("C1");
       Scope.track(fr);
 
@@ -199,7 +199,7 @@ public class PSVMTest extends TestUtil {
       assertNotNull(model);
       Scope.track_generic(model);
 
-      Frame test = parse_test_file("./smalldata/svm_test/svmguide1_test.svm")
+      Frame test = parseTestFile("./smalldata/svm_test/svmguide1_test.svm")
               .toCategoricalCol("C1");
       Scope.track(test);
 
@@ -218,7 +218,7 @@ public class PSVMTest extends TestUtil {
   public void testSVMGuide3() {
     try {
       Scope.enter();
-      Frame fr = parse_test_file("./smalldata/svm_test/svmguide3scale.svm");
+      Frame fr = parseTestFile("./smalldata/svm_test/svmguide3scale.svm");
       Scope.track(fr);
 
       PSVMModel.PSVMParameters parms = new PSVMModel.PSVMParameters();
@@ -233,7 +233,7 @@ public class PSVMTest extends TestUtil {
       assertNotNull(model);
       Scope.track_generic(model);
 
-      Frame test = parse_test_file("./smalldata/svm_test/svmguide3scale_test.svm");
+      Frame test = parseTestFile("./smalldata/svm_test/svmguide3scale_test.svm");
       Scope.track(test);
 
       Frame testPreds = model.score(test);

@@ -108,17 +108,67 @@ automl.leaderboard.suite <- function() {
         expect_equal(names(aml@leaderboard), std_columns)
         expect_equal(names(h2o.get_leaderboard(aml)), std_columns)
         expect_equal(names(h2o.get_leaderboard(aml, extra_columns='unknown')), std_columns)
-        expect_equal(names(h2o.get_leaderboard(aml, extra_columns='ALL')), c(std_columns, "training_time_ms", "predict_time_per_row_ms"))
+        expect_equal(names(h2o.get_leaderboard(aml, extra_columns='ALL')), c(std_columns, "training_time_ms", "predict_time_per_row_ms", "algo"))
         expect_equal(names(h2o.get_leaderboard(aml, extra_columns="training_time_ms")), c(std_columns, "training_time_ms"))
         expect_equal(names(h2o.get_leaderboard(aml, extra_columns=c("predict_time_per_row_ms","training_time_ms"))), c(std_columns, "predict_time_per_row_ms", "training_time_ms"))
         expect_equal(names(h2o.get_leaderboard(aml, extra_columns=list("unkown","training_time_ms"))), c(std_columns, "training_time_ms"))
 
         lb_ext <- h2o.get_leaderboard(aml, 'ALL')
         print(lb_ext)
-        expect_true(all(sapply(lb_ext[2:length(lb_ext)], is.numeric)))
+        expect_true(all(sapply(lb_ext[setdiff(names(lb_ext), c("model_id", "algo"))], is.numeric)))
         expect_true(all(sapply(lb_ext["training_time_ms"], function(v) v >= 0)))
         expect_true(all(sapply(lb_ext["predict_time_per_row_ms"], function(v) v > 0)))
+        expect_true(all(lb_ext["algo"] %in% c("DeepLearning", "DRF", "GBM", "GLM", "StackedEnsemble", "XGBoost")))
     }
+
+
+    test.get_best_model_per_family <- function() {
+        fr <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))
+        fr["CAPSULE"] <- as.factor(fr["CAPSULE"])
+        aml <- h2o.automl(y = "CAPSULE", training_frame = fr, max_models = 11,
+                          project_name = "r_aml_customlb")
+        .check_best_model <- function(model_ids, criterion) {
+            seen <- character()
+
+            # test case insensitivity in algo specification
+            top_model_ids <- sapply(c("DEEPLEARNING", "drf", "GBM", "glm", "stackedensemble", "xgboost"), function(algo) {
+                m <- h2o.get_best_model(aml, algo, criterion = criterion)
+                if (is.null(m)) NULL else m@model_id
+            })
+            expect_true(sum(sapply(top_model_ids, is.null)) <= 1 && length(top_model_ids) <= 6)
+            for (model_id in model_ids) {
+                model_type <- strsplit(model_id, "_")[[1]][[1]]
+                if (!model_type %in% seen) {
+                    expect_true(model_id %in% top_model_ids)
+                    if (model_type %in% c("DRF", "XRT"))
+                      seen <- c(seen, c("DRF", "XRT"))
+                    else
+                      seen <- c(seen, model_type)
+                }
+            }
+        }
+        # check it works with default criterion
+        .check_best_model(as.character(as.list(aml@leaderboard$model_id)), "auto")
+        # check it works with AUC criterion (the higher the better as opposed to loss functions) and test case insensitivity
+        .check_best_model(as.character(as.list(h2o.arrange(aml@leaderboard, desc(auc))$model_id)), "AUC")
+        # check it works for MSE as a criterion
+        .check_best_model(as.character(as.list(h2o.arrange(aml@leaderboard, mse)$model_id)), "mse")
+
+        # Check it works for without specifying a model type
+        expect_equal(h2o.get_best_model(aml)@model_id, aml@leaderboard[1, "model_id"])
+
+        # Check it works with just criterion
+        expect_equal(h2o.get_best_model(aml, criterion = "mse")@model_id, h2o.arrange(aml@leaderboard, mse)[1, "model_id"])
+
+        # Check it works with extra_cols
+        top_model <- h2o.arrange(h2o.get_leaderboard(aml, extra_columns = "training_time_ms"), training_time_ms)[1, "model_id"]
+        expect_equal(h2o.get_best_model(aml, criterion = "training_time_ms")@model_id, top_model)
+
+        # Check input validation
+        expect_error(h2o.get_best_model(iris))
+        expect_error(h2o.get_best_model(aml, algorithm = "GXboost"))
+        expect_error(h2o.get_best_model(aml, criterion = "lorem_ipsum_dolor_sit_amet"))
+}
 
     makeSuite(
       test.binomial,
@@ -127,6 +177,7 @@ automl.leaderboard.suite <- function() {
       test.empty_leaderboard,
       test.all_algos,
       test.custom_leaderboard,
+      test.get_best_model_per_family,
     )
 }
 

@@ -143,6 +143,39 @@ public class TestUtil extends Iced {
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
+  
+  private static class KeyCleaner extends MRTask<KeyCleaner> {
+    private final Class[] objectType;
+
+    private KeyCleaner(Class[] objectType) {
+      this.objectType = objectType;
+    }
+
+    @Override
+    protected void setupLocal() {
+      Futures fs = new Futures();
+      for( Key k : H2O.localKeySet() ) {
+        Value value = Value.STORE_get(k);
+        if (value == null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
+            value.isJob() || value.type() == TypeMap.PRIM_B
+        ) {
+          // do nothing
+        } else {
+          for (Class c : objectType) {
+            if (c.isInstance(value.get())) {
+              DKV.remove(k, fs);
+              break;
+            }
+          }
+        }
+      }
+      fs.blockForPending();
+    }
+  }
+  
+  public static void cleanupKeys(Class... objectType) {
+    new KeyCleaner(objectType).doAllNodes();
+  }
 
   public static void checkArrays(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++) {
@@ -162,19 +195,39 @@ public class TestUtil extends Iced {
   }
 
   /**
+   * @deprecated use {@link #generateEnumOnly(int, int, int, double)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated 
+  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac);
+  }
+
+  /**
    * generate random frames containing enum columns only
    * @param numCols
    * @param numRows
    * @param num_factor
    * @return
    */
-  protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
+  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_enum_only(numCols, numRows, num_factor, missingfrac, seed);
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
 
+  /**
+   * @deprecated use {@link #generateEnumOnly(int, int, int, double, long)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
+    return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
+  }
+  
+  protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -188,14 +241,34 @@ public class TestUtil extends Iced {
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
     return cf.execImpl().get();
   }
-
+  
+  /**
+   * @deprecated use {@link #generateRealOnly(int, int, double)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_real_only(int numCols, int numRows, double missingfrac) {
-    long seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_real_only(numCols, numRows, missingfrac, seed);
+    return generateRealOnly(numCols, numRows, missingfrac);
   }
 
+  protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac) {
+    long seed = System.currentTimeMillis();
+    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    return generateRealOnly(numCols, numRows, missingfrac, seed);
+  }
+  
+  /**
+   * @deprecated use {@link #generateRealOnly(int, int, double, long)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_real_only(int numCols, int numRows, double missingfrac, long seed) {
+    return generateRealOnly(numCols, numRows, missingfrac, seed);
+  }
+
+  protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -211,13 +284,33 @@ public class TestUtil extends Iced {
     return cf.execImpl().get();
   }
 
+  /**
+   * @deprecated use {@link #generateIntOnly(int, int, int, double)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac) {
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac);
+  }
+  
+  protected static Frame generateIntOnly(int numCols, int numRows, int integer_range, double missingfrac) {
     long seed = System.currentTimeMillis();
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
-    return generate_int_only(numCols, numRows, integer_range, missingfrac, seed);
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
   }
 
+  /**
+   * @deprecated use {@link #generateIntOnly(int, int, int, double, long)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac, long seed) {
+    return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
+  }
+  
+  protected static Frame generateIntOnly(int numCols, int numRows, int integerRange, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
     cf.rows= numRows;
     cf.cols = numCols;
@@ -228,7 +321,7 @@ public class TestUtil extends Iced {
     cf.string_fraction = 0;
     cf.has_response=false;
     cf.missing_fraction = missingfrac;
-    cf.integer_range = integer_range;
+    cf.integer_range = integerRange;
     cf.seed = seed;
     System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
     return cf.execImpl().get();
@@ -379,16 +472,43 @@ public class TestUtil extends Iced {
       return null;
     }
   }
+  
+  /**
+   * @deprecated use {@link #parseTestFile(String)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  public static Frame parse_test_file(String fname) {
+    return parseTestFile(fname);
+  }
+
+  /**
+   * @deprecated use {@link #parseTestFile(String, int[])} instead
+   * 
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  public static Frame parse_test_file(String fname, int[] skipped_columns) {
+    return parseTestFile(fname, skipped_columns);
+  }
 
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  public static Frame parse_test_file( String fname) {
-    return parse_test_file(Key.make(), fname);
+  public static Frame parseTestFile(String fname) {
+    return parseTestFile(Key.make(), fname);
   }
 
-  public static Frame parse_test_file( String fname, int[] skipped_columns) {
-    return parse_test_file(Key.make(), fname, skipped_columns);
+  public static Frame parseTestFile(String fname, int[] skipped_columns) {
+    return parseTestFile(Key.make(), fname, skipped_columns);
+  }
+  
+  /** Find & parse & track in {@link Scope} a CSV file.  NPE if file not found.
+   *  @param fname Test filename
+   *  @return      Frame or NPE */
+  public static Frame parseAndTrackTestFile(String fname) {
+    return Scope.track(parseTestFile(Key.make(), fname));
   }
 
   public static NFSFileVec makeNfsFileVec(String fname) {
@@ -412,7 +532,8 @@ public class TestUtil extends Iced {
       fname = fname.substring(2);
     File f = new File(fname);
     if (! f.exists()) {
-      f.getParentFile().mkdirs();
+      if (f.getParentFile() != null)
+        f.getParentFile().mkdirs();
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
       org.apache.commons.io.FileUtils.copyURLToFile(
               new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
@@ -422,12 +543,32 @@ public class TestUtil extends Iced {
       }
     }
   }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
-    return parse_test_file(outputKey, fname, guessSetup, null);
+  
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, boolean)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, boolean guessSetup) {
+    return parseTestFile(outputKey, fname, guessSetup);
+  }
+  
+  protected Frame parseTestFile(Key outputKey, String fname, boolean guessSetup) {
+    return parseTestFile(outputKey, fname, guessSetup, null);
   }
 
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, boolean, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, guessSetup, skippedColumns);
+  }
+  
+  protected Frame parseTestFile(Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
     if (skippedColumns != null) {
@@ -437,27 +578,87 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname) {
-    return parse_test_file(outputKey, fname, new int[]{});
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname) {
+    return parseTestFile(outputKey, fname);
+  }
+  
+  public static Frame parseTestFile(Key outputKey, String fname) {
+    return parseTestFile(outputKey, fname, new int[]{});
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname, int[] skippedColumns) {
-    return parse_test_file(outputKey, fname, null, skippedColumns);
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, skippedColumns);
   }
 
-  public static Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
-    return parse_test_file(Key.make(), fname, transformer);
+  public static Frame parseTestFile(Key outputKey, String fname, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, null, skippedColumns);
+  }
+  
+  /**
+   * @deprecated use {@link #parseTestFile(String, ParseSetupTransformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(fname, transformer);
+  }
+  
+  public static Frame parseTestFile(String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(Key.make(), fname, transformer);
   }
 
-  public static Frame parse_test_file(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
-    return parse_test_file(Key.make(), fname, transformer, skippedColumns);
+  /**
+   * @deprecated use {@link #parseTestFile(String, ParseSetupTransformer, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */  
+  @Deprecated
+  protected Frame parse_test_file(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(fname, transformer, skippedColumns);
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer) {
-    return parse_test_file(outputKey, fname, transformer, null);
+  public static Frame parseTestFile(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(Key.make(), fname, transformer, skippedColumns);
   }
 
-  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+  /**
+   * @deprecated use {@link #parseTestFile(Key, String, ParseSetupTransformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(outputKey, fname, transformer);
+  }
+
+  public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer) {
+    return parseTestFile(outputKey, fname, transformer, null);
+  }
+
+  /**
+   * @deprecated use {@link #parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(outputKey, fname, transformer, skippedColumns);
+  }
+
+  public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
     if (skippedColumns != null) {
@@ -470,15 +671,47 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
-    return parse_test_file(fname, na_string, check_header, column_types, null, null);
+  /**
+   * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types) {
+    return parseTestFile(fname, na_string, check_header, column_types);
+  }
+  
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types) {
+    return parseTestFile(fname, na_string, check_header, column_types, null, null);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
-    return parse_test_file( fname, na_string, check_header, column_types, transformer,null);
+
+  /**
+   * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+    return parseTestFile(fname, na_string, check_header, column_types, transformer);
+  }
+  
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
+    return parseTestFile( fname, na_string, check_header, column_types, transformer,null);
   }
 
-  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
+
+  /**
+   * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
+    return parseTestFile(fname, na_string, check_header, column_types, transformer, skippedColumns);
+  }
+  
+  public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
@@ -515,17 +748,37 @@ public class TestUtil extends Iced {
 
   }
 
+  /**
+   * @deprecated use {@link #parseTestFolder(String)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname) {
+    return parseTestFolder(fname);
+  }
+  
   /** Find & parse a folder of CSV files.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_folder( String fname ) {
-    return parse_test_folder(fname, null);
+  protected Frame parseTestFolder(String fname) {
+    return parseTestFolder(fname, null);
   }
 
+  /**
+   * @deprecated use {@link #parseTestFolder(String, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname, int[] skippedColumns) {
+    return parseTestFolder(fname, skippedColumns);
+  }
+  
   /** Find & parse a folder of CSV files.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected Frame parse_test_folder( String fname, int[] skippedColumns ) {
+  protected Frame parseTestFolder(String fname, int[] skippedColumns ) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -537,6 +790,19 @@ public class TestUtil extends Iced {
     keys.toArray(res);
     return ParseDataset.parse(skippedColumns, Key.make(), res);
   }
+
+
+  /**
+   * @deprecated use {@link #parseTestFolder(String, String, int, byte[], ParseSetupTransformer)} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname, String na_string, int check_header, byte[] column_types,
+                                  ParseSetupTransformer transformer) {
+    return parseTestFolder(fname, na_string, check_header, column_types, transformer);
+  }
+  
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
@@ -544,9 +810,20 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
-                                            ParseSetupTransformer transformer) {
-    return parse_test_folder(fname, na_string, check_header, column_types, transformer, null);
+  protected static Frame parseTestFolder(String fname, String na_string, int check_header, byte[] column_types,
+                                         ParseSetupTransformer transformer) {
+    return parseTestFolder(fname, na_string, check_header, column_types, transformer, null);
+  }
+  
+  /**
+   * @deprecated use {@link #parseTestFolder(String, String, int, byte[], ParseSetupTransformer, int[])} instead
+   *
+   * Will be removed at version 3.38.0.1
+   */
+  @Deprecated
+  protected Frame parse_test_folder(String fname, String na_string, int check_header, byte[] column_types,
+                                    ParseSetupTransformer transformer, int[] skipped_columns) {
+    return parseTestFolder(fname, na_string, check_header, column_types, transformer, skipped_columns);
   }
 
   /**
@@ -556,8 +833,8 @@ public class TestUtil extends Iced {
    * @param na_string string for NA in a column
    * @return
    */
-  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types,
-                                            ParseSetupTransformer transformer, int[] skipped_columns) {
+  protected static Frame parseTestFolder(String fname, String na_string, int check_header, byte[] column_types,
+                                         ParseSetupTransformer transformer, int[] skipped_columns) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
@@ -786,6 +1063,10 @@ public class TestUtil extends Iced {
     assertVecEquals("", expecteds, actuals, delta);
   }
 
+  public static void assertVecEquals(Vec expecteds, Vec actuals, double delta, double relativeDelta) {
+    assertVecEquals("", expecteds, actuals, delta, relativeDelta);
+  }
+
   public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
     assertVecEquals(messagePrefix, expecteds, actuals, delta, null);
   }
@@ -856,6 +1137,23 @@ public class TestUtil extends Iced {
       String actual = getFactorAsString(actuals, i);
       final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expected, actual);
+    }
+  }
+  
+  public static void assertTwoDimTableEquals(TwoDimTable expected, TwoDimTable actual) {
+    assertEquals("tableHeader different", expected.getTableHeader(), actual.getTableHeader());
+    assertEquals("tableDescriptionDifferent", expected.getTableDescription(), actual.getTableDescription());
+    assertArrayEquals("rowHeaders different", expected.getRowHeaders(), actual.getRowHeaders());
+    assertArrayEquals("colHeaders different", expected.getColHeaders(), actual.getColHeaders());
+    assertArrayEquals("colTypes different", expected.getColTypes(), actual.getColTypes());
+    assertArrayEquals("colFormats different", expected.getColFormats(), actual.getColFormats());
+    assertEquals("colHeaderForRowHeaders different", expected.getColHeaderForRowHeaders(), actual.getColHeaderForRowHeaders());
+    for (int r = 0; r < expected.getRowDim(); r++) {
+      for (int c = 0; c < expected.getColDim(); c++) {
+        Object ex = expected.get(r, c);
+        Object act = actual.get(r, c);
+        assertEquals("cellValues different at row " + r + ", col " + c, ex, act);
+      }
     }
   }
 
@@ -1137,7 +1435,7 @@ public class TestUtil extends Iced {
     }
 
     public Frame prepare() {
-      return TestUtil.parse_test_file(file);
+      return parseTestFile(file);
     }
 
     public void done(Frame frame) {}
@@ -1169,9 +1467,9 @@ public class TestUtil extends Iced {
         File f = generatedFile = prepareFile();
         System.out.println("File generated into: " + f.getCanonicalPath());
         if (f.isDirectory()) {
-          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, psTransformer);
+          return parseTestFolder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null, psTransformer);
         } else {
-          return parse_test_file(f.getCanonicalPath(), psTransformer);
+          return parseTestFile(f.getCanonicalPath(), psTransformer);
         }
       } catch (IOException e) {
         throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
@@ -1189,7 +1487,7 @@ public class TestUtil extends Iced {
 
   public static class Datasets {
     public static Frame iris() {
-      return parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      return parseTestFile(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
     }
   }
 
@@ -1270,19 +1568,38 @@ public class TestUtil extends Iced {
    * 
    * @param f1 Frame to be compared, not null
    * @param f2 Frame to be compared, not null
-   * @param delta tolerance
+   * @param delta absolute tolerance
    * @return True if frames are the same up to tolerance - number of columns, rows & values at each cell.
-   * @throws IllegalStateException If any inequalities are found
+   * @throws AssertionError If any inequalities are found
+   * @throws IllegalArgumentException If input frames don't have the same column and row count
    */
-  public static boolean compareFrames(final Frame f1, final Frame f2, double delta) throws IllegalStateException {
+  public static boolean compareFrames(final Frame f1, final Frame f2, double delta) {
+    return compareFrames(f1, f2, delta, 0.0);
+  } 
+  
+  /**
+   *
+   * Compares two frames. Two frames are equal if and only if they contain the same number of columns, rows,
+   * and values at each cell (coordinate) are the same. Column names are ignored, as well as chunks sizes and all other
+   * aspects besides those explicitly mentioned.
+   * 
+   * @param f1 Frame to be compared, not null
+   * @param f2 Frame to be compared, not null
+   * @param delta absolute tolerance
+   * @param relativeDelta relative tolerance
+   * @return True if frames are the same up to tolerance - number of columns, rows & values at each cell.
+   * @throws AssertionError If any inequalities are found
+   * @throws IllegalArgumentException If input frames don't have the same column and row count
+   */
+  public static boolean compareFrames(final Frame f1, final Frame f2, double delta, double relativeDelta) {
     Objects.requireNonNull(f1);
     Objects.requireNonNull(f2);
 
     if (f1.numCols() != f2.numCols())
-      throw new IllegalStateException(String.format("Number of columns is not the same: {%o, %o}",
+      throw new IllegalArgumentException(String.format("Number of columns is not the same: {%o, %o}",
               f1.numCols(), f2.numCols()));
     if (f1.numRows() != f2.numRows())
-      throw new IllegalStateException(String.format("Number of rows is not the same: {%o, %o}",
+      throw new IllegalArgumentException(String.format("Number of rows is not the same: {%o, %o}",
               f1.numRows(), f2.numRows()));
 
     for (int vecNum = 0; vecNum < f1.numCols(); vecNum++) {
@@ -1290,7 +1607,7 @@ public class TestUtil extends Iced {
       final Vec f1Vec = f1.vec(vecNum);
       final Vec f2Vec = f2.vec(vecNum);
 
-      assertVecEquals(f1Vec, f2Vec, delta);
+      assertVecEquals(f1Vec, f2Vec, delta, relativeDelta);
     }
 
     return true;
@@ -1372,6 +1689,36 @@ public class TestUtil extends Iced {
     return weightsVec;
   }
 
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with random double values
+   */ 
+  public static Vec createRandomDoubleVec(final long len, final long randomSeed) {
+    final Vec vec = Vec.makeZero(len, Vec.T_NUM);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < vec.length(); i++) {
+      vec.set(i, random.nextDouble());
+    }
+    return vec;
+  }
+
+  /**
+   * @param len        Length of the resulting vector
+   * @param randomSeed Seed for the random generator (for reproducibility)
+   * @return An instance of {@link Vec} with random categorical values
+   */  
+  public static Vec createRandomCategoricalVec(final long len, final long randomSeed) {
+    String[] domain = new String[100];
+    for (int i = 0; i < domain.length; i++) domain[i] = "CAT_" + i;
+    final Vec vec = Scope.track(Vec.makeZero(len, Vec.T_NUM)).makeZero(domain);
+    final Random random = RandomUtils.getRNG(randomSeed);
+    for (int i = 0; i < vec.length(); i++) {
+      vec.set(i, random.nextInt(domain.length));
+    }
+    return vec;
+  }
+
   @SuppressWarnings("rawtypes")
   public static GenModel toMojo(Model model, String testName, boolean readModelMetaData) {
     final String filename = testName + ".zip";
@@ -1390,6 +1737,10 @@ public class TestUtil extends Iced {
       boolean deleted = new File(filename).delete();
       if (!deleted) Log.warn("Failed to delete the file");
     }
+  }
+
+  public static boolean isCI() {
+    return System.getProperty("user.name").equals("jenkins");
   }
 
 }

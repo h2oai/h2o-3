@@ -46,7 +46,7 @@ public class FVecTest extends TestUtil {
   @Test public void testSet() {
     Frame fr = null;
     try {
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       double[] mins =new double[fr.numCols()];
       for (int i=0; i < mins.length; i++)
         mins[i] = fr.vecs()[i].min();
@@ -104,7 +104,7 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     Vec vz = null;
     try {
-      fr = parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
+      fr = parseTestFile("smalldata/junit/syn_2659x1049.csv.gz");
       assertEquals(fr.numCols(),1050); // Count of columns
       assertEquals(fr.numRows(),2659); // Count of rows
 

@@ -16,10 +16,10 @@ public class ParseCompressedAndXLSTest extends TestUtil {
   @Test public void testIris(){
     Frame k1 = null,k2 = null,k3 = null, k4 = null;
     try {
-      k1 = parse_test_file("smalldata/junit/iris.csv");
-      k2 = parse_test_file("smalldata/junit/iris.xls");
-      k3 = parse_test_file("smalldata/junit/iris.csv.gz");
-      k4 = parse_test_file("smalldata/junit/iris.csv.zip");
+      k1 = parseTestFile("smalldata/junit/iris.csv");
+      k2 = parseTestFile("smalldata/junit/iris.xls");
+      k3 = parseTestFile("smalldata/junit/iris.csv.gz");
+      k4 = parseTestFile("smalldata/junit/iris.csv.zip");
       TestUtil.assertBitIdentical(k1,k2);
       TestUtil.assertBitIdentical(k2,k3);
       TestUtil.assertBitIdentical(k3,k4);
@@ -34,11 +34,11 @@ public class ParseCompressedAndXLSTest extends TestUtil {
   @Test public void  testXLS(){
     Frame k1 = null;
     try {
-      k1 = parse_test_file("smalldata/junit/benign.xls");
+      k1 = parseTestFile("smalldata/junit/benign.xls");
       assertEquals( 14,k1.numCols());
       assertEquals(203,k1.numRows());
       k1.delete();
-      k1 = parse_test_file("smalldata/junit/pros.xls");
+      k1 = parseTestFile("smalldata/junit/pros.xls");
       assertEquals(  9,k1.numCols());
       assertEquals(380,k1.numRows());
     } finally {

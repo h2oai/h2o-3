@@ -462,6 +462,18 @@ h2o.clusterStatus <- function() {
   temp[,cnames]
 }
 
+#' Triggers auto-recovery resume - this will look into configured recovery dir and resume and
+#' tasks that were interrupted by unexpected cluster stopping.
+#'
+#' @param recovery_dir A \code{character} path to where cluster recovery data is stored, if blank, will use
+#'        cluster's configuration.
+#' @export
+h2o.resume <- function(recovery_dir=NULL) {
+  parms <- list()
+  parms$recovery_dir <- recovery_dir
+  invisible(.h2o.__remoteSend(.h2o.__RESUME, method = "POST", .params = parms))
+}
+
 #
 # Get a session ID at init
 .init.session_id <- function() {

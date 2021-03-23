@@ -11,9 +11,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.rapids.ast.prims.reducers.AstCumu;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -66,7 +64,7 @@ public class XGBoostVarImpComparisonTest extends TestUtil {
     public void testImportancesAreSame() {
         Scope.enter();
         try {
-            Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
             // define special columns
             Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
             Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical

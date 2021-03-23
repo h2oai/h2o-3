@@ -6,6 +6,7 @@ import water.fvec.*;
 import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
+import water.fvec.Vec;
 
 import java.util.Arrays;
 
@@ -378,29 +379,168 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // Support for fluid-programming with strong types
   protected T self() { return (T)this; }
 
-  /** Invokes the map/reduce computation over the given Vecs.  This call is
-   *  blocking. */
-  public final T doAll( Vec... vecs ) { return doAll(null,vecs); }
-  public final T doAll(byte[] types, Vec... vecs ) { return doAll(types,new Frame(vecs), false); }
-  public final T doAll(byte type, Vec... vecs ) { return doAll(new byte[]{type},new Frame(vecs), false); }
-  public final T doAll( Vec vec, boolean run_local ) { return doAll(null,vec, run_local); }
-  public final T doAll(byte[] types, Vec vec, boolean run_local ) { return doAll(types,new Frame(vec), run_local); }
+  /** 
+   * Invokes the map/reduce computation over the given {@link Vec}s. This call is
+   * blocking.
+   * 
+   * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
+   *             
+   * @return this
+   */
+  public final T doAll( Vec... vecs) {
+    return doAll(null,vecs);
+  }
+  
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}s. This call is
+   * blocking.
+   * 
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
+   *
+   * @return this
+   */ 
+  public final T doAll(byte[] outputTypes, Vec... vecs) { 
+    return doAll(outputTypes, new Frame(vecs),  false); 
+  }
 
-  /** Invokes the map/reduce computation over the given Frame.  This call is
-   *  blocking.  */
-  public final T doAll( Frame fr, boolean run_local) { return doAll(null,fr, run_local); }
-  public final T doAll( Frame fr ) { return doAll(null,fr, false); }
-  public final T doAll( byte[] types, Frame fr) {return doAll(types,fr,false);}
-  public final T doAll( byte type, Frame fr) {return doAll(new byte[]{type},fr,false);}
-  public final T doAll( byte[] types, Frame fr, boolean run_local) {
-    dfork(types,fr, run_local);
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}s. This call is
+   * blocking.
+   *
+   * @param outputType The type of output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param vecs Perform the computation over this vectors. They can be possibly mutated as side-effect.
+   *
+   * @return this
+   */
+  public final T doAll(byte outputType, Vec... vecs) { 
+    return doAll(new byte[]{outputType}, new Frame(vecs),  false); 
+  }
+
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}. This call is blocking.
+   *    
+   * @param vec Perform the computation over this vector. It can be possibly mutated as side-effect.
+   *            
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   * 
+   * @return this
+   */ 
+  public final T doAll(Vec vec, boolean runLocal) {
+    return doAll(null, vec, runLocal); 
+  }
+  
+  /**
+   * Invokes the map/reduce computation over the given {@link Vec}. This call is blocking.
+   * 
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   * 
+   * @param vec Perform the computation over this vector. It can be possibly mutated as side-effect.
+   *
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   *
+   * @return this
+   */
+  public final T doAll(byte[] outputTypes, Vec vec, boolean runLocal) { 
+    return doAll(outputTypes, new Frame(vec), runLocal);
+  }
+
+  /** 
+   * Invokes the map/reduce computation over the given Frame. This call is
+   * blocking.  
+   *
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
+   *
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   *                 
+   * @return this
+   */
+  public final T doAll( Frame fr, boolean runLocal) { 
+    return doAll(null, fr, runLocal); 
+  }
+  
+  /** 
+   * Invokes the map/reduce computation over the given Frame. This call is
+   * blocking. The run is performed across the cluster.
+   * 
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
+   *
+   * @return this
+   */
+  public final T doAll(Frame fr ) { 
+    return doAll(null, fr, false); 
+  }
+
+  /** 
+   * Invokes the map/reduce computation over the given Frame. This call is
+   * blocking. The run is performed across the cluster.
+   *  
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect.   
+   *
+   * @return this
+   */
+  public final T doAll(byte[] outputTypes, Frame fr) {
+    return doAll(outputTypes, fr, false);
+  }
+
+  /** 
+   * Invokes the map/reduce computation over the given Frame.  This call is
+   * blocking. The run is performed across the cluster.
+   *  
+   * @param outputType The type of one output Vec instance to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param fr  Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
+   *
+   * @return this
+   */
+  public final T doAll(byte outputType, Frame fr) {
+    return doAll(new byte[]{outputType}, fr, false);
+  }
+
+  /** 
+   * Invokes the map/reduce computation over the given Frame.  This call is
+   * blocking. 
+   *
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
+   *
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   *
+   * @return this
+   */
+  public final T doAll(byte[] outputTypes, Frame fr, boolean runLocal) {
+    dfork(outputTypes, fr, runLocal);
     return getResult();
   }
-  // Output is several vecs of the same type
-  public final T doAll( int nouts, byte type, Frame fr) {
-    byte[] types = new byte[nouts];
-    Arrays.fill(types, type);
-    return doAll(types,fr,false);
+
+  /**
+   * Invokes the map/reduce computation over the given Frame.  This call is
+   * blocking. 
+   * 
+   * @param numberOfOutputs Number of output vectors for the computation. All of them will have the same type.
+   *
+   * @param outputType The type of all the output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect.   
+   *
+   * @return this
+   */ 
+  public final T doAll(int numberOfOutputs, byte outputType, Frame fr) {
+    byte[] types = new byte[numberOfOutputs];
+    Arrays.fill(types, outputType);
+    return doAll(types, fr, false);
   }
 
   // Special mode doing 1 map per key.  No frame
@@ -408,6 +548,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     dfork(keys);
     return getResult();         // Block For All
   }
+  
   // Special mode doing 1 map per key.  No frame
   public void dfork(Key... keys ) {
     _topGlobal = true;
@@ -428,11 +569,16 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * which <code>getResult</code> may be invoked by the caller to block for pending
    * computation to complete.
    *
-   * @param types The type of output Vec instances to create.
-   * @param vecs The input set of Vec instances upon which computation is performed.
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param vecs The set of Vec instances upon which computation is performed.
+   *             
    * @return this
    */
-  public final T dfork( byte[] types, Vec... vecs) { return dfork(types,new Frame(vecs),false); }
+  public final T dfork( byte[] outputTypes, Vec... vecs) { 
+    return dfork(outputTypes, new Frame(vecs), false); 
+  }
 
   public final T dfork(Vec... vecs){ return dfork(null,new Frame(vecs),false); }
   /**
@@ -441,25 +587,37 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * by the caller to block for pending computation to complete. This call produces no
    * output Vec instances or Frame instances.
    *
-   * @param fr Perform the computation on this Frame instance.
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
+   *
    * @return this
    */
-  public final T dfork(Frame fr){ return dfork(null,fr,false); }
+  public final T dfork(Frame fr) { 
+    return dfork(null, fr, false); 
+  }
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should
    *  *never* block on it.
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
+   *  
+   * @param outputTypes The type of output Vec instances to create. See {@link Vec#T_STR}, {@link Vec#T_NUM}, 
+   *    {@link Vec#T_CAT} and other byte constants in {@link Vec} to see possible values.
+   *
+   * @param fr Perform the computation on this Frame instance. This frame can be possibly mutated as side-effect. 
+   * 
+   * @param runLocal Run locally by copying data, or run across the cluster?
+   *           
+   * @return this
    */
-  public final T dfork( byte[] types, Frame fr, boolean run_local) {
+  public final T dfork(byte[] outputTypes, Frame fr, boolean runLocal) {
     _topGlobal = true;
-    _output_types = types;
-    if( types != null && types.length > 0 )
-      _vid = fr.anyVec().group().reserveKeys(types.length);
+    _output_types = outputTypes;
+    if( outputTypes != null && outputTypes.length > 0 )
+      _vid = fr.anyVec().group().reserveKeys(outputTypes.length);
     _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
-    _run_local = run_local;     // Run locally by copying data, or run globally?
+    _run_local = runLocal;     // Run locally by copying data, or run globally?
     assert checkRunLocal() : "MRTask is expected to be running in a local-mode but _run_local = false";
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
@@ -474,8 +632,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return _run_local;
   }
 
-  /** Block for and get any final results from a dfork'd MRTask.
-   *  Note: the desired name 'get' is final in ForkJoinTask.  */
+  /** 
+   * Block for and get any final results from a dfork'd MRTask.
+   * Note: the desired name 'get' is final in ForkJoinTask.  
+   */
   public final T getResult(boolean fjManagedBlock) {
     assert getCompleter()==null; // No completer allowed here; FJ never awakens threads with completers
     do {
@@ -497,8 +657,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     assert _topGlobal:"lost top global flag";
     return self();
   }
-  /** Block for and get any final results from a dfork'd MRTask.
-   *  Note: the desired name 'get' is final in ForkJoinTask.  */
+  /** 
+   * Block for and get any final results from a dfork'd MRTask.
+   *  Note: the desired name 'get' is final in ForkJoinTask.
+   */
   public final T getResult() {return getResult(true);}
 
   // Return true if blocking is unnecessary, which is true if the Task isDone.

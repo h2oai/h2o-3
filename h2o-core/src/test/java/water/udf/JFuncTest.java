@@ -56,7 +56,7 @@ public class JFuncTest extends TestUtil {
     final String testFuncName = testFuncDef.funcName;
     Frame inFr = null, outFr = null;
     try {
-      inFr = parse_test_file("./smalldata/logreg/prostate.csv");
+      inFr = parseTestFile("./smalldata/logreg/prostate.csv");
       outFr = new CFunc1Task(testFuncDef, 1, 1 /* CAPSULE */) {
         @Override
         protected ClassLoader getParentClassloader() {
@@ -79,7 +79,7 @@ public class JFuncTest extends TestUtil {
     final String testFuncName = testFuncDef.funcName;
     Frame inFr = null, outFr = null, expFr = null;
     try {
-      inFr = parse_test_file("./smalldata/logreg/prostate.csv");
+      inFr = parseTestFile("./smalldata/logreg/prostate.csv");
       // Execute sum CAPSULE + AGE
       outFr = new CFunc2Task(testFuncDef, 1, 1, 2, 1) {
         @Override

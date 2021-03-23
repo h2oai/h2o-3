@@ -20,7 +20,7 @@ public class RefCntTest extends TestUtil {
   @Test
   public void testBasic() {
     Session session = new Session();
-    Frame crimes = parse_test_file(Key.make("chicagoCrimes10k.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
+    Frame crimes = parseTestFile(Key.make("chicagoCrimes10k.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
     Vec.VectorGroup vg = crimes.anyVec().group();
 
     // Expect to compute and update crimes.hex "Date" column in-place, but the

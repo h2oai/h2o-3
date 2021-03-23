@@ -2078,9 +2078,9 @@ class H2OXGBoostEstimator(H2OEstimator):
     @property
     def gpu_id(self):
         """
-        Which GPU to use.
+        Which GPU(s) to use.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``List[int]``.
 
         :examples:
 
@@ -2101,7 +2101,7 @@ class H2OXGBoostEstimator(H2OEstimator):
 
     @gpu_id.setter
     def gpu_id(self, gpu_id):
-        assert_is_type(gpu_id, None, int)
+        assert_is_type(gpu_id, None, int, [int])
         self._parms["gpu_id"] = gpu_id
 
 

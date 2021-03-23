@@ -3,6 +3,7 @@ package water.api;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
+import hex.faulttolerance.Recovery;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -13,6 +14,7 @@ import water.Job;
 import water.Key;
 import water.TypeMap;
 import water.api.schemas3.JobV3;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
@@ -44,13 +46,38 @@ public class GridSearchHandler<G extends Grid<MP>,
   // TODO: why does this do its own sub-dispatch?
   @Override
   public S handle(int version, water.api.Route route, Properties parms, String postBody) throws Exception {
-    // Only here for train or validate-parms
-    if( !route._handler_method.getName().equals("train") )
-      throw water.H2O.unimpl();
-
-    // Peek out the desired algo from the URL
+    final String methodName = route._handler_method.getName();
     String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{99}/{Grid}/{gbm}/
+    if ("train".equals(methodName)) {
+      return trainGrid(algoURLName, parms);
+    } else if ("resume".equals(methodName)) {
+      return resumeGrid(algoURLName, parms);
+    } else {
+      throw water.H2O.unimpl();
+    }
+  }
+  
+  private S resumeGrid(String algoURLName, Properties parms) {
+    if (!parms.containsKey("grid_id")) {
+      throw new IllegalArgumentException("grid_id is missing");
+    }
+    S gss = buildGridSearchSchema(algoURLName, parms);
+    Grid<MP> grid = gss.grid_id.key().get();
+    Key<Job> jobKey = gss.job_id != null ? gss.job_id.key() : null;
+    Recovery<Grid> recovery = getRecovery(gss);
+    Job<Grid> gsJob = GridSearch.resumeGridSearch(
+        jobKey, grid,
+        new DefaultModelParametersBuilderFactory<MP, P>(),
+        recovery
+    ); 
+    gss.hyper_parameters = null;
+    gss.job = new JobV3(gsJob);
+    return gss;
+  }
+  
+  private S buildGridSearchSchema(String algoURLName, Properties parms) {
+    // Peek out the desired algo from the URL
     String algoName = ModelBuilder.algoName(algoURLName); // gbm -> GBM; deeplearning -> DeepLearning
     String schemaDir = ModelBuilder.schemaDirectory(algoURLName);
     // Get the latest version of this algo: /99/Grid/gbm  ==> GBMV3
@@ -63,8 +90,7 @@ public class GridSearchHandler<G extends Grid<MP>,
 
     // TODO: this is a horrible hack which is going to cause maintenance problems:
     String paramSchemaName = schemaDir+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;
-
-    // Build the Grid Search schema, and fill it from the parameters
+    
     S gss = (S) new GridSearchSchema();
     gss.init_meta();
     gss.parameters = (P)TypeMap.newFreezable(paramSchemaName);
@@ -74,14 +100,18 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Get default parameters, then overlay the passed-in values
     ModelBuilder builder = ModelBuilder.make(algoURLName,null,null); // Default parameter settings
     gss.parameters.fillFromImpl(builder._parms); // Defaults for this builder into schema
-
     gss.fillFromParms(parms);   // Override defaults from user parms
+    return gss;
+  }
+
+  private S trainGrid(String algoURLName, Properties parms) {
+    S gss = buildGridSearchSchema(algoURLName, parms);
 
     // Verify list of hyper parameters
     // Right now only names, no types
     // note: still use _validation_frame and and _training_frame at this point.
     // Do not change those names yet.
-    validateHyperParams((P)gss.parameters, gss.hyper_parameters);
+    validateHyperParams(gss.parameters, gss.hyper_parameters);
 
     // Get actual parameters
     MP params = (MP) gss.parameters.createAndFillImpl();
@@ -97,16 +127,21 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
 
     // Get/create a grid for given frame
-    // FIXME: Grid ID is not pass to grid search builder!
     Key<Grid> destKey = gss.grid_id != null ? gss.grid_id.key() : null;
+    // Prepare recovery if requested
+    Recovery<Grid> recovery = getRecovery(gss);
+    Key<Job> jobKey = gss.job_id != null ? gss.job_id.key() : null;
+
     // Create target grid search object (keep it private for now)
     // Start grid search and return the schema back with job key
     Job<Grid> gsJob = GridSearch.startGridSearch(
+        jobKey,
         destKey,
         params,
         sortedMap,
         new DefaultModelParametersBuilderFactory<MP, P>(),
-        (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(), 
+        (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(),
+        recovery,
         GridSearch.getParallelismLevel(gss.parallelism)
     );
 
@@ -121,6 +156,8 @@ public class GridSearchHandler<G extends Grid<MP>,
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public S train(int version, S gridSearchSchema) { throw H2O.fail(); }
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public S resume(int version, S gridSearchSchema) { throw H2O.fail(); }
 
   /**
    * Validate given hyper parameters with respect to type parameter P.
@@ -158,6 +195,15 @@ public class GridSearchHandler<G extends Grid<MP>,
     }
   }
 
+  private Recovery<Grid> getRecovery(GridSearchSchema gss) {
+    if (gss.recovery_dir != null) {
+      return new Recovery<>(gss.recovery_dir);
+    } else if (H2O.ARGS.auto_recovery_dir != null) {
+      return new Recovery<>(H2O.ARGS.auto_recovery_dir);
+    } else {
+      return null;
+    }
+  }
 
   public static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {

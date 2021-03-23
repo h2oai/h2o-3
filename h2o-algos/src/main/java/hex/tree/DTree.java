@@ -3,12 +3,19 @@ package hex.tree;
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.RecursiveAction;
-import water.*;
+import org.apache.log4j.Logger;
+import water.AutoBuffer;
+import water.H2O;
+import water.Iced;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 /** A Decision Tree, laid over a Frame of Vecs, and built distributed.
  *
@@ -27,6 +34,9 @@ import java.util.*;
  *  @author Cliff Click
  */
 public class DTree extends Iced {
+
+  private static final Logger LOG = Logger.getLogger(DTree.class);
+
   final String[] _names; // Column names
   final int _ncols;      // Active training columns
   final long _seed;      // RNG seed; drives sampling seeds if necessary
@@ -216,12 +226,12 @@ public class DTree extends Iced {
     public DHistogram[] nextLevelHistos(DHistogram currentHistos[], int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
       double n = way==0 ? _n0 : _n1;
       if( n < parms._min_rows ) {
-//        Log.info("Not splitting: too few observations left: " + n);
+        if (LOG.isTraceEnabled()) LOG.trace("Not splitting: too few observations left: " + n);
         return null; // Too few elements
       }
       double se = way==0 ? _se0 : _se1;
       if( se <= 1e-30 ) {
-//        Log.info("Not splitting: pure node (perfect prediction).");
+        LOG.trace("Not splitting: pure node (perfect prediction).");
         return null; // No point in splitting a perfect prediction
       }
 
@@ -339,7 +349,7 @@ public class DTree extends Iced {
 
       // per-tree pre-selected columns
       int[] activeCols = tree._cols;
-//      Log.info("For tree with seed " + tree._seed + ", out of " + _hs.length + " cols, the following cols are activated via mtry_per_tree=" + tree._mtrys_per_tree + ": " + Arrays.toString(activeCols));
+      if (LOG.isTraceEnabled()) LOG.trace("For tree with seed " + tree._seed + ", out of " + _hs.length + " cols, the following cols are activated via mtry_per_tree=" + tree._mtrys_per_tree + ": " + Arrays.toString(activeCols));
 
       int[] cols = new int[activeCols.length];
       int len=0;
@@ -352,7 +362,7 @@ public class DTree extends Iced {
         assert _hs[idx]._min < _hs[idx]._maxEx && _hs[idx].actNBins() > 1 : "broken histo range "+_hs[idx];
         cols[len++] = idx;        // Gather active column
       }
-//      Log.info("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, len)));
+      if (LOG.isTraceEnabled()) LOG.trace("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, len)));
       int choices = len;        // Number of columns I can choose from
 
       int mtries = tree.actual_mtries();
@@ -367,7 +377,7 @@ public class DTree extends Iced {
         }
         assert len < choices;
       }
-//      Log.info("Picking these (mtry=" + mtries + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
+      if (LOG.isTraceEnabled()) LOG.trace("Picking these (mtry=" + mtries + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
       return Arrays.copyOfRange(cols, len, choices);
     }
 
@@ -429,7 +439,7 @@ public class DTree extends Iced {
       return sb.toString();
     }
     static private StringBuilder p(StringBuilder sb, String s, int w) {
-      return sb.append(Log.fixedLength(s,w));
+      return sb.append(StringUtils.fixedLength(s,w));
     }
     static private StringBuilder p(StringBuilder sb, double d, int w) {
       String s = Double.isNaN(d) ? "NaN" :
@@ -815,7 +825,7 @@ public class DTree extends Iced {
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, int constraint, double min, double max, 
                                   boolean useBounds, Distribution dist) {
     if(hs._vals == null) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": histogram not filled yet.");
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": histogram not filled yet.");
       return null;
     }
     final int nbins = hs.nbins();
@@ -859,7 +869,7 @@ public class DTree extends Iced {
           if (hasNomin)
             vals[vals_dim * i + 6] = hs._vals[vals_dim * id + 6];
         }
-//        Log.info(vals[3*i] + " obs have avg response [" + i + "]=" + avgs[id]);
+        if (LOG.isTraceEnabled()) LOG.trace(vals[3*i] + " obs have avg response [" + i + "]=" + avgs[id]);
       }
     }
 
@@ -900,7 +910,7 @@ public class DTree extends Iced {
     double tot = wlo[nbins] + wNA; //total number of (weighted) rows
     // Is any split possible with at least min_obs?
     if( tot < 2*min_rows ) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": min_rows: total number of observations is " + tot);
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": min_rows: total number of observations is " + tot);
       return null;
     }
     // If we see zero variance, we must have a constant response in this
@@ -910,7 +920,7 @@ public class DTree extends Iced {
     double wYYNA = hs.wYYNA();
     double var = (wYYlo[nbins]+wYYNA)*tot - (wYlo[nbins]+wYNA)*(wYlo[nbins]+wYNA);
     if( ((float)var) == 0f ) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": var = 0.");
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": var = 0.");
       return null;
     }
 
@@ -1179,25 +1189,25 @@ public class DTree extends Iced {
     }
 
     if( best==0 && nasplit== DHistogram.NASplitDir.None) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no optimal split found:\n" + hs);
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": no optimal split found:\n" + hs);
       return null;
     }
 
     //if( se <= best_seL+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
     if (!(best_seL+ best_seR < seBefore * (1- hs._minSplitImprovement))) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
       return null;
     }
 
     assert(Math.abs(tot - (nRight + nLeft)) < 1e-5*tot);
 
     if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": Predictions for left/right are the same.");
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": Predictions for left/right are the same.");
       return null;
     }
 
     if (nLeft < min_rows || nRight < min_rows) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate min_rows limit.");
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": split would violate min_rows limit.");
       return null;
     }
 
@@ -1210,7 +1220,7 @@ public class DTree extends Iced {
 
     if (constraint != 0) {
       if (constraint * tree_p0 > constraint * tree_p1) {
-        if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": split would violate monotone constraint.");
+        if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": split would violate monotone constraint.");
         return null;
       }
     }
@@ -1218,12 +1228,10 @@ public class DTree extends Iced {
     if (!Double.isNaN(min)) {
       if (tree_p0 < min) {
         if (! useBounds) {
-          if (SharedTree.DEV_DEBUG)
-            Log.info("minimum constraint violated in the left split of " + hs._name + ": node will not split");
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the left split of " + hs._name + ": node will not split");
           return null;
         }
-        if (SharedTree.DEV_DEBUG)
-          Log.info("minimum constraint violated in the left split of " + hs._name + ": left node will predict minimum bound: " + min);
+        if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the left split of " + hs._name + ": left node will predict minimum bound: " + min);
         tree_p0 = min;
         if (nasplit == DHistogram.NASplitDir.NAvsREST) {
           best_seL = pr1hi[0];
@@ -1235,12 +1243,10 @@ public class DTree extends Iced {
       }
       if (tree_p1 < min) {
         if (! useBounds) {
-          if (SharedTree.DEV_DEBUG)
-            Log.info("minimum constraint violated in the right split of " + hs._name + ": node will not split");
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the right split of " + hs._name + ": node will not split");
           return null;
         }
-        if (SharedTree.DEV_DEBUG)
-          Log.info("minimum constraint violated in the right split of " + hs._name + ": right node will predict minimum bound: " + min);
+        if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the right split of " + hs._name + ": right node will predict minimum bound: " + min);
         tree_p1 = min;
         if (nasplit == DHistogram.NASplitDir.NAvsREST) {
           best_seR = hs.seP1NA();
@@ -1254,12 +1260,10 @@ public class DTree extends Iced {
     if (!Double.isNaN(max)) {
       if (tree_p0 > max) {
         if (! useBounds) {
-          if (SharedTree.DEV_DEBUG)
-            Log.info("minimum constraint violated in the left split of " + hs._name + ": node will not split");
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the left split of " + hs._name + ": node will not split");
           return null;
         }
-        if (SharedTree.DEV_DEBUG)
-          Log.info("maximum constraint violated in the left split of " + hs._name + ": left node will predict maximum bound: " + max);
+        if (LOG.isTraceEnabled()) LOG.trace("maximum constraint violated in the left split of " + hs._name + ": left node will predict maximum bound: " + max);
         tree_p0 = max;
         if (nasplit == DHistogram.NASplitDir.NAvsREST) {
           best_seL = pr2hi[0];
@@ -1271,12 +1275,10 @@ public class DTree extends Iced {
       }
       if (tree_p1 > max) {
         if (! useBounds) {
-          if (SharedTree.DEV_DEBUG)
-            Log.info("minimum constraint violated in the right split of " + hs._name + ": node will not split");
+          if (LOG.isTraceEnabled()) LOG.trace("minimum constraint violated in the right split of " + hs._name + ": node will not split");
           return null;
         }
-        if (SharedTree.DEV_DEBUG)
-          Log.info("maximum constraint violated in the right split of " + hs._name + ": right node will predict maximum bound: " + max);
+        if (LOG.isTraceEnabled()) LOG.trace("maximum constraint violated in the right split of " + hs._name + ": right node will predict maximum bound: " + max);
         tree_p1 = max;
         if (nasplit == DHistogram.NASplitDir.NAvsREST) {
           best_seR = hs.seP2NA();
@@ -1289,12 +1291,12 @@ public class DTree extends Iced {
     }
 
     if (!(best_seL + best_seR < seBefore * (1- hs._minSplitImprovement))) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
       return null;
     }
 
     if( MathUtils.equalsWithinOneSmallUlp((float) tree_p0,(float) tree_p1) ) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": Predictions for left/right are the same.");
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": Predictions for left/right are the same.");
       return null;
     }
 
@@ -1319,7 +1321,7 @@ public class DTree extends Iced {
     assert (Double.isNaN(min) || min <= tree_p0) && (Double.isNaN(max) || tree_p0 <= max);
     assert (Double.isNaN(min) || min <= tree_p1) && (Double.isNaN(max) || tree_p1 <= max);
     Split split = new Split(col, best, nasplit, bs, equal, seBefore, best_seL, best_seR, nLeft, nRight, node_p0, node_p1, tree_p0, tree_p1);
-    if (SharedTree.DEV_DEBUG) Log.info("splitting on " + hs._name + ": " + split);
+    if (LOG.isTraceEnabled()) LOG.trace("splitting on " + hs._name + ": " + split);
     return split;
   }
 
@@ -1352,7 +1354,7 @@ public class DTree extends Iced {
     }
 
     if (bs.cardinality()==0 || bs.cardinality()==bs.size()) {
-      if (SharedTree.DEV_DEBUG) Log.info("can't split " + hs._name + ": no separation of categoricals possible");
+      if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": no separation of categoricals possible");
       return -1;
     }
 

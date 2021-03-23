@@ -21,7 +21,7 @@
 #' @param sep The field separator character. Values on each line of
 #'        the file will be separated by this character (default ",").
 #' @param compression How to compress the exported dataset
-#         (default none; gzip, bzip2 and snappy available)
+#'        (default none; gzip, bzip2 and snappy available)
 #' @param parts integer, number of part files to export to. Default is to
 #'        write to a single file. Large data can be exported to multiple
 #'        'part' files, where each part file contains subset of the data.
@@ -188,6 +188,28 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
     .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
 }
 
+#'
+#' Store frame data in H2O's native format.
+#'
+#' @name h2o.save_frame
+#' @param x An H2OFrame object
+#' @param dir a filesystem location where to write frame data (hdfs, nfs)
+#' @param force \code{logical}. overwrite already existing files (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
+#' }
+#' @export
+h2o.save_frame <- function(x, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(h2o.getId(x)), dir = dir, force = force, method = "POST")
+    .h2o.__waitOnJob(res$job$key$name)
+}
+
 # ------------------- Save H2O Model to Disk ----------------------------------------------------
 #'
 #' Save an H2O Model Object to Disk
@@ -320,7 +342,10 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'
 #' @param grid_directory A character string containing the path to the folder for the grid to be saved to.
 #' @param grid_id A chracter string with identification of the grid to be saved.
-#' @param export_cross_validation_predictions A boolean flag indicating whether exported model artifacts should also include CV holdout Frame predictions.
+#' @param save_params_references A logical indicating if objects referenced by grid parameters
+#'                               (e.g. training frame, calibration frame) should also be saved.
+#' @param export_cross_validation_predictions A logical indicating whether exported model
+#'                                            artifacts should also include CV holdout Frame predictions.
 #' @return Returns an object that is a subclass of \linkS4class{H2OGrid}.
 #' @examples
 #' \dontrun{
@@ -348,17 +373,18 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'grid <- h2o.loadGrid(grid_path)
 #' }
 #' @export
-h2o.saveGrid <- function(grid_directory, grid_id, export_cross_validation_predictions = FALSE){
+h2o.saveGrid <- function(grid_directory, grid_id, save_params_references=FALSE, export_cross_validation_predictions = FALSE) {
   params <- list()
   params[["grid_directory"]] <- grid_directory
+  params[["save_params_references"]] <- save_params_references
   params[["export_cross_validation_predictions"]] <- export_cross_validation_predictions
   
   url <- paste0("Grid.bin/", grid_id,"/export")
   
-  res <- .h2o.__remoteSend(
+  .h2o.__remoteSend(
     url,
     method = "POST",
-    h2oRestApiVersion = 3,.params = params
+    h2oRestApiVersion = 3, .params = params
   )
   
   paste0(grid_directory,"/",grid_id)

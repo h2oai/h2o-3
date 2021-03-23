@@ -329,6 +329,35 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 }
 
 #'
+#' Load frame previously stored in H2O's native format.
+#'
+#' @name h2o.load_frame
+#' @param frame_id the frame ID of the original frame
+#' @param dir a filesystem location where to look for frame data
+#' @param force \code{logical}. overwrite an already existing frame (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
+#' prostate.key <- h2o.getId(prostate)
+#' h2o.rm(prostate)
+#' prostate <- h2o.load_frame(prostate.key, "/tmp/prostate")
+#' }
+#' @export
+h2o.load_frame <- function(frame_id, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__LOAD_FRAME, frame_id = frame_id, dir = dir, force = force, method = "POST")
+    hex <- res$job$dest$name
+    .h2o.__waitOnJob(res$job$key$name)
+    x <- .newH2OFrame("Load", id=hex, -1, -1)
+    .fetch.data(x,1L) # Fill in nrow and ncol
+    x
+}
+
+#'
 #' Load H2O Model from HDFS or Local Disk
 #'
 #' Load a saved H2O model from disk. (Note that ensemble binary models 
@@ -426,6 +455,9 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #' Returns a reference to the loaded Grid.
 #'
 #' @param grid_path A character string containing the path to the file with the grid saved.
+#' @param load_params_references A logical which if true will attemt to reload saved objects referenced by 
+#'                    grid parameters (e.g. training frame, calibration frame), will fail if grid was saved 
+#'                    without referenced objects.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -446,15 +478,15 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #'grid <- h2o.loadGrid(paste0(tempdir(),"/",baseline_grid@grid_id))
 #' }
 #' @export
-h2o.loadGrid <- function(grid_path){
+h2o.loadGrid <- function(grid_path, load_params_references=FALSE){
   params <- list()
   params[["grid_path"]] <- grid_path
-  
+  params[["load_params_references"]] <- load_params_references
   
   res <- .h2o.__remoteSend(
     "Grid.bin/import",
     method = "POST",
-    h2oRestApiVersion = 3,.params = params
+    h2oRestApiVersion = 3, .params = params
   )
   
   h2o.getGrid(grid_id = res$name)

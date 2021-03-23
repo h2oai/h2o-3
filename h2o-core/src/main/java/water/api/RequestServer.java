@@ -395,7 +395,7 @@ public class RequestServer extends HttpServlet {
       // to represent booleans creates ambiguities: should I write "true", "True", "TRUE", or perhaps "1"?
       //
       // TODO These should be removed as soon as possible...
-      if (url.startsWith("/3/Frames/")) {
+      if (route == null && url.startsWith("/3/Frames/")) {
         // /3/Frames/{frame_id}/export/{path}/overwrite/{force}
         if ((url.toLowerCase().endsWith("/overwrite/true") || url.toLowerCase().endsWith("/overwrite/false")) && url.contains("/export/")) {
           int i = url.indexOf("/export/");

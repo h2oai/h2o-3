@@ -42,7 +42,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                    "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "stopping_rounds",
                    "stopping_metric", "stopping_tolerance", "balance_classes", "class_sampling_factors",
                    "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs", "custom_metric_func",
-                   "auc_type"}
+                   "generate_scoring_history", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
@@ -1787,6 +1787,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
+
+
+    @property
+    def generate_scoring_history(self):
+        """
+        If set to true, will generate scoring history for GLM.  This may significantly slow down the algo.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("generate_scoring_history")
+
+    @generate_scoring_history.setter
+    def generate_scoring_history(self, generate_scoring_history):
+        assert_is_type(generate_scoring_history, None, bool)
+        self._parms["generate_scoring_history"] = generate_scoring_history
 
 
     @property

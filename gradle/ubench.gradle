@@ -8,7 +8,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.2'
     }
 }
 
@@ -29,6 +29,7 @@ ext {
     jmhRunSha = bv.getLastCommitHash()
     jmhResultFileName = "${bv.getLastCommitHash()}-${date}.csv"
     jmhResultFile = project.file("${project.buildDir}/reports/jmh/$jmhResultFileName")
+    jmhVersion = '1.23'
 
     // ubench - post-processed output
     ubenchResultFile = project.file("${project.buildDir}/reports/ubench/$jmhResultFileName")
@@ -41,7 +42,7 @@ jmh {
     if (project.hasProperty('ubenchIncludeOnly')) {
         include = project.ubenchIncludeOnly
     }
-    jmhVersion = '1.21'
+    jmhVersion = project.jmhVersion
     resultsFile = project.jmhResultFile
     duplicateClassesStrategy = 'warn'
     resultFormat = 'CSV'
@@ -53,7 +54,8 @@ jmh {
 
 dependencies {
     jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
-    compile 'org.openjdk.jmh:jmh-core:1.21'
+    compile group: 'org.openjdk.jmh', name:'jmh-core', version: project.jmhVersion
+    compile group: 'org.openjdk.jmh', name:'jmh-generator-annprocess', version: project.jmhVersion
 }
 
 task jmhPostProcess(dependsOn: "jmh") {

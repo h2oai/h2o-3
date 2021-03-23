@@ -67,6 +67,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__CLOUD          <- "Cloud?skip_ticks=true"
 .h2o.__SHUTDOWN       <- "Shutdown"
 .h2o.__DOWNLOAD_LOGS  <- "3/Logs/download"
+.h2o.__RESUME         <- "3/Recovery/resume"
 
 #' Removal Endpoints
 .h2o.__DKV            <- "DKV"
@@ -140,8 +141,14 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__LOAD_MODEL <- "Models.bin/"
 .h2o.__UPLOAD_MODEL <- "Models.upload.bin/"
 
+# Export/Import Frame Endpoints
+.h2o.__SAVE_FRAME <- function(frame_id) paste0("Frames/", frame_id, "/save")
+.h2o.__LOAD_FRAME <- "Frames/load"
+
+
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)
+.h2o.__GRID_RESUME <- function(algo) paste0("Grid/", algo, "/resume")
 .h2o.__GRIDS <- function(grid_id, sort_by, decreasing) {
     if (missing(grid_id)) {
         "/Grids"

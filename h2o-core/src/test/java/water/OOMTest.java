@@ -1,8 +1,6 @@
 package water;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.Frame;
@@ -104,8 +102,8 @@ public class OOMTest extends TestUtil {
     try {
       // Force much swap-to-disk
       for( int i=0; i<4; i++ ) {
-        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
-        frames.add(parse_test_file(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
+        frames.add(parseTestFile(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98LRN_z.csv"));
+        frames.add(parseTestFile(Key.make("F" + frames.size()), "bigdata/laptop/usecases/cup98VAL_z.csv"));
       }
     } finally {
       dirs = ice.list();

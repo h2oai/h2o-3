@@ -25,7 +25,7 @@ public class ClientParserTest extends TestUtil {
                                   "smalldata/chicago/chicagoCrimes10k.csv.zip"};
     try {
       for (String f : files) {
-        Frame frame = parse_test_file(Key.make("data_1_"+f), f);
+        Frame frame = parseTestFile(Key.make("data_1_"+f), f);
         frame.delete();
       }
     } finally {

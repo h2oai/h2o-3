@@ -451,7 +451,7 @@ public class DeepLearningTest extends TestUtil {
     Frame test = null, res = null;
     DeepLearningModel model = null;
     try {
-      frTrain = parse_test_file(fnametrain);
+      frTrain = parseTestFile(fnametrain);
       Vec removeme = unifyFrame(dl, frTrain, prep, classification);
       if (removeme != null) Scope.track(removeme);
       DKV.put(frTrain._key, frTrain);
@@ -477,7 +477,7 @@ public class DeepLearningTest extends TestUtil {
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
-        frTest = parse_test_file(fnametest);
+        frTest = parseTestFile(fnametest);
         pred = model.score(frTest);
         mm = hex.ModelMetrics.getFromDKV(model, frTest);
         // Check test set CM
@@ -486,7 +486,7 @@ public class DeepLearningTest extends TestUtil {
         mm = hex.ModelMetrics.getFromDKV(model, frTrain);
       }
 
-      test = parse_test_file(fnametrain);
+      test = parseTestFile(fnametrain);
       res = model.score(test);
 
       if (classification) {
@@ -528,7 +528,7 @@ public class DeepLearningTest extends TestUtil {
     Scope.enter();
     try {
       for (int i = 0; i < N; ++i) {
-        frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+        frTrain = parseTestFile("./smalldata/covtype/covtype.20k.data");
         Vec resp = frTrain.lastVec().toCategoricalVec();
         frTrain.remove(frTrain.vecs().length - 1).remove();
         frTrain.add("Response", resp);
@@ -588,12 +588,12 @@ public class DeepLearningTest extends TestUtil {
     Scope.enter();
     boolean covtype = true; //new Random().nextBoolean();
     if (covtype) {
-      frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
+      frTrain = parseTestFile("./smalldata/covtype/covtype.20k.data");
       Vec resp = frTrain.lastVec().toCategoricalVec();
       frTrain.remove(frTrain.vecs().length - 1).remove();
       frTrain.add("Response", resp);
     } else {
-      frTrain = parse_test_file("./bigdata/server/HIGGS.csv");
+      frTrain = parseTestFile("./bigdata/server/HIGGS.csv");
       Vec resp = frTrain.vecs()[0].toCategoricalVec();
       frTrain.remove(0).remove();
       frTrain.prepend("Response", resp);
@@ -657,7 +657,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      tfr = parseTestFile("smalldata/junit/no_weights.csv");
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
@@ -696,7 +696,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
@@ -736,7 +736,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      tfr = parseTestFile("smalldata/junit/no_weights_shuffled.csv");
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
@@ -775,7 +775,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
@@ -841,19 +841,19 @@ public class DeepLearningTest extends TestUtil {
     dl = new DeepLearningParameters();
     Scope.enter();
     try {
-//      first1kSVM = parse_test_file("/users/arno/first1k.svm");
+//      first1kSVM = parseTestFile("/users/arno/first1k.svm");
 //      Scope.track(first1kSVM.replace(0, first1kSVM.vec(0).toCategoricalVec())._key);
 //      DKV.put(first1kSVM);
 //
-//      second1kSVM = parse_test_file("/users/arno/second1k.svm");
+//      second1kSVM = parseTestFile("/users/arno/second1k.svm");
 //      Scope.track(second1kSVM.replace(0, second1kSVM.vec(0).toCategoricalVec())._key);
 //      DKV.put(second1kSVM);
 //
-//      third1kSVM = parse_test_file("/users/arno/third1k.svm");
+//      third1kSVM = parseTestFile("/users/arno/third1k.svm");
 //      Scope.track(third1kSVM.replace(third1kSVM.find("C1"), third1kSVM.vec("C1")).toCategoricalVec()._key);
 //      DKV.put(third1kSVM);
 
-      first1kCSV = parse_test_file("/users/arno/first1k.csv");
+      first1kCSV = parseTestFile("/users/arno/first1k.csv");
 //      first1kCSV.remove(first1kCSV.find("C1")).remove(); //remove id
       Vec response = first1kCSV.remove(first1kCSV.find("C2")); //remove response, but keep it around outside the frame
       Vec responseFactor = response.toCategoricalVec(); //turn response into a categorical
@@ -862,7 +862,7 @@ public class DeepLearningTest extends TestUtil {
       first1kCSV.prepend("C2", responseFactor); //add back response as first column
       DKV.put(first1kCSV);
 
-//      second1kCSV = parse_test_file("/users/arno/second1k.csv");
+//      second1kCSV = parseTestFile("/users/arno/second1k.csv");
 //      second1kCSV.remove(second1kCSV.find("C1")).remove(); //remove id
 //      response = second1kCSV.remove(second1kCSV.find("C2")); //remove response, but keep it around outside the frame
 //      responseFactor = response.toCategoricalVec(); //turn response into a categorical
@@ -871,7 +871,7 @@ public class DeepLearningTest extends TestUtil {
 //      second1kCSV.prepend("C1", responseFactor); //add back response as first column
 //      DKV.put(second1kCSV);
 //
-//      third1kCSV = parse_test_file("/users/arno/third1k.csv");
+//      third1kCSV = parseTestFile("/users/arno/third1k.csv");
 //      third1kCSV.remove(third1kCSV.find("C1")).remove(); //remove id
 //      response = third1kCSV.remove(third1kCSV.find("C2")); //remove response, but keep it around outside the frame
 //      responseFactor = response.toCategoricalVec(); //turn response into a categorical
@@ -982,7 +982,7 @@ public class DeepLearningTest extends TestUtil {
     }) {
       Scope.enter();
       try {
-        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        tfr = parseTestFile("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
             "Merit", "Class"
         }) {
@@ -1034,7 +1034,7 @@ public class DeepLearningTest extends TestUtil {
     }) {
       Scope.enter();
       try {
-        tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+        tfr = parseTestFile("smalldata/glm_test/cancar_logIn.csv");
         for (String s : new String[]{
             "Merit", "Class"
         }) {
@@ -1079,7 +1079,7 @@ public class DeepLearningTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+      tfr = parseTestFile("smalldata/glm_test/cancar_logIn.csv");
       for (String s : new String[]{
           "Merit", "Class"
       }) {
@@ -1124,7 +1124,7 @@ public class DeepLearningTest extends TestUtil {
       Frame pred = null;
 
       try {
-        tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
+        tfr = parseTestFile("./smalldata/junit/two_spiral.csv");
         for (String s : new String[]{
             "Class"
         }) {
@@ -1178,7 +1178,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
+      tfr = parseTestFile("./smalldata/junit/two_spiral.csv");
       for (String s : new String[]{
               "Class"
       }) {
@@ -1214,7 +1214,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 100;
@@ -1246,7 +1246,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 10;
@@ -1281,7 +1281,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 10;
@@ -1316,7 +1316,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 1000000;
@@ -1350,7 +1350,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 1000000;
@@ -1384,7 +1384,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      tfr = parseTestFile("./smalldata/logreg/prostate.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 1000000;
@@ -1418,7 +1418,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      tfr = parseTestFile("./smalldata/logreg/prostate.csv");
       for (String s : new String[]{
               "CAPSULE"
       }) {
@@ -1461,7 +1461,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      tfr = parseTestFile("./smalldata/logreg/prostate.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._epochs = 1000;
@@ -1485,7 +1485,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      tfr = parseTestFile("./smalldata/logreg/prostate.csv");
       for (String s : new String[]{
           "CAPSULE"
       }) {
@@ -1517,7 +1517,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/logreg/prostate.csv");
+      tfr = parseTestFile("./smalldata/logreg/prostate.csv");
       for (String s : new String[]{
               "CAPSULE"
       }) {
@@ -1559,7 +1559,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1586,7 +1586,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1612,7 +1612,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1641,7 +1641,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel ae = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       Vec r = tfr.remove("chas");
       tfr.add("chas",r.toCategoricalVec());
       DKV.put(tfr);
@@ -1731,7 +1731,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
 
       // train DL model from scratch
       {
@@ -1782,7 +1782,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
 
       // train DL model from scratch
       {
@@ -1838,7 +1838,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1865,7 +1865,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1892,7 +1892,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null, dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1938,7 +1938,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null, dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -1987,7 +1987,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null, dl2 = null;
 
     try {
-      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      tfr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
       parms._response_column = tfr.lastVecName();
@@ -2029,7 +2029,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      tfr = parseTestFile("./smalldata/junit/titanic_alt.csv");
       Vec v = tfr.remove("survived");
       tfr.add("survived", v.toCategoricalVec());
       v.remove();
@@ -2064,7 +2064,7 @@ public class DeepLearningTest extends TestUtil {
 
     try {
       String response = "survived";
-      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      tfr = parseTestFile("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
         Vec v = tfr.remove(response);
         tfr.add(response, v.toCategoricalVec());
@@ -2105,8 +2105,8 @@ public class DeepLearningTest extends TestUtil {
 
     try {
       String response = "survived";
-      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
-      vfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      tfr = parseTestFile("./smalldata/junit/titanic_alt.csv");
+      vfr = parseTestFile("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
         Vec v = tfr.remove(response);
         tfr.add(response, v.toCategoricalVec());
@@ -2149,7 +2149,7 @@ public class DeepLearningTest extends TestUtil {
 
     try {
       String response = "survived";
-      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      tfr = parseTestFile("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
         Vec v = tfr.remove(response);
         tfr.add(response, v.toCategoricalVec());
@@ -2190,7 +2190,7 @@ public class DeepLearningTest extends TestUtil {
 
     try {
       String response = "age";
-      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      tfr = parseTestFile("./smalldata/junit/titanic_alt.csv");
       if (tfr.vec(response).isBinary()) {
         Vec v = tfr.remove(response);
         tfr.add(response, v.toCategoricalVec());
@@ -2307,7 +2307,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel model = null;
     Scope.enter();
     try {
-      train = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      train = parseTestFile("./smalldata/junit/titanic_alt.csv");
       Vec v = train.remove("pclass");
       train.add("pclass", v.toCategoricalVec());
       v.remove();
@@ -2347,7 +2347,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel model = null;
     Scope.enter();
     try {
-      train = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      train = parseTestFile("./smalldata/junit/titanic_alt.csv");
       Vec v = train.remove("survived");
       train.add("survived", v.toCategoricalVec());
       v.remove();
@@ -2406,7 +2406,7 @@ public class DeepLearningTest extends TestUtil {
     DeepLearningModel model = null;
     Scope.enter();
     try {
-      train = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      train = parseTestFile("./smalldata/junit/titanic_alt.csv");
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = train._key;
       parms._response_column = "age";
@@ -2522,7 +2522,7 @@ public class DeepLearningTest extends TestUtil {
 
     Frame train = null, valid = null;
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
 
       FrameSplitter fs = new FrameSplitter(tfr, new double[]{0.8},new Key[]{Key.make("train"),Key.make("valid")},null);
       fs.compute2();
@@ -2572,7 +2572,7 @@ public class DeepLearningTest extends TestUtil {
 
     Frame train = null, valid = null;
     try {
-      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      tfr = parseTestFile("./smalldata/iris/iris.csv");
 
       FrameSplitter fs = new FrameSplitter(tfr, new double[]{0.8},new Key[]{Key.make("train"),Key.make("valid")},null);
       fs.compute2();
@@ -2617,7 +2617,7 @@ public class DeepLearningTest extends TestUtil {
   public void testMojoConcurrentScoring() throws Exception  { // PUBDEV-6615: DeepLearning MOJOs should be thread-safe
     try {
       Scope.enter();
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
       tfr.remove("ID").remove();
       tfr.add("AGE", tfr.remove("AGE")); // make AGE the last column (for convenience)
       DKV.put(tfr);
@@ -2762,7 +2762,7 @@ public class DeepLearningTest extends TestUtil {
           Scope.enter();
           final String response = "CAPSULE";
           final String testFile = "./smalldata/logreg/prostate.csv";
-          Frame fr = parse_test_file(testFile)
+          Frame fr = parseTestFile(testFile)
                   .toCategoricalCol("RACE")
                   .toCategoricalCol("GLEASON")
                   .toCategoricalCol(response);
@@ -2810,7 +2810,7 @@ public class DeepLearningTest extends TestUtil {
                               "--output", pojoScoringOutput.getAbsolutePath(),
                               "--decimal"}, (GenModel) pojoClass.newInstance());
               predictor.run();
-              Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+              Frame scoredWithPojo = Scope.track(parseTestFile(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                   @Override
                   public ParseSetup transformSetup(ParseSetup guessedSetup) {
                       return guessedSetup.setCheckHeader(1);
@@ -2830,7 +2830,7 @@ public class DeepLearningTest extends TestUtil {
                               "--output", mojoScoringOutput.getAbsolutePath(),
                               "--decimal"}, (GenModel) mojoModel);
               predictor.run();
-              Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+              Frame scoredWithMojo = Scope.track(parseTestFile(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                   @Override
                   public ParseSetup transformSetup(ParseSetup guessedSetup) {
                       return guessedSetup.setCheckHeader(1);

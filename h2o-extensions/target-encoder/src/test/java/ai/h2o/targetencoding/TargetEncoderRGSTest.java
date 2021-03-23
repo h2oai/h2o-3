@@ -56,8 +56,8 @@ public class TargetEncoderRGSTest{
 
         HyperSpaceIterator<TargetEncoderParameters> iterator = walker.iterator();
         int count = 0;
-        while (iterator.hasNext(null)) {
-          TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+        while (iterator.hasNext()) {
+          TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters();
           System.out.println(targetEncoderParameters._blending + ":" + targetEncoderParameters._noise + ":" + targetEncoderParameters._inflection_point + ":" + targetEncoderParameters._smoothing);
           count++;
         }
@@ -89,7 +89,7 @@ public class TargetEncoderRGSTest{
 
       Scope.enter();
       try {
-        Frame trainingFrame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        Frame trainingFrame = parseTestFile("./smalldata/gbm_test/titanic.csv");
         Scope.track(trainingFrame);
         String responseColumn = "survived";
         asFactor(trainingFrame, responseColumn);

@@ -1,32 +1,45 @@
 package hex;
 
-import org.junit.BeforeClass;
+import hex.genmodel.utils.DistributionFamily;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.ReflectionUtils;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
+import water.test.dummy.DummyModel;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
+import water.test.dummy.MessageInstallAction;
+import water.util.ReflectionUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
+import static water.TestUtil.ar;
+import static water.TestUtil.ivec;
 
-
-public class ModelBuilderTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class ModelBuilderTest {
 
   @Rule
   public transient TemporaryFolder tmp = new TemporaryFolder();
 
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
-
+  @Rule
+  public transient ExpectedException ee = ExpectedException.none();
+  
   @Test
   public void testRebalancePubDev5400() {
     try {
@@ -231,23 +244,6 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
   
-  
-  @Test
-  @SuppressWarnings("unchecked")
-  public void bulkBuildModels() throws Exception {
-    Job j = new Job(null, null, "BulkBuilding");
-    Key key1 = Key.make(j._key + "-dummny-1");
-    Key key2 = Key.make(j._key + "-dummny-2");
-    try {
-      j.start(new BulkRunner(j), 10).get();
-      assertEquals("Computed Dummy 1", DKV.getGet(key1).toString());
-      assertEquals("Computed Dummy 2", DKV.getGet(key2).toString());
-    } finally {
-      DKV.remove(key1);
-      DKV.remove(key2);
-    }
-  }
-
   @Test
   public void testExportCheckpointsWriteCheck() throws IOException {
     try {
@@ -281,20 +277,108 @@ public class ModelBuilderTest extends TestUtil {
       Scope.exit();
     }
   }
+  
+  @Test
+  public void testUsedColumns() {
+    String[] trainNames = new String[] {
+        "c1", "c2", "c3", "c4", "c5", "response"
+    };
+    DummyModelParameters params = new DummyModelParameters();
+    params._dummy_string_array_param = new String[] { "c1" };
+    params._dummy_string_param = "c2";
+    assertEquals(
+        "no columns used", emptySet(), params.getUsedColumns(trainNames));
+    params._column_param = "invalid";
+    assertEquals(
+        "invalid column name not used", emptySet(), params.getUsedColumns(trainNames)
+    );
+    params._column_param = "response";
+    assertEquals(
+        "columns from simple param", 
+        new HashSet<>(singletonList("response")), params.getUsedColumns(trainNames)
+    );
+    params._column_param = null;
+    params._column_list_param = new String[] { "invalid", "c4", "c5" };
+    assertEquals(
+        "columns from array param", 
+        new HashSet<>(asList("c4", "c5")), params.getUsedColumns(trainNames)
+    );
+    params._column_param = "response";
+    assertEquals(
+        "columns from multiple params combined", 
+        new HashSet<>(asList("c4", "c5", "response")), params.getUsedColumns(trainNames)
+    );
+  }
 
-  public static class BulkRunner extends H2O.H2OCountedCompleter<BulkRunner> {
-    private Job _j;
-    private BulkRunner(Job j) { _j = j; }
+  @Test
+  public void testTrainModelNestedExecutesOnExceptionalCompletionSynchronously() {
+    Key proofKey = Key.make();
+    try {
+      Scope.enter();
+      Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
+
+      DummyModelParameters params = new DummyModelParameters();
+      params._response_column = trainingFrame.name(0);
+      params._train = trainingFrame._key;
+      params._cancel_job = true;
+      params._on_exception_action = new DelayedMessageInstallAction(proofKey, "onExceptionalCompletion", 1000);
+
+      ee.expect(Job.JobCancelledException.class);
+      try {
+        new DummyModelBuilder(params).trainModelNested(trainingFrame);
+      } finally {
+        assertEquals("Computed onExceptionalCompletion", DKV.getGet(proofKey).toString());
+      }
+    } finally {
+      Scope.exit();
+      DKV.remove(proofKey);
+    }
+  }
+
+  private static class DelayedMessageInstallAction extends MessageInstallAction {
+    private final int _delay_millis;
+
+    DelayedMessageInstallAction(Key trgt, String msg, int delayMillis) {
+      super(trgt, msg);
+      _delay_millis = delayMillis;
+    }
+
     @Override
-    public void compute2() {
-      ModelBuilder<?, ?, ?>[] builders = {
-              new DummyModelBuilder(new DummyModelParameters("Dummy 1", Key.make(_j._key + "-dummny-1"))),
-              new DummyModelBuilder(new DummyModelParameters("Dummy 2", Key.make(_j._key + "-dummny-2")))
-      };
-      ModelBuilder.bulkBuildModels("dummy-group", _j, builders, 1 /*sequential*/, 1 /*increment by 1*/);
-      // check that progress is as expected
-      assertEquals(0.2, _j.progress(), 0.001);
-      tryComplete();
+    protected String run(DummyModelParameters parms) {
+      try {
+        Thread.sleep(_delay_millis);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      return super.run(parms);
+    }
+  }
+
+  @Test
+  public void testFoldColumnHaveExtraLevels() {
+    DummyModel model = null;
+    try {
+      Scope.enter();
+      Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
+      Vec fold = Scope.track(ivec(1, 3, 1));
+      fold.setDomain(new String[]{"NoDataFold0", "fold1", "NoDataFold2", "fold3", "NoDataFold4"});
+      DKV.put(fold);
+      trainingFrame.add("Fold", fold);
+      DKV.put(trainingFrame);
+
+      DummyModelParameters params = new DummyModelParameters();
+      params._response_column = "col_3";
+      params._train = trainingFrame._key;
+      params._fold_column = "Fold";
+      params._makeModel = true;
+
+      model = new DummyModelBuilder(params).trainModel().get();
+      Scope.track_generic(model);
+      assertEquals(2, model._output._cross_validation_models.length);
+    } finally {
+      if (model != null)
+        model.deleteCrossValidationModels();
+      Scope.exit();
     }
   }
 

@@ -19,7 +19,7 @@ public class VecUtilsTest extends TestUtil {
 
   @Test
   public void testStringVec2Categorical() {
-    Frame f = parse_test_file("smalldata/junit/iris.csv");
+    Frame f = parseTestFile("smalldata/junit/iris.csv");
     try {
       Assert.assertTrue(f.vec(4).isCategorical());
       int categoricalCnt = f.vec(4).cardinality();

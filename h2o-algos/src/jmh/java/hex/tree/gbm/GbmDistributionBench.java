@@ -8,11 +8,12 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 
 import java.util.concurrent.TimeUnit;
 
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 import static water.TestUtil.stall_till_cloudsize;
 
 @State(Scope.Thread)
@@ -35,7 +36,7 @@ public class GbmDistributionBench {
     public void setup() {
         water.util.Log.setLogLevel("ERR");
         stall_till_cloudsize(1);
-        fr = parse_test_file(Key.make("gdata"), "smalldata/logreg/prostate_train.csv");
+        fr = parseTestFile(Key.make("gdata"), "smalldata/logreg/prostate_train.csv");
         params = new GBMModel.GBMParameters();
         params._train = fr._key;
         params._distribution = distribution;

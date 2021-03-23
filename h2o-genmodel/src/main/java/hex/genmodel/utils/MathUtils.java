@@ -22,4 +22,14 @@ public class MathUtils {
   public static int log2(long n) {
     return 63 - Long.numberOfLeadingZeros(n);
   }
+  
+  public static int combinatorial(int top, int bottom) {
+    int denom = 1;
+    int numer = 1;
+    for (int index = 1; index <= bottom; index++) {
+      numer *= (top - index + 1);
+      denom *= index;
+    }
+    return (numer/denom);
+  }
 }

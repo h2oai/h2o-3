@@ -120,7 +120,7 @@ public class FrameSplitterTest extends TestUtil {
 
   @Test public void test() {
     // Load data
-    Frame f = parse_test_file(Key.make("iris.csv"), "smalldata/iris/iris.csv");
+    Frame f = parseTestFile(Key.make("iris.csv"), "smalldata/iris/iris.csv");
     long numRows = f.numRows();
     Assert.assertEquals(150, numRows);
     // Perform frame split via API

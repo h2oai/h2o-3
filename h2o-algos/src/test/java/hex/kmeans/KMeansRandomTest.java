@@ -28,7 +28,7 @@ public class KMeansRandomTest extends TestUtil {
     int testcount = 0;
     int count = 0;
     for( String dataset : datasets ) {
-      Frame frame = parse_test_file(dataset);
+      Frame frame = parseTestFile(dataset);
 
       try {
         for (int centers : new int[]{1, 2, 10, 100}) {

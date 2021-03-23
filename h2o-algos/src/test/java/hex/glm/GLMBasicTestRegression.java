@@ -68,15 +68,15 @@ public class GLMBasicTestRegression extends TestUtil {
     outputKey = Key.make("upsampled.hex");
     _upsampled = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_upsampled._key, _upsampled);
-    _prostateTrain = parse_test_file("smalldata/glm_test/prostate_cat_train.csv");
-    _airlines = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
+    _prostateTrain = parseTestFile("smalldata/glm_test/prostate_cat_train.csv");
+    _airlines = parseTestFile("smalldata/airlines/AirlinesTrain.csv.zip");
     Vec v = _airlines.remove("IsDepDelayed");
     Vec v2 = v.makeCopy(null);
     _airlines.add("IsDepDelayed",v2);
     v.remove();
     DKV.put(_airlines._key,_airlines);
 //    System.out.println("made copy of vec " + v._key + " -> " + v2._key + ", in DKV? src =" + ((DKV.get(v._key) != null)) + ", dst = " + (DKV.get(v2._key) != null));
-    _airlinesMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
+    _airlinesMM = parseTestFile(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     v = _airlinesMM.remove("IsDepDelayed");
     _airlinesMM.add("IsDepDelayed",v.makeCopy(null));
     v.remove();
@@ -935,26 +935,26 @@ public class GLMBasicTestRegression extends TestUtil {
    * Test to verify that the dispersion parameter estimation for Tweedie families are calculated correctly.
    */
   @Test
-  public void testDispersionEstimat() {
-      Scope.enter();
-    Frame fr, f1, f2, f3, pred;
-    // get new coefficients, 7 classes and 53 predictor+intercept
-    Random rand = new Random();
-    rand.setSeed(12345);
-    int nclass = 4;
-    double threshold = 1e-10;
-    int numRows = 1000;
-    GLMModel model = null;
+  public void testDispersionEstimate() {
+    Scope.enter();
 
     try {
+      Frame fr, f1, f2, f3, pred;
+      // get new coefficients, 7 classes and 53 predictor+intercept
+      Random rand = new Random();
+      rand.setSeed(12345);
+      int nclass = 4;
+      double threshold = 1e-10;
+      int numRows = 1000;
       long seed = 1234;
-      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      f1 = TestUtil.generateEnumOnly(2, numRows, nclass, 0, seed);
       Scope.track(f1);
-      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      f2 = TestUtil.generateRealOnly(4, numRows, 0, seed);
       Scope.track(f2);
-      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      f3 = TestUtil.generateIntOnly(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
+      DKV.put(fr);
       Scope.track(fr);
         GLMParameters params = new GLMParameters(Family.tweedie);
         params._response_column = fr._names[fr.numCols() - 1];
@@ -967,7 +967,7 @@ public class GLMBasicTestRegression extends TestUtil {
         params._tweedie_variance_power = 0;
         params._compute_p_values = true;
 
-        model = new GLM(params).trainModel().get();
+        GLMModel model = new GLM(params).trainModel().get();
         Scope.track_generic(model);
         pred = model.score(fr);
         Scope.track(pred);
@@ -1006,11 +1006,11 @@ public class GLMBasicTestRegression extends TestUtil {
 
     try {
       long seed = 1234;
-      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      f1 = TestUtil.generateEnumOnly(2, numRows, nclass, 0, seed);
       Scope.track(f1);
-      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      f2 = TestUtil.generateRealOnly(4, numRows, 0, seed);
       Scope.track(f2);
-      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      f3 = TestUtil.generateIntOnly(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
       Scope.track(fr);
@@ -1192,11 +1192,11 @@ public class GLMBasicTestRegression extends TestUtil {
 
     try {
       long seed = 1234;
-      f1 = TestUtil.generate_enum_only(2, numRows, nclass, 0, seed);
+      f1 = TestUtil.generateEnumOnly(2, numRows, nclass, 0, seed);
       Scope.track(f1);
-      f2 = TestUtil.generate_real_only(4, numRows, 0, seed);
+      f2 = TestUtil.generateRealOnly(4, numRows, 0, seed);
       Scope.track(f2);
-      f3 = TestUtil.generate_int_only(1, numRows, 10, 0, seed);
+      f3 = TestUtil.generateIntOnly(1, numRows, 10, 0, seed);
       Scope.track(f3);
       fr = f1.add(f2).add(f3);  // complete frame generation
       Scope.track(fr);

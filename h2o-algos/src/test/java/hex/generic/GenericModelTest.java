@@ -36,7 +36,7 @@ import static org.junit.Assert.*;
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class GenericModelTest extends TestUtil {
-    
+
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -45,9 +45,9 @@ public class GenericModelTest extends TestUtil {
         try {
             Scope.enter();
             // Create new GBM model
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
@@ -94,9 +94,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_drf_binomial() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = trainingFrame._key;
@@ -140,9 +140,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_irf_binomial() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
             parms._train = trainingFrame._key;
@@ -186,9 +186,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_gbm_regression() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
@@ -232,9 +232,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_drf_regression() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = trainingFrame._key;
@@ -278,9 +278,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_irf_numerical() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
             parms._train = trainingFrame._key;
@@ -324,9 +324,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_glm() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
             parms._train = trainingFrame._key;
@@ -369,9 +369,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_gbm_multinomial() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
@@ -417,9 +417,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_drf_multinomial() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = trainingFrame._key;
@@ -463,9 +463,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_irf_multinomial() throws Exception {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
             parms._train = trainingFrame._key;
@@ -504,19 +504,19 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
-    
+
     /**
      * Create a GBM model and writes a MOJO into a temporary zip file. Then, it creates a Generic model out of that
      * temporary zip file and re-downloads the underlying MOJO again. The byte arrays representing both MOJOs are tested
      * to be the same.
-     * 
+     *
      */
     @Test
     public void downloadable_mojo_gbm() throws IOException {
         try {
             Scope.enter();
             // Create new GBM model
-            final Frame trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             Scope.track(trainingFrame);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
@@ -544,7 +544,7 @@ public class GenericModelTest extends TestUtil {
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
             genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
             assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
-            
+
         } finally {
             Scope.exit();
         }
@@ -561,7 +561,7 @@ public class GenericModelTest extends TestUtil {
         try {
             Scope.enter();
             // Create new DRF model
-            final Frame trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             Scope.track(trainingFrame);
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = trainingFrame._key;
@@ -605,7 +605,7 @@ public class GenericModelTest extends TestUtil {
         try {
             Scope.enter();
             // Create new IRF model
-            final Frame trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             Scope.track(trainingFrame);
             IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
             parms._train = trainingFrame._key;
@@ -648,7 +648,7 @@ public class GenericModelTest extends TestUtil {
     public void downloadable_mojo_glm() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             Scope.track(trainingFrame);
             GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
             parms._train = trainingFrame._key;
@@ -691,7 +691,7 @@ public class GenericModelTest extends TestUtil {
     public void downloadable_mojo_cox_ph() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/coxph_test/heart.csv");
             Scope.track(trainingFrame);
             CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
             parms._train = trainingFrame._key;
@@ -730,9 +730,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_mojo_cox_ph() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/coxph_test/heart.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/coxph_test/heart_test.csv");
             Scope.track(testFrame);
             testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
         } finally {
@@ -743,9 +743,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_mojo_cox_ph_strata() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
+            final Frame trainingFrame = parseTestFile("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
+            final Frame testFrame = parseTestFile("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
             Scope.track(testFrame);
             testJavaScoringCoxPH(trainingFrame, testFrame, new String[] {"transplant"});
 
@@ -758,9 +758,9 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_mojo_cox_ph_categorical() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
+            final Frame trainingFrame = parseTestFile("./smalldata/coxph_test/heart.csv").toCategoricalCol("transplant");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
+            final Frame testFrame = parseTestFile("./smalldata/coxph_test/heart_test.csv").toCategoricalCol("transplant");
             Scope.track(testFrame);
             testJavaScoringCoxPH(trainingFrame, testFrame, new String[0]);
         } finally {
@@ -772,11 +772,11 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_mojo_cox_ph_2_categoricals() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv")
+            final Frame trainingFrame = parseTestFile("./smalldata/coxph_test/heart.csv")
                     .toCategoricalCol("transplant")
                     .toCategoricalCol("surgery");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv")
+            final Frame testFrame = parseTestFile("./smalldata/coxph_test/heart_test.csv")
                     .toCategoricalCol("transplant")
                     .toCategoricalCol("surgery");
             Scope.track(testFrame);
@@ -790,11 +790,11 @@ public class GenericModelTest extends TestUtil {
     public void testJavaScoring_mojo_cox_ph_2_stratify() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/coxph_test/heart.csv")
+            final Frame trainingFrame = parseTestFile("./smalldata/coxph_test/heart.csv")
                     .toCategoricalCol("transplant")
                     .toCategoricalCol("surgery");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/coxph_test/heart_test.csv")
+            final Frame testFrame = parseTestFile("./smalldata/coxph_test/heart_test.csv")
                     .toCategoricalCol("transplant")
                     .toCategoricalCol("surgery");
             Scope.track(testFrame);
@@ -803,6 +803,7 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
+
 
     private void testJavaScoringCoxPH(Frame trainingFrame, Frame testFrame, String[] stratifyBy) throws IOException {
         CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
@@ -818,9 +819,15 @@ public class GenericModelTest extends TestUtil {
         CoxPH job = new CoxPH(parms);
         final CoxPHModel originalModel = job.trainModel().get();
         Scope.track_generic(originalModel);
-        final File originalModelMojoFile = File.createTempFile("mojo", "zip");
-        originalModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
 
+        // FIXME: for debugging issues on jenkins
+        originalModel.exportBinaryModel(modelExportFile("binary", "bin").getAbsolutePath(), true);
+
+        final File originalModelMojoFile = modelExportFile("mojo", "zip");
+        originalModel
+                .getMojo()
+                .writeTo(new FileOutputStream(originalModelMojoFile));
+        
         final Key mojoKey = importMojo(originalModelMojoFile.getAbsolutePath());
 
         // Create Generic model from given imported MOJO
@@ -839,14 +846,29 @@ public class GenericModelTest extends TestUtil {
 
         final Frame originalModelPredictions = originalModel.score(testFrame);
         Scope.track(originalModelPredictions);
-        assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions, 0.000001));
+        assertTrue(TestUtil.compareFrames(originalModelPredictions, genericModelPredictions, 0.000001, 0.00001));
     }
-
+    
+    private File modelExportFile(String prefix, String suffix) throws IOException {
+        File sandboxDir = H2O.getCloudSize() > 1 ? new File("sandbox/multi") : new File("sandbox/single");
+        if (sandboxDir.isDirectory()) {
+            String name = "unknown";
+            for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                if (ste.getMethodName().startsWith("test") && ste.getClassName().equals(getClass().getCanonicalName())) {
+                    name = ste.getMethodName();
+                }
+            }
+            return new File(sandboxDir, prefix + name + "." + suffix);
+        } else {
+            return File.createTempFile("mojo", "zip");
+        }
+    }
+    
     @Test
     public void downloadable_mojo_glm_binomial() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
             GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
             parms._train = trainingFrame._key;
@@ -884,9 +906,9 @@ public class GenericModelTest extends TestUtil {
         try {
             Scope.enter();
             // Create new GBM model
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
 
             DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
@@ -934,7 +956,7 @@ public class GenericModelTest extends TestUtil {
     public void downloadable_mojo_deeplearning() throws IOException {
         try {
             Scope.enter();
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
 
             DeepLearningModel.DeepLearningParameters parms = new DeepLearningModel.DeepLearningParameters();
@@ -975,7 +997,7 @@ public class GenericModelTest extends TestUtil {
         try {
             Scope.enter();
 
-            final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
 
             // Create DeepLearning Model
@@ -1039,7 +1061,7 @@ public class GenericModelTest extends TestUtil {
             assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
 
             // Test scoring
-            final Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
             Scope.track(testFrame);
             final Frame predictions = genericModel.score(testFrame);
             Scope.track(predictions);
@@ -1049,7 +1071,7 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = stackedEnsembleModel.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(predictions, originalModelPredictions));
-            
+
             assertTrue(equallyScored);
         } finally {
             Scope.exit();
@@ -1074,14 +1096,14 @@ public class GenericModelTest extends TestUtil {
         Scope.track_generic(key.get());
         return key;
     }
-    
-    
+
+
     @Test
     public void isAlgoNamePresent() throws IOException {
         try {
             Scope.enter();
             // Create new GBM model
-            final Frame trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             Scope.track(trainingFrame);
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = trainingFrame._key;
@@ -1103,12 +1125,11 @@ public class GenericModelTest extends TestUtil {
             final Generic generic = new Generic(genericModelParameters);
             final GenericModel genericModel = trainAndCheck(generic);
             Scope.track_generic(genericModel);
-            
+
             assertEquals("gbm",genericModel._output._original_model_identifier);
             assertEquals("Gradient Boosting Machine", genericModel._output._original_model_full_name);
         } finally {
             Scope.exit();
         }
     }
-
 }

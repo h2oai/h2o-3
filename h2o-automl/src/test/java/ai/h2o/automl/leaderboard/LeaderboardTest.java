@@ -67,7 +67,7 @@ public class LeaderboardTest extends water.TestUtil {
     GBMModel model = null;
     Frame fr  = null;
     try {
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._nfolds = 2;
@@ -100,7 +100,7 @@ public class LeaderboardTest extends water.TestUtil {
     List<Keyed> removables = new ArrayList<>();
     try {
       String target = "CAPSULE";
-      final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv").toCategoricalCol(target);  removables.add(fr);
+      final Frame fr = parseTestFile("./smalldata/logreg/prostate_train.csv").toCategoricalCol(target);  removables.add(fr);
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._nfolds = 3;

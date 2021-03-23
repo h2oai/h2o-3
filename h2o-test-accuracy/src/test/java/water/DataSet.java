@@ -4,7 +4,8 @@ import java.io.File;
 import java.io.IOException;
 
 import water.fvec.Frame;
-import water.util.FileUtils;
+
+import static water.TestUtil.parseTestFile;
 import static water.util.FileUtils.*;
 
 public class DataSet {
@@ -33,7 +34,7 @@ public class DataSet {
 
 	public void load(boolean regression) throws IOException {
 		AccuracyTestingSuite.summaryLog.println("Loading data set: " + this.id);
-		frame = TestUtil.parse_test_file(makeDataSetFile(this.uri).getCanonicalPath());
+		frame = parseTestFile(makeDataSetFile(this.uri).getCanonicalPath());
 		if (!regression) {
 			String responseColumnName = frame._names[responseColumn];
 			AccuracyTestingSuite.summaryLog.println("Converting response column (idx/name): " + responseColumn + "/" +

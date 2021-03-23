@@ -39,6 +39,8 @@ Defining a RuleFit Model (Beta API)
     - If the model_type is ``rules``, the algorithm fits a linear model only to the rule feature set (no linear terms can become important).
     - If the model_type is ``linear``, the algorithm fits a linear model only to the original feature set (no rule terms can become important).
 
+- **rule_generation_ntrees**: Specify the number of trees for tree ensemble. Defaults to 50.
+
 - `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
 
 	**Python only:** To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``.

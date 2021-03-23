@@ -49,12 +49,12 @@ public class GamTestPiping extends TestUtil {
     try {
       Scope.enter();
       String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      String[] gamCols = new String[]{"C6"};
-      final GAMModel model = getModel(gaussian,
-              Scope.track(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
+      String[][] gamCols = new String[][]{{"C6"}};
+      final GAMModel model = getModel(multinomial,
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
               "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
               true, new double[]{1}, new double[]{0}, new double[]{0}, false, null,
-              null, true);
+              null, false);
       Scope.track_generic(model);
       final double[][] rBinvD = new double[][]{{1.5605080,
               -3.5620961, 2.5465468, -0.6524143, 0.1074557}, {-0.4210098, 2.5559955, -4.3258597, 2.6228736,
@@ -70,15 +70,15 @@ public class GamTestPiping extends TestUtil {
 
       TestUtil.checkDoubleArrays(model._output._binvD[0], rBinvD, 1e-6); // compare binvD generation
       TestUtil.checkDoubleArrays(model._output._penaltyMatrices[0], rS, 1e-6);  // compare penalty terms
-      TestUtil.checkDoubleArrays(model._output._penaltyMatrices_center[0], rScenter, 1e-6);
+      TestUtil.checkDoubleArrays(model._output._penaltyMatricesCenter[0], rScenter, 1e-6);
       
-      Frame rTransformedData = parse_test_file("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam.csv");
+      Frame rTransformedData = parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam.csv");
       Scope.track(rTransformedData);
 
       Frame transformedDataC = ((Frame) DKV.getGet(model._output._gamTransformedTrainCenter));// compare model matrix with centering
       Scope.track(transformedDataC);
       Scope.track(transformedDataC.remove("C11"));
-      Frame rTransformedDataC = parse_test_file("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
+      Frame rTransformedDataC = parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
       Scope.track(rTransformedDataC);
       TestUtil.assertIdenticalUpToRelTolerance(transformedDataC, rTransformedDataC, 1e-2);
     } finally {
@@ -91,7 +91,7 @@ public class GamTestPiping extends TestUtil {
   public void testKnotsFromFrame() {
     try {
       Scope.enter();
-      Frame knotsFrame = generate_real_only(1, 5, 0);
+      Frame knotsFrame = generateRealOnly(1, 5, 0);
       Scope.track(knotsFrame);
       final double[][] knots = new double[][]{{-1.9990569949269443}, {-0.9814307533427584}, {0.025991586992542004}, 
               {1.0077098743127828}, {1.999422899675758}};
@@ -100,9 +100,9 @@ public class GamTestPiping extends TestUtil {
       Scope.track(knotsFrame);
 
       String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      String[] gamCols = new String[]{"C6"};
+      String[][] gamCols = new String[][]{{"C6"}};
       final GAMModel model = getModel(gaussian,
-              Scope.track(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
               "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
               true, new double[]{1}, new double[]{0}, new double[]{0}, false, 
               new String[]{knotsFrame._key.toString()},null, true);
@@ -121,12 +121,12 @@ public class GamTestPiping extends TestUtil {
 
       TestUtil.checkDoubleArrays(model._output._binvD[0], rBinvD, 1e-6); // compare binvD generation
       TestUtil.checkDoubleArrays(model._output._penaltyMatrices[0], rS, 1e-6);  // compare penalty terms
-      TestUtil.checkDoubleArrays(model._output._penaltyMatrices_center[0], rScenter, 1e-6);
+      TestUtil.checkDoubleArrays(model._output._penaltyMatricesCenter[0], rScenter, 1e-6);
 
       Frame transformedDataC = ((Frame) DKV.getGet(model._output._gamTransformedTrainCenter));  // compare model matrix with centering
       Scope.track(transformedDataC);
       Scope.track(transformedDataC.remove("C11"));
-      final Frame rTransformedDataC = parse_test_file("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
+      final Frame rTransformedDataC = parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
       Scope.track(rTransformedDataC);
       TestUtil.assertIdenticalUpToRelTolerance(transformedDataC, rTransformedDataC, 1e-2);
     } finally {
@@ -142,9 +142,9 @@ public class GamTestPiping extends TestUtil {
     try {
       Scope.enter();
       final String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      final String[] gamCols = new String[]{"C6", "C7", "C8"};
+      final String[][] gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
       final Frame train = massageFrame(
-              Scope.track(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")), multinomial);
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")), multinomial);
       DKV.put(train);
       Scope.track(train);
       GAMModel.GAMParameters params = new GAMModel.GAMParameters();
@@ -158,11 +158,11 @@ public class GamTestPiping extends TestUtil {
       params._train = train._key;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
       final GAMModel gam = new GAM(params).trainModel().get();
-      double[][][] penaltyMat1 = gam._output._penaltyMatrices_center;
+      double[][][] penaltyMat1 = gam._output._penaltyMatricesCenter;
       Scope.track_generic(gam);
       params._scale = new double[]{10, 10, 10};
       final GAMModel gam2 = new GAM(params).trainModel().get();
-      double[][][] penaltyMat2 = gam2._output._penaltyMatrices_center;
+      double[][][] penaltyMat2 = gam2._output._penaltyMatricesCenter;
       Scope.track_generic(gam2);
       // ratio of penaltyMat2 and penaltyMat1 should be approximately 10/0.1 = 100
       assert penaltyMat1.length == penaltyMat2.length && penaltyMat1[0].length == penaltyMat2[0].length && 
@@ -194,8 +194,8 @@ public class GamTestPiping extends TestUtil {
       Scope.enter();
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame train = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+      Frame train = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
       DKV.put(train);
       Scope.track(train);
       GAMModel.GAMParameters params = new GAMModel.GAMParameters();
@@ -209,11 +209,11 @@ public class GamTestPiping extends TestUtil {
       params._train = train._key;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
       final GAMModel gam = new GAM(params).trainModel().get();
-      double[][][] penaltyMat1 = gam._output._penaltyMatrices_center;
+      double[][][] penaltyMat1 = gam._output._penaltyMatricesCenter;
       Scope.track_generic(gam);
       params._scale = new double[]{10, 10, 10};
       final GAMModel gam2 = new GAM(params).trainModel().get();
-      double[][][] penaltyMat2 = gam2._output._penaltyMatrices_center;
+      double[][][] penaltyMat2 = gam2._output._penaltyMatricesCenter;
       Scope.track_generic(gam2);
       // ratio of penaltyMat2 and penaltyMat1 should be approximately 10/0.1 = 100
       assert penaltyMat1.length == penaltyMat2.length && penaltyMat1[0].length == penaltyMat2[0].length &&
@@ -248,10 +248,10 @@ public class GamTestPiping extends TestUtil {
     try {
       Scope.enter();
       final String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      final String[] gamCols = new String[]{"C6", "C7", "C8"};
+      final String[][] gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
       final int numGamCols = gamCols.length;
       final GAMModel model = getModel(gaussian,
-              Scope.track(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
               , "C11", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0,0,0},
               false, true, new double[]{1, 1, 1}, new double[]{0, 0, 0}, 
               new double[]{0, 0, 0}, false, null,null, true);
@@ -273,15 +273,15 @@ public class GamTestPiping extends TestUtil {
 
       for (int test = 0; test < numGamCols; test++) {
         TestUtil.checkDoubleArrays(model._output._binvD[test], rBinvD[test], 1e-6); // compare binvD generation
-        TestUtil.checkDoubleArrays(model._output._penaltyMatrices_center[test], rScenter[test], 1e-6);
+        TestUtil.checkDoubleArrays(model._output._penaltyMatricesCenter[test], rScenter[test], 1e-6);
       }
 
       Frame transformedDataC = ((Frame) DKV.getGet(model._output._gamTransformedTrainCenter));  // compare model matrix with centering
       Scope.track(transformedDataC);
       Scope.track(transformedDataC.remove("C11"));
-      Frame rTransformedDataC = parse_test_file("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
-      rTransformedDataC.add(Scope.track(parse_test_file("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C7Gam_center.csv")));
-      rTransformedDataC.add(Scope.track(parse_test_file("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C8Gam_center.csv")));
+      Frame rTransformedDataC = parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
+      rTransformedDataC.add(Scope.track(parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C7Gam_center.csv")));
+      rTransformedDataC.add(Scope.track(parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C8Gam_center.csv")));
       Scope.track(rTransformedDataC);
       TestUtil.assertIdenticalUpToRelTolerance(transformedDataC, rTransformedDataC, 1e-2);
     } finally {
@@ -305,10 +305,10 @@ public class GamTestPiping extends TestUtil {
   }
   
   public static GAMModel getModel(GLMModel.GLMParameters.Family family, Frame train, String responseColumn,
-                           String[] gamCols, String[] ignoredCols, int[] numKnots, int[] bstypes, boolean saveZmat,
+                           String[][] gamCols, String[] ignoredCols, int[] numKnots, int[] bstypes, boolean saveZmat,
                            boolean savePenalty, double[] scale, double[] alpha, double[] lambda, 
                            boolean standardize, String[] knotsKey, Frame valid, boolean computePVal) {
-    GAMModel gam = null;
+    GAMModel gam;
     try {
       Scope.enter();
       train = massageFrame(train, family);
@@ -346,7 +346,7 @@ public class GamTestPiping extends TestUtil {
   }
 
   public GAMModel getModel(GLMModel.GLMParameters.Family family, Frame train, String responseColumn,
-                           String[] gamCols, String[] ignoredCols, int[] numKnots, int[] bstypes, boolean saveZmat,
+                           String[][] gamCols, String[] ignoredCols, int[] numKnots, int[] bstypes, boolean saveZmat,
                            boolean savePenalty, double[] scale, double[] alpha, double[] lambda,
                            boolean standardize, String[] knotsKey, Frame valid, boolean computePVal,
                            GLMModel.GLMParameters.Family autoRepresentingFamily) {
@@ -368,18 +368,18 @@ public class GamTestPiping extends TestUtil {
     try {
       Scope.enter();
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      String[] gamCols = new String[]{"C6", "C7", "C8"};
+      String[][] gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
       GLMModel.GLMParameters.Family[] fams = new GLMModel.GLMParameters.Family[]{multinomial, gaussian};     
       GLMModel.GLMParameters.Link[] links = new GLMModel.GLMParameters.Link[]{GLMModel.GLMParameters.Link.multinomial, 
               GLMModel.GLMParameters.Link.identity};
       for (int runIndex=0; runIndex < links.length; runIndex++) {
         GAMModel model = getModel(fams[runIndex],
-                Scope.track(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
+                Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
                 "C11", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false,
                 true, new double[]{1, 1, 1}, new double[]{0}, new double[]{0}, 
                 false, null,null, false);
         Scope.track_generic(model);
-        Frame train = parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv");
+        Frame train = parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv");
         Scope.track(train);
         Frame dataFrame = ((Frame) DKV.getGet(model._output._gamTransformedTrainCenter)); // actual data used
         Scope.track(dataFrame.remove("C1"));
@@ -449,10 +449,10 @@ public class GamTestPiping extends TestUtil {
         activeCols = ArrayUtils.toIntegers(activeColumns, 0, activeColumns.length);
       }
       Gram gramGAM = gt2.getGram(); // add penalty contribution to gram
-      gramGAM.addGAMPenalty(activeCols, model._output._penaltyMatrices_center, gamCoeffIndices);
+      gramGAM.addGAMPenalty(activeCols, model._output._penaltyMatricesCenter, gamCoeffIndices);
       // manually add contribution from penalty terms
       double[][] gramGLM = gt.getGram().getXX();
-      double[][][] penalty_mat = model._output._penaltyMatrices_center;
+      double[][][] penalty_mat = model._output._penaltyMatricesCenter;
       int numGamCols = penalty_mat.length;
       for (int gamColInd = 0; gamColInd < numGamCols; gamColInd++) {
         int numKnots = penalty_mat[gamColInd].length;
@@ -491,7 +491,7 @@ public class GamTestPiping extends TestUtil {
   public void checkObjectiveGradients(DataInfo dinfo, GLMModel.GLMParameters glmParms, GAMModel model,
                                       GLMModel.GLMParameters.Family fam) {
     int[][] gamCoeffIndices = new int[][]{{10, 11, 12, 13}, {14, 15, 16, 17}, {18, 19, 20, 21}};
-    double[][][] penalty_mat = model._output._penaltyMatrices_center;
+    double[][][] penalty_mat = model._output._penaltyMatricesCenter;
     glmParms._glmType = gam;
     double[] beta = fam.equals(gaussian)?model._output._model_beta 
             :TestUtil.changeDouble2SingleArray(model._output._model_beta_multinomial);
@@ -560,7 +560,7 @@ public class GamTestPiping extends TestUtil {
   public void testEqualColNames() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"));
       String[] fnames = train.names();
       String[] types = train.typesStr();
       assert !(equalColNames(types, fnames, fnames[fnames.length-1])):"Equal length but different strings!";
@@ -591,47 +591,48 @@ public class GamTestPiping extends TestUtil {
       // test for binomial
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame trainBinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+      Frame trainBinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
               binomial));
       DKV.put(trainBinomial);
       GAMModel binomialModel = getModel(binomial,
-              parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"), "C21",
+              parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"), "C21",
               gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false, true,
               new double[]{1, 1, 1}, new double[]{0}, new double[]{0}, true, null,
               null, false);
       Scope.track_generic(binomialModel);
       binomialModel._output._training_metrics = null; // force prediction threshold of 0.5
       Frame predictBinomial = Scope.track(binomialModel.score(trainBinomial));
-      Frame predictGLMBinomial = Scope.track(parse_test_file("smalldata/gam_test/predictBinomialGAM3.csv"));
+      Frame predictGLMBinomial = Scope.track(parseTestFile("smalldata/gam_test/predictBinomialGAM3.csv"));
       TestUtil.assertIdenticalUpToRelTolerance(predictBinomial, predictGLMBinomial, 1e-6);
       
       // test for Gaussian
-      Frame trainGaussian = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
+      Frame trainGaussian = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
       DKV.put(trainGaussian);
       GAMModel gaussianModel = getModel(gaussian,
-              parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), "C21",
+              parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), "C21",
               gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false, true,
               new double[]{1, 1, 1}, new double[]{0}, new double[]{0}, true, null,
               null, false);
       Scope.track_generic(gaussianModel);
       Frame predictGaussian = Scope.track(gaussianModel.score(trainGaussian));
-      Frame predictGLMGaussian = Scope.track(parse_test_file("smalldata/gam_test/predictGaussianGAM3.csv"));
+      Frame predictGLMGaussian = Scope.track(parseTestFile("smalldata/gam_test/predictGaussianGAM3.csv"));
       TestUtil.assertIdenticalUpToRelTolerance(predictGaussian, predictGLMGaussian, 1e-6);
       
       // multinomial
       ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      gamCols = new String[]{"C6", "C7", "C8"};
-      Frame trainMultinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
+
+      gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
+      Frame trainMultinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
       DKV.put(trainMultinomial);
       GAMModel multinomialModel = getModel(multinomial,
-              parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"),
+              parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"),
               "C11", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false,
               true, new double[]{1, 1, 1}, new double[]{0}, new double[]{0},
               true, null, null, false);
       Scope.track_generic(multinomialModel);
       Frame predictMult = Scope.track(multinomialModel.score(trainMultinomial));
-      Frame predictGLMMulti = Scope.track(parse_test_file("smalldata/gam_test/predictMultinomialGAM3.csv"));
+      Frame predictGLMMulti = Scope.track(parseTestFile("smalldata/gam_test/predictMultinomialGAM3.csv"));
       TestUtil.assertIdenticalUpToRelTolerance(predictMult, predictGLMMulti, 1e-6);
     } finally {
       Scope.exit();
@@ -643,10 +644,10 @@ public class GamTestPiping extends TestUtil {
     Scope.enter();
     try {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      String[] gamCols = new String[]{"C6", "C7", "C8"};
-      Frame trainMultinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
+      String[][] gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
+      Frame trainMultinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"), multinomial));
       DKV.put(trainMultinomial);
-      Frame trainMultiWithC11Categorical = parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv");
+      Frame trainMultiWithC11Categorical = parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv");
       String target = "C11";
       int target_idx = trainMultiWithC11Categorical.find(target);
       trainMultiWithC11Categorical.replace(target_idx, trainMultinomial.vec(target_idx).toCategoricalVec()).remove();
@@ -659,7 +660,7 @@ public class GamTestPiping extends TestUtil {
       Scope.track_generic(multinomialModel);
       
       Frame predictMultinomial = Scope.track(multinomialModel.score(trainMultinomial));
-      Frame predictGAMMultinomial = Scope.track(parse_test_file("smalldata/gam_test/predictMultinomialGAM3.csv"));
+      Frame predictGAMMultinomial = Scope.track(parseTestFile("smalldata/gam_test/predictMultinomialGAM3.csv"));
       TestUtil.assertIdenticalUpToRelTolerance(predictMultinomial, predictGAMMultinomial, 1e-6);
     } finally {
       Scope.exit();
@@ -673,18 +674,18 @@ public class GamTestPiping extends TestUtil {
     try {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame trainGaussian = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+      Frame trainGaussian = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
       DKV.put(trainGaussian);
       
       GAMModel autoGaussianModel = getModel(AUTO,
-              parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), "C21",
+              parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), "C21",
               gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false, true,
               new double[]{1, 1, 1}, new double[]{0}, new double[]{0}, true, null,null, false, gaussian);
       Scope.track_generic(autoGaussianModel);
       
       Frame predictAutoGaussian = Scope.track(autoGaussianModel.score(trainGaussian));
-      Frame predictGAMGaussian = Scope.track(parse_test_file("smalldata/gam_test/predictGaussianGAM3.csv"));
+      Frame predictGAMGaussian = Scope.track(parseTestFile("smalldata/gam_test/predictGaussianGAM3.csv"));
       TestUtil.assertIdenticalUpToRelTolerance(predictAutoGaussian, predictGAMGaussian, 1e-6);
     } finally {
       Scope.exit();
@@ -697,10 +698,10 @@ public class GamTestPiping extends TestUtil {
     try {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame trainBinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"), binomial));
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+      Frame trainBinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"), binomial));
       DKV.put(trainBinomial);
-      Frame trainBinomialWithC21Categorical = parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      Frame trainBinomialWithC21Categorical = parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
       String target = "C21";
       int target_idx = trainBinomialWithC21Categorical.find(target);
       trainBinomialWithC21Categorical.replace(target_idx, trainBinomialWithC21Categorical.vec(target_idx).toCategoricalVec()).remove();
@@ -714,7 +715,7 @@ public class GamTestPiping extends TestUtil {
       autoGaussianModel._output._training_metrics = null; // force prediction threshold of 0.5
       
       Frame predictAutoGaussian = Scope.track(autoGaussianModel.score(trainBinomial));
-      Frame predictGAMBinomial = Scope.track(parse_test_file("smalldata/gam_test/predictBinomialGAM3.csv"));
+      Frame predictGAMBinomial = Scope.track(parseTestFile("smalldata/gam_test/predictBinomialGAM3.csv"));
       TestUtil.assertIdenticalUpToRelTolerance(predictAutoGaussian, predictGAMBinomial, 1e-6);
     } finally {
       Scope.exit();
@@ -741,8 +742,8 @@ public class GamTestPiping extends TestUtil {
     try {
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
-      Frame trainBinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+      Frame trainBinomial = Scope.track(massageFrame(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
               binomial));
       DKV.put(trainBinomial);
       SplitFrame sf = new SplitFrame(trainBinomial, new double[]{0.7, 0.3}, null);
@@ -752,7 +753,7 @@ public class GamTestPiping extends TestUtil {
       Frame testFrame = Scope.track((Frame) splits[1].get());
       
       GAMModel binomialModel = getModel(binomial,
-              parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"), "C21",
+              parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"), "C21",
               gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0}, false, true,
               new double[]{1, 1, 1}, new double[]{0}, new double[]{0}, true, null, 
               testFrame, true);
@@ -772,8 +773,8 @@ public class GamTestPiping extends TestUtil {
       // test for gaussian
       String[] ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
-      String[] gamCols = new String[]{"C11", "C12", "C13"};
-      GAMModel binomialModel = getModel(binomial,  Scope.track(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
+      String[][] gamCols = new String[][]{{"C11"}, {"C12"}, {"C13"}};
+      GAMModel binomialModel = getModel(binomial,  Scope.track(parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
               , "C21", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0},
               false, true, new double[]{1, 1, 1}, new double[]{0},
               new double[]{0}, true, null,null, true);
@@ -781,7 +782,7 @@ public class GamTestPiping extends TestUtil {
       verifyModelMetrics(binomialModel,1e-6);
 
       GAMModel gaussianModel = getModel(gaussian,
-              Scope.track(parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
+              Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
               , "C21", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0},
               false, true, new double[]{1, 1, 1}, new double[]{0},
               new double[]{0}, true, null,null, true);
@@ -790,10 +791,10 @@ public class GamTestPiping extends TestUtil {
       
       // multinomial
       ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
-      gamCols = new String[]{"C6", "C7", "C8"};
+      gamCols = new String[][]{{"C6"}, {"C7"}, {"C8"}};
 
       GAMModel multinomialModel = getModel(multinomial,
-              Scope.track(parse_test_file("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
               , "C11", gamCols, ignoredCols, new int[]{5, 5, 5}, new int[]{0, 0, 0},
               false, true, new double[]{1, 1, 1}, new double[]{0},
               new double[]{0}, true, null,null, false);

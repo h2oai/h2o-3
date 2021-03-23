@@ -3,6 +3,7 @@ package hex.pca;
 import hex.DataInfo;
 import water.DKV;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -10,7 +11,7 @@ import java.util.Random;
 
 import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 /**
  * micro-benchmark based on hex.pca.PCAWideDataSetsTest
@@ -89,7 +90,7 @@ public class PCAWideDataSets {
 	
 	private PCA preparePCAModel(String datafile, boolean addNAs, boolean removeColumns,
 	                            DataInfo.TransformType transformType) {
-		trainingFrame = parse_test_file(Key.make(datafile), datafile);
+		trainingFrame = parseTestFile(Key.make(datafile), datafile);
 		if (removeColumns) {
 			trainingFrame.remove(12).remove();    // remove categorical columns
 			trainingFrame.remove(11).remove();

@@ -259,6 +259,13 @@ NULL
 }
 
 .h2o.checkAndUnifyModelParameters <- function(algo, allParams, params, hyper_params = list()) {
+  addGamCol <- FALSE
+  if (algo == "gam") {# gam_column is specified in subspace and need to fake something here
+    if (is.null(params$gam_columns) && !(is.null(hyper_params$subspaces)) && !(is.null(hyper_params$subspaces[[1]]$gam_columns))) {
+      addGamCol <- TRUE
+      params$gam_columns = list("C1")  # set default gam_columns
+    }
+  }
   # First verify all parameters
   error <- lapply(allParams, function(i) {
     e <- ""
@@ -278,6 +285,9 @@ NULL
     e
   })
 
+  if (addGamCol)
+    params$gam_columns <- NULL
+  
   if(any(nzchar(error)))
     stop(error)
 
@@ -838,6 +848,9 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #'        desired
 #' @param newdata An H2OFrame object in which to look for
 #'        variables with which to predict.
+#' @param output_format Specify how to output feature contributions in XGBoost - XGBoost by default outputs
+#'                      contributions for 1-hot encoded features, specifying a compact output format will produce
+#'                      a per-feature contribution. Defaults to original.
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame contain feature contributions for each input row.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
@@ -853,12 +866,14 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' h2o.predict_contributions(prostate_gbm, prostate)
 #' }
 #' @export
-predict_contributions.H2OModel <- function(object, newdata, ...) {
+predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
+    params <- list(predict_contributions = TRUE)
+    params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method = "POST", predict_contributions=TRUE, h2oRestApiVersion = 4)
+    res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)
     job_key <- res$key$name
     dest_key <- res$dest$name
     .h2o.__waitOnJob(job_key)

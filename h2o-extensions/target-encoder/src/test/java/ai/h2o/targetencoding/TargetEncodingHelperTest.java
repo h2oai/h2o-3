@@ -579,5 +579,5 @@ public class TargetEncodingHelperTest extends TestUtil {
       Scope.exit();
     }
   }
-
+  
 }

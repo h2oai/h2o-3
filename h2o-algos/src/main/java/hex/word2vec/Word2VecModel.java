@@ -1,15 +1,20 @@
 package hex.word2vec;
 
+import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.ModelMojoWriter;
+import hex.word2vec.Word2VecModel.Word2VecOutput;
+import hex.word2vec.Word2VecModel.Word2VecParameters;
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.*;
-
-import hex.Model;
-import hex.word2vec.Word2VecModel.*;
+import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
+import water.util.IcedLong;
+import water.util.RandomUtils;
 
 import java.util.*;
 
@@ -302,6 +307,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     public Key<Frame> _pre_trained;  // key of a frame that contains a pre-trained word2vec model
     boolean isPreTrained() { return _pre_trained != null; }
     Vec trainVec() { return train().vec(0); }
+
   }
 
   public static class Word2VecOutput extends Model.Output {

@@ -28,20 +28,28 @@ public class GlmMojoModel extends GlmMojoModelBase {
     double eta = 0.0;
 
     if (!_useAllFactorLevels) { // skip level 0 of all factors
-      for(int i = 0; i < _catOffsets.length-1; ++i) if(data[i] != 0) {
-        int ival = (int) data[i] - 1;
-        if (ival != data[i] - 1) throw new IllegalArgumentException("categorical value out of range");
-        ival += _catOffsets[i];
-        if (ival < _catOffsets[i + 1])
-          eta += _beta[ival];
+      for(int i = 0; i < _catOffsets.length-1; ++i) {
+        if(data[i] != 0) {
+          int ival = (int) data[i] - 1;
+          if (ival != data[i] - 1) {
+            throw new IllegalArgumentException("categorical value out of range");
+          }
+          ival += _catOffsets[i];
+          if (ival < _catOffsets[i + 1]) {
+            eta += _beta[ival];
+          }
+        }
       }
     } else { // do not skip any levels
       for(int i = 0; i < _catOffsets.length-1; ++i) {
         int ival = (int) data[i];
-        if (ival != data[i]) throw new IllegalArgumentException("categorical value out of range");
+        if (ival != data[i]) {
+          throw new IllegalArgumentException("categorical value out of range");
+        }
         ival += _catOffsets[i];
-        if (ival < _catOffsets[i + 1])
+        if (ival < _catOffsets[i + 1]) {
           eta += _beta[ival];
+        }
       }
     }
 

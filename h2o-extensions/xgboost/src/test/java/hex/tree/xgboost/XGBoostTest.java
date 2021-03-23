@@ -13,6 +13,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteraction;
 import hex.FeatureInteractions;
+import hex.schemas.XGBoostV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
@@ -22,6 +23,7 @@ import hex.tree.xgboost.util.FeatureScore;
 import ai.h2o.xgboost4j.java.DMatrix;
 import ai.h2o.xgboost4j.java.XGBoost;
 import ai.h2o.xgboost4j.java.*;
+import hex.tree.xgboost.util.GpuUtils;
 import org.apache.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
@@ -34,6 +36,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
+import water.util.PojoUtils;
 import water.util.TwoDimTable;
 
 import java.io.*;
@@ -42,8 +45,10 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.bernoulli;
 import static hex.genmodel.utils.DistributionFamily.multinomial;
+import static hex.Model.Contributions.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.getFile;
 
 @RunWith(Parameterized.class)
@@ -453,7 +458,7 @@ public class XGBoostTest extends TestUtil {
   }
   
   public static Frame loadWeather(String response) {
-    Frame df = parse_test_file("./smalldata/junit/weather.csv");
+    Frame df = parseTestFile("./smalldata/junit/weather.csv");
     int responseIdx = df.find(response);
     Scope.track(df.replace(responseIdx, df.vecs()[responseIdx].toCategoricalVec()));
     // remove columns correlated with the response
@@ -493,7 +498,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       Frame preds = Scope.track(model.score(testFrame));
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
               ((ModelMetricsBinomial) model._output._validation_metrics).auc(),
@@ -538,7 +543,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       Frame preds = Scope.track(model.score(testFrame));
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
@@ -619,7 +624,7 @@ public class XGBoostTest extends TestUtil {
       Frame step2Preds = Scope.track(step2Model.score(df));
 
       // on GPU the resume from checkpoint is slightly in-deterministic
-      double delta = (hex.tree.xgboost.XGBoost.hasGPU(H2O.CLOUD.members()[0], 0)) ? 1e-6d : 0;
+      double delta = (GpuUtils.hasGPU(H2O.CLOUD.members()[0], null)) ? 1e-6d : 0;
       assertFrameEquals(directPreds, step2Preds, delta);
     } finally {
       Scope.exit();
@@ -636,7 +641,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      tfr = parseTestFile("./smalldata/junit/cars.csv");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       DKV.put(tfr);
 
@@ -666,7 +671,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
@@ -696,7 +701,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
 
       Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
@@ -726,7 +731,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(testFrame);
-      assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+      assertJavaScoring(model, testFrame, preds);
       assertEquals(
               ((ModelMetricsRegression)model._output._validation_metrics).mae(),
               ModelMetricsRegression.make(preds.anyVec(), testFrame.vec(response), DistributionFamily.gaussian).mae(),
@@ -751,7 +756,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel model = null;
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
       Scope.track(tfr.replace(8, tfr.vecs()[8].toCategoricalVec()));   // Convert GLEASON to categorical
       DKV.put(tfr);
 
@@ -782,7 +787,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel model = null;
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -823,7 +828,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
-      Frame airlinesFrame = Scope.track(parse_test_file("./smalldata/testng/airlines.csv"));
+      Frame airlinesFrame = Scope.track(parseTestFile("./smalldata/testng/airlines.csv"));
       airlinesFrame.replace(0, airlinesFrame.vecs()[0].toCategoricalVec()).remove();
 
       final Vec weightsVector = createRandomBinaryWeightsVec(airlinesFrame.numRows(), 10);
@@ -873,7 +878,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
-      Frame prostateFrame = parse_test_file("./smalldata/prostate/prostate.csv");
+      Frame prostateFrame = parseTestFile("./smalldata/prostate/prostate.csv");
       prostateFrame.replace(8, prostateFrame.vecs()[8].toCategoricalVec()).remove();   // Convert GLEASON to categorical
       Scope.track(prostateFrame);
 
@@ -923,7 +928,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel noWeightsModel = null;
     Scope.enter();
     try {
-      Frame irisFrame = parse_test_file("./smalldata/extdata/iris.csv");
+      Frame irisFrame = parseTestFile("./smalldata/extdata/iris.csv");
       irisFrame.replace(4, irisFrame.vecs()[4].toCategoricalVec()).remove();
       Scope.track(irisFrame);
 
@@ -973,7 +978,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel model = null;
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+      tfr = parseTestFile("./smalldata/prostate/prostate.csv");
       DKV.put(tfr);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1008,7 +1013,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = null;
       try {
         // Parse frame into H2O
-        tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+        tfr = parseTestFile("./smalldata/prostate/prostate.csv");
         FrameMetadata metadataBefore = new FrameMetadata(tfr);
 
         // split into train/test
@@ -1036,7 +1041,7 @@ public class XGBoostTest extends TestUtil {
         assertEquals(metadataBefore, metadataAfter);
 
         preds = model.score(testFrame);
-        assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
+        assertJavaScoring(model, testFrame, preds);
         assertTrue(preds.anyVec().sigma() > 0);
 
       } finally {
@@ -1060,7 +1065,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(tfr);
@@ -1154,7 +1159,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(tfr);
@@ -1205,7 +1210,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // Parse frame into H2O
-      tfr = parse_test_file("csc.csv");
+      tfr = parseTestFile("csc.csv");
       FrameMetadata metadataBefore = new FrameMetadata(tfr);
       String response = "response";
 
@@ -1222,7 +1227,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(metadataBefore, metadataAfter);
 
       preds = model.score(tfr);
-      assertTrue(model.testJavaScoring(tfr, preds, 1e-6));
+      assertJavaScoring(model, tfr, preds);
       assertTrue(preds.vec(2).sigma() > 0);
       assertEquals(
               ((ModelMetricsBinomial)model._output._training_metrics).logloss(),
@@ -1243,7 +1248,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = null;
       try {
         // Parse frame into H2O
-        tfr = parse_test_file("./smalldata/prostate/prostate.csv");
+        tfr = parseTestFile("./smalldata/prostate/prostate.csv");
         FrameMetadata metadataBefore = new FrameMetadata(tfr);
 
         // split into train/test
@@ -1300,7 +1305,7 @@ public class XGBoostTest extends TestUtil {
     XGBoostModel denseModel = null;
     XGBoostModel sparseModel = null;
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -1392,7 +1397,7 @@ public class XGBoostTest extends TestUtil {
   public void testMojoBoosterDump() throws IOException { 
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));   // Convert CAPSULE to categorical
       Scope.track(tfr.replace(3, tfr.vecs()[3].toCategoricalVec()));   // Convert RACE to categorical
@@ -1419,7 +1424,7 @@ public class XGBoostTest extends TestUtil {
   public void testMojoSerializable() throws IOException {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -1451,7 +1456,7 @@ public class XGBoostTest extends TestUtil {
     try {
       final String response = "cylinders";
 
-      Frame f = parse_test_file("./smalldata/junit/cars.csv");
+      Frame f = parseTestFile("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find(response)].toCategoricalVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1482,7 +1487,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       final String response = "power (hp)";
-      Frame f = parse_test_file("./smalldata/junit/cars.csv");
+      Frame f = parseTestFile("./smalldata/junit/cars.csv");
       f.replace(f.find(response), f.vecs()[f.find("cylinders")].toNumericVec()).remove();
       DKV.put(Scope.track(f));
 
@@ -1519,7 +1524,7 @@ public class XGBoostTest extends TestUtil {
     try {
       final String response = "power (hp)";
 
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parseTestFile("smalldata/junit/cars.csv");
       Scope.track(f);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1543,7 +1548,7 @@ public class XGBoostTest extends TestUtil {
   public void testMakeDataInfo() {
     Scope.enter();
     try {
-      Frame f = parse_test_file("smalldata/junit/cars.csv");
+      Frame f = parseTestFile("smalldata/junit/cars.csv");
       Scope.track(f);
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1576,7 +1581,7 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       LOG.info(model);
 
-      Frame contributions = Scope.track(model.scoreContributions(df, Key.make()));
+      Frame contributions = Scope.track(scoreContributionsChecked(model, df, true));
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
       
@@ -1690,7 +1695,7 @@ public class XGBoostTest extends TestUtil {
   public void testScoreContributionsBernoulli() throws IOException, PredictException {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
       fr.replace(fr.find("survived"), fr.vec("survived").toCategoricalVec());
       DKV.put(fr);
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -1708,8 +1713,14 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = job.trainModel().get();
       Scope.track_generic(model);
 
-      Frame contributions = model.scoreContributions(fr, Key.<Frame>make("contributions_titanic"));
-      Scope.track(contributions);
+      Frame contributionsExpanded = model.scoreContributions(fr, Key.make("contributions_titanic_exp"));
+      Scope.track(contributionsExpanded);
+
+      Frame contributionsAggregated = model.scoreContributions(fr, Key.make("contributions_titanic"), null,
+              new ContributionsOptions().setOutputFormat(ContributionsOutputFormat.Compact));
+      Scope.track(contributionsAggregated);
+
+      CheckExpandedContributionsMatchAggregatedContributions.assertEquals(model, fr, contributionsAggregated, contributionsExpanded);
 
       MojoModel mojo = model.toMojo();
 
@@ -1717,25 +1728,96 @@ public class XGBoostTest extends TestUtil {
               .setModel(mojo)
               .setEnableContributions(true);
       EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
-      assertArrayEquals(contributions.names(), wrapper.getContributionNames());
+      assertArrayEquals(contributionsExpanded.names(), wrapper.getContributionNames());
 
       for (long row = 0; row < fr.numRows(); row++) {
         RowData rd = toRowData(fr, model._output._names, row);
         BinomialModelPrediction pr = wrapper.predictBinomial(rd);
         assertArrayEquals("Contributions should match, row=" + row, 
-                toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                toNumericRow(contributionsExpanded, row), ArrayUtils.toDouble(pr.contributions), 0);
       }
     } finally {
       Scope.exit();
     }
   }
 
+  private static Frame scoreContributionsChecked(XGBoostModel model, Frame fr, boolean outputExpanded) {
+    try {
+      Scope.enter();
+      Frame contribs = model.scoreContributions(fr, Key.make("contribs"), null,
+              new ContributionsOptions().setOutputFormat(ContributionsOutputFormat.Compact));
+      Scope.track(contribs);
+      Frame contribsExpanded = model.scoreContributions(fr, Key.make("contribsExpanded"));
+      Scope.track(contribsExpanded);
+      CheckExpandedContributionsMatchAggregatedContributions.assertEquals(model, fr, contribs, contribsExpanded);
+      Frame result = outputExpanded ? contribsExpanded : contribs;
+      Scope.untrack(result);
+      return result;
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  private static class CheckExpandedContributionsMatchAggregatedContributions 
+          extends MRTask<CheckExpandedContributionsMatchAggregatedContributions> {
+    int _frCols;
+    DataInfo _di;
+
+    CheckExpandedContributionsMatchAggregatedContributions(int frCols, DataInfo di) {
+      _frCols = frCols;
+      _di = di;
+    }
+
+    void map(Chunk[] fr, Chunk[] contribs, Chunk[] contribsExpanded) {
+      int numPrecedingCats = 0;
+      for (int c = 0; c < fr.length; c++) {
+        Vec v = fr[c].vec();
+        if (v.isCategorical()) {
+          numPrecedingCats++;
+          for (int i = 0; i < fr[c]._len; i++) {
+            float sum = 0;
+            for (int j = _di._catOffsets[c]; j < _di._catOffsets[c + 1]; j++) {
+              sum += contribsExpanded[j].atd(i);
+            }
+            Assert.assertEquals(sum, contribs[c].atd(i), 0);
+          }
+        } else {
+          assert v.isNumeric() || v.isTime();
+          int colOffset = _di.numStart() - numPrecedingCats;
+          for (int i = 0; i < fr[c]._len; i++) {
+            Assert.assertEquals("Contribution not matching in col=" + _fr.name(c) + ", row=" + (fr[0].start() + i), 
+                    contribsExpanded[colOffset + c].atd(i), contribs[c].atd(i), 0);
+          }
+        }
+      }
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      Chunk[] fr = Arrays.copyOf(cs, _frCols);
+      Chunk[] contribs = Arrays.copyOfRange(cs, _frCols, _frCols * 2 + 1);
+      Chunk[] contribsExpanded = Arrays.copyOfRange(cs, _frCols * 2 + 1, cs.length);
+      map(fr, contribs, contribsExpanded);
+    }
+
+    public static void assertEquals(XGBoostModel model, Frame fr, Frame contributionsAggregated, Frame contributionsExpanded) {
+      Frame checkContribsFr = new Frame(model._output.features(), fr.vecs(model._output.features()));
+      Assert.assertEquals(checkContribsFr.numCols() + 1, contributionsAggregated.numCols());
+      checkContribsFr.add(contributionsAggregated);
+      checkContribsFr.add(contributionsExpanded);
+
+      new CheckExpandedContributionsMatchAggregatedContributions(contributionsAggregated.numCols() - 1, model.model_info().dataInfo())
+              .doAll(checkContribsFr);
+    }
+
+  }
+  
   // Scoring should output original probabilities and probabilities calibrated by Platt Scaling
   @Test public void testPredictWithCalibration() {
     Scope.enter();
     try {
-      Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
-      Frame calib = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+      Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
+      Frame calib = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
 
       // Fix training set
       train.remove("Site").remove();     // Remove unique ID
@@ -1764,7 +1846,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = job.trainModel().get();
       Scope.track_generic(model);
 
-      Frame pred = parse_test_file("smalldata/gbm_test/ecology_eval.csv");
+      Frame pred = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
       pred.remove("Angaus").remove();    // No response column during scoring
       Scope.track(pred);
       Frame res = Scope.track(model.score(pred));
@@ -1985,7 +2067,7 @@ public class XGBoostTest extends TestUtil {
   public void testXGBoostMaximumDepth() {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -2007,7 +2089,7 @@ public class XGBoostTest extends TestUtil {
   public void testXGBoostFeatureInteractions() {
     Scope.enter();
     try {
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -2165,7 +2247,7 @@ public class XGBoostTest extends TestUtil {
     Scope.enter();
     try {
       // create 2 similar trees and check whether they have similar feature interactions 
-      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
@@ -2248,6 +2330,119 @@ public class XGBoostTest extends TestUtil {
     
     return averageDistance / (i - missing);
   }
-  
 
+  @Test
+  public void testMissingFoldColumnIsNotReportedInScoring() {
+    try {
+      Scope.enter();
+      final Frame frame = TestFrameCatalog.specialColumns();
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._fold_column = "Fold";
+      parms._weights_column = "Weight";
+      parms._offset_column = "Offset";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+      parms._keep_cross_validation_models = false;
+      parms._keep_cross_validation_predictions = false;
+      parms._keep_cross_validation_fold_assignment = false;
+
+      XGBoostModel xgb = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(xgb);
+
+      assertArrayEquals(new String[0], xgb._warnings);
+      assertArrayEquals(null, xgb._warningsP); // no predict warning to begin with
+
+      final Frame test = TestFrameCatalog.specialColumns();
+      test.remove("Fold").remove();
+      DKV.put(test);
+
+      xgb.score(test).remove();
+
+      assertArrayEquals(new String[0], xgb._warningsP); // no predict warnings
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testSamplingRatesAreValidated() {
+    try {
+      Scope.enter();
+      final Frame frame = TestFrameCatalog.oneChunkFewRows();
+
+      List<String> checkedSamplingParams = Arrays.asList(
+              "colsample_bytree", "sample_rate", "col_sample_rate_per_tree", "colsample_bynode", 
+              "subsample", "colsample_bylevel", "col_sample_rate"
+      );
+      List<String> ignoredParams = Collections.singletonList("sample_type");
+      Set<String> knownSamplingParams = new HashSet<>();
+      knownSamplingParams.addAll(checkedSamplingParams);
+      knownSamplingParams.addAll(ignoredParams);
+
+      Set<String> samplingParams = Arrays.stream(XGBoostV3.XGBoostParametersV3.fields)
+              .filter(name -> name.contains("sample"))
+              .collect(Collectors.toSet());
+      assertEquals(new HashSet<>(knownSamplingParams), samplingParams);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = frame._key;
+      parms._response_column = frame.name(0);
+
+      hex.tree.xgboost.XGBoost builder = new hex.tree.xgboost.XGBoost(parms);
+      assertNoValidationError(builder);
+
+      for (String param : checkedSamplingParams) {
+        assertNoValidationError(runParamValidation(parms, param, 1e-3));
+        assertNoValidationError(runParamValidation(parms, param, 0.42));
+        assertNoValidationError(runParamValidation(parms, param, 1.0));
+        assertHasValidationError(runParamValidation(parms, param, 0.0), param, "must be between 0 (exclusive) and 1 (inclusive)");
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private hex.tree.xgboost.XGBoost runParamValidation(XGBoostModel.XGBoostParameters parms, String param, double value) {
+    XGBoostModel.XGBoostParameters p = (XGBoostModel.XGBoostParameters) parms.clone();
+    PojoUtils.setField(p, param, value, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+    return new hex.tree.xgboost.XGBoost(p);
+  }
+  
+  private void assertNoValidationError(hex.tree.xgboost.XGBoost builder) {
+    assertEquals("", builder.validationErrors());
+  }
+
+  private void assertHasValidationError(hex.tree.xgboost.XGBoost builder, String field, String error) {
+    System.out.println(builder.validationErrors());
+    assertTrue(field, builder.validationErrors().contains(error));
+  }
+
+  private void assertJavaScoring(XGBoostModel model, Frame testFrame, Frame preds) {
+    double relEpsilon = Boolean.parseBoolean(confJavaPredict) ? 
+            1e-7 // pure java predict 
+            : 
+            getNativeRelEpsilon(model._parms._backend); // rel_epsilon based on backend
+    assertTrue(model.testJavaScoring(testFrame, preds, relEpsilon));
+  }
+
+  private static double getNativeRelEpsilon(XGBoostModel.XGBoostParameters.Backend backend) {
+    final double relEpsilon;
+    switch (backend) {
+      case cpu:
+        relEpsilon = 1e-7;
+        break;
+      case gpu:
+        // As demonstrated in https://github.com/h2oai/h2o-3/pull/5373/files sigmoid transformation
+        // implemented on GPU gives different result than when running on CPU, therefore we pick a lower tolerance  
+        relEpsilon = 1e-6;
+        break;
+      default:
+        throw new IllegalStateException("Don't know how to determine tolerance for backend `" + backend + "`.");
+    }
+    return relEpsilon;
+  }
+  
 }
