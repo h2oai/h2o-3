@@ -214,6 +214,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         throw new H2OIllegalArgumentException("Base model predictions array is empty.");
       if (baseModels.length != baseModelPredictions.length)
         throw new H2OIllegalArgumentException("Base models and prediction arrays are different lengths.");
+      final StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform transform;
+      if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
+        if (!(_model._output.isBinomialClassifier() || _model._output.isMultinomialClassifier()))
+          throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
+        transform = _parms._metalearner_transform;
+      } else {
+        transform = null;
+      }
 
       if (null == levelOneKey) levelOneKey = "levelone_" + _model._key.toString() + "_" + _parms._metalearner_transform.toString();
 
@@ -229,7 +237,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         oldFrame.unlock(_job);
       }
 
-      Frame levelOneFrame = new Frame(Key.make(levelOneKey));
+      Frame levelOneFrame = transform == null ?
+              new Frame(Key.make(levelOneKey))  // no tranform -> this will be the final frame 
+              :
+              new Frame();                      // tranform -> this is only an intermediate result
 
       for (int i = 0; i < baseModels.length; i++) {
         Model baseModel = baseModels[i];
@@ -246,23 +257,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, baseModelPreds, levelOneFrame);
         Scope.untrack(baseModelPredictions);
       }
-      if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE) {
-        if (!(_model._output.isBinomialClassifier() || _model._output.isMultinomialClassifier()))
-          throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
 
-        Frame oldLOF = levelOneFrame;
-        levelOneFrame = _parms._metalearner_transform.transform(_model, levelOneFrame);
-        oldLOF.write_lock(_job);
-        oldLOF.removeAll();
-        oldLOF.update(_job);
-        oldLOF.unlock(_job);
+      if (transform != null) {
+        levelOneFrame = _parms._metalearner_transform.transform(_model, levelOneFrame, Key.make(levelOneKey));
       }
 
       // Add metalearner fold column, weights column to level one frame if it exists
       addMiscColumnsToLevelOneFrame(_model._parms, actuals, levelOneFrame, true);
 
-      levelOneFrame.delete_and_lock(_job);
-      levelOneFrame.unlock(_job);
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
       DKV.put(levelOneFrame);
       return levelOneFrame;
