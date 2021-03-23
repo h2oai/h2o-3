@@ -81,7 +81,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       NONE,
       Logit;
 
-      public Frame transform(StackedEnsembleModel model, Frame frame) {
+      public Frame transform(StackedEnsembleModel model, Frame frame, Key<Frame> destKey) {
         if (this == Logit) {
           return new MRTask() {
             @Override
@@ -95,7 +95,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
               }
             }
           }.doAll(frame.numCols(), Vec.T_NUM, frame)
-                  .outputFrame(frame._key, frame._names, null);
+                  .outputFrame(destKey, frame._names, null);
         } else {
           throw new RuntimeException();
         }
@@ -167,8 +167,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   @Override
   protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+    final StackedEnsembleParameters.MetalearnerTransform transform; 
+    if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
+      if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
+        throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
+      transform = _parms._metalearner_transform;
+    } else {
+      transform = null;
+    }
     final String seKey = this._key.toString();
-    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + seKey + fr._key));
+    final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_" + seKey + fr._key);
+    Frame levelOneFrame = transform == null ?
+            new Frame(levelOneFrameKey)  // no tranform -> this will be the final frame 
+            :
+            new Frame();        // tranform -> this is only an intermediate result
 
     Model[] usefulBaseModels = Stream.of(_parms._base_models)
             .filter(this::isUsefulBaseModel)
@@ -198,13 +210,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
 
-    if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
-      if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
-        throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
-
+    if (transform != null) {
       Frame oldLOF = levelOneFrame;
-      levelOneFrame = _parms._metalearner_transform.transform(this, levelOneFrame);
-      oldLOF.delete(true);
+      levelOneFrame = transform.transform(this, levelOneFrame, levelOneFrameKey);
+      oldLOF.remove();
     }
     // Add response column, weights columns to level one frame
     StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);

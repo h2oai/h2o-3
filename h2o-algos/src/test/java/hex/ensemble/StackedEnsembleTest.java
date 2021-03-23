@@ -21,11 +21,14 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -35,9 +38,9 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class StackedEnsembleTest extends TestUtil {
-
-    @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Rule
   public transient ExpectedException expectedException = ExpectedException.none();
@@ -1442,7 +1445,8 @@ public class StackedEnsembleTest extends TestUtil {
             fr.add("second", Vec.makeCon(0.1, 10));
             fr.add("third", Vec.makeCon(0.9, 10));
 
-            Frame newFr = StackedEnsembleParameters.MetalearnerTransform.Logit.transform(null,fr);
+            Frame newFr = StackedEnsembleParameters.MetalearnerTransform.Logit.transform(null,fr, Key.make());
+            Scope.track(newFr);
 
             Frame expected = new Frame();
             expected.add("first", Vec.makeCon(0, 10));
@@ -1502,7 +1506,7 @@ public class StackedEnsembleTest extends TestUtil {
             final Frame vanillaLevelOneFrame = new Frame(se._output._levelone_frame_id).remove(new String[]{"RainTomorrow"});
             Scope.track(vanillaLevelOneFrame);
 
-            Frame expectedLogit = StackedEnsembleParameters.MetalearnerTransform.Logit.transform(seLogit,vanillaLevelOneFrame);
+            Frame expectedLogit = StackedEnsembleParameters.MetalearnerTransform.Logit.transform(seLogit,vanillaLevelOneFrame,Key.make());
             Scope.track(expectedLogit);
             assertFrameEquals(expectedLogit,
                     new Frame(seLogit._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
