@@ -26,9 +26,11 @@ test.model.gam.dual.modes <- function() {
         temp <- abs(coeff1[[ind]]-coeff2[[ind]])
         expect_true(temp < 1e-6, "coefficient comparison failed.")
     }
-    
     # check validation metrics
-    expect_true(abs(h2o.mse(gam_model, valid=TRUE)-h2o.mse(gam_model2, valid=TRUE)) < 1e-6)
+    mse1 = h2o.mse(gam_model, valid=TRUE)
+    mse2 = h2o.mse(gam_model2, valid=TRUE)
+    expect_true(abs(mse1-mse2)/abs(mse1) < 1e-6)
+    print("Finished dual-mode test")
 }
 
 doTest("General Additive Model test dual model specification with Gaussian family", test.model.gam.dual.modes)
