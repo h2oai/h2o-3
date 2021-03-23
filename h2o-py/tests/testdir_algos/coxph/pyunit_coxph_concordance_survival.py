@@ -56,7 +56,7 @@ def check_cox(rossi, x, stratify_by, formula):
     
     assert cph_h2o.model_id != ""
     assert cph_h2o.model_id != ""
-    assert cph_h2o.formula() == formula, f"Expected formula to be '{formula}' but it was " + cph_h2o.formula()
+    assert cph_h2o.formula() == formula, "Expected formula to be '" + formula + "' but it was " + cph_h2o.formula()
     
     predH2O = cph_h2o.predict(test_data=rossi_h2o)
     assert len(predH2O) == len(rossi)
