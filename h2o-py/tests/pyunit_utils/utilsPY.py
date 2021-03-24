@@ -1,27 +1,45 @@
+# Py2 compat
 from __future__ import print_function
 from future import standard_library
 standard_library.install_aliases()
-from builtins import range
 from past.builtins import basestring
+
+# standard lib
+import copy
+import datetime
+from decimal import *
 from functools import reduce
-from scipy.sparse import csr_matrix
-import sys, os, gc
-import pandas as pd
-import tempfile
+import imp
+import json
+import math
+import os
+import random
+import re
+import shutil
+import string
+import subprocess
+from subprocess import STDOUT,PIPE
+import sys
+import time # needed to randomly generate time
+import threading
+import urllib.request, urllib.error, urllib.parse
+import uuid # call uuid.uuid4() to generate unique uuid numbers
 
 try:        # works with python 2.7 not 3
     from StringIO import StringIO
 except:     # works with python 3
     from io import StringIO
+    
+# 3rd parties
+import numpy as np
+import pandas as pd
+from scipy.sparse import csr_matrix
+import scipy.special
 
+# h2o 
 sys.path.insert(1, "../../")
+
 import h2o
-import imp
-import random
-import re
-import subprocess
-from subprocess import STDOUT,PIPE
-from h2o.utils.shared_utils import temp_ctr
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
@@ -29,28 +47,14 @@ from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
-from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.random_forest import H2ORandomForestEstimator
-from decimal import *
-import urllib.request, urllib.error, urllib.parse
-import numpy as np
-import shutil
-import string
-import copy
-import json
-import math
-from random import shuffle
-import scipy.special
+from h2o.transforms.decomposition import H2OPCA
 from h2o.utils.typechecks import is_type
-import datetime
-import time # needed to randomly generate time
-import threading
-import uuid # call uuid.uuid4() to generate unique uuid numbers
+from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
 
 class Timeout:
@@ -509,16 +513,30 @@ def locate(path):
     else:
         tmp_dir = os.path.realpath(os.getcwd())
         possible_result = os.path.join(tmp_dir, path)
-        while (True):
-            if (os.path.exists(possible_result)):
-                return possible_result
+        try:
+            while (True):
+                if (os.path.exists(possible_result)):
+                    return possible_result
 
-            next_tmp_dir = os.path.dirname(tmp_dir)
-            if (next_tmp_dir == tmp_dir):
-                raise ValueError("File not found: " + path)
+                next_tmp_dir = os.path.dirname(tmp_dir)
+                if (next_tmp_dir == tmp_dir):
+                    raise ValueError("File not found: " + path)
 
-            tmp_dir = next_tmp_dir
-            possible_result = os.path.join(tmp_dir, path)
+                tmp_dir = next_tmp_dir
+                possible_result = os.path.join(tmp_dir, path)
+        except ValueError as e:
+            url = "https://h2o-public-test-data.s3.amazonaws.com/{}".format(path)
+            if url_exists(url):
+                return url
+            raise
+
+def url_exists(url):
+    head_req = urllib.request.Request(url, method='HEAD')
+    try:
+        with urllib.request.urlopen(head_req) as test:
+            return test.status == 200
+    except urllib.error.URLError:
+        return False          
 
 def hadoop_namenode_is_accessible():
     url = "http://{0}:50070".format(hadoop_namenode())
@@ -1721,7 +1739,7 @@ def generate_for_indices(list_size, check_all, num_per_dim, start_val):
         return list(range(start_val, list_size))
     else:
         randomList = list(range(start_val, list_size))
-        shuffle(randomList)
+        random.shuffle(randomList)
         return randomList[0:min(list_size, num_per_dim)]
 
 def generate_sign_vec(table1, table2):
@@ -2904,7 +2922,7 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
 
     total_model = 1
     hyper_keys = list(hyper_params)
-    shuffle(hyper_keys)    # get all hyper_parameter names in random order
+    random.shuffle(hyper_keys)    # get all hyper_parameter names in random order
     final_hyper_params = dict()
 
     for param in hyper_keys:
