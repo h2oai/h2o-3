@@ -86,6 +86,50 @@ public class CsvParserTest extends TestUtil {
     }
 
     @Test
+    public void testParseEscapeCharDoubleQuotes() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 1;
+      parseSetup._single_quotes = false;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"\\\"ab\\\\cd\\\"\""), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(1, outWriter.lineNum());
+      assertEquals("\"ab\\cd\"", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    @Test
+    public void testParseEscapeCharSingleQuotes() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 1;
+      parseSetup._single_quotes = true;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("'\\'ab\\\\cd\\''"), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(1, outWriter.lineNum());
+      assertEquals("'ab\\cd'", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    @Test
     public void testParseDoubleEscapedSingleQuotes() {
       ParseSetup parseSetup = new ParseSetup();
       parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
