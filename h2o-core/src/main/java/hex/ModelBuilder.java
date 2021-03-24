@@ -1842,28 +1842,73 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   //stitch together holdout predictions into one large Frame
-  private static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key key) {
+  Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
+    int precision = _parms._keep_cross_validation_predictions_precision;
+    if (precision < 0) {
+      precision = isClassifier() ? 8 : 0;
+    }
+    return combineHoldoutPredictions(predKeys, key, precision);
+  }
+
+  static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key, int precision) {
     int N = predKeys.length;
     Frame template = predKeys[0].get();
     Vec[] vecs = new Vec[N*template.numCols()];
     int idx=0;
-    for (int i=0;i<N;++i)
-      for (int j=0;j<predKeys[i].get().numCols();++j)
-        vecs[idx++]=predKeys[i].get().vec(j);
-    return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.types(),new Frame(vecs)).outputFrame(key, template.names(),template.domains());
+    for (Key<Frame> predKey : predKeys)
+      for (int j = 0; j < predKey.get().numCols(); ++j)
+        vecs[idx++] = predKey.get().vec(j);
+    HoldoutPredictionCombiner combiner = makeHoldoutPredictionCombiner(N, template.numCols(), precision);
+    return combiner.doAll(template.types(),new Frame(vecs))
+            .outputFrame(key, template.names(),template.domains());
   }
 
+  static HoldoutPredictionCombiner makeHoldoutPredictionCombiner(int folds, int cols, int precision) {
+    if (precision < 0) {
+      throw new IllegalArgumentException("Precision cannot be negative, got precision = " + precision);
+    } else if (precision == 0) {
+      return new HoldoutPredictionCombiner(folds, cols);
+    } else {
+      return new ApproximatingHoldoutPredictionCombiner(folds, cols, precision);
+    }
+  }
+  
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
-  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
+  static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
     int _folds, _cols;
     public HoldoutPredictionCombiner(int folds, int cols) { _folds=folds; _cols=cols; }
-    @Override public void map(Chunk[] cs, NewChunk[] nc) {
-      for (int c=0;c<_cols;++c) {
-        double [] vals = new double[cs[0].len()];
-        for (int f=0;f<_folds;++f)
-          for (int row = 0; row < cs[0].len(); ++row)
-            vals[row] += cs[f * _cols + c].atd(row);
-        nc[c].setDoubles(vals);
+    @Override public final void map(Chunk[] cs, NewChunk[] nc) {
+      for (int c = 0; c < _cols; c++) {
+        double[] vals = new double[cs[0].len()];
+        ChunkVisitor.CombiningDoubleAryVisitor visitor = new ChunkVisitor.CombiningDoubleAryVisitor(vals);
+        for (int f = 0; f < _folds; f++) {
+          cs[f * _cols + c].processRows(visitor, 0, vals.length);
+          visitor.reset();
+        }
+        populateChunk(nc[c], vals);
+      }
+    }
+    protected void populateChunk(NewChunk nc, double[] vals) {
+      nc.setDoubles(vals);
+    }
+  }
+
+  static class ApproximatingHoldoutPredictionCombiner extends HoldoutPredictionCombiner {
+    private final int _precision;
+    public ApproximatingHoldoutPredictionCombiner(int folds, int cols, int precision) { 
+      super(folds, cols);
+      _precision = precision;
+    }
+    @Override
+    protected void populateChunk(NewChunk nc, double[] vals) {
+      final long scale = PrettyPrint.pow10i(_precision); 
+      for (double val : vals) {
+        if (Double.isNaN(val))
+          nc.addNA();
+        else {
+          long approx = (long) (val * scale);
+          nc.addNum(approx, -_precision);
+        }
       }
     }
   }

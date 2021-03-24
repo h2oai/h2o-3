@@ -7,9 +7,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.dummy.DummyModel;
@@ -27,8 +25,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
-import static water.TestUtil.ar;
-import static water.TestUtil.ivec;
+import static water.TestUtil.*;
+import static water.util.RandomUtils.getRNG;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -380,6 +378,73 @@ public class ModelBuilderTest {
         model.deleteCrossValidationModels();
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testMakeHoldoutPredictionCombiner() {
+    assertFalse(
+            ModelBuilder.makeHoldoutPredictionCombiner(-1, -1, 0) instanceof ModelBuilder.ApproximatingHoldoutPredictionCombiner
+    );
+    assertTrue(
+            ModelBuilder.makeHoldoutPredictionCombiner(-1, -1, 4) instanceof ModelBuilder.ApproximatingHoldoutPredictionCombiner
+    );
+    ee.expectMessage("Precision cannot be negative, got precision = -42");
+    ModelBuilder.makeHoldoutPredictionCombiner(-1, -1, -42);
+  }
+
+  @Test
+  public void testApproximatingHoldoutPredictionCombiner() {
+    try {
+      Scope.enter();
+      Vec v = Vec.makeVec(ard(0, 1.0, 0.1, 0.99999, 1e-5, 0.123456789), Vec.newKey());
+      Scope.track(v);
+      Frame approx = new ModelBuilder.ApproximatingHoldoutPredictionCombiner(1, 1, 4)
+              .doAll(Vec.T_NUM, v).outputFrame();
+      Scope.track(approx);
+      Vec expected = Vec.makeVec(ard(0, 1.0, 0.1, 0.9999, 0, 0.1234), Vec.newKey());
+      assertVecEquals(expected, approx.vec(0), 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testApproximatingHoldoutPredictionCombinerProducesCSChunks() {
+    try {
+      Scope.enter();
+      Vec v = randomProbabilitiesVec(42, 100_000);
+      Scope.track(v);
+
+      checkApproximatingHoldoutPredictionCombiner(v, 8, 2);
+      checkApproximatingHoldoutPredictionCombiner(v, 4, 4);
+      checkApproximatingHoldoutPredictionCombiner(v, 2, 8);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static void checkApproximatingHoldoutPredictionCombiner(Vec v, int precision, int expectedMemoryRatio) {
+    Vec approx = new ModelBuilder.ApproximatingHoldoutPredictionCombiner(1, 1, precision)
+            .doAll(Vec.T_NUM, v).outputFrame().vec(0);
+    Scope.track(approx);
+    assertEquals(expectedMemoryRatio, v.byteSize() / (double) approx.byteSize(), 0.2);
+    for (int i = 0; i < approx.nChunks(); i++) {
+      assertTrue(approx.chunkForChunkIdx(i) instanceof CSChunk);
+    }
+  }
+  
+  private static Vec randomProbabilitiesVec(final long seed, final long len) {
+    Vec v = Vec.makeCon(0.0d, len);
+    new MRTask() {
+      @Override public void map(Chunk c) {
+        final long chunk_seed = seed + c.start();
+        for (int i = 0; i < c._len; i++) {
+          double rnd = getRNG(chunk_seed + i).nextDouble();
+          c.set(i, rnd);
+        }
+      }
+    }.doAll(v);
+    return v;
   }
 
 }

@@ -151,6 +151,43 @@ public abstract class ChunkVisitor {
     }
   }
   /**
+   * Chunk visitor for combining values from chunk with values from a given double array
+   */
+  public static final class CombiningDoubleAryVisitor extends ChunkVisitor {
+    public final double [] vals;
+    private int _k = 0;
+    private final double _na;
+    public CombiningDoubleAryVisitor(double [] vals){this(vals,Double.NaN);}
+    CombiningDoubleAryVisitor(double [] vals, double NA){
+      this.vals = vals; _na = NA;}
+    @Override
+    void addValue(int val) {
+      vals[_k++] += val;}
+    @Override
+    void addValue(long val) {
+      vals[_k++] += val;}
+    @Override
+    void addValue(double val) {
+      if (Double.isNaN(val))
+        vals[_k++] = _na;
+      else
+        vals[_k++] += val;}
+    @Override
+    void addZeros(int zeros) {
+      _k += zeros;
+    }
+    @Override
+    void addNAs(int nas) {
+      int k = _k;
+      int kmax = k + nas;
+      for(;k < kmax; k++) vals[k] = _na;
+      _k = kmax;
+    }
+    public void reset() {
+      _k = 0;
+    }
+  }
+  /**
    * Simple chunk visitor for extracting rows from chunks into a integer array.
    */
   public static final class IntAryVisitor extends ChunkVisitor {
