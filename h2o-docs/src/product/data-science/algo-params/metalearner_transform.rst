@@ -7,9 +7,9 @@
 Description
 ~~~~~~~~~~~
 
-H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking (or Super Learning). The algorithm that learns the optimal combination of the base learners is called the metalearning algorithm or metalearner. 
+H2O's Stacked Ensemble method is a supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking (or Super Learning). The algorithm that learns the optimal combination of the base learners is called the metalearning algorithm or metalearner. 
 
-By default, the Stacked Ensemble metalearner uses base model predictions as an input for the metalearner. This option allows you to specify transformation used on predictions from the base models in order to make a level one frame which is the input frame for the metalearner.
+By default, the Stacked Ensemble metalearner uses base model predictions as an input for the metalearner. This option allows you to specify the transformation used on predictions from the base models in order to make a level one frame which is the input frame for the metalearner.
 
 Options include:
 
