@@ -51,9 +51,10 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
-from h2o.transforms.decomposition import H2OPCA
 from h2o.estimators.random_forest import H2ORandomForestEstimator
+from h2o.transforms.decomposition import H2OPCA
 from h2o.utils.typechecks import is_type
+from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
 
 class Timeout:
