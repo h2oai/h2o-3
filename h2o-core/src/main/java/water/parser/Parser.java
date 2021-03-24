@@ -36,6 +36,7 @@ public abstract class Parser extends Iced {
   static final byte CHAR_SPACE = ' ';
   static final byte CHAR_DOUBLE_QUOTE = '"';
   static final byte CHAR_SINGLE_QUOTE = '\'';
+  static final byte CHAR_ESCAPE = '\\';
 
   // State for the CSV & SVMLight Parser's FSAs
   protected static final byte SKIP_LINE = 0;

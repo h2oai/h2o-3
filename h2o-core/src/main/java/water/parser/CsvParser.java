@@ -54,10 +54,11 @@ public class CsvParser extends Parser {
       else state = POSSIBLE_EMPTY_LINE;
     }
 
+    byte quoteChar = _setup._single_quotes ? CHAR_SINGLE_QUOTE : CHAR_DOUBLE_QUOTE;
     int quotes = 0;
     byte quoteCount = 0;
     long number = 0;
-    int escaped = -1;
+    boolean escaped = false;
     int exp = 0;
     int sgnExp = 1;
     boolean decimal = false;
@@ -129,13 +130,17 @@ MAIN_LOOP:
           }
 
         case STRING:
-          if (c == quotes) {
+          if (c == quotes && !escaped) {
             state = COND_QUOTE;
             continue MAIN_LOOP;
           }
           if ((!isEOL(c) && c != CHAR_SEPARATOR) || quoteCount == 1) {
             if (str.getBuffer() == null && isEOL(c)) str.set(bits, offset, 0);
-            str.addChar();
+            escaped = !escaped && c == CHAR_ESCAPE;
+            if (escaped) 
+              str.skipIndex(offset);
+            else
+              str.addChar();
             if ((c & 0x80) == 128) //value beyond std ASCII
               isAllASCII = false;
             break;
@@ -256,8 +261,8 @@ MAIN_LOOP:
         // ---------------------------------------------------------------------
         case COND_QUOTED_TOKEN:
           state = TOKEN;
-          if( CHAR_SEPARATOR!=HIVE_SEP && // Only allow quoting in CSV not Hive files
-              ((_setup._single_quotes && c == CHAR_SINGLE_QUOTE) || (c == CHAR_DOUBLE_QUOTE))) {
+          if( CHAR_SEPARATOR!=HIVE_SEP // Only allow quoting in CSV not Hive files
+              && c == quoteChar) {
             quotes = c;
             quoteCount++;
             break;
@@ -543,14 +548,21 @@ MAIN_LOOP:
   public static final byte HIVE_SEP = 0x1; // '^A',  Hive table column separator
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
-  /** Dermines the number of separators in given line.  Correctly handles quoted tokens. */
-  private static int[] determineSeparatorCounts(String from, byte singleQuote) {
+  /** Determines the number of separators in given line.  Correctly handles quoted tokens. */
+  private static int[] determineSeparatorCounts(String from, byte quoteChar) {
     int[] result = new int[separators.length];
     byte[] bits = StringUtils.bytesOf(from);
     boolean inQuote = false;
-    for( byte c : bits ) {
-      if( (c == singleQuote) || (c == CsvParser.CHAR_DOUBLE_QUOTE) )
-        inQuote ^= true;
+    boolean escaped, escaping = false;
+    for( int bi=0; bi < bits.length; bi++ ) {
+      byte c = bits[bi];
+      escaped = escaping;
+      escaping = !escaped && (
+              c == CsvParser.CHAR_ESCAPE
+              || (inQuote && c == quoteChar && bi < bits.length-1 && bits[bi+1] == quoteChar) // 2 consecutive quotes inside a quote are not csv quotes
+      );
+      if( c == quoteChar && !escaped && !escaping)
+          inQuote ^= true;
       if( !inQuote || c == HIVE_SEP )
         for( int i = 0; i < separators.length; ++i )
           if( c == separators[i] )
@@ -563,10 +575,10 @@ MAIN_LOOP:
    *  in an array.  Assumes the given separator.
    */
   public static String[] determineTokens(String from, byte separator, boolean singleQuotes) {
-    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
+    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : CsvParser.CHAR_DOUBLE_QUOTE;
     return determineTokens(from, separator, singleQuote);
   }
-  public static String[] determineTokens(String from, byte separator, byte singleQuote) {
+  public static String[] determineTokens(String from, byte separator, byte quoteChar) {
     ArrayList<String> tokens = new ArrayList<>();
     byte[] bits = StringUtils.bytesOf(from);
     int offset = 0;
@@ -576,13 +588,19 @@ MAIN_LOOP:
       if(offset == bits.length)break;
       final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
       byte c = bits[offset];
-      if ((c == CsvParser.CHAR_DOUBLE_QUOTE) || (c == singleQuote)) {
+      boolean escaped, escaping = false;
+      if (c == quoteChar) {
         quotes = c;
         ++offset;
       }
       while (offset < bits.length) {
         c = bits[offset];
-        if ((c == quotes)) {
+        escaped = escaping;
+        escaping = !escaped && (
+                c == CsvParser.CHAR_ESCAPE 
+                || (quotes > 0 && c == quoteChar && offset < bits.length-1 && bits[offset+1] == quoteChar) // 2 consecutive quotes inside a quote are not csv quotes
+        );
+        if (c == quotes && !escaped && !escaping) {
           ++offset;
           if ((offset < bits.length) && (bits[offset] == c)) {
             byteArrayOutputStream.write(c);
@@ -590,7 +608,7 @@ MAIN_LOOP:
             continue;
           }
           quotes = 0;
-        } else if( quotes == 0 && ((c == separator) || CsvParser.isEOL(c)) ) {
+        } else if( quotes == 0 && (c == separator || CsvParser.isEOL(c)) ) {
           break;
         } else {
           byteArrayOutputStream.write(c);
@@ -615,9 +633,9 @@ MAIN_LOOP:
 
 
   public static byte guessSeparator(String l1, String l2, boolean singleQuotes) {
-    final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : -1;
-    int[] s1 = determineSeparatorCounts(l1, singleQuote);
-    int[] s2 = determineSeparatorCounts(l2, singleQuote);
+    final byte quoteChar = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : CsvParser.CHAR_DOUBLE_QUOTE;
+    int[] s1 = determineSeparatorCounts(l1, quoteChar);
+    int[] s2 = determineSeparatorCounts(l2, quoteChar);
     // Now we have the counts - if both lines have the same number of
     // separators the we assume it is the separator.  Separators are ordered by
     // their likelyhoods.
@@ -627,8 +645,8 @@ MAIN_LOOP:
       if( s1[max] < s1[i] ) max=i; // Largest count sep on 1st line
       if( s1[i] == s2[i] && s1[i] >= s1[max]>>1 ) {  // Sep counts are equal?  And at nearly as large as the larger header sep?
         try {
-          String[] t1 = determineTokens(l1, separators[i], singleQuote);
-          String[] t2 = determineTokens(l2, separators[i], singleQuote);
+          String[] t1 = determineTokens(l1, separators[i], quoteChar);
+          String[] t2 = determineTokens(l2, separators[i], quoteChar);
           if( t1.length != s1[i]+1 || t2.length != s2[i]+1 )
             continue;           // Token parsing fails
           return separators[i];
@@ -640,8 +658,8 @@ MAIN_LOOP:
     // one.  If there's no largest one, space will be used.
     if( s1[max]==0 ) max=separators.length-1; // Try last separator (space)
     if( s1[max]!=0 ) {
-      String[] t1 = determineTokens(l1, separators[max], singleQuote);
-      String[] t2 = determineTokens(l2, separators[max], singleQuote);
+      String[] t1 = determineTokens(l1, separators[max], quoteChar);
+      String[] t2 = determineTokens(l2, separators[max], quoteChar);
       if( t1.length == s1[max]+1 && t2.length == s2[max]+1 )
         return separators[max];
     }
