@@ -197,7 +197,7 @@ public class ModelSerializationTest {
     Frame anomaly = null;
     Frame anomalyLoaded = null;
     try {
-      frame = parse_test_file("smalldata/logreg/prostate.csv");
+      frame = parseTestFile("smalldata/logreg/prostate.csv");
       model = prepareExtIsoForModel(frame, ar("ID", "CAPSULE"), 5, 1);
       loadedModel = saveAndLoad(model);
       assertModelBinaryEquals(model, loadedModel);
