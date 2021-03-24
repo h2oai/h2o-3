@@ -132,4 +132,3 @@ Example
         stack_logit.train(x=x, y=y, training_frame=train)
         stack_logit.model_performance(test).auc()
         # 0.7784964063210138
-
