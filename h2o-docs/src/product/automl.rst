@@ -419,7 +419,7 @@ FAQ
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.   
+  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.  The metalearner in both ensembles is a variant of the default Stacked Ensemble metalearner (which is a GLM with regularization to encourage more sparse ensembles).   
 
 -  **How do I save AutoML runs?**
 
@@ -582,9 +582,9 @@ This table shows the Deep Learning values that are searched over when performing
 +------------------------------+----------------------------------------------------------------------------------------------------------+
 | ``epsilon``                  | ``{1e-6, 1e-7, 1e-8, 1e-9}``                                                                             |
 +------------------------------+----------------------------------------------------------------------------------------------------------+
-| ``hidden``                   |  - Grid search 1: ``{50}, {200}, {500}``                                                                 |
-|                              |  - Grid search 2: ``{50, 50}, {200, 200}, {500, 500}``                                                   |
-|                              |  - Grid search 3: ``{50, 50, 50}, {200, 200, 200}, {500, 500, 500}``                                     |
+| ``hidden``                   |  - Grid search 1: ``{20}, {50}, {100}``                                                                  |
+|                              |  - Grid search 2: ``{20, 20}, {50, 50}, {100, 100}``                                                     |
+|                              |  - Grid search 3: ``{20, 20, 20}, {50, 50, 50}, {100, 100, 100}``                                        |
 +------------------------------+----------------------------------------------------------------------------------------------------------+
 | ``hidden_dropout_ratios``    |  - Grid search 1: ``{0.1}, {0.2}, {0.3}, {0.4}, {0.5}``                                                  |
 |                              |  - Grid search 2: ``{0.1, 0.1}, {0.2, 0.2}, {0.3, 0.3}, {0.4, 0.4}, {0.5, 0.5}``                         |
