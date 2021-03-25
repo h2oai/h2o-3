@@ -64,7 +64,7 @@ Example
                                                  model_id = "eif.hex",
                                                  ntrees = 100,
                                                  sample_size = 256,
-                                                 extension_level = 8)
+                                                 extension_level = length(predictors) - 1)
 
         # Calculate score
         score_if <- h2o.predict(model_if, prostate)
@@ -93,7 +93,7 @@ Example
         # Use full-extension
         eif_full = H2OExtendedIsolationForestEstimator(model_id = "eif_full.hex",
                                                        ntrees = 100,
-                                                       extension_level = 8)
+                                                       extension_level = len(predictors) - 1)
 
         eif_if.train(x = predictors, training_frame = h2o_df)
         eif_full.train(x = predictors, training_frame = h2o_df)
