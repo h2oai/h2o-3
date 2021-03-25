@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zipf (3.32.1.1) - 3/xx/2021
+### Zipf (3.32.1.1) - 3/25/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.html</a>
 
@@ -106,6 +106,8 @@ No longer errors when trying to use a fold column where not all folds are repres
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8063'>PUBDEV-8063</a>] -         POJO predictions for XGBoost now even closer to in-H2O predictions.
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8064'>PUBDEV-8064</a>] -         Double-scoring of CV models in AutoML now avoided thus speeding up AutoML.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8070'>PUBDEV-8070</a>] -         AutoML now uses fewer neurons in DL grids and has improved the metalearner for Stacked Ensemble.
 </li>
 </ul>
     
