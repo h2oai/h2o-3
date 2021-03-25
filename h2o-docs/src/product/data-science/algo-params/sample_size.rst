@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option specifies the number of randomly sampled observations used to train each Isolation Forest tree. If set to -1, ``sample_rate`` will be used instead. This value defaults to 256.
+This option specifies the number of randomly sampled observations used to train each Isolation Forest tree. For Isolation Forest, If set to -1, ``sample_rate`` will be used instead. This value defaults to 256 for both algorithms.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

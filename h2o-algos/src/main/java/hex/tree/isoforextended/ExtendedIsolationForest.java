@@ -86,11 +86,12 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                             + extensionLevelMax + "] but it is " + _parms._extension_level);
                 }
             }
-            if (_parms._sample_size < 0 || _parms._sample_size > MAX_SAMPLE_SIZE) {
-                error("sample_size","Parameter sample_size must be in interval [0, "
+            long sampleSizeMax = _parms.train().numRows();
+            if (_parms._sample_size < 2 || _parms._sample_size > MAX_SAMPLE_SIZE || _parms._sample_size > sampleSizeMax) {
+                error("sample_size","Parameter sample_size must be in interval [2, "
                         + MAX_SAMPLE_SIZE + "] but it is " + _parms._sample_size);
             }
-            if(_parms._ntrees < 0 || _parms._ntrees > MAX_NTREES)
+            if(_parms._ntrees < 1 || _parms._ntrees > MAX_NTREES)
                 error("ntrees", "Parameter ntrees must be in interval [1, "
                         + MAX_NTREES + "] but it is " + _parms._ntrees);
         }
