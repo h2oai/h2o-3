@@ -215,7 +215,6 @@ public class Metalearners {
             //specific to AUTO mode
             parms._non_negative = true;
             //parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
-            parms._alpha = new double[] {0.5, 1.0};    
 
             // feature columns are already homogeneous (probabilities); when standardization is enabled,
             // there can be information loss if some columns have very low probabilities compared with others for example (bad model)
