@@ -865,64 +865,6 @@ public class VecUtils {
   }
 
   /**
-   * Make a new vector initialized to random Gaussian N(0,1) values with the given seed.
-   * 
-   * @param length length of generated vector
-   * @return vector with gaussian values
-   */
-  public static Vec makeGaussianVec(long length, long seed) {
-      return makeGaussianVec(length, 0, seed);
-  }
-
-  /**
-   * Make a new vector initialized to random Gaussian N(0,1) values with the given seed.
-   * Make randomly selected {@code zeroNum} items zeros. Used in Extended isolation forest.
-   * 
-   * @param length length of generated vector
-   * @param zeroNum set randomly selected {@code zeroNum} items of vector to zero
-   * @return vector with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
-   */
-  public static Vec makeGaussianVec(long length, long zeroNum, long seed) {
-    Vec gausVec =  new MRTask() {
-
-      @Override
-      public void map(Chunk c){
-        Random rng = RandomUtils.getRNG(seed + c.start());
-
-        for(int row = 0; row < c._len; ++row) {
-          c.set(row, rng.nextGaussian());
-        }
-      }
-    }.doAll(Vec.makeZero(length))._fr.vecs()[0];
-    
-    Random rng = RandomUtils.getRNG(seed);
-    for (int i = 0; i < zeroNum; i++) {
-      long randomItem = Math.abs(rng.nextLong());
-      randomItem = randomItem % gausVec.length();
-      gausVec.set(randomItem, 0);
-    }
-    return gausVec;
-  }
-
-  /**
-   * 
-   * @return Array dimension of frame.numCols with values from uniform distribution with bounds taken from frame.
-   *         For example first value of the result is from Unif(First column min value, First column max value)
-   */
-  public static double[] uniformDistrFromFrame(Frame frame, long seed) {
-    double[] p = new double[frame.numCols()];
-    Vec[] vecs = frame.vecs();
-    Random random = RandomUtils.getRNG(seed);
-    for (int i = 0; i < vecs.length; i++) {
-      Vec vec = vecs[i];
-      double min = vec.min();
-      double max = vec.max();
-      p[i] = min + random.nextDouble() * (max - min);
-    }
-    return p;
-  }
-
-  /**
    *
    * @return Array dimension of array.lengt with values from uniform distribution with bounds taken from array.
    *         For example first value of the result is from Unif(First column min value, First column max value)

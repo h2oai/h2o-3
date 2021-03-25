@@ -57,45 +57,6 @@ public class VecUtilsTest extends TestUtil {
   }
 
   @Test
-  public void testMakeGaussian() {
-    Vec v = null;
-    try {
-      v = VecUtils.makeGaussianVec(5, 3,0xCECE);
-      Assert.assertArrayEquals(new int[]{0, 1, 0, 0, 2}, FrameUtils.asInts(v)); 
-    } finally {
-      if (v != null) 
-        v.remove(); 
-    }
-  }
-
-  @Test
-  public void testMakeGaussian2() {
-    Vec v = null;
-    try {    
-      v = VecUtils.makeGaussianVec(5,0xCECE);
-      Assert.assertArrayEquals(new int[]{-1, 1, 0, 0, 2}, FrameUtils.asInts(v));
-    } finally {
-      if (v != null) 
-        v.remove();
-    }
-  }  
-
-  @Test
-  public void testUniformDistrFromFrame() {
-    Frame frame = null;
-    try {
-      frame = parse_test_file("smalldata/anomaly/single_blob.csv");
-      double [] dist = VecUtils.uniformDistrFromFrame(frame, 0xDECAF);
-      Assert.assertNotNull(dist);
-      Assert.assertEquals(-2.69738, ArrayUtils.minValue(dist), 10e-5);
-      Assert.assertEquals(2.56836, ArrayUtils.maxValue(dist), 10e-5);
-    } finally {
-      if (frame != null)
-        frame.remove();
-    }
-  }
-
-  @Test
   public void testUniformDistrFromArray() {
     Frame frame = null;
     try {
