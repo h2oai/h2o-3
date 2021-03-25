@@ -32,7 +32,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicTrain() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -53,7 +53,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicTrainAndScore() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -79,7 +79,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicTrainErrorTrain0Trees() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -99,7 +99,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicTrainErrorOnlyRootsDoesNotMakeSence() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -119,7 +119,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicTrainErrorNegativeExtensionLevel() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -139,7 +139,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicTrainErrorTooHighExtensionLevel() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
@@ -325,7 +325,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testIsolationTreeSmoke() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
 
             long start = System.currentTimeMillis();
             IsolationTree isolationTree = new IsolationTree(9, 1);
@@ -397,7 +397,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testSubSampleTaskSmoke() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             int tries = 100;
             long sum = 0;
             for(int i = 0; i < tries; i++) {
@@ -435,7 +435,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testSubSampleFixedSizeSmoke() {
         try {
             Scope.enter();
-            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
             Frame subSample = SamplingUtils.sampleOfFixedSize(train, 256, 0xBEEF);
             assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
             assertEquals("SubSample has different number of rows", 256, subSample.numRows());
