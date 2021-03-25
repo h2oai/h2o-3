@@ -2,6 +2,134 @@
 
 ## H2O
 
+### Zipf (3.32.1.1) - 3/25/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-6356'>PUBDEV-6356</a>] -         GBM histograms now ignore rows with NA responses.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7606'>PUBDEV-7606</a>] -         Variable Importances added to GLM Generic model.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7782'>PUBDEV-7782</a>] -         Fixed the ArrayIndexOutOfBoundsException issue with GLM CV.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7825'>PUBDEV-7825</a>] -         CoxPH performance no longer fails when a factor is used for the `event_column`.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7841'>PUBDEV-7841</a>] -         Existing frame no longer overwritten when data with the same query is loaded.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7909'>PUBDEV-7909</a>] -         Fixed how `gain` is calculated in XGBFI for GBM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7934'>PUBDEV-7934</a>] -         Improved the error messages for `save_to_hive_table`.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7963'>PUBDEV-7963</a>] -         Added missing argument ’test’ for `h2o.explain_row()`.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7979'>PUBDEV-7979</a>] -         All trees now supported for XGBoost Print MOJO in Java.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7987'>PUBDEV-7987</a>] -         CoxPH `prediction` no longer fails when `offset_column` is specified.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7998'>PUBDEV-7998</a>] -         Added keys for Individual Conditional Expectation (ICE) plot in H2OExplanation class.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8013'>PUBDEV-8013</a>] -         `model@model$parameters$x` now reports actual feature names instead of `names`.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8016'>PUBDEV-8016</a>] -         `h2o.explain` no longer errors when AutoML object is trained with a `fold_column`.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8046'>PUBDEV-8046</a>] -         Fixed issues with python’s explanation plots not displaying fully.
+</li>
+</ul>
+    
+#### New Feature
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7706'>PUBDEV-7706</a>] -         Ignored columns that are actually used for model training are unignored and no longer prevent model training to start in Flow.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7735'>PUBDEV-7735</a>] -         Added baseline hazard function estimate to CoxPH model.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7748'>PUBDEV-7748</a>] -         Target Encoding now supports feature interactions.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7805'>PUBDEV-7805</a>] -         Added CoxPH concordance to both Flow and R/Python CoxPH summaries.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7820'>PUBDEV-7820</a>] -         Added a `topbasemodel` attribute to AutoML.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7831'>PUBDEV-7831</a>] -         Added new learning curve plotting function to R/Python.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7854'>PUBDEV-7854</a>] -         Added script for estimating the memory usage of a dataset.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7859'>PUBDEV-7859</a>] -         Added fault protections to grid search allowing saving of data and parameters, model checkpointing, and auto-recovery.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7884'>PUBDEV-7884</a>] -         Added support for Java 15.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7969'>PUBDEV-7969</a>] -         Added CDP7.1 support.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7978'>PUBDEV-7978</a>] -         Added support for XGBoost to Print MOJO as JSON.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8021'>PUBDEV-8021</a>] -         Added support for refreshing HDFS delegation tokens.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8035'>PUBDEV-8035</a>] -         Reverted XGBoost categorical encodings for contributions.
+</li>
+</ul>
+    
+#### Task
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7637'>PUBDEV-7637</a>] -         `max_hit_ratio_k` deprecated and removed.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7894'>PUBDEV-7894</a>] -         Added upper bound cap to supported Java version in H2O CRAN package requirements.
+</li>
+</ul>
+    
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7473'>PUBDEV-7473</a>] -         Users now allowed to include categorical column name in beta constraints.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7579'>PUBDEV-7579</a>] -         Multinomial PDP can now be plotted for more than one target class in Flow.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7736'>PUBDEV-7736</a>] -          Sped up CoxPH concordance score by using tree instead of the direct approach.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7819'>PUBDEV-7819</a>] -         XGBoost no longer fails when specifying custom `fold_column`.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7843'>PUBDEV-7843</a>] -         XGBoost CV models now built on multiple GPUs in parallel.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7968'>PUBDEV-7968</a>] -         Missing metrics added to GLM scoring history.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8017'>PUBDEV-8017</a>] -         Added validation checks for sampling rates for XGBoost for the R/Python clients.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8024'>PUBDEV-8024</a>] -         
+No longer errors when trying to use a fold column where not all folds are represented.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8032'>PUBDEV-8032</a>] -         Added the `metalearner_transform` option to Stacked Ensemble. 
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8057'>PUBDEV-8057</a>] -         GBM main model now built in parallel to the CV models.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8060'>PUBDEV-8060</a>] -         Removed redundant extraction weights from GBM/DRF histogram.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8061'>PUBDEV-8061</a>] -         GBM now avoids scoring the last iteration twice when early stopping is enabled.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8063'>PUBDEV-8063</a>] -         POJO predictions for XGBoost now even closer to in-H2O predictions.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8064'>PUBDEV-8064</a>] -         Double-scoring of CV models in AutoML now avoided thus speeding up AutoML.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8070'>PUBDEV-8070</a>] -         AutoML now uses fewer neurons in DL grids and has improved the metalearner for Stacked Ensemble.
+</li>
+</ul>
+    
+####Technical task
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7860'>PUBDEV-7860</a>] -         Thin plate regression splines added to GAM.
+</li>
+</ul>
+    
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7917'>PUBDEV-7917</a>] -         Added checkpoint description to GLM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7976'>PUBDEV-7976</a>] -         Added thin plate regression spline documentation to GAM algorithm page.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7988'>PUBDEV-7988</a>] -         Added missing parameters to XGBoost algorithm page.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7992'>PUBDEV-7992</a>] -         Added more information about log files to User Guide.
+</li>
+</ul>
+
+
 ### Zermelo (3.32.0.5) - 3/16/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zermelo/5/index.html</a>
