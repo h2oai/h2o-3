@@ -76,7 +76,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testBasicTrainError() {
+    public void testBasicTrainErrorTrain0Trees() {
         try {
             Scope.enter();
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
@@ -84,12 +84,72 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
-            p._ntrees = -2;
-            p._sample_size = -1;
-            p._extension_level = - 1;
+            p._ntrees = 0;
+            p._sample_size = 10;
+            p._extension_level = 0;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
-            ExtendedIsolationForestModel model = eif.trainModel().get();
+            eif.trainModel().get();
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testBasicTrainErrorOnlyRootsDoesNotMakeSence() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 1;
+            p._sample_size = 1;
+            p._extension_level = -1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            eif.trainModel().get();
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testBasicTrainErrorNegativeExtensionLevel() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 1;
+            p._sample_size = 2;
+            p._extension_level = -1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            eif.trainModel().get();
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+    public void testBasicTrainErrorTooHighExtensionLevel() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 1;
+            p._sample_size = 2;
+            p._extension_level = 2;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            eif.trainModel().get();
         } finally {
             Scope.exit();
         }
