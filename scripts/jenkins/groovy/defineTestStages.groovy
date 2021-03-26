@@ -79,7 +79,7 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
+      stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
