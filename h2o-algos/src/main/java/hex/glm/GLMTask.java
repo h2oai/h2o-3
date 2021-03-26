@@ -14,10 +14,12 @@ import water.H2O.H2OCountedCompleter;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
+
 import java.util.Arrays;
 
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
@@ -827,8 +829,19 @@ public abstract class GLMTask  {
           _beta[i][j] = beta[j][i];
       _job = job;
       _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .125;
+      //_sparse = sparseRatio(dinfo._adaptedFrame) < .125;
       _dinfo = dinfo;
       if (_dinfo._offset) throw H2O.unimpl();
+    }
+    
+    public double sparseRatio(Frame fr) {
+      double reg = 1.0/fr.numCols();
+      double res = 0;
+      for(Vec v:fr.vecs()) {
+        if (DKV.get(v._key) != null)
+          res += v.sparseRatio();
+      }
+      return res * reg;
     }
 
     public GLMMultinomialGradientBaseTask(Job job, DataInfo dinfo, double lambda, double[][] beta, GLMParameters glmp) {
