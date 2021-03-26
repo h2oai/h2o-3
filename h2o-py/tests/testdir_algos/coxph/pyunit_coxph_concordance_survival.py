@@ -40,7 +40,10 @@ def with_strata(rossi):
 def fix_py_result_for_older_lifelines(df):
     one_more_line = 50 == len(df.index)
     if one_more_line:
-        df.drop(df.head(1).index, inplace=True)
+        print("droping first line")
+        return df.drop(df.index[0:1])
+    else:
+        return df
 
 
 def check_cox(rossi, x, stratify_by, formula):
@@ -78,17 +81,17 @@ def check_cox(rossi, x, stratify_by, formula):
     
     for col_name in hazard_py.columns:
         hazard_py.rename(columns={col_name: str(col_name)}, inplace=True)
-    
-    print("h2o:")
-    print(hazard_h2o_as_pandas.reset_index(drop=True))
-    
-    print("lifelines:")
-    print(hazard_py.reset_index(drop=True))
 
     hazard_py_reordered_columns = hazard_py.reset_index(drop=True).sort_index(axis=1)
     hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
-    
-    fix_py_result_for_older_lifelines(hazard_py_reordered_columns)
+
+    hazard_py_reordered_columns = fix_py_result_for_older_lifelines(hazard_py_reordered_columns)
+
+    print("h2o:")
+    print(hazard_h2o_as_pandas.reset_index(drop=True))
+
+    print("lifelines:")
+    print(hazard_py_reordered_columns.reset_index(drop=True)) 
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False)
@@ -104,13 +107,13 @@ def check_cox(rossi, x, stratify_by, formula):
     survival_py_reordered_columns = survival_py.reset_index(drop=True).sort_index(axis=1)
     survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
 
-    fix_py_result_for_older_lifelines(survival_py_reordered_columns)
+    survival_py_reordered_columns = fix_py_result_for_older_lifelines(survival_py_reordered_columns)
     
     print("h2o:")
     print(survival_h2o_as_pandas.reset_index(drop=True))
 
     print("lifelines:")
-    print(survival_py.reset_index(drop=True))
+    print(survival_py_reordered_columns.reset_index(drop=True))
 
     assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
                        check_dtype=False, check_index_type=False, check_column_type=False)
