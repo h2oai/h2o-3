@@ -38,7 +38,7 @@ def with_strata(rossi):
 # expected (the first line with time=0 and values = 0)
 # When tests are run at CI wyth Python version 2.x and old lifelines, lifelines result contains one more line then
 def fix_py_result_for_older_lifelines(df):
-    one_more_line = 49 == len(df.index)
+    one_more_line = 50 == len(df.index)
     if one_more_line:
         df.drop(df.head(1).index, inplace=True)
 
