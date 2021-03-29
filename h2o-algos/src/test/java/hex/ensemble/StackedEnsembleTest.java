@@ -1529,4 +1529,137 @@ public class StackedEnsembleTest extends TestUtil {
             Scope.exit();
         }
     }
+
+
+    @Test
+    public void testMultinomialWithAUTOMetalearnerAndAlphaSearch() {
+        final String training_file = "./smalldata/iris/iris_wheader.csv";
+        Set<Frame> framesBefore = new HashSet<>();
+        framesBefore.addAll(Arrays.asList(Frame.fetchAll()));
+
+        GBMModel gbm = null;
+        DRFModel drf = null;
+        StackedEnsembleModel stackedEnsembleModel = null;
+        Frame training_frame = null;
+        Frame preds = null;
+        long seed = 42 * 42;
+        try {
+            Scope.enter();
+            training_frame = parseTestFile(training_file);
+
+            int idx = 4;
+            if (!training_frame.vecs()[idx].isCategorical()) {
+                Scope.track(training_frame.replace(idx, training_frame.vecs()[idx].toCategoricalVec()));
+            }
+
+            DKV.put(training_frame); // Update frames after preparing
+
+            // Build GBM
+            GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+            // Configure GBM
+            gbmParameters._train = training_frame._key;
+            gbmParameters._response_column = training_frame._names[idx];
+            gbmParameters._ntrees = 5;
+            gbmParameters._distribution = DistributionFamily.multinomial;
+            gbmParameters._max_depth = 4;
+            gbmParameters._min_rows = 1;
+            gbmParameters._nbins = 50;
+            gbmParameters._learn_rate = .2f;
+            gbmParameters._score_each_iteration = true;
+            gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            gbmParameters._keep_cross_validation_predictions = true;
+            gbmParameters._nfolds = 5;
+            gbmParameters._seed = seed;
+
+            // Invoke GBM and block till the end
+            GBM gbmJob = new GBM(gbmParameters);
+            // Get the model
+            gbm = gbmJob.trainModel().get();
+            Assert.assertTrue(gbmJob.isStopped()); //HEX-1817
+
+            // Build DRF
+            DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
+            // Configure DRF
+            drfParameters._train = training_frame._key;
+            drfParameters._response_column = training_frame._names[idx];
+            drfParameters._distribution = DistributionFamily.multinomial;
+            drfParameters._ntrees = 5;
+            drfParameters._max_depth = 4;
+            drfParameters._min_rows = 1;
+            drfParameters._nbins = 50;
+            drfParameters._score_each_iteration = true;
+            drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            drfParameters._keep_cross_validation_predictions = true;
+            drfParameters._nfolds = 5;
+            drfParameters._seed = seed;
+
+            // Invoke DRF and block till the end
+            DRF drfJob = new DRF(drfParameters);
+            // Get the model
+            drf = drfJob.trainModel().get();
+            Assert.assertTrue(drfJob.isStopped()); //HEX-1817
+
+            // Build Stacked Ensemble of previous GBM and DRF
+            StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
+            // Configure Stacked Ensemble
+            stackedEnsembleParameters._train = training_frame._key;
+            stackedEnsembleParameters._response_column = training_frame._names[idx];
+            stackedEnsembleParameters._metalearner_algorithm = Algorithm.glm;
+            stackedEnsembleParameters.initMetalearnerParams(Algorithm.glm);
+            GLMModel.GLMParameters glmParams =  (GLMModel.GLMParameters) stackedEnsembleParameters._metalearner_parameters;
+            glmParams._generate_scoring_history = true;
+            glmParams._score_iteration_interval = (glmParams._valid == null) ? 5 : -1;
+            glmParams._non_negative = true;
+            glmParams._alpha = new double[] {0.5, 1.0};
+            glmParams._standardize = false;
+
+            stackedEnsembleParameters._base_models = new Key[]{gbm._key, drf._key};
+            stackedEnsembleParameters._seed = seed;
+            stackedEnsembleParameters._score_training_samples = 0; // don't subsample dataset for training metrics so we don't randomly fail the test
+            // Invoke Stacked Ensemble and block till end
+            StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
+            // Get the stacked ensemble
+            stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
+
+            Frame training_clone = new Frame(training_frame);
+            DKV.put(training_clone);
+            Scope.track(training_clone);
+            preds = stackedEnsembleModel.score(training_clone);
+            final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
+            Assert.assertTrue(predsTheSame);
+            Assert.assertTrue(stackedEnsembleJob.isStopped());
+
+            ModelMetrics training_metrics = stackedEnsembleModel._output._training_metrics;
+            ModelMetrics training_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, training_clone);
+            Assert.assertEquals(training_metrics.mse(), training_clone_metrics.mse(), 1e-15);
+            training_clone.remove();
+
+
+
+        } finally {
+            if (training_frame != null) training_frame.remove();
+            if (gbm != null) {
+                gbm.delete();
+                for (Key k : gbm._output._cross_validation_predictions) k.remove();
+                gbm._output._cross_validation_holdout_predictions_frame_id.remove();
+                gbm.deleteCrossValidationModels();
+            }
+            if (drf != null) {
+                drf.delete();
+            }
+
+            if (preds != null) preds.delete();
+
+            Set<Frame> framesAfter = new HashSet<>(framesBefore);
+            framesAfter.removeAll(Arrays.asList(Frame.fetchAll()));
+
+            Assert.assertEquals("finish with the same number of Frames as we started: " + framesAfter, 0, framesAfter.size());
+
+            if (stackedEnsembleModel != null) {
+                stackedEnsembleModel.delete();
+                stackedEnsembleModel._output._metalearner.delete();
+            }
+            Scope.exit();
+        }
+    }
 }
