@@ -396,12 +396,12 @@ public class ModelBuilderTest {
   public void testApproximatingHoldoutPredictionCombiner() {
     try {
       Scope.enter();
-      Vec v = Vec.makeVec(ard(0, 1.0, 0.1, 0.99999, 1e-5, 0.123456789), Vec.newKey());
+      Vec v = Vec.makeVec(ard(0, 1.0, 0.1, 0.99994, 0.99995, 1e-5, 0.123456789), Vec.newKey());
       Scope.track(v);
       Frame approx = new ModelBuilder.ApproximatingHoldoutPredictionCombiner(1, 1, 4)
               .doAll(Vec.T_NUM, v).outputFrame();
       Scope.track(approx);
-      Vec expected = Vec.makeVec(ard(0, 1.0, 0.1, 0.9999, 0, 0.1234), Vec.newKey());
+      Vec expected = Vec.makeVec(ard(0, 1.0, 0.1, 0.9999, 1.0, 0, 0.1235), Vec.newKey());
       assertVecEquals(expected, approx.vec(0), 0);
     } finally {
       Scope.exit();
@@ -415,19 +415,19 @@ public class ModelBuilderTest {
       Vec v = randomProbabilitiesVec(42, 100_000);
       Scope.track(v);
 
-      checkApproximatingHoldoutPredictionCombiner(v, 8, 2);
-      checkApproximatingHoldoutPredictionCombiner(v, 4, 4);
-      checkApproximatingHoldoutPredictionCombiner(v, 2, 8);
+      checkApproximatingHoldoutPredictionCombiner(v, 8, 2, 0.2);
+      checkApproximatingHoldoutPredictionCombiner(v, 4, 4, 0.2);
+      checkApproximatingHoldoutPredictionCombiner(v, 2, 8, 0.5);
     } finally {
       Scope.exit();
     }
   }
 
-  private static void checkApproximatingHoldoutPredictionCombiner(Vec v, int precision, int expectedMemoryRatio) {
+  private static void checkApproximatingHoldoutPredictionCombiner(Vec v, int precision, int expectedMemoryRatio, double delta) {
     Vec approx = new ModelBuilder.ApproximatingHoldoutPredictionCombiner(1, 1, precision)
             .doAll(Vec.T_NUM, v).outputFrame().vec(0);
     Scope.track(approx);
-    assertEquals(expectedMemoryRatio, v.byteSize() / (double) approx.byteSize(), 0.2);
+    assertEquals(expectedMemoryRatio, v.byteSize() / (double) approx.byteSize(), delta);
     for (int i = 0; i < approx.nChunks(); i++) {
       assertTrue(approx.chunkForChunkIdx(i) instanceof CSChunk);
     }

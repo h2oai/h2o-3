@@ -1906,7 +1906,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (Double.isNaN(val))
           nc.addNA();
         else {
-          long approx = (long) (val * scale);
+          long approx = Math.round(val * scale);
           nc.addNum(approx, -_precision);
         }
       }
