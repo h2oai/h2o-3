@@ -16,10 +16,7 @@ import water.util.FileUtils;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.zip.ZipEntry;
@@ -46,7 +43,7 @@ public class ParseTestEncrypted extends TestUtil {
   public String _encrypted_name;
 
   @Parameterized.Parameters
-  public static Iterable<? extends Object> data() { return Arrays.asList("encrypted.aes.csv", "encrypted.aes.zip"); };
+  public static Iterable<? extends Object> data() { return Arrays.asList("encrypted.csv.aes", "encrypted.zip.aes"); };
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -54,9 +51,9 @@ public class ParseTestEncrypted extends TestUtil {
     // KeyStore
     _jks = writeKeyStore(secretKey);
     // Encrypted CSV
-    writeEncrypted(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.aes.csv"), secretKey);
-    // Encrypted CSV in a Zip
-    writeEncryptedZip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.aes.zip"), secretKey);
+    writeEncrypted(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.csv.aes"), secretKey);
+    // CSV in an Encrypted Zip
+    writeEncryptedZip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.zip.aes"), secretKey);
 
     TestUtil.stall_till_cloudsize(1);
   }
@@ -97,17 +94,21 @@ public class ParseTestEncrypted extends TestUtil {
   }
 
   private static void writeEncryptedZip(File source, File target, SecretKey secretKey) throws Exception {
-    FileOutputStream fileOut = new FileOutputStream(target);
+    File tmpFile = tmp.newFile();
+    FileOutputStream tmpOut = new FileOutputStream(tmpFile);
     try {
-      ZipOutputStream zipOut = new ZipOutputStream(fileOut);
+      ZipOutputStream zipOut = new ZipOutputStream(tmpOut);
       ZipEntry ze = new ZipEntry(source.getName());
       zipOut.putNextEntry(ze);
-      encryptFile(source, zipOut, secretKey);
+      try (InputStream sourceIn = new FileInputStream(source)) {
+        IOUtils.copy(sourceIn, zipOut);
+      }
       zipOut.closeEntry();
       zipOut.close();
     } finally {
-      IOUtils.closeQuietly(fileOut);
+      IOUtils.closeQuietly(tmpOut);
     }
+    writeEncrypted(tmpFile, target, secretKey);
   }
 
   private static void encryptFile(File source, OutputStream outputStream, SecretKey secretKey) throws Exception {

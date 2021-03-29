@@ -774,10 +774,10 @@ public final class ParseDataset {
       Log.trace("Begin a map stage of a file parse with start index " + chunkStartIdx + ".");
 
       DecryptionTool decryptionTool = _parseSetup.getDecryptionTool();
-      byte[] zips = vec.getFirstBytes();
+      final byte[] zips = decryptionTool.decryptFirstBytes(vec.getFirstBytes());
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
       if (localSetup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
-        byte[] bits = decryptionTool.decryptFirstBytes(ZipUtil.unzipBytes(zips, cpr, localSetup._chunk_size));
+        byte[] bits = ZipUtil.unzipBytes(zips, cpr, localSetup._chunk_size);
         localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(bits, localSetup);
       }
       // Parse the file
@@ -814,16 +814,16 @@ public final class ParseDataset {
           localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           // Zipped file; no parallel decompression;
           InputStream bvs = vec.openStream(_jobKey);
-          ZipInputStream zis = new ZipInputStream(bvs);
+          InputStream dec = decryptionTool.decryptInputStream(bvs);
+          ZipInputStream zis = new ZipInputStream(dec);
 
           if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
             zis.getNextEntry();          // first ZipEntry describes the directory
           }
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
-          InputStream dec = decryptionTool.decryptInputStream(zis);
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
-            _dout[_lo] = streamParse(dec,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
           dec.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);

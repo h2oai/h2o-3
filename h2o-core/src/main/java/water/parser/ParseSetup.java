@@ -421,26 +421,26 @@ public class ParseSetup extends Iced {
       Iced ice = DKV.getGet(key);
       if(ice == null) throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
       ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs()[0]);
-      byte [] bits;
+      byte[] bits;
       try {
-        bits = ZipUtil.getFirstUnzippedBytesChecked(bv);
+        bits = bv.getFirstBytes();
       } catch (Exception e) {
         throw new RuntimeException("This H2O node couldn't read data from '" + _file + "'. " +
                 "Please make sure the file is available on all H2O nodes and/or check the working directories.", e);
       }
+      Key<DecryptionTool> decryptToolKey = _userSetup._decrypt_tool != null ?
+              _userSetup._decrypt_tool : H2O.defaultDecryptionTool();
+      DecryptionTool decrypt = DKV.getGet(decryptToolKey);
+      if (decrypt != null) {
+        byte[] plainBits = decrypt.decryptFirstBytes(bits);
+        if (plainBits != bits)
+          bits = plainBits;
+        else
+          decryptToolKey = null;
+      }
+      bits = ZipUtil.getFirstUnzippedBytes(bits);
       // The bits can be null
       if (bits != null && bits.length > 0) {
-        Key<DecryptionTool> decryptToolKey = _userSetup._decrypt_tool != null ?
-                _userSetup._decrypt_tool : H2O.defaultDecryptionTool();
-        DecryptionTool decrypt = DKV.getGet(decryptToolKey);
-        if (decrypt != null) {
-          byte[] plainBits = decrypt.decryptFirstBytes(bits);
-          if (plainBits != bits)
-            bits = plainBits;
-          else
-            decryptToolKey = null;
-        }
-
         _empty = false;
 
         // get file size
