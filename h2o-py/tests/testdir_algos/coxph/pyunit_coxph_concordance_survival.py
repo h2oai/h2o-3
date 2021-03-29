@@ -41,7 +41,7 @@ def fix_py_result_for_older_lifelines(df):
     one_more_line = 50 == len(df.index)
     if one_more_line:
         print("droping first line")
-        return df.drop(df.index[0:1])
+        return df.drop(df.index[0:1]).reset_index( drop=True)
     else:
         return df
 
