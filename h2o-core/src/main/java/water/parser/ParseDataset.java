@@ -813,28 +813,29 @@ public final class ParseDataset {
         case ZIP: {
           localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
           // Zipped file; no parallel decompression;
-          InputStream bvs = vec.openStream(_jobKey);
-          InputStream dec = decryptionTool.decryptInputStream(bvs);
-          ZipInputStream zis = new ZipInputStream(dec);
-
-          if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
-            zis.getNextEntry();          // first ZipEntry describes the directory
+          try (InputStream bvs = vec.openStream(_jobKey);
+               InputStream dec = decryptionTool.decryptInputStream(bvs);
+               ZipInputStream zis = new ZipInputStream(dec)) {
+            if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
+              zis.getNextEntry();          // first ZipEntry describes the directory
+            }
+            ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
+            // There is at least one entry in zip file and it is not a directory.
+            if (ze != null && !ze.isDirectory())
+              _dout[_lo] = streamParse(zis, localSetup, makeDout(localSetup, chunkStartIdx, vec.nChunks()), bvs);
           }
-          ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
-          // There is at least one entry in zip file and it is not a directory.
-          if( ze != null && !ze.isDirectory() )
-            _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
-            _errors = _dout[_lo].removeErrors();
-          dec.close();       // Confused: which zipped file to decompress
+          _errors = _dout[_lo].removeErrors();
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }
         case GZIP: {
           localSetup = ParserService.INSTANCE.getByInfo(localSetup._parse_type).setupLocal(vec,localSetup);
-          InputStream bvs = vec.openStream(_jobKey);
-          // Zipped file; no parallel decompression;
-          _dout[_lo] = streamParse(decryptionTool.decryptInputStream(new GZIPInputStream(bvs)),
-                  localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
+          try (InputStream bvs = vec.openStream(_jobKey);
+               InputStream dec = decryptionTool.decryptInputStream(bvs);
+               GZIPInputStream gzis = new GZIPInputStream(dec)) {
+            // gzipped file; no parallel decompression
+            _dout[_lo] = streamParse(gzis, localSetup, makeDout(localSetup, chunkStartIdx, vec.nChunks()), bvs);
+          }
           _errors = _dout[_lo].removeErrors();
           // set this node as the one which processed all the chunks
           chunksAreLocal(vec,chunkStartIdx,key);

@@ -19,6 +19,7 @@ import javax.crypto.SecretKey;
 import java.io.*;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -43,7 +44,9 @@ public class ParseTestEncrypted extends TestUtil {
   public String _encrypted_name;
 
   @Parameterized.Parameters
-  public static Iterable<? extends Object> data() { return Arrays.asList("encrypted.csv.aes", "encrypted.zip.aes"); };
+  public static Iterable<? extends Object> data() { 
+    return Arrays.asList("encrypted.csv.aes", "encrypted.zip.aes", "encrypted.gz.aes"); 
+  }
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -52,8 +55,10 @@ public class ParseTestEncrypted extends TestUtil {
     _jks = writeKeyStore(secretKey);
     // Encrypted CSV
     writeEncrypted(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.csv.aes"), secretKey);
-    // CSV in an Encrypted Zip
+    // CSV in an Encrypted Zip container
     writeEncryptedZip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.zip.aes"), secretKey);
+    // CSV in an Encrypted Gzip container
+    writeEncryptedGzip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.gz.aes"), secretKey);
 
     TestUtil.stall_till_cloudsize(1);
   }
@@ -93,6 +98,16 @@ public class ParseTestEncrypted extends TestUtil {
     }
   }
 
+  private static void writeEncryptedGzip(File source, File target, SecretKey secretKey) throws Exception {
+    File tmpFile = tmp.newFile();
+    try (InputStream sourceIn = new FileInputStream(source); 
+         FileOutputStream fileOut = new FileOutputStream(tmpFile);
+         GZIPOutputStream gzipOutput = new GZIPOutputStream(fileOut)) {
+      IOUtils.copyLarge(sourceIn, gzipOutput);
+    }
+    writeEncrypted(tmpFile, target, secretKey);
+  }
+
   private static void writeEncryptedZip(File source, File target, SecretKey secretKey) throws Exception {
     File tmpFile = tmp.newFile();
     FileOutputStream tmpOut = new FileOutputStream(tmpFile);
@@ -101,7 +116,7 @@ public class ParseTestEncrypted extends TestUtil {
       ZipEntry ze = new ZipEntry(source.getName());
       zipOut.putNextEntry(ze);
       try (InputStream sourceIn = new FileInputStream(source)) {
-        IOUtils.copy(sourceIn, zipOut);
+        IOUtils.copyLarge(sourceIn, zipOut);
       }
       zipOut.closeEntry();
       zipOut.close();
