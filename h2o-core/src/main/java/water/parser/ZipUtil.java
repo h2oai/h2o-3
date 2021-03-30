@@ -29,27 +29,12 @@ abstract class ZipUtil {
    * This method will attempt to read the few bytes off a file which will in turn be used
    * to guess what kind of parsers we should use to parse the file.
    *
-   * @param bv
+   * @param bits
    * @return
    */
-  static byte [] getFirstUnzippedBytes( ByteVec bv ) {
-    try {
-      return getFirstUnzippedBytesChecked(bv);
-    } catch (Exception e) {
-      return null;
-    }
-  }
-
-  static byte[] getFirstUnzippedBytesChecked( ByteVec bv ) throws Exception {
-    ZipUtil.Compression guessedCompression = null;
-    try {
-      byte[] bits = bv.getFirstBytes();
-      guessedCompression = guessCompressionMethod(bits);
-      return unzipBytes(bits, guessedCompression, FileVec.DFLT_CHUNK_SIZE);
-    } catch (Exception e) {
-      Log.debug("Cannot get unzipped bytes from ByteVec! Compression method: " + guessedCompression, e);
-      throw e;
-    }
+  static byte[] getFirstUnzippedBytes(byte[] bits) {
+    ZipUtil.Compression guessedCompression = guessCompressionMethod(bits);
+    return unzipBytes(bits, guessedCompression, FileVec.DFLT_CHUNK_SIZE);
   }
 
   /**
