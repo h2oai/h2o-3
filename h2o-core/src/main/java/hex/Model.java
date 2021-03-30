@@ -262,7 +262,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  0; disabled
      *  
      *  for classification problems consider eg.:
-     *     4 to keep only first 4 decimal places (consumes 25% less memory)
+     *     4 to keep only first 4 decimal places (consumes 75% less memory)
      *  or 8 to keep 8 decimal places (consumes 50% less memory)
      */
     public int _keep_cross_validation_predictions_precision = -1; 
