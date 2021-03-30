@@ -65,15 +65,21 @@ public class XGBoostExtension extends AbstractH2OExtension {
     }
   }
 
+  public static NativeLibraryLoaderChain getLoader() throws IOException {
+    INativeLibLoader loader = NativeLibLoader.getLoader();
+    if (! (loader instanceof NativeLibraryLoaderChain)) {
+      LOG.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
+              "XGBoost extension will be disabled.");
+      return null;
+    }
+    return(NativeLibraryLoaderChain) loader;
+  }
+
   private boolean initXgboost() {
     try {
-      INativeLibLoader loader = NativeLibLoader.getLoader();
-      if (! (loader instanceof NativeLibraryLoaderChain)) {
-        LOG.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
-                "XGBoost extension will be disabled.");
+      NativeLibraryLoaderChain chainLoader = getLoader();
+      if (chainLoader == null)
         return false;
-      }
-      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
       NativeLibrary lib = chainLoader.getLoadedLibrary();
       nativeLibInfo = new NativeLibInfo(lib);
       return true;

@@ -44,8 +44,6 @@ public class NativeLibraryLoaderChain implements INativeLibLoader {
     this(
       // GPU & OpenMP support enabled - backend will be decided at runtime based on availability
       nativeLibrary("xgboost4j_gpu", new NativeLibrary.CompilationFlags[] {WITH_GPU, WITH_OMP}),
-      // OpenMP 3.x support enabled (when libgomp1 4.x is not available - eg. Ubuntu 14.04)
-      nativeLibrary("xgboost4j_omp", new NativeLibrary.CompilationFlags[] {WITH_OMP}),
       // Minimum version of library - no gpu, no omp
       nativeLibrary("xgboost4j_minimal", EMPTY_COMPILATION_FLAGS)
     );
@@ -56,6 +54,10 @@ public class NativeLibraryLoaderChain implements INativeLibLoader {
     nativeLibs = libs;
   }
 
+  public NativeLibrary[] getNativeLibs() {
+    return nativeLibs;
+  }
+  
   @Override
   public void loadNativeLibs() throws IOException {
     LinkedList<IOException> exs = new LinkedList<>();
