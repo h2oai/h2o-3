@@ -1898,14 +1898,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean haveMojo() {
-    if (_parms.interactionSpec() == null) return super.haveMojo();
-    else return false;
+    return super.haveMojo();
   }
 
   @Override
   public boolean havePojo() {
-    if (_parms.interactionSpec() == null) return super.havePojo();
-    else return false;
+    return super.havePojo();
   }
 
   @Override
