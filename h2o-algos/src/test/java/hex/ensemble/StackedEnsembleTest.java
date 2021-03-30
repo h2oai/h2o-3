@@ -793,15 +793,15 @@ public class StackedEnsembleTest extends TestUtil {
             if (blending_frame != null) blending_frame.remove();
             if( gbm != null ) {
                 gbm.delete();
-                for (Key k : gbm._output._cross_validation_predictions) k.remove();
-                gbm._output._cross_validation_holdout_predictions_frame_id.remove();
+                for (Key k : gbm._output._cross_validation_predictions) Keyed.remove(k);
+                Keyed.remove(gbm._output._cross_validation_holdout_predictions_frame_id);
                 gbm.deleteCrossValidationModels();
             }
             if( drf != null ) {
                 drf.delete();
                 if (!blending_mode) {
-                    for (Key k : drf._output._cross_validation_predictions) k.remove();
-                    drf._output._cross_validation_holdout_predictions_frame_id.remove();
+                    for (Key k : drf._output._cross_validation_predictions) Keyed.remove(k);
+                    Keyed.remove(drf._output._cross_validation_holdout_predictions_frame_id);
                     drf.deleteCrossValidationModels();
                 }
             }
@@ -1391,7 +1391,7 @@ public class StackedEnsembleTest extends TestUtil {
         try {
             Scope.enter();
 
-            final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/junit/weather.csv");
+            final Frame trainingFrame = parseTestFile("./smalldata/junit/weather.csv");
             Scope.track(trainingFrame);
             trainingFrame.toCategoricalCol("RainTomorrow");
 
