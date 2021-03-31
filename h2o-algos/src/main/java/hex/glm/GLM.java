@@ -2790,7 +2790,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
     int max_active = 0;
-    if(_parms._family == multinomial )
+    if(multinomial.equals(_parms._family))
       for(int c = 0; c < _nclass; ++c)
         max_active += _state.activeDataMultinomial(c).fullN();
     else max_active = _state.activeData().fullN();
@@ -2801,7 +2801,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       s = Solver.COORDINATE_DESCENT;
     } else if(_state.activeBC().hasBounds() && !_state.activeBC().hasProximalPenalty()) {
       s = Solver.COORDINATE_DESCENT;
-    } else if(_parms._family == multinomial && _parms._alpha[0] == 0)
+    } else if(multinomial.equals(_parms._family) && _parms._alpha[0] == 0)
       s = Solver.L_BFGS; // multinomial does better with lbfgs
     else
       Log.info(LogMsg("picked solver " + s));
@@ -3288,7 +3288,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     @Override
     public GLMGradientInfo getGradient(double[] beta) {
-      if (_parms._family == multinomial || _parms._family == ordinal) {
+      if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family)) {
         if (_betaMultinomial == null) {
           int nclasses = beta.length / (_dinfo.fullN() + 1);
           assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
@@ -3307,7 +3307,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (double[] b : _betaMultinomial) {
           l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
 
-          if (_parms._family == ordinal)
+          if (ordinal.equals(_parms._family))
             break;  // only one beta for all classes, l2pen needs to count beta for one class only
         }
 
