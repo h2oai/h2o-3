@@ -1633,32 +1633,12 @@ public class StackedEnsembleTest extends TestUtil {
             ModelMetrics training_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, training_clone);
             Assert.assertEquals(training_metrics.mse(), training_clone_metrics.mse(), 1e-15);
             training_clone.remove();
-
-
-
         } finally {
             if (training_frame != null) training_frame.remove();
-            if (gbm != null) {
-                gbm.delete();
-                for (Key k : gbm._output._cross_validation_predictions) k.remove();
-                gbm._output._cross_validation_holdout_predictions_frame_id.remove();
-                gbm.deleteCrossValidationModels();
-            }
-            if (drf != null) {
-                drf.delete();
-            }
-
+            if (gbm != null) gbm.delete();
+            if (drf != null) drf.delete();
             if (preds != null) preds.delete();
-
-            Set<Frame> framesAfter = new HashSet<>(framesBefore);
-            framesAfter.removeAll(Arrays.asList(Frame.fetchAll()));
-
-            Assert.assertEquals("finish with the same number of Frames as we started: " + framesAfter, 0, framesAfter.size());
-
-            if (stackedEnsembleModel != null) {
-                stackedEnsembleModel.delete();
-                stackedEnsembleModel._output._metalearner.delete();
-            }
+            if (stackedEnsembleModel != null) stackedEnsembleModel.delete();
             Scope.exit();
         }
     }
