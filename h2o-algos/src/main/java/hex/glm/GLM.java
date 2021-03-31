@@ -2682,7 +2682,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state.updateState(beta, gginfo._likelihood);
         else
           _state.updateState(beta, gginfo);
-        if (!_parms._lambda_search || (_parms._generate_scoring_history && !_insideCVCheck))
+        if ((!_parms._lambda_search || _parms._generate_scoring_history) && !_insideCVCheck)
           updateProgress(true);
         boolean converged = !_earlyStopEnabled && _state.converged(); // GLM specific early stop.  Disabled if early stop is enabled
         if (converged) Log.info(LogMsg(_state.convergenceMsg));
@@ -2710,7 +2710,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       // updateProgress is not run originally when lambda_search is not enabled inside or outside of 
       // cv_computeAndSetOptimalParameters.  However, with generate_scoring_history on, I am adding deviance_* and
       // hence I need to make sure that updateProgress is not run inside cv_computeAndSetOptimalParameters.
-      if (!_parms._lambda_search || (_parms._generate_scoring_history && !_insideCVCheck))
+      if ((!_parms._lambda_search || _parms._generate_scoring_history) && !_insideCVCheck)
         updateProgress(true);
       boolean converged = !_earlyStopEnabled && _state.converged();
       if (converged) Log.info(LogMsg(_state.convergenceMsg));
