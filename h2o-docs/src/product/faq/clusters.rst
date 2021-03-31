@@ -250,6 +250,6 @@ More information is available here:
 Why do I receive the error "ice_root not a read/writable directory"?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ice_root folder is where H2O will store temporary files, and by default it would be in the '/tmp' (on Linux) or '/var' (on Mac). Check that the user launching H2O has write access to the folder. 
+The ``ice_root`` folder is where H2O will store temporary files, and by default it would be in the ``/tmp`` (on Linux) or ``/var`` (on Mac). Check that the user launching H2O has write access to the folder. 
 
 The ice_root directory can also be assigned to a different folder during launch.
