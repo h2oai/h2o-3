@@ -159,6 +159,9 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
                 CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
+                if (LOG.isDebugEnabled()) {
+                    isolationTree.logNodesNumRows();
+                }
                 _model._output._iTreeKeys[tid] = compressedIsolationTree._key;
                 DKV.put(compressedIsolationTree);
                 _job.update(1);
