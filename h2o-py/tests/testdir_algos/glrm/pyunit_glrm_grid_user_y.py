@@ -39,8 +39,12 @@ def glrm_grid_user_y():
     print("first grid")
     print(grid)
     assert len(grid.model_ids) == 2
-    archetypes1 = grid.models[0].archetypes()
-    archetypes2 = grid.models[1].archetypes()
+    if (grid.models[0].actual_params['transform']=='STANDARDIZE'):
+        archetypes0p1Standardize = grid.models[0].archetypes()
+        archetypes0p1None = grid.models[1].archetypes()
+    else:
+        archetypes0p1Standardize = grid.models[1].archetypes()
+        archetypes0p1None = grid.models[0].archetypes()
     grid_path = h2o.save_grid(export_dir, grid.grid_id)
     h2o.remove_all()
     
@@ -54,16 +58,20 @@ def glrm_grid_user_y():
     print(grid)
     assert len(grid.model_ids) == 4
     # check actual training occurred and results are different
-    assert grid.models[0].archetypes() == archetypes1
-    assert grid.models[1].archetypes() == archetypes2
-    model1Archetypes = grid.models[1].archetypes()
-    model2Archetypes = grid.models[2].archetypes()   
-    archetypesNotEqual12 = not all([pyunit_utils.equal_two_arrays(model1Archetypes[i], model2Archetypes[i], 
+    for oneGridModel in grid.models:
+        if (oneGridModel.actual_params['gamma_x'] == 0.1) and (oneGridModel.actual_params['transform']=='STANDARDIZE'):
+            assert oneGridModel.archetypes() == archetypes0p1Standardize
+        if (oneGridModel.actual_params['gamma_x'] == 0.1) and (oneGridModel.actual_params['transform']=='NONE'):
+            assert oneGridModel.archetypes() == archetypes0p1None
+        if (oneGridModel.actual_params['gamma_x'] == 1) and (oneGridModel.actual_params['transform']=='STANDARDIZE'):
+            archetypes1None = oneGridModel.archetypes()
+        if (oneGridModel.actual_params['gamma_x'] == 1) and (oneGridModel.actual_params['transform']=='NONE'):
+            archetypes1Standardize = oneGridModel.archetypes()
+  
+    archetypesNotEqual12 = not all([pyunit_utils.equal_two_arrays(archetypes1None[i], archetypes0p1None[i], 
                                                                   throw_error=False) for i in range(numArchetypes)])
     assert archetypesNotEqual12
-    
-    model3Archetypes = grid.models[3].archetypes()
-    archetypesNotEqual23 = not all([pyunit_utils.equal_two_arrays(model3Archetypes[i], model2Archetypes[i], 
+    archetypesNotEqual23 = not all([pyunit_utils.equal_two_arrays(archetypes1Standardize[i], archetypes0p1Standardize[i], 
                                                                   throw_error=False) for i in range(numArchetypes)])
     assert archetypesNotEqual23
 
