@@ -41,7 +41,7 @@ test.export.file <- function(parts) {
   H.pred <- as.data.frame(mypred)
   print(head(H.pred))
 
-  expect_identical(R.pred, H.pred)
+  expect_equal(R.pred, H.pred)
 }
 
 test.export.file.single <- function() test.export.file(1)
