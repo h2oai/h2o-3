@@ -1931,10 +1931,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   protected boolean isFeatureUsedInPredict(int featureIdx) {
     if (_output.isMultinomialClassifier()) {
       int outputClasses =  beta().length / _output.coefficientNames().length;
-      boolean used = false;
-      for (int i = 0; i < outputClasses; i++)
-        used |= isFeatureUsedInPredict(featureIdx, i * _output.coefficientNames().length);
-      return used;
+      for (int i = 0; i < outputClasses; i++) {
+        if (isFeatureUsedInPredict(featureIdx, i * _output.coefficientNames().length))
+          return true;
+      }
+      return false;
     } else {
       return isFeatureUsedInPredict(featureIdx, 0);
     }
