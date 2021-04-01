@@ -21,7 +21,8 @@ def glrm_grid_user_y():
         "user_y": initial_y_h2o,
         "loss": "Quadratic",
         "regularization_x": "OneSparse",
-        "regularization_y": "NonNegative"
+        "regularization_y": "NonNegative",
+        "seed":12345
     }
     hyper_params = {
         "transform": ["NONE", "STANDARDIZE"],
@@ -54,9 +55,32 @@ def glrm_grid_user_y():
     # check actual training occurred and results are different
     assert grid.models[0].archetypes() == archetypes1
     assert grid.models[1].archetypes() == archetypes2
-    # instead of using python compare, I am just check and make first the first arrays are not equal.
-    assert not(pyunit_utils.equal_two_arrays(grid.models[1].archetypes()[0], grid.models[2].archetypes()[0], throw_error=False))
-    assert not(pyunit_utils.equal_two_arrays(grid.models[2].archetypes()[0], grid.models[3].archetypes()[0], throw_error=False))
+    model1Archetypes = grid.models[1].archetypes()
+    model2Archetypes = grid.models[2].archetypes()   
+    archetypesNotEqual12 = not(pyunit_utils.equal_two_arrays(model1Archetypes[0], model2Archetypes[0], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[1], model2Archetypes[1], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[2], model2Archetypes[2], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[3], model2Archetypes[3], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[4], model2Archetypes[4], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[5], model2Archetypes[5], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[6], model2Archetypes[6], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[7], model2Archetypes[7], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[8], model2Archetypes[8], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[9], model2Archetypes[9], throw_error=False))
+    assert archetypesNotEqual12
+    
+    model3Archetypes = grid.models[3].archetypes()
+    archetypesNotEqual23 = not(pyunit_utils.equal_two_arrays(model3Archetypes[0], model2Archetypes[0], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[1], model2Archetypes[1], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[2], model2Archetypes[2], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[3], model2Archetypes[3], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[4], model2Archetypes[4], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[5], model2Archetypes[5], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[6], model2Archetypes[6], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[7], model2Archetypes[7], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[8], model2Archetypes[8], throw_error=False)) \
+                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[9], model2Archetypes[9], throw_error=False))
+    assert archetypesNotEqual23
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(glrm_grid_user_y)
