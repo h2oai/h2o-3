@@ -57,16 +57,7 @@ def glrm_grid_user_y():
     assert grid.models[1].archetypes() == archetypes2
     model1Archetypes = grid.models[1].archetypes()
     model2Archetypes = grid.models[2].archetypes()   
-    archetypesNotEqual12 = not(pyunit_utils.equal_two_arrays(model1Archetypes[0], model2Archetypes[0], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[1], model2Archetypes[1], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[2], model2Archetypes[2], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[3], model2Archetypes[3], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[4], model2Archetypes[4], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[5], model2Archetypes[5], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[6], model2Archetypes[6], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[7], model2Archetypes[7], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[8], model2Archetypes[8], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model1Archetypes[9], model2Archetypes[9], throw_error=False))
+    archetypesNotEqual12 = not all([pyunit_utils.equal_two_arrays(model1Archetypes[i], model2Archetypes[i], throw_error=False) for i in range(10)])
     assert archetypesNotEqual12
     
     model3Archetypes = grid.models[3].archetypes()
