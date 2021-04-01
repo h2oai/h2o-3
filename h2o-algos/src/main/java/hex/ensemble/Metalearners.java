@@ -1,6 +1,5 @@
 package hex.ensemble;
 
-import hex.DistributionFactory;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ensemble.Metalearner.Algorithm;
