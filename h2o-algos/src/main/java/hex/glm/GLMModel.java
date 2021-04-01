@@ -1929,6 +1929,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   protected boolean isFeatureUsedInPredict(int featureIdx) {
+    if (_parms._interactions != null) return true;
     if (_output.isMultinomialClassifier()) {
       int outputClasses =  beta().length / _output.coefficientNames().length;
       for (int i = 0; i < outputClasses; i++) {
