@@ -15,8 +15,9 @@ def glrm_grid_user_y():
     train = h2o.H2OFrame(train_data.tolist(), destination_frame="glrm_train")
     initial_y_data = np.random.rand(10, 100)
     initial_y_h2o = h2o.H2OFrame(initial_y_data.tolist(), destination_frame="glrm_initial_y")
+    numArchetypes = 10
     params = {
-        "k": 10,
+        "k": numArchetypes,
         "init": "User",
         "user_y": initial_y_h2o,
         "loss": "Quadratic",
@@ -57,20 +58,13 @@ def glrm_grid_user_y():
     assert grid.models[1].archetypes() == archetypes2
     model1Archetypes = grid.models[1].archetypes()
     model2Archetypes = grid.models[2].archetypes()   
-    archetypesNotEqual12 = not all([pyunit_utils.equal_two_arrays(model1Archetypes[i], model2Archetypes[i], throw_error=False) for i in range(10)])
+    archetypesNotEqual12 = not all([pyunit_utils.equal_two_arrays(model1Archetypes[i], model2Archetypes[i], 
+                                                                  throw_error=False) for i in range(numArchetypes)])
     assert archetypesNotEqual12
     
     model3Archetypes = grid.models[3].archetypes()
-    archetypesNotEqual23 = not(pyunit_utils.equal_two_arrays(model3Archetypes[0], model2Archetypes[0], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[1], model2Archetypes[1], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[2], model2Archetypes[2], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[3], model2Archetypes[3], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[4], model2Archetypes[4], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[5], model2Archetypes[5], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[6], model2Archetypes[6], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[7], model2Archetypes[7], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[8], model2Archetypes[8], throw_error=False)) \
-                           or not(pyunit_utils.equal_two_arrays(model3Archetypes[9], model2Archetypes[9], throw_error=False))
+    archetypesNotEqual23 = not all([pyunit_utils.equal_two_arrays(model3Archetypes[i], model2Archetypes[i], 
+                                                                  throw_error=False) for i in range(numArchetypes)])
     assert archetypesNotEqual23
 
 if __name__ == "__main__":
