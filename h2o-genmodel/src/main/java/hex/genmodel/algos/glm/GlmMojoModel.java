@@ -53,9 +53,25 @@ public class GlmMojoModel extends GlmMojoModelBase {
       }
     }
 
-    int noff = _catOffsets[_cats] - _cats;
-    for(int i = _cats; i < _beta.length - 1 - noff; ++i)
-      eta += _beta[noff + i] * data[i];
+    // Categorical-Numerical Interaction scoring
+    
+    for (int i = 0; i < _catNumOffsets.length - 1; ++i) {
+      Integer[] interaction = _interaction_mapping.get(_names[_cats + i]);
+      int catOffset = _catOffsets[_catOffsets.length - 1];
+      int cat_index = _domains[interaction[0]] == null ? 1 : 0;
+      int num_index = _domains[interaction[0]] == null ? 0 : 1;
+      int enum_level = (int) data[interaction[cat_index]];
+      if (enum_level != data[interaction[cat_index]]) {
+        throw new IllegalArgumentException("categorical value out of range");
+      }
+      if(!_useAllFactorLevels && enum_level == 0) {continue;}
+      eta += _beta[catOffset + _catNumOffsets[i] + enum_level] * data[interaction[num_index]];
+    }
+    
+    int noff = _catNumOffsets[_catNumOffsets.length - 1];
+    for(int i = 0; i < _nums - _catNumOffsets.length - 1; ++i) {
+      eta += _beta[noff + i] * data[i + _cats + _catNumOffsets.length - 1];
+    }
     eta += _beta[_beta.length - 1]; // reduce intercept
 
     double mu = _linkFn.eval(eta);
