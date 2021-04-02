@@ -12,6 +12,11 @@ Refer to the `Supported File Formats <http://docs.h2o.ai/h2o/latest-stable/h2o-d
 
 .. tabs::
    .. code-tab:: r R
+		# To import airlines file from H2O’s package:
+		library(h2o)
+		h2o.init()
+		iris_path <- system.file("extdata", "iris.csv", package="h2o")
+		iris <- h2o.importFile(path = iris_path)
 
 		# To import from S3:
 		library(h2o)
