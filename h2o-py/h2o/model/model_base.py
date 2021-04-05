@@ -421,9 +421,10 @@ class ModelBase(h2o_meta(Keyed)):
         :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to 100.
         :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
         :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
-        starting at root only). Defaults to -1.
-        :param path: Path where to save the output in .xlsx format. Please note that Pandas and XlsxWriter need to be 
-        installed for using this option. Defaults to None.
+            starting at root only). Defaults to -1.
+        :param path: Path where to save the output in .xlsx format (e.g. ``/mypath/file.xlsx``).
+            Please note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
+
 
         :examples:
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
