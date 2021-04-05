@@ -92,12 +92,7 @@ The following error message displayed when I tried to launch H2O. What should I 
             at java.lang.ClassLoader.loadClass(Unknown Source)
     Could not find the main class: water.H2OApp. Program will exit.
 
-This error output indicates that your Java version is not supported.
-Upgrade to `Java 7
-(JVM) <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`__
-or
-`later <http://www.oracle.com/technetwork/java/javase/downloads/jre8-downloads-2133155.html>`__
-and H2O should launch successfully.
+This error output indicates that your Java version is not supported. Make sure to check and upgrade to the `supported Java versions <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__ and H2O should launch successfully.
 
 --------------
 
