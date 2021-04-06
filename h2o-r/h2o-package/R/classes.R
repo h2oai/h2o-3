@@ -984,16 +984,26 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
       .Object@safety_index_threshold <- infogram_model@parameters$safety_index_threshold
       .Object@relevance_index_threshold <- infogram_model@parameters$relevance_index_threshold
       .Object@admissible_score <- h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
-      .Object@net_information_threshold <-
-        infogram_model@parameters$net_information_threshold
-      .Object@total_information_threshold <-
-        infogram_model@parameters$total_information_threshold
-      .Object@safety_index_threshold <-
-        infogram_model@parameters$safety_index_threshold
-      .Object@relevance_index_threshold <-
-        infogram_model@parameters$relevance_index_threshold
-      .Object@admissible_score <-
-        h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
+      if(!is.null(infogram_model@model$admissible_features_valid) && !is.list(infogram_model@model$admissible_features_valid)) {
+        .Object@admissible_features_valid <- infogram_model@model$admissible_features_valid
+      } else {
+      .Object@admissible_features_valid <- NULL
+      }
+      if (!is.null(infogram_model@model$admissible_features_xval) && !is.list(infogram_model@model$admissible_features_xval)) {
+        .Object@admissible_features_xval <- infogram_model@model$admissible_features_xval
+      } else {
+      .Object@admissible_features_xval <- NULL
+      }
+      if (!is.null(infogram_model@model$relevance_cmi_key_valid)) {
+        .Object@admissible_score_valid <- h2o.getFrame(infogram_model@model$relevance_cmi_key_valid$name)
+      } else {
+        .Object@admissible_score_valid <- NULL
+      }
+      if (!is.null(infogram_model@model$relevance_cmi_key_xval)) {
+        .Object@admissible_score_xval <- h2o.getFrame(infogram_model@model$relevance_cmi_key_xval$name)
+      } else {
+        .Object@admissible_score_xval <- NULL
+      }
       return(.Object)
     } else {
       stop('Input must be H2OModel with algorithm == "infogram".')
@@ -1009,7 +1019,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
 #' @return A \code{H2OInfogram} object
 #' @export
 H2OInfogram <- function(model_id, ...) {
-  initialize(new("H2OInfogram"), model_id = model_id, ...)
+  initialize(new("H2OInfogram"), model_id=model_id, ...)
 }
 
 #'
