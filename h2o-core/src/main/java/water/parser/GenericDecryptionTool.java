@@ -9,9 +9,9 @@ import java.security.GeneralSecurityException;
 
 public class GenericDecryptionTool extends DecryptionTool {
 
-  private byte[] _encoded_key = new byte[]{-14, 22, 35, -64, 29, -72, 115, 25, -122, 39, -57, -77, -63, -35, 32, 75};
-  private String _key_algo = "AES";
-  private String _cipher_spec = "AES/ECB/PKCS5Padding";
+  private final byte[] _encoded_key;
+  private final String _key_algo;
+  private final String _cipher_spec;
 
   public GenericDecryptionTool(DecryptionSetup ds) {
     super(ds._decrypt_tool_id);
