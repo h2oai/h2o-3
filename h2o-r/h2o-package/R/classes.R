@@ -256,7 +256,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
-  if(!is.null(o@algorithm) && o@algorithm %in% c("gam","glm","gbm","drf","xgboost","generic")) {
+  if(!is.null(o@algorithm) && o@algorithm %in% c("gam","glm","gbm","drf","xgboost","infogram","generic")) {
     if( !is.null(tm$r2) && !is.na(tm$r2)                           )  cat("\nR^2: (Extract with `h2o.r2`)", tm$r2)
   }
   if( !is.null(tm$AIC)                                             )  cat("\nAIC: (Extract with `h2o.aic`)", tm$AIC)
@@ -613,7 +613,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
     cat("AUCPR:  ", object@metrics$pr_auc, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
-    if(!is.null(object@algorithm) && object@algorithm %in% c("gam","glm","gbm","drf","xgboost","generic")) {
+    if(!is.null(object@algorithm) && object@algorithm %in% c("gam","glm","gbm","drf","xgboost","infogram","generic")) {
 
       if (!is.null(object@metrics$r2) && !is.na(object@metrics$r2)) cat("R^2:  ", object@metrics$r2, "\n", sep="")
       if (!is.null(object@metrics$null_deviance0)) cat("Null Deviance:  ", object@metrics$null_deviance,"\n", sep="")
@@ -934,6 +934,84 @@ setMethod("summary", "H2OGrid",
 setClass("H2OFrame", contains = c("Keyed", "environment"))
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OFrame"), function(object) attr(object, "id"))
+
+setClassUnion("CharacterOrNULL", c("character", "NULL"))
+setClassUnion("numericOrNULL", c("numeric", "NULL"))
+
+#' H2OInfogram class
+#'
+#' H2OInfogram class contains a subset of what a normal H2OModel will return
+#' @slot model_id string returned as part of every H2OModel
+#' @slot algorithm string denoting the algorithm used to build infogram
+#' @slot admissible_features string array denoting all predictor names which pass the cmi and relelvance threshold
+#' @slot net_information_threshold numeric value denoting threshold used for predictor selection
+#' @slot total_information_threshold numeric value denoting threshold used for predictor selection
+#' @slot safety_index_threshold numeric value denoting threshold used for predictor selection
+#' @slot relevance_index_threshold nuermic value denoting threshold used for predictor selection
+#' @slot admissible_score \code{H2OFrame} that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw
+#' @aliases H2OInfogram
+#' @export
+setClass(
+  "H2OInfogram",
+  slots = c(
+    model_id = 'character',
+    algorithm = 'character',
+    admissible_features = 'CharacterOrNULL',
+    net_information_threshold = 'numericOrNULL',
+    total_information_threshold = 'numericOrNULL',
+    safety_index_threshold = 'numericOrNULL',
+    relevance_index_threshold = 'numericOrNULL',
+    admissible_score = 'H2OFrame'
+  )
+)
+
+#' Method on \code{H2OInfogram} object which in this case is to instantiate and initialize it
+#'
+#' @param .object A \code{H2OInfogram} object
+#' @param model_id string returned as part of every H2OModel
+#' @param ... parameters to algorithm, admissible_features, ... 
+#' @return A \code{H2OInfogram} object
+#' @export
+setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
+  if (!missing(model_id)) {
+    infogram_model = h2o.getModel(model_id)
+    if (is(infogram_model, "H2OModel") &&
+        (infogram_model@algorithm == 'infogram')) {
+      .Object@model_id <- infogram_model@model_id
+      .Object@algorithm <-
+        infogram_model@algorithm
+      if (!is.null(infogram_model@model$admissible_features) &&
+          !is.list(infogram_model@model$admissible_features)) {
+        .Object@admissible_features <-
+          infogram_model@model$admissible_features
+      }
+      .Object@net_information_threshold <-
+        infogram_model@parameters$net_information_threshold
+      .Object@total_information_threshold <-
+        infogram_model@parameters$total_information_threshold
+      .Object@safety_index_threshold <-
+        infogram_model@parameters$safety_index_threshold
+      .Object@relevance_index_threshold <-
+        infogram_model@parameters$relevance_index_threshold
+      .Object@admissible_score <-
+        h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
+      return(.Object)
+    } else {
+      stop("Input must be H2OModel with algorithm == infogram.")
+    }
+  } else {
+    stop("A model Id must be used to instantiate a H2OInfogram.")
+  }
+})
+    
+#' wrapper function for instantiating H2OInfogram
+#' @param model_id is string of H2OModel object
+#' @param ... parameters to algorithm, admissible_features, ... 
+#' @return A \code{H2OInfogram} object
+#' @export
+H2OInfogram <- function(model_id, ...) {
+  initialize(new("H2OInfogram"), model_id=model_id, ...)
+}
 
 #'
 #' The H2OAutoML class

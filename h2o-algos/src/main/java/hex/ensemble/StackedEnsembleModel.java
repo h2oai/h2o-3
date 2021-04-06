@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -347,18 +348,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     if (null != this._output._metalearner._output._cross_validation_metrics) {
       this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics
               .deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
-    }
-  }
-
-  private DistributionFamily familyToDistribution(GLMModel.GLMParameters.Family aFamily) {
-    if (aFamily == GLMModel.GLMParameters.Family.binomial) {
-      return DistributionFamily.bernoulli;
-    }
-    try {
-      return Enum.valueOf(DistributionFamily.class, aFamily.toString());
-    }
-    catch (IllegalArgumentException e) {
-      throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + aFamily);
     }
   }
 

@@ -17,7 +17,7 @@ function() {
               "edicts.R", "coxph.R", "coxphutils.R", "glm.R", "gam.R", "glrm.R", "pca.R", "kmeans.R", "gbm.R",
                "deeplearning.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R", "predict.R", "rulefit.R",
                 "isolationforest.R", "psvm.R", "tf-idf.R", "permutation_varimp.R", "extendedisolationforest.R", 
-                "anovaglm.R", "modelselection.R", "upliftrandomforest.R")
+                "anovaglm.R", "modelselection.R", "upliftrandomforest.R", "infogram.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }

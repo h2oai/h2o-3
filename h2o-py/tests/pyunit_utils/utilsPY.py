@@ -52,8 +52,8 @@ from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
 from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
-    H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2ORandomForestEstimator, \
-    H2OPrincipalComponentAnalysisEstimator
+    H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
+    H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
 from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
