@@ -8,7 +8,6 @@ import hex.glm.GLMModel;
 import hex.schemas.*;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
@@ -17,18 +16,9 @@ import java.util.*;
 
 import static hex.Infogram.InfogramModel.InfogramParameters.Algorithm.glm;
 import static hex.genmodel.utils.DistributionFamily.*;
-import static hex.glm.GLMModel.GLMParameters.Family.binomial;
 import static hex.util.DistributionUtils.familyToDistribution;
-import static water.util.ArrayUtils.sort;
 
 public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramParameters, InfogramModel.InfogramModelOutput> {
-  /**
-   * Full constructor
-   *
-   * @param selfKey
-   * @param parms
-   * @param output
-   */
   public InfogramModel(Key<InfogramModel> selfKey, InfogramParameters parms, InfogramModelOutput output) {
     super(selfKey, parms, output);
   }
@@ -156,19 +146,35 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
   }
 
   public static class InfogramModelOutput extends Model.Output {
+    final public static int _COLUMN_INDEX = 0;
+    final public static int _ADMISSIBLE_PREDICTOR_INDEX = 1;
+    final public static int _RELEVANCE_INDEX = 3;
+    final public static int _CMI_INDEX = 4;
+    final public static int _CMI_RAW_INDEX = 5;
     public double[] _admissible_cmi;  // conditional info for admissible features in _admissible_features
     public double[] _admissible_cmi_raw;  // conditional info for admissible features in _admissible_features raw
     public double[] _admissible_relevance;  // varimp values for admissible features in _admissible_features
     public String[] _admissible_features; // predictors chosen that exceeds both conditional_info and varimp thresholds
+    public String[] _admissible_features_valid;
+    public String[] _admissible_features_xval;
     public double[] _admissible_index;  // store normalized distance from 0,0 corner of infogram plot from 0 to 1
+    public double[] _admissible_index_valid; // needed to build validation frame
     public double[] _admissible; // 0 if predictor is admissible and 1 otherwise
+    public double[] _admissible_valid;
     public DistributionFamily _distribution;
     public double[] _cmi_raw; // cmi before normalization and for all predictors
+    public double[] _cmi_raw_valid;
     public double[] _cmi; // normalized cmi
+    public double[] _cmi_valid;
     public String[] _all_predictor_names;
+    public String[] _all_predictor_names_valid;
     public double[] _relevance; // variable importance for all predictors
+    public double[] _relevance_valid; // equals to _relevance but may change in order
     public Key<Frame> _relevance_cmi_key;
+    public Key<Frame> _relevance_cmi_key_valid;
+    public Key<Frame> _relevance_cmi_key_xval;
     public String[] _topKFeatures;
+    public long _validNonZeroNumRows;
 
     @Override
     public ModelCategory getModelCategory() {
@@ -185,37 +191,36 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
     public void setDistribution(DistributionFamily distribution) {
       _distribution = distribution;
     }
-    
+
     public InfogramModelOutput(Infogram b) {
       super(b);
       if (glm.equals(b._parms._algorithm))
         _distribution = familyToDistribution(((GLMModel.GLMParameters) b._parms._infogram_algorithm_parameters)._family);
     }
-
+    
     /***
      * Generate arrays containing only admissible features which are predictors with both cmi >= cmi_threshold and
      * relevance >= relevance_threshold
-     * 
-     * @param varImp
-     * @param topKPredictors
-     * @param cmi
-     * @param cmiRaw
-     * @param cmiThreshold
-     * @param varImpThreshold
+     *
+     * @param validFrame true if validation dataset exists
+     * @param cvFrame true if cross-validation is enabled
      */
     public void extractAdmissibleFeatures(TwoDimTable varImp, String[] topKPredictors, double[] cmi, double[] cmiRaw,
-                                          double cmiThreshold, double varImpThreshold) {
+                                          double cmiThreshold, double varImpThreshold, boolean validFrame, 
+                                          boolean cvFrame) {
       int numRows = varImp.getRowDim();
+      // relCMIFrame contains c1:column, c2:admissible, c3:admissible_index, c4:relevance, c5:cmi, c6 cmi_raw
       List<Double> varimps = new ArrayList<>();
       List<Double> predictorCMI = new ArrayList<>();
       List<Double> predictorCMIRaw = new ArrayList<>();
       List<String> topKList = new ArrayList<>(Arrays.asList(topKPredictors));
       List<String> admissiblePred = new ArrayList<>();
       String[] varRowHeaders = varImp.getRowHeaders();
-      for (int index = 0; index < numRows; index++) { // extract predictor with varimp >= threshold
-        double varimp = (double) varImp.get(index, 1);
+
+      for (int rowIndex=0; rowIndex<numRows; rowIndex++) {
+        double varimp = (double) varImp.get(rowIndex, 1);
         if (varimp >= varImpThreshold) {
-          int predIndex = topKList.indexOf(varRowHeaders[index]);
+          int predIndex = topKList.indexOf(varRowHeaders[rowIndex]);
           if (cmi[predIndex] >= cmiThreshold) {
             varimps.add(varimp);
             predictorCMI.add(cmi[predIndex]);
@@ -224,62 +229,46 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
           }
         }
       }
-      _admissible_features = admissiblePred.toArray(new String[admissiblePred.size()]);
-      _admissible_cmi = predictorCMI.stream().mapToDouble(i -> i).toArray();
-      _admissible_cmi_raw = predictorCMIRaw.stream().mapToDouble(i->i).toArray();
-      _admissible_relevance = varimps.stream().mapToDouble(i -> i).toArray();
-    }
 
-    /***
-     * Generate frame that contains information columns, admissible, admissible_index, relevance, cmi and cmi_raw.
-     * Note that the frame is sorted on admissible_index from 0 to 1.
-     * 
-     * @return H2OFrame key
-     */
-    public Key<Frame> generateCMIRelFrame(boolean core) {
-      Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
-      Vec vName = Vec.makeVec(_all_predictor_names, vg.addVec());
-      Vec vAdm = Vec.makeVec(_admissible, vg.addVec());
-      Vec vAdmIndex = Vec.makeVec(_admissible_index, vg.addVec());
-      Vec vRel = Vec.makeVec(_relevance, vg.addVec());
-      Vec vCMI = Vec.makeVec(_cmi, vg.addVec());
-      Vec vCMIRaw = Vec.makeVec(_cmi_raw, vg.addVec());
-      String[] columnNames = core ? new String[]{"column", "admissible", "admissible_index", "total_information", 
-              "net_information", "net_information_raw"} : new String[]{"column", "admissible", "admissible_index",
-              "relevance_index", "safety_index", "safety_index_raw"};
-      Frame cmiRelFrame = new Frame(Key.<Frame>make(), columnNames, new Vec[]{vName, vAdm, vAdmIndex, vRel, vCMI, vCMIRaw});
-      DKV.put(cmiRelFrame);
-      _relevance_cmi_key = cmiRelFrame._key;
-      return cmiRelFrame._key;
+      if (validFrame) {
+        _admissible_features_valid = admissiblePred.toArray(new String[admissiblePred.size()]);
+      } else if (cvFrame) {
+        _admissible_features_xval = admissiblePred.toArray(new String[admissiblePred.size()]);
+      } else {
+        _admissible_features = admissiblePred.toArray(new String[admissiblePred.size()]);
+        _admissible_cmi = predictorCMI.stream().mapToDouble(i -> i).toArray();
+        _admissible_cmi_raw = predictorCMIRaw.stream().mapToDouble(i -> i).toArray();
+        _admissible_relevance = varimps.stream().mapToDouble(i -> i).toArray();
+      }
     }
-
+    
     /***
      * This method will sort _relvance, _cmi_raw, _cmi_normalize, _all_predictor_names such that features that
      * are closest to upper right corner of infogram comes first with the order specified in the index
-     * @param indices
      */
-    void sortCMIRel(int[] indices) {
-      int indexLength = indices.length;
-      double[] rel = new double[indexLength];
-      double[] cmiRaw = new double[indexLength];
-      double[] cmiNorm = new double[indexLength];
-      double[] distanceCorner = new double[indexLength];
-      String[] predNames = new String[indexLength];
-      double[] admissible = new double[indexLength];
-      for (int index = 0; index < indexLength; index++) {
-        rel[index] = _relevance[indices[index]];
-        cmiRaw[index] = _cmi_raw[indices[index]];
-        cmiNorm[index] = _cmi[indices[index]];
-        predNames[index] = _all_predictor_names[indices[index]];
-        distanceCorner[index] = _admissible_index[indices[index]];
-        admissible[index] = _admissible[indices[index]];
-      }
-      _relevance = rel;
-      _cmi = cmiNorm;
-      _cmi_raw = cmiRaw;
-      _all_predictor_names = predNames;
-      _admissible_index = distanceCorner;
-      _admissible = admissible;
+    public static void sortCMIRel(int[] indices, double[] relevance, double[] cmiRawA, double[] cmi,
+                                  String[] allPredictorNames, double[] admissibleIndex, double[] admissibleA) {
+        int indexLength = indices.length;
+        double[] rel = new double[indexLength];
+        double[] cmiRaw = new double[indexLength];
+        double[] cmiNorm = new double[indexLength];
+        double[] distanceCorner = new double[indexLength];
+        String[] predNames = new String[indexLength];
+        double[] admissible = new double[indexLength];
+        for (int index = 0; index < indexLength; index++) {
+            rel[index] = relevance[indices[index]];
+            cmiRaw[index] = cmiRawA[indices[index]];
+            cmiNorm[index] = cmi[indices[index]];
+            predNames[index] = allPredictorNames[indices[index]];
+            distanceCorner[index] = admissibleIndex[indices[index]];
+            admissible[index] = admissibleA[indices[index]];
+        }
+        System.arraycopy(rel, 0, relevance, 0, indexLength);
+        System.arraycopy(cmiNorm, 0, cmi, 0, indexLength);
+        System.arraycopy(cmiRaw, 0, cmiRawA, 0, indexLength);
+        System.arraycopy(predNames, 0, allPredictorNames, 0, indexLength);
+        System.arraycopy(distanceCorner, 0, admissibleIndex, 0, indexLength);
+        System.arraycopy(admissible, 0, admissibleA, 0, indexLength);
     }
   }
 
@@ -297,6 +286,8 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
     Keyed.remove(_output._relevance_cmi_key, fs, true);
+    Keyed.remove(_output._relevance_cmi_key_valid, fs, true);
+    Keyed.remove(_output._relevance_cmi_key_xval, fs, true);
     return fs;
   }
 
@@ -304,12 +295,21 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
   protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     if (_output._relevance_cmi_key != null)
       ab.putKey(_output._relevance_cmi_key);
+    if (_output._relevance_cmi_key_valid != null)
+      ab.putKey(_output._relevance_cmi_key_valid);
+    if (_output._relevance_cmi_key_xval != null)
+      ab.putKey(_output._relevance_cmi_key_xval);
     return super.writeAll_impl(ab);
   }
-  
+
+  @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     if (_output._relevance_cmi_key != null)
       ab.getKey(_output._relevance_cmi_key, fs);
+    if (_output._relevance_cmi_key_valid != null)
+      ab.getKey(_output._relevance_cmi_key_valid, fs);
+    if (_output._relevance_cmi_key_xval != null)
+      ab.getKey(_output._relevance_cmi_key_xval, fs);
     return super.readAll_impl(ab, fs);
   }
 }

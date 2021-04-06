@@ -15,8 +15,11 @@ import water.api.EnumValuesProvider;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import static hex.util.DistributionUtils.distributionToFamily;
-
 import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, InfogramV3.InfogramParametersV3> {
   public static final class InfogramParametersV3 extends ModelParametersSchemaV3<InfogramModel.InfogramParameters, InfogramParametersV3> {
@@ -28,6 +31,7 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
             "keep_cross_validation_models",
             "keep_cross_validation_predictions",
             "keep_cross_validation_fold_assignment",
+            "nfolds",
             "fold_assignment",
             "fold_column",
             "response_column",
@@ -80,7 +84,7 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled " +
             "and the mean of response does not reflect reality.", level = API.Level.expert)
     public double prior;
-    
+
     /**
      * For imbalanced data, balance training data class counts via
      * over/under-sampling. This can result in improved predictive accuracy.
@@ -285,6 +289,7 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
       return new ParamNParamSchema(paramsSchema, params);
     }
   }
+
   public static final class InfogramAlrogithmProvider extends EnumValuesProvider<InfogramModel.InfogramParameters.Algorithm> {
     public InfogramAlrogithmProvider() { super(InfogramModel.InfogramParameters.Algorithm.class); }
   }

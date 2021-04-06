@@ -13,6 +13,8 @@ import h2o
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.frame import H2OFrame
 import numpy as np
+from h2o.plot import get_matplotlib_pyplot
+from matplotlib.collections import PolyCollection
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -43,6 +45,7 @@ class H2OInfogram(H2OEstimator):
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
+                 nfolds=0,  # type: int
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: Optional[str]
                  response_column=None,  # type: Optional[str]
@@ -97,6 +100,9 @@ class H2OInfogram(H2OEstimator):
         :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
                Defaults to ``False``.
         :type keep_cross_validation_fold_assignment: bool
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
+        :type nfolds: int
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                Defaults to ``"auto"``.
@@ -232,6 +238,7 @@ class H2OInfogram(H2OEstimator):
         self.keep_cross_validation_models = keep_cross_validation_models
         self.keep_cross_validation_predictions = keep_cross_validation_predictions
         self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.nfolds = nfolds
         self.fold_assignment = fold_assignment
         self.fold_column = fold_column
         self.response_column = response_column
@@ -346,6 +353,20 @@ class H2OInfogram(H2OEstimator):
     def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
+
+    @property
+    def nfolds(self):
+        """
+        Number of folds for K-fold cross-validation (0 to disable or >= 2).
+
+        Type: ``int``, defaults to ``0``.
+        """
+        return self._parms.get("nfolds")
+
+    @nfolds.setter
+    def nfolds(self, nfolds):
+        assert_is_type(nfolds, None, int)
+        self._parms["nfolds"] = nfolds
 
     @property
     def fold_assignment(self):
@@ -850,21 +871,143 @@ class H2OInfogram(H2OEstimator):
         """
         extract admissible features from an Infogram model.
 
-        :param self: 
-        :return: 
+        :return: List of predictors that are considered admissible
         """
         features = self._model_json.get('output', {}).get('admissible_features')
         if features is None:
             raise ValueError("model %s doesn't have any admissible features" % self.key)
         return set(features)
 
-    def get_relevance_cmi_frame(self):
+    def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=True, server=False):
         """
-        Get the relevance and CMI for all attributes returned by Infogram as an H2O Frame.
-        :param self: 
+        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
+        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
+
+        :param train: True if infogram is generated from training dataset
+        :param valid: True if infogram is generated from validation dataset
+        :param xval: True if infogram is generated from cross-validation holdout dataset
+        :param figsize: size of infogram plot
+        :param title: string to denote title of the plot
+        :param legend_on: legend text is included if True
+        :param server: True will not generate plot, False will produce plot
+        :return: infogram plot if server=True or None if server=False
+        """
+        """
+        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
+        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
+        - 0: predictor names
+        - 1: admissible 
+        - 2: admissible index
+        - 3: relevance-index or total information
+        - 4: safety-index or net information, normalized from 0 to 1
+        - 5: safety-index or net information not normalized
+
+        :param valid: True if to plot infogram from validation dataset
+        :param xval: True if to plot infogram from cross-validation hold out dataset
+        :return: plot or None if server=True
+        """
+        plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
+
+        if train:
+            rel_cmi_frame = self.get_relevance_cmi_frame()            
+            if rel_cmi_frame is None:
+                raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from training dataset.")
+        if valid:
+            rel_cmi_frame_valid = self.get_relevance_cmi_frame(valid=True)
+            if rel_cmi_frame_valid is None:
+                raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from validation dataset.")
+        if xval:
+            rel_cmi_frame_xval = self.get_relevance_cmi_frame(xval=True)
+            if rel_cmi_frame_xval is None:
+                raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from xval holdout dataset.")
+
+        rel_cmi_frame_names = rel_cmi_frame.names
+        x_label = rel_cmi_frame_names[3]
+        y_label = rel_cmi_frame_names[4]
+        ig_x_column = 3
+        ig_y_column = 4
+        index_of_admissible = 1
+        features_column = 0
+        if self.actual_params['protected_columns'] == None:
+            x_thresh = self.actual_params['total_information_threshold']
+            y_thresh = self.actual_params['net_information_threshold']
+        else:
+            x_thresh = self.actual_params["relevance_index_threshold"]
+            y_thresh = self.actual_params["safety_index_threshold"]
+
+        xmax=1.1
+        ymax=1.1
+
+        X = np.array(rel_cmi_frame[ig_x_column].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+        Y = np.array(rel_cmi_frame[ig_y_column].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+        features = np.array(rel_cmi_frame[features_column].as_data_frame(header=False, use_pandas=False)).reshape((-1,))
+        admissible = np.array(rel_cmi_frame[index_of_admissible].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+        mask = admissible > 0
+
+        if valid:
+            X_valid = np.array(rel_cmi_frame_valid[ig_x_column].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+            Y_valid = np.array(rel_cmi_frame_valid[ig_y_column].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+            features_valid = np.array(rel_cmi_frame_valid[features_column].as_data_frame(header=False, use_pandas=False)).reshape((-1,))
+            admissible_valid = np.array(rel_cmi_frame_valid[index_of_admissible].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+            mask_valid = admissible_valid > 0       
+
+        if xval:
+            X_xval = np.array(rel_cmi_frame_xval[ig_x_column].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+            Y_xval = np.array(rel_cmi_frame_xval[ig_y_column].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+            features_xval = np.array(rel_cmi_frame_xval[features_column].as_data_frame(header=False, use_pandas=False)).reshape((-1,))
+            admissible_xval = np.array(rel_cmi_frame_xval[index_of_admissible].as_data_frame(header=False, use_pandas=False)).astype(float).reshape((-1,))
+            mask_xval = admissible_xval > 0
+
+        plt.figure(figsize=figsize)
+        plt.grid(True)
+        plt.scatter(X, Y, zorder=10, c=np.where(mask, "black", "gray"), label="training data")
+        if valid:
+            plt.scatter(X_valid, Y_valid, zorder=10, marker=",", c=np.where(mask_valid, "black", "gray"), label="validation data")
+        if xval:
+            plt.scatter(X_xval, Y_xval, zorder=10, marker="v", c=np.where(mask_xval, "black", "gray"), label="xval holdout data")
+        if legend_on:
+            plt.legend(loc=2, fancybox=True, framealpha=0.5)
+        plt.hlines(y_thresh, xmin=x_thresh, xmax=xmax, colors="red", linestyle="dashed")
+        plt.vlines(x_thresh, ymin=y_thresh, ymax=ymax, colors="red", linestyle="dashed")
+        plt.gca().add_collection(PolyCollection(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
+                                                color="#CC663E", alpha=0.1, zorder=5))
+
+        for i in mask.nonzero()[0]:
+            plt.annotate(features[i], (X[i], Y[i]), xytext=(0, -10), textcoords="offset points",
+                         horizontalalignment='center', verticalalignment='top', color="blue")
+
+        if valid:
+            for i in mask_valid.nonzero()[0]:
+                plt.annotate(features_valid[i], (X_valid[i], Y_valid[i]), xytext=(0, -10), textcoords="offset points",
+                             horizontalalignment='center', verticalalignment='top', color="magenta")
+
+        if xval:
+            for i in mask_xval.nonzero()[0]:
+                plt.annotate(features_xval[i], (X_xval[i], Y_xval[i]), xytext=(0, -10), textcoords="offset points",
+                             horizontalalignment='center', verticalalignment='top', color="green")
+
+        plt.xlim(0, 1.05)
+        plt.ylim(0, 1.05)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.title(title)
+        fig = plt.gcf()
+        if not server:
+            plt.show()
+        return fig
+
+    def get_relevance_cmi_frame(self, valid=False, xval=False):
+        """
+        Retreive relevance, CMI information in an H2OFrame for training dataset by default
+        :param valid: return infogram info on validation dataset if True
+        :param xval: return infogram info on cross-validation hold outs if True
         :return: H2OFrame
         """
         keyString = self._model_json["output"]["relevance_cmi_key"]
+        if (valid):
+            keyString = self._model_json["output"]["relevance_cmi_key_valid"]
+        elif (xval):
+            keyString = self._model_json["output"]["relevance_cmi_key_xval"]
 
         if keyString is None:
             return None
@@ -873,9 +1016,7 @@ class H2OInfogram(H2OEstimator):
 
     def get_admissible_attributes(self):
         """
-        Get the admissible attributes
-        :param self: 
-        :return: 
+        :return: a list of predictor that are considered admissible
         """
         if self._model_json["output"]["admissible_features"] is None:
             return None
@@ -884,9 +1025,7 @@ class H2OInfogram(H2OEstimator):
 
     def get_admissible_relevance(self):
         """
-        Get the relevance of admissible attributes
-        :param self: 
-        :return: 
+        :return: a list of relevance (variable importance) for admissible attributes
         """
         if self._model_json["output"]["admissible_relevance"] is None:
             return None
@@ -895,9 +1034,7 @@ class H2OInfogram(H2OEstimator):
 
     def get_admissible_cmi(self):
         """
-        Get the normalized cmi of admissible attributes
-        :param self: 
-        :return: 
+        :return: a list of the normalized CMI of admissible attributes
         """
         if self._model_json["output"]["admissible_cmi"] is None:
             return None
@@ -906,9 +1043,7 @@ class H2OInfogram(H2OEstimator):
 
     def get_admissible_cmi_raw(self):
         """
-        Get the raw cmi of admissible attributes
-        :param self: 
-        :return: 
+        :return: a list of raw cmi of admissible attributes 
         """
         if self._model_json["output"]["admissible_cmi_raw"] is None:
             return None
@@ -918,7 +1053,6 @@ class H2OInfogram(H2OEstimator):
     def get_all_predictor_relevance(self):
         """
         Get relevance of all predictors
-        :param self: 
         :return: two tuples, first one is predictor names and second one is relevance
         """
         if self._model_json["output"]["all_predictor_names"] is None:
@@ -928,8 +1062,7 @@ class H2OInfogram(H2OEstimator):
 
     def get_all_predictor_cmi(self):
         """
-        Get normalized cmi of all predictors.
-        :param self: 
+        Get normalized CMI of all predictors.
         :return: two tuples, first one is predictor names and second one is cmi
         """
         if self._model_json["output"]["all_predictor_names"] is None:
@@ -939,8 +1072,7 @@ class H2OInfogram(H2OEstimator):
 
     def get_all_predictor_cmi_raw(self):
         """
-        Get raw cmi of all predictors.
-        :param self: 
+        Get raw CMI of all predictors.
         :return: two tuples, first one is predictor names and second one is cmi
         """
         if self._model_json["output"]["all_predictor_names"] is None:

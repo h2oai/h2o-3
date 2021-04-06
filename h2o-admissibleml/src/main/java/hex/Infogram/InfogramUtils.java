@@ -17,7 +17,11 @@ import water.Key;
 import water.Scope;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.TwoDimTable;
+import static hex.Infogram.InfogramModel.InfogramModelOutput._CMI_RAW_INDEX;
+import static hex.Infogram.InfogramModel.InfogramModelOutput._COLUMN_INDEX;
 import static hex.Infogram.InfogramModel.InfogramParameters;
 
 import java.util.ArrayList;
@@ -26,30 +30,24 @@ import java.util.List;
 import java.util.stream.DoubleStream;
 
 public class InfogramUtils {
-
   /**
    * This method will take the columns of _parms.train().  It will then remove the response, any columns in 
    * _parms._sensitive_attributes from the columns of _parms.train(), weights_column, offset_column.  Then, the 
    * columns that are left are the columns that are eligible to get their InfoGram.
-   *
-   * @param parms
-   * @return
    */
-  public static String[] extractPredictors(InfogramParameters parms, Frame train) {
+  public static String[] extractPredictors(InfogramParameters parms, Frame train, String foldColumnName) {
     List<String> colNames = new ArrayList<>(Arrays.asList(train.names()));
-    if (parms._response_column != null)
-      colNames.remove(parms._response_column);
-    if (!(parms._protected_columns == null))
-      colNames.removeAll(Arrays.asList(parms._protected_columns));  // remove sensitive attributes
+      if (parms._response_column != null)
+        colNames.remove(parms._response_column);
+      if (!(parms._protected_columns == null))
+        colNames.removeAll(Arrays.asList(parms._protected_columns));  // remove sensitive attributes
+      if (foldColumnName != null)
+        colNames.remove(foldColumnName);
     return colNames.toArray(new String[colNames.size()]);
   }
 
   /**
    * Method to run infogram model once in order to get the variable importance of the topK predictors
-   * @param parms
-   * @param trainFrame
-   * @param eligiblePredictors
-   * @return
    */
   public static String[] extractTopKPredictors(InfogramParameters parms, Frame trainFrame,
                                                String[] eligiblePredictors, List<Key<Frame>> generatedFrameKeys) {
@@ -82,12 +80,7 @@ public class InfogramUtils {
    * This method will perform two functions:
    * - if user only wants a fraction of the training dataset to be used for infogram calculation, we will split the
    *   training frame and only use a fraction of it for infogram training purposes;
-   * - next, a new training dataset will be generated containing only the predictors in predictors2Use array. 
-   *
-   * @param parms
-   * @param sensitivePredictors
-   * @param dataFraction
-   * @return
+   * - next, a new training dataset will be generated containing only the predictors in predictors2Use array.
    */
   public static Frame extractTrainingFrame(InfogramParameters parms, String[] sensitivePredictors, double dataFraction,
                                            Frame trainFrame) {
@@ -103,10 +96,25 @@ public class InfogramUtils {
     if (sensitivePredictors != null)
       for (String colName : sensitivePredictors) // add sensitive features to Frame
         extractedFrame.add(colName, trainFrame.vec(colName));
-    
+      
       String[] nonPredictors = parms.getNonPredictors();
-      for (String nonPredName : nonPredictors) 
-        extractedFrame.add(nonPredName, trainFrame.vec(nonPredName));
+    List<String> colNames = Arrays.asList(trainFrame.names());
+      boolean cvWeightsPresent = parms._weights_column != null && colNames.contains(parms._weights_column)
+            && parms._weights_column.equals("__internal_cv_weights__");
+      for (String nonPredName : nonPredictors) {
+        if ("__internal_cv_weights__".equals(nonPredName) && colNames.contains(parms._weights_column)) {
+          String cvWeightName = "infogram_internal_cv_weights_"; // switch weights column to turn off cv in algo used to build infogram
+          extractedFrame.add(cvWeightName, trainFrame.vec(nonPredName));
+          parms._weights_column = cvWeightName;
+        } else if (nonPredName.equals(parms._fold_column) && colNames.contains(parms._fold_column) && !cvWeightsPresent) {
+          extractedFrame.add(nonPredName, trainFrame.vec(nonPredName));
+        } else {
+          extractedFrame.add(nonPredName, trainFrame.vec(nonPredName));
+        }
+      }
+      
+      if (!(parms._fold_column != null && colNames.contains(parms._fold_column) && !cvWeightsPresent))
+        parms._fold_column = null;
 
     DKV.put(extractedFrame);
     return extractedFrame;
@@ -131,12 +139,6 @@ public class InfogramUtils {
   /***
    * Build model parameters for model specified in infogram_algorithm.  Any model specific parameters can be specified
    * in infogram_algorithm_params.
-   * 
-   * @param trainingFrames
-   * @param infoParams
-   * @param numModels
-   * @param algoName
-   * @return
    */
   public static Model.Parameters[] buildModelParameters(Frame[] trainingFrames, Model.Parameters infoParams,
                                                         int numModels, InfogramParameters.Algorithm algoName) {
@@ -174,19 +176,32 @@ public class InfogramUtils {
     return modelBuilders;
   }
   
+  public static Frame generateCMIRelevance(String[] allPredictorNames, double[] admissible, double[] admissibleIndex, 
+                                           double[] relevance, double[] cmi, double[] cmiRaw, boolean buildCore) {      
+    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+    Vec vName = Vec.makeVec(allPredictorNames, vg.addVec());
+    Vec vAdm = Vec.makeVec(admissible, vg.addVec());
+    Vec vAdmIndex = Vec.makeVec(admissibleIndex, vg.addVec());
+    Vec vRel = Vec.makeVec(relevance, vg.addVec());
+    Vec vCMI = Vec.makeVec(cmi, vg.addVec());
+    Vec vCMIRaw = Vec.makeVec(cmiRaw, vg.addVec());
+    String[] columnNames = buildCore ? new String[]{"column", "admissible", "admissible_index", "total_information",
+            "net_information", "net_information_raw"} : new String[]{"column", "admissible", "admissible_index",
+            "relevance_index", "safety_index", "safety_index_raw"};
+    Frame cmiRelFrame = new Frame(Key.<Frame>make(), columnNames, new Vec[]{vName, vAdm, vAdmIndex, vRel, vCMI, vCMIRaw});
+    DKV.put(cmiRelFrame);
+    return cmiRelFrame;
+  }
+  
   public static void removeFromDKV(List<Key<Frame>> generatedFrameKeys) {
     for (Key<Frame> oneFrameKey : generatedFrameKeys)
         DKV.remove(oneFrameKey);
   }
-
+  
   /***
    * To calculate the CMI, refer to https://h2oai.atlassian.net/browse/PUBDEV-8075 section I step 2 for core infogram,
    * section II step 2 for fair infogram.  Note that the last model is built with all predictors for core infogram or
    * built with protected columns for fair infogram.
-   * 
-   * @param cmiRaw
-   * @param buildCore
-   * @return
    */
   public static double[] calculateFinalCMI(double[] cmiRaw, boolean buildCore) {
     int lastInd = cmiRaw.length-1; // index of full model or model with sensitive features only
@@ -217,5 +232,36 @@ public class InfogramUtils {
       newFrame.add(addEle, featureFrame.vec(addEle));
     DKV.put(newFrame);
     return newFrame;
+  }
+
+  public static void extractInfogramInfo(InfogramModel infoModel, double[][] cmiRaw, 
+                                         List<List<String>> columns, int foldIndex) {
+    Frame validFrame = DKV.getGet(infoModel._output._relevance_cmi_key_valid);
+    // relCMIFrame contains c1:column, c2:admissible, c3:admissible_index, c4:relevance, c5:cmi, c6 cmi_raw
+    cmiRaw[foldIndex] = vec2array(validFrame.vec(_CMI_RAW_INDEX));
+    String[] oneColumn = strVec2array(validFrame.vec(_COLUMN_INDEX));
+    ArrayList<String> oneFrameColumn = new ArrayList(Arrays.asList(oneColumn));
+    columns.add(oneFrameColumn);
+    validFrame.remove();
+  }
+
+  static double[] vec2array(Vec v) {
+    assert v.length() < Integer.MAX_VALUE;
+    final int len = (int) v.length();
+    double[] array = new double[len];
+    for (int i = 0; i < len; i++) array[i] = v.at(i);
+    return array;
+  }
+
+  static String[] strVec2array(Vec v) {
+    assert v.length() < Integer.MAX_VALUE;
+    final int len = (int) v.length();
+    BufferedString bs = new BufferedString();
+    String[] array = new String[len];
+    for (int i = 0; i < len; i++) {
+      BufferedString s = v.atStr(bs, i);
+      if (s != null) array[i] = s.toString();
+    }
+    return array;
   }
 }

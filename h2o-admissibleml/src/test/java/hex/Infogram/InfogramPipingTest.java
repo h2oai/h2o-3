@@ -101,8 +101,7 @@ public class InfogramPipingTest extends TestUtil {
   }
 
   public static void assertWarningMessages(ModelBuilder.ValidationMessage[] messages, int expectedWarn) {
-    int numMessage = messages.length;
-    List<String> warnMessage = new ArrayList<String>();
+    List<String> warnMessage = new ArrayList<>();
     for (ModelBuilder.ValidationMessage oneMessage : messages) {
       if (oneMessage.log_level()==2) { // for warning
         warnMessage.add(oneMessage.toString());
