@@ -1,7 +1,6 @@
 package water.infogram;
 
 import hex.Infogram.Infogram;
-import water.ExtensionManager;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
 import water.api.SchemaServer;

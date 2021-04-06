@@ -23,7 +23,15 @@ public class InfogramModelV3 extends ModelSchemaV3<InfogramModel, InfogramModelV
 
     @API(help="Array containing names of admissible features for the user", direction = API.Direction.OUTPUT)
     public String[] admissible_features; // predictors chosen that exceeds both conditional_info and varimp thresholds
+      
+    @API(help="Array containing names of admissible features for the user from the validation dataset.", 
+            direction = API.Direction.OUTPUT)
+    public String[] admissible_features_valid; // predictors chosen that exceeds both conditional_info and varimp thresholds    
 
+    @API(help="Array containing names of admissible features for the user from cross-validation.",
+            direction = API.Direction.OUTPUT)
+    public String[] admissible_features_xval; // predictors chosen that exceeds both conditional_info and varimp thresholds 
+      
     @API(help="Array of raw conditional mutual information for all features excluding sensitive attributes if " +
             "applicable", direction = API.Direction.OUTPUT)
     public double[] cmi_raw; // cmi before normalization and for all predictors
@@ -42,6 +50,14 @@ public class InfogramModelV3 extends ModelSchemaV3<InfogramModel, InfogramModelV
       
     @API(help="Frame key that stores the predictor names, net CMI and relevance.", direction = API.Direction.OUTPUT)
     KeyV3.FrameKeyV3 relevance_cmi_key;
+
+    @API(help="Frame key that stores the predictor names, net CMI and relevance calculated from validation dataset.",
+            direction = API.Direction.OUTPUT)
+    KeyV3.FrameKeyV3 relevance_cmi_key_valid;
+
+    @API(help="Frame key that stores the predictor names, net CMI and relevance from cross-validation.", 
+            direction = API.Direction.OUTPUT)
+    KeyV3.FrameKeyV3 relevance_cmi_key_xval;
   }
 
   public InfogramV3.InfogramParametersV3 createParametersSchema() { return new InfogramV3.InfogramParametersV3(); }
