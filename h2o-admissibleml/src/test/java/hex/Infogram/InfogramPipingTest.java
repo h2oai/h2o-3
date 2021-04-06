@@ -262,8 +262,7 @@ public class InfogramPipingTest extends TestUtil {
   public void testBreastCancer() {
     try {
       Scope.enter();
-      String[] colNames = new String[]{"diagnosis", "radiu" +
-              "s_mean", "texture_mean", "perimeter_mean", "area_mean",
+      String[] colNames = new String[]{"diagnosis", "radius_mean", "texture_mean", "perimeter_mean", "area_mean",
               "smoothness_mean", "compactness_mean", "concavity_mean", "concave_points_mean", "symmetry_mean",
               "fractal_dimension_mean", "radius_se", "texture_se", "perimeter_se", "area_se", "smoothness_se",
               "compactness_se", "concavity_se", "concave_points_se", "symmetry_se", "fractal_dimension_se",

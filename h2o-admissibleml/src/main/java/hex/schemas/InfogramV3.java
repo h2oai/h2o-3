@@ -163,8 +163,9 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
     
     @API(help = "If true will calculate the p-value. Default to false.",
             level = API.Level.secondary, gridable = false)
-    public boolean compute_p_values;  // for GLM
 
+    public boolean compute_p_values;  // for GLM
+      
     public InfogramModel.InfogramParameters fillImpl(InfogramModel.InfogramParameters impl) {
       super.fillImpl(impl);
       if (algorithm_params != null && !algorithm_params.isEmpty()) {
