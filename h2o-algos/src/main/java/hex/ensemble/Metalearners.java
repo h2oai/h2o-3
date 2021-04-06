@@ -48,7 +48,7 @@ public class Metalearners {
         return algo == Algorithm.AUTO ? Algorithm.glm : algo;
     }
 
-    static Model.Parameters createParameters(String name) {
+    public static Model.Parameters createParameters(String name) {
         assertAvailable(name);
         return createInstance(name).createBuilder()._parms;
     }

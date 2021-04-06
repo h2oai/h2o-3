@@ -348,6 +348,7 @@ def algo_to_classname(algo):
     if algo == "gam": return "H2OGeneralizedAdditiveEstimator"
     if algo == "targetencoder": return "H2OTargetEncoderEstimator"
     if algo == "rulefit": return "H2ORuleFitEstimator"
+    if algo == "infogram": return "H2OInfoGramEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 
