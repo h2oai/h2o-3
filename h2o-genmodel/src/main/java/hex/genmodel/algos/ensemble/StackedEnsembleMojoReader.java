@@ -19,12 +19,16 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
         _model._metaLearner = getModel((String) readkv("metalearner"));
 
         final String metaLearnerTransform = readkv("metalearner_transform", "NONE");
-        if (!metaLearnerTransform.equals("NONE") && !metaLearnerTransform.equals("Logit"))
+        if (!metaLearnerTransform.equals("NONE") &&
+                !metaLearnerTransform.equals("Logit") &&
+                !metaLearnerTransform.equals("PercentileRank"))
             throw new UnsupportedOperationException("Metalearner Transform \"" + metaLearnerTransform + "\" is not supported!");
-        _model._useLogitMetaLearnerTransform = metaLearnerTransform.equals("Logit");
+        _model._metalearnerTransform = StackedEnsembleMojoModel.MetalearnerTransform.valueOf(metaLearnerTransform);
 
         _model._baseModels = new StackedEnsembleMojoModel.StackedEnsembleMojoSubModel[baseModelNum];
         final String[] columnNames = readkv("[columns]");
+        if (_model._metalearnerTransform.equals(StackedEnsembleMojoModel.MetalearnerTransform.PercentileRank))
+            _model._metalearner_percentile_rank_precomputed_quantiles = new double[baseModelNum][];
         for (int i = 0; i < baseModelNum; i++) {
             String modelKey = readkv("base_model" + i);
             if (modelKey == null)
@@ -32,6 +36,9 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
             final MojoModel model = getModel(modelKey);
             _model._baseModels[i] = new StackedEnsembleMojoModel.StackedEnsembleMojoSubModel(model,
                     createMapping(model, columnNames, modelKey));
+            if (_model._metalearnerTransform.equals(StackedEnsembleMojoModel.MetalearnerTransform.PercentileRank))
+                _model._metalearner_percentile_rank_precomputed_quantiles[i] = readkv("metalearner_percentile_rank_precomputed_quantiles_" + i);
+
         }
     }
 
@@ -78,6 +85,6 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
     }
 
     @Override public String mojoVersion() {
-        return "1.01";
+        return "1.02";
     }
 }

@@ -19,7 +19,8 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
         super(model);
         // White list supported metalearning transforms
         if (!(model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.NONE ||
-                model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.Logit)) {
+                model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.Logit ||
+                model._parms._metalearner_transform == StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.PercentileRank)) {
             throw new UnsupportedOperationException("Cannot save Stacked Ensemble with metalearner_transform = \"" +
                     model._parms._metalearner_transform.name() + "\" to MOJO.");
         }
@@ -28,7 +29,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
 
     @Override
     public String mojoVersion() {
-        return "1.01";
+        return "1.02";
     }
 
     @Override
@@ -49,6 +50,13 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
         writekv("base_models_num", model._parms._base_models.length);
         writekv("metalearner", model._output._metalearner._key);
         writekv("metalearner_transform", model._parms._metalearner_transform.toString());
+        if (model._parms._metalearner_transform.equals(StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform.PercentileRank)) {
+            for (int i = 0; i < model._parms._base_models.length; i++) {
+                if (model.isUsefulBaseModel(model._parms._base_models[i])) {
+                    writekv("metalearner_percentile_rank_precomputed_quantiles_" + i, model._output._metalearner_percentile_rank_precomputed_quantiles[i]);
+                }
+            }
+        }
         for (int i = 0; i < model._parms._base_models.length; i++) {
             if (model.isUsefulBaseModel(model._parms._base_models[i])) {
                 writekv("base_model" + i, model._parms._base_models[i]);

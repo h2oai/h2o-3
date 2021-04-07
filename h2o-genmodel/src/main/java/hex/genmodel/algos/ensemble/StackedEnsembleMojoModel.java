@@ -8,9 +8,26 @@ import java.util.Arrays;
 public class StackedEnsembleMojoModel extends MojoModel {
 
     MojoModel _metaLearner; //Currently only a GLM. May change to be DRF, GBM, XGBoost, or DL in the future
-    boolean _useLogitMetaLearnerTransform;
     StackedEnsembleMojoSubModel[] _baseModels; //An array of base models
     int _baseModelNum; //Number of base models
+
+    public enum MetalearnerTransform {
+        NONE,
+        Logit,
+        PercentileRank;
+
+        public double[] transform(StackedEnsembleMojoModel model, double[] basePreds) {
+            if (this.equals(MetalearnerTransform.Logit)) {
+                return model.logitTransformRow(basePreds);
+            } else if (this.equals(MetalearnerTransform.PercentileRank)) {
+                return model.percentileTransformRow(basePreds);
+            }
+            return basePreds;
+        }
+    };
+
+    MetalearnerTransform _metalearnerTransform;
+    double[][] _metalearner_percentile_rank_precomputed_quantiles;
 
     public StackedEnsembleMojoModel(String[] columns, String[][] domains, String responseColumn) {
         super(columns, domains, responseColumn);
@@ -21,9 +38,31 @@ public class StackedEnsembleMojoModel extends MojoModel {
         return  x == 0 ? -19 : Math.max(-19, Math.log(x));
     }
 
-    private static void logitTransformRow(double[] basePreds){
+    private static double[] logitTransformRow(double[] basePreds){
         for (int i = 0; i < basePreds.length; i ++)
             basePreds[i] = logit(Math.min(1 - 1e-9, Math.max(basePreds[i], 1e-9)));
+        return basePreds;
+    }
+
+    private double[] percentileTransformRow(double[] basePreds) {
+        for (int c = 0; c < basePreds.length; c++) {
+            if (null == _baseModels[c]) continue;
+            final double[] quantiles = _metalearner_percentile_rank_precomputed_quantiles[c];
+            int idx = Arrays.binarySearch(quantiles, basePreds[c]);
+            if (idx >= 0) {
+                basePreds[c] = ((double) idx) / quantiles.length;
+            } else if (idx == -1) {
+                basePreds[c] = 0;
+            } else if (idx == -quantiles.length - 1) {
+                basePreds[c] = 1;
+            } else {
+                idx = -idx - 1;
+                final double quantDiff = quantiles[idx] - quantiles[idx - 1];
+                final double probDiff = 1d / quantiles.length;
+                basePreds[c] = ((double) idx) / quantiles.length - (((quantiles[idx] - basePreds[c]) / quantDiff) * probDiff);
+            }
+        }
+        return basePreds;
     }
 
     @Override
@@ -38,16 +77,14 @@ public class StackedEnsembleMojoModel extends MojoModel {
                     basePreds[i * _nclasses + j] = _baseModels[i]._mojoModel.score0(_baseModels[i].remapRow(row), basePredsRow)[j + 1];
                 }
             }
-            if (_useLogitMetaLearnerTransform)
-                logitTransformRow(basePreds);
+            basePreds = _metalearnerTransform.transform(this, basePreds);
         }else if(_nclasses == 2){ //Binomial
             for(int i = 0; i < _baseModelNum; ++i) {
                 if (_baseModels[i] == null) continue; // skip unused model
                 _baseModels[i]._mojoModel.score0(_baseModels[i].remapRow(row), basePredsRow);
                 basePreds[i] = basePredsRow[2];
             }
-            if (_useLogitMetaLearnerTransform)
-                logitTransformRow(basePreds);
+            basePreds = _metalearnerTransform.transform(this, basePreds);
         }else{ //Regression
             for(int i = 0; i < _baseModelNum; ++i) { //Regression
                 if (_baseModels[i] == null) continue; // skip unused model

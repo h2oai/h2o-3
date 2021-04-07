@@ -1387,6 +1387,31 @@ public class StackedEnsembleTest extends TestUtil {
 
 
     @Test
+    public void percentileRankTransformWorks() {
+        Scope.enter();
+        try {
+            Frame fr = new Frame(Key.make());
+            Scope.track(fr);
+            fr.add("first", Vec.makeVec(new double[]{1, 1, 3, 0.1, 0.2, 0.2}, Vec.newKey()));
+            fr.add("second", Vec.makeVec(new double[] {1,2,3,  4,  5,  6}, Vec.newKey()));
+            fr.add("third",  Vec.makeVec(new double[] {1,1,3,  3,  2,  2}, Vec.newKey()));
+            fr.add("fourth",  Vec.makeVec(new double[]{1,1,1,  1,  1,  1}, Vec.newKey()));
+            StackedEnsembleModel se = new StackedEnsembleModel(null, new StackedEnsembleParameters(), new StackedEnsembleModel.StackedEnsembleOutput());
+            Frame newFr = StackedEnsembleParameters.MetalearnerTransform.PercentileRank.transform(se,fr, Key.make());
+            Scope.track(newFr);
+            Frame expected = new Frame();
+            expected.add("first", Vec.makeVec(new double[] {0.75,      0.75,      1,     0,     0.2421875, 0.2421875}, Vec.newKey()));
+            expected.add("second", Vec.makeVec(new double[]{ 0,        0.2,       0.4,   0.6,   0.8,       1}, Vec.newKey()));
+            expected.add("third", Vec.makeVec(new double[] {0.1171875, 0.1171875, 0.875, 0.875, 0.5,       0.5}, Vec.newKey()));
+            expected.add("fourth", Vec.makeVec(new double[] {0.5,      0.5,       0.5,   0.5,   0.5,       0.5}, Vec.newKey()));
+            assertFrameEquals(expected, newFr, 1e-5);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+
+    @Test
     public void testMetalearnerTransformWorks() {
         try {
             Scope.enter();
@@ -1424,11 +1449,17 @@ public class StackedEnsembleTest extends TestUtil {
             final StackedEnsembleParameters seParamsLogit = (StackedEnsembleParameters)seParams.clone();
             seParamsLogit._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
 
+            final StackedEnsembleParameters seParamsPercentileRank = (StackedEnsembleParameters)seParams.clone();
+            seParamsPercentileRank._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.PercentileRank;
+
             final StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
             final StackedEnsembleModel seLogit = new StackedEnsemble(seParamsLogit).trainModel().get();
+            final StackedEnsembleModel sePercentileRank = new StackedEnsemble(seParamsPercentileRank).trainModel().get();
 
             Scope.track_generic(se);
             Scope.track_generic(seLogit);
+            Scope.track_generic(sePercentileRank);
+
 
             final Frame vanillaLevelOneFrame = new Frame(se._output._levelone_frame_id).remove(new String[]{"RainTomorrow"});
             Scope.track(vanillaLevelOneFrame);
@@ -1438,6 +1469,14 @@ public class StackedEnsembleTest extends TestUtil {
             assertFrameEquals(expectedLogit,
                     new Frame(seLogit._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
                     1e-5);
+
+
+              Frame expectedPercentileRank = StackedEnsembleParameters.MetalearnerTransform.PercentileRank.transform(sePercentileRank,vanillaLevelOneFrame,Key.make());
+              Scope.track(expectedPercentileRank);
+              assertFrameEquals(expectedPercentileRank,
+                              new Frame(sePercentileRank._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
+                              1e-5);
+
 
             Frame training_clone = new Frame(trainingFrame);
             DKV.put(training_clone);
@@ -1451,6 +1490,11 @@ public class StackedEnsembleTest extends TestUtil {
             Scope.track(predsLogit);
             final boolean predsLogitTheSame = seLogit.testJavaScoring(training_clone, predsLogit, 1e-15, 0.01);
             Assert.assertTrue(predsLogitTheSame);
+
+            Frame predsPR = sePercentileRank.score(training_clone);
+            Scope.track(predsPR);
+            final boolean predsPRTheSame = sePercentileRank.testJavaScoring(training_clone, predsPR, 1e-15, 0.01);
+            Assert.assertTrue(predsPRTheSame);
 
         } finally {
             Scope.exit();
