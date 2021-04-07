@@ -28,6 +28,7 @@ private GString getCommandHadoop(final stageConfig) {
                 -jks mykeystore.jks \\
                 -notify h2o_one_node \\
                 -flatfile flatfile.lst \\
+                -JJ -Daws.accessKeyId=\$AWS_ACCESS_KEY_ID -JJ -Daws.secretKey=\$AWS_SECRET_ACCESS_KEY \\
                 -ea -proxy \\
                 -jks mykeystore.jks \\
                 -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\

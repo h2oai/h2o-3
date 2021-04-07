@@ -17,11 +17,9 @@ import water.fvec.FileVec;
 import water.fvec.S3FileVec;
 import water.fvec.Vec;
 import water.util.ByteStreams;
-import water.util.RIStream;
+import water.util.Log;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.util.*;
 
@@ -64,25 +62,16 @@ public final class PersistS3 extends Persist {
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
     public H2OAWSCredentialsProviderChain() {
-      super(constructProviderChain());
-
-    }
-
-    private static List<AWSCredentialsProvider> constructProviderChain() {
-      final List<AWSCredentialsProvider> providers = new ArrayList<>();
-
-      providers.add(new H2ODynamicCredentialsProvider());
-      providers.add(new H2OArgCredentialsProvider());
-      providers.add(new InstanceProfileCredentialsProvider());
-      providers.add(new EnvironmentVariableCredentialsProvider());
-      providers.add(new SystemPropertiesCredentialsProvider());
-      providers.add(new ProfileCredentialsProvider());
-
-      return providers;
-
+      super(
+              new H2ODynamicCredentialsProvider(),
+              new H2OArgCredentialsProvider(),
+              new InstanceProfileCredentialsProvider(),
+              new EnvironmentVariableCredentialsProvider(),
+              new SystemPropertiesCredentialsProvider(),
+              new ProfileCredentialsProvider()
+      );
     }
   }
-  
 
   /**
    * Holds basic credentials (Secret key ID + Secret access key) pair.
@@ -116,7 +105,7 @@ public final class PersistS3 extends Persist {
 
     // Default location of the AWS credentials file
     public static final String DEFAULT_CREDENTIALS_LOCATION = "AwsCredentials.properties";
-
+    
     @Override public AWSCredentials getCredentials() {
       File credentials = new File(H2O.ARGS.aws_credentials != null ? H2O.ARGS.aws_credentials : DEFAULT_CREDENTIALS_LOCATION);
       try {
@@ -139,28 +128,6 @@ public final class PersistS3 extends Persist {
     }
   }
 
-  public static final class H2SO3InputStream extends RIStream {
-    Key _k;
-    long _to;
-    String[] _bk;
-
-    @Override protected InputStream open(long offset) {
-      return getClient().getObject(new GetObjectRequest(_bk[0], _bk[1]).withRange(offset, _to)).getObjectContent();
-    }
-
-    public H2SO3InputStream(Key k, ProgressMonitor pmon) {
-      this(k, pmon, 0, Long.MAX_VALUE);
-    }
-
-    public H2SO3InputStream(Key k, ProgressMonitor pmon, long from, long to) {
-      super(from, pmon);
-      _k = k;
-      _to = Math.min(DKV.get(k)._max - 1, to);
-      _bk = decodeKey(k);
-      open();
-    }
-  }
-
   @Override
   public InputStream open(String path) {
     String[] bk = decodePath(path);
@@ -169,8 +136,75 @@ public final class PersistS3 extends Persist {
     return s3obj.getObjectContent();
   }
 
-  public static InputStream openStream(Key k, RIStream.ProgressMonitor pmon) throws IOException {
-    return new H2SO3InputStream(k, pmon);
+  @Override
+  public OutputStream create(String path, boolean overwrite) {
+    String[] bk = decodePath(path);
+    final File tmpFile;
+    try {
+      tmpFile = File.createTempFile("h2o-export", ".bin");
+      tmpFile.deleteOnExit();
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to create temporary file for S3 object upload", e);
+    }
+    Runnable callback = new PutObjectCallback(tmpFile, true, bk[0], bk[1]);
+    try {
+      return new CallbackFileOutputStream(tmpFile, callback);
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(e); // should never happen
+    }
+  }
+
+  static class PutObjectCallback implements Runnable {
+    private final File _file;
+    private final boolean _deleteOnDone;
+    private final String _bucketName;
+    private final String _key;
+
+    public PutObjectCallback(File file, boolean deleteOnDone, String bucketName, String key) {
+      _file = file;
+      _deleteOnDone = deleteOnDone;
+      _bucketName = bucketName;
+      _key = key;
+    }
+
+    @Override
+    public void run() {
+      try {
+        PutObjectRequest request = new PutObjectRequest(_bucketName, _key, _file);
+        PutObjectResult result = getClient().putObject(request);
+        Log.info("Object `" + _key + "` uploaded to bucket `" + _bucketName + "`, ETag=`" + result.getETag() + "`.");
+      } finally {
+        if (_deleteOnDone) {
+          boolean deleted = _file.delete();
+          if (!deleted) {
+            LOG.warn("Temporary file `" + _file.getAbsolutePath() + "` was not deleted. Please delete manually.");
+          }
+        }
+      }
+    }
+  } 
+
+  static class CallbackFileOutputStream extends FileOutputStream {
+    private final Object closeLock = new Object();
+    private volatile boolean closed = false;
+    private final Runnable callback;
+    
+    public CallbackFileOutputStream(File file, Runnable callback) throws FileNotFoundException {
+      super(file);
+      this.callback = callback;
+    }
+
+    @Override
+    public void close() throws IOException {
+      synchronized (closeLock) {
+        if (closed) {
+          super.close();
+          return; // run callback only once
+        }
+        closed = true;
+      }
+      callback.run();
+    }
   }
 
   public static Key loadKey(ObjectListing listing, S3ObjectSummary obj) throws IOException {
@@ -391,10 +425,11 @@ public final class PersistS3 extends Persist {
       LOG.debug(String.format("S3 endpoint specified: %s", endPoint));
       s3Client.setEndpoint(endPoint);
     }
-    if (System.getProperty(S3_ENABLE_PATH_STYLE) != null && Boolean.valueOf(System.getProperty(S3_ENABLE_PATH_STYLE))) {
+    if (System.getProperty(S3_ENABLE_PATH_STYLE) != null && Boolean.parseBoolean(System.getProperty(S3_ENABLE_PATH_STYLE))) {
       LOG.debug("S3 path style access enabled");
-      S3ClientOptions sco = new S3ClientOptions();
-      sco.setPathStyleAccess(true);
+      S3ClientOptions sco = S3ClientOptions.builder()
+              .setPathStyleAccess(true)
+              .build();
       s3Client.setS3ClientOptions(sco);
     }
     return s3Client;

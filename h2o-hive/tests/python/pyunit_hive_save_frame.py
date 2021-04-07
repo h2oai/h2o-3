@@ -23,7 +23,7 @@ def hive_save_frame():
     password = ""
 
     print("import data")
-    prostate_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_cat_NA.csv"))
+    prostate_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_cat.csv"))
 
     print("save as csv, managed, custom tmp")
     prostate_hex.save_to_hive(connection_url, "prostate_hex_py_csv", tmp_path="/tmp")
