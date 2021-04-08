@@ -95,8 +95,8 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if(uplift != null){
                 fr.add("uplift", uplift);
             }
-
-            MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain()).doAll(fr)._mb;
+            // TODO solve nbins parameter
+            MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(AUUC.NBINS, targetClassProbs)).doAll(fr)._mb;
             labels.remove();
             Frame preds = new Frame(targetClassProbs);
             // todo solve for uplift here too, meantime null uplift vector is given
@@ -111,11 +111,17 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
     // helper to build a ModelMetricsBinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
     private static class UpliftBinomialMetrics extends MRTask<UpliftBinomialMetrics> {
-        public UpliftBinomialMetrics(String[] domain) { this.domain = domain; }
         String[] domain;
+        double[] thresholds;
         public MetricBuilderBinomialUplift _mb;
+        
+        public UpliftBinomialMetrics(String[] domain, double[] thresholds) { 
+            this.domain = domain; 
+            this.thresholds = thresholds;
+        }
+        
         @Override public void map(Chunk[] chks) {
-            _mb = new MetricBuilderBinomialUplift(domain);
+            _mb = new MetricBuilderBinomialUplift(domain, thresholds);
             Chunk actuals = chks[1];
             Chunk weights = chks.length == 3 ? chks[2] : null;
             Chunk uplift = chks.length == 4 ? chks[3] : null;
@@ -138,9 +144,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         
         protected AUUC.AUUCBuilder _auuc;
 
-        public MetricBuilderBinomialUplift( String[] domain ) { 
+        public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) { 
             super(2,domain); 
-            _auuc = new AUUC.AUUCBuilder(AUUC.NBINS);
+            _auuc = new AUUC.AUUCBuilder(thresholds);
         }
 
 
