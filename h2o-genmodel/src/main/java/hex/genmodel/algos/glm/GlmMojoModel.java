@@ -53,10 +53,11 @@ public class GlmMojoModel extends GlmMojoModelBase {
       }
     }
 
-    // Categorical-Numerical Interaction scoring
+    // Categorical-Numerical interaction scoring
     
     for (int i = 0; i < _catNumOffsets.length - 1; ++i) {
       Integer[] interaction = _interaction_mapping.get(_names[_cats + i]);
+      // catOffset is index at which categorical-numerical interaction coefficients begin in beta array
       int catOffset = _catOffsets[_catOffsets.length - 1];
       int cat_index = _domains[interaction[0]] == null ? 1 : 0;
       int num_index = _domains[interaction[0]] == null ? 0 : 1;
@@ -65,10 +66,15 @@ public class GlmMojoModel extends GlmMojoModelBase {
         throw new IllegalArgumentException("categorical value out of range");
       }
       if(!_useAllFactorLevels && enum_level == 0) {continue;}
+      // _catNumOffsets[i] + enum_level gets the offset for that particular categorical-numerical interaction column
+      // within the categorical-numerical interaction portion of beta array
       eta += _beta[catOffset + _catNumOffsets[i] + enum_level] * data[interaction[num_index]];
     }
     
-    int noff = _catNumOffsets[_catNumOffsets.length - 1];
+    // Numerical interaction scoring
+    
+    // noff is index at which numerical coefficients begin in beta array
+    int noff = _catOffsets[_catOffsets.length - 1] + _catNumOffsets[_catNumOffsets.length - 1];
     for(int i = 0; i < _nums - _catNumOffsets.length - 1; ++i) {
       eta += _beta[noff + i] * data[i + _cats + _catNumOffsets.length - 1];
     }
