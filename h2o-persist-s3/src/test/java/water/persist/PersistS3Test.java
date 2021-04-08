@@ -2,8 +2,6 @@ package water.persist;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
-import org.junit.After;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,18 +36,9 @@ public class PersistS3Test extends TestUtil {
   private static final String AWS_SECRET_KEY_PROPERTY_NAME = "AWS_SECRET_ACCESS_KEY";
   private static final String IRIS_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests/iris.csv";
   private static final String IRIS_BUCKET_H2O_AWS = "s3://test.0xdata.com/h2o-unit-tests";
-
-
+  
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
-
-
-
-  @After
-  public void tearDown() throws Exception {
-    // Make sure after each test method, wrong client with invalid credentials - required to avoid false negatives
-    final String invalidCredential = UUID.randomUUID().toString();
-  }
 
   private static class XORTask extends MRTask<XORTask> {
     long _res = 0;
