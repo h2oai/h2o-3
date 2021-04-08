@@ -23,10 +23,11 @@ public class AUUC extends Iced{
     public final int _nBins;  // Max number of bins; can be less if there are fewer points
     public final int _maxIdx;  // Threshold that maximizes the default criterion
     public final double[] _ths; // Thresholds
-    public final double[] _treatment; // Treatments  
-    public final double[] _control; // Controls
-    public final double[] _yTreatment; // Treatment predictions
-    public final double[] _yControl; // Control predictions
+    public final long[] _treatment; // Treatments  
+    public final long[] _control; // Controls
+    public final long[] _yTreatment; // Treatment y==1
+    public final long[] _yControl; // Control y==1
+    public double[] _uplift;
 
     
     // Default bins, good answers on a highly unbalanced sorted (and reverse
@@ -37,10 +38,11 @@ public class AUUC extends Iced{
     public double _auuc;
 
     public double threshold( int idx ) { return _ths[idx]; }
-    public double treatment( int idx ) { return _treatment[idx]; }
-    public double control( int idx ) { return _control[idx]; }
-    public double yTreatment( int idx ) { return _yTreatment[idx]; }
-    public double yControl( int idx ) { return _yControl[idx]; }
+    public long treatment( int idx ) { return _treatment[idx]; }
+    public long control( int idx ) { return _control[idx]; }
+    public long yTreatment( int idx ) { return _yTreatment[idx]; }
+    public long yControl( int idx ) { return _yControl[idx]; }
+    public double uplift( int idx) { return _uplift[idx]; }
     
     public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(NBINS, probs, y, uplift, auucType);
@@ -66,14 +68,18 @@ public class AUUC extends Iced{
         _control = Arrays.copyOf(bldr._control,_nBins);
         _yTreatment = Arrays.copyOf(bldr._yTreatment,_nBins);
         _yControl = Arrays.copyOf(bldr._yControl,_nBins);
+        _uplift = new double[_nBins];
 
         // Rollup counts, so that computing the rates are easier.
-        double tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0;
+        long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0;
         for( int i=0; i<_nBins; i++ ) {
             tmpt += _treatment[i]; _treatment[i] = tmpt;
             tmpc += _control[i]; _control[i] = tmpc;
             tmptp += _yTreatment[i]; _yTreatment[i] = tmptp;
             tmpcp += _yControl[i]; _yControl[i] = tmpcp;
+        }
+        for( int i=0; i<_nBins; i++ ) {
+            _uplift[i] = auucType.exec(treatment(i), control(i), yTreatment(i), yControl(i));
         }
         
         if (trueProbabilities) {
@@ -87,10 +93,10 @@ public class AUUC extends Iced{
     private AUUC(AUUC auuc, int idx) {
         _nBins = 1;
         _ths = new double[]{auuc._ths[idx]};
-        _treatment = new double[]{auuc._treatment[idx]};
-        _control = new double[]{auuc._control[idx]};
-        _yTreatment = new double[]{auuc._yTreatment[idx]};
-        _yControl = new double[]{auuc._yControl[idx]};
+        _treatment = new long[]{auuc._treatment[idx]};
+        _control = new long[]{auuc._control[idx]};
+        _yTreatment = new long[]{auuc._yTreatment[idx]};
+        _yControl = new long[]{auuc._yControl[idx]};
         _auuc = auuc._auuc;
         _maxIdx = auuc._maxIdx >= 0 ? 0 : -1;
         _auucType = auuc._auucType;
@@ -98,7 +104,8 @@ public class AUUC extends Iced{
 
     AUUC() {
         _nBins = 0;
-        _ths = _treatment = _control = _yTreatment = _yControl = new double[0];
+        _ths = new double[0];
+        _treatment = _control = _yTreatment = _yControl = new long[0];
         _auuc = Double.NaN;
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
@@ -186,10 +193,10 @@ public class AUUC extends Iced{
     public static class AUUCBuilder extends Iced {
         final int _nBins;
         final double _thresholds[];        // Histogram bins, center
-        final double _treatment[];        // Histogram bins, treatment cumsum
-        final double _control[];        // Histogram bins, control cumsum
-        final double _yTreatment[];        // Histogram bins, treatment prediction cumsum
-        final double _yControl[];        // Histogram bins, control prediction cumsum
+        final long _treatment[];        // Histogram bins, treatment cumsum
+        final long _control[];        // Histogram bins, control cumsum
+        final long _yTreatment[];        // Histogram bins, treatment prediction cumsum
+        final long _yControl[];        // Histogram bins, control prediction cumsum
         // Merging this bin with the next gives the least increase in squared
         // error, or -1 if not known.  Requires a linear scan to find.
         int    _ssx;
@@ -197,10 +204,10 @@ public class AUUC extends Iced{
             int nBins = thresholds.length;
             _nBins = nBins;
             _thresholds = thresholds; // Threshold; also the mean for this bin
-            _treatment = new double[nBins]; // treatment cumsum
-            _control = new double[nBins]; // control cumsum
-            _yTreatment = new double[nBins]; // treatment prediction cumsum 
-            _yControl = new double[nBins]; // contol prediction cumsum
+            _treatment = new long[nBins]; // treatment cumsum
+            _control = new long[nBins]; // control cumsum
+            _yTreatment = new long[nBins]; // treatment prediction cumsum 
+            _yControl = new long[nBins]; // contol prediction cumsum
             _ssx = -1;                   // Unknown best merge bin
         }
 
@@ -226,7 +233,7 @@ public class AUUC extends Iced{
         }
 
         public void reduce( AUUCBuilder bldr) {
-            ArrayUtils.add(_thresholds, bldr._treatment);
+            ArrayUtils.add(_treatment, bldr._treatment);
             ArrayUtils.add(_control, bldr._control);
             ArrayUtils.add(_yTreatment, bldr._yTreatment);
             ArrayUtils.add(_yControl, bldr._yControl);
@@ -265,10 +272,10 @@ public class AUUC extends Iced{
         
         /** @param threshold
          *  @param control
-         *  @param yThreshold
+         *  @param yTreatment
          *  @param yControl
          *  @return metric value */
-        abstract double exec( double threshold, double control, double yThreshold, double yControl );
+        abstract double exec( double threshold, double control, double yTreatment, double yControl );
         public double exec( AUUC auc, int idx ) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
 
         public static final AUUCType[] VALUES = values();
