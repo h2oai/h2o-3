@@ -16,6 +16,7 @@ dependencies {
 
   testCompile project(":h2o-test-support")
   testCompile "com.adobe.testing:s3mock:2.1.28"
+  testCompile "com.adobe.testing:s3mock-junit4:2.1.28"
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

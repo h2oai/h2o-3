@@ -78,9 +78,13 @@ public class PersistS3Test extends TestUtil {
   }
 
   @Test
+  public void testExists() {
+    assertTrue(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
+    assertFalse(new PersistS3().exists("s3://h2o-public-test-data/smalldata/airlines/invalid.file"));
+  }
+
+  @Test
   public void testS3UriToKeyChangedCredentials() throws Exception {
-
-
     Scope.enter();
     Key k = null, k2 = null;
     Frame fr = null;

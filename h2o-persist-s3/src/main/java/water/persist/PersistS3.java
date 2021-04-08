@@ -11,12 +11,14 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
+import hex.genmodel.utils.IOUtils;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
 import water.fvec.Vec;
 import water.util.ByteStreams;
+import water.util.FileUtils;
 import water.util.Log;
 
 import java.io.*;
@@ -34,6 +36,11 @@ public final class PersistS3 extends Persist {
 
   private static final Object _lock = new Object();
   private static volatile AmazonS3 _s3;
+
+  // for unit testing
+  static void setClient(AmazonS3 s3) {
+    _s3 = s3;
+  }
 
   public static AmazonS3 getClient() {
     if (_s3 == null) {
@@ -129,6 +136,13 @@ public final class PersistS3 extends Persist {
   }
 
   @Override
+  public boolean exists(String path) {
+    String[] bk = decodePath(path);
+    ObjectListing objects = getClient().listObjects(bk[0], bk[1]);
+    return !objects.getObjectSummaries().isEmpty();
+  }
+
+  @Override
   public InputStream open(String path) {
     String[] bk = decodePath(path);
     GetObjectRequest r = new GetObjectRequest(bk[0], bk[1]);
@@ -146,21 +160,23 @@ public final class PersistS3 extends Persist {
     } catch (IOException e) {
       throw new RuntimeException("Failed to create temporary file for S3 object upload", e);
     }
-    Runnable callback = new PutObjectCallback(tmpFile, true, bk[0], bk[1]);
+    Runnable callback = new PutObjectCallback(getClient(), tmpFile, true, bk[0], bk[1]);
     try {
       return new CallbackFileOutputStream(tmpFile, callback);
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e); // should never happen
     }
   }
-
+  
   static class PutObjectCallback implements Runnable {
+    private final AmazonS3 _client;
     private final File _file;
     private final boolean _deleteOnDone;
     private final String _bucketName;
     private final String _key;
 
-    public PutObjectCallback(File file, boolean deleteOnDone, String bucketName, String key) {
+    public PutObjectCallback(AmazonS3 client, File file, boolean deleteOnDone, String bucketName, String key) {
+      _client = client;
       _file = file;
       _deleteOnDone = deleteOnDone;
       _bucketName = bucketName;
@@ -171,7 +187,7 @@ public final class PersistS3 extends Persist {
     public void run() {
       try {
         PutObjectRequest request = new PutObjectRequest(_bucketName, _key, _file);
-        PutObjectResult result = getClient().putObject(request);
+        PutObjectResult result = _client.putObject(request);
         Log.info("Object `" + _key + "` uploaded to bucket `" + _bucketName + "`, ETag=`" + result.getETag() + "`.");
       } finally {
         if (_deleteOnDone) {
