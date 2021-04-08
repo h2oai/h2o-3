@@ -1,11 +1,19 @@
 package hex;
 
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
+import water.DKV;
 import water.Iced;
+import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.TreeSet;
 
 
 /**
@@ -34,13 +42,12 @@ public class AUUC extends Iced{
     public double yTreatment( int idx ) { return _yTreatment[idx]; }
     public double yControl( int idx ) { return _yControl[idx]; }
     
-    
-    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) { 
+    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(NBINS, probs, y, uplift, auucType);
     }
 
     public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
-        this(new AUUCImpl(nBins).doAll(probs, y, uplift)._bldr, auucType);
+        this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
     }
 
     public AUUC( AUUCBuilder bldr, AUUCType auucType) {
@@ -51,22 +58,14 @@ public class AUUC extends Iced{
         // Copy result arrays into base object, shrinking to match actual bins
         System.out.println(bldr.toDebugString());
         _auucType = auucType;
-        _nBins = bldr._n;
+        _nBins = bldr._nBins;
         assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
-        assert trueProbabilities || bldr._ths[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
-        _ths = Arrays.copyOf(bldr._ths,_nBins);
+        assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
+        _ths = Arrays.copyOf(bldr._thresholds,_nBins);
         _treatment = Arrays.copyOf(bldr._treatment,_nBins);
         _control = Arrays.copyOf(bldr._control,_nBins);
         _yTreatment = Arrays.copyOf(bldr._yTreatment,_nBins);
-        _yControl = Arrays.copyOf(bldr._yContr,_nBins);
-        // Reverse everybody; thresholds from 1 down to 0, easier to read
-        for( int i=0; i<((_nBins)>>1); i++ ) {
-            double tmp = _ths[i];  _ths[i] = _ths[_nBins-1-i]; _ths[_nBins-1-i] = tmp ;
-            double tmpt = _treatment[i];  _treatment[i] = _treatment[_nBins-1-i]; _treatment[_nBins-1-i] = tmpt;
-            double tmpc = _control[i];  _control[i] = _control[_nBins-1-i]; _control[_nBins-1-i] = tmpc;
-            double tmptp = _yTreatment[i];  _yTreatment[i] = _yTreatment[_nBins-1-i]; _yTreatment[_nBins-1-i] = tmptp;
-            double tmpcp = _yControl[i];  _yControl[i] = _yControl[_nBins-1-i]; _yControl[_nBins-1-i] = tmpcp;
-        }
+        _yControl = Arrays.copyOf(bldr._yControl,_nBins);
 
         // Rollup counts, so that computing the rates are easier.
         double tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0;
@@ -104,8 +103,7 @@ public class AUUC extends Iced{
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
     }
-
-
+    
     /**
      * Creates a dummy AUUC instance with no metrics, meant to prevent possible NPEs
      * @return a valid AUUC instance
@@ -117,6 +115,37 @@ public class AUUC extends Iced{
     private boolean isEmpty() {
         return _nBins == 0;
     }
+    
+    public static double[] calculateQuantileThresholds(int groups, Vec preds) {
+        Frame fr = null;
+        QuantileModel qm = null;
+        double[] quantiles;
+        try {
+            QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
+            fr = new Frame(Key.<Frame>make(), new String[]{"predictions"}, new Vec[]{preds});
+            DKV.put(fr);
+            qp._train = fr._key;
+            assert groups > 0;
+            qp._probs = new double[groups];
+            for (int i = 0; i < groups; ++i) {
+                qp._probs[i] = (groups - i - 1.) / groups; // This is 0.9, 0.8, 0.7, 0.6, ..., 0.1, 0 for 10 groups
+            }
+            qm = new Quantile(qp).trainModel().get();
+            quantiles = qm._output._quantiles[0];
+            // find uniques
+            TreeSet<Double> hs = new TreeSet<>();
+            for (double d : quantiles) hs.add(d);
+            quantiles = new double[hs.size()];
+            Iterator<Double> it = hs.descendingIterator();
+            int i = 0;
+            while (it.hasNext()) quantiles[i++] = it.next();
+        } finally {
+            if (qm != null) qm.remove();
+            if (fr != null) DKV.remove(fr._key);
+        }
+        return quantiles;
+    }
+    
     
     private double computeArea(double uplift, double prevUplift, double threshold, double prevThreshold){
         return (threshold - prevThreshold) * (uplift + prevUplift) / 2.0; // Trapezoid
@@ -142,11 +171,11 @@ public class AUUC extends Iced{
     }
 
     private static class AUUCImpl extends MRTask<AUUCImpl> {
-        final int _nBins;
+        final double[] _thresholds;
         AUUCBuilder _bldr;
-        AUUCImpl( int nBins ) { _nBins = nBins; }
+        AUUCImpl( double[] thresholds) { _thresholds = thresholds; }
         @Override public void map(Chunk ps, Chunk actuals, Chunk uplift) {
-            AUUCBuilder bldr = _bldr = new AUUCBuilder(_nBins);
+            AUUCBuilder bldr = _bldr = new AUUCBuilder(_thresholds);
             for( int row = 0; row < ps._len; row++ )
                 if( !ps.isNA(row) && !uplift.isNA(row) )
                     bldr.perRow(ps.atd(row),1, actuals.atd(row), uplift.atd(row));
@@ -156,198 +185,62 @@ public class AUUC extends Iced{
 
     public static class AUUCBuilder extends Iced {
         final int _nBins;
-        int _n;                     // Current number of bins
-        final double _ths[];        // Histogram bins, center
+        final double _thresholds[];        // Histogram bins, center
         final double _treatment[];        // Histogram bins, treatment cumsum
         final double _control[];        // Histogram bins, control cumsum
         final double _yTreatment[];        // Histogram bins, treatment prediction cumsum
-        final double _yContr[];        // Histogram bins, control prediction cumsum
+        final double _yControl[];        // Histogram bins, control prediction cumsum
         // Merging this bin with the next gives the least increase in squared
         // error, or -1 if not known.  Requires a linear scan to find.
         int    _ssx;
-        public AUUCBuilder(int nBins) {
+        public AUUCBuilder(double[] thresholds) {
+            int nBins = thresholds.length;
             _nBins = nBins;
-            _ths = new double[nBins<<1]; // Threshold; also the mean for this bin
-            _treatment = new double[nBins<<1]; // treatment cumsum
-            _control = new double[nBins<<1]; // control cumsum
-            _yTreatment = new double[nBins<<1]; // treatment prediction cumsum 
-            _yContr = new double[nBins<<1]; // contol prediction cumsum
+            _thresholds = thresholds; // Threshold; also the mean for this bin
+            _treatment = new double[nBins]; // treatment cumsum
+            _control = new double[nBins]; // control cumsum
+            _yTreatment = new double[nBins]; // treatment prediction cumsum 
+            _yControl = new double[nBins]; // contol prediction cumsum
             _ssx = -1;                   // Unknown best merge bin
         }
 
         public void perRow(double pred, double w, double y, double uplift) {
-            // Insert the prediction into the set of histograms in sorted order, as
-            // if its a new histogram bin with 1 count.
-            assert !Double.isNaN(pred);
-            assert !Double.isNaN(w) && !Double.isInfinite(w);
-            int idx = Arrays.binarySearch(_ths,0,_n,pred);
-            if( idx >= 0 ) {          // Found already in histogram; merge results
-                if(uplift == 0) {
-                    _control[idx]+= w;
-                } else {
-                    _treatment[idx]+= w;
+            //for-loop is faster than binary search for small number of thresholds
+            if(w == 0) {return;}
+            for( int t=0; t < _thresholds.length; t++ ) {
+                if (pred >= _thresholds[t] && (t == 0 || pred <_thresholds[t-1])) {
+                    if(uplift == 1){
+                        _treatment[t]++;
+                        if(y == 1){ 
+                            _yTreatment[t]++;
+                        }
+                    } else {
+                        _control[t]++;
+                        if(y == 1){
+                            _yControl[t]++;
+                        }
+                    }
+                    break;
                 }
-                if(y == 0){
-                    _yContr[idx] += y * uplift ;
-                } else {
-                    _yTreatment[idx] += y * (1-uplift);
-                }
-                _ssx = -1;              // Blows the known best merge
-                return;
             }
-            idx = -idx-1;             // Get index to insert at
-
-            // Must insert this point as it's own threshold (which is not insertion
-            // point), either because we have too few bins or because we cannot
-            // instantly merge the new point into an existing bin.
-            if (idx == 0 || idx == _n ||     // Just because we didn't bother to deal with the corner cases ^^^
-                    idx == _ssx) _ssx = -1;  // Smallest error becomes one of the splits
-            else if( idx < _ssx ) _ssx++; // Smallest error will slide right 1
-
-            // Slide over to do the insert.  Horrible slowness.
-            System.arraycopy(_ths,idx,_ths,idx+1,_n-idx);
-            System.arraycopy(_treatment, idx, _treatment,idx+1,_n-idx);
-            System.arraycopy(_control,idx, _control,idx+1,_n-idx);
-            // Insert into the histogram
-            _ths[idx] = pred;         // New histogram center
-            if(uplift == 0){
-                _control[idx] = w;
-                _treatment[idx] = 0;
-            } else {
-                _treatment[idx] = w;
-                _control[idx] = 0;
-            }
-            _yContr[idx] = y * (1-uplift);
-            _yTreatment[idx] = y * uplift;
-            _n++;
-            if( _n > _nBins )         // Merge as needed back down to nBins
-                mergeOneBin();          // Merge best pair of bins
         }
 
-        public void reduce( AUUCBuilder bldr ) {
-            // Merge sort the 2 sorted lists into the double-sized arrays.  The tail
-            // half of the double-sized array is unused, but the front half is
-            // probably a source.  Merge into the back.
-            int x=     _n-1;
-            int y=bldr._n-1;
-            while( x+y+1 >= 0 ) {
-                boolean self_is_larger = y < 0 || (x >= 0 && _ths[x] >= bldr._ths[y]);
-                AUUCBuilder b = self_is_larger ? this : bldr;
-                int      idx = self_is_larger ?   x  :   y ;
-                _ths[x+y+1] = b._ths[idx];
-                _treatment[x+y+1] = b._treatment[idx];
-                _control[x+y+1] = b._control[idx];
-                _yTreatment[x+y+1] = b._yTreatment[idx];
-                _yContr[x+y+1] = b._yContr[idx];
-                if( self_is_larger ) x--; else y--;
-            }
-            _n += bldr._n;
-            _ssx = -1; // We no longer know what bin has the smallest error
-
-            // Merge elements with least squared-error increase until we get fewer
-            // than _nBins and no duplicates.  May require many merges.
-            while( _n > _nBins || dups() )
-                mergeOneBin();
-        }
-
-        static double combine_centers(double ths1, double n1, double ths0, double n0) {
-            double center = (ths0 * n0 + ths1 * n1) / (n0 + n1);
-            if (Double.isNaN(center) || Double.isInfinite(center)) {
-                // use a simple average as a fallback
-                return (ths0 + ths1) / 2;
-            }
-            return center;
-        }
-
-        private void mergeOneBin( ) {
-            // Too many bins; must merge bins.  Merge into bins with least total
-            // squared error.  Horrible slowness linear arraycopy.
-            int ssx = find_smallest();
-
-            // Merge two bins.  Classic bins merging by averaging the histogram
-            // centers based on counts.
-            double k0 = k(ssx);
-            double k1 = k(ssx+1);
-            _ths[ssx] = combine_centers(_ths[ssx], k0, _ths[ssx+1], k1);
-            _treatment[ssx] += _treatment[ssx+1];
-            _control[ssx] += _control[ssx+1];
-            _yTreatment[ssx] += _yTreatment[ssx+1];
-            _yContr[ssx] += _yContr[ssx+1];
-            // Slide over to crush the removed bin at index (ssx+1)
-            System.arraycopy(_ths,ssx+2,_ths,ssx+1,_n-ssx-2);
-            System.arraycopy(_treatment,ssx+2, _treatment,ssx+1,_n-ssx-2);
-            System.arraycopy(_control,ssx+2, _control,ssx+1,_n-ssx-2);
-            System.arraycopy(_yTreatment,ssx+2, _yTreatment,ssx+1,_n-ssx-2);
-            System.arraycopy(_yContr,ssx+2, _yContr,ssx+1,_n-ssx-2);
-            _n--;
-            _ssx = -1;
-        }
-
-        // Find the pair of bins that when combined give the smallest increase in
-        // squared error.  Dups never increase squared error.
-        //
-        // I tried code for merging bins with keeping the bins balanced in size,
-        // but this leads to bad errors if the probabilities are sorted.  Also
-        // tried the original: merge bins with the least distance between bin
-        // centers.  Same problem for sorted data.
-        private int find_smallest() {
-            if( _ssx == -1 ) {
-                _ssx = find_smallest_impl();
-                assert _ssx != -1 : toDebugString();
-            }
-            return _ssx;
+        public void reduce( AUUCBuilder bldr) {
+            ArrayUtils.add(_thresholds, bldr._treatment);
+            ArrayUtils.add(_control, bldr._control);
+            ArrayUtils.add(_yTreatment, bldr._yTreatment);
+            ArrayUtils.add(_yControl, bldr._yControl);
         }
 
         private String toDebugString() {
             return "_ssx = " + _ssx +
-                    "; n = " + _n +
-                    "; ths = " + Arrays.toString(_ths) +
+                    "; nBins = " + _nBins +
+                    "; ths = " + Arrays.toString(_thresholds) +
                     "; treatCumsum = " + Arrays.toString(_treatment) +
                     "; contrCumsum = " + Arrays.toString(_control) +
                     "; yTreatCumsum = " + Arrays.toString(_yTreatment) +
-                    "; yContCumsum = " + Arrays.toString(_yContr);
+                    "; yContCumsum = " + Arrays.toString(_yControl);
         }
-
-        private int find_smallest_impl() {
-            if (_n == 1)
-                return 0;
-            int n = _n;
-            int minI = 0;
-            double minDist = _ths[1] - _ths[0];
-            for (int i = 1; i < n - 1; i++) {
-                double dist = _ths[i + 1] - _ths[i];
-                if (dist < minDist) {
-                    minDist = dist;
-                    minI = i;
-                }
-            }
-            return minI;
-        }
-
-        private boolean dups() {
-            int n = _n;
-            for( int i=0; i<n-1; i++ ) {
-                double derr = compute_delta_error(_ths[i+1],k(i+1),_ths[i],k(i));
-                if( derr == 0 ) { _ssx = i; return true; }
-            }
-            return false;
-        }
-
-
-        private double compute_delta_error( double ths1, double n1, double ths0, double n0 ) {
-            // If thresholds vary by less than a float ULP, treat them as the same.
-            // Some models only output predictions to within float accuracy (so a
-            // variance here is junk), and also it's not statistically sane to have
-            // a model which varies predictions by such a tiny change in thresholds.
-            double delta = (float)ths1-(float)ths0;
-            if (delta == 0)
-                return 0;
-            // Parallel equation drawn from:
-            //  http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
-            return delta*delta*n0*n1 / (n0+n1);
-        }
-
-        private double k( int idx ) { return _treatment[idx]+ _control[idx]; }
     }
 
     /** AUUC type enum
