@@ -79,8 +79,10 @@ public class AUUC extends Iced{
             tmpcp += _yControl[i]; _yControl[i] = tmpcp;
         }
         for( int i=0; i<_nBins; i++ ) {
-            _uplift[i] = auucType.exec(treatment(i), control(i), yTreatment(i), yControl(i));
+            _uplift[i] = _auucType.exec(this, i);
         }
+        
+        ArrayUtils.interpolateLinear(_uplift);
         
         if (trueProbabilities) {
             _auuc = computeAuuc();
@@ -154,7 +156,7 @@ public class AUUC extends Iced{
     }
     
     
-    private double computeArea(double uplift, double prevUplift, double threshold, double prevThreshold){
+    private double computeArea(double threshold, double prevThreshold, double uplift, double prevUplift){
         return (threshold - prevThreshold) * (uplift + prevUplift) / 2.0; // Trapezoid
     }
     
@@ -163,7 +165,7 @@ public class AUUC extends Iced{
         double up0 = 0, th0 = 0;
         for( int i=0; i<_nBins; i++ ) {
             double thres = _ths[i];
-            double uplift = _auucType.exec(treatment(i), control(i), yTreatment(i), yControl(i));
+            double uplift = _uplift[i];
             if(Double.isNaN(uplift)) {
                 uplift = 0;
             }
@@ -256,18 +258,18 @@ public class AUUC extends Iced{
      *  from the basic parts, and from an AUUC at a given threshold index.
      */
     public enum AUUCType {
-        AUTO() { @Override double exec(double treatment, double control, double yTreatment, double yControl) {
+        AUTO() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
             return qini.exec(treatment, control, yTreatment, yControl);
         } },
-        qini() { @Override double exec(double treatment, double control, double yTreatment, double yControl) {
-            double norm =  control == 0 ? 1 : treatment / control;
-            return treatment - control * norm;
+        qini() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
+            double norm = treatment / (double)control;
+            return yTreatment - yControl * norm;
         } },
-        lift() { @Override double exec(double treatment, double control, double yTreatment, double yControl) {
-            return yTreatment/treatment - yControl/control;
+        lift() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
+            return yTreatment / (double)treatment - yControl / (double)control;
         } },
-        gain() { @Override double exec(double treatment, double control, double yTreatment, double yControl) {
-            return lift.exec(treatment, control, yTreatment, yControl) / (treatment + control);
+        gain() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
+            return lift.exec(treatment, control, yTreatment, yControl) * (double)(treatment + control);
         } };
         
         /** @param threshold
@@ -275,7 +277,7 @@ public class AUUC extends Iced{
          *  @param yTreatment
          *  @param yControl
          *  @return metric value */
-        abstract double exec( double threshold, double control, double yTreatment, double yControl );
+        abstract double exec(long threshold, long control, long yTreatment, long yControl );
         public double exec( AUUC auc, int idx ) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
 
         public static final AUUCType[] VALUES = values();
