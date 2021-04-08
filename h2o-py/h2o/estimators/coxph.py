@@ -6,8 +6,6 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import h2o
-
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -493,14 +491,17 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(single_node_mode, None, bool)
         self._parms["single_node_mode"] = single_node_mode
 
-    def baseline_hazard(self):
-        """
-        Return baseline hazard
-        """
-        return h2o.get_frame(self._model_json['output']['baseline_hazard']['name'])
 
-    def baseline_survival(self):
-        """
-        Return baseline survival
-        """
-        return h2o.get_frame(self._model_json['output']['baseline_survival']['name'])
+    @property
+    def baseline_hazard_frame(self):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("baseline_hazard", {}).get("name") is not None):
+            baseline_hazard_name = self._model_json["output"]["baseline_hazard"]["name"]
+            return H2OFrame.get_frame(baseline_hazard_name)
+
+    @property
+    def baseline_survival_frame(self):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("baseline_survival", {}).get("name") is not None):
+            baseline_hazard_name = self._model_json["output"]["baseline_survival"]["name"]
+            return H2OFrame.get_frame(baseline_survival_name)

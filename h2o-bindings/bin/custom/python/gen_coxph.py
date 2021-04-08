@@ -1,3 +1,22 @@
+def class_extensions():
+    @property
+    def baseline_hazard_frame(self):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("baseline_hazard", {}).get("name") is not None):
+            baseline_hazard_name = self._model_json["output"]["baseline_hazard"]["name"]
+            return H2OFrame.get_frame(baseline_hazard_name)
+
+    @property
+    def baseline_survival_frame(self):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("baseline_survival", {}).get("name") is not None):
+            baseline_survival_name = self._model_json["output"]["baseline_survival"]["name"]
+            return H2OFrame.get_frame(baseline_survival_name)
+
+extensions = dict(
+    __class__=class_extensions
+)
+
 doc = dict(
     __class__="""
 Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
