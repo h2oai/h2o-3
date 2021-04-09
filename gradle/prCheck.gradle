@@ -10,6 +10,17 @@ buildscript {
 
 import groovy.json.JsonSlurper
 
+def GOOD_PR_PROCESS = """
+How to pass this check?
+    1. Always have a Jira before you start working on a task (otherwise you cannot know what branch to start from).
+    2. Make sure the Jira has a 'Fix Version' defined. If it doesn't consult the team what is a good fix version for your change.
+    3. If you are working on a Jira with 'Fix Version' ending with '.1' you are working on a change that should go to a master branch. 
+       All other changes should go to the (current) fix release branch. Such branches are prefixed 'rel-'. 
+    4. Put the Jira to 'In Progress' state.
+    5. Make a code change. Include Jira ticket ID in message of the main commit (this is not checked). 
+    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines (this is checked).
+"""
+
 task checkPullRequest {
     group = "Validation"
     description = "Validates that PR has the right metadata in the title and is created against the correct branch"
@@ -18,6 +29,8 @@ task checkPullRequest {
         def report = errors.isEmpty() ? ["OK"] : errors
         new File(project.buildDir, "prCheckReport.txt").withWriter {w ->
             report.forEach { e -> w.println(e) }
+            w.println()
+            w.println(GOOD_PR_PROCESS)
         }
         if (!errors.isEmpty()) {
             throw new GradleException(errors[0])
