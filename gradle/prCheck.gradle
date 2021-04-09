@@ -14,7 +14,14 @@ task checkPullRequest {
     group = "Validation"
     description = "Validates that PR has the right metadata in the title and is created against the correct branch"
     doLast {
-        checkPull(System.getenv("CHANGE_ID"));
+        def errors = checkPull(System.getenv("CHANGE_ID"))
+        def report = errors.isEmpty() ? ["OK"] : errors
+        new File(project.buildDir, "prCheckReport.txt").withWriter {w ->
+            report.forEach { e -> w.println(e) }
+        }
+        if (!errors.isEmpty()) {
+            throw new GradleException(errors[0])
+        }
     }
 }
 
@@ -28,38 +35,38 @@ def checkPull(changeId) {
     def hexdevMatcher = title =~ /.*HEXDEV-[0-9]{4,5}.*/
     if (hexdevMatcher.matches()) {
         println "HEXDEV jiras are not validated"
-        return
+        return []
     }
     def pubdevMatcher = title =~ /.*(PUBDEV-[0-9]{4,5}).*/
     if (!pubdevMatcher.matches()) {
-        throw new GradleException("Pull Request ${changeId} doesn't have associated JIRA ticket. Please add jira id in the title of the PR")
+        return ["Pull Request ${changeId} doesn't have associated JIRA ticket. Please add jira id in the title of the PR"]
     }
     def jiraId = pubdevMatcher[0][1]
     def jiraDetails = jsonSlurper.parseText(new URL("https://h2oai.atlassian.net/rest/api/latest/issue/$jiraId").getText())
     def status = jiraDetails.fields.status
     if (status.name != 'In Progress') {
-        throw new GradleException("Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                "This jira is not marked 'In Progress'. Please check if the associated jira ticket is correct and change the status to 'In Progress'")
+        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                "This jira is not marked 'In Progress'. Please check if the associated jira ticket is correct and change the status to 'In Progress'"]
     }
     def fixVersions = jiraDetails.fields.fixVersions
     if (fixVersions.size() == 0) {
-        throw new GradleException("Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                "This jira doesn't have a fix version set. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version.")
+        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                "This jira doesn't have a fix version set. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version."]
     }
     if (fixVersions.size() > 1) {
-        throw new GradleException("Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                "This jira has more than one fix version. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version.")
+        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                "This jira has more than one fix version. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version."]
     }
     def fixVersionValue = fixVersions.get(0).name
     def baseBranch = pullDetails.base.ref
     if (fixVersionValue.endsWith('.1')) {
         if (baseBranch != 'master')
-            throw new GradleException("Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'.")
+            return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'."]
     } else {
         if (!baseBranch.startsWith('rel-')) {
-            throw new GradleException("Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
-                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch.")
+            return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
         }
     }
     println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
