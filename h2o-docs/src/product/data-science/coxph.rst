@@ -224,6 +224,13 @@ Below is a simple example showing how to build a CoxPH model.
     predict <- h2o.predict(heart_coxph, newdata = test)
 
     # Get baseline hazard:
+    baseline_hazard <- h2o.getFrame(heart_coxph@model$baseline_hazard$name)
+
+    # Get baseline survival:
+    baseline_survival <- h2o.getFrame(heart_coxph@model$baseline_survival$name)
+
+    # Get model concordance:
+    concordance <- perf@metrics$concordance
     
 
 
