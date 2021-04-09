@@ -70,7 +70,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  gainslift_bins=-1,  # type: int
                  uplift_column=None,  # type: Optional[str]
                  uplift_metric=None,  # type: Optional[Literal["auto", "kl", "euclidean", "chi_squared"]]
-                 auuc_type=None,  # type: Optional[Literal["auto", "qini", "lift", "gain"]]
+                 auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -251,8 +251,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                Defaults to ``None``.
         :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"], optional
         :param auuc_type: AUUC metric used to calculate Area under Uplift.
-               Defaults to ``None``.
-        :type auuc_type: Literal["auto", "qini", "lift", "gain"], optional
+               Defaults to ``"auto"``.
+        :type auuc_type: Literal["auto", "qini", "lift", "gain"]
         """
         super(H2OUpliftRandomForestEstimator, self).__init__()
         self._parms = {}
@@ -1002,7 +1002,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         """
         AUUC metric used to calculate Area under Uplift.
 
-        Type: ``Literal["auto", "qini", "lift", "gain"]``.
+        Type: ``Literal["auto", "qini", "lift", "gain"]``, defaults to ``"auto"``.
         """
         return self._parms.get("auuc_type")
 

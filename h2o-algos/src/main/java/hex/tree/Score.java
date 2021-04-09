@@ -28,7 +28,8 @@ public class Score extends CMetricScoringTask<Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-  
+  final double[] _thresholds;   // Only for uplift metric builder to calculate AUUC
+
   /** Output parameter: Metric builder */
   ModelMetrics.MetricBuilder _mb;
 
@@ -50,6 +51,12 @@ public class Score extends CMetricScoringTask<Score> {
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
     assert _kresp != null || !_bldr.isSupervised();
     assert (! _is_train) || (_sii == null);
+    // TODO: fix preds and nbins from parameters
+    if(bldr.isUplift()) {
+      _thresholds = AUUC.calculateQuantileThresholds(AUUC.NBINS, preds.vec(0));
+    } else {
+      _thresholds = null;
+    }
   }
 
   @Override public void map(Chunk allchks[]) {
@@ -77,6 +84,10 @@ public class Score extends CMetricScoringTask<Score> {
     }
     final int nclass = _bldr.nclasses();
     _mb = m.makeMetricBuilder(domain);
+    // TODO is there better way? New makeMetricBuilder method? 
+    if(_bldr.isUplift()){
+      ((ModelMetricsBinomialUplift.MetricBuilderBinomialUplift) _mb).resetThresholds(_thresholds);
+    }
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();

@@ -28,11 +28,12 @@ public class AUUC extends Iced{
     public final long[] _yTreatment; // Treatment y==1
     public final long[] _yControl; // Control y==1
     public double[] _uplift;
+    public final long _n;
 
     
     // Default bins, good answers on a highly unbalanced sorted (and reverse
     // sorted) datasets
-    public static final int NBINS = 400;
+    public static final int NBINS = 3500;
 
     public final AUUCType _auucType;
     public double _auuc;
@@ -63,6 +64,7 @@ public class AUUC extends Iced{
         _nBins = bldr._nBins;
         assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
         assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
+        _n = bldr._n;
         _ths = Arrays.copyOf(bldr._thresholds,_nBins);
         _treatment = Arrays.copyOf(bldr._treatment,_nBins);
         _control = Arrays.copyOf(bldr._control,_nBins);
@@ -94,6 +96,7 @@ public class AUUC extends Iced{
 
     private AUUC(AUUC auuc, int idx) {
         _nBins = 1;
+        _n = auuc._n;
         _ths = new double[]{auuc._ths[idx]};
         _treatment = new long[]{auuc._treatment[idx]};
         _control = new long[]{auuc._control[idx]};
@@ -106,6 +109,7 @@ public class AUUC extends Iced{
 
     AUUC() {
         _nBins = 0;
+        _n = 0;
         _ths = new double[0];
         _treatment = _control = _yTreatment = _yControl = new long[0];
         _auuc = Double.NaN;
@@ -155,24 +159,12 @@ public class AUUC extends Iced{
         return quantiles;
     }
     
-    
-    private double computeArea(double threshold, double prevThreshold, double uplift, double prevUplift){
-        return (threshold - prevThreshold) * (uplift + prevUplift) / 2.0; // Trapezoid
-    }
-    
     private double computeAuuc(){
         double area = 0;
-        double up0 = 0, th0 = 0;
-        for( int i=0; i<_nBins; i++ ) {
-            double thres = _ths[i];
-            double uplift = _uplift[i];
-            if(Double.isNaN(uplift)) {
-                uplift = 0;
-            }
-            area += computeArea(thres, th0, uplift, up0);
-            up0 = uplift;  th0 = thres;
+        for( int i = 0; i < _nBins; i++ ) {
+            area += uplift(i);
         }
-        return area;
+        return area/_n;
     }
     
     public double auuc(){
@@ -199,9 +191,7 @@ public class AUUC extends Iced{
         final long _control[];        // Histogram bins, control cumsum
         final long _yTreatment[];        // Histogram bins, treatment prediction cumsum
         final long _yControl[];        // Histogram bins, control prediction cumsum
-        // Merging this bin with the next gives the least increase in squared
-        // error, or -1 if not known.  Requires a linear scan to find.
-        int    _ssx;
+        long _n;
         public AUUCBuilder(double[] thresholds) {
             int nBins = thresholds.length;
             _nBins = nBins;
@@ -210,13 +200,13 @@ public class AUUC extends Iced{
             _control = new long[nBins]; // control cumsum
             _yTreatment = new long[nBins]; // treatment prediction cumsum 
             _yControl = new long[nBins]; // contol prediction cumsum
-            _ssx = -1;                   // Unknown best merge bin
         }
 
         public void perRow(double pred, double w, double y, double uplift) {
             //for-loop is faster than binary search for small number of thresholds
             if(w == 0) {return;}
             for( int t=0; t < _thresholds.length; t++ ) {
+                _n++;
                 if (pred >= _thresholds[t] && (t == 0 || pred <_thresholds[t-1])) {
                     if(uplift == 1){
                         _treatment[t]++;
@@ -235,6 +225,7 @@ public class AUUC extends Iced{
         }
 
         public void reduce( AUUCBuilder bldr) {
+            _n += bldr._n;
             ArrayUtils.add(_treatment, bldr._treatment);
             ArrayUtils.add(_control, bldr._control);
             ArrayUtils.add(_yTreatment, bldr._yTreatment);
@@ -242,7 +233,7 @@ public class AUUC extends Iced{
         }
 
         private String toDebugString() {
-            return "_ssx = " + _ssx +
+            return  "n =" +_n +
                     "; nBins = " + _nBins +
                     "; ths = " + Arrays.toString(_thresholds) +
                     "; treatCumsum = " + Arrays.toString(_treatment) +
