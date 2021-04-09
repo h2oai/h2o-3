@@ -469,7 +469,7 @@ final public class H2O {
     System.out.println("ERROR: " + message);
     System.out.println("");
     printHelp();
-    H2O.exit(1);
+    H2O.exitQuietly(1); // argument parsing failed -> we might have inconsistent ARGS and not be able to initialize logging 
   }
 
   public static class OptString {
@@ -959,6 +959,17 @@ final public class H2O {
     // Log subsystem might be still caching message, let it know to flush the cache and start logging even if we don't have SELF yet
     Log.notifyAboutProcessExiting();
 
+    exitQuietly(status);
+  }
+
+  /**
+   * Notify embedding software instance H2O wants to exit.  Shuts down a single Node.
+   * Exit without logging any buffered messages, invoked when H2O arguments are not correctly parsed
+   * and we might thus not be able to successfully initialize the logging subsystem.
+   * 
+   * @param status H2O's requested process exit value.
+   */
+  private static void exitQuietly(int status) {
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
@@ -966,7 +977,7 @@ final public class H2O {
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
   }
-
+  
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
     if(status == 0) H2O.orderlyShutdown();
