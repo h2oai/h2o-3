@@ -2757,6 +2757,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
+    if (_parms._remove_collinear_columns) { // choose IRLSM if remove_collinear_columns is true
+      Log.info(LogMsg("picked solver " + s));
+      _parms._solver = s;
+      return s;
+    }
     int max_active = 0;
     if(_parms._family == Family.multinomial )
       for(int c = 0; c < _nclass; ++c)
