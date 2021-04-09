@@ -6,9 +6,13 @@ buildscript {
     repositories {
         mavenCentral()
     }
+    dependencies {
+        classpath 'com.github.ricksbrown:cowsay:1.1.0'
+    }
 }
 
 import groovy.json.JsonSlurper
+import com.github.ricksbrown.cowsay.Cowsay
 
 def GOOD_PR_PROCESS = """
 How to pass this check?
@@ -26,9 +30,13 @@ task checkPullRequest {
     description = "Validates that PR has the right metadata in the title and is created against the correct branch"
     doLast {
         def errors = checkPull(System.getenv("CHANGE_ID"))
-        def report = errors.isEmpty() ? ["OK"] : errors
-        new File(project.buildDir, "prCheckReport.txt").withWriter {w ->
-            report.forEach { e -> w.println(e) }
+        def allGood = errors.isEmpty()
+        def message = allGood ? "No issues found! Thank you for being awesome" : "Baa! Your PR isn't quite right"
+        def animal = allGood ? "cow" : "sheep" // as in "black sheep"
+        new File(project.buildDir, "prCheckReport.log").withWriter {w ->
+            def cowargs = ["-f", animal, message] as String[]
+            w.println(Cowsay.say(cowargs))
+            errors.forEach { e -> w.println("==>> $e") }
             w.println()
             w.println(GOOD_PR_PROCESS)
         }
