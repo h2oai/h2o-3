@@ -101,8 +101,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     metrics_h2o = cph_h2o.model_performance(shelter_h2o)
     concordance_py = concordance_for_lifelines(cph_py)
     assert abs(concordance_py - metrics_h2o.concordance()) < 0.001
-    hazard_h2o = cph_h2o.baseline_hazard() 
-    hazard_h2o_as_pandas = hazard_h2o.as_data_frame(use_pandas=True)
+    hazard_h2o_as_pandas = cph_h2o.baseline_hazard_frame.as_data_frame(use_pandas=True)
 
     hazard_py = cph_py.baseline_hazard_
     
@@ -122,8 +121,7 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False, check_less_precise=True)
     
-    survival_h2o = cph_h2o.baseline_survival()
-    survival_h2o_as_pandas = survival_h2o.as_data_frame(use_pandas=True)
+    survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
     survival_py = cph_py.baseline_survival_
 
