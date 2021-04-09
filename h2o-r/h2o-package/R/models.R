@@ -2264,8 +2264,6 @@ h2o.get_ntrees_actual <- function(object) {
 #' @param max_tree_depth Upper bound for tree depth. Defaults to 100.
 #' @param max_deepening Upper bound for interaction start deepening (zero deepening => interactions 
 #' starting at root only). Defaults to -1.
-#' @param path (Optional) Path where to save the output in .xlsx format (e.g. "/mypath/file.xlsx"). Please
-#'        note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
 #'
 #' @examples
 #' \dontrun{
