@@ -146,7 +146,19 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
         public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) { 
             super(2,domain); 
-            _auuc = new AUUC.AUUCBuilder(thresholds);
+            if(thresholds != null) {
+                _auuc = new AUUC.AUUCBuilder(thresholds);
+            }
+        }
+
+        public MetricBuilderBinomialUplift( String[] domain) {
+            super(2,domain);
+        }
+        
+        public void resetThresholds(double[] thresholds){
+            if(thresholds != null) {
+                _auuc = new AUUC.AUUCBuilder(thresholds);
+            }
         }
 
 
@@ -171,7 +183,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
 
         @Override public void reduce( T mb ) {
             super.reduce(mb);
-            _auuc.reduce(mb._auuc);
+            if(_auuc != null) {
+                _auuc.reduce(mb._auuc);
+            }
         }
 
         /**
@@ -228,7 +242,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if(_wcount > 0) {
                 sigma = weightedSigma();
                 // TODO propagate auuc metric through API
-                auuc = new AUUC(_auuc, AUUC.AUUCType.AUTO);
+                auuc = new AUUC(_auuc, m._parms._auuc_type);
             } else {
                 auuc = new AUUC();
             }

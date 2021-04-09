@@ -21,7 +21,6 @@ public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFMo
 
         public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
         public UpliftMetricType _uplift_metric;
-        public AUUC.AUUCType _auuc_type;
 
         public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
 
