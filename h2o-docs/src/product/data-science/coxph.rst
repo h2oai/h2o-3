@@ -223,6 +223,9 @@ Below is a simple example showing how to build a CoxPH model.
     # Generate predictions on a test set (if necessary):
     predict <- h2o.predict(heart_coxph, newdata = test)
 
+    # Get baseline hazard:
+    
+
 
    .. code-tab:: python
    
@@ -246,6 +249,17 @@ Below is a simple example showing how to build a CoxPH model.
 
     # Generate predictions on a test set (if necessary):
     pred = heart_coxph.predict(test)
+
+    # Get baseline hazard:
+    hazard = h2o.get_frame(heart_coxph._model_json['output']['baseline_hazard']['name'])
+
+    # Get baseline survival:
+    survival = h2o.get_frame(heart_coxph._model_json['output']['baseline_survival']['name'])
+
+    # Get model concordance:
+    heart_coxph.model_performance().concordance()
+
+
 
 
 
