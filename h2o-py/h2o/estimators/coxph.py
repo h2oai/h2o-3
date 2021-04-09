@@ -503,5 +503,5 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def baseline_survival_frame(self):
         if (self._model_json is not None
                 and self._model_json.get("output", {}).get("baseline_survival", {}).get("name") is not None):
-            baseline_hazard_name = self._model_json["output"]["baseline_survival"]["name"]
+            baseline_survival_name = self._model_json["output"]["baseline_survival"]["name"]
             return H2OFrame.get_frame(baseline_survival_name)
