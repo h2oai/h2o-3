@@ -285,6 +285,7 @@ public final class ComputationState {
       l2pen = l2pen/_nclasses;   // need only one set of parameters
 
     if(l2pen > 0) {
+      if (_ginfo == null) _ginfo = ginfo();
       if(_parms._family == Family.multinomial || _parms._family == Family.ordinal) {
         l2pen = 0;
         int off = 0;
@@ -376,7 +377,7 @@ public final class ComputationState {
 
   public boolean _lsNeeded = false;
 
-  private DataInfo [] _activeDataMultinomial;
+  public DataInfo [] _activeDataMultinomial;
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
@@ -529,8 +530,11 @@ public final class ComputationState {
         for (int i = 0; i < P; ++i) {
           if (j < oldActiveCols.length && i == oldActiveCols[j]) {
             ++j;
-          } else if (_ginfo._gradient[c*N+i] > rhs || _ginfo._gradient[c*N+i] < -rhs) {
-            cols[selected++] = c*N + i;
+          } else {  // need access to _ginfo
+            if (_ginfo == null) _ginfo = ginfo();
+            if (_ginfo._gradient[c * N + i] > rhs || _ginfo._gradient[c * N + i] < -rhs) {
+              cols[selected++] = c * N + i;
+            }
           }
         }
       }
