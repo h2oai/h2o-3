@@ -54,8 +54,9 @@ def checkPull(changeId) {
     println "Checking pull request ($changeId): $title"
     println ""
     def hexdevMatcher = title =~ /.*HEXDEV-[0-9]{4,5}.*/
-    if (hexdevMatcher.matches()) {
-        println "HEXDEV jiras are not validated"
+    def itaMatcher = title =~ /.*ITA-[0-9]{3,5}.*/
+    if (hexdevMatcher.matches() || itaMatcher.matches()) {
+        println "HEXDEV and ITA jiras are not validated"
         return []
     }
     def pubdevMatcher = title =~ /.*(PUBDEV-[0-9]{4,5}).*/
