@@ -33,5 +33,19 @@ public class H2OTest {
     assertTrue(id.startsWith("test-desc_test-type"));
     assertTrue(id.endsWith("_" + seq));
   }
+
+  @Test
+  public void testIsArgProperty() {
+      // Any string with a dot after `ai.h2o.` must fail
+      assertFalse(H2O.isArgProperty("noprefixnodots"));
+      assertFalse(H2O.isArgProperty("no.prefix.ever"));
+      assertFalse(H2O.isArgProperty("ai.h2o.anythingwithdotwillfail."));
+      assertFalse(H2O.isArgProperty("ai.h2o.org.eclipse.jetty.LEVEL"));
+      assertFalse(H2O.isArgProperty("ai.h2o.org.eclipse.jetty.util.log.class"));
+      assertFalse(H2O.isArgProperty("ai.h2o.org.eclipse.jetty.util.log.StdErrLog"));
+      assertFalse(H2O.isArgProperty("sys.ai.h2o.nodots"));
+
+      assertTrue(H2O.isArgProperty("ai.h2o.hdfs_config"));
+  }
   
 }
