@@ -4,6 +4,7 @@ import ai.h2o.automl.IAlgo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import org.junit.Ignore;
+import water.exceptions.H2OIllegalArgumentException;
 
 @Ignore("utility class")
 public class DummyBuilder extends ModelBuilder<DummyModel, DummyModel.DummyModelParameters, DummyModel.DummyModelOutput> {
@@ -24,6 +25,14 @@ public class DummyBuilder extends ModelBuilder<DummyModel, DummyModel.DummyModel
         init(false);
     }
 
+    @Override
+    public void init(boolean expensive) {
+        super.init(expensive);
+        if (_parms._fail_on_init) {
+            throw new H2OIllegalArgumentException("Failing on request");
+        }
+    }
+    
     @Override
     public ModelCategory[] can_build() {
         return new ModelCategory[] {ModelCategory.Binomial};
