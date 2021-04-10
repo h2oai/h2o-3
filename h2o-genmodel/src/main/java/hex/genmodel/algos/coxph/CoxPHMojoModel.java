@@ -2,11 +2,12 @@ package hex.genmodel.algos.coxph;
 
 import hex.genmodel.MojoModel;
 
-import java.util.Map;
+import java.io.Serializable;
+import java.util.HashMap;
 
 public class CoxPHMojoModel extends MojoModel  {
 
-  static class Strata {
+  static class Strata implements Serializable {
     final double[] strata;
     final int strataLen;
     final int hashCode;
@@ -45,7 +46,7 @@ public class CoxPHMojoModel extends MojoModel  {
   }
   
   double[] _coef;
-  Map<Strata, Integer> _strata;
+  HashMap<Strata, Integer> _strata; // HashMap to make sure the implementation is Serializable
   int _strata_len;
   double[][] _x_mean_cat;
   double[][] _x_mean_num;
