@@ -85,6 +85,35 @@ public class GLMBasicTestMultinomial extends TestUtil {
               magnitudes[indices[index-1]] >= magnitudes[indices[index]]);
   }
 
+  /***
+   * This test is written to make sure no leaked vectors for my fix to the rollup stats absent bug.  No assert
+   * statement is needed.  This test just needs to run to completion.
+   */
+  @Test
+  public void testRollupBug() {
+    try {
+      Scope.enter();
+      Frame df = parseTestFile("smalldata/glm_test/rollup_stat_test.csv");
+      df.replace(df.numCols()-1,df.vec("RACE").toCategoricalVec()).remove();
+      Scope.track(df);
+      DKV.put(df);
+      GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+      params._response_column = "RACE";
+      params._alpha = new double[]{0.5, 1};
+      params._standardize = false;
+      params._generate_scoring_history = true;
+      params._score_iteration_interval = 5;
+      params._non_negative = true;
+      params._nfolds = 5;
+      params._seed = 7;
+      params._train = df._key;
+      GLMModel model = new GLM(params).trainModel().get();
+      Scope.track_generic(model);
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test
   public void testMultinomialPredMojoPojo() {
     try {
