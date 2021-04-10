@@ -1,7 +1,6 @@
 package water;
 
 import hex.ModelBuilder;
-import hex.faulttolerance.Recovery;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import jsr166y.ForkJoinWorkerThread;
@@ -2184,7 +2183,19 @@ final public class H2O {
       return true;
     }
     return false;
-  } 
+  }
+
+  /**
+   * Any system property starting with `ai.h2o.` and containing any more `.` does not match
+   * this pattern and is therefore ignored. This is mostly to prevent system properties
+   * serving as configuration for H2O's dependencies (e.g. `ai.h2o.org.eclipse.jetty.LEVEL` ).
+   */
+  static boolean isArgProperty(String name) {
+    final String prefix = "ai.h2o.";
+    if (!name.startsWith(prefix))
+      return false;
+    return name.lastIndexOf('.') < prefix.length(); 
+  }
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
@@ -2206,8 +2217,8 @@ final public class H2O {
     // effectively overwriting the earlier args.
     ArrayList<String> args2 = new ArrayList<>(Arrays.asList(args));
     for( Object p : System.getProperties().keySet() ) {
-      String s = (String)p;
-      if( s.startsWith("ai.h2o.") ) {
+      String s = (String) p;
+      if(isArgProperty(s)) {
         args2.add("-" + s.substring(7));
         // hack: Junits expect properties, throw out dummy prop for ga_opt_out
         if (!s.substring(7).equals("ga_opt_out") && !System.getProperty(s).isEmpty())
