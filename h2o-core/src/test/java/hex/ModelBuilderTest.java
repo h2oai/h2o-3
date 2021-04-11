@@ -412,7 +412,7 @@ public class ModelBuilderTest {
   public void testApproximatingHoldoutPredictionCombinerProducesCSChunks() {
     try {
       Scope.enter();
-      Vec v = randomProbabilitiesVec(42, 100_000);
+      Vec v = randomProbabilitiesVec(42, 100_000, 20);
       Scope.track(v);
 
       checkApproximatingHoldoutPredictionCombiner(v, 8, 2, 0.2);
@@ -433,8 +433,8 @@ public class ModelBuilderTest {
     }
   }
   
-  private static Vec randomProbabilitiesVec(final long seed, final long len) {
-    Vec v = Vec.makeCon(0.0d, len);
+  private static Vec randomProbabilitiesVec(final long seed, final long len, final int nChunks) {
+    Vec v = Vec.makeConN(len, nChunks);
     new MRTask() {
       @Override public void map(Chunk c) {
         final long chunk_seed = seed + c.start();
