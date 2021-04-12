@@ -48,14 +48,12 @@ class CloudHandler extends Handler {
     
     H2ONode leader = H2O.CLOUD.leader();
     cloud.leader_idx = leader == null ? -1 : leader.index();
-    if (null != members) {
-      cloud.nodes = new CloudV3.NodeV3[members.length];
-      for (int i = 0; i < members.length; i++) {
-        cloud.nodes[i] = new CloudV3.NodeV3(members[i], cloud.skip_ticks);
-        if (! cloud.nodes[i].healthy) {
-          cloud.cloud_healthy = false;
-          cloud.bad_nodes++;
-        }
+    cloud.nodes = new CloudV3.NodeV3[members.length];
+    for (int i = 0; i < members.length; i++) {
+      cloud.nodes[i] = new CloudV3.NodeV3(members[i], cloud.skip_ticks);
+      if (! cloud.nodes[i].healthy) {
+        cloud.cloud_healthy = false;
+        cloud.bad_nodes++;
       }
     }
 
