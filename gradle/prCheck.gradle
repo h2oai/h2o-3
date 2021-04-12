@@ -21,8 +21,8 @@ How to pass this check?
     3. If you are working on a Jira with 'Fix Version' ending with '.1' you are working on a change that should go to a master branch. 
        All other changes should go to the (current) fix release branch. Such branches are prefixed 'rel-'. 
     4. Put the Jira to 'In Progress' state.
-    5. Make a code change. Include Jira ticket ID in message of the main commit (this is not checked). 
-    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines (this is checked).
+    5. Make a code change. Include Jira ticket ID (PUBDEV-XXXX) in the commit message of one of your commits. This is not checked. 
+    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines This is checked.
 """
 
 task checkPullRequest {
@@ -61,7 +61,7 @@ def checkPull(changeId) {
     }
     def pubdevMatcher = title =~ /.*(PUBDEV-[0-9]{4,5}).*/
     if (!pubdevMatcher.matches()) {
-        return ["Pull Request ${changeId} doesn't have associated JIRA ticket. Please add jira id in the title of the PR"]
+        return ["Pull Request ${changeId} doesn't have associated JIRA ticket. Please add jira id (PUBDEV-XXXX) in the title of the PR"]
     }
     def jiraId = pubdevMatcher[0][1]
     def jiraDetails = jsonSlurper.parseText(new URL("https://h2oai.atlassian.net/rest/api/latest/issue/$jiraId").getText())
