@@ -41,13 +41,15 @@ class CloudHandler extends Handler {
     cloud.locked = Paxos._cloudLocked;
     cloud.internal_security_enabled = H2OSecurityManager.instance().securityEnabled;
 
-    // Fetch and calculate cloud metrics from individual node metrics.
+
+    // set leader
+    H2ONode leader = H2O.CLOUD.leaderOrNull(); // leader might be null in client mode if clouding didn't finish yet
+    cloud.leader_idx = leader == null ? -1 : leader.index();
+
+    // set list of members (might be empty)
     H2ONode[] members = H2O.CLOUD.members();
     cloud.bad_nodes = 0;
     cloud.cloud_healthy = true;
-    
-    H2ONode leader = H2O.CLOUD.leader();
-    cloud.leader_idx = leader == null ? -1 : leader.index();
     cloud.nodes = new CloudV3.NodeV3[members.length];
     for (int i = 0; i < members.length; i++) {
       cloud.nodes[i] = new CloudV3.NodeV3(members[i], cloud.skip_ticks);
