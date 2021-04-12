@@ -59,7 +59,7 @@ public abstract class Paxos {
       }
     }
 
-    if(!H2O.ARGS.allow_clients && h2o.isClient()) {
+    if(!H2O.ARGS.allow_clients && h2o.isClient() && !h2o.isSelf()) {
       // ignore requests from clients if cloud is not started with client connections enabled
       ListenerService.getInstance().report("clients_disabled", h2o);
       h2o.removeClient();

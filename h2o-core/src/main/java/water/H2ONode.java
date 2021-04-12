@@ -171,6 +171,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   public final int ip4() { return (int) _key._ipLow; }
 
+  public boolean isSelf() {
+    return this == H2O.SELF;
+  }
+  
   // These are INTERN'd upon construction, and are uniquely numbered within the
   // same run of a JVM.  If a remote Node goes down, then back up... it will
   // come back with the SAME IP address, and the same unique_idx and history
