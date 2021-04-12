@@ -1978,6 +1978,9 @@ final public class H2O {
   public final H2ONode leader() {
     return _memary[0];
   }
+  public final H2ONode leaderOrNull() {
+    return _memary.length > 0 ? _memary[0] : null;
+  }
 
   // Find the node index for this H2ONode, or a negative number on a miss
   int nidx( H2ONode h2o ) { return java.util.Arrays.binarySearch(_memary,h2o); }

@@ -59,7 +59,7 @@ public abstract class Paxos {
       }
     }
 
-    if(!H2O.ARGS.allow_clients && h2o.isClient()) {
+    if(!H2O.ARGS.allow_clients && h2o.isClient() && !h2o.isSelf()) {
       // ignore requests from clients if cloud is not started with client connections enabled
       ListenerService.getInstance().report("clients_disabled", h2o);
       h2o.removeClient();
@@ -103,7 +103,8 @@ public abstract class Paxos {
 
     // Do we have consensus now?
     H2ONode h2os[] = PROPOSED.values().toArray(new H2ONode[PROPOSED.size()]);
-    if( H2O.ARGS.client && h2os.length == 0 ) return 0; // Client stalls until it finds *some* cloud
+    if( H2O.ARGS.client && h2os.length == 0 ) 
+      return 0; // Client stalls until it finds *some* cloud
     for( H2ONode h2o2 : h2os )
       if( chash != h2o2._heartbeat._cloud_hash )
         return print("Heartbeat hashes differ, self=0x"+Integer.toHexString(chash)+" "+h2o2+"=0x"+Integer.toHexString(h2o2._heartbeat._cloud_hash)+" ",PROPOSED);
