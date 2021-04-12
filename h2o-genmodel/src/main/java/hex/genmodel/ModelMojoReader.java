@@ -239,8 +239,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     readModelData();
     if (readModelMetadata) {
       final String algoFullName = readkv("algorithm"); // The key'algo' contains the shortcut, 'algorithm' is the long version
-      _model._modelDescriptor = new ModelDescriptorBuilder(_model, algoFullName)
-              .build();
+      _model._modelDescriptor = ModelDescriptorBuilder.makeDescriptor(_model, algoFullName);
       _model._modelAttributes = readModelSpecificAttributes();
     }
     _model._reproducibilityInformation = readReproducibilityInformation() ;

@@ -27,9 +27,9 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
 
   
 
-  private Map<CoxPHMojoModel.Strata, Integer> readStrata() {
+  private HashMap<CoxPHMojoModel.Strata, Integer> readStrata() {
     final int count = readkv("strata_count");
-    final Map<CoxPHMojoModel.Strata, Integer> result = new HashMap<>(count);
+    final HashMap<CoxPHMojoModel.Strata, Integer> result = new HashMap<>(count);
     for (int i = 0; i < count; i++) {
       final double[] strata = readkv("strata_" + i);
       result.put(new CoxPHMojoModel.Strata(strata, strata.length), i);
