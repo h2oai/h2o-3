@@ -2594,6 +2594,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename, true);
+            checkSerializable((MojoModel) genmodel);
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
@@ -2795,6 +2796,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return num_errors == 0;
     } finally {
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, data);  // Remove temp keys.
+    }
+  }
+
+  private static void checkSerializable(MojoModel mojoModel) {
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
+         ObjectOutput out = new ObjectOutputStream(bos)) { 
+      out.writeObject(mojoModel);
+      out.flush();
+    } catch (IOException e) {
+      throw new RuntimeException("MOJO cannot be serialized", e);
     }
   }
 
