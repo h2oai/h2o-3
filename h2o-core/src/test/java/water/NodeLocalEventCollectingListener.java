@@ -4,12 +4,12 @@ import org.junit.Ignore;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Ignore
 public class NodeLocalEventCollectingListener implements H2OListenerExtension {
 
-  private HashMap<String, ArrayList<Object[]>> reports;
+  private ConcurrentHashMap<String, ArrayList<Object[]>> reports;
   @Override
   public String getName() {
     return "LocalEverExpandingListener";
@@ -17,13 +17,13 @@ public class NodeLocalEventCollectingListener implements H2OListenerExtension {
 
   @Override
   public void init() {
-      reports = new HashMap<>();
+      reports = new ConcurrentHashMap<>();
   }
 
   @Override
   public void report(String ctrl, Object... data) {
     if(!reports.containsKey(ctrl)){
-      reports.put(ctrl, new ArrayList<Object[]>());
+      reports.put(ctrl, new ArrayList<>());
     }
     reports.get(ctrl).add(data);
   }
@@ -33,7 +33,7 @@ public class NodeLocalEventCollectingListener implements H2OListenerExtension {
   }
 
   public void clear(){
-    reports = new HashMap<>();
+    reports = new ConcurrentHashMap<>();
   }
 
   public static NodeLocalEventCollectingListener getFreshInstance() {
