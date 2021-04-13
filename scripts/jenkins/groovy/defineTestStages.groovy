@@ -27,6 +27,13 @@ def call(final pipelineContext) {
 
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
+  def METADATA_VALIDATION_STAGES = [
+    [
+      stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+    ]
+  ]
+
   // Job will execute PR_STAGES only if these are green.
   // for Python, smoke only oldest and latest supported versions
   def SMOKE_STAGES = [
@@ -734,6 +741,9 @@ def call(final pipelineContext) {
       executeInParallel(SMOKE_STAGES + jobs, pipelineContext)
     } else {
       executeInParallel(SMOKE_STAGES, pipelineContext)
+      if (modeCode == MODE_PR_CODE) {
+        jobs += METADATA_VALIDATION_STAGES
+      }
       executeInParallel(jobs, pipelineContext)
     }
   }
