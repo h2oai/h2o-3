@@ -41,7 +41,7 @@ public final class DefaultParserProviders {
     @Override
     public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup ps) {
       return ARFFParser.guessSetup(v, bits, ps._separator, ps._single_quotes, ps._column_names, ps._na_strings,
-              ps._nonDataLineMarkers);
+              ps._nonDataLineMarkers, ps._escapechar);
     }
   }
 
@@ -100,7 +100,7 @@ public final class DefaultParserProviders {
     @Override
     public ParseSetup guessInitSetup(ByteVec v, byte[] bits, ParseSetup ps) {
       return CsvParser.guessSetup(bits, ps._separator, ps._number_columns, ps._single_quotes, ps._check_header,
-              ps._column_names, ps._column_types, ps._na_strings, ps._nonDataLineMarkers);
+              ps._column_names, ps._column_types, ps._na_strings, ps._nonDataLineMarkers, ps._escapechar);
     }
     
   }

@@ -32,9 +32,15 @@ def test_upload_single_quoted():
 
 def test_import_single_quoted_with_escaped_quotes():
     path = pyunit_utils.locate("smalldata/parser/single_quotes_with_escaped_quotes.csv")
-    hdf = h2o.import_file(path=path, quotechar="'")
+    hdf = h2o.import_file(path=path, quotechar="'", escapechar="\\")
     
     pdf = pd.read_csv(path, quotechar="'", escapechar="\\")
+    pd.testing.assert_frame_equal(pdf, hdf.as_data_frame(), check_dtype=False)
+
+    path = pyunit_utils.locate("smalldata/parser/single_quotes_with_escaped_quotes_custom_escapechar.csv")
+    hdf = h2o.import_file(path=path, quotechar="'",  escapechar='*')
+    
+    pdf = pd.read_csv(path, quotechar="'", escapechar="*")
     pd.testing.assert_frame_equal(pdf, hdf.as_data_frame(), check_dtype=False)
 
 

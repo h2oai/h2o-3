@@ -110,7 +110,8 @@ public class Example {
                                                                   null,
                                                                   null,
                                                                   null,
-                                                                  null).execute().body();
+                                                                  (byte)'\\',
+                                                                null).execute().body();
             System.out.println("parseSetupBody: " + parseSetupBody);
 
             // STEP 3: parse into columnar Frame
@@ -136,7 +137,8 @@ public class Example {
                                                    null,
                                                    null,
                                                    null,
-                                                 null).execute().body();
+                                                   parseSetupBody.escapechar,
+                                                   null).execute().body();
             System.out.println("parseBody: " + parseBody);
 
             // STEP 5: Train the model (NOTE: step 4 is polling, which we don't require because we specified blocking for the parse above)
