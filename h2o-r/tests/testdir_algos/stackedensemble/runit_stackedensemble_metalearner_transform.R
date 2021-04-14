@@ -42,9 +42,16 @@ stackedensemble.metalearner_transform_works <- function() {
                                                metalearner_transform = "percentile_rank",
                                                seed = 1)
 
+  stack_percentile_rank2 <- h2o.stackedEnsemble(y = y,
+                                               training_frame = train,
+                                               base_models = list(my_rf, my_xrf),
+                                               metalearner_transform = "PercentileRank",
+                                               seed = 1)
+
   # Check that the metalearner transform was set properly
   expect_equal(stack_logit@parameters$metalearner_transform, "Logit")
   expect_equal(stack_percentile_rank@parameters$metalearner_transform, "PercentileRank")
+  expect_equal(stack_percentile_rank@parameters$metalearner_transform, stack_percentile_rank2@parameters$metalearner_transform)
 
   # Check we can predict
   preds <- predict(stack_notransform, train)

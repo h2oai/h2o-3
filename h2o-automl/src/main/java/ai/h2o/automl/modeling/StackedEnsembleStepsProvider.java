@@ -119,6 +119,8 @@ public class StackedEnsembleStepsProvider
                 if (aml().getResponseColumn().isCategorical()) {
                     // Add logit transform
                     stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
+                    //TODO: REMOVE THE FOLLOWING LINE BEFORE MERGING - THIS IS HERE ONLY TO GET BIGGER TEST COVERAGE
+                    stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.PercentileRank;
                 }
 
                 return stackedEnsembleParameters;
