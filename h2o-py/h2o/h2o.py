@@ -354,7 +354,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, skipped_columns=None, quotechar=None):
+                na_strings=None, skipped_columns=None, quotechar=None, escapechar=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -385,6 +385,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -405,17 +406,18 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(quotechar, None, U("'", '"'))
     assert (skipped_columns==None) or isinstance(skipped_columns, list), \
         "The skipped_columns should be an list of column names!"
+    assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
 
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
-                                    quotechar)
+                                    quotechar, escapechar)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None, quotechar=None):
+                partition_by=None, quotechar=None, escapechar=None):
     """
     Import a dataset that is already on the cluster.
 
@@ -455,6 +457,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -477,6 +480,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
     assert_is_type(quotechar, None, U("'", '"'))
+    assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -487,7 +491,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers, partition_by, quotechar)
+                                        skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
 
 
 def load_grid(grid_file_path, load_params_references=False):
@@ -727,7 +731,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None, quotechar=None):
+                partition_by=None, quotechar=None, escapechar=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -766,6 +770,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 
@@ -799,6 +804,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
     assert_is_type(quotechar, None, U("'", '"'))
+    assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
@@ -809,6 +815,9 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
               "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
+      
+    if escapechar:
+        kwargs["escapechar"] = ord(escapechar)
 
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers

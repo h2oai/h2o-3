@@ -4,6 +4,7 @@ import water.Iced;
 import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.ParseTypeValuesProvider;
+import water.parser.ParseSetup;
 
 public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   // Input fields
@@ -69,4 +70,7 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   // Zero if blocking==false; row-count if blocking==true
   @API(help="Rows", direction=API.Direction.OUTPUT)
   public long rows;
+
+  @API(help="One ASCII character used to escape other characters.", direction=API.Direction.INOUT)
+  public byte escapechar = ParseSetup.DEFAULT_ESCAPE_CHAR;
 }

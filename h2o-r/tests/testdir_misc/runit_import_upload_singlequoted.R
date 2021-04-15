@@ -54,9 +54,19 @@ test.upload_fails_on_unsupported_quotechar <- function() {
   }, "`quotechar` must be either NULL or single \\('\\) or double \\(\"\\) quotes")
 }
 
+test.upload_custom_escape <- function() {
+    customDataURL = locate("smalldata/parser/single_quotes_with_escaped_quotes_custom_escapechar.csv")
+    custom = h2o.importFile(path = customDataURL, destination_frame = "customDataURL.hex", quotechar="'", escapechar='*')
+    defaultDataURL = locate("smalldata/parser/single_quotes_with_escaped_quotes.csv")
+    default = h2o.importFile(path = defaultDataURL, destination_frame = "defaultDataURL.hex", quotechar="'", , escapechar='\\')
+    
+    expect_equal(custom['carnegie_basic_classification'], default['carnegie_basic_classification'])
+}
+
 doSuite("Test single quotes import/upload file", makeSuite(
     test.import_single_quoted,
     test.upload_single_quoted,
     test.import_fails_on_unsupported_quotechar,
-    test.upload_fails_on_unsupported_quotechar
+    test.upload_fails_on_unsupported_quotechar,
+    test.upload_custom_escape
 ))

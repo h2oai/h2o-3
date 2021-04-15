@@ -525,7 +525,7 @@ MAIN_LOOP:
     boolean hasHdr = true;
     String[] lines = getFirstLines(bits, ps._single_quotes, _nonDataLineMarkers);
     if (lines != null && lines.length > 0) {
-      String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes);
+      String[] firstLine = determineTokens(lines[0], _setup._separator, _setup._single_quotes, _setup._escapechar);
       if (_setup._column_names != null) {
         for (int i = 0; hasHdr && i < firstLine.length; ++i)
           hasHdr = (_setup._column_names[i] == firstLine[i]) || (_setup._column_names[i] != null && _setup._column_names[i].equalsIgnoreCase(firstLine[i]));
@@ -549,7 +549,7 @@ MAIN_LOOP:
   private static byte[] separators = new byte[] { HIVE_SEP, ',', ';', '|', '\t',  ' '/*space is last in this list, because we allow multiple spaces*/ };
 
   /** Determines the number of separators in given line.  Correctly handles quoted tokens. */
-  private static int[] determineSeparatorCounts(String from, byte quoteChar) {
+  private static int[] determineSeparatorCounts(String from, byte quoteChar, byte escapechar) {
     int[] result = new int[separators.length];
     byte[] bits = StringUtils.bytesOf(from);
     boolean inQuote = false;
@@ -558,7 +558,7 @@ MAIN_LOOP:
       byte c = bits[bi];
       escaped = escaping;
       escaping = !escaped && (
-              c == CsvParser.CHAR_ESCAPE
+              c == escapechar 
               || (inQuote && c == quoteChar && bi < bits.length-1 && bits[bi+1] == quoteChar) // 2 consecutive quotes inside a quote are not csv quotes
       );
       if( c == quoteChar && !escaped && !escaping)
@@ -574,11 +574,11 @@ MAIN_LOOP:
   /** Determines the tokens that are inside a line and returns them as strings
    *  in an array.  Assumes the given separator.
    */
-  public static String[] determineTokens(String from, byte separator, boolean singleQuotes) {
+  public static String[] determineTokens(String from, byte separator, boolean singleQuotes, byte escapechar) {
     final byte singleQuote = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : CsvParser.CHAR_DOUBLE_QUOTE;
-    return determineTokens(from, separator, singleQuote);
+    return determineTokens(from, separator, singleQuote, escapechar);
   }
-  public static String[] determineTokens(String from, byte separator, byte quoteChar) {
+  public static String[] determineTokens(String from, byte separator, byte quoteChar, byte escapechar) {
     ArrayList<String> tokens = new ArrayList<>();
     byte[] bits = StringUtils.bytesOf(from);
     int offset = 0;
@@ -597,7 +597,7 @@ MAIN_LOOP:
         c = bits[offset];
         escaped = escaping;
         escaping = !escaped && (
-                c == CsvParser.CHAR_ESCAPE 
+                c == escapechar
                 || (quotes > 0 && c == quoteChar && offset < bits.length-1 && bits[offset+1] == quoteChar) // 2 consecutive quotes inside a quote are not csv quotes
         );
         if (c == quotes && !escaped && !escaping) {
@@ -632,10 +632,10 @@ MAIN_LOOP:
   }
 
 
-  public static byte guessSeparator(String l1, String l2, boolean singleQuotes) {
+  public static byte guessSeparator(String l1, String l2, boolean singleQuotes, byte escapechar) {
     final byte quoteChar = singleQuotes ? CsvParser.CHAR_SINGLE_QUOTE : CsvParser.CHAR_DOUBLE_QUOTE;
-    int[] s1 = determineSeparatorCounts(l1, quoteChar);
-    int[] s2 = determineSeparatorCounts(l2, quoteChar);
+    int[] s1 = determineSeparatorCounts(l1, quoteChar, escapechar);
+    int[] s2 = determineSeparatorCounts(l2, quoteChar, escapechar);
     // Now we have the counts - if both lines have the same number of
     // separators the we assume it is the separator.  Separators are ordered by
     // their likelyhoods.
@@ -645,8 +645,8 @@ MAIN_LOOP:
       if( s1[max] < s1[i] ) max=i; // Largest count sep on 1st line
       if( s1[i] == s2[i] && s1[i] >= s1[max]>>1 ) {  // Sep counts are equal?  And at nearly as large as the larger header sep?
         try {
-          String[] t1 = determineTokens(l1, separators[i], quoteChar);
-          String[] t2 = determineTokens(l2, separators[i], quoteChar);
+          String[] t1 = determineTokens(l1, separators[i], quoteChar, escapechar);
+          String[] t2 = determineTokens(l2, separators[i], quoteChar, escapechar);
           if( t1.length != s1[i]+1 || t2.length != s2[i]+1 )
             continue;           // Token parsing fails
           return separators[i];
@@ -658,8 +658,8 @@ MAIN_LOOP:
     // one.  If there's no largest one, space will be used.
     if( s1[max]==0 ) max=separators.length-1; // Try last separator (space)
     if( s1[max]!=0 ) {
-      String[] t1 = determineTokens(l1, separators[max], quoteChar);
-      String[] t2 = determineTokens(l2, separators[max], quoteChar);
+      String[] t1 = determineTokens(l1, separators[max], quoteChar, escapechar);
+      String[] t2 = determineTokens(l2, separators[max], quoteChar, escapechar);
       if( t1.length == s1[max]+1 && t2.length == s2[max]+1 )
         return separators[max];
     }
@@ -695,7 +695,7 @@ MAIN_LOOP:
    *
    */
   static ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes, int checkHeader,
-                               String[] columnNames, byte[] columnTypes, String[][] naStrings, byte[] nonDataLineMarkers) {
+                               String[] columnNames, byte[] columnTypes, String[][] naStrings, byte[] nonDataLineMarkers, byte escapechar) {
     if (nonDataLineMarkers == null)
       nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
     int lastNewline = bits.length-1;
@@ -731,10 +731,10 @@ MAIN_LOOP:
           }
           //FIXME should set warning message and let fall through
           return new ParseSetup(CSV_INFO, GUESS_SEP, singleQuotes, checkHeader, 1, null, ctypes, domains, naStrings, data, new ParseWriter.ParseErr[0],FileVec.DFLT_CHUNK_SIZE,
-                  nonDataLineMarkers);
+                  nonDataLineMarkers, escapechar);
         }
       }
-      data[0] = determineTokens(lines[0], sep, singleQuotes);
+      data[0] = determineTokens(lines[0], sep, singleQuotes, escapechar);
       ncols = (ncols > 0) ? ncols : data[0].length;
       if( checkHeader == GUESS_HEADER) {
         if (ParseSetup.allStrings(data[0]) && !data[0][0].isEmpty()) {
@@ -751,17 +751,17 @@ MAIN_LOOP:
 
       // First guess the field separator by counting occurrences in first few lines
       if( sep == GUESS_SEP) {   // first guess the separator
-        sep = guessSeparator(lines[0], lines[1], singleQuotes);
+        sep = guessSeparator(lines[0], lines[1], singleQuotes, escapechar);
         if( sep == GUESS_SEP && lines.length > 2 ) {
-          sep = guessSeparator(lines[1], lines[2], singleQuotes);
-          if( sep == GUESS_SEP) sep = guessSeparator(lines[0], lines[2], singleQuotes);
+          sep = guessSeparator(lines[1], lines[2], singleQuotes, escapechar);
+          if( sep == GUESS_SEP) sep = guessSeparator(lines[0], lines[2], singleQuotes, escapechar);
         }
         if( sep == GUESS_SEP) sep = (byte)' '; // Bail out, go for space
       }
 
       // Tokenize the first few lines using the separator
       for( int i = 0; i < lines.length; ++i )
-        data[i] = determineTokens(lines[i], sep, singleQuotes );
+        data[i] = determineTokens(lines[i], sep, singleQuotes, escapechar);
       // guess columns from tokenization
       ncols = guessNcols(columnNames,data);
 
@@ -791,7 +791,7 @@ MAIN_LOOP:
 
     // Assemble the setup understood so far
     ParseSetup resSetup = new ParseSetup(CSV_INFO, sep, singleQuotes, checkHeader, ncols, labels, null, null /*domains*/, naStrings, data,
-            nonDataLineMarkers);
+            nonDataLineMarkers, escapechar);
 
     // now guess the types
     if (columnTypes == null || ncols != columnTypes.length) {
