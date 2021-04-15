@@ -15,11 +15,13 @@ import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 import water.util.Timer;
 
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static water.util.ArrayUtils.constAry;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Cox Proportional Hazards Model
@@ -490,7 +492,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    protected void calcCumhaz_0(CoxPHModel model, final CoxPHTask coxMR) {
+    protected void calcCumhaz_0(CoxPHModel model, DataInfo dinfo, final CoxPHTask coxMR) {
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
@@ -596,11 +598,17 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         baselineHazardAsFrame.setNames(new String[]{"t", "baseline hazard"});
         baselineSurvivalAsFrame.setNames(new String[]{"t", "baseline survival"});
       } else {
+        final Vec[] strataCols = stream(_input_parms._stratify_by)
+                                   .map(s -> train().vec(s))
+                                   .toArray(Vec[]::new);
+        
         List<String> names = o._strataMap.entrySet().stream()
                 .sorted(Comparator.comparingInt(e -> e.getValue()._val))
                 .map(Map.Entry::getKey)
                 .map(i -> i._gs)
-                .map(a -> Arrays.stream(a).mapToObj(d -> String.valueOf((int) d)))
+                .map(a -> IntStream.range(0, strataCols.length)
+                                   .mapToObj(i -> strataCols[i].factor((int) a[i]))
+                )
                 .map(s -> s.collect(Collectors.joining(", ", "(", ")")))
                 .collect(toList());
         names.add(0, "t");
@@ -707,7 +715,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         }
 
         if (_parms._calc_cumhaz && coxMR != null) {
-          calcCumhaz_0(model, coxMR);
+          calcCumhaz_0(model, dinfo, coxMR);
         }
 
         if (iterTimer != null) {
