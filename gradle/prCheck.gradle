@@ -92,4 +92,5 @@ def checkPull(changeId) {
         }
     }
     println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
+    return []
 }
