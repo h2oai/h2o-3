@@ -71,6 +71,6 @@ public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   @API(help="Rows", direction=API.Direction.OUTPUT)
   public long rows;
 
-  @API(help="One-character string used to escape other characters.", direction=API.Direction.INOUT)
+  @API(help="One ASCII character used to escape other characters.", direction=API.Direction.INOUT)
   public byte escapechar = ParseSetup.DEFAULT_ESCAPE_CHAR;
 }

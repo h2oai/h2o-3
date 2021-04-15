@@ -33,7 +33,7 @@
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @param partition_by (Optional) Names of the columns the persisted dataset has been partitioned by.
 #' @param quotechar A hint for the parser which character to expect as quoting character. None (default) means autodetection.
-#' @param escapechar (Optional) One-character string used to escape other characters.
+#' @param escapechar (Optional) One ASCII character used to escape other characters.
 #' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
 #' @export
 h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, sep = "", col.names=NULL,
@@ -140,7 +140,7 @@ h2o.parseRaw <- function(data, pattern="", destination_frame = "", header=NA, se
 #' Get a parse setup back for the staged data.
 #' @inheritParams h2o.parseRaw
 #' @param single_quotes If set to true, the parser expects single quotes. False for double quotes (default).
-#' @param escapechar (Optional) One-character string used to escape other characters.
+#' @param escapechar (Optional) One ASCII character used to escape other characters.
 #' @seealso \link{h2o.parseRaw}
 #' @export
 h2o.parseSetup <- function(data, pattern="", destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,

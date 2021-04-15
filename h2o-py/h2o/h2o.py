@@ -385,7 +385,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
-    :param escapechar: (Optional) One-character string used to escape other characters.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -457,7 +457,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
-    :param escapechar: (Optional) One-character string used to escape other characters.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -770,7 +770,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
     :param partition_by: A list of columns the dataset has been partitioned by. None by default.
     :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
-    :param escapechar: (Optional) One-character string used to escape other characters.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 

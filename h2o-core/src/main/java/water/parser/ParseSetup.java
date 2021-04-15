@@ -47,7 +47,7 @@ public class ParseSetup extends Iced {
   String[] _synthetic_column_names; // Columns with constant values to be added to parsed Frame
   String[][] _synthetic_column_values; // For each imported file contains array of values for each synthetic column
   byte _synthetic_column_type = Vec.T_STR; // By default, all synthetic columns are treated as strings
-  byte _escapechar = DEFAULT_ESCAPE_CHAR; // One-character string used to escape other characters, by default '\'
+  byte _escapechar = DEFAULT_ESCAPE_CHAR; // One ASCII character used to escape other characters, by default '\'
 
   String [] _fileNames = new String[]{"unknown"};
   public boolean disableParallelParse;
