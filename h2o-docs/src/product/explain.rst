@@ -509,6 +509,28 @@ An Individual Conditional Expectation (ICE) plot gives a graphical depiction of 
    :align: center
 
 
+Learning Curve Plot
+~~~~~~~~~~~~~~~~~~~
+
+The learning curve plot shows error metric dependence on learning progress, e.g., RMSE vs number of trees trained so far in GBM.
+This plot can help diagnosing whether the model is overfitting or underfitting - in an ideal situation the training and validation curves converge.
+There can be up to 4 curves showing Training, Validation, Training on CV Models, and Cross-validation error.
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        learning_curve_plot <- h2o.learning_curve_plot(model)
+        learning_curve_plot
+
+   .. code-tab:: python
+
+        learning_curve_plot = model.learning_curve_plot()
+
+.. figure:: images/explain_learning_curve_plot_airlines.png
+   :alt: H2O AutoML
+   :scale: 90%
+   :align: center
 
 
 
