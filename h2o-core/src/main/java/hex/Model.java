@@ -1871,7 +1871,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
-    if(_output.isClassifier() && computeMetrics) {
+    if(_output.isClassifier() && computeMetrics && !_output.hasUplift()) {
       /*
       if (false) {
         assert(mdomain != null); // label must be categorical
@@ -1969,7 +1969,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
     String[][] domains = new String[names.length][];
     Vec response = adaptFrm.lastVec();
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
+    domains[0] = names.length == 1 || _output.hasUplift() ? null : ! computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
     }
@@ -2145,8 +2145,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
+      Chunk upliftChunk = _output.hasUplift() ? chks[_output.upliftIdx()] : null;
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
+      if(_output.hasUplift()){
+        ((ModelMetricsBinomialUplift.MetricBuilderBinomialUplift) _mb).resetThresholds(null);
+      }
       if (_computeMetrics) {
         if (_output.hasResponse()) {
           actual = new float[1];
