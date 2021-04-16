@@ -47,6 +47,9 @@ public class AUUCTest extends TestUtil {
         double[] causalMlGain = new double[]{0, 0, 0, 0, 1.6667, 0, -1.16667, 0, 0.9, 0};
         auuc = doAUUC(10, probs, y, uplift, AUUC.AUUCType.gain);
         assert equalTwoArrays(causalMlGain, auuc._uplift, 1e-2);
+
+        double resultAUUC = ArrayUtils.sum(causalMlGain)/(causalMlGain.length+1);
+        assert auuc._auuc - resultAUUC < 10e-10;
     }
 
     private static AUUC doAUUC(int nbins, double[] probs, double[] y, double[] uplift) {

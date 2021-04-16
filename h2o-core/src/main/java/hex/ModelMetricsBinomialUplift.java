@@ -177,7 +177,9 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _wYY += weight * y * y;
             _count++;
             _wcount += weight;
-            _auuc.perRow(ds[0], weight, y, uplift);
+            if(_auuc != null) {
+                _auuc.perRow(ds[0], weight, y, uplift);
+            }
             return ds;
         }
 
@@ -223,9 +225,13 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,
                                               final Vec resp, final Vec weight, Vec uplift) {
             GainsUplift gul = null;
+            AUUC auuc = null;
             if (_wcount > 0) {
                 if (preds != null) {
                     if (resp != null) {
+                        if (_auuc == null) {
+                            auuc = new AUUC(preds.vec(0), resp, uplift, m._parms._auuc_type);
+                        }
                         final Optional<GainsUplift> optionalGainsUplift = calculateGainsUplift(m, preds, resp, weight, uplift);
                         if (optionalGainsUplift.isPresent()) {
                             gul = optionalGainsUplift.get();
@@ -233,13 +239,12 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                     }
                 }
             }
-            return makeModelMetrics(m, f, gul);
+            return makeModelMetrics(m, f, auuc, gul);
         }
 
-        private ModelMetrics makeModelMetrics(Model m, Frame f, GainsUplift gul) {
+        private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc, GainsUplift gul) {
             double sigma = Double.NaN;
-            final AUUC auuc;
-            if(_wcount > 0) {
+            if(_wcount > 0 && auuc == null) {
                 sigma = weightedSigma();
                 // TODO propagate auuc metric through API
                 auuc = new AUUC(_auuc, m._parms._auuc_type);
