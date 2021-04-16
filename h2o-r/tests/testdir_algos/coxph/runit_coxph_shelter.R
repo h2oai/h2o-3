@@ -1,26 +1,27 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-test.CoxPH.shelter <- function() {
+test.CoxPH.shelter.impl <- function(ties) {
     shelter <- read.csv(file =locate("smalldata/coxph_test/shelter.csv"))
     coxph_features <- c("intake_condition","intake_type", "animal_breed", "chip_status", "surv_hours", "event")
     
     shelter.df <- shelter[,coxph_features]
     shelter.hex <- as.h2o(shelter.df)
 
-    shelter.hex$event = as.factor(shelter.hex$event)
-    shelter.hex$intake_condition = as.factor(shelter.hex$intake_condition)
-    shelter.hex$intake_type = as.factor(shelter.hex$intake_type)
-    shelter.hex$animal_breed = as.factor(shelter.hex$animal_breed)
-    shelter.hex$chip_status = as.factor(shelter.hex$chip_status)
+    shelter.hex$event <- as.factor(shelter.hex$event)
+    shelter.hex$intake_condition <- as.factor(shelter.hex$intake_condition)
+    shelter.hex$intake_type <- as.factor(shelter.hex$intake_type)
+    shelter.hex$animal_breed <- as.factor(shelter.hex$animal_breed)
+    shelter.hex$chip_status <- as.factor(shelter.hex$chip_status)
     
     
     coxph.h2o <- h2o.coxph(training_frame = shelter.hex,
                            stop_column = "surv_hours",
-                           event_column = "event")
+                           event_column = "event",
+                           ties = ties)
     
     coxph.r <- survival::coxph(Surv(surv_hours, event) ~ intake_condition + animal_breed + intake_type + chip_status, 
-                               data = shelter.df)
+                               data = shelter.df, ties = ties)
 
 
     output <- coxph.h2o@model
@@ -51,6 +52,11 @@ test.CoxPH.shelter <- function() {
     expect_equal(c(1078, 2), dim(baseline_survival))
     baseline_hazard <- h2o.getFrame(output$baseline_hazard$name)
     expect_equal(c(1078, 2), dim(baseline_hazard))
+}
+
+test.CoxPH.shelter <- function() {
+    test.CoxPH.shelter.impl("breslow")
+    test.CoxPH.shelter.impl("efron")
 }
 
 doTest("CoxPH: Animal Shelter Test", test.CoxPH.shelter)
