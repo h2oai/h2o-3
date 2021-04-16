@@ -19,7 +19,7 @@ import java.util.TreeSet;
 /**
  * Area under uplift curve
  */
-public class AUUC extends Iced{
+public class AUUC2 extends Iced{
     public final int _nBins;  // Max number of bins; can be less if there are fewer points
     public final int _maxIdx;  // Threshold that maximizes the default criterion
     public final double[] _ths; // Thresholds
@@ -47,19 +47,19 @@ public class AUUC extends Iced{
     public long frequency( int idx ) { return _frequency[idx]; }
     public double uplift( int idx) { return _uplift[idx]; }
     
-    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
+    public AUUC2(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(NBINS, probs, y, uplift, auucType);
     }
 
-    public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
+    public AUUC2(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
     }
 
-    public AUUC(AUUCBuilder bldr, AUUCType auucType) {
+    public AUUC2(AUUCBuilder bldr, AUUCType auucType) {
         this(bldr, true, auucType);
     }
 
-    private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
+    private AUUC2(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         // Copy result arrays into base object, shrinking to match actual bins
         System.out.println(bldr.toDebugString());
         _auucType = auucType;
@@ -87,11 +87,8 @@ public class AUUC extends Iced{
             _uplift[i] = _auucType.exec(this, i);
         }
         
-        if(_uplift.length == 1 && Double.isNaN(_uplift[0])) {
-           _uplift[0] = 0;
-        } else {
-            ArrayUtils.interpolateLinear(_uplift);
-        }
+        ArrayUtils.interpolateLinear(_uplift);
+        
         if (trueProbabilities) {
             _auuc = computeAuuc();
             _maxIdx = 0;
@@ -100,7 +97,7 @@ public class AUUC extends Iced{
         }
     }
 
-    private AUUC(AUUC auuc, int idx) {
+    private AUUC2(AUUC2 auuc, int idx) {
         _nBins = 1;
         _n = auuc._n;
         _ths = new double[]{auuc._ths[idx]};
@@ -114,7 +111,7 @@ public class AUUC extends Iced{
         _auucType = auuc._auucType;
     }
 
-    AUUC() {
+    AUUC2() {
         _nBins = 0;
         _n = 0;
         _ths = new double[0];
@@ -128,8 +125,8 @@ public class AUUC extends Iced{
      * Creates a dummy AUUC instance with no metrics, meant to prevent possible NPEs
      * @return a valid AUUC instance
      */
-    public static AUUC emptyAUUC() {
-        return new AUUC();
+    public static AUUC2 emptyAUUC() {
+        return new AUUC2();
     }
 
     private boolean isEmpty() {
@@ -171,7 +168,7 @@ public class AUUC extends Iced{
         for( int i = 0; i < _nBins; i++ ) {
             area += uplift(i) * frequency(i);
         }
-        return area/(_n+1);
+        return area/_n;
     }
     
     public double auuc(){
@@ -288,7 +285,7 @@ public class AUUC extends Iced{
          *  @param yControl
          *  @return metric value */
         abstract double exec(long threshold, long control, long yTreatment, long yControl );
-        public double exec( AUUC auc, int idx ) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
+        public double exec(AUUC2 auc, int idx ) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
 
         public static final AUUCType[] VALUES = values();
 

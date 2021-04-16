@@ -2,6 +2,7 @@ package water.util;
 
 import org.junit.Assert;
 import org.junit.Test;
+import sun.plugin.javascript.navig.Array;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -524,8 +525,26 @@ public class ArrayUtilsTest {
 
   @Test
   public void testUniformDistFromArray() {
-    double[][] array = new double[][]{{1.0, 2.0, 3.0},{-1.0, -2.0, -3.0}};
+    double[][] array = new double[][]{{1.0, 2.0, 3.0}, {-1.0, -2.0, -3.0}};
     double[] dist = uniformDistFromArray(array, 0xDECAF);
     assertArrayEquals("Not expected array of size", new double[]{2.763, -2.958}, dist, 10e-3);
+  }
+
+  @Test
+  public void testInterpolateLinear(){
+    double[] simple = new double[]{Double.NaN, 1, 2, Double.NaN, 4};
+    double[] simpleExpected = new double[]{0.5, 1, 2, 3, 4};
+    interpolateLinear(simple);
+    assertArrayEquals("Interpolated array should be"+Arrays.toString(simpleExpected)+" but is"+Arrays.toString(simple), simpleExpected, simple, 0);
+
+    double[] simple2 = new double[]{Double.NaN, Double.NaN, 3, 4, Double.NaN, 6};
+    double[] simpleExpected2 = new double[]{1, 2, 3, 4, 5, 6};
+    interpolateLinear(simple2);
+    assertArrayEquals("Interpolated array should be"+Arrays.toString(simpleExpected2)+" but is"+ Arrays.toString(simple2), simpleExpected2, simple2, 0);
+
+    double[] complex = new double[]{0, Double.NaN, 3, Double.NaN, 9};
+    double[] complexExpected = new double[]{0, 1.5, 3, 6, 9};
+    interpolateLinear(complex);
+    assertArrayEquals("Interpolated array should be"+Arrays.toString(complexExpected)+" but is"+Arrays.toString(complex), complexExpected, complex, 0);
   }
 }
