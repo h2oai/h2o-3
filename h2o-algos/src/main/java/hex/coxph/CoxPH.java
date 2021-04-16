@@ -492,7 +492,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    protected void calcCumhaz_0(CoxPHModel model, DataInfo dinfo, final CoxPHTask coxMR) {
+    protected void calcCumhaz_0(CoxPHModel model, final CoxPHTask coxMR) {
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
@@ -715,7 +715,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         }
 
         if (_parms._calc_cumhaz && coxMR != null) {
-          calcCumhaz_0(model, dinfo, coxMR);
+          calcCumhaz_0(model, coxMR);
         }
 
         if (iterTimer != null) {
