@@ -7,6 +7,22 @@ from h2o.estimators.uplift_random_forest import H2OUpliftRandomForestEstimator
 from causalml.inference.tree import UpliftRandomForestClassifier
 from causalml.metrics import plot_gain, plot_qini, plot_lift
 from causalml.metrics import auuc_score
+import pandas as pd
+
+
+def uplift_simple():
+    treatment_column = "treatment"
+    response_column = "response"
+    uplift_column = "uplift"
+    data = {treatment_column: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+            response_column:  [0, 0, 0, 1, 1, 0, 0, 0, 1, 1],
+            uplift_column:    [0.1, -0.1, 0.2, 0.5, 0.55, 0.13, -0.2, 0.11, 0.3, 0.9]}
+    df = pd.DataFrame(data=data)
+    plot_qini(df, outcome_col=response_column, treatment_col=treatment_column)
+    plot_lift(df, outcome_col=response_column, treatment_col=treatment_column)
+    plot_gain(df, outcome_col=response_column, treatment_col=treatment_column)
+    auuc = auuc_score(df, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
+    print(auuc)
 
 
 def uplift_compare():
@@ -22,7 +38,7 @@ def uplift_compare():
     train = split[0]
     test = split[1]
     
-    ntree = 100
+    ntree = 1000
     max_depth = 3
     
     auuc_types = ["qini", "lift", "gain"]
@@ -98,7 +114,7 @@ def uplift_compare():
     print("H2O metrics AUUC Lift: "+str(auuc_lift))
     print("H2O metrics AUUC Gain: "+str(auuc_gain))
 
-    auuc = auuc_score(results, outcome_col=response_column, treatment_col=uplift_column)
+    auuc = auuc_score(results, outcome_col=response_column, treatment_col=uplift_column, normalize=False)
     print("H2O AUUC:")
     print(auuc["h2o"])
     print("CauslML AUUC:")
@@ -106,8 +122,13 @@ def uplift_compare():
     print("Random AUUC:")
     print(auuc["Random"])
     
+    # auuc gain and h2o auuc shoudl be almost the same
+    # assert auuc_gain == auuc["h2o"]
+    
     
 if __name__ == "__main__":
+    #pyunit_utils.standalone_test(uplift_simple)
     pyunit_utils.standalone_test(uplift_compare)
 else:
+    #uplift_simple()
     uplift_compare()
