@@ -598,10 +598,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         baselineHazardAsFrame.setNames(new String[]{"t", "baseline hazard"});
         baselineSurvivalAsFrame.setNames(new String[]{"t", "baseline survival"});
       } else {
-        final Vec[] strataCols = stream(_input_parms._stratify_by)
-                                   .map(s -> train().vec(s))
-                                   .toArray(Vec[]::new);
-        
+        final Vec[] strataCols = train().vecs(_input_parms._stratify_by);
+
         List<String> names = o._strataMap.entrySet().stream()
                 .sorted(Comparator.comparingInt(e -> e.getValue()._val))
                 .map(Map.Entry::getKey)
