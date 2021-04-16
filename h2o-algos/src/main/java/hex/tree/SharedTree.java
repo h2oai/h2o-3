@@ -187,6 +187,13 @@ public abstract class SharedTree<
     }
   }
 
+  @Override
+  protected void checkEarlyStoppingReproducibility() {
+    if (_parms._score_tree_interval == 0 && !_parms._score_each_iteration) {
+      warn("_stopping_rounds", "early stopping is enabled but neither score_tree_interval or score_each_iteration are defined. Early stopping will not be reproducible!");
+    }
+  }
+
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
   abstract protected class Driver extends ModelBuilder<M,P,O>.Driver {
