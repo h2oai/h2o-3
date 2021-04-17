@@ -44,10 +44,7 @@ def gbm_predict_contributions_sorting():
     assert_equals(first_row_sorted_asc[1][0], contributions[0, 2], "Not correctly sorted")
 
     contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=2, abs_val=False)
-    assert_equals(first_row_sorted_desc[0][0], contributions[0, 0], "Not correctly sorted")
-    assert_equals(first_row_sorted_desc[1][0], contributions[0, 2], "Not correctly sorted")
-    assert_equals(first_row_sorted_asc[0][0], contributions[0, 4], "Not correctly sorted")
-    assert_equals(first_row_sorted_asc[1][0], contributions[0, 6], "Not correctly sorted")
+    check_sorted_correcty_first_two_last_two(contributions, first_row_sorted_desc, first_row_sorted_asc)
 
     contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=0, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
@@ -83,10 +80,7 @@ def gbm_predict_contributions_sorting():
     assert_equals(first_row_sorted_asc_abs[1][0], contributions[0, 2], "Not correctly sorted")
 
     contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=2, abs_val=True)
-    assert_equals(first_row_sorted_desc_abs[0][0], contributions[0, 0], "Not correctly sorted")
-    assert_equals(first_row_sorted_desc_abs[1][0], contributions[0, 2], "Not correctly sorted")
-    assert_equals(first_row_sorted_asc_abs[0][0], contributions[0, 4], "Not correctly sorted")
-    assert_equals(first_row_sorted_asc_abs[1][0], contributions[0, 6], "Not correctly sorted")
+    check_sorted_correcty_first_two_last_two(contributions, first_row_sorted_desc_abs, first_row_sorted_asc_abs)
 
     contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=0, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
@@ -119,6 +113,13 @@ def check_sorted_correctly(contributions, python_sorted):
     assert_equals(python_sorted[4][0], contributions[0, 8], "Not correctly sorted")
     assert_equals(python_sorted[5][0], contributions[0, 10], "Not correctly sorted")
     assert_equals(python_sorted[6][0], contributions[0, 12], "Not correctly sorted")
+
+
+def check_sorted_correcty_first_two_last_two(contributions, python_sorted_desc, python_sorted_asc):
+    assert_equals(python_sorted_desc[0][0], contributions[0, 0], "Not correctly sorted")
+    assert_equals(python_sorted_desc[1][0], contributions[0, 2], "Not correctly sorted")
+    assert_equals(python_sorted_asc[0][0], contributions[0, 4], "Not correctly sorted")
+    assert_equals(python_sorted_asc[1][0], contributions[0, 6], "Not correctly sorted")
 
 
 if __name__ == "__main__":
