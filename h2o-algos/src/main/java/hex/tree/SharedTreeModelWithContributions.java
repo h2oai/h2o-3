@@ -23,8 +23,6 @@ public abstract class SharedTreeModelWithContributions<
         O extends SharedTreeModel.SharedTreeOutput
         > extends SharedTreeModel<M, P, O> implements Model.Contributions {
 
-  private transient final ContributionComposer contributionComposer = new ContributionComposer();
-
   public SharedTreeModelWithContributions(Key<M> selfKey, P parms, O output) {
         super(selfKey, parms, output);
     }
@@ -72,6 +70,7 @@ public abstract class SharedTreeModelWithContributions<
     Frame adaptFrm = cleanFrame(frame);
     final String[] contribNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
 
+    final ContributionComposer contributionComposer = new ContributionComposer();
     int topNAdjusted = contributionComposer.checkAndAdjustInput(topN, adaptFrm.names().length);
     int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(topBottomN, adaptFrm.names().length);
 
@@ -203,7 +202,7 @@ public abstract class SharedTreeModelWithContributions<
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
         doModelSpecificComputation(contribs);
-        KeyValue[] contribsSorted = contributionComposer.composeContributions(contribs, _contribNames, _topN, _topBottomN, _abs);
+        KeyValue[] contribsSorted = (new ContributionComposer()).composeContributions(contribs, _contribNames, _topN, _topBottomN, _abs);
 
         // Add contribs to new chunk
         addContribToNewChunk(contribsSorted, nc);
