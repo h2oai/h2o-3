@@ -877,7 +877,7 @@ predict_contributions.H2OModel <- function(object, newdata, output_format = c("o
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
-    params <- list(predict_contributions = TRUE, top_n=0, top_bottom_n=0, abs=FALSE)
+    params <- list(predict_contributions = TRUE, top_n=top_n, top_bottom_n=top_bottom_n, abs=abs)
     params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
     res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)
