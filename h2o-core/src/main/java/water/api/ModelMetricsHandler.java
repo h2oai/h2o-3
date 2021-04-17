@@ -140,13 +140,13 @@ class ModelMetricsHandler extends Handler {
             "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
     public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
 
-    @API(help = "Predict the feature contributions - Shapley values - return top_n highest", json = false)
+    @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
     public int top_n;
 
-    @API(help = "Predict the feature contributions - Shapley values - return top_bottom_n lowest", json = false)
+    @API(help = "Only for predict_contributions function - sort Shapley values and return top_bottom_n lowest (optional)", json = false)
     public int top_bottom_n;
 
-    @API(help = "Predict the feature contributions - Shapley values - compare as absolute values", json = false)
+    @API(help = "Only for predict_contributions function - sort absolute Shapley values (optional)", json = false)
     public boolean abs;
 
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
