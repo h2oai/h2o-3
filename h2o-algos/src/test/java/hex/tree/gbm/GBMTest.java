@@ -15,6 +15,7 @@ import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
+import org.hamcrest.number.OrderingComparison;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
@@ -4267,12 +4268,19 @@ public class GBMTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC;
       parms._stopping_rounds = 1;
       parms._auc_type = MultinomialAucType.MACRO_OVO;
+      parms._seed = 42;
+      parms._score_tree_interval = 1;
 
       gbm = new GBM(parms).trainModel().get();
+
+      // with learn_rate = 1 and min_rows = 1 we are forcing the trees to overfit on the training dataset
+      // we should see the training stop almost immediately (after 2 trees)
+      assertThat(gbm._output._ntrees, OrderingComparison.lessThan(5));
+
       ScoreKeeper[] history = gbm._output._scored_train;
       double previous = Double.MIN_VALUE;
-      for(ScoreKeeper sk : history){
-        assert sk._AUC >= previous;
+      for (ScoreKeeper sk : history) {
+        assertThat(sk._AUC, OrderingComparison.greaterThanOrEqualTo(previous)); 
         previous = sk._AUC;
       }
     } finally {
