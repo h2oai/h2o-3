@@ -565,7 +565,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
         long model_checksum = m.checksum();
         ModelMetrics mm = ModelMetrics.defaultModelMetrics(m);
         metrics[i++] = ModelMetrics.getMetricFromModelMetric(
-            _leaderboard_model_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
+            _leaderboard_model_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frameKey(), mm.frameChecksum())),
             metric
         );
       }

@@ -676,7 +676,7 @@ public class KMeansTest extends TestUtil {
       KMeans job = new KMeans(parms);
       kmeans = job.trainModel().get();
 
-      Assert.assertNotNull("The training metrics frame key should not be null.", kmeans._output._training_metrics.frame()._key);
+      Assert.assertNotNull("The training metrics frame key should not be null.", kmeans._output._training_metrics.frameKey());
 
     } finally {
       if( fr  != null ) fr.delete();
