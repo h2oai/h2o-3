@@ -19,7 +19,7 @@ def glm_grid_search_on_weights():
     train["CAPSULE"] = train["CAPSULE"].asfactor()
 
     response = "CAPSULE"
-    features = train.col_names.copy()
+    features = list(train.col_names)
     features.remove(response)
 
     train['wt_2'] = (train["CAPSULE"] == "1").ifelse(2, 1)
