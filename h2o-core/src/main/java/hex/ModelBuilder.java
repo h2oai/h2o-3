@@ -1061,7 +1061,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean validateStoppingMetric() {
     return true;
   }
-  
+
+  protected void checkEarlyStoppingReproducibility() {
+    // nothing by default -> meant to be overridden 
+  }
+
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -1587,18 +1591,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else if (validateStoppingMetric()){
-      if (isClassifier()) {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
-          error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
-        }
-      } else {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
-                == ScoreKeeper.StoppingMetric.AUCPR)
-        {
-          error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+    }
+    else { // early stopping is enabled
+      checkEarlyStoppingReproducibility();
+      if (validateStoppingMetric()) {
+        if (isClassifier()) {
+          if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
+            error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+          }
+        } else {
+          if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
+                  _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
+                  _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
+                  == ScoreKeeper.StoppingMetric.AUCPR) {
+            error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+          }
         }
       }
     }

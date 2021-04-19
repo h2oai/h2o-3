@@ -261,6 +261,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_" + paramName, paramName + " must be between 0 (exclusive) and 1 (inclusive)");
   }
 
+  @Override
+  protected void checkEarlyStoppingReproducibility() {
+    if (_parms._score_tree_interval == 0 && !_parms._score_each_iteration) {
+      warn("_stopping_rounds", "early stopping is enabled but neither score_tree_interval or score_each_iteration are defined. Early stopping will not be reproducible!");
+    }
+  }
+
   static boolean allowMultiGPU() {
     return H2O.getSysBoolProperty("xgboost.multinode.gpu.enabled", false);
   }
