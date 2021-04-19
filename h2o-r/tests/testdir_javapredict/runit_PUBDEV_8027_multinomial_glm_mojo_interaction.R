@@ -25,27 +25,25 @@ setParmsData <- function(numTest=1000) {
   # Parameters for the test.
   #----------------------------------------------------------------------
   missing_values <- 'MeanImputation'
-  
   X <- sample(1:10, numTest, replace=TRUE)
   Y <- sample(1:10, numTest, replace=TRUE)
   Z <- sample(1:10, numTest, replace=TRUE)
-  resp <- sample(1:3, numTest, replace=TRUE)
-  training_file <- data.frame(x=X, y=Y, z=Z, response=resp)
-  ratios <- (h2o.nrow(training_file)-numTest)/h2o.nrow(training_file)
-  allFrames <- h2o.splitFrame(training_file, ratios)
-  training_frame <- allFrames[[1]]
-  test_frame <- allFrames[[2]]
-  allNames = h2o.names(training_frame)
+  resp <- sample(1:5, numTest, replace=TRUE)
+  training_file <- as.h2o(data.frame(x=X, y=Y, z=Z, response=resp))
+  training_file$response <- h2o.asfactor(training_file$response)
+  test_file <- as.h2o(data.frame(x=X, y=Y, z=Z, response=resp))
+  test_file$response <- h2o.asfactor(test_file$response)
+  allNames = h2o.names(training_file)
   
   params                  <- list()
   params$missing_values_handling <- missing_values
-  params$training_frame <- training_frame
+  params$training_frame <- training_file
   params$interaction_pairs <- list(c("x", "y"), c("y", "z"), c("x", "z"))
   params$x <- allNames[-which(allNames=="response")]
   params$y <- "response"
   params$family <- "multinomial"
   
-  return(list("params" = params, "tDataset" = test_frame))
+  return(list("params" = params, "tDataset" = test_file))
 }
 
 doTest("Multinomial GLM mojo interaction test", test.multinomialGlm.mojo.interaction)
