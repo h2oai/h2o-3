@@ -166,6 +166,14 @@ public class ArrayUtils {
     return tmp;
   }
 
+  @SafeVarargs
+  public static <T> T[] appendGeneric(T[] a, T... b) {
+    if( a==null ) return b;
+    T[] tmp = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,tmp,a.length,b.length);
+    return tmp;
+  }
+
   public static double[] signum(double[] array) {
     double[] signArray = new double[array.length];
     for (int i = 0; i < array.length; i++) {

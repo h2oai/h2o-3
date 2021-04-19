@@ -24,16 +24,17 @@ public class ContributionComposer implements Serializable {
     public final KeyValue[] composeContributions(float[] contribs, String[] contribNames, int topN, int topBottomN, boolean abs) {
         if (topBottomN == 0) {
             return composeSortedContributions(contribs, contribNames, topN, new KeyValue.DescComparator(abs));
-        } else if (topN == 0){
+        } else if (topN == 0) {
             return composeSortedContributions(contribs, contribNames, topBottomN, new KeyValue.AscComparator(abs));
         } else if ((topN + topBottomN) >= contribs.length || topN < 0 || topBottomN < 0) {
             return composeSortedContributions(contribs, contribNames, contribs.length, new KeyValue.DescComparator(abs));
         }
-        
-        KeyValue[] topSorted = composeSortedContributions(contribs,contribNames, topN, new KeyValue.DescComparator(abs));
-        topSorted = Arrays.copyOf(topSorted, topSorted.length - 1);
-        KeyValue[] bottomSorted = composeSortedContributions(contribs, contribNames, topBottomN, new KeyValue.AscComparator(abs));
-        
+
+        KeyValue[] topSorted = composeSortedContributions(contribs, contribNames, contribs.length, new KeyValue.DescComparator(abs));
+        KeyValue[] bottomSorted = Arrays.copyOfRange(topSorted, topSorted.length - 1 - topBottomN, topSorted.length);
+        reverse(bottomSorted, bottomSorted.length - 1);
+        topSorted = Arrays.copyOf(topSorted, topN);
+
         return ArrayUtils.appendGeneric(topSorted, bottomSorted);
     }
     
@@ -62,5 +63,13 @@ public class ContributionComposer implements Serializable {
         }
         Arrays.sort(sorted, 0, contribs.length -1 /*exclude bias*/, comparator);
         return sorted;
+    }
+
+    private void reverse(KeyValue[] contributions, int len) {
+        for (int i = 0; i < len/2; i++) {
+            KeyValue tmp = contributions[i];
+            contributions[i] = contributions[len - i - 1];
+            contributions[len - i - 1] = tmp;
+        }
     }
 }
