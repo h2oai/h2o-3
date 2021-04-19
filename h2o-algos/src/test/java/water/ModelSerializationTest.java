@@ -3,6 +3,8 @@ package water;
 import hex.ModelExportOption;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
+import hex.rulefit.RuleFit;
+import hex.rulefit.RuleFitModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.junit.Assert;
@@ -219,6 +221,27 @@ public class ModelSerializationTest {
   private GBMModel prepareGBMModel(String dataset, String response) {
     return prepareGBMModel(dataset, new GBMModel.GBMParameters(), response);
   }
+
+  @Test
+  public void testRuleFitModel() throws IOException {
+    RuleFitModel model = null, loadedModel = null;
+    Frame fr = null, pr = null;
+    try {
+      model = prepareRuleFitModel("smalldata/junit/cars.csv", new String[0], "power (hp)");
+      loadedModel = saveAndLoad(model);
+      assertModelBinaryEquals(model, loadedModel);
+      for (Key<ModelMetrics> mmKey : loadedModel._output.getModelMetrics()) {
+        assertNotNull(mmKey.get());
+      }
+      fr = parseTestFile("smalldata/junit/cars.csv");
+      pr = loadedModel.score(fr);
+    } finally {
+      if (loadedModel != null) loadedModel.delete();
+      if (model != null) model.delete();
+      if (fr != null) fr.delete();
+      if (pr != null) pr.delete();
+    }
+  }
   
   private GBMModel prepareGBMModel(String dataset, GBMModel.GBMParameters gbmParams, String response) {
     Frame f = parseTestFile(dataset);
@@ -292,6 +315,19 @@ public class ModelSerializationTest {
       params._ignored_columns = ignoredColumns;
       params._response_column = response;
       return new GLRM(params).trainModel().get();
+    } finally {
+      if (f!=null) f.delete();
+    }
+  }
+  
+  private RuleFitModel prepareRuleFitModel(String dataset, String[] ignoredColumns, String response) {
+    Frame f = parseTestFile(dataset);
+    try {
+      RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+      params._train = f._key;
+      params._ignored_columns = ignoredColumns;
+      params._response_column = response;
+      return new RuleFit(params).trainModel().get();
     } finally {
       if (f!=null) f.delete();
     }
