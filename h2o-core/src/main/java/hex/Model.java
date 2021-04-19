@@ -1541,7 +1541,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(defval);
           toDelete.put(vec._key, "adapted missing vectors");
           String str = "Test/Validation dataset is missing column '" + names[i] + "': substituting in a column of " + defval;
-          if (isResponse || isWeights || isFold)
+
+          if (ArrayUtils.contains(parms.getNonPredictors(), names[i]))
             Log.info(str); // we are doing a "pure" predict (computeMetrics is false), don't complain to the user
           else
             msgs.add(str);
