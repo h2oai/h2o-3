@@ -141,7 +141,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     void updateModelMetrics( GLMModel glmModel, Frame fr){
         for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
-            this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
+            // what is null here was already added to RF model from GLM submodel during hex.rulefit.RuleFit.RuleFitDriver.fillModelMetrics
+            if (modelMetricsKey.get() != null)
+                this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
         }
     }
 }
