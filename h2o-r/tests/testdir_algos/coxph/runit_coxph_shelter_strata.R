@@ -8,11 +8,11 @@ test.CoxPH.shelter.strata.impl <- function(ties) {
     shelter.df <- shelter[,coxph_features]
     shelter.hex <- as.h2o(shelter.df)
 
-    shelter.hex$event = as.factor(shelter.hex$event)
-    shelter.hex$intake_condition = as.factor(shelter.hex$intake_condition)
-    shelter.hex$intake_type = as.factor(shelter.hex$intake_type)
-    shelter.hex$animal_breed = as.factor(shelter.hex$animal_breed)
-    shelter.hex$chip_status = as.factor(shelter.hex$chip_status)
+    shelter.hex$event <- as.factor(shelter.hex$event)
+    shelter.hex$intake_condition <- as.factor(shelter.hex$intake_condition)
+    shelter.hex$intake_type <- as.factor(shelter.hex$intake_type)
+    shelter.hex$animal_breed <- as.factor(shelter.hex$animal_breed)
+    shelter.hex$chip_status <- as.factor(shelter.hex$chip_status)
     
     
     coxph.h2o <- h2o.coxph(training_frame = shelter.hex,
