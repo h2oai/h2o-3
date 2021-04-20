@@ -510,12 +510,16 @@ An Individual Conditional Expectation (ICE) plot gives a graphical depiction of 
 
 
 Learning Curve Plot
-~~~~~~~~~~~~~~~~~~~
+----------------------
 
-The learning curve plot shows error metric dependence on learning progress, e.g., RMSE vs number of trees trained so far in GBM.
-This plot can help diagnosing whether the model is overfitting or underfitting - in an ideal situation the training and validation curves converge.
-There can be up to 4 curves showing Training, Validation, Training on CV Models, and Cross-validation error.
+The learning curve plot shows error metric dependence on learning progress (e.g. RMSE vs. number of trees trained so far in GBM).  This plot can help to diagnose whether the model is overfitting or underfitting -- in an ideal situation, the training and validation curves converge.  There can be up to 4 curves showing the error, and all available metrics will be plotted: 
 
+- Training
+- Validation  (available when ``validation_frame`` is set)
+- Training on CV Models  (available when ``nfolds>1``)
+- Cross-validation  (available when ``nfolds>1``)
+
+If one of these is missing, that means those particular scoring metrics were not available in the model.  Learning curve plots will be included in the Explain function in a `future <https://h2oai.atlassian.net/browse/PUBDEV-8112>`__ release, but for now, this is offered as a stand-alone utility. 
 
 .. tabs::
    .. code-tab:: r R
