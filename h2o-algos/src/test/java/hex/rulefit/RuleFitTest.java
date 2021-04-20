@@ -130,9 +130,10 @@ public class RuleFitTest extends TestUtil {
         // the same as above but uses rules + linear terms
         RuleFitModel rfModel = null;
         GLMModel glmModel = null;
-        Frame fr = null, fr2 = null, fr3 = null;
+        Frame fr = null, fr2 = null, fr3 = null, valid = null;
         try {
             fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
+            valid = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -148,11 +149,14 @@ public class RuleFitTest extends TestUtil {
             final Vec weightsVector = fr.anyVec().makeOnes(1)[0];
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            
             DKV.put(fr);
+            DKV.put(valid);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._train = fr._key;
+            params._valid = valid._key;
             params._response_column = responseColumnName;
             params._max_num_rules = 100;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
@@ -178,6 +182,7 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._valid = valid._key;
             glmParameters._weights_column = rfModel._parms._weights_column;
             glmParameters._response_column = rfModel._parms._response_column;
             glmModel = new GLM(glmParameters).trainModel().get();
@@ -216,6 +221,7 @@ public class RuleFitTest extends TestUtil {
             if (fr != null) fr.remove();
             if (fr2 != null) fr2.remove();
             if (fr3 != null) fr3.remove();
+            if (valid != null) valid.remove();
             if (rfModel != null) {
                 rfModel.remove();
             }
@@ -459,6 +465,55 @@ public class RuleFitTest extends TestUtil {
 
             GLMModel.GLMParameters glmParameters = model.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._response_column = model._parms._response_column;
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+            Scope.track(glmModel.score(fr));
+
+            Assert.assertTrue(model.testJavaScoring(fr,fr2,1e-4));
+
+            ScoringInfo RuleFitScoringInfo = model.glmModel.getScoringInfo()[0];
+            ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
+            System.out.println("RuleFit MSE: " + RuleFitScoringInfo.scored_train._mse);
+            System.out.println("GLM MSE: " + GLMScoringInfo.scored_train._mse);
+            System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
+            System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+            System.out.println("RuleFit RMSLE:" +  model.rmsle());
+            System.out.println("GLM RMSLE:" + glmModel.rmsle());
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testCarsRulesValidation() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parseTestFile("smalldata/testng/cars_train.csv"));
+            final Frame valid = Scope.track(parseTestFile("smalldata/testng/cars_test.csv"));
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 1234;
+            params._response_column = "power (hp)";
+            params._ignored_columns = new String[]{"name"};
+            params._train = fr._key;
+            params._valid = valid._key;
+            params._max_num_rules = 200;
+            params._max_rule_length = 5;
+            params._model_type = RuleFitModel.ModelType.RULES;
+            params._min_rule_length = 1;
+
+            RuleFitModel model = new RuleFit( params).trainModel().get();
+            Scope.track_generic(model);
+
+            System.out.println("Intercept: \n" + model._output._intercept[0]);
+            System.out.println(model._output._rule_importance);
+
+            final Frame fr2 = Scope.track(model.score(fr));
+
+            GLMModel.GLMParameters glmParameters = model.glmModel._parms;
+            glmParameters._train = fr._key;
+            glmParameters._valid = valid._key;
             glmParameters._response_column = model._parms._response_column;
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);

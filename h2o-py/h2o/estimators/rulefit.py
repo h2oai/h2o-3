@@ -21,8 +21,8 @@ class H2ORuleFitEstimator(H2OEstimator):
     """
 
     algo = "rulefit"
-    param_names = {"model_id", "training_frame", "seed", "response_column", "ignored_columns", "algorithm",
-                   "min_rule_length", "max_rule_length", "max_num_rules", "model_type", "weights_column",
+    param_names = {"model_id", "training_frame", "validation_frame", "seed", "response_column", "ignored_columns",
+                   "algorithm", "min_rule_length", "max_rule_length", "max_num_rules", "model_type", "weights_column",
                    "distribution", "rule_generation_ntrees"}
 
     def __init__(self, **kwargs):
@@ -50,6 +50,20 @@ class H2ORuleFitEstimator(H2OEstimator):
     @training_frame.setter
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+
+
+    @property
+    def validation_frame(self):
+        """
+        Id of the validation data frame.
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("validation_frame")
+
+    @validation_frame.setter
+    def validation_frame(self, validation_frame):
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
 
     @property
