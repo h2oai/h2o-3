@@ -348,11 +348,12 @@
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
-  stopifnot(is.character(urlSuffix))
-  stopifnot(is.character(method))
-  if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
-
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, autoML=FALSE, doValidation=TRUE, ...) {
+  if (doValidation) {
+    stopifnot(is.character(urlSuffix))
+    stopifnot(is.character(method))
+    if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
+  }
   rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                    parms = parms, method = method, fileUploadInfo = fileUploadInfo,autoML=autoML, ...)
 
@@ -802,10 +803,10 @@ h2o.list_jobs <- function() {
 h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALSE) {
   myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
 
-  # If request fail, repeat the request unless it is stopifnot(..) error or job is no longer exists in the cluster (e.g. in case of restart)
+  # If request fail, repeat the request except the cases when job is no longer exists in the cluster (e.g. in case of restart)
   i <- 0
   while (i < 30) {
-    rawResponse <- try(.h2o.doSafeGET(urlSuffix = myJobUrlSuffix))
+    rawResponse <- try(.h2o.doSafeGET(urlSuffix = myJobUrlSuffix, doValidation=!jobPollSuccess))
     if(class(rawResponse) == "try-error" && jobPollSuccess){
       error_type <- attr(rawResponse,"condition")
       if (jobIsRecoverable) {
@@ -815,10 +816,6 @@ h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALS
         # This type of error handling is not ideal and safe for changes inside of the API
         if(grepl("Job is missing", error_type$message, fixed = TRUE)) {
           print(sprintf("Job is no longer exists: %s", error_type$message))
-          break
-        }
-        if (grepl("is not TRUE", error_type$message, fixed = TRUE)) {
-          print(sprintf("Request validation failed %s", error_type$message))
           break
         }
         print(sprintf("Job request failed %s, will retry after 3s.", error_type$message))
