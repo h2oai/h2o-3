@@ -3035,6 +3035,24 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
                 compare_frames_local_onecolumn_NA(frame1[col_ind], frame2[col_ind], prob=probVal, tol=tol_numeric)
     return True
 
+
+def catch_warnings():
+    import warnings
+    warnings.simplefilter("always", RuntimeWarning)
+    for v in sys.modules.values():
+        if getattr(v, '__warningregistry__', None):
+            v.__warningregistry__ = {}
+    return warnings.catch_warnings(record=True)
+
+
+def contains_warning(ws, message):
+    return any(issubclass(w.category, RuntimeWarning) and message in str(w.message) for w in ws)
+
+
+def no_warnings(ws):
+    return len(ws) == 0
+
+
 def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """
             This function will execute a command to run and analyze the print outs of
