@@ -178,6 +178,11 @@ public class RuleFitTest extends TestUtil {
 
             ConfusionMatrix ruleFitConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
 
+            assertEquals(rfModel._output._validation_metrics.rmse(), rfModel._output._training_metrics.rmse(), 1e-4);
+            assertEquals(rfModel._output._validation_metrics.mse(), rfModel._output._training_metrics.mse(), 1e-4);
+            assertEquals(rfModel._output._validation_metrics.auc_obj()._auc, rfModel._output._training_metrics.auc_obj()._auc, 1e-4);
+            assertEquals(rfModel._output._validation_metrics.hr(), rfModel._output._training_metrics.hr());
+            
             // GLM to compare:
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
@@ -216,6 +221,8 @@ public class RuleFitTest extends TestUtil {
 
             System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+            
+            
 
         } finally {
             if (fr != null) fr.remove();
