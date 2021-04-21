@@ -2454,6 +2454,7 @@ h2o.learning_curve_plot <- function(model,
                                     cv_ribbon = NULL,
                                     cv_lines = NULL
                                     ) {
+  .check_for_ggplot2()
   .preprocess_scoring_history <- function(model, scoring_history, training_metric=NULL) {
     scoring_history <- scoring_history[, !sapply(scoring_history, function(col) all(is.na(col)))]
     if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
