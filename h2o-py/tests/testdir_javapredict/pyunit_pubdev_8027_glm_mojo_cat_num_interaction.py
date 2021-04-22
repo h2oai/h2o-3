@@ -8,7 +8,10 @@ import tempfile
 
 
 def glm_mojo_cat_num_interaction_test():
-    pd_df = pd.DataFrame(np.array([[1,0,1,0,1,0,1,0,1,0], [3,1,1,3,1,1,2,3,3,1], [3,2,2,1,2,1,1,2,1,2], [2,2,1,2,2,2,3,2,1,1],
+#    pd_df = pd.DataFrame(np.array([[1,0,1,0,1,0,1,0,1,0], [3,1,1,3,1,1,2,3,3,1], [3,2,2,1,2,1,1,2,1,2], [2,2,1,2,2,2,3,2,1,1],
+#                                   ["a","a","a","b","a","b","a","b","b","a"]]).T,
+#                         columns=['label','numerical_feat','numerical_feat2', 'numerical_feat3', 'categorical_feat'])
+    pd_df = pd.DataFrame(np.array([[1,0,1,0,1,0,1,0,1,0], [3,float("NaN"),1,3,1,1,2,3,3,1], [3,2,2,1,2,float("NaN"),1,2,1,2], [2,2,1,2,2,2,3,float("NaN"),1,1],
                                    ["a","a","a","b","a","b","a","b","b","a"]]).T,
                          columns=['label','numerical_feat','numerical_feat2', 'numerical_feat3', 'categorical_feat'])
     h2o_df = h2o.H2OFrame(pd_df, na_strings=["UNKNOWN"])
