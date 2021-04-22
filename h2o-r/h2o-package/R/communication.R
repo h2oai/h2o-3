@@ -348,11 +348,12 @@
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
-  stopifnot(is.character(urlSuffix))
-  stopifnot(is.character(method))
-  if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
-
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, autoML=FALSE, doValidation=TRUE, ...) {
+  if (doValidation) {
+    stopifnot(is.character(urlSuffix))
+    stopifnot(is.character(method))
+    if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
+  }
   rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
                    parms = parms, method = method, fileUploadInfo = fileUploadInfo,autoML=autoML, ...)
 
@@ -799,9 +800,39 @@ h2o.list_jobs <- function() {
   df
 }
 
-h2o.get_job <- function(job_key) {
+h2o.get_job <- function(job_key, jobPollSuccess = FALSE, jobIsRecoverable = FALSE) {
   myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-  rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+
+  # If request fail, repeat the request except the cases when job is no longer exists in the cluster (e.g. in case of restart)
+  i <- 0
+  while (i < 30) {
+    rawResponse <- try(.h2o.doSafeGET(urlSuffix = myJobUrlSuffix, doValidation=!jobPollSuccess))
+    if(class(rawResponse) == "try-error" && jobPollSuccess){
+      error_type <- attr(rawResponse,"condition")
+      if (jobIsRecoverable) {
+        print(sprintf("Job request failed %s, waiting for cluster to restart.", error_type$message))
+        Sys.sleep(10)
+      } else {
+        # This type of error handling is not ideal and safe for changes inside of the API
+        if(grepl("Job is missing", error_type$message, fixed = TRUE)) {
+          print(sprintf("Job is no longer exists: %s", error_type$message))
+          break
+        }
+        print(sprintf("Job request failed %s, will retry after 3s.", error_type$message))
+        Sys.sleep(3)
+      }
+      i <- i + 1
+    } else {
+      break
+    }
+  }
+
+  # If request is still errored, stop with last error
+  if(class(rawResponse) == "try-error") {
+    stop(rawResponse)
+  }
+
+  # Parse job from response
   jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
   jobs <- jsonObject$jobs
   if (length(jobs) > 1) {
@@ -928,10 +959,14 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
   if (progressBar) pb <- txtProgressBar(style = 3L)
   keepRunning <- TRUE
   tryCatch({
+    jobPollSuccess <- FALSE
+    jobIsRecoverable <- FALSE
     while (keepRunning) {
-      job <- h2o.get_job(job_key)
+      job <- h2o.get_job(job_key, jobPollSuccess, jobIsRecoverable)
       status <- job$status
       stopifnot(is.character(status))
+      jobPollSuccess <- TRUE
+      jobIsRecoverable <- job$auto_recoverable
 
       # check failed up front...
       if( status == "FAILED" ) {

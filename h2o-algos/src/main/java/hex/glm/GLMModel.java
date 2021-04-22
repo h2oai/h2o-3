@@ -1930,19 +1930,31 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
-  @Override
-  protected boolean isFeatureUsedInPredict(int featureIdx) {
+  private boolean isFeatureUsedInPredict(int featureIdx, double[] beta){
     if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
       for (int i = _output._dinfo._catOffsets[featureIdx];
            i < _output._dinfo._catOffsets[featureIdx + 1];
            i++) {
-        if (beta()[i] != 0) return true;
+        if (beta[i] != 0) return true;
       }
       return false;
     } else {
       featureIdx += _output._dinfo._numOffsets[0] - _output._dinfo._catOffsets.length + 1;
     }
-    return beta()[featureIdx] != 0;
+    return beta[featureIdx] != 0;
+}
 
+  @Override
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
+    if (_parms._interactions != null) return true;
+    if (_output.isMultinomialClassifier()) {
+      for (double[] classBeta : _output._global_beta_multinomial) {
+        if (isFeatureUsedInPredict(featureIdx, classBeta))
+          return true;
+      }
+      return false;
+    } else {
+      return isFeatureUsedInPredict(featureIdx, _output._global_beta);
+    }
   }
 }
