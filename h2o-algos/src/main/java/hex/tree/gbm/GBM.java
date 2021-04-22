@@ -208,12 +208,31 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override
     protected Frame makeValidWorkspace() {
-      // FIXME: this is not efficient, we need a sparse volatile chunks
-      Vec[] tmp = _valid.anyVec().makeVolatileDoubles(numClassTrees());
+      final int nClasses = numClassTrees();
+      final Vec[] tmp;
+      if (validWorkspaceCanReuseTrainWorkspace()) {
+        tmp = new Vec[nClasses];
+        for (int i = 0; i < nClasses; i++) {
+          tmp[i] = _train.vec(idx_tree(i));
+          assert tmp[i].isVolatile();
+        }
+      } else {
+        tmp = _valid.anyVec().makeVolatileDoubles(nClasses);
+      }
       String[] tmpNames = new String[tmp.length];
       for (int i = 0; i < tmpNames.length; i++)
         tmpNames[i] = "__P_" + i;
       return new Frame(tmpNames, tmp);
+    }
+
+    private boolean validWorkspaceCanReuseTrainWorkspace() {
+      // 1. only possible for CV models
+      if (!_parms._is_cv_model)
+        return false;
+      // 2. and only if training frame and validation frame are identical (except for weights)
+      // training frame can eg. be sub/over-sampled for imbalanced problems\
+      // shortcut: if responses are identical => frames must be identical as well (for CV models only!!!)
+      return _vresponse._key.equals(_response._key);
     }
 
     @Override protected boolean doOOBScoring() { return false; }
