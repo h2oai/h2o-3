@@ -26,9 +26,9 @@ public class GLMMojoInteractionTestGaussian extends TestUtil {
             Frame fr2 = new TestFrameBuilder()
                 .withColNames("N1", "N2", "N3", "C1", "C2", "C3", "response")
                 .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-                .withDataForCol(0, ar(3,1,1,3,1,1,2,3,3,1))
-                .withDataForCol(1, ar(3,2,2,1,2,1,1,2,1,2))
-                .withDataForCol(2, ar(2,2,1,2,2,2,3,2,1,1))
+                .withDataForCol(0, ard(3,1,Double.NaN,3,1,1,2,3,3,1))
+                .withDataForCol(1, ard(3,2,2,1,2,1,1,2,Double.NaN,2))
+                .withDataForCol(2, ard(2,Double.NaN,1,2,2,2,3,2,1,1))
                 .withDataForCol(3, ar("a","a","a","b","a","b","a","b","b","a"))
                 .withDataForCol(4, ar("A","B","B","A","A","A","B","B","A","A"))
                 .withDataForCol(5, ar("F","B","F","B","F","F","B","F","B","B"))
@@ -38,9 +38,9 @@ public class GLMMojoInteractionTestGaussian extends TestUtil {
             Frame fr = new TestFrameBuilder()
                     .withColNames("N1", "N2", "N3", "C1", "C2", "C3", "response")
                     .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_CAT, Vec.T_CAT, Vec.T_CAT, Vec.T_NUM)
-                    .withDataForCol(0, ar(3,1,1,3,1,1,2,3,3,1))
-                    .withDataForCol(1, ar(3,2,2,1,2,1,1,2,1,2))
-                    .withDataForCol(2, ar(2,2,1,2,2,2,3,2,1,1))
+                    .withDataForCol(0, ard(3,1,Double.NaN,3,1,1,2,3,3,1))
+                    .withDataForCol(1, ard(3,2,2,1,2,1,1,2,Double.NaN,2))
+                    .withDataForCol(2, ard(2,Double.NaN,1,2,2,2,3,2,1,1))
                     .withDataForCol(3, ar("a","a","a","b","a","b","a","b","b","a"))
                     .withDataForCol(4, ar("A","B","B","A","A","A","B","B","A","A"))
                     .withDataForCol(5, ar("F","B","F","B","F","F","B","F","B","B"))
@@ -57,7 +57,7 @@ public class GLMMojoInteractionTestGaussian extends TestUtil {
             params._intercept = false;
             params._seed = 42;
 
-            params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
+            params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.MeanImputation;
             params._interaction_pairs = new StringPair[]{
                 new StringPair("N1", "N2"),
                 new StringPair("N2", "N3"),
