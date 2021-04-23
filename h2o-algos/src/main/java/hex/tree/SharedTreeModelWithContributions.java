@@ -79,19 +79,25 @@ public abstract class SharedTreeModelWithContributions<
     byte[] types = new byte[outputSize];
     String[][] domains = new String[outputSize+1][contribNames.length];
 
-    for (int i = 0, topFeatureIterator = 1, bottomFeatureIterator = 1; i < outputSize; i+=2, topFeatureIterator++) {
-      if (topFeatureIterator <= topNAdjusted) {
-        names[i] = "top_feature_" + topFeatureIterator;
-        names[i+1] = "top_value_" + topFeatureIterator;
-      } else {
-        names[i] = "bottom_top_feature_" + bottomFeatureIterator;
-        names[i+1] = "bottom_top_value_" + bottomFeatureIterator;
-        bottomFeatureIterator++;
-      }
+    for (int i = 0; i < outputSize; i+=2) {
       types[i] = Vec.T_CAT;
       domains[i] = Arrays.copyOf(contribNames, contribNames.length);
       domains[i+1] = null;
       types[i+1] = Vec.T_NUM;
+    }
+
+    int topFeatureIterator = 1;
+    for (int i = 0; i < topNAdjusted*2; i+=2) {
+      names[i] = "top_feature_" + topFeatureIterator;
+      names[i+1] = "top_value_" + topFeatureIterator;
+      topFeatureIterator++;
+    }
+
+    int bottomFeatureIterator = 1;
+    for (int i = topNAdjusted*2; i < outputSize; i+=2) {
+      names[i] = "bottom_top_feature_" + bottomFeatureIterator;
+      names[i+1] = "bottom_top_value_" + bottomFeatureIterator;
+      bottomFeatureIterator++;
     }
 
     final String[] outputNames = ArrayUtils.append(names, "BiasTerm");
