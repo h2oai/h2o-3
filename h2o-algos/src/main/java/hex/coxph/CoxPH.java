@@ -15,11 +15,13 @@ import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 import water.util.Timer;
 
+import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 import static water.util.ArrayUtils.constAry;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Cox Proportional Hazards Model
@@ -596,11 +598,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         baselineHazardAsFrame.setNames(new String[]{"t", "baseline hazard"});
         baselineSurvivalAsFrame.setNames(new String[]{"t", "baseline survival"});
       } else {
+        final Vec[] strataCols = train().vecs(_input_parms._stratify_by);
+
         List<String> names = o._strataMap.entrySet().stream()
                 .sorted(Comparator.comparingInt(e -> e.getValue()._val))
                 .map(Map.Entry::getKey)
                 .map(i -> i._gs)
-                .map(a -> Arrays.stream(a).mapToObj(d -> String.valueOf((int) d)))
+                .map(a -> IntStream.range(0, strataCols.length)
+                                   .mapToObj(i -> strataCols[i].factor((int) a[i]))
+                )
                 .map(s -> s.collect(Collectors.joining(", ", "(", ")")))
                 .collect(toList());
         names.add(0, "t");
