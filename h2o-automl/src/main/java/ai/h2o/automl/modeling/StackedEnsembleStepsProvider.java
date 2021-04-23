@@ -115,6 +115,9 @@ public class StackedEnsembleStepsProvider
                 stackedEnsembleParameters.initMetalearnerParams();
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
+                // add custom alpha in GLM metalearner
+                // not working:
+                //stackedEnsembleParameters._metalearner_parameters._alpha = new double[] {0.5, 1.0};
 
                 if (aml().getResponseColumn().isCategorical()) {
                     // Add logit transform
