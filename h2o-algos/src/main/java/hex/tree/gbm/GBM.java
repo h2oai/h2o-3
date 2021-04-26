@@ -49,7 +49,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   public GBM(boolean startup_once) { super(new GBMModel.GBMParameters(),startup_once); }
 
   @Override protected int nModelsInParallel(int folds) {
-    return nModelsInParallel(folds, 2);
+    int defaultParallelization = nclasses() <= 2 ?
+            2  // for binomial and regression we can squeeze bit more performance by running 2 models in parallel 
+            :
+            1; // for multinomial we need to build a tree per class - this is already massively parallel; 
+               // adding another level of parallelism on top of that increases memory requirements and doesn't improve performance  
+    return nModelsInParallel(folds, defaultParallelization);
   }
 
   /** Start the GBM training Job on an F/J thread. */
