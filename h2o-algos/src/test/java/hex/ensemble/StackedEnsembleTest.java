@@ -34,9 +34,7 @@ import water.util.Log;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 @CloudSize(1)
 @RunWith(H2ORunner.class)
@@ -1595,4 +1593,64 @@ public class StackedEnsembleTest extends TestUtil {
     }
   }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testMOJOWorksWhenSubmodelIsIgnoringAColumn() {
+        try (LockableCleaner cleaner = new LockableCleaner()) {
+            final String response = "petal_wid";
+            final Frame train = parseTestFile("./smalldata/iris/iris_train.csv");
+            cleaner.add(train);
+
+            Vec constVec = train.anyVec().makeCon(Math.PI);
+            train.insertVec(0, "constant", constVec);
+            DKV.put(train);
+            
+            GBMModel.GBMParameters ignoreConstParms = new GBMModel.GBMParameters();
+            ignoreConstParms._train = train._key;
+            ignoreConstParms._response_column = response;
+            ignoreConstParms._ntrees = 5;
+            ignoreConstParms._seed = 42;
+            ignoreConstParms._keep_cross_validation_models = false;
+            ignoreConstParms._keep_cross_validation_predictions = true;
+            ignoreConstParms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            ignoreConstParms._nfolds = 3;
+            ignoreConstParms._distribution = DistributionFamily.gaussian;
+
+            GBMModel.GBMParameters keepConstParms = (GBMModel.GBMParameters) ignoreConstParms.clone();
+            keepConstParms._ignore_const_cols = false;
+
+            GBMModel ignoreConstModel = new GBM(ignoreConstParms).trainModel().get();
+            cleaner.add(ignoreConstModel);
+            GBMModel keepConstModel = new GBM(keepConstParms).trainModel().get();
+            cleaner.add(keepConstModel);
+
+            StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+            seParams._train = train._key;
+            seParams._response_column = response;
+            seParams._base_models = new Key[]{ignoreConstModel._key, keepConstModel._key};
+            seParams._seed = 42;
+
+            StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+            cleaner.add(se);
+
+            assertNotNull(se);
+
+            Frame sePredict = se.score(train);
+            cleaner.add(sePredict);
+
+            assertTrue(se.testJavaScoring(train, sePredict, 1e-15, 0.01));
+        }
+    }
+
+    private static class LockableCleaner extends ArrayList<Lockable<?>> implements AutoCloseable {
+        @Override
+        public void close() {
+            for (Lockable<?> l : this) {
+                if (l instanceof Model) 
+                    ((Model<?, ?, ?>) l).deleteCrossValidationPreds();
+                l.delete();
+            }
+        }
+    }
+    
 }

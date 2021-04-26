@@ -67,7 +67,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
     static class StackedEnsembleMojoSubModel implements Serializable {
 
         final MojoModel _mojoModel;
-        final int[] _mapping; // Mapping. If null, no mapping is required.
+        final int[] _mapping;
 
         public StackedEnsembleMojoSubModel(MojoModel mojoModel, int[] mapping) {
             _mojoModel = mojoModel;
@@ -82,14 +82,10 @@ public class StackedEnsembleMojoModel extends MojoModel {
          * @return A new instance of double[] with values re-mapped to order given by the underlying submodel.
          */
         public double[] remapRow(final double[] row) {
-            double[] remappedRow = Arrays.copyOf(row, row.length);
-            if (_mapping == null) return remappedRow; // Null mapping means no remapping is needed.
-
+            double[] remappedRow = new double[_mapping.length];
             for (int i = 0; i < _mapping.length; i++) {
-                if (_mapping[i] == i) continue; // do not copy if the column is not shifted
-                remappedRow[_mapping[i]] = row[i];
+                remappedRow[i] = row[_mapping[i]];
             }
-
             return remappedRow;
         }
     }
