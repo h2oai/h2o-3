@@ -27,12 +27,10 @@ def glm_mojo_num_num_interaction_test():
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(glmBinomialModel, TMPDIR, MOJONAME)  # load model and perform predict
     h2o.download_csv(pred_h2o, os.path.join(TMPDIR, "h2oPred.csv"))
     print("Comparing mojo predict and h2o predict...")
-    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 0.1, tol=1e-10)
+    pyunit_utils.compare_frames_local(pred_h2o, pred_mojo, 1, tol=1e-10)
 
 
 if __name__ == "__main__":
-    h2o.init(ip='192.168.0.105', port=54321, strict_version_check=False)
     pyunit_utils.standalone_test(glm_mojo_num_num_interaction_test)
 else:
-    h2o.init(ip='192.168.0.105', port=54321, strict_version_check=False)
     glm_mojo_num_num_interaction_test()

@@ -163,9 +163,6 @@ public class GLMPlugValuesTest extends TestUtil {
       GLMModel model = new GLM(params).trainModel().get();
       Scope.track_generic(model);
 
-      Frame pred = model.score(fr);
-      Scope.track(pred);
-      
       GLMModel model2 = new GLM(params2).trainModel().get();
       Scope.track_generic(model2);
 
