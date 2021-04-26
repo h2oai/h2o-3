@@ -16,6 +16,7 @@
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param validation_frame Id of the validation data frame.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param algorithm The algorithm to use to generate rules. Must be one of: "AUTO", "DRF", "GBM". Defaults to AUTO.
@@ -70,6 +71,7 @@ h2o.rulefit <- function(x,
                         y,
                         training_frame,
                         model_id = NULL,
+                        validation_frame = NULL,
                         seed = -1,
                         algorithm = c("AUTO", "DRF", "GBM"),
                         min_rule_length = 3,
@@ -82,6 +84,7 @@ h2o.rulefit <- function(x,
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
@@ -102,6 +105,8 @@ h2o.rulefit <- function(x,
 
   if (!missing(model_id))
     parms$model_id <- model_id
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(algorithm))
@@ -128,6 +133,7 @@ h2o.rulefit <- function(x,
 .h2o.train_segments_rulefit <- function(x,
                                         y,
                                         training_frame,
+                                        validation_frame = NULL,
                                         seed = -1,
                                         algorithm = c("AUTO", "DRF", "GBM"),
                                         min_rule_length = 3,
@@ -147,6 +153,7 @@ h2o.rulefit <- function(x,
   destination_key <- NULL
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
@@ -165,6 +172,8 @@ h2o.rulefit <- function(x,
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
 
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(algorithm))
