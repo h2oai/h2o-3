@@ -386,8 +386,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
         IsolationTree.FilteredData split = IsolationTree.extendedIsolationForestSplit(data, p, n);
 
-        // Result of (data - p) * n
-        // assertArrayEquals("Result is not correct", new double[]{1.5, 0.25, -1.25}, ret.getRes(), 1e-3);
+        // Result of (data - p) * n = (1.5, 0.25, -1.25)^T
 
         assertArrayEquals("Result is not correct", new double[]{-1.0}, split.getLeft()[0], 1e-3);
         assertArrayEquals("Result is not correct", new double[]{2.0, 1.0}, split.getRight()[0], 1e-3);
