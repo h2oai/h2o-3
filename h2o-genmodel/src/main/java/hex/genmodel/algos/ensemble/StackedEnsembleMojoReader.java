@@ -3,8 +3,6 @@ package hex.genmodel.algos.ensemble;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MultiModelMojoReader;
 
-import java.io.IOException;
-
 public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsembleMojoModel> {
 
     @Override
@@ -13,7 +11,7 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
     }
 
     @Override
-    protected void readParentModelData() throws IOException {
+    protected void readParentModelData() {
         int baseModelNum = readkv("base_models_num", 0);
         _model._baseModelNum = baseModelNum;
         _model._metaLearner = getModel((String) readkv("metalearner"));
@@ -39,30 +37,22 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
      * Creates an array of integers with mapping of referential column name space into model-specific column name space.
      *
      * @param model     Model to create column mapping for
-     * @param reference Column mapping servig as a reference
+     * @param reference Column mapping serving as a reference
      * @param modelName Name of the model for various error reports
-     * @return An array of integers with mapping. Null of no mapping is necessary.
+     * @return An array of integers with representing the mapping.
      */
     private static int[] createMapping(final MojoModel model, final String[] reference, final String modelName) {
-        int[] mapping = new int[reference.length];
-        if (model._names.length != reference.length) {
-            throw new IllegalStateException(String.format("Model '%s' is expected to have has non-standard number of columns.",
-                    modelName));
-        }
-        boolean foundDifference = false;
-        for (int i = 0; i < reference.length; i++) {
-            final int pos = findColumnIndex(model._names, reference[i]);
-            if (pos == -1) {
+        String[] features = model.features();
+        int[] mapping = new int[features.length];
+        for (int i = 0; i < mapping.length; i++) {
+            String feature = features[i];
+            mapping[i] = findColumnIndex(reference, feature);
+            if (mapping[i] < 0) {
                 throw new IllegalStateException(String.format("Model '%s' does not have input column '%s'",
-                        modelName, reference[i]));
+                        modelName, feature));
             }
-            if (pos != i) foundDifference = true;
-            mapping[i] = pos;
         }
-
-        if (foundDifference) {
-            return mapping;
-        } else return null;
+        return mapping;
     }
 
     private static int findColumnIndex(String[] arr, String searchedColname) {
