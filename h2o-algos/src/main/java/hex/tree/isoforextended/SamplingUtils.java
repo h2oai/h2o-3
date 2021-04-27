@@ -13,6 +13,10 @@ import java.util.Random;
 public class SamplingUtils  {
 
     /**
+     *
+     * @param frame Frame to be sampled
+     * @param sampleSize approximate size of sample
+     * @param seed ...
      * @return Random sub-sample of frame with size approximately {@code sampleSize}
      */
     public static Frame sampleOfApproxSize(Frame frame, int sampleSize, long seed) {
@@ -21,6 +25,10 @@ public class SamplingUtils  {
     }
 
     /**
+     *
+     * @param frame Frame to be sampled
+     * @param sampleSize exact size of sample
+     * @param seed ...
      * @return Random sub-sample of frame with size equals to {@code sampleSize}
      */
     public static Frame sampleOfFixedSize(Frame frame, int sampleSize, long seed) {
