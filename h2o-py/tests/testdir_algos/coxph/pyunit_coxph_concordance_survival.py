@@ -35,6 +35,17 @@ def with_strata(rossi):
               )
 
 
+# expected (the first line with time=0 and values = 0)
+# When tests are run at CI wyth Python version 2.x and old lifelines, lifelines result contains one more line then
+def fix_py_result_for_older_lifelines(df):
+    one_more_line = 50 == len(df.index)
+    if one_more_line:
+        print("droping first line")
+        return df.drop(df.index[0:1]).reset_index( drop=True)
+    else:
+        return df
+
+
 def check_cox(rossi, x, stratify_by, formula):
     if stratify_by:
         cph_py = CoxPHFitter(strata=stratify_by)
@@ -56,35 +67,35 @@ def check_cox(rossi, x, stratify_by, formula):
     
     assert cph_h2o.model_id != ""
     assert cph_h2o.model_id != ""
-    assert cph_h2o.formula() == formula, f"Expected formula to be '{formula}' but it was " + cph_h2o.formula()
+    assert cph_h2o.formula() == formula, "Expected formula to be '" + formula + "' but it was " + cph_h2o.formula()
     
     predH2O = cph_h2o.predict(test_data=rossi_h2o)
     assert len(predH2O) == len(rossi)
     metrics_h2o = cph_h2o.model_performance(rossi_h2o)
     concordance_py = concordance_for_lifelines(cph_py)
     assert abs(concordance_py - metrics_h2o.concordance()) < 0.001
-    hazard_h2o = h2o.get_frame(cph_h2o._model_json['output']['baseline_hazard']['name'])
-    hazard_h2o_as_pandas = hazard_h2o.as_data_frame(use_pandas=True)
+    hazard_h2o_as_pandas = cph_h2o.baseline_hazard_frame.as_data_frame(use_pandas=True)
 
     hazard_py = cph_py.baseline_hazard_
     
     for col_name in hazard_py.columns:
         hazard_py.rename(columns={col_name: str(col_name)}, inplace=True)
-    
-    print("h2o:")
-    print(hazard_h2o_as_pandas.reset_index(drop=True))
-    
-    print("lifelines:")
-    print(hazard_py.reset_index(drop=True))
 
     hazard_py_reordered_columns = hazard_py.reset_index(drop=True).sort_index(axis=1)
     hazard_h2o_reordered_columns = hazard_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
+
+    hazard_py_reordered_columns = fix_py_result_for_older_lifelines(hazard_py_reordered_columns)
+
+    print("h2o:")
+    print(hazard_h2o_as_pandas.reset_index(drop=True))
+
+    print("lifelines:")
+    print(hazard_py_reordered_columns.reset_index(drop=True)) 
     
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False)
     
-    survival_h2o = h2o.get_frame(cph_h2o._model_json['output']['baseline_survival']['name'])
-    survival_h2o_as_pandas = survival_h2o.as_data_frame(use_pandas=True)
+    survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
     survival_py = cph_py.baseline_survival_
     
@@ -94,11 +105,13 @@ def check_cox(rossi, x, stratify_by, formula):
     survival_py_reordered_columns = survival_py.reset_index(drop=True).sort_index(axis=1)
     survival_h2o_reordered_columns = survival_h2o_as_pandas.drop('t', axis="columns").reset_index( drop=True).sort_index(axis=1)
 
+    survival_py_reordered_columns = fix_py_result_for_older_lifelines(survival_py_reordered_columns)
+    
     print("h2o:")
     print(survival_h2o_as_pandas.reset_index(drop=True))
 
     print("lifelines:")
-    print(survival_py.reset_index(drop=True))
+    print(survival_py_reordered_columns.reset_index(drop=True))
 
     assert_frame_equal(survival_py_reordered_columns, survival_h2o_reordered_columns,
                        check_dtype=False, check_index_type=False, check_column_type=False)
@@ -106,13 +119,14 @@ def check_cox(rossi, x, stratify_by, formula):
 
 # There are different API versions for concordance in lifelines library
 def concordance_for_lifelines(cph):
-    if ("_model" in cph.__dict__.keys()):
+    if "_model" in cph.__dict__.keys():
         py_concordance = cph._model._concordance_index_
-    elif ("_concordance_index_" in cph.__dict__.keys()):
+    elif "_concordance_index_" in cph.__dict__.keys():
         py_concordance = cph._concordance_index_
     else:
         py_concordance = cph._concordance_score_
     return py_concordance
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(coxph_concordance_and_baseline)

@@ -304,6 +304,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _generate_scoring_history = false; // if true, will generate scoring history but will slow algo down
     
     public void validate(GLM glm) {
+      if (_remove_collinear_columns) {
+        if (!(Solver.IRLSM.equals(_solver) || Solver.AUTO.equals(_solver)))
+          glm.warn("remove_collinear_columns", "remove_collinear_columns only works when IRLSM (or " +
+                  "AUTO which will default to IRLSM when remove_collinear_columns=true) is chosen as the solver.  " +
+                  "Otherwise, remove_collinear_columns is not enabled.");
+
+        if (_lambda_search) {
+          glm.warn("remove_collinear_columns", "remove_collinear_columns should only be used with " +
+                  "no regularization, i.e. lambda=0.0.  It is used improperly here with lambda_search.  " +
+                  "Please disable lambda_search and set lambda=0.");
+        } else if (_lambda != null) {
+          boolean nonZeroLambda = Arrays.stream(_lambda).sum() > 0;
+          if (nonZeroLambda)
+            glm.warn("remove_collinear_columns", "remove_collinear_columns should only be used with " +
+                    "no regularization, i.e. lambda=0.0.  It is used improperly here.  Please set lambda=0.");
+        }
+      }
       if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE) && _family.equals(Family.multinomial))
         throw H2O.unimpl("Naive coordinate descent is not supported for multinomial.");
       if ((_lambda != null) && _lambda_search)
@@ -1913,19 +1930,31 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
-  @Override
-  protected boolean isFeatureUsedInPredict(int featureIdx) {
+  private boolean isFeatureUsedInPredict(int featureIdx, double[] beta){
     if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
       for (int i = _output._dinfo._catOffsets[featureIdx];
            i < _output._dinfo._catOffsets[featureIdx + 1];
            i++) {
-        if (beta()[i] != 0) return true;
+        if (beta[i] != 0) return true;
       }
       return false;
     } else {
       featureIdx += _output._dinfo._numOffsets[0] - _output._dinfo._catOffsets.length + 1;
     }
-    return beta()[featureIdx] != 0;
+    return beta[featureIdx] != 0;
+}
 
+  @Override
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
+    if (_parms._interactions != null) return true;
+    if (_output.isMultinomialClassifier()) {
+      for (double[] classBeta : _output._global_beta_multinomial) {
+        if (isFeatureUsedInPredict(featureIdx, classBeta))
+          return true;
+      }
+      return false;
+    } else {
+      return isFeatureUsedInPredict(featureIdx, _output._global_beta);
+    }
   }
 }

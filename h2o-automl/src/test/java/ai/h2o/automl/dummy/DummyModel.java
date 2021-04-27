@@ -16,7 +16,8 @@ public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameter
 
     public static class DummyModelParameters extends Model.Parameters {
 
-        public String _tag = null;
+        public String _tag;
+        public boolean _fail_on_init;
         public IcedHashMap<String, String> _moreParams = new IcedHashMap<>();
 
         @Override

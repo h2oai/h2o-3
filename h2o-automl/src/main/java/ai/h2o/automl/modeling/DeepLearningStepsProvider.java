@@ -89,9 +89,9 @@ public class DeepLearningStepsProvider
 
                         Map<String, Object[]> searchParams = prepareSearchParams();
                         searchParams.put("_hidden", new Integer[][] {
-                                {50},
-                                {200},
-                                {500}
+                                {  20 },
+                                {  50 },
+                                { 100 }
                         });
                         searchParams.put("_hidden_dropout_ratios", new Double[][] {
                                 { 0.0 },
@@ -112,9 +112,9 @@ public class DeepLearningStepsProvider
 
                         Map<String, Object[]> searchParams = prepareSearchParams();
                         searchParams.put("_hidden", new Integer[][] {
-                                {50, 50},
-                                {200, 200},
-                                {500, 500}
+                                {  20,  20 },
+                                {  50,  50 },
+                                { 100, 100 }
                         });
                         searchParams.put("_hidden_dropout_ratios", new Double[][] {
                                 { 0.0, 0.0 },
@@ -134,9 +134,9 @@ public class DeepLearningStepsProvider
 
                         Map<String, Object[]> searchParams = prepareSearchParams();
                         searchParams.put("_hidden", new Integer[][] {
-                                {50, 50, 50},
-                                {200, 200, 200},
-                                {500, 500, 500}
+                                {  20,  20,  20 },
+                                {  50,  50,  50 },
+                                { 100, 100, 100 }
                         });
                         searchParams.put("_hidden_dropout_ratios", new Double[][] {
                                 { 0.0, 0.0, 0.0 },

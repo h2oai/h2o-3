@@ -94,21 +94,20 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     
     assert cph_h2o.model_id != ""
     assert cph_h2o.formula() == \
-           expected_formula, f"Expected formula to be '{expected_formula}' but it was " + cph_h2o.formula()
+           expected_formula, "Expected formula to be '" + expected_formula + "' but it was " + cph_h2o.formula()
     
     pred_h2o = cph_h2o.predict(test_data=shelter_h2o)
     assert len(pred_h2o) == len(shelter)
     metrics_h2o = cph_h2o.model_performance(shelter_h2o)
     concordance_py = concordance_for_lifelines(cph_py)
     assert abs(concordance_py - metrics_h2o.concordance()) < 0.001
-    hazard_h2o = h2o.get_frame(cph_h2o._model_json['output']['baseline_hazard']['name'])
-    hazard_h2o_as_pandas = hazard_h2o.as_data_frame(use_pandas=True)
+    hazard_h2o_as_pandas = cph_h2o.baseline_hazard_frame.as_data_frame(use_pandas=True)
 
     hazard_py = cph_py.baseline_hazard_
     
     for col_name in hazard_py.columns:
         if (isinstance(col_name, int)):
-            new_name = f"({col_name})"
+            new_name = "({0})".format(col_name)
         else:
             new_name = str(col_name)
         hazard_py.rename(columns={col_name: new_name}, inplace=True)
@@ -122,14 +121,13 @@ def check_cox(shelter, x, expected_formula, stratify_by=None, weight=None):
     assert_frame_equal(hazard_py_reordered_columns, hazard_h2o_reordered_columns, 
                        check_dtype=False, check_index_type=False, check_column_type=False, check_less_precise=True)
     
-    survival_h2o = h2o.get_frame(cph_h2o._model_json['output']['baseline_survival']['name'])
-    survival_h2o_as_pandas = survival_h2o.as_data_frame(use_pandas=True)
+    survival_h2o_as_pandas = cph_h2o.baseline_survival_frame.as_data_frame(use_pandas=True)
 
     survival_py = cph_py.baseline_survival_
 
     for col_name in survival_py.columns:
         if (isinstance(col_name, int)):
-            new_name = f"({col_name})"
+            new_name = "({0})".format(col_name)
         else:
             new_name = str(col_name)
         survival_py.rename(columns={col_name: new_name}, inplace=True)

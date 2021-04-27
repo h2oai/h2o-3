@@ -387,8 +387,6 @@ class ModelBase(h2o_meta(Keyed)):
         model = self._model_json["output"]
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
-        if "glm_scoring_history" in model and model["glm_scoring_history"] is not None:
-            return model["glm_scoring_history"].as_data_frame()
         print("No score history for this model")
 
     def ntrees_actual(self):
@@ -423,9 +421,10 @@ class ModelBase(h2o_meta(Keyed)):
         :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to 100.
         :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
         :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
-        starting at root only). Defaults to -1.
-        :param path: Path where to save the output in .xlsx format. Please note that Pandas and XlsxWriter need to be 
-        installed for using this option. Defaults to None.
+            starting at root only). Defaults to -1.
+        :param path: (Optional) Path where to save the output in .xlsx format (e.g. ``/mypath/file.xlsx``).
+            Please note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
+
 
         :examples:
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")

@@ -76,6 +76,12 @@ public class ModelingStepTest {
         assertEquals(aml.getBuildSpec().build_control.stopping_criteria.stopping_metric(), model._parms._stopping_metric);
     }
 
+    @Test public void testFailingModelStep() {
+        ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_model_failing".equals(s._id)).findFirst().get();
+        Job<DummyModel> job = step.startJob();
+        assertNull(job);
+    }
+
     @Test public void testGridStep() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_grid".equals(s._id)).findFirst().get();
         Job<Grid> job = step.startJob();
@@ -121,7 +127,8 @@ public class ModelingStepTest {
         public TestingModelSteps(AutoML autoML) {
             super(autoML);
             defaultModels = new ModelingStep[] {
-                    new DummyModelStep(DummyBuilder.algo, "dummy_model", 10, aml())
+                    new DummyModelStep(DummyBuilder.algo, "dummy_model", 10, aml()),
+                    new FailingDummyModelStep(DummyBuilder.algo, "dummy_model_failing", 0, aml())
             };
 
             grids = new ModelingStep[] {
@@ -144,6 +151,19 @@ public class ModelingStepTest {
         @Override
         protected Job<DummyModel> startJob() {
             Model.Parameters params = new DummyModel.DummyModelParameters();
+            return trainModel(params);
+        }
+    }
+
+    private static class FailingDummyModelStep extends ModelingStep.ModelStep<DummyModel> {
+        public FailingDummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
+            super(algo, id, cost, autoML);
+        }
+
+        @Override
+        protected Job<DummyModel> startJob() {
+            DummyModel.DummyModelParameters params = new DummyModel.DummyModelParameters();
+            params._fail_on_init = true;
             return trainModel(params);
         }
     }

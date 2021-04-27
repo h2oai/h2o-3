@@ -1,0 +1,96 @@
+//
+// Validate Pull Request metadata
+//
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.ricksbrown:cowsay:1.1.0'
+    }
+}
+
+import groovy.json.JsonSlurper
+import com.github.ricksbrown.cowsay.Cowsay
+
+def GOOD_PR_PROCESS = """
+How to pass this check?
+    1. Always have a Jira before you start working on a task (otherwise you cannot know what branch to start from).
+    2. Make sure the Jira has a 'Fix Version' defined. If it doesn't consult the team what is a good fix version for your change.
+    3. If you are working on a Jira with 'Fix Version' ending with '.1' you are working on a change that should go to a master branch. 
+       All other changes should go to the (current) fix release branch. Such branches are prefixed 'rel-'. 
+    4. Put the Jira to 'In Progress' state.
+    5. Make a code change. Include Jira ticket ID (PUBDEV-XXXX) in the commit message of one of your commits. This is not checked. 
+    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines This is checked.
+"""
+
+task checkPullRequest {
+    group = "Validation"
+    description = "Validates that PR has the right metadata in the title and is created against the correct branch"
+    doLast {
+        def errors = checkPull(System.getenv("CHANGE_ID"))
+        def allGood = errors.isEmpty()
+        def message = allGood ? "No issues found! Thank you for being awesome" : "Baa! Your PR isn't quite right"
+        def animal = allGood ? "cow" : "sheep" // as in "black sheep"
+        new File(project.buildDir, "prCheckReport.log").withWriter {w ->
+            def cowargs = ["-f", animal, message] as String[]
+            w.println(Cowsay.say(cowargs))
+            errors.forEach { e -> w.println("==>> $e") }
+            w.println()
+            w.println(GOOD_PR_PROCESS)
+        }
+        if (!errors.isEmpty()) {
+            throw new GradleException(errors[0])
+        }
+    }
+}
+
+def checkPull(changeId) {
+    def jsonSlurper = new JsonSlurper()
+    def pullDetails = jsonSlurper.parseText(new URL("https://api.github.com/repos/h2oai/h2o-3/pulls/$changeId").getText())
+    def title = pullDetails.title
+    println ""
+    println "Checking pull request ($changeId): $title"
+    println ""
+    def hexdevMatcher = title =~ /.*HEXDEV-[0-9]{4,5}.*/
+    def itaMatcher = title =~ /.*ITA-[0-9]{3,5}.*/
+    if (hexdevMatcher.matches() || itaMatcher.matches()) {
+        println "HEXDEV and ITA jiras are not validated"
+        return []
+    }
+    def pubdevMatcher = title =~ /.*(PUBDEV-[0-9]{4,5}).*/
+    if (!pubdevMatcher.matches()) {
+        return ["Pull Request ${changeId} doesn't have associated JIRA ticket. Please add jira id (PUBDEV-XXXX) in the title of the PR"]
+    }
+    def jiraId = pubdevMatcher[0][1]
+    def jiraDetails = jsonSlurper.parseText(new URL("https://h2oai.atlassian.net/rest/api/latest/issue/$jiraId").getText())
+    def status = jiraDetails.fields.status
+    if (status.name != 'In Progress') {
+        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                "This jira is not marked 'In Progress'. Please check if the associated jira ticket is correct and change the status to 'In Progress'"]
+    }
+    def fixVersions = jiraDetails.fields.fixVersions
+    if (fixVersions.size() == 0) {
+        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                "This jira doesn't have a fix version set. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version."]
+    }
+    if (fixVersions.size() > 1) {
+        return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                "This jira has more than one fix version. Please check if the associated jira ticket is correct and validate with the team what should be the correct fixed version."]
+    }
+    def fixVersionValue = fixVersions.get(0).name
+    def baseBranch = pullDetails.base.ref
+    if (fixVersionValue.endsWith('.1')) {
+        if (baseBranch != 'master')
+            return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a master branch. Change the base branch of the PR to 'master'."]
+    } else {
+        if (!baseBranch.startsWith('rel-')) {
+            return ["Pull Request ${changeId} is linked to jira ticket https://h2oai.atlassian.net/browse/${jiraId}. " +
+                    "This jira is marked for release in {$fixVersionValue}. This release will be done from a fix release branch. Change the base branch to a correspond to the right fix release branch."]
+        }
+    }
+    println "Pull request #$changeId seems correct. Thank you and good luck in code review!"
+    return []
+}

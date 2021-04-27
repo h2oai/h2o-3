@@ -34,6 +34,7 @@
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm
+#' @param metalearner_transform Transformation used for the level one frame. Must be one of: "NONE", "Logit". Defaults to NONE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -112,6 +113,7 @@ h2o.stackedEnsemble <- function(x,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 metalearner_fold_column = NULL,
                                 metalearner_params = NULL,
+                                metalearner_transform = c("NONE", "Logit"),
                                 max_runtime_secs = 0,
                                 weights_column = NULL,
                                 offset_column = NULL,
@@ -175,6 +177,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(metalearner_transform))
+    parms$metalearner_transform <- metalearner_transform
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(weights_column))
@@ -215,6 +219,7 @@ h2o.stackedEnsemble <- function(x,
                                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                                 metalearner_fold_column = NULL,
                                                 metalearner_params = NULL,
+                                                metalearner_transform = c("NONE", "Logit"),
                                                 max_runtime_secs = 0,
                                                 weights_column = NULL,
                                                 offset_column = NULL,
@@ -283,6 +288,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(metalearner_transform))
+    parms$metalearner_transform <- metalearner_transform
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(weights_column))

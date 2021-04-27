@@ -65,9 +65,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "weights_column",
-                   "offset_column", "seed", "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir",
-                   "auc_type"}
+                   "metalearner_fold_column", "metalearner_params", "metalearner_transform", "max_runtime_secs",
+                   "weights_column", "offset_column", "seed", "score_training_samples", "keep_levelone_frame",
+                   "export_checkpoints_dir", "auc_type"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -551,6 +551,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             self._parms["metalearner_params"] = str(json.dumps(metalearner_params))
         else:
             self._parms["metalearner_params"] = None
+
+
+    @property
+    def metalearner_transform(self):
+        """
+        Transformation used for the level one frame.
+
+        One of: ``"none"``, ``"logit"``  (default: ``"none"``).
+        """
+        return self._parms.get("metalearner_transform")
+
+    @metalearner_transform.setter
+    def metalearner_transform(self, metalearner_transform):
+        assert_is_type(metalearner_transform, None, Enum("none", "logit"))
+        self._parms["metalearner_transform"] = metalearner_transform
 
 
     @property

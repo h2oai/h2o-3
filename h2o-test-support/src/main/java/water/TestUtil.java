@@ -717,7 +717,7 @@ public class TestUtil extends Iced {
     Key[] res = {nfs._key};
 
     // create new parseSetup in order to store our na_string
-    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',false,
         check_header,0,null,null,null,null,null, null, null));
     if (skippedColumns != null) {
       p.setSkippedColumns(skippedColumns);

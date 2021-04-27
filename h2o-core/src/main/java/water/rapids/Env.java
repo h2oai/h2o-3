@@ -9,6 +9,7 @@ import water.rapids.ast.params.AstConst;
 import water.rapids.ast.prims.advmath.*;
 import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.filters.dropduplicates.AstDropDuplicates;
+import water.rapids.ast.prims.internal.AstRunTool;
 import water.rapids.ast.prims.math.*;
 import water.rapids.ast.prims.matrix.*;
 import water.rapids.ast.prims.misc.*;
@@ -320,7 +321,10 @@ public class Env extends Iced {
     
     // Filters
     init(new AstDropDuplicates());
-    
+
+    // For internal use only
+    init(new AstRunTool());
+
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
       init(prim);

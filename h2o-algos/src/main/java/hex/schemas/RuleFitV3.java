@@ -12,6 +12,7 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
      public static final String[] fields = new String[] {
             "model_id",
             "training_frame",
+            "validation_frame",
             "seed",
             "response_column", 
             "ignored_columns",

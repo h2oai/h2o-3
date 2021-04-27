@@ -936,6 +936,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info(mainModel._output._cross_validation_metrics.toString());
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
+    // Put cross-validation scoring history to the main model
+    if (mainModel._output._scoring_history != null) { // check if scoring history is supported (e.g., NaiveBayes doesn't)
+      mainModel._output._cv_scoring_history = new TwoDimTable[cvModKeys.length];
+      for (int i = 0; i < cvModKeys.length; i++) {
+        TwoDimTable sh = cvModKeys[i].get()._output._scoring_history;
+        String[] rowHeaders = sh.getRowHeaders();
+        String[] colTypes = sh.getColTypes();
+        int tableSize = rowHeaders.length;
+        int colSize = colTypes.length;
+        TwoDimTable copiedScoringHistory = new TwoDimTable(
+                sh.getTableHeader(),
+                sh.getTableDescription(),
+                sh.getRowHeaders(),
+                sh.getColHeaders(),
+                sh.getColTypes(),
+                sh.getColFormats(),
+                sh.getColHeaderForRowHeaders());
+        for (int rowIndex = 0; rowIndex < tableSize; rowIndex++)  {
+          for (int colIndex = 0; colIndex < colSize; colIndex++) {
+            copiedScoringHistory.set(rowIndex, colIndex,sh.get(rowIndex, colIndex));
+          }
+        }
+        mainModel._output._cv_scoring_history[i] = copiedScoringHistory;
+      }
+    }
+
     if (!_parms._keep_cross_validation_models) {
       int count = Model.deleteAll(cvModKeys);
       Log.info(count+" CV models were removed");
@@ -1035,7 +1061,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean validateStoppingMetric() {
     return true;
   }
-  
+
+  protected void checkEarlyStoppingReproducibility() {
+    // nothing by default -> meant to be overridden 
+  }
+
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -1147,7 +1177,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Drop all-constant and all-bad columns.
     if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) {
+        @Override protected boolean filter(Vec v, String name) {
           boolean isBad = v.isBad();
           boolean skipConst = ignoreConstColumns() && v.isConst(canLearnFromNAs()); // NAs can have information
           boolean skipString = ignoreStringColumns() && v.isString();
@@ -1561,18 +1591,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else if (validateStoppingMetric()){
-      if (isClassifier()) {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
-          error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
-        }
-      } else {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
-                == ScoreKeeper.StoppingMetric.AUCPR)
-        {
-          error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+    }
+    else { // early stopping is enabled
+      checkEarlyStoppingReproducibility();
+      if (validateStoppingMetric()) {
+        if (isClassifier()) {
+          if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
+            error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+          }
+        } else {
+          if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
+                  _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
+                  _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
+                  == ScoreKeeper.StoppingMetric.AUCPR) {
+            error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+          }
         }
       }
     }
@@ -1794,12 +1827,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
-    abstract protected boolean filter(Vec v);
+    abstract protected boolean filter(Vec v, String name);
 
     public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vec(i)) ) rmcolsList.add(i);
+        if( filter(f.vec(i), f._names[i])) rmcolsList.add(i);
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
@@ -1816,28 +1849,73 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   //stitch together holdout predictions into one large Frame
-  private static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key key) {
+  Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
+    int precision = _parms._keep_cross_validation_predictions_precision;
+    if (precision < 0) {
+      precision = isClassifier() ? 8 : 0;
+    }
+    return combineHoldoutPredictions(predKeys, key, precision);
+  }
+
+  static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key, int precision) {
     int N = predKeys.length;
     Frame template = predKeys[0].get();
     Vec[] vecs = new Vec[N*template.numCols()];
     int idx=0;
-    for (int i=0;i<N;++i)
-      for (int j=0;j<predKeys[i].get().numCols();++j)
-        vecs[idx++]=predKeys[i].get().vec(j);
-    return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.types(),new Frame(vecs)).outputFrame(key, template.names(),template.domains());
+    for (Key<Frame> predKey : predKeys)
+      for (int j = 0; j < predKey.get().numCols(); ++j)
+        vecs[idx++] = predKey.get().vec(j);
+    HoldoutPredictionCombiner combiner = makeHoldoutPredictionCombiner(N, template.numCols(), precision);
+    return combiner.doAll(template.types(),new Frame(vecs))
+            .outputFrame(key, template.names(),template.domains());
   }
 
+  static HoldoutPredictionCombiner makeHoldoutPredictionCombiner(int folds, int cols, int precision) {
+    if (precision < 0) {
+      throw new IllegalArgumentException("Precision cannot be negative, got precision = " + precision);
+    } else if (precision == 0) {
+      return new HoldoutPredictionCombiner(folds, cols);
+    } else {
+      return new ApproximatingHoldoutPredictionCombiner(folds, cols, precision);
+    }
+  }
+  
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
-  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
+  static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
     int _folds, _cols;
     public HoldoutPredictionCombiner(int folds, int cols) { _folds=folds; _cols=cols; }
-    @Override public void map(Chunk[] cs, NewChunk[] nc) {
-      for (int c=0;c<_cols;++c) {
-        double [] vals = new double[cs[0].len()];
-        for (int f=0;f<_folds;++f)
-          for (int row = 0; row < cs[0].len(); ++row)
-            vals[row] += cs[f * _cols + c].atd(row);
-        nc[c].setDoubles(vals);
+    @Override public final void map(Chunk[] cs, NewChunk[] nc) {
+      for (int c = 0; c < _cols; c++) {
+        double[] vals = new double[cs[0].len()];
+        ChunkVisitor.CombiningDoubleAryVisitor visitor = new ChunkVisitor.CombiningDoubleAryVisitor(vals);
+        for (int f = 0; f < _folds; f++) {
+          cs[f * _cols + c].processRows(visitor, 0, vals.length);
+          visitor.reset();
+        }
+        populateChunk(nc[c], vals);
+      }
+    }
+    protected void populateChunk(NewChunk nc, double[] vals) {
+      nc.setDoubles(vals);
+    }
+  }
+
+  static class ApproximatingHoldoutPredictionCombiner extends HoldoutPredictionCombiner {
+    private final int _precision;
+    public ApproximatingHoldoutPredictionCombiner(int folds, int cols, int precision) { 
+      super(folds, cols);
+      _precision = precision;
+    }
+    @Override
+    protected void populateChunk(NewChunk nc, double[] vals) {
+      final long scale = PrettyPrint.pow10i(_precision); 
+      for (double val : vals) {
+        if (Double.isNaN(val))
+          nc.addNA();
+        else {
+          long approx = Math.round(val * scale);
+          nc.addNum(approx, -_precision);
+        }
       }
     }
   }

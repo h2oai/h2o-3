@@ -185,6 +185,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             try {
                 // linearTrain = frame to be used as _train for GLM in 2., will be filled in 1.
                 Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
+                Frame linearValid = (_valid != null ? new Frame(Key.make("valid_paths_frame" + _result)) : null);
                 // store train frame without bad columns to pass it to tree model builders
                 Frame trainAdapted = new Frame(_train);
                 // 1. Rule generation
@@ -217,19 +218,27 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
 
                     linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees));
+                    if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees));
                 }
 
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     String[] names = _train._names;
                     linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
+                    if (_valid != null) linearValid.add(RuleFitUtils.getLinearNames(names.length, names), _valid.vecs(names));
                 } else {
                     linearTrain.add(glmParameters._response_column, _train.vec(_parms._response_column));
+                    if (_valid != null) linearValid.add(glmParameters._response_column, _valid.vec(_parms._response_column));
                     if (_parms._weights_column != null) {
                         linearTrain.add(glmParameters._weights_column, _train.vec(_parms._weights_column));
+                        if (_valid != null) linearValid.add(glmParameters._weights_column, _valid.vec(_parms._weights_column));
                     }
                 }
                 DKV.put(linearTrain);
+                if (_valid != null) {
+                    DKV.put(linearValid);
+                    glmParameters._valid = linearValid._key;
+                }
 
                 // 2. Sparse linear model with Lasso
                 glmParameters._train = linearTrain._key;
@@ -250,6 +259,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 DKV.put(glmModel);
 
                 DKV.remove(linearTrain._key);
+                if (linearValid != null) DKV.remove(linearValid._key);
                 DKV.remove(trainAdapted._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);

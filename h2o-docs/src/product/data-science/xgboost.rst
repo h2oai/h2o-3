@@ -330,6 +330,7 @@ Metrics
 - **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
 - **Average Tree Index**
 - **Average Tree Depth**
+- **Path:** Argument for saving the table in .xlsx format.
 
 **Additional features:**
 

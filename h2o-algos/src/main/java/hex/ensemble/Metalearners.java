@@ -1,6 +1,5 @@
 package hex.ensemble;
 
-import hex.DistributionFactory;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ensemble.Metalearner.Algorithm;
@@ -208,6 +207,9 @@ public class Metalearners {
         protected void setCustomParams(GLMParameters parms) {
             //add GLM custom params
             super.setCustomParams(parms);
+
+            parms._generate_scoring_history = true;
+            parms._score_iteration_interval = (parms._valid == null) ? 5 : -1;
 
             //specific to AUTO mode
             parms._non_negative = true;

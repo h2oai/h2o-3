@@ -1,28 +1,28 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-test.CoxPH.shelter.strata <- function() {
+test.CoxPH.shelter.strata.impl <- function(ties) {
     shelter <- read.csv(file =locate("smalldata/coxph_test/shelter.csv"))
     coxph_features <- c("intake_condition","intake_type", "animal_breed", "chip_status", "surv_hours", "event")
     
     shelter.df <- shelter[,coxph_features]
     shelter.hex <- as.h2o(shelter.df)
 
-    shelter.hex$event = as.factor(shelter.hex$event)
-    shelter.hex$intake_condition = as.factor(shelter.hex$intake_condition)
-    shelter.hex$intake_type = as.factor(shelter.hex$intake_type)
-    shelter.hex$animal_breed = as.factor(shelter.hex$animal_breed)
-    shelter.hex$chip_status = as.factor(shelter.hex$chip_status)
+    shelter.hex$event <- as.factor(shelter.hex$event)
+    shelter.hex$intake_condition <- as.factor(shelter.hex$intake_condition)
+    shelter.hex$intake_type <- as.factor(shelter.hex$intake_type)
+    shelter.hex$animal_breed <- as.factor(shelter.hex$animal_breed)
+    shelter.hex$chip_status <- as.factor(shelter.hex$chip_status)
     
     
     coxph.h2o <- h2o.coxph(training_frame = shelter.hex,
                            stop_column = "surv_hours",
                            event_column = "event",
-                           stratify_by = "intake_type")
+                           stratify_by = "intake_type",
+                           ties = ties)
     
     coxph.r <- survival::coxph(Surv(surv_hours, event) ~ intake_condition + animal_breed + chip_status + strata(intake_type), 
-                               data = shelter.df)
-
+                               data = shelter.df, ties = ties)
 
     output <- coxph.h2o@model
     coefs <- output$coefficients
@@ -53,6 +53,11 @@ test.CoxPH.shelter.strata <- function() {
     baseline_hazard <- h2o.getFrame(output$baseline_hazard$name)
     expect_equal(c(1078, 4), dim(baseline_hazard))
     
+}
+
+test.CoxPH.shelter.strata <- function() {
+    test.CoxPH.shelter.strata.impl("efron")
+    test.CoxPH.shelter.strata.impl("breslow")
 }
 
 doTest("CoxPH: Animal Shelter Test Strata", test.CoxPH.shelter.strata)

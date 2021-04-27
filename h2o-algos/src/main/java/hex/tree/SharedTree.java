@@ -98,7 +98,7 @@ public abstract class SharedTree<
   protected void ignoreInvalidColumns(int npredictors, boolean expensive) {
     // Drop invalid columns
     new FilterCols(npredictors) {
-      @Override protected boolean filter(Vec v) {
+      @Override protected boolean filter(Vec v, String name) {
         return (v.max() > Float.MAX_VALUE ); }
     }.doIt(_train,"Dropping columns with too large numeric values: ",expensive);
   }
@@ -184,6 +184,13 @@ public abstract class SharedTree<
         if (!(0.0 < _parms._sample_rate_per_class[i] && _parms._sample_rate_per_class[i] <= 1.0))
           error("_sample_rate_per_class", "sample_rate_per_class for class " + response().domain()[i] + " should be in interval ]0,1] but it is " + _parms._sample_rate_per_class[i] + ".");
       }
+    }
+  }
+
+  @Override
+  protected void checkEarlyStoppingReproducibility() {
+    if (_parms._score_tree_interval == 0 && !_parms._score_each_iteration) {
+      warn("_stopping_rounds", "early stopping is enabled but neither score_tree_interval or score_each_iteration are defined. Early stopping will not be reproducible!");
     }
   }
 

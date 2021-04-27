@@ -71,7 +71,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         );
     }
 
-    protected <M extends Model, MP extends Model.Parameters> Job<M> startModel(
+    @SuppressWarnings("unchecked")
+    protected <MP extends Model.Parameters> Job<M> startModel(
             final Key<M> resultKey,
             final MP params
     ) {
@@ -81,8 +82,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         builder._parms = params;
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                 .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        builder.init(false);          // validate parameters
         try {
+            builder.init(false);          // validate parameters
             return builder.trainModelOnH2ONode();
         } catch (H2OIllegalArgumentException exception) {
             aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);

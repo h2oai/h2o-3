@@ -23,7 +23,7 @@ class ARFFParser extends CsvParser {
 
   /** Try to parse the bytes as ARFF format  */
   static ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, boolean singleQuotes, String[] columnNames, String[][] naStrings,
-                               byte[] nonDataLineMarkers) {
+                               byte[] nonDataLineMarkers, byte escapechar) {
     if (columnNames != null) throw new UnsupportedOperationException("ARFFParser doesn't accept columnNames.");
     if (nonDataLineMarkers == null)
       nonDataLineMarkers = NON_DATA_LINE_MARKERS_DEFAULT;
@@ -106,22 +106,22 @@ class ARFFParser extends CsvParser {
           else if (datalines[0].split(" ").length > 2) sep = ' ';
           else throw new ParseDataset.H2OParseException("Failed to detect separator.");
         }
-        data[0] = determineTokens(datalines[0], sep, singleQuotes);
+        data[0] = determineTokens(datalines[0], sep, singleQuotes, escapechar);
         ncols = (ncols > 0) ? ncols : data[0].length;
         labels = null;
       } else {                    // 2 or more lines
         if (sep == GUESS_SEP) {   // first guess the separator
           //FIXME if last line is incomplete, this logic fails
-          sep = guessSeparator(datalines[0], datalines[1], singleQuotes);
+          sep = guessSeparator(datalines[0], datalines[1], singleQuotes, escapechar);
           if (sep == GUESS_SEP && datalines.length > 2) {
-            sep = guessSeparator(datalines[1], datalines[2], singleQuotes);
-            if (sep == GUESS_SEP) sep = guessSeparator(datalines[0], datalines[2], singleQuotes);
+            sep = guessSeparator(datalines[1], datalines[2], singleQuotes, escapechar);
+            if (sep == GUESS_SEP) sep = guessSeparator(datalines[0], datalines[2], singleQuotes, escapechar);
           }
           if (sep == GUESS_SEP) sep = (byte) ' '; // Bail out, go for space
         }
 
         for (int i = 0; i < datalines.length; ++i) {
-          data[i] = determineTokens(datalines[i], sep, singleQuotes);
+          data[i] = determineTokens(datalines[i], sep, singleQuotes, escapechar);
         }
       }
     }
@@ -129,7 +129,7 @@ class ARFFParser extends CsvParser {
     naStrings = addDefaultNAs(naStrings, ncols);
 
     // Return the final setup
-    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data, nonDataLineMarkers);
+    return new ParseSetup(ARFF_INFO, sep, singleQuotes, ParseSetup.NO_HEADER, ncols, labels, ctypes, domains, naStrings, data, nonDataLineMarkers, escapechar);
   }
 
   private static String[][] addDefaultNAs(String[][] naStrings, int nCols) {

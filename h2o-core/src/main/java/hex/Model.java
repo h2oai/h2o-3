@@ -255,6 +255,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int _nfolds = 0;
     public boolean _keep_cross_validation_models = true;
     public boolean _keep_cross_validation_predictions = false;
+    /**
+     * What precision to use for storing holdout predictions (the number of decimal places stored)?
+     * Special values:
+     *  -1 == AUTO; use precision=8 for classification, precision=unlimited for everything else
+     *  0; disabled
+     *  
+     *  for classification problems consider eg.:
+     *     4 to keep only first 4 decimal places (consumes 75% less memory)
+     *  or 8 to keep 8 decimal places (consumes 50% less memory)
+     */
+    public int _keep_cross_validation_predictions_precision = -1; 
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
@@ -928,6 +939,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * User-facing model scoring history - 2D table with modeling accuracy as a function of time/trees/epochs/iterations, etc.
      */
     public TwoDimTable _scoring_history;
+    public TwoDimTable[] _cv_scoring_history;
 
     public double[] _distribution;
     public double[] _modelClassDist;
@@ -2582,6 +2594,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename, true);
+            checkSerializable((MojoModel) genmodel);
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
@@ -2783,6 +2796,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return num_errors == 0;
     } finally {
       Frame.deleteTempFrameAndItsNonSharedVecs(fr, data);  // Remove temp keys.
+    }
+  }
+
+  private static void checkSerializable(MojoModel mojoModel) {
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); 
+         ObjectOutput out = new ObjectOutputStream(bos)) { 
+      out.writeObject(mojoModel);
+      out.flush();
+    } catch (IOException e) {
+      throw new RuntimeException("MOJO cannot be serialized", e);
     }
   }
 

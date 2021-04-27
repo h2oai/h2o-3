@@ -61,7 +61,15 @@ extensions = dict(
       if(!missing(missing_values_handling))
         parms$missing_values_handling <- missing_values_handling
     """,
-
+    module="""
+    .h2o.fill_gam <- function(model, parameters, allparams) {
+        if (is.null(model$scoring_history))
+            model$scoring_history <- model$glm_scoring_history
+        if (is.null(model$model_summary))
+            model$model_summary <- model$glm_model_summary
+        return(model)
+    }
+"""
 )
 
 doc = dict(

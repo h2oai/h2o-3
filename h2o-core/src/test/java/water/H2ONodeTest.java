@@ -1,11 +1,15 @@
 package water;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.net.InetAddress;
+
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class H2ONodeTest extends TestUtil {
 
@@ -38,4 +42,12 @@ public class H2ONodeTest extends TestUtil {
     clientNode.sendMessage(null, (byte) -1);
   }
 
+  @Test
+  public void testSelf() {
+    assertTrue(H2O.SELF.isSelf());
+    for (H2ONode node : H2O.CLOUD.members()) {
+      Assert.assertEquals(H2O.SELF == node, node.isSelf());
+    }
+  }
+  
 }

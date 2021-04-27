@@ -97,6 +97,11 @@ Defining a Stacked Ensemble Model
 
 -  `metalearner_fold_column <algo-params/fold_column.html>`__: (Optional; Cannot be used at the same time as ``nfolds``) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner.  The column can be numeric (e.g. fold index or other integer value) or it can be categorical.  The number of folds is equal to the number of unique values in this column.
 
+-  `metalearner_transform <algo-params/metalearner_transform.html>`__: (Optional) Specify the transformation used on predictions from the base models in order to make a level one frame. Options include:
+
+ - ``"NONE"`` (no transform applied)
+ - ``"Logit"`` (applicable only to classification tasks, use logit transformation on the predicted probabilities)
+
 -  `offset_column <algo-params/offset_column.html>`__: (Optional; Availability depends on the ``metalearner_algorithm``) Specify a column to use as the offset.
 
 -  `weights_column <algo-params/weights_column.html>`__: (Optional) Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
