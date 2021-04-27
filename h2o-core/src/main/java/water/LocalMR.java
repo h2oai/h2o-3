@@ -38,6 +38,9 @@ public class LocalMR<T extends MrFun<T>> extends H2O.H2OCountedCompleter<LocalMR
     _reusePrevTsk = false;
     return this;
   }
+  public boolean isReproducible() {
+    return !_reusePrevTsk;
+  }
   private LocalMR(LocalMR src, LocalMR prevTsk,int lo, int hi) {
     super(src);
     _root = src._root;
@@ -50,7 +53,7 @@ public class LocalMR<T extends MrFun<T>> extends H2O.H2OCountedCompleter<LocalMR
 
   private LocalMR<T> _left;
   private LocalMR<T> _rite;
-  private boolean _reusePrevTsk;
+  private boolean _reusePrevTsk = true;
   private final LocalMR<T> _prevTsk; //will attempt to share MrFun with "previous task" if it's done by the time we start
 
 
