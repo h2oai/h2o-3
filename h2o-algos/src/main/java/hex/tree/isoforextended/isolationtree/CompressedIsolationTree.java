@@ -46,6 +46,9 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
 
     /**
      * Implementation of Algorithm 3 (pathLength) from paper.
+     *
+     * @param row a row of the input data
+     * @return how deep the data are in the isolation tree plus estimation in case that heightLimit is hit
      */
     public double computePathLength(double[] row) {
         int position = 0;
