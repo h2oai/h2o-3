@@ -1,0 +1,18 @@
+{{- if .Values.loadbalancer.enabled -}}
+{{- $fullName := include "h2o-helm.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-load-balancer
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "h2o-helm.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  selector:
+  {{- include "h2o-helm.selectorLabels" . | nindent 4 }}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 54321
+{{- end }}
