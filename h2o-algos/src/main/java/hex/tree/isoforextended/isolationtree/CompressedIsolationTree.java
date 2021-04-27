@@ -31,10 +31,12 @@ public class CompressedIsolationTree extends Keyed<CompressedIsolationTree> {
     }
 
     private CompressedNode compressedNode(AbstractCompressedNode node) {
+        assert node instanceof CompressedNode : "AbstractCompressedNode cannot be cast to CompressedNode";
         return (CompressedNode) node;
     }
 
     private CompressedLeaf compressedLeaf(AbstractCompressedNode node) {
+        assert node instanceof CompressedLeaf : "AbstractCompressedNode cannot be cast to CompressedLeaf";
         return (CompressedLeaf) node;
     }
 
