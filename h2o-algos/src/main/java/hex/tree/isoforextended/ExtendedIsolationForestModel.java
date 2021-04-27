@@ -51,7 +51,7 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
             LOG.trace("iTreeScore " + iTreeScore);
         }
         pathLength = pathLength / _output._ntrees;
-        LOG.trace("pathLength " + pathLength);
+        LOG.trace("Path length " + pathLength);
         double anomalyScore = anomalyScore(pathLength);
         LOG.trace("Anomaly score " + anomalyScore);
         preds[0] = anomalyScore;
