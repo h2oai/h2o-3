@@ -10,6 +10,7 @@ import hex.KeyValue;
 import hex.Model;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -115,6 +116,9 @@ public class StackedEnsembleStepsProvider
                 stackedEnsembleParameters.initMetalearnerParams();
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
+                // add custom alpha in GLM metalearner
+                GLMModel.GLMParameters metalearner_params = (GLMModel.GLMParameters)stackedEnsembleParameters._metalearner_parameters;
+                metalearner_params._lambda_search = true;
 
                 if (aml().getResponseColumn().isCategorical()) {
                     // Add logit transform
