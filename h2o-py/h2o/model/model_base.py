@@ -606,7 +606,7 @@ class ModelBase(h2o_meta(Keyed)):
 
     def pprint_coef(self):
         """Pretty print the coefficents table (includes normalized coefficients)."""
-        print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
+        print(self._coef_table())  # will return None if no coefs!
 
     def coef(self):
         """
@@ -614,11 +614,10 @@ class ModelBase(h2o_meta(Keyed)):
 
         Note: standardize = True by default, if set to False then coef() return the coefficients which are fit directly.
         """
-        if (self._model_json["output"]['model_category']=="Multinomial") or \
-            (self._model_json["output"]['model_category']=="Ordinal"):
+        if self._is_multiclass():
             return self._fillMultinomialDict(False)
         else:
-            tbl = self._model_json["output"]["coefficients_table"]
+            tbl = self._coef_table()
             if tbl is None:
                 return None
             return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
@@ -629,19 +628,28 @@ class ModelBase(h2o_meta(Keyed)):
 
         These coefficients can be used to evaluate variable importance.
         """
-        if self._model_json["output"]["model_category"]=="Multinomial":
+        if self._is_multiclass():
             return self._fillMultinomialDict(True)
         else:
-            tbl = self._model_json["output"]["coefficients_table"]
+            tbl = self._coef_table()
             if tbl is None:
                 return None
             return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
+    def _coef_table_name(self):
+        return "coefficients_table" if self.algo == 'gam' or not self._is_multiclass() \
+            else "coefficients_table_multinomials_with_class_names" 
+
+    def _coef_table(self):
+        tbl_name = self._coef_table_name()
+        return self._model_json["output"][tbl_name] if tbl_name in self._model_json["output"] else None
+
+    def _is_multiclass(self):
+        model_category = self._model_json["output"]['model_category']
+        return model_category == "Multinomial" or model_category == "Ordinal"
+
     def _fillMultinomialDict(self, standardize=False):
-        if self.algo == 'gam':
-            tbl = self._model_json["output"]["coefficients_table"]
-        else:
-            tbl = self._model_json["output"]["coefficients_table_multinomials_with_class_names"]
+        tbl = self._coef_table()
         if tbl is None:
             return None
         coeff_dict = {} # contains coefficient names
