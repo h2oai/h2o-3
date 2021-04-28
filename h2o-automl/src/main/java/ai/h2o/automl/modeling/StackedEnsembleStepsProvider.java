@@ -119,6 +119,7 @@ public class StackedEnsembleStepsProvider
                 // add custom alpha in GLM metalearner
                 GLMModel.GLMParameters metalearner_params = (GLMModel.GLMParameters)stackedEnsembleParameters._metalearner_parameters;
                 metalearner_params._alpha = new double[]{1.0};
+                metalearner_params._lambda_search = true;
 
                 if (aml().getResponseColumn().isCategorical()) {
                     // Add logit transform
