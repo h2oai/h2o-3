@@ -1,12 +1,8 @@
 package water;
 
 import jsr166y.CountedCompleter;
-import jsr166y.RecursiveAction;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 
 /**
@@ -38,10 +34,18 @@ public class LocalMR<T extends MrFun<T>> extends H2O.H2OCountedCompleter<LocalMR
     _hi = nthreads;
     _prevTsk = null;
   }
+  public LocalMR<T> withNoPrevTaskReuse() {
+    _reusePrevTsk = false;
+    return this;
+  }
+  public boolean isReproducible() {
+    return !_reusePrevTsk;
+  }
   private LocalMR(LocalMR src, LocalMR prevTsk,int lo, int hi) {
     super(src);
     _root = src._root;
-    _prevTsk = prevTsk;
+    _reusePrevTsk = src._reusePrevTsk;
+    _prevTsk = _reusePrevTsk ? prevTsk : null;
     _lo = lo;
     _hi = hi;
     _cancelled = src._cancelled;
@@ -49,6 +53,7 @@ public class LocalMR<T extends MrFun<T>> extends H2O.H2OCountedCompleter<LocalMR
 
   private LocalMR<T> _left;
   private LocalMR<T> _rite;
+  private boolean _reusePrevTsk = true;
   private final LocalMR<T> _prevTsk; //will attempt to share MrFun with "previous task" if it's done by the time we start
 
 
