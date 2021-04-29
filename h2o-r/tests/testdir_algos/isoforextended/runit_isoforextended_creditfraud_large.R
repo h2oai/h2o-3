@@ -25,29 +25,29 @@ test.ExtendedIsolationForest.creditcardfraud <- function() {
         Actual = h2o_anomaly_score_local$Class == 1
     )
     print(h2o_cm)
-    
-    ## With isoforextended
+
+    ## With isofor
 
     creditcardfraud_local <- read.csv(ccf_path)
 
-    isoforextended_model <- isoforextended::iForest(creditcardfraud_local[1:30], seed = 1234)
+    isofor_model <- isofor::iForest(creditcardfraud_local[1:30], seed = 1234)
 
-    isoforextended_anomaly_score <- predict(isoforextended_model, creditcardfraud_local[1:30])
+    isofor_anomaly_score <- predict(isofor_model, creditcardfraud_local[1:30])
 
-    isoforextended_cm <- table(
-        iForest = isoforextended_anomaly_score > quantile(isoforextended_anomaly_score, p),
-        Actual = creditcardfraud_local$Class == 1
+    isofor_cm <- table(
+      iForest = isofor_anomaly_score > quantile(isofor_anomaly_score, p),
+      Actual = creditcardfraud_local$Class == 1
     )
-    print(isoforextended_cm)
+    print(isofor_cm)
 
     ## Compare results
-    
-    # H2O vs isoforextended
+
+    # H2O vs isofor
     expect_equal(
-        h2o_cm[2,2] / (h2o_cm[1,2] + h2o_cm[2,2]),
-        isoforextended_cm[2,2] / (isoforextended_cm[1,2] + isoforextended_cm[2,2]),
-        tolerance = 0.05, scale = 1
+      h2o_cm[2,2] / (h2o_cm[1,2] + h2o_cm[2,2]),
+      isofor_cm[2,2] / (isofor_cm[1,2] + isofor_cm[2,2]),
+      tolerance = 0.05, scale = 1
     )
 }
 
-doTest("ExtendedIsolationForest: Compares Extended Isolation Forest with extension_level=0 to isoforextended package in R", test.ExtendedIsolationForest.creditcardfraud)
+doTest("ExtendedIsolationForest: Compares Extended Isolation Forest with extension_level=0 to isofor package in R", test.ExtendedIsolationForest.creditcardfraud)
