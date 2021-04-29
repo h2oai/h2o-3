@@ -501,7 +501,7 @@ Random Grid Search Parameters
 
 AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparameter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
-**Note**: AutoML does not run a standard grid search for GLM (returning all the possible models). Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. vIt returns only the model with the best alpha-lambda combination rather than one model for each alpha-lambda combination.
+**Note**: AutoML does not run a standard grid search for GLM (returning all the possible models). Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns only the model with the best alpha-lambda combination rather than one model for each alpha-lambda combination.
 
 
 GLM Hyperparameters
