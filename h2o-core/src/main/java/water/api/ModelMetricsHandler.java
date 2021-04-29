@@ -269,7 +269,7 @@ class ModelMetricsHandler extends Handler {
     // set user given auc type, used for scoring a testing data fe. from h2o.performance function
     MultinomialAucType at = parms._model._parms._auc_type;
     if(s.auc_type != null) {
-      parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type);
+      parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type.toUpperCase());
     }
     parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);

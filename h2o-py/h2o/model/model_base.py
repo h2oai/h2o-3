@@ -371,7 +371,8 @@ class ModelBase(h2o_meta(Keyed)):
                 return
             if auc_type is not None:
                 assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
-                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data={"auc_type":auc_type})
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), 
+                              data={"auc_type": auc_type})
 
             # FIXME need to do the client-side filtering...  (PUBDEV-874)
             raw_metrics = None
