@@ -8,7 +8,7 @@ test.gbm.mult.accessors <- function() {
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
-  iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train)
+  iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, auc_type="WEIGHTED_OVR")
   iris.gbm.valid <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test)
   iris.gbm.valid.xval <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test, nfolds=2)
 
