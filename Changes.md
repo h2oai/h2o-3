@@ -46,6 +46,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/2/index.h
 </li>
 <li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8101'>PUBDEV-8101</a>] - Added ‘ice_root’ error documented in FAQ.
 </li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8118'>PUBDEV-8118</a>] - Added further regularization to the GLM metalearner.
+</li>
 </ul>
 
 #### New Feature
