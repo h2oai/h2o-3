@@ -341,7 +341,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         return self._model_json["output"]["training_metrics"]._metric_json
     
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type="NONE"):
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type="none"):
         """
         Generate model metrics for this model on test_data.
 
@@ -351,7 +351,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param bool valid: Report the validation metrics for the model.
         :param bool xval: Report the cross-validation metrics for the model. If train and valid are True, then it
             defaults to True.
-        :param String auc_type: Change default AUC type for multinomial classification AUC calculation    
+        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
 
         :returns: An object of class H2OModelMetrics.
         """
@@ -369,7 +369,9 @@ class ModelBase(h2o_meta(Keyed)):
             if (self._model_json["response_column_name"] is not None) and not(self._model_json["response_column_name"] in test_data.names):
                 print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
                 return
-            res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data={"auc_type":auc_type})
+            if auc_type is not None:
+                assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), data={"auc_type":auc_type})
 
             # FIXME need to do the client-side filtering...  (PUBDEV-874)
             raw_metrics = None
