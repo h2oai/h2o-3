@@ -12,6 +12,7 @@ import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
 import hex.genmodel.algos.pipeline.MojoPipelineReader;
+import hex.genmodel.algos.rulefit.RuleFitMojoReader;
 import hex.genmodel.algos.svm.SvmMojoReader;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoReader;
 import hex.genmodel.algos.word2vec.Word2VecMojoReader;
@@ -104,6 +105,9 @@ public class ModelMojoFactory {
       
       case "Cox Proportional Hazards":
         return new CoxPHMojoReader();
+
+      case "RuleFit":
+        return new RuleFitMojoReader(); 
         
       default:
         // Try to load MOJO reader via service

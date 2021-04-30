@@ -24,6 +24,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     RuleEnsemble ruleEnsemble;
     
+    String[] dataFromRulesCodes;
+    
     public static class RuleFitParameters extends Model.Parameters {
         public String algoName() {
             return "RuleFit";
@@ -145,5 +147,10 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             if (modelMetricsKey.get() != null)
                 this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
         }
+    }
+
+    @Override
+    public RuleFitMojoWriter getMojo() {
+        return new RuleFitMojoWriter(this);
     }
 }
