@@ -45,11 +45,9 @@ public class RuleFitMojoModel extends MojoModel {
   double[] map(double[] test) {
     double[] newtest = test.clone();
     List list = Arrays.asList(_linearModel._names);
-    String[] checkarray = dataFromRulesCodes.clone();
     for (int i = 0; i < dataFromRulesCodes.length; i++) {
       int id = list.indexOf(dataFromRulesCodes[i]);
       newtest[id] = test[i];
-      checkarray[id] = dataFromRulesCodes[i];
     }
     return newtest;
   }

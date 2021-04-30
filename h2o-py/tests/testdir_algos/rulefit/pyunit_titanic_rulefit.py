@@ -23,9 +23,21 @@ def titanic():
     assert rfit._model_json["output"]["model_summary"] is not None, "model_summary should be present"
     assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0, "model_summary's content should be present"
 
-    rfit.predict(test)
+    rfit_predictions = rfit.predict(test)
 
+    import tempfile
+    tmpdir = tempfile.mkdtemp()
 
+    try:
+        mojo_path = rfit.save_mojo(tmpdir)
+        mojo_model = h2o.upload_mojo(mojo_path)
+    finally:
+        import shutil
+        shutil.rmtree(tmpdir)
+
+    mojo_predictions = mojo_model.predict(test)
+
+    assert pyunit_utils.compare_frames(rfit_predictions, mojo_predictions, 0)
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(titanic)

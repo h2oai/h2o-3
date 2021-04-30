@@ -153,4 +153,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     public RuleFitMojoWriter getMojo() {
         return new RuleFitMojoWriter(this);
     }
+
+    @Override
+    public boolean haveMojo() {
+        return true;
+    }
 }
