@@ -207,6 +207,10 @@ public class GLMPlugValuesTest extends TestUtil {
       // just check it doesn't crash
       GLMModel model = new GLM(params).trainModel().get();
       Scope.track_generic(model);
+
+      Frame pred = model.score(fr);
+      Scope.track(pred);
+      model.testJavaScoring(fr, pred, 1e-10, 1e-15, 1);
     } finally {
       Scope.exit();
     }
