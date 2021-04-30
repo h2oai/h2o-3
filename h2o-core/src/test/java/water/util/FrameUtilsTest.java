@@ -18,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -140,9 +139,9 @@ public class FrameUtilsTest extends TestUtil {
   @Test
   public void testIDColumnOperationEncoder() {
     Scope.enter();
-    Random _rand = new Random();
     int numRows = 1000;
-    int rowsToTest = _rand.nextInt(numRows);
+    int rowsToTest = new Random().nextInt(numRows);
+    Log.info("Row to test in testIDColumnOperationEncoder was chosen to be: " + rowsToTest);
     try {
       FrameTestUtil.Create1IDColumn tempO = new FrameTestUtil.Create1IDColumn(numRows);
       Frame f = tempO.doAll(tempO.returnFrame()).returnFrame();
@@ -154,9 +153,9 @@ public class FrameUtilsTest extends TestUtil {
               0, f).doAll(f).getNumberAppear();
       assertEquals("All values should appear only once.", countAppear, 1);
 
-      // delete a row to make sure it is not found again.
-      f.remove(rowsToTest);  // row containing value rowsToTest is no longer there.
-      countAppear = new FrameTestUtil.CountIntValueRows(2000, 0, 0,
+      // remove the value to make sure it is not found again.
+      f.vec(0).setNA(rowsToTest);  // row containing value rowsToTest is no longer there.
+      countAppear = new FrameTestUtil.CountIntValueRows(rowsToTest, 0, 0,
               f).doAll(f).getNumberAppear();
       assertEquals("Value of interest should not been found....", countAppear, 0);
     } finally {
