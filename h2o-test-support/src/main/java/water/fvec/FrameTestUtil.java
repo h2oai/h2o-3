@@ -102,7 +102,6 @@ public class FrameTestUtil {
     public long _value;
     public int _columnIndex;  // column where the values are to be counted
     public int _columnIndRowValue; // column that contains row indices
-    public ArrayList<Long> _specialRows;
 
 
     public CountIntValueRows(long value, int columnInd, int columnIndRowValue, Frame fr) {
@@ -110,7 +109,6 @@ public class FrameTestUtil {
         _value = value;
         _columnIndex = columnInd;
         _numberAppear = 0;
-        _specialRows = new ArrayList<Long>();
         _columnIndRowValue = columnIndRowValue;
       } else {
         throw new IllegalArgumentException("The column data type must be categorical or integer.");
@@ -120,8 +118,7 @@ public class FrameTestUtil {
     public void map(Chunk[] chks) {
       int numRows = chks[0].len();
       for (int index = 0; index < numRows; index++) {
-        if (chks[_columnIndex].at8(index) == _value) {
-          _specialRows.add(chks[_columnIndRowValue].at8(index));
+        if (!chks[_columnIndex].isNA_impl(index) && chks[_columnIndex].at8(index) == _value) {
           _numberAppear++;
         }
       }
