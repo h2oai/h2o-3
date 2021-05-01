@@ -1,0 +1,49 @@
+setwd(normalizePath(dirname(
+  R.utils::commandArgs(asValues = TRUE)$"f"
+)))
+source("../../scripts/h2o-r-test-setup.R")
+
+test.multinomialGlm.mojo.interaction <-
+  function() {
+    #----------------------------------------------------------------------
+    # Run the test
+    #----------------------------------------------------------------------
+    numTest = 1000 # set test dataset to contain 1000 rows
+    params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
+    modelAndDir<-buildModelSaveMojoGLM(params_prob_data$params) # build the model and save mojo
+    filename = sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
+    h2o.downloadCSV(params_prob_data$tDataset[,params_prob_data$params$x], filename)
+    twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename) # perform H2O and mojo prediction and return frames
+    h2o.downloadCSV(twoFrames$h2oPredict, sprintf("%s/h2oPred.csv", modelAndDir$dirName))
+    h2o.downloadCSV(twoFrames$mojoPredict, sprintf("%s/mojoOut.csv", modelAndDir$dirname))
+    compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-4)
+  }
+
+
+setParmsData <- function(numTest=1000) {
+  #----------------------------------------------------------------------
+  # Parameters for the test.
+  #----------------------------------------------------------------------
+  missing_values <- 'MeanImputation'
+  X <- sample(1:10, numTest, replace=TRUE)
+  Y <- sample(1:10, numTest, replace=TRUE)
+  Z <- sample(1:10, numTest, replace=TRUE)
+  resp <- sample(1:5, numTest, replace=TRUE)
+  training_file <- as.h2o(data.frame(x=X, y=Y, z=Z, response=resp))
+  training_file$response <- h2o.asfactor(training_file$response)
+  test_file <- as.h2o(data.frame(x=X, y=Y, z=Z, response=resp))
+  test_file$response <- h2o.asfactor(test_file$response)
+  allNames = h2o.names(training_file)
+  
+  params                  <- list()
+  params$missing_values_handling <- missing_values
+  params$training_frame <- training_file
+  params$interaction_pairs <- list(c("x", "y"), c("y", "z"), c("x", "z"))
+  params$x <- allNames[-which(allNames=="response")]
+  params$y <- "response"
+  params$family <- "multinomial"
+  
+  return(list("params" = params, "tDataset" = test_file))
+}
+
+doTest("Multinomial GLM mojo interaction test", test.multinomialGlm.mojo.interaction)

@@ -22,13 +22,13 @@ def interactions_airlines():
     )
     model.train(y=y, training_frame=airlines)
     MOJONAME = pyunit_utils.getMojoName(model._id)
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", MOJONAME))
     os.mkdir(TMPDIR)
     try:
         model.download_mojo(path=TMPDIR)
-        assert False, "Download MOJO should fail."
+        assert True, "Download MOJO with interaction pairs completed."
     except H2OValueError as e:
-        assert "Export to MOJO not supported" in e.args[0]
+        assert False, "Download MOJO with interaction pairs failed."
     try:
         model.download_pojo(path=TMPDIR)
         assert False, "Download POJO should fail."

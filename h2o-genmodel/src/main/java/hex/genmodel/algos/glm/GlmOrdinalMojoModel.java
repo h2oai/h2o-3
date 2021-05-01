@@ -15,6 +15,7 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
 
   @Override
   void init() {
+    super.init();
     P = _beta.length / _nclasses;
     lastClass = _nclasses-1;
     icptIndices = new int[lastClass];
