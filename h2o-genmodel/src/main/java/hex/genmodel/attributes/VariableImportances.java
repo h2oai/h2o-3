@@ -2,6 +2,8 @@ package hex.genmodel.attributes;
 
 
 import com.google.gson.JsonObject;
+import hex.genmodel.attributes.comparators.AscPairComparator;
+import hex.genmodel.attributes.comparators.DescPairComparator;
 import hex.genmodel.attributes.parameters.KeyValue;
 
 import java.io.Serializable;
@@ -56,12 +58,7 @@ public class VariableImportances implements Serializable {
         for (int i = 0; i < _importances.length; i++) {
             sortedImportances[i] = new KeyValue(_variables[i], _importances[i]);
         }
-        Arrays.sort(sortedImportances, new Comparator<KeyValue>() {
-            @Override
-            public int compare(KeyValue o1, KeyValue o2) {
-                return o1.getValue() > o2.getValue() ? -1 : 0;
-            }
-        });
+        Arrays.sort(sortedImportances, new DescPairComparator(false));
         return Arrays.copyOfRange(sortedImportances, 0, n);
     }
 }

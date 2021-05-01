@@ -1,9 +1,8 @@
 package hex.genmodel.attributes.parameters;
 
 import java.io.Serializable;
-import java.util.Comparator;
 
-public class KeyValue implements Serializable {
+public class KeyValue implements Serializable, Pair<String, Double> {
     
     public final String key;
     public final double value;
@@ -17,7 +16,7 @@ public class KeyValue implements Serializable {
         return key;
     }
 
-    public double getValue() {
+    public Double getValue() {
         return value;
     }
 
