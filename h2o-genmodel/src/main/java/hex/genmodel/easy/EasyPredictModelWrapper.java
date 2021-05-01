@@ -11,6 +11,8 @@ import hex.genmodel.algos.tree.TreeBackedMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.VariableImportances;
+import hex.genmodel.attributes.parameters.FeatureContribution;
+import hex.genmodel.attributes.parameters.Pair;
 import hex.genmodel.attributes.parameters.VariableImportancesHolder;
 import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.easy.error.VoidErrorConsumer;
@@ -903,12 +905,13 @@ public class EasyPredictModelWrapper implements Serializable {
    *         If topN < 0 || topBottomN < 0 then all descending sorted contributions is returned.
    * @throws PredictException
    */
-  public KeyValue[] predictContributions(RowData data, int topN, int topBottomN, boolean abs) throws PredictException {
+  @SuppressWarnings("unchecked")
+  public Pair<String, Double>[] predictContributions(RowData data, int topN, int topBottomN, boolean abs) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
     float[] contribs = predictContributions.calculateContributions(rawData);
     String[] contribNames = predictContributions.getContributionNames();
-    return contributionComposer.composeContributions(contribs, contribNames, topN, topBottomN, abs);
+    return (Pair<String, Double>[]) contributionComposer.composeContributions(contribs, contribNames, topN, topBottomN, abs);
   }
 
   /**
