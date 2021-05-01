@@ -51,7 +51,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   }
 
   @Override
-  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, String[] contribNames, int topN, int topBottomN, boolean abs) {
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs) {
     return new ScoreContributionsSoringTaskDRF(this, contribNames, topN, topBottomN, abs);
   }
 
@@ -120,7 +120,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
 
   public class ScoreContributionsSoringTaskDRF extends ScoreContributionsSortingTask {
 
-    public ScoreContributionsSoringTaskDRF(SharedTreeModel model, String[] contribNames, int topN, int topBottomN, boolean abs) {
+    public ScoreContributionsSoringTaskDRF(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs) {
       super(model, contribNames, topN, topBottomN, abs);
     }
 

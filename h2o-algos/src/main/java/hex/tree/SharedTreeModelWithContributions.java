@@ -3,7 +3,7 @@ package hex.tree;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.tree.*;
-import hex.genmodel.attributes.parameters.KeyValue;
+import hex.genmodel.attributes.parameters.Pair;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -104,7 +104,7 @@ public abstract class SharedTreeModelWithContributions<
     types = ArrayUtils.append(types, Vec.T_NUM);
     domains[domains.length -1] = null;
 
-    return getScoreContributionsSoringTask(this, contribNames, topN, topBottomN, abs)
+    return getScoreContributionsSoringTask(this, ArrayUtils.interval(0, contribNames.length), topN, topBottomN, abs)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(types, adaptFrm)
             .outputFrame(destination_key, outputNames, domains);
@@ -112,7 +112,7 @@ public abstract class SharedTreeModelWithContributions<
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
 
-  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, String[] contribNames, int topN, int topBottomN, boolean abs);
+  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs);
 
   public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
     protected final Key<SharedTreeModel> _modelKey;
@@ -183,12 +183,12 @@ public abstract class SharedTreeModelWithContributions<
 
   public class ScoreContributionsSortingTask extends ScoreContributionsTask {
 
-    private transient String[] _contribNames;
+    private transient Integer[] _contribNames;
     private transient int _topN;
     private transient int _topBottomN;
     private transient boolean _abs;
 
-    public ScoreContributionsSortingTask(SharedTreeModel model, String[] contribNames, int topN, int topBottomN, boolean abs) {
+    public ScoreContributionsSortingTask(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs) {
       super(model);
       _topN = topN;
       _topBottomN = topBottomN;
@@ -212,19 +212,19 @@ public abstract class SharedTreeModelWithContributions<
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
         doModelSpecificComputation(contribs);
-        KeyValue[] contribsSorted = (new ContributionComposer()).composeContributions(contribs, _contribNames, _topN, _topBottomN, _abs);
+        Pair[] contribsSorted = (new ContributionComposer()).composeContributions(contribs, _contribNames, _topN, _topBottomN, _abs);
 
         // Add contribs to new chunk
         addContribToNewChunk(contribsSorted, nc);
       }
     }
 
-    protected void addContribToNewChunk(KeyValue[] contribs, NewChunk[] nc) {
+    protected void addContribToNewChunk(Pair<Integer, Double>[] contribs, NewChunk[] nc) {
       for (int i = 0, inputPointer = 0; i < nc.length-1; i+=2, inputPointer++) {
-        nc[i].addNum(ArrayUtils.indexOfLinear(_contribNames, contribs[inputPointer].key));
-        nc[i+1].addNum(contribs[inputPointer].value);
+        nc[i].addNum(contribs[inputPointer].getKey());
+        nc[i+1].addNum(contribs[inputPointer].getValue());
       }
-      nc[nc.length-1].addNum(contribs[contribs.length-1].value); // bias
+      nc[nc.length-1].addNum(contribs[contribs.length-1].getValue()); // bias
     }
   }
 }
