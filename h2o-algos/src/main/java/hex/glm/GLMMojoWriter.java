@@ -1,6 +1,5 @@
 package hex.glm;
 
-import com.sun.corba.se.spi.orb.StringPair;
 import hex.ModelMojoWriter;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
@@ -26,11 +25,7 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
     writekv("cats", model.dinfo()._cats);
     writekv("cat_offsets", model.dinfo()._catOffsets);
     writekv("nums", model._output._dinfo._nums);
-    if(model._parms._interaction_pairs != null) {
-      writekv("num_interactions", model._parms._interaction_pairs.length);
-      writeStringArrays(parseInteractionPairs(model._parms._interaction_pairs), "interaction_pairs");  
-    }
-    
+
     boolean imputeMeans = model._parms.imputeMissing();
     writekv("mean_imputation", imputeMeans);
     if (imputeMeans) {
@@ -45,16 +40,6 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
 
     if (GLMModel.GLMParameters.Family.tweedie.equals(model._parms._family))
       writekv("tweedie_link_power", model._parms._tweedie_link_power);
-  }
-  
-  public String[] parseInteractionPairs(hex.StringPair[] interaction_pairs) {
-    String[] parsed = new String[2 * interaction_pairs.length];
-    for(int i = 0; i < interaction_pairs.length; i++) {
-      hex.StringPair interaction_pair = interaction_pairs[i];
-      parsed[2 * i] = interaction_pair._a;
-      parsed[(2 * i) + 1] = interaction_pair._b;
-    }
-    return parsed;
   }
 
 }
