@@ -110,7 +110,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   @Override
   public boolean havePojo() {
-    return  _parms.interactionSpec() == null;
+    if (_parms.interactionSpec() == null) return super.havePojo();
+    else return false;
   }
   
   @Override public boolean haveMojo() { return true; }
