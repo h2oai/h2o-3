@@ -35,7 +35,7 @@ Description: R interface for 'H2O', the scalable open source machine learning
     unsupervised machine learning algorithms such as Generalized Linear
     Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests,
     Deep Neural Networks (Deep Learning), Stacked Ensembles, Naive Bayes,
-    Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA,
+    Generalized Additive Models (GAM), Anova GLM, Cox Proportional Hazards, K-Means, PCA,
     Word2Vec, as well as a fully automatic machine learning algorithm (H2O AutoML).
 License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
@@ -89,6 +89,7 @@ Collate:
          'coxphutils.R'
          'kmeans.R'
          'gam.R'
+         'anovaglm.R'
          'gbm.R'
          'generic.R'
          'glm.R'

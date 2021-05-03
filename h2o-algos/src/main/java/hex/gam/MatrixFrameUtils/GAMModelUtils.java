@@ -5,6 +5,8 @@ import hex.gam.GAMModel;
 import hex.glm.GLMModel;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.TwoDimTable;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.gam.GAMModel.GAMParameters;
@@ -45,6 +47,8 @@ public class GAMModelUtils {
               glmCoeffLen);
     }
   }
+  
+  
 
   /***
    * Find the number of gamified column coefficients.  This is more difficult with thin plate regression smoothers.
@@ -70,22 +74,22 @@ public class GAMModelUtils {
     model._output._glm_training_metrics = glmModel._output._training_metrics;
     if (valid != null)
       model._output._glm_validation_metrics = glmModel._output._validation_metrics;
-    model._output._glm_model_summary = model.copyTwoDimTable(glmModel._output._model_summary);
-    model._output._glm_scoring_history = model.copyTwoDimTable(glmModel._output._scoring_history);
+    model._output._glm_model_summary = copyTwoDimTable(glmModel._output._model_summary, "glm model summary");
+    model._output._glm_scoring_history = copyTwoDimTable(glmModel._output._scoring_history, "glm scoring history");
     if (parms._family == multinomial || parms._family == ordinal) {
-      model._output._coefficients_table = model.genCoefficientTableMultinomial(new String[]{"Coefficients",
+      model._output._coefficients_table = genCoefficientTableMultinomial(new String[]{"Coefficients",
                       "Standardized Coefficients"}, model._output._model_beta_multinomial,
               model._output._standardized_model_beta_multinomial, model._output._coefficient_names,"GAM Coefficients");
-      model._output._coefficients_table_no_centering = model.genCoefficientTableMultinomial(new String[]{"coefficients " +
+      model._output._coefficients_table_no_centering = genCoefficientTableMultinomial(new String[]{"coefficients " +
                       "no centering", "standardized coefficients no centering"},
               model._output._model_beta_multinomial_no_centering, model._output._standardized_model_beta_multinomial_no_centering,
               model._output._coefficient_names_no_centering,"GAM Coefficients No Centering");
       model._output._standardized_coefficient_magnitudes = model.genCoefficientMagTableMultinomial(new String[]{"coefficients", "signs"},
               model._output._standardized_model_beta_multinomial, model._output._coefficient_names, "standardized coefficients magnitude");
     } else{
-      model._output._coefficients_table = model.genCoefficientTable(new String[]{"coefficients", "standardized coefficients"}, model._output._model_beta,
+      model._output._coefficients_table = genCoefficientTable(new String[]{"coefficients", "standardized coefficients"}, model._output._model_beta,
               model._output._standardized_model_beta, model._output._coefficient_names, "GAM Coefficients");
-      model._output._coefficients_table_no_centering = model.genCoefficientTable(new String[]{"coefficients no centering",
+      model._output._coefficients_table_no_centering = genCoefficientTable(new String[]{"coefficients no centering",
                       "standardized coefficients no centering"}, model._output._model_beta_no_centering,
               model._output._standardized_model_beta_no_centering,
               model._output._coefficient_names_no_centering,
@@ -113,6 +117,71 @@ public class GAMModelUtils {
     }
     model._output._varimp = new VarImp(glmModel._output._varimp._varimp, glmModel._output._varimp._names);
     model._output._variable_importances = calcVarImp(model._output._varimp);
+  }
+
+  public static TwoDimTable copyTwoDimTable(TwoDimTable table, String tableHeader) {
+    String[] rowHeaders = table.getRowHeaders();
+    String[] colTypes = table.getColTypes();
+    int tableSize = rowHeaders.length;
+    int colSize = colTypes.length;
+    TwoDimTable tableCopy = new TwoDimTable(tableHeader, "",
+            rowHeaders, table.getColHeaders(), colTypes, table.getColFormats(),
+            "names");
+    for (int rowIndex = 0; rowIndex < tableSize; rowIndex++)  {
+      for (int colIndex = 0; colIndex < colSize; colIndex++) {
+        tableCopy.set(rowIndex, colIndex,table.get(rowIndex, colIndex));
+      }
+    }
+    return tableCopy;
+  }
+  
+  public static TwoDimTable genCoefficientTable(String[] colHeaders, double[] coefficients, double[] coefficientsStand,
+                                                String[] coefficientNames, String tableHeader) {
+    String[] colTypes = new String[]{ "double", "double"};
+    String[] colFormat = new String[]{"%5f", "%5f"};
+    int nCoeff = coefficients.length;
+    String[] coeffNames = new String[nCoeff];
+    System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
+
+    Log.info("genCoefficientMagTable", String.format("coemffNames length: %d.  coefficients " +
+            "length: %d, coeffSigns length: %d", coeffNames.length, coefficients.length, coefficientsStand.length));
+
+    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
+            "names");
+    fillUpCoeffs(coefficients, coefficientsStand, table, 0);
+    return table;
+  }
+
+  public static TwoDimTable genCoefficientTableMultinomial(String[] colHeaders, double[][] coefficients, double[][] coefficients_stand,
+                                                           String[] coefficientNames, String tableHeader) {
+    String[] colTypes = new String[]{"double", "double"};
+    String[] colFormat = new String[]{"%5f", "%5f"};
+    int nCoeff = coefficients[0].length;
+    int nclass = coefficients.length;
+    int totCoeff = nCoeff*nclass;
+    String[] coeffNames = new String[totCoeff];
+
+    int coeffCounter=0;
+    for (int classInd=0; classInd < nclass; classInd++){
+      for (int ind=0; ind < nCoeff; ind++) {
+        coeffNames[coeffCounter++] = coefficientNames[ind]+"_class_"+classInd;
+      }
+    }
+    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
+            "names");
+    for (int classInd=0; classInd<nclass; classInd++)
+      fillUpCoeffs(coefficients[classInd], coefficients_stand[classInd], table, classInd*nCoeff);
+    return table;
+  }
+  
+  public static void fillUpCoeffs(double[] coeffValues, double[] coeffValuesStand, TwoDimTable tdt, int rowStart) {
+    int arrLength = coeffValues.length+rowStart;
+    int arrCounter=0;
+    for (int i=rowStart; i<arrLength; i++) {
+      tdt.set(i, 0, coeffValues[arrCounter]);
+      tdt.set(i, 1, coeffValuesStand[arrCounter]);
+      arrCounter++;
+    }
   }
 
   public static int copyGLMCoeffNames2GAMCoeffNames(GAMModel model, GLMModel glm) {
