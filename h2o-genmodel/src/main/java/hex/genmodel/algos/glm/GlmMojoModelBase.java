@@ -28,13 +28,12 @@ abstract class GlmMojoModelBase extends MojoModel {
 
   GlmMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
-  }
-
-  void init() {
     mapColumns();
     mapInteractions();
     addCatNumOffsets();
   }
+
+  void init() { /* do nothing by default */ }
 
   @Override
   public final double[] score0(double[] data, double[] preds) {
@@ -122,7 +121,7 @@ abstract class GlmMojoModelBase extends MojoModel {
         data[index] = _catModes[index];
       } else {
         // Computes interaction value based on enum level of respective categorical values
-        data[index] = (_domains[pair[0]].length * data[pair[0]]) + data[pair[1]];  
+        data[index] = (_domains[pair[0]].length * data[pair[0]]) + data[pair[1]] - 1;  
       }
     }
     // Impute numerical-numerical interaction

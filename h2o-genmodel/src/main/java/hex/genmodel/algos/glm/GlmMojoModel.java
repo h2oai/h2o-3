@@ -19,7 +19,6 @@ public class GlmMojoModel extends GlmMojoModelBase {
 
   @Override
   void init() {
-    super.init();
     _linkFn = createLinkFunction();
     _binomial = _family.equals("binomial");
   }
