@@ -7,9 +7,9 @@ import subprocess
 from subprocess import STDOUT,PIPE
 def glm_mojo_all_interaction_test_large():
     seed = 12345
-    bigCat = pyunit_utils.random_dataset_enums_only(10000, 1, factorL=30, misFrac=0.00, randSeed=seed)
-    bitCat2 = pyunit_utils.random_dataset_enums_only(10000, 1, factorL=20, misFrac=0.00, randSeed=seed)
-    smallCats = pyunit_utils.random_dataset_enums_only(10000, 4, factorL=5, misFrac=0.00, randSeed=seed)
+    bigCat = pyunit_utils.random_dataset_enums_only(10000, 1, factorL=30, misFrac=0.01, randSeed=seed)
+    bitCat2 = pyunit_utils.random_dataset_enums_only(10000, 1, factorL=20, misFrac=0.01, randSeed=seed)
+    smallCats = pyunit_utils.random_dataset_enums_only(10000, 4, factorL=5, misFrac=0.01, randSeed=seed)
     numerics = pyunit_utils.random_dataset_real_only(10000, 5, realR=100, misFrac=0.01, randSeed=seed)
     dataframe = numerics.cbind(smallCats.cbind(bitCat2.cbind(bigCat)))
     dataframe.set_names(["response","n1","n2","n3","n4","c1","c2","c3","c4","c5","c6"])
@@ -50,6 +50,8 @@ def mojo_predict(tmpdir, mojoname):
     pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
     return pred_mojo
 if __name__ == "__main__":
+    h2o.init(ip='192.168.0.141', port=54321, strict_version_check=False)
     pyunit_utils.standalone_test(glm_mojo_all_interaction_test_large)
 else:
+    h2o.init(ip='192.168.0.141', port=54321, strict_version_check=False)
     glm_mojo_all_interaction_test_large()
