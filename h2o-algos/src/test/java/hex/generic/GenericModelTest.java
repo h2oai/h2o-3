@@ -1199,14 +1199,13 @@ public class GenericModelTest extends TestUtil {
 
 
     @Test
-    public void rulefitMojoTest() throws IOException {
+    public void rulefitMojoTestBinomial() throws IOException {
         try {
             Scope.enter();
 
             final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(trainingFrame);
 
-            // Create DeepLearning Model
             final RuleFitModel.RuleFitParameters ruleFitParameters = new RuleFitModel.RuleFitParameters();
             ruleFitParameters._train = trainingFrame._key;
             ruleFitParameters._distribution = AUTO;
@@ -1257,6 +1256,63 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
-    
-    
+
+    @Test
+    public void rulefitMojoTestRegression() throws IOException {
+        try {
+            Scope.enter();
+
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
+            Scope.track(trainingFrame);
+            
+            final RuleFitModel.RuleFitParameters ruleFitParameters = new RuleFitModel.RuleFitParameters();
+            ruleFitParameters._train = trainingFrame._key;
+            ruleFitParameters._distribution = AUTO;
+            ruleFitParameters._response_column = "Distance";
+            ruleFitParameters._seed = 0XFEED;
+            ruleFitParameters._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            ruleFitParameters._max_rule_length = 5;
+            ruleFitParameters._min_rule_length = 1;
+            ruleFitParameters._max_num_rules = 1000;
+
+            final RuleFit ruleFit = new RuleFit(ruleFitParameters);
+            final RuleFitModel ruleFitModel = ruleFit.trainModel().get();
+            Scope.track_generic(ruleFitModel);
+            assertNotNull(ruleFitModel);
+
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            ruleFitModel.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            final Key<Frame> mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            // Create Generic model from given imported MOJO
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._model_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            final GenericModel genericModel = trainAndCheck(generic);
+            Scope.track_generic(genericModel);
+
+            // Compare the two MOJOs byte-wise
+            final File genericModelMojoFile = temporaryFolder.newFile();
+            genericModelMojoFile.deleteOnExit();
+            genericModel.getMojo().writeTo(new FileOutputStream(genericModelMojoFile));
+            assertArrayEquals(FileUtils.readFileToByteArray(originalModelMojoFile), FileUtils.readFileToByteArray(genericModelMojoFile));
+
+            // Test scoring
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
+            Scope.track(testFrame);
+            final Frame predictions = genericModel.score(testFrame);
+            Scope.track(predictions);
+
+            final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+
+            final Frame originalModelPredictions = ruleFitModel.score(testFrame);
+            Scope.track(originalModelPredictions);
+            assertTrue(TestUtil.compareFrames(predictions, originalModelPredictions));
+
+            assertTrue(equallyScored);
+        } finally {
+            Scope.exit();
+        }
+    }
 }
