@@ -1912,6 +1912,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     assert gs._dinfo._valid:"_valid flag should be set on data info when doing scoring";
     return gs.doAll(gs._dinfo._adaptedFrame)._mb;
   }
+
+  @Override
+  public boolean havePojo() {
+    return  _parms.interactionSpec() == null;
+  }
+
+  @Override public boolean haveMojo() { return true; }
   
   @Override
   public GLMMojoWriter getMojo() {
