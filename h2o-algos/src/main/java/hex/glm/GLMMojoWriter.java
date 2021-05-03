@@ -25,6 +25,7 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
     writekv("cats", model.dinfo()._cats);
     writekv("cat_offsets", model.dinfo()._catOffsets);
     writekv("nums", model._output._dinfo._nums);
+    writekv("interaction_pairs", model._parms._interaction_pairs);
 
     boolean imputeMeans = model._parms.imputeMissing();
     writekv("mean_imputation", imputeMeans);
