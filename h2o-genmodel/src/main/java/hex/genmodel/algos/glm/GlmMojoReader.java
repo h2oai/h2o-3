@@ -19,10 +19,8 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   @Override
   protected void readModelData() throws IOException {
     _model._useAllFactorLevels = readkv("use_all_factor_levels", false);
-    int num_interactions = readkv("num_interactions", 0);
-    if(num_interactions > 0) {
-      _model._interaction_pairs = parseInteractionPairs(readStringArray("interaction_pairs", 2 * num_interactions));
-    }
+    _model._interaction_pairs = readkv("interaction_pairs", new StringPair[0]);
+
     _model._cats = readkv("cats", -1);
     _model._catModes = readkv("cat_modes", new int[0]);
     _model._catOffsets = readkv("cat_offsets", new int[0]);
@@ -66,14 +64,6 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
 
   @Override public String mojoVersion() {
     return "1.00";
-  }
-  
-  public StringPair[] parseInteractionPairs(String[] pairs) {
-    StringPair[] interaction_pairs = new StringPair[pairs.length / 2];
-    for(int i = 0; i < interaction_pairs.length; i++) {
-      interaction_pairs[i] = new StringPair(pairs[2 * i], pairs[(2 * i) + 1]);
-    }
-    return interaction_pairs;
   }
 
 }

@@ -213,7 +213,6 @@ public class GLMPlugValuesTest extends TestUtil {
 
       Frame pred = model.score(fr);
       Scope.track(pred);
-      model.testJavaScoring(fr, pred, 1e-10, 1e-15, 1);
     } finally {
       Scope.exit();
     }
