@@ -318,6 +318,7 @@ def algo_to_classname(algo):
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
     if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     if algo == "gam": return "H2OGeneralizedAdditiveEstimator"
+    if algo == "anovaglm": return "H2OAnovaGLMEstimator"
     if algo == "targetencoder": return "H2OTargetEncoderEstimator"
     if algo == "rulefit": return "H2ORuleFitEstimator"
     return "H2O" + algo.capitalize() + "Estimator"

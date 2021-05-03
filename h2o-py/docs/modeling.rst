@@ -7,6 +7,12 @@ Modeling In H2O
 Supervised
 ++++++++++
 
+:mod:`H2OAnovaGLMEstimator`
+---------------------------
+.. autoclass:: h2o.estimators.anovaglm.H2OAnovaGLMEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OCoxProportionalHazardsEstimator`
 -----------------------------------------
 .. autoclass:: h2o.estimators.coxph.H2OCoxProportionalHazardsEstimator
