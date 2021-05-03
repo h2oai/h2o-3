@@ -165,48 +165,48 @@ At this point, determine whether you want to complete this quick start in either
 
    .. code-tab:: python
 
-    # Before starting Python, run the following commands to install dependencies.
-    # Prepend these commands with `sudo` only if necessary.
-    h2o-3 user$ [sudo] pip install -U requests
-    h2o-3 user$ [sudo] pip install -U tabulate
-    h2o-3 user$ [sudo] pip install -U future
-    h2o-3 user$ [sudo] pip install -U colorama
+      # Before starting Python, run the following commands to install dependencies.
+      # Prepend these commands with `sudo` only if necessary:
+      # h2o-3 user$ [sudo] pip install -U requests
+      # h2o-3 user$ [sudo] pip install -U tabulate
+      # h2o-3 user$ [sudo] pip install -U future
+      # h2o-3 user$ [sudo] pip install -U colorama
 
-    # Start python
-    h2o-3 user$ python
+      # Start python:
+      # h2o-3 user$ python
 
-    # Run the following command to import the H2O module:
-    >>> import h2o
+      # Run the following commands to import the H2O module:
+      >>> import h2o
 
-    # Run the following command to initialize H2O on your local machine (single-node cluster).
-    >>> h2o.init()
+      # Run the following command to initialize H2O on your local machine (single-node cluster):
+      >>> h2o.init()
 
-    # If desired, run the GLM, GBM, or Deep Learning demo
-    >>> h2o.demo("glm")
-    >>> h2o.demo("gbm")
-    >>> h2o.demo("deeplearning")
+      # If desired, run the GLM, GBM, or Deep Learning demo(s):
+      >>> h2o.demo("glm")
+      >>> h2o.demo("gbm")
+      >>> h2o.demo("deeplearning")
 
-    # Import the Iris (with headers) dataset.
-    >>> path = "smalldata/iris/iris_wheader.csv"
-    >>> iris = h2o.import_file(path=path)
+      # Import the Iris (with headers) dataset:
+      >>> path = "smalldata/iris/iris_wheader.csv"
+      >>> iris = h2o.import_file(path=path)
 
-    # View a summary of the imported dataset.
-    >>> iris.summary
-      sepal_len    sepal_wid    petal_len    petal_wid        class
-    -----------  -----------  -----------  -----------  -----------
-            5.1          3.5          1.4          0.2  Iris-setosa
-            4.9          3            1.4          0.2  Iris-setosa
-            4.7          3.2          1.3          0.2  Iris-setosa
-            4.6          3.1          1.5          0.2  Iris-setosa
-            5            3.6          1.4          0.2  Iris-setosa
-            5.4          3.9          1.7          0.4  Iris-setosa
-            4.6          3.4          1.4          0.3  Iris-setosa
-            5            3.4          1.5          0.2  Iris-setosa
-            4.4          2.9          1.4          0.2  Iris-setosa
-            4.9          3.1          1.5          0.1  Iris-setosa
+      # View a summary of the imported dataset:
+      >>> iris.summary
+      # sepal_len    sepal_wid    petal_len    petal_wid    class
+      # 5.1          3.5          1.4          0.2          Iris-setosa
+      # 4.9          3            1.4          0.2          Iris-setosa
+      # 4.7          3.2          1.3          0.2          Iris-setosa
+      # 4.6          3.1          1.5          0.2          Iris-setosa
+      # 5            3.6          1.4          0.2          Iris-setosa
+      # 5.4          3.9          1.7          0.4          Iris-setosa
+      # 4.6          3.4          1.4          0.3          Iris-setosa
+      # 5            3.4          1.5          0.2          Iris-setosa
+      # 4.4          2.9          1.4          0.2          Iris-setosa
+      # 4.9          3.1          1.5          0.1          Iris-setosa
+      #
+      # [150 rows x 5 columns]
+      # <bound method H2OFrame.summary of >
 
-    [150 rows x 5 columns]
-    <bound method H2OFrame.summary of >
 
 
 Experienced Users
