@@ -1,6 +1,5 @@
 package hex.genmodel.algos.glm;
 
-import com.sun.corba.se.spi.orb.StringPair;
 import hex.genmodel.MojoModel;
 
 import java.util.HashMap;
@@ -8,7 +7,7 @@ import java.util.HashMap;
 abstract class GlmMojoModelBase extends MojoModel {
 
   boolean _useAllFactorLevels;
-  public StringPair[] _interaction_pairs;
+  public InteractionPair[] _interaction_pairs;
   HashMap<String, Integer[]> _interaction_mapping;
   HashMap<String, Integer> _column_mapping;
 
@@ -88,11 +87,11 @@ abstract class GlmMojoModelBase extends MojoModel {
       return;
     }
     
-    _interaction_mapping = new HashMap<String, Integer[]>();
-    for (StringPair pair: _interaction_pairs) {
-      int index1 = _column_mapping.get(pair.getFirst());
-      int index2 = _column_mapping.get(pair.getSecond());
-      _interaction_mapping.put((pair.getFirst() + "_" + pair.getSecond()), new Integer[]{index1, index2});
+    _interaction_mapping = new HashMap<>();
+    for (InteractionPair pair: _interaction_pairs) {
+      int index1 = _column_mapping.get(pair.columnA);
+      int index2 = _column_mapping.get(pair.columnB);
+      _interaction_mapping.put((pair.columnA + "_" + pair.columnB), new Integer[]{index1, index2});
     }
   }
 

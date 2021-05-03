@@ -1,8 +1,6 @@
 package hex.glm;
 
-import com.sun.corba.se.spi.orb.StringPair;
 import hex.ModelMojoWriter;
-import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 import java.io.IOException;
 

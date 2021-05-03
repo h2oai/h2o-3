@@ -68,10 +68,10 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
     return "1.00";
   }
   
-  public StringPair[] parseInteractionPairs(String[] pairs) {
-    StringPair[] interaction_pairs = new StringPair[pairs.length / 2];
+  public InteractionPair[] parseInteractionPairs(String[] pairs) {
+    InteractionPair[] interaction_pairs = new InteractionPair[pairs.length / 2];
     for(int i = 0; i < interaction_pairs.length; i++) {
-      interaction_pairs[i] = new StringPair(pairs[2 * i], pairs[(2 * i) + 1]);
+      interaction_pairs[i] = new InteractionPair(pairs[2 * i], pairs[(2 * i) + 1]);
     }
     return interaction_pairs;
   }
