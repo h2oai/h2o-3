@@ -1,6 +1,7 @@
 package hex.api;
 
 import hex.ModelBuilder;
+import hex.anovaglm.ANOVAGLM;
 import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
@@ -30,6 +31,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.coxph       .CoxPH       (true),
             new hex.generic     .Generic     (true),
             new hex.gam         .GAM         (true),
+            new ANOVAGLM(true),
             new PSVM(true),
             new hex.rulefit     .RuleFit     (true)
     };

@@ -227,11 +227,21 @@ h2o.getModel <- function(model_id) {
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
   if (model_category %in% c("Binomial", "Multinomial", "Ordinal", "Regression")) { # add the missing metrics manually where
-    model$coefficients <- model$coefficients_table[,2]
-    names(model$coefficients) <- model$coefficients_table[,1]
-    if (!is.null(model$random_coefficients_table)) {
-      model$random_coefficients <- model$random_coefficients_table[,2]
-      names(model$random_coefficients) <- model$random_coefficients_table[,1]
+    if (!is.null(model$coefficients_table)) {
+      if (typeof(model$coefficients_table[[2]])=="double") {
+        model$coefficients <- model$coefficients_table[,2]
+        names(model$coefficients) <- model$coefficients_table[,1]
+        if (!is.null(model$random_coefficients_table)) {
+          model$random_coefficients <- model$random_coefficients_table[,2]
+          names(model$random_coefficients) <- model$random_coefficients_table[,1]
+        }
+      } else { # with AnovaGLM
+        coefLen =  length(model$coefficients_table)
+        model$coefficients <- vector("list", coefLen)
+        for (index in 1:coefLen) {
+          model$coefficients[[index]] <- model$coefficients_table[[index]]
+        }  
+      }
     }
   }
   parameters <- list()
