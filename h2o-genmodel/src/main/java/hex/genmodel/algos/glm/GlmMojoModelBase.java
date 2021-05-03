@@ -138,8 +138,8 @@ abstract class GlmMojoModelBase extends MojoModel {
     }
     // Impute categorical-numerical interaction
     else {
-      int cat_index = _domains[pair[0]] == null ? pair[1] : pair[0];
-      int num_index = _domains[pair[0]] == null ? pair[0] : pair[1];
+      int cat_index = _domains[pair[0]] == null ? 1 : 0;
+      int num_index = _domains[pair[0]] == null ? 0 : 1;
       if (Double.isNaN(data[num_index])) {
         // index - _cats says which categorical-numerical column is being used
         // meanOffset is index where that categorical-numerical column's means begin in numMeans
