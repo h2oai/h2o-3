@@ -21,6 +21,7 @@ abstract class GlmMojoModelBase extends MojoModel {
   boolean _meanImputation;
 
   int[] _catNumOffsets;
+  int _numNumOffset;
   
   double[] _beta;
 
@@ -34,6 +35,7 @@ abstract class GlmMojoModelBase extends MojoModel {
     mapColumns();
     mapInteractions();
     addCatNumOffsets();
+    _numNumOffset = _catNumOffsets[_catNumOffsets.length - 1] - (_catNumOffsets.length - 1);
   }
 
   @Override
@@ -61,7 +63,7 @@ abstract class GlmMojoModelBase extends MojoModel {
         if (isInteraction(_names[i + _cats])) { // Interaction columns will always be read in as NaN
           imputeInteraction(data, i + _cats);
         } else {
-          data[i + _cats] = _numMeans[i];  
+          data[i + _cats] = _numMeans[i + _numNumOffset];  
         }
       } 
     }
