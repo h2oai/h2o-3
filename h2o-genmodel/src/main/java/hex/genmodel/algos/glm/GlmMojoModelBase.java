@@ -22,6 +22,8 @@ abstract class GlmMojoModelBase extends MojoModel {
 
   int[] _catNumOffsets;
   int _numNumOffset;
+  int _numMeanOffset;
+  int _numBetaOffset;
   
   double[] _beta;
 
@@ -36,6 +38,10 @@ abstract class GlmMojoModelBase extends MojoModel {
     mapInteractions();
     addCatNumOffsets();
     _numNumOffset = _catNumOffsets[_catNumOffsets.length - 1] - (_catNumOffsets.length - 1);
+    // meanOffset represents index at which categorical-numerical means end and numerical means begin in numMeans 
+    _numMeanOffset = _catNumOffsets[_catNumOffsets.length - 1] -_cats - (_catNumOffsets.length - 1);
+    // noff is index at which numerical coefficients begin in beta array
+    _numBetaOffset = _catOffsets[_catOffsets.length - 1] + _catNumOffsets[_catNumOffsets.length - 1];
   }
 
   @Override
@@ -115,6 +121,7 @@ abstract class GlmMojoModelBase extends MojoModel {
     return _interaction_mapping.containsKey(name);
   }
   
+  
   private void imputeInteraction(double[] data, int index) {
     Integer[] pair = _interaction_mapping.get(_names[index]);
     // Impute categorical-categorical interaction
@@ -130,10 +137,8 @@ abstract class GlmMojoModelBase extends MojoModel {
     // Impute numerical-numerical interaction
     else if (_domains[pair[0]] == null && _domains[pair[1]] == null) {
       if(Double.isNaN(data[pair[0]]) || Double.isNaN(data[pair[1]])) {
-        // meanOffset represents index at which categorical-numerical means end and numerical means begin in numMeans 
-        int meanOffset = _catNumOffsets[_catNumOffsets.length - 1];
         // index - _cats - (_catNumOffsets.length - 1) says which numerical column is being used
-        data[index] = _numMeans[meanOffset + (index - _cats - (_catNumOffsets.length - 1))];
+        data[index] = index + _numMeanOffset;
       } else {
         data[index] = data[pair[0]] * data[pair[1]];  
       }
