@@ -9,9 +9,9 @@ import tempfile
 
 def glm_mojo_num_num_interaction_test():
     pd_df = pd.DataFrame(np.array([[1,0,1,0,1,0,1,0,1,0],
-                                   ["NA",'a','a','b','a','b','a','b','b','a'],
-                                   ['A', "NA", 'B', 'A', 'A', 'A', 'B', 'B', 'A', 'A'],
-                                   ['foo', 'bar', "NA", 'bar', 'foo', 'foo', 'bar', 'foo', 'bar','bar']]).T,
+                                   ["b",'a','a','b','a','b','a','b','b','a'],
+                                   ['A', "B", 'B', 'A', 'A', 'A', 'B', 'B', 'A', 'A'],
+                                   ['foo', 'bar', "foo", 'bar', 'foo', 'foo', 'bar', 'foo', 'bar','bar']]).T,
                          columns=['label','categorical_feat','categorical_feat2', 'categorical_feat3'])
     h2o_df = h2o.H2OFrame(pd_df, na_strings=["NA"])
 

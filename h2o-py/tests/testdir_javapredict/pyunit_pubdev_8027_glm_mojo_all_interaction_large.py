@@ -50,8 +50,6 @@ def mojo_predict(tmpdir, mojoname):
     pred_mojo = h2o.import_file(outfile, header=1)  # load mojo prediction in 
     return pred_mojo
 if __name__ == "__main__":
-    h2o.init(ip='192.168.0.105', port=54321, strict_version_check=False)
     pyunit_utils.standalone_test(glm_mojo_all_interaction_test_large)
 else:
-    h2o.init(ip='192.168.0.105', port=54321, strict_version_check=False)
     glm_mojo_all_interaction_test_large()
