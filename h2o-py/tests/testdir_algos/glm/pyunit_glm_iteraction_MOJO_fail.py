@@ -25,10 +25,10 @@ def interactions_airlines():
     TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", MOJONAME))
     os.mkdir(TMPDIR)
     try:
-        model.download_mojo(path=TMPDIR)
-        assert True, "Download MOJO with interaction pairs completed."
+        model.download_mojo(path="TMPDIR")
+        assert False, "Download MOJO should fail."
     except H2OValueError as e:
-        assert False, "Download MOJO with interaction pairs failed."
+        assert "Export to MOJO not supported" in e.args[0]
     try:
         model.download_pojo(path=TMPDIR)
         assert False, "Download POJO should fail."

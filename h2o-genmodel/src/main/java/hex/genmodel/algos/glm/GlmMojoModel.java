@@ -73,9 +73,10 @@ public class GlmMojoModel extends GlmMojoModelBase {
     
     // Numerical interaction scoring
     
-    
+    // noff is index at which numerical coefficients begin in beta array
+    int noff = _catOffsets[_catOffsets.length - 1] + _catNumOffsets[_catNumOffsets.length - 1];
     for(int i = 0; i < _nums - (_catNumOffsets.length - 1); ++i) {
-      eta += _beta[_numBetaOffset + i] * data[i + _cats + _catNumOffsets.length - 1];
+      eta += _beta[noff + i] * data[i + _cats + _catNumOffsets.length - 1];
     }
     eta += _beta[_beta.length - 1]; // reduce intercept
 
