@@ -70,9 +70,11 @@ public class ContributionComposer implements Serializable {
 
     private void reverse(Pair<?,?>[] contributions, int len) {
         for (int i = 0; i < len/2; i++) {
-            Pair<?,?> tmp = contributions[i];
-            contributions[i] = contributions[len - i - 1];
-            contributions[len - i - 1] = tmp;
+            if (!contributions[i].getValue().equals(contributions[len - i - 1].getValue())) {
+                Pair<?, ?> tmp = contributions[i];
+                contributions[i] = contributions[len - i - 1];
+                contributions[len - i - 1] = tmp;
+            }
         }
     }
 }
