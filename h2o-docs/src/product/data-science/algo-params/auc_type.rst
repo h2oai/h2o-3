@@ -35,76 +35,78 @@ Example
 ~~~~~~~
 
 .. tabs::
-   .. code-tab:: r R
+	.. code-tab:: r R
 
 		library(h2o)
 		h2o.init()
 
-		# import the cars dataset:
-		# this dataset is used to classify whether or not a car is economical based on
-		# the car's displacement, power, weight, and acceleration, and the year it was made
+		# Import the cars dataset:
+		# (this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made)
 		cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-
-		# set the predictor names and the response column name
-		predictors <- c("displacement","power", "weight", "acceleration", "year")
+		# Set the predictor and response column names:
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "cylinders"
-        cars[response] <- h2o.asfactor(cars[response])
+		cars[response] <- h2o.asfactor(cars[response])
 
-		# split into train and validation sets
-		cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+		# Split into train and validation sets:
+		cars_splits <- h2o.splitFrame(data = cars, ratios = 0.8), seed = 1234)
 		train <- cars_splits[[1]]
 		valid <- cars_splits[[2]]
 
-		# try using the distribution parameter:
-		# train a GBM
-		car_gbm <- h2o.gbm(x=predictors, 
-		                   y=response, 
-		                   training_frame=train,
-		                   validation_frame=valid,
-		                   distribution="multinomial",
-                           auc_type="MACRO_OVR", 
-		                   seed=1234)
+		# Try using the distribution parameter & train a GBM:
+		car_gbm <- h2o.gbm(x = predictors, 
+				   y = response, 
+				   training_frame = train, 
+				   validation_frame = valid, 
+				   distribution = "multinomial", 
+				   auc_type = "MACRO_OVR", 
+				   seed = 1234)
 
-		# print the AUC for your validation data
+		# Print the AUC for your validation data:
 		print(h2o.auc(car_gbm, valid = TRUE))
-		# print the AUCPR for your validation data
+		# Print the AUCPR for your validation data:
 		print(h2o.aucpr(car_gbm, valid = TRUE))
-        # print the whole AUC table
-        print(cars_gbm.multinomial_auc_table())
-        # print the whole AUCPR table
-        print(cars_gbm.multinomial_aucpr_table())
+		# Print the whole AUC table:
+		print(cars_gbm.multinomial_auc_table())
+		# Print the whole AUCPR table:
+		print(cars_gbm.multinomial_aucpr_table())
 
-   .. code-tab:: python
+
+	.. code-tab:: python
 
 		import h2o
-		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		from h2o.estimators import H2OGradientBoostingEstimator
 		h2o.init()
 
-		# import the cars dataset:
-		# this dataset is used to classify whether or not a car is economical based on
-		# the car's displacement, power, weight, and acceleration, and the year it was made
+		# Import the cars dataset:
+		# (this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made)
 		cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-		# set the predictor names and the response column name
-		predictors = ["displacement","power","weight","acceleration","year"]
+		# Set the predictor and responsecolumn names:
+		predictors - ["displacement","power","weight","acceleration","year"]
 		response = "cylinders"
+		cars[response] = cars[response].asfactor()
 
-        cars[response] = cars[response].asfactor()
-
-		# split into train and validation sets
+		# Split into train and validation sets:
 		train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-		# try using the distribution parameter:
-		# Initialize and train a GBM
-		cars_gbm = H2OGradientBoostingEstimator(distribution="multinomial", seed=1234, auc_type="MACRO_OVR")
-		cars_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
+		# Try using the distribution parameter & train a GBM:
+		cars_gbm = H2OGradientBoostingEstimator(distribution="multinomial", 
+							seed=1234, 
+							auc_type="MACRO_OVR")
+		cars_gbm.train(x=predictors, 
+			       y=response, 
+			       training_frame=train, 
+			       validation_frame=valid)
 
-		# print the AUC for the validation data
+		# Print the AUC for the validation data:
 		print(cars_gbm.auc(valid=True))
-		# print the AUCPR for the validation data
-		print(cars_gbm.auc(valid=True))
-        # print the whole AUC table
-        print(cars_gbm.multinomial_auc_table())
-        # print the whole AUCPR table
-        print(cars_gbm.multinomial_aucpr_table())
+		# Print the AUCPR for the validation data:
+		print(cars_gbm.pr_auc(valid=True))
+		# Print the whole AUC table:
+		print(cars_gbm.multinomial_auc_table())
+		# Print the whole AUCPR table:
+		print(cars_gbm.multinomial_aucpr_table())
