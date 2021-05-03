@@ -4,7 +4,6 @@ import com.sun.corba.se.spi.orb.StringPair;
 import hex.genmodel.MojoModel;
 
 import java.util.HashMap;
-import java.util.stream.IntStream;
 
 abstract class GlmMojoModelBase extends MojoModel {
 
@@ -49,7 +48,7 @@ abstract class GlmMojoModelBase extends MojoModel {
   private void imputeMissingWithMeans(double[] data) {
     for (int i = 0; i < _cats; ++i) {
       if (Double.isNaN(data[i])) {
-        if (isInteraction(_names[i])) {
+        if (isInteraction(_names[i])) { // Interaction columns will always be read in as NaN
           imputeInteraction(data, i);
         } else {
           data[i] = _catModes[i];
@@ -58,7 +57,7 @@ abstract class GlmMojoModelBase extends MojoModel {
     }
     for (int i = 0; i < _nums; ++i) {
       if (Double.isNaN(data[i + _cats])) {
-        if (isInteraction(_names[i + _cats])) {
+        if (isInteraction(_names[i + _cats])) { // Interaction columns will always be read in as NaN
           imputeInteraction(data, i + _cats);
         } else {
           data[i + _cats] = _numMeans[i];  
@@ -87,7 +86,14 @@ abstract class GlmMojoModelBase extends MojoModel {
       _interaction_mapping.put((pair.getFirst() + "_" + pair.getSecond()), new Integer[]{index1, index2});
     }
   }
-  
+
+  /**
+   * Creates array that gives offset of each categorical-numerical interaction column, relative to the first
+   * categorical-numerical interaction column. First interaction column has offset 0, each offset is then
+   * determined by the domain length of the categorical variable in the subsequent interaction columns.
+   * Array is used to determine correct value of beta to use when scoring categorical-numerical interaction column
+   * and to impute the correct value into the categorical-numerical interaction columns when reading in data.
+   */
   private void addCatNumOffsets() {
     int catNumInteractions = 0;
     for (int i = _cats; i < _domains.length - 1; i++) {
@@ -108,24 +114,37 @@ abstract class GlmMojoModelBase extends MojoModel {
   
   private void imputeInteraction(double[] data, int index) {
     Integer[] pair = _interaction_mapping.get(_names[index]);
+    // Impute categorical-categorical interaction
     if (_domains[pair[0]] != null && _domains[pair[1]] != null) {
+      // If either categorical value in the pair is NaN, use interaction columns mode to impute
       if(Double.isNaN(data[pair[0]]) || Double.isNaN(data[pair[1]])) {
         data[index] = _catModes[index];
       } else {
+        // Computes interaction value based on enum level of respective categorical values
         data[index] = (_domains[pair[0]].length * data[pair[0]]) + data[pair[1]] - 1;  
       }
-    } else if (_domains[pair[0]] == null && _domains[pair[1]] == null) {
+    }
+    // Impute numerical-numerical interaction
+    else if (_domains[pair[0]] == null && _domains[pair[1]] == null) {
       if(Double.isNaN(data[pair[0]]) || Double.isNaN(data[pair[1]])) {
+        // meanOffset represents index at which categorical-numerical means end and numerical means begin in numMeans 
         int meanOffset = _catNumOffsets[_catNumOffsets.length - 1];
+        // index - _cats - (_catNumOffsets.length - 1) says which numerical column is being used
         data[index] = _numMeans[meanOffset + (index - _cats - (_catNumOffsets.length - 1))];
       } else {
         data[index] = data[pair[0]] * data[pair[1]];  
       }
-    } else {
+    }
+    // Impute categorical-numerical interaction
+    else {
       int cat_index = _domains[pair[0]] == null ? 1 : 0;
       int num_index = _domains[pair[0]] == null ? 0 : 1;
       if (Double.isNaN(data[num_index])) {
+        // index - _cats says which categorical-numerical column is being used
+        // meanOffset is index where that categorical-numerical column's means begin in numMeans
         int meanOffset = _catNumOffsets[index - _cats];
+        // Each categorical-numerical column has multiple means based on enum level
+        // (int)data[cat_index] gets enum level - this is used as the offset to get the corresponding mean
         data[index] = _numMeans[meanOffset + (int)data[cat_index]];
       } else {
         data[index] = data[num_index];
