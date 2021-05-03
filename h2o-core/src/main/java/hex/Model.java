@@ -119,9 +119,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     class ContributionsOptions {
       public ContributionsOutputFormat _outputFormat = ContributionsOutputFormat.Original;
+      public int _topN;
+      public int _topBottomN;
+      public boolean _abs;
 
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
+        return this;
+      }
+
+      public ContributionsOptions setTopN(int topN) {
+        _topN = topN;
+        return this;
+      }
+
+      public ContributionsOptions setTopBottomN(int topBottomN) {
+        _topBottomN = topBottomN;
+        return this;
+      }
+
+      public ContributionsOptions setAbs(boolean abs) {
+        _abs = abs;
         return this;
       }
     }
@@ -134,8 +152,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
       return scoreContributions(frame, destination_key);
     }
-
-    Frame scoreContributions(Frame frame, Key<Frame> destination_key, int topN, int topBottomN, boolean abs, Job<Frame> j);
   }
 
   public interface ExemplarMembers {

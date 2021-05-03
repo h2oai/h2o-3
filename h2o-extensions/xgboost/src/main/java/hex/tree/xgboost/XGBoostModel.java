@@ -665,6 +665,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
+    if (options._topN != 0 || options._topBottomN != 0 || options._abs) {
+      throw new UnsupportedOperationException(
+              "Sorting of Shapley for XGBooost is not yet supported");
+    }
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
@@ -678,11 +682,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
-  }
-
-  @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, int topN, int topBottomN, boolean abs, Job<Frame> j) {
-    throw new UnsupportedOperationException("Sorting of shap for XGBooost is not yet implemented");
   }
 
   @Override

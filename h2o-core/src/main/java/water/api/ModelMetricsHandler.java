@@ -433,14 +433,14 @@ class ModelMetricsHandler extends Handler {
             throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
           }
           Model.Contributions mc = (Model.Contributions) parms._model;
-          if (parms._top_n == 0 && parms._top_bottom_n == 0 && !parms._abs) {
-            Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
-                    Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
-            Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
-            mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
-          } else {
-            mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), parms._top_n, parms._top_bottom_n, parms._abs, j);
-          }
+          Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
+                  Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
+          Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
+          options.setOutputFormat(outputFormat)
+                  .setTopN(parms._top_n)
+                  .setTopBottomN(parms._top_bottom_n)
+                  .setAbs(parms._abs);
+          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         } else if (s.deep_features_hidden_layer_name != null){

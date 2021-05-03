@@ -61,18 +61,25 @@ public abstract class SharedTreeModelWithContributions<
   }
 
   @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, int topN, int topBottomN, boolean abs, Job<Frame> j) {
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
     if (_output.nclasses() > 2) {
       throw new UnsupportedOperationException(
               "Calculating contributions is currently not supported for multinomial models.");
+    }
+    if (options._outputFormat == ContributionsOutputFormat.Compact) {
+      throw new UnsupportedOperationException(
+              "Only output_format \"Original\" is supported for this model.");
+    }
+    if (options._topN == 0 && options._topBottomN == 0 && !options._abs) {
+      return scoreContributions(frame, destination_key, j);
     }
 
     Frame adaptFrm = removeSpecialColumns(frame);
     final String[] contribNames = ArrayUtils.append(adaptFrm.names(), "BiasTerm");
 
     final ContributionComposer contributionComposer = new ContributionComposer();
-    int topNAdjusted = contributionComposer.checkAndAdjustInput(topN, adaptFrm.names().length);
-    int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(topBottomN, adaptFrm.names().length);
+    int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, adaptFrm.names().length);
+    int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(options._topBottomN, adaptFrm.names().length);
 
     int outputSize = Math.min((topNAdjusted+topBottomNAdjusted)*2, adaptFrm.names().length*2);
     String[] names = new String[outputSize];
@@ -104,7 +111,7 @@ public abstract class SharedTreeModelWithContributions<
     types = ArrayUtils.append(types, Vec.T_NUM);
     domains[domains.length -1] = null;
 
-    return getScoreContributionsSoringTask(this, ArrayUtils.interval(0, contribNames.length), topN, topBottomN, abs)
+    return getScoreContributionsSoringTask(this, ArrayUtils.interval(0, contribNames.length), options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(types, adaptFrm)
             .outputFrame(destination_key, outputNames, domains);
@@ -112,7 +119,7 @@ public abstract class SharedTreeModelWithContributions<
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
 
-  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs);
+  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options);
 
   public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
     protected final Key<SharedTreeModel> _modelKey;
@@ -184,16 +191,12 @@ public abstract class SharedTreeModelWithContributions<
   public class ScoreContributionsSortingTask extends ScoreContributionsTask {
 
     private transient Integer[] _contribNames;
-    private transient int _topN;
-    private transient int _topBottomN;
-    private transient boolean _abs;
+    private transient ContributionsOptions _options;
 
-    public ScoreContributionsSortingTask(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs) {
+    public ScoreContributionsSortingTask(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options) {
       super(model);
-      _topN = topN;
-      _topBottomN = topBottomN;
-      _abs = abs;
       _contribNames = contribNames;
+      _options = options;
     }
 
     @Override
@@ -212,7 +215,7 @@ public abstract class SharedTreeModelWithContributions<
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
         doModelSpecificComputation(contribs);
-        Pair[] contribsSorted = (new ContributionComposer()).composeContributions(contribs, _contribNames, _topN, _topBottomN, _abs);
+        Pair[] contribsSorted = (new ContributionComposer()).composeContributions(contribs, _contribNames, _options._topN, _options._topBottomN, _options._abs);
 
         // Add contribs to new chunk
         addContribToNewChunk(contribsSorted, nc);

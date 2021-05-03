@@ -51,8 +51,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
   }
 
   @Override
-  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs) {
-    return new ScoreContributionsSoringTaskDRF(this, contribNames, topN, topBottomN, abs);
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options) {
+    return new ScoreContributionsSoringTaskDRF(this, contribNames, options);
   }
 
   @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
@@ -120,8 +120,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
 
   public class ScoreContributionsSoringTaskDRF extends ScoreContributionsSortingTask {
 
-    public ScoreContributionsSoringTaskDRF(SharedTreeModel model, Integer[] contribNames, int topN, int topBottomN, boolean abs) {
-      super(model, contribNames, topN, topBottomN, abs);
+    public ScoreContributionsSoringTaskDRF(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options) {
+      super(model, contribNames, options);
     }
 
     @Override
