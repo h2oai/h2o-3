@@ -11,7 +11,6 @@ public class GlmMultinomialMojoModel extends GlmMojoModelBase {
 
   @Override
   void init() {
-    super.init();
     P = _beta.length / _nclasses;
     if (P * _nclasses != _beta.length)
       throw new IllegalStateException("Incorrect coding of Beta.");
