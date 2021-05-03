@@ -9,11 +9,11 @@ import tempfile
 
 def glm_mojo_num_num_interaction_test():
     pd_df = pd.DataFrame(np.array([[1,0,1,0,1,0,1,0,1,0],
-                                   ["NA",'a','a','b','a','b','a','b','b','a'],
-                                   ['A', "NA", 'B', 'A', 'A', 'A', 'B', 'B', 'A', 'A'],
-                                   ['foo', 'bar', "NA", 'bar', 'foo', 'foo', 'bar', 'foo', 'bar','bar']]).T,
+                                   ['a','a','a','b','a','b','a','b','b','a'],
+                                   ['A', 'B', 'B', 'A', 'A', 'A', 'B', 'B', 'A', 'A'],
+                                   ['foo', 'bar', 'foo', 'bar', 'foo', 'foo', 'bar', 'foo', 'bar','bar']]).T,
                          columns=['label','categorical_feat','categorical_feat2', 'categorical_feat3'])
-    h2o_df = h2o.H2OFrame(pd_df, na_strings=["NA"])
+    h2o_df = h2o.H2OFrame(pd_df, na_strings=["UNKNOWN"])
 
     interaction_pairs = [("categorical_feat", "categorical_feat2"),("categorical_feat", "categorical_feat3"),
                          ("categorical_feat2", "categorical_feat3")]
@@ -31,8 +31,6 @@ def glm_mojo_num_num_interaction_test():
 
 
 if __name__ == "__main__":
-    h2o.init(ip='192.168.0.105', port=54321, strict_version_check=False)
     pyunit_utils.standalone_test(glm_mojo_num_num_interaction_test)
 else:
-    h2o.init(ip='192.168.0.105', port=54321, strict_version_check=False)
     glm_mojo_num_num_interaction_test()

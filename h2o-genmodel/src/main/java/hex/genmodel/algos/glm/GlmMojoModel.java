@@ -61,6 +61,7 @@ public class GlmMojoModel extends GlmMojoModelBase {
       // catOffset is index at which categorical-numerical interaction coefficients begin in beta array
       int catOffset = _catOffsets[_catOffsets.length - 1];
       int cat_index = _domains[interaction[0]] == null ? interaction[1] : interaction[0];
+      int num_index = _domains[interaction[0]] == null ? interaction[0] : interaction[1];
       int enum_level = (int) data[cat_index];
       if (enum_level != data[cat_index]) {
         throw new IllegalArgumentException("categorical value out of range");
@@ -68,7 +69,7 @@ public class GlmMojoModel extends GlmMojoModelBase {
       if(!_useAllFactorLevels && enum_level == 0) {continue;}
       // _catNumOffsets[i] + enum_level gets the offset for that particular categorical-numerical interaction column
       // within the categorical-numerical interaction portion of beta array
-      eta += _beta[catOffset + _catNumOffsets[i] + enum_level] * data[i + _cats];
+      eta += _beta[catOffset + _catNumOffsets[i] + enum_level] * data[num_index];
     }
     
     // Numerical interaction scoring
