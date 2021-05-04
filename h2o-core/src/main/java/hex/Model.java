@@ -2506,6 +2506,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     boolean havePojo = mb.havePojo();
     boolean haveMojo = mb.haveMojo();
 
+    if ("glm".equalsIgnoreCase(_parms.algoName())) {
+      assert havePojo; // generally we declare we do have a POJO
+      if (!havePojo()) {
+        boolean hasInteractions =
+                PojoUtils.getFieldValue(_parms, "_interactions", PojoUtils.FieldNaming.CONSISTENT) != null || 
+                PojoUtils.getFieldValue(_parms, "_interaction_pairs", PojoUtils.FieldNaming.CONSISTENT) != null;
+        assert hasInteractions; // POJO was disabled because of interactions 
+        havePojo = false;
+      }
+    }
+    
     Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
     Frame fr = new Frame(data);

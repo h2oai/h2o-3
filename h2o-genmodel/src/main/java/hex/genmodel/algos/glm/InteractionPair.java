@@ -1,6 +1,8 @@
 package hex.genmodel.algos.glm;
 
-public class InteractionPair {
+import java.io.Serializable;
+
+public class InteractionPair implements Serializable {
     public final String columnA;
     public final String columnB;
 
