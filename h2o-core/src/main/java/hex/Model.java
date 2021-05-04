@@ -142,6 +142,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         _abs = abs;
         return this;
       }
+
+      public boolean isSortingRequired() {
+        return _topN != 0 || _topBottomN != 0 || _abs;
+      }
     }
 
     Frame scoreContributions(Frame frame, Key<Frame> destination_key);

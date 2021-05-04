@@ -70,7 +70,7 @@ public abstract class SharedTreeModelWithContributions<
       throw new UnsupportedOperationException(
               "Only output_format \"Original\" is supported for this model.");
     }
-    if (options._topN == 0 && options._topBottomN == 0 && !options._abs) {
+    if (!options.isSortingRequired()) {
       return scoreContributions(frame, destination_key, j);
     }
 

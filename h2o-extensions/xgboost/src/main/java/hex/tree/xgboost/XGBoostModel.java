@@ -665,7 +665,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
-    if (options._topN != 0 || options._topBottomN != 0 || options._abs) {
+    if (options.isSortingRequired()) {
       throw new UnsupportedOperationException(
               "Sorting of Shapley for XGBooost is not yet supported");
     }
