@@ -155,6 +155,13 @@ public abstract class SharedTreeModelWithContributions<
       _treeSHAP = new TreeSHAPEnsemble<>(treeSHAPs, (float) _output._init_f);
     }
 
+    protected void fillInput(Chunk chks[], int row, double[] input, float[] contribs) {
+      for (int i = 0; i < chks.length; i++) {
+        input[i] = chks[i].atd(row);
+      }
+      Arrays.fill(contribs, 0);
+    }
+
     @Override
     public void map(Chunk chks[], NewChunk[] nc) {
       assert chks.length == nc.length - 1; // calculate contribution for each feature + the model bias
@@ -164,16 +171,10 @@ public abstract class SharedTreeModelWithContributions<
       Object workspace = _treeSHAP.makeWorkspace();
 
       for (int row = 0; row < chks[0]._len; row++) {
-        for (int i = 0; i < chks.length; i++) {
-          input[i] = chks[i].atd(row);
-        }
-        Arrays.fill(contribs, 0);
-
+        fillInput(chks, row, input, contribs);
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
-
         doModelSpecificComputation(contribs);
-
         // Add contribs to new chunk
         addContribToNewChunk(contribs, nc);
       }
@@ -207,10 +208,7 @@ public abstract class SharedTreeModelWithContributions<
       Object workspace = _treeSHAP.makeWorkspace();
 
       for (int row = 0; row < chks[0]._len; row++) {
-        for (int i = 0; i < chks.length; i++) {
-          input[i] = chks[i].atd(row);
-        }
-        Arrays.fill(contribs, 0);
+        fillInput(chks, row, input, contribs);
 
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
