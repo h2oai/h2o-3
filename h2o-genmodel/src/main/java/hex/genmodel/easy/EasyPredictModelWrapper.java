@@ -73,7 +73,6 @@ public class EasyPredictModelWrapper implements Serializable {
   private final int glrmIterNumber; // allow user to set GLRM mojo iteration number in constructing x.
 
   private final PredictContributions predictContributions;
-  private final ContributionComposer contributionComposer = new ContributionComposer();
 
   public boolean getEnableLeafAssignment() { return enableLeafAssignment; }
   public boolean getEnableGLRMReconstruct() { return enableGLRMReconstruct; }
@@ -905,13 +904,10 @@ public class EasyPredictModelWrapper implements Serializable {
    *         If topN < 0 || topBottomN < 0 then all descending sorted contributions is returned.
    * @throws PredictException
    */
-  @SuppressWarnings("unchecked")
   public Pair<String, Double>[] predictContributions(RowData data, int topN, int topBottomN, boolean abs) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    float[] contribs = predictContributions.calculateContributions(rawData);
-    String[] contribNames = predictContributions.getContributionNames();
-    return (Pair<String, Double>[]) contributionComposer.composeContributions(contribs, contribNames, topN, topBottomN, abs);
+    return predictContributions.calculateContributions(rawData, topN, topBottomN, abs);
   }
 
   /**

@@ -1,12 +1,14 @@
 package hex.genmodel.algos.tree;
 
 import hex.genmodel.PredictContributions;
+import hex.genmodel.attributes.parameters.Pair;
 import hex.genmodel.utils.ArrayUtils;
 
 public abstract class ContributionsPredictor<E> implements PredictContributions {
   private final int _ncontribs;
   private final String[] _contribution_names;
   private final TreeSHAPPredictor<E> _treeSHAPPredictor;
+  private final ContributionComposer contributionComposer = new ContributionComposer();
 
   private static final ThreadLocal<Object> _workspace = new ThreadLocal<>();
 
@@ -40,6 +42,12 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
       _workspace.set(workspace);
     }
     return workspace;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public Pair<String, Double>[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs) {
+    return (Pair<String, Double>[]) contributionComposer.composeContributions(calculateContributions(input), _contribution_names, topN, topBottomN, abs);
   }
 }
 

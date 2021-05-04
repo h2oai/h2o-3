@@ -1,5 +1,7 @@
 package hex.genmodel;
 
+import hex.genmodel.attributes.parameters.Pair;
+
 import java.io.Serializable;
 
 public interface PredictContributions extends Serializable {
@@ -10,6 +12,8 @@ public interface PredictContributions extends Serializable {
    * @return per-feature contributions, last value is the model bias
    */
   float[] calculateContributions(double[] input);
+
+  Pair<String,Double>[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs);
 
   String[] getContributionNames();
 
