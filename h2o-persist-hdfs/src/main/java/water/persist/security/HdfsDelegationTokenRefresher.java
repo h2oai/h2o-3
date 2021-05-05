@@ -43,6 +43,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
         if (authPrincipal == null) {
             log("Principal not provided, HDFS tokens will not be refreshed by H2O and their lifespan will be limited", null);
+            return;
         }
         String authKeytab = conf.get(H2O_AUTH_KEYTAB);
         if (authKeytab == null) {
@@ -50,7 +51,17 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             return;
         }
         String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
+        startRefresher(conf, authPrincipal, authKeytabPath, authUser);
+    }
+
+    static void startRefresher(Configuration conf,
+                               String authPrincipal, String authKeytabPath, String authUser) {
         new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser).start();
+    }
+
+    public static void startRefresher(Configuration conf,
+                                      String authPrincipal, String authKeytabPath, long renewalIntervalSecs) {
+        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, null).start(renewalIntervalSecs);
     }
 
     private static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
@@ -88,14 +99,26 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         _fallbackIntervalSecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS, 12 * 3600); // 12h
     }
 
-    public void start() {
+    void start() {
+        long renewalIntervalSecs = autodetectRenewalInterval();
+        start(renewalIntervalSecs);
+    }
+
+    void start(long renewalIntervalSecs) {
+        if (renewalIntervalSecs <= 0) {
+            throw new IllegalArgumentException("Renewal interval needs to be a positive number, got " + renewalIntervalSecs);
+        }
+        _executor.scheduleAtFixedRate(this, 0, renewalIntervalSecs, TimeUnit.SECONDS);
+    }
+
+    private long autodetectRenewalInterval() {
+        final long actualIntervalSecs;
         long intervalSecs = 0L;
         try {
-             intervalSecs = getTokenRenewalIntervalSecs(loginAuthUser());
+            intervalSecs = getTokenRenewalIntervalSecs(loginAuthUser());
         } catch (IOException | InterruptedException e) {
             log("Encountered error while trying to determine token renewal interval.", e);
         }
-        final long actualIntervalSecs;
         if (intervalSecs == 0L) {
             actualIntervalSecs = _fallbackIntervalSecs;
             log("Token renewal interval was not determined, will use " + _fallbackIntervalSecs + "s.", null);
@@ -104,9 +127,9 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             log("Determined token renewal interval = " + intervalSecs + "s. " +
                     "Using actual interval = " + actualIntervalSecs + "s (ratio=" + _intervalRatio + ").", null);
         }
-        _executor.scheduleAtFixedRate(this, 0, actualIntervalSecs, TimeUnit.SECONDS);
+        return actualIntervalSecs;
     }
-
+    
     private static void log(String s, Exception e) {
         System.out.println("HDFS TOKEN REFRESH: " + s);
         if (e != null) {
@@ -140,10 +163,14 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private Credentials refreshTokens(UserGroupInformation tokenUser) throws IOException, InterruptedException {
         return tokenUser.doAs((PrivilegedExceptionAction<Credentials>) () -> {
             Credentials creds = new Credentials();
-            Token<?>[] tokens = fetchDelegationTokens(_authUser, creds);
+            Token<?>[] tokens = fetchDelegationTokens(getRenewer(), creds);
             log("Fetched delegation tokens: " + Arrays.toString(tokens), null);
             return creds;
         });
+    }
+
+    private String getRenewer() {
+        return _authUser != null ? _authUser : _authPrincipal;
     }
 
     private UserGroupInformation loginAuthUser() throws IOException, InterruptedException{

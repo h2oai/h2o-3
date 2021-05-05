@@ -277,6 +277,14 @@ final public class H2O {
     public String decrypt_tool = null;
 
     //-----------------------------------------------------------------------------------
+    // Kerberos
+    //-----------------------------------------------------------------------------------
+
+    public String principal = null;
+    public String keytab_path = null;
+    public String hdfs_token_refresh_interval = null;
+
+    //-----------------------------------------------------------------------------------
     // Networking
     //-----------------------------------------------------------------------------------
     /** -port=####; Specific Browser/API/HTML port */
@@ -734,8 +742,21 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.decrypt_tool = args[i];
       }
+      else if (s.matches("principal")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.principal = args[i];
+      }
+      else if (s.matches("keytab")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.keytab_path = args[i];
+      }
+      else if (s.matches("hdfs_token_refresh_interval")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.hdfs_token_refresh_interval = args[i];
+      }
       else if (s.matches("no_latest_check")) {
         // ignored
+        Log.trace("Invoked with 'no_latest_check' option (NOOP in current release).");
       }
       else if(s.matches(("client_disconnect_timeout"))){
         i = s.incrementAndCheck(i, args);
