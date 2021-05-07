@@ -2,7 +2,7 @@ package hex.genmodel.attributes.parameters;
 
 import java.io.Serializable;
 
-public class KeyValue implements Serializable, Pair<String, Double> {
+public class KeyValue implements Serializable {
     
     public final String key;
     public final double value;
@@ -16,7 +16,7 @@ public class KeyValue implements Serializable, Pair<String, Double> {
         return key;
     }
 
-    public Double getValue() {
+    public double getValue() {
         return value;
     }
 
