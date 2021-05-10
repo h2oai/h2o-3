@@ -1,3 +1,17 @@
+def MODES = [
+        [name: 'MODE_PR', code: MODE_PR_CODE],
+        [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
+        [name: 'MODE_KERBEROS', code: MODE_KERBEROS_CODE],
+        [name: 'MODE_HADOOP_MULTINODE', code: MODE_HADOOP_MULTINODE_CODE],
+        [name: 'MODE_XGB', code: MODE_XGB_CODE],
+        [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
+        [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
+        [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
+        [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
+        [name: 'MODE_NIGHTLY_REPEATED', code: MODE_NIGHTLY_REPEATED_CODE],
+        [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
+]
+
 def call(final pipelineContext) {
 
   def MODE_PR_CODE = 0
@@ -11,19 +25,6 @@ def call(final pipelineContext) {
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_REPEATED_CODE = 15
   def MODE_NIGHTLY_CODE = 20
-  def MODES = [
-    [name: 'MODE_PR', code: MODE_PR_CODE],
-    [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
-    [name: 'MODE_KERBEROS', code: MODE_KERBEROS_CODE],
-    [name: 'MODE_HADOOP_MULTINODE', code: MODE_HADOOP_MULTINODE_CODE],
-    [name: 'MODE_XGB', code: MODE_XGB_CODE],
-    [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
-    [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
-    [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
-    [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
-    [name: 'MODE_NIGHTLY_REPEATED', code: MODE_NIGHTLY_REPEATED_CODE],
-    [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
-  ]
 
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
@@ -840,6 +841,7 @@ private void invokeStage(final pipelineContext, final body) {
     config.hasJUnit = true
   }
   config.additionalTestPackages = config.additionalTestPackages ?: []
+  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
   if ((modeCode >= MODE_NIGHTLY_REPEATED_CODE) || (modeCode >= MODE_NIGHTLY_CODE)) {
     config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getNightlyNodeLabel()
   } else {
