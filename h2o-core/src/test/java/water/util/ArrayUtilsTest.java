@@ -3,6 +3,7 @@ package water.util;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
 
@@ -186,14 +187,16 @@ public class ArrayUtilsTest {
   }
   
   @Test
-  public void testSortIndices() {
+  public void testSortIndicesRandomAttackJavaSortBranch() {
     Random randObj = new Random(12345);
     int arrayLen = 100;
     int[] indices = new int[arrayLen];
     double[] values = new double[arrayLen];
-    for (int index = 0; index < arrayLen; index++)  // generate data array
+    for (int index = 0; index < arrayLen; index++) {// generate data array
       values[index] = randObj.nextDouble();
-    
+      indices[index] = index;
+    }
+
     sort(indices, values, -1, 1); // sorting in ascending order
     for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
       Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]], 
