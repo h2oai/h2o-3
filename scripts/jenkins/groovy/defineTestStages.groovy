@@ -324,56 +324,68 @@ def call(final pipelineContext) {
     [
       stageName: 'Py2.7 Init Java 11', target: 'test-py-init', pythonVersion: '2.7', javaVersion: 11,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_PY,
-      imageSpecifier: "python-2.7-jdk-11"
+      imageSpecifier: "python-2.7-jdk-11",
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.5 Init Java 11', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 11,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
-      imageSpecifier: "r-3.5.3-jdk-11"
+      imageSpecifier: "r-3.5.3-jdk-11",
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 14 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 14,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-14"
+      imageSpecifier: "python-2.7-jdk-14",
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 15 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 15,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-15"
+      imageSpecifier: "python-2.7-jdk-15",
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()      
     ],
     [
       stageName: 'Py3.6 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '3.6',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()      
     ],
     [
       stageName: 'Py3.6 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.6',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.6',
-      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.3 Medium-large', target: 'test-r-medium-large', rVersion: '3.3.3',
-      timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.3 Small', target: 'test-r-small', rVersion: '3.3.3',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.3 AutoML', target: 'test-r-automl', rVersion: '3.3.3',
-      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20, activatePythonEnv: false,
@@ -389,69 +401,85 @@ def call(final pipelineContext) {
   def NIGHTLY_STAGES = [
     [
       stageName: 'Java 10 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 11 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 11, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 12 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 12, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 13 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 13, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 14 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 14, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 15 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 15, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Java 11 JUnit', target: 'test-junit-1x-jenkins', pythonVersion: '2.7', javaVersion: 11,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-11"
+      imageSpecifier: "python-2.7-jdk-11",
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py2.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '2.7',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()      
     ],
     [
       stageName: 'Py2.7 Small', target: 'test-pyunit-small', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py2.7 Fault Tolerance', target: 'test-pyunit-fault-tolerance', pythonVersion: '2.7',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py2.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '2.7',
-      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [
       stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
-      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
+      timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R,
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()
     ],
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.6', timeoutValue: 40,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ]
+      component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=150:150' ],
+      nodeLabel: pipelineContext.getBuildConfig().getNightlyNodeLabel()      
     ]
   ]
 
@@ -812,7 +840,12 @@ private void invokeStage(final pipelineContext, final body) {
     config.hasJUnit = true
   }
   config.additionalTestPackages = config.additionalTestPackages ?: []
-  config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
+  def mode = pipelineContext.getBuildConfig().getMode()
+  if ((mode == "MODE_NIGHTLY_REPEATED") || (mode == "MODE_NIGHTLY")) {
+    config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getNightlyNodeLabel()
+  } else {
+    config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
+  }
   config.executionScript = config.executionScript ?: DEFAULT_EXECUTION_SCRIPT
   config.makefilePath = config.makefilePath ?: pipelineContext.getBuildConfig().MAKEFILE_PATH
   config.archiveAdditionalFiles = config.archiveAdditionalFiles ?: []
