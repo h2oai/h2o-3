@@ -425,7 +425,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                             error("Maximum for ${column} for ${line.dataset} cannot be found")
                         }
                         def lineValue = Double.parseDouble(line[column])
-                        myecho "Checking ${column} for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
+                        echo "Checking ${column} for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
                         if ((lineValue < minValue) || (lineValue > maxValue)) {
                             failures += [
                                     algorithm: line.algorithm,
@@ -438,9 +438,9 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                                     value: lineValue.round(4)
                             ]
                             def lineValueFormatted = new java.text.DecimalFormat("#.#").format(lineValue)
-                            myecho "Check failed. Value ${lineValueFormatted}s not in [${minValue}s..${maxValue}s]. "
+                            echo "Check failed. Value ${lineValueFormatted}s not in [${minValue}s..${maxValue}s]. "
                         } else {
-                            myecho "Check OK!"
+                            echo "Check OK!"
                         }
                     } else {
                         error "Cannot find EXPECTED_VALUES for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
@@ -451,12 +451,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             }
         }
         if (!failures.isEmpty()) {
-            myecho failuresToText(failures)
+            echo failuresToText(failures)
             sendBenchmarksWarningMail(pipelineContext, failures)
             error "One or more checks failed"
 
         } else {
-            myecho "All checks passed!"
+            echo "All checks passed!"
         }
     }
 }
@@ -551,18 +551,4 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
     pipelineContext.getEmailer().sendEmail(this, benchmarksSummary.RESULT_WARNING, benchmarksSummary.getSummaryHTML(this))
 }
 
-// Calls echo with an empty context - to avoid showing "Print Message" instead of the actual message
-def myecho( String msg ) {
-    withContext( new MyEnvClearer() ) {
-        echo msg
-    }
-}
-
-// Clears all environment variables, to be used from withContext{}.
-class MyEnvClearer extends org.jenkinsci.plugins.workflow.steps.EnvironmentExpander {
-    @NonCPS
-    void expand(hudson.EnvVars env) throws IOException, InterruptedException {
-        env.clear()
-    }
-}
 return this
