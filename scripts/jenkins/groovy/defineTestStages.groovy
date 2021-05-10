@@ -840,7 +840,11 @@ private void invokeStage(final pipelineContext, final body) {
     config.hasJUnit = true
   }
   config.additionalTestPackages = config.additionalTestPackages ?: []
-  config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
+  if ((modeCode >= MODE_NIGHTLY_REPEATED_CODE) || (modeCode >= MODE_NIGHTLY_CODE)) {
+    config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getNightlyNodeLabel()
+  } else {
+    config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
+  } 
   config.executionScript = config.executionScript ?: DEFAULT_EXECUTION_SCRIPT
   config.makefilePath = config.makefilePath ?: pipelineContext.getBuildConfig().MAKEFILE_PATH
   config.archiveAdditionalFiles = config.archiveAdditionalFiles ?: []
