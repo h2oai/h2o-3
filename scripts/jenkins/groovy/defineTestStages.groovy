@@ -840,8 +840,8 @@ private void invokeStage(final pipelineContext, final body) {
     config.hasJUnit = true
   }
   config.additionalTestPackages = config.additionalTestPackages ?: []
-  def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
-  if ((modeCode >= 15) || (modeCode >= 20)) {
+  def mode = pipelineContext.getBuildConfig().getMode()
+  if ((mode == "MODE_NIGHTLY_REPEATED") || (mode == "MODE_NIGHTLY")) {
     config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getNightlyNodeLabel()
   } else {
     config.nodeLabel = config.nodeLabel ?: pipelineContext.getBuildConfig().getDefaultNodeLabel()
