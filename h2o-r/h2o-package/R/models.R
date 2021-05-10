@@ -967,8 +967,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE")
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
+  if(!(auc_type %in% c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))) stop("`auc_type` must be \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", or \"WEIGHTED_OVO\".")
 
   missingNewdata <- missing(newdata) || is.null(newdata)
+  if( missingNewdata && auc_type != "NONE") {
+    print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
+  }
   if( !missingNewdata ) {
     if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
       print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")

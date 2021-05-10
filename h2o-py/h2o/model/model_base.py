@@ -351,11 +351,14 @@ class ModelBase(h2o_meta(Keyed)):
         :param bool valid: Report the validation metrics for the model.
         :param bool xval: Report the cross-validation metrics for the model. If train and valid are True, then it
             defaults to True.
-        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
+        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when test_data is not None. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
 
         :returns: An object of class H2OModelMetrics.
         """
+        
         if test_data is None:
+            if auc_type is not None:
+                print("WARNING: The `auc_type` parameter is set but it is not used because the `test_data` parameter is None.")
             if train: 
                 return self._model_json["output"]["training_metrics"]
             if valid: 

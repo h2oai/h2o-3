@@ -30,18 +30,17 @@ test.GBM.iris.multinomial.auc <- function() {
     auc_table = h2o.multinomial_auc_table(perf)
     default_auc <- h2o.auc(perf)
     weighted_ovo_auc <- auc_table[32, 4] # weighted ovo AUC is the last number in the table
+    
     expect_equal(default_auc, weighted_ovo_auc)
-
     print(paste(weighted_ovo_auc, "=",  default_auc))
     print(perf)
     print(auc_table)
     
-    # Build GBM model with cv
-    iris.gbm2 <- h2o.gbm(y=response_col, x=predictors, distribution="multinomial", training_frame=train.hex, validation_frame=test.hex, ntrees=5, max_depth=2, min_rows=20, nfold=3)
-
-    # Check aucpr is not in performance table
-    print(iris.gbm2@model$cross_validation_metrics_summary)
-    expect_false("aucpr" %in% row.names(iris.gbm2@model$cross_validation_metrics_summary))
+    #Test auc_type is set and newdata is NULL
+    perf2 <- h2o.performance(iris.gbm, train=TRUE, auc_type="WEIGHTED_OVO")
+    auc <- h2o.auc(perf2)
+    print(auc)
+    expect_true(auc == "NaN")
 }
 
 doTest("GBM test checkpoint on iris", test.GBM.iris.multinomial.auc)

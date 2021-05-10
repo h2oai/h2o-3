@@ -90,11 +90,19 @@ def multinomial_auc_prostate_gbm():
     gbm2 = H2OGradientBoostingEstimator(ntrees=ntrees, max_depth=2, nfolds=3, distribution=distribution, score_each_iteration=True, auc_type="MACRO_OVR", stopping_metric="AUC", stopping_rounds=3)
     gbm2.train(x=predictors, y=response_col, training_frame=data, validation_frame=data)
     assert ntrees > gbm2.score_history().shape[0], "Test early stopping: Training should start early."
-    
+
     # test performance with different auc type
-    perf = gbm.model_performance(data, auc_type="WEIGHTED_OVO")
-    perf_auc = perf.auc()
-    assert abs(h2o_ovo_weighted_auc - perf_auc) < precision, "h2o ovo weighted vs. h2o performance ovo weighted: "+str(h2o_ovo_weighted_auc)+" != "+str(perf_auc)
+    perf2 = gbm.model_performance(data, auc_type="WEIGHTED_OVO")
+    perf2_auc = perf2.auc()
+    assert abs(h2o_ovo_weighted_auc - perf2_auc) < precision, "h2o ovo weighted vs. h2o performance ovo weighted: "+str(h2o_ovo_weighted_auc)+" != "+str(perf2_auc)
+    
+    # test peformance with no data and auc_type is set
+    ntrees = 2
+    gbm3 = H2OGradientBoostingEstimator(ntrees=ntrees, max_depth=2, nfolds=3, distribution=distribution)
+    gbm3.train(x=predictors, y=response_col, training_frame=data, validation_frame=data)
+    perf3 = gbm3.model_performance(train=True, auc_type="WEIGHTED_OVO")
+    perf3_auc = perf3.auc()
+    assert perf3_auc == "NaN", "AUC should be \"NaN\" because it is not set in model parameters and test_data is None"
     
 
 if __name__ == "__main__":
