@@ -566,7 +566,7 @@ public class ArrayUtils {
   /**
    * Provide array from start to end in steps of 1
    * @param start beginning value (inclusive)
-   * @param end   ending value (exclusive)
+   * @param end   ending value (inclusive)
    * @return specified range of integers
    */
   public static int[] range(int start, int end) {
