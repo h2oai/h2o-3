@@ -142,6 +142,10 @@ class BuildConfig {
   String getGPUNodeLabel() {
     return nodeLabels.getGPUNodeLabel()
   }
+  
+  String getNightlyNodeLabel() {
+    return nodeLabels.getNightlyNodeLabel()
+  }
 
   boolean getBuildHadoop() {
     return buildHadoop
@@ -329,8 +333,8 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'), //master or nightly build
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')  //PR build
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3','docker && !mr-0xc8 && nightly'), //master or nightly build
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker','docker && !mr-0xc8 && nightly')  //PR build
 
     static Map<String, NodeLabels> LABELS_MAP = [
             "c1": LABELS_C1,
@@ -340,14 +344,16 @@ class BuildConfig {
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
-    private final String gpuNodeLabel
+    private final String gpuNodeLabel    
     private final String gpuBenchmarkNodeLabel
+    private final String nightlyNodeLabel
 
-    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel, final String gpuBenchmarkNodeLabel) {
+    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel, final String gpuBenchmarkNodeLabel, final String nightlyNodeLabel) {
       this.defaultNodeLabel = defaultNodeLabel
       this.benchmarkNodeLabel = benchmarkNodeLabel
       this.gpuNodeLabel = gpuNodeLabel
       this.gpuBenchmarkNodeLabel = gpuBenchmarkNodeLabel
+      this.nightlyNodeLabel = nightlyNodeLabel
     }
 
     String getDefaultNodeLabel() {
@@ -361,7 +367,10 @@ class BuildConfig {
     String getGPUNodeLabel() {
       return gpuNodeLabel
     }
-
+    
+    String getNightlyNodeLabel() {
+      return nightlyNodeLabel
+    }
     String getGPUBenchmarkNodeLabel() {
       return gpuBenchmarkNodeLabel
     }
