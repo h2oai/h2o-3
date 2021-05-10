@@ -93,8 +93,8 @@ def multinomial_auc_prostate_gbm():
     
     # test aucpr is not in cv summary
     print(gbm._model_json["output"]["cv_scoring_history"][0]._col_header)
-    assert not "aucpr" in gbm.cross_validation_metrics_summary()[0], "aucpr should not be in scoring info summary"
-    assert "pr_auc" in gbm.cross_validation_metrics_summary()[0], "pr_auc should be in scoring info summary"
+    assert not "aucpr" in gbm.cross_validation_metrics_summary()[0], "The aucpr should not be in cross-validation metrics summary."
+    assert "pr_auc" in gbm.cross_validation_metrics_summary()[0], "The pr_auc should be in cross-validation metrics summary."
     
 
 if __name__ == "__main__":
