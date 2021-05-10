@@ -91,6 +91,11 @@ def multinomial_auc_prostate_gbm():
     gbm.train(x=predictors, y=response_col, training_frame=data, validation_frame=data)
     assert ntrees > gbm.score_history().shape[0], "Test early stopping: Training should start early."
     
+    # test aucpr is not in cv summary
+    print(gbm._model_json["output"]["cv_scoring_history"][0]._col_header)
+    assert not "training_aucpr" in gbm._model_json["output"]["cv_scoring_history"][0]._col_header, "aucpr should not be in scoring info summary"
+    assert "training_pr_auc" in gbm._model_json["output"]["cv_scoring_history"][0]._col_header, "pr_auc should be in scoring info summary"
+    
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(multinomial_auc_prostate_gbm)
