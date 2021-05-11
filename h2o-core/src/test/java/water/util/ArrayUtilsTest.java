@@ -187,6 +187,24 @@ public class ArrayUtilsTest {
   }
 
   @Test
+  public void testSortIndicesCutoffIsStable() {
+    int arrayLen = 100;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[arrayLen]; // intentionally only zeros
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, 500, 1);
+    assertArrayEquals("Not correctly sorted or the same values were replaced",
+            ArrayUtils.range(0, arrayLen - 1), indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+
+    sort(indices, valuesInput, 500, -1);
+    assertArrayEquals("Not correctly sorted or the same values were replaced",
+            ArrayUtils.range(0, arrayLen - 1), indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+  }
+
+  @Test
   public void testSortIndicesCutoffBranch() {
     int arrayLen = 10;
     int[] indices = ArrayUtils.range(0, arrayLen - 1);
