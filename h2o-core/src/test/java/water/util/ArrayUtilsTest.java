@@ -3,6 +3,7 @@ package water.util;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
 
@@ -184,16 +185,80 @@ public class ArrayUtilsTest {
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
   }
+
+  @Test
+  public void testSortIndicesCutoffIsStable() {
+    int arrayLen = 100;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[arrayLen]; // intentionally only zeros
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, 500, 1);
+    assertArrayEquals("Not correctly sorted or the same values were replaced",
+            ArrayUtils.range(0, arrayLen - 1), indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+
+    sort(indices, valuesInput, 500, -1);
+    assertArrayEquals("Not correctly sorted or the same values were replaced",
+            ArrayUtils.range(0, arrayLen - 1), indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+  }
+
+  @Test
+  public void testSortIndicesCutoffBranch() {
+    int arrayLen = 10;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 1, -26, 16};
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, 500, 1);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 7, 4, 9, 3}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, valuesInput, 500, -1);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 4, 2, 7, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
+  }
+
+  @Test
+  public void testSortIndicesJavaSortBranch() {
+    int arrayLen = 10;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 1, -26, 16};
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, -1, 1);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 7, 4, 9, 3}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, valuesInput, -1, -1);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 4, 2, 7, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
+  }
   
   @Test
-  public void testSortIndices() {
+  public void testSortIndicesRandomAttackJavaSortBranch() {
     Random randObj = new Random(12345);
     int arrayLen = 100;
     int[] indices = new int[arrayLen];
     double[] values = new double[arrayLen];
-    for (int index = 0; index < arrayLen; index++)  // generate data array
+    for (int index = 0; index < arrayLen; index++) {// generate data array
       values[index] = randObj.nextDouble();
-    
+      indices[index] = index;
+    }
+
     sort(indices, values, -1, 1); // sorting in ascending order
     for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
       Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]], 
@@ -203,6 +268,28 @@ public class ArrayUtilsTest {
     for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
       Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
               values[indices[index-1]] >= values[indices[index]]);  
+  }
+
+  @Test
+  public void testSortIndicesRandomAttackCutoffBranch() {
+    Random randObj = new Random(12345);
+    int arrayLen = 100;
+    int[] indices = new int[arrayLen];
+    double[] values = new double[arrayLen];
+    for (int index = 0; index < arrayLen; index++) {// generate data array
+      values[index] = randObj.nextDouble();
+      indices[index] = index;
+    }
+
+    sort(indices, values, 500, 1); // sorting in ascending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, values, 500, -1);  // sorting in descending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
   }
 
   @Test
