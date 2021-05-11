@@ -47,5 +47,10 @@ public class H2OTest {
 
       assertTrue(H2O.isArgProperty("ai.h2o.hdfs_config"));
   }
-  
+
+    @Test
+    public void testLeaderNodeOrNullReturnsNullForEmptyCloud() {
+      H2O h2o = new H2O(new H2ONode[0], -1, -1);
+      assertNull(h2o.leaderOrNull());
+    }
 }
