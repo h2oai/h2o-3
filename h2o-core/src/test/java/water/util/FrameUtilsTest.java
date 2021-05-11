@@ -135,34 +135,6 @@ public class FrameUtilsTest extends TestUtil {
     }
   }
 
-  // This test is used to test some utilities that I have written to make sure they function as planned.
-  @Test
-  public void testIDColumnOperationEncoder() {
-    Scope.enter();
-    int numRows = 1000;
-    int rowsToTest = new Random().nextInt(numRows);
-    Log.info("Row to test in testIDColumnOperationEncoder was chosen to be: " + rowsToTest);
-    try {
-      FrameTestUtil.Create1IDColumn tempO = new FrameTestUtil.Create1IDColumn(numRows);
-      Frame f = tempO.doAll(tempO.returnFrame()).returnFrame();
-      Scope.track(f);
-
-      ArrayList<Integer> badRows = new FrameTestUtil.CountAllRowsPresented(0, f).doAll(f).findMissingRows();
-      assertEquals("All rows should be present but not!", badRows.size(), 0);
-      long countAppear = new FrameTestUtil.CountIntValueRows(rowsToTest, 0,
-              0, f).doAll(f).getNumberAppear();
-      assertEquals("All values should appear only once.", countAppear, 1);
-
-      // remove the value to make sure it is not found again.
-      f.vec(0).setNA(rowsToTest);  // row containing value rowsToTest is no longer there.
-      countAppear = new FrameTestUtil.CountIntValueRows(rowsToTest, 0, 0,
-              f).doAll(f).getNumberAppear();
-      assertEquals("Value of interest should not been found....", countAppear, 0);
-    } finally {
-      Scope.exit();
-    }
-  }
-
   @Test
   public void getColumnIndexByName() {
     Scope.enter();
