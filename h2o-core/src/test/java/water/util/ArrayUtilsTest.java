@@ -185,6 +185,50 @@ public class ArrayUtilsTest {
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
   }
+
+  @Test
+  public void testSortIndicesCutoffBranch() {
+    int arrayLen = 10;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 1, -26, 16};
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, 500, 1);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 7, 4, 9, 3}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, valuesInput, 500, -1);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 4, 2, 7, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
+  }
+
+  @Test
+  public void testSortIndicesJavaSortBranch() {
+    int arrayLen = 10;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 1, -26, 16};
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, -1, 1);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 7, 4, 9, 3}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, valuesInput, -1, -1);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 4, 2, 7, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
+  }
   
   @Test
   public void testSortIndicesRandomAttackJavaSortBranch() {
