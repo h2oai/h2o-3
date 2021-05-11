@@ -8,7 +8,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 12
                 ],
                 200: [
-                    'train_time_min': 32,
+                    'train_time_min': 30,
                     'train_time_max': 36
                 ]
             ],
@@ -18,7 +18,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 14
                 ],
                 200: [
-                    'train_time_min': 42,
+                    'train_time_min': 40,
                     'train_time_max': 50
                 ]
             ],
@@ -66,11 +66,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'homesite': [
                 COORDINATE_DESCENT: [
-                    'train_time_min': 38,
+                    'train_time_min': 37,
                     'train_time_max': 48
                 ],
                 IRLSM: [
-                    'train_time_min': 71,
+                    'train_time_min': 68,
                     'train_time_max': 84
                 ]
             ],
@@ -202,11 +202,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb': [
             'airlines-1m': [
                 [100, "cpu"]: [
-                    'train_time_min': 9,
+                    'train_time_min': 8,
                     'train_time_max': 15
                 ],
                 [100, "ext"]: [
-                    'train_time_min': 15,
+                    'train_time_min': 14,
                     'train_time_max': 19
                 ],
                 [100, "gpu"]: [
