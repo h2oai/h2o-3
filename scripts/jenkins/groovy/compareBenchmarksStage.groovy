@@ -342,8 +342,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'rulefit': [
             'redhat': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 971,
-                        'train_time_max': 1081
+                        'train_time_min': 307,
+                        'train_time_max': 330
                 ]
             ],
             'homesite': [
@@ -354,20 +354,20 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'springleaf': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 20,
-                        'train_time_max': 23
+                        'train_time_min': 81,
+                        'train_time_max': 84
                 ]
             ],
             'paribas': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 7,
-                        'train_time_max': 12
+                        'train_time_min': 4,
+                        'train_time_max': 5
                 ]
             ],
             'higgs': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 71,
-                        'train_time_max': 80
+                        'train_time_min': 22,
+                        'train_time_max': 24
                 ]
             ]
         ]    
