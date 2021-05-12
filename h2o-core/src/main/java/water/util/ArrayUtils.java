@@ -101,17 +101,6 @@ public class ArrayUtils {
     return result;
   }
 
-  /**
-   * @return Index of element val or -1 if not found. Method is iterating through arr and found value in liner time.
-   */
-  public static<T extends Comparable<T>> int indexOfLinear(T[] arr, T val) {
-    for(int i = 0; i < arr.length; i++) {
-      if (arr[i].equals(val))
-        return i;
-    }
-    return -1;
-  }
-
   /***
    * Find the index of an element val in the sorted array arr.
    * 
