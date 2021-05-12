@@ -208,18 +208,18 @@ public class ArrayUtilsTest {
   public void testSortIndicesCutoffBranch() {
     int arrayLen = 10;
     int[] indices = ArrayUtils.range(0, arrayLen - 1);
-    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 1, -26, 16};
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 2, -26, 16};
     double[] valuesInput = Arrays.copyOf(values, values.length);
 
     sort(indices, valuesInput, 500, 1);
-    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 7, 4, 9, 3}, indices);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 4, 7, 9, 3}, indices);
     assertArrayEquals("Values array is changed", values, valuesInput, 0);
     for (int index = 1; index < arrayLen; index++)
       Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
               values[indices[index-1]] <= values[indices[index]]);
 
     sort(indices, valuesInput, 500, -1);
-    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 4, 2, 7, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 7, 4, 2, 6, 5, 1, 0, 8}, indices);
     assertArrayEquals("Values array is changed", values, valuesInput, 0);
     for (int index = 1; index < arrayLen; index++)
       Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
@@ -230,18 +230,18 @@ public class ArrayUtilsTest {
   public void testSortIndicesJavaSortBranch() {
     int arrayLen = 10;
     int[] indices = ArrayUtils.range(0, arrayLen - 1);
-    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 1, -26, 16};
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 2, -26, 16};
     double[] valuesInput = Arrays.copyOf(values, values.length);
 
     sort(indices, valuesInput, -1, 1);
-    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 7, 4, 9, 3}, indices);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 4, 7, 9, 3}, indices);
     assertArrayEquals("Values array is changed", values, valuesInput, 0);
     for (int index = 1; index < arrayLen; index++)
       Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
               values[indices[index-1]] <= values[indices[index]]);
 
     sort(indices, valuesInput, -1, -1);
-    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 4, 2, 7, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 7,4, 2, 6, 5, 1, 0, 8}, indices);
     assertArrayEquals("Values array is changed", values, valuesInput, 0);
     for (int index = 1; index < arrayLen; index++)
       Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
