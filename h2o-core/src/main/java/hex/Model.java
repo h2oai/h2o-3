@@ -144,7 +144,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
 
       public boolean isSortingRequired() {
-        return _topN != 0 || _topBottomN != 0 || _abs;
+        return _topN != 0 || _topBottomN != 0;
       }
     }
 

@@ -34,7 +34,7 @@ def rf_predict_contributions_sorting_smoke():
     assert_equals("GLEASON", contributions[0, 6], "Not correctly sorted")
 
     contributions = m.predict_contributions(fr, top_n=0, top_bottom_n=0, abs_val=True)
-    assert_equals(1, contributions.shape[1], "Wrong number of columns")
+    assert_equals(8, contributions.shape[1], "Wrong number of columns")
     assert_equals(380, contributions.shape[0], "Wrong number of rows")
 
     contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=0, abs_val=True)

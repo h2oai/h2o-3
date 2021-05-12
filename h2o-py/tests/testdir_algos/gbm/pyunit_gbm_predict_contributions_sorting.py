@@ -68,7 +68,7 @@ def gbm_predict_contributions_sorting():
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
     contributions = m.predict_contributions(fr, top_n=0, top_bottom_n=0, abs_val=True)
-    assert_equals(1, contributions.shape[1], "Wrong number of columns")
+    assert_equals(8, contributions.shape[1], "Wrong number of columns")
     assert_equals(380, contributions.shape[0], "Wrong number of rows")
 
     contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=0, abs_val=True)

@@ -27,7 +27,7 @@ test.RF.contribs_sorted_smoke <- function() {
     expect_equal("GLEASON", as.character(contributions[1,7]), info="Not sorted correctly")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, prostate_hex, top_n=0, top_bottom_n=0, abs=TRUE))
-    expect_equal(dim(contributions), c(380,1), info="Output frame has wrong dimmension")
+    expect_equal(dim(contributions), c(380,8), info="Output frame has wrong dimmension")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=2, top_bottom_n=0, abs=TRUE))
     expect_equal("PSA", as.character(contributions[1,1]), info="Not sorted correctly")
