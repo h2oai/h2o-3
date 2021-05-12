@@ -8,16 +8,16 @@ import java.util.Arrays;
 public class ContributionComposer implements Serializable {
     
     /**
-     * Sort shapley values and compose desired output
+     * Sort #contribNameIds according to #contribs values and compose desired output with correct #topN, #topBottomN fields
      *
-     * @param contribs Raw contributions to be composed
      * @param contribNameIds Contribution corresponding feature ids
-     * @param topN Return only #topN highest contributions + bias.
-     * @param topBottomN Return only #topBottomN lowest contributions + bias
-     *                   If topN and topBottomN are defined together then return array of #topN + #topBottomN + bias
-     * @param abs True to compare absolute values of contributions
-     * @return Sorted KeyValue array of contributions of size #topN + #topBottomN + bias
-     *         If topN < 0 || topBottomN < 0 then all descending sorted contributions is returned.
+     * @param contribs Raw contribution values
+     * @param topN Return only #topN highest #contribNameIds + bias.
+     * @param topBottomN Return only #topBottomN lowest #contribNameIds + bias
+     *                   If #topN and #topBottomN are defined together then return array of #topN + #topBottomN + bias
+     * @param abs True to compare absolute values of #contribs
+     * @return Sorted contribNameIds array of corresponding contributions features.
+     *         The size of returned array is #topN + #topBottomN + bias
      */
     public final int[] composeContributions(final int[] contribNameIds, final float[] contribs, int topN, int topBottomN, boolean abs) {
         assert contribNameIds.length == contribs.length : "contribNameIds must have the same length as contribs";
