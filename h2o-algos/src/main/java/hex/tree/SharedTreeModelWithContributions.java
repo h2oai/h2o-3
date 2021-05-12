@@ -3,7 +3,6 @@ package hex.tree;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.tree.*;
-import hex.genmodel.attributes.parameters.Pair;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -82,8 +81,8 @@ public abstract class SharedTreeModelWithContributions<
     int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(options._topBottomN, adaptFrm.names().length);
 
     int outputSize = Math.min((topNAdjusted+topBottomNAdjusted)*2, adaptFrm.names().length*2);
-    String[] names = new String[outputSize];
-    byte[] types = new byte[outputSize];
+    String[] names = new String[outputSize+1];
+    byte[] types = new byte[outputSize+1];
     String[][] domains = new String[outputSize+1][contribNames.length];
 
     for (int i = 0; i < outputSize; i+=2) {
@@ -107,19 +106,19 @@ public abstract class SharedTreeModelWithContributions<
       bottomFeatureIterator++;
     }
 
-    final String[] outputNames = ArrayUtils.append(names, "BiasTerm");
-    types = ArrayUtils.append(types, Vec.T_NUM);
-    domains[domains.length -1] = null;
+    names[outputSize] = "BiasTerm";
+    types[outputSize] = Vec.T_NUM;
+    domains[outputSize] = null;
 
-    return getScoreContributionsSoringTask(this, ArrayUtils.interval(0, contribNames.length), options)
+    return getScoreContributionsSoringTask(this, options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(types, adaptFrm)
-            .outputFrame(destination_key, outputNames, domains);
+            .outputFrame(destination_key, names, domains);
   }
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
 
-  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options);
+  protected abstract ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options);
 
   public class ScoreContributionsTask extends MRTask<ScoreContributionsTask> {
     protected final Key<SharedTreeModel> _modelKey;
@@ -191,41 +190,50 @@ public abstract class SharedTreeModelWithContributions<
 
   public class ScoreContributionsSortingTask extends ScoreContributionsTask {
 
-    private transient Integer[] _contribNames;
     private transient ContributionsOptions _options;
 
-    public ScoreContributionsSortingTask(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options) {
+    public ScoreContributionsSortingTask(SharedTreeModel model, ContributionsOptions options) {
       super(model);
-      _contribNames = contribNames;
       _options = options;
+    }
+
+    protected void fillInput(Chunk[] chks, int row, double[] input, float[] contribs, int[] contribNameIds) {
+      super.fillInput(chks, row, input, contribs);
+      for (int i = 0; i < contribNameIds.length; i++) {
+        contribNameIds[i] = i;
+      }
     }
 
     @Override
     public void map(Chunk chks[], NewChunk[] nc) {
       double[] input = MemoryManager.malloc8d(chks.length);
       float[] contribs = MemoryManager.malloc4f(chks.length+1);
+      int[] contribNameIds = MemoryManager.malloc4(chks.length+1);
 
       Object workspace = _treeSHAP.makeWorkspace();
 
       for (int row = 0; row < chks[0]._len; row++) {
-        fillInput(chks, row, input, contribs);
+        fillInput(chks, row, input, contribs, contribNameIds);
 
         // calculate Shapley values
         _treeSHAP.calculateContributions(input, contribs, 0, -1, workspace);
         doModelSpecificComputation(contribs);
-        Pair[] contribsSorted = (new ContributionComposer()).composeContributions(contribs, _contribNames, _options._topN, _options._topBottomN, _options._abs);
+        ContributionComposer contributionComposer = new ContributionComposer();
+
+        int[] _contribNameIdsSorted = contributionComposer.composeContributions(
+                contribNameIds, contribs, _options._topN, _options._topBottomN, _options._abs);
 
         // Add contribs to new chunk
-        addContribToNewChunk(contribsSorted, nc);
+        addContribToNewChunk(contribs, _contribNameIdsSorted, nc);
       }
     }
 
-    protected void addContribToNewChunk(Pair<Integer, Double>[] contribs, NewChunk[] nc) {
+    protected void addContribToNewChunk(float[] contribs, int[] contribNamesSorted, NewChunk[] nc) {
       for (int i = 0, inputPointer = 0; i < nc.length-1; i+=2, inputPointer++) {
-        nc[i].addNum(contribs[inputPointer].getKey());
-        nc[i+1].addNum(contribs[inputPointer].getValue());
+        nc[i].addNum(contribNamesSorted[inputPointer]);
+        nc[i+1].addNum(contribs[contribNamesSorted[inputPointer]]);
       }
-      nc[nc.length-1].addNum(contribs[contribs.length-1].getValue()); // bias
+      nc[nc.length-1].addNum(contribs[contribs.length-1]); // bias
     }
   }
 }

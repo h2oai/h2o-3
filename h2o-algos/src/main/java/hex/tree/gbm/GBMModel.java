@@ -122,8 +122,8 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   }
 
   @Override
-  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, Integer[] contribNames, ContributionsOptions options) {
-    return new ScoreContributionsSortingTask(model, contribNames, options);
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
+    return new ScoreContributionsSortingTask(model, options);
   }
 
   @Override

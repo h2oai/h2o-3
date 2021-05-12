@@ -201,11 +201,11 @@ public class ArrayUtils {
     return tmp;
   }
 
-  @SafeVarargs
-  public static <T> T[] appendGeneric(T[] a, T... b) {
-    if( a==null ) return b;
-    T[] tmp = Arrays.copyOf(a,a.length+b.length);
-    System.arraycopy(b,0,tmp,a.length,b.length);
+  public static int[] append(int[] a, int... b) {
+    if (a==null )
+      return b;
+    int[] tmp = Arrays.copyOf(a,a.length + b.length);
+    System.arraycopy(b, 0, tmp, a.length, b.length);
     return tmp;
   }
 
@@ -247,6 +247,19 @@ public class ArrayUtils {
         result[index] += a[innerIndex]*bT[index][innerIndex];
       }
     }
+  }
+
+  /**
+   * Provide array from start to end in steps of 1
+   * @param start beginning value (inclusive)
+   * @param end   ending value (inclusive)
+   * @return specified range of integers
+   */
+  public static int[] range(int start, int end) {
+    int[] r = new int[end-start+1];
+    for(int i=0;i<r.length;i++)
+      r[i] = i+start;
+    return r;
   }
 
 }

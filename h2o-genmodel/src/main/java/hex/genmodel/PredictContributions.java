@@ -1,6 +1,6 @@
 package hex.genmodel;
 
-import hex.genmodel.attributes.parameters.Pair;
+import hex.genmodel.attributes.parameters.FeatureContribution;
 
 import java.io.Serializable;
 
@@ -13,7 +13,7 @@ public interface PredictContributions extends Serializable {
    */
   float[] calculateContributions(double[] input);
 
-  Pair<String,Double>[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs);
+  FeatureContribution[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs);
 
   String[] getContributionNames();
 

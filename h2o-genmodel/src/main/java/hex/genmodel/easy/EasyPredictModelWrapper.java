@@ -5,23 +5,24 @@ import hex.genmodel.*;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
-import hex.genmodel.algos.tree.ContributionComposer;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.VariableImportances;
 import hex.genmodel.attributes.parameters.FeatureContribution;
-import hex.genmodel.attributes.parameters.Pair;
-import hex.genmodel.attributes.parameters.VariableImportancesHolder;
 import hex.genmodel.attributes.parameters.KeyValue;
+import hex.genmodel.attributes.parameters.VariableImportancesHolder;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static hex.genmodel.utils.ArrayUtils.nanArray;
 
@@ -904,7 +905,7 @@ public class EasyPredictModelWrapper implements Serializable {
    *         If topN < 0 || topBottomN < 0 then all descending sorted contributions is returned.
    * @throws PredictException
    */
-  public Pair<String, Double>[] predictContributions(RowData data, int topN, int topBottomN, boolean abs) throws PredictException {
+  public FeatureContribution[] predictContributions(RowData data, int topN, int topBottomN, boolean abs) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
     return predictContributions.calculateContributions(rawData, topN, topBottomN, abs);

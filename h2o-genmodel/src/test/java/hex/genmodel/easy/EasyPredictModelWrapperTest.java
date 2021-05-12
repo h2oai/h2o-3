@@ -8,7 +8,6 @@ import hex.genmodel.MojoReaderBackendFactoryTest;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.attributes.parameters.FeatureContribution;
 import hex.genmodel.attributes.parameters.KeyValue;
-import hex.genmodel.attributes.parameters.Pair;
 import hex.genmodel.easy.error.CountingErrorConsumer;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
@@ -17,7 +16,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -552,27 +551,27 @@ public class EasyPredictModelWrapperTest {
     row.put("VOL", "0");
     row.put("GLEASON", "6");
 
-    Pair<String, Double>[] contributions = model.predictContributions(row, 2, 0, false);
+    FeatureContribution[] contributions = model.predictContributions(row, 2, 0, false);
     Assert.assertNotNull(contributions);
     Assert.assertEquals("Wrong number of array fields", 3, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "VOL", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "PSA", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].getKey());
+    Assert.assertEquals("Not sorted correctly", "VOL", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "PSA", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].columnName);
 
     contributions = model.predictContributions(row, 0, 2, false);
     Assert.assertNotNull(contributions);
     Assert.assertEquals("Wrong number of array fields", 3, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].getKey());
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].columnName);
 
     contributions = model.predictContributions(row, 2, 2, false);
     Assert.assertNotNull(contributions);
-    Assert.assertEquals("Not sorted correctly", "VOL", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "PSA", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[2].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[3].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[4].getKey());
+    Assert.assertEquals("Not sorted correctly", "VOL", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "PSA", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[2].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[3].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[4].columnName);
 
     contributions = model.predictContributions(row, -1, 0, false);
     Assert.assertNotNull(contributions);
@@ -609,25 +608,25 @@ public class EasyPredictModelWrapperTest {
     contributions = model.predictContributions(row, 2, 0, true);
     Assert.assertNotNull(contributions);
     Assert.assertEquals("Wrong number of array fields", 3, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].getKey());
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].columnName);
 
     contributions = model.predictContributions(row, 0, 2, true);
     Assert.assertNotNull(contributions);
     Assert.assertEquals("Wrong number of array fields", 3, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "AGE", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].getKey());
+    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "AGE", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[2].columnName);
 
     contributions = model.predictContributions(row, 2, 2, true);
     Assert.assertNotNull(contributions);
     Assert.assertEquals("Wrong number of array fields", 5, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[2].getKey());
-    Assert.assertEquals("Not sorted correctly", "AGE", contributions[3].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[4].getKey());
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[2].columnName);
+    Assert.assertEquals("Not sorted correctly", "AGE", contributions[3].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[4].columnName);
 
     contributions = model.predictContributions(row, -1, 0, true);
     Assert.assertNotNull(contributions);
@@ -646,52 +645,52 @@ public class EasyPredictModelWrapperTest {
     checkSortedCorrectlyABS(contributions);
   }
 
-  private void checkSortedCorrectly(Pair<String, Double>[] contributions) {
+  private void checkSortedCorrectly(FeatureContribution[] contributions) {
     Assert.assertEquals("Wrong number of array fields", 8, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "VOL", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "PSA", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[2].getKey());
-    Assert.assertEquals("Not sorted correctly", "AGE", contributions[3].getKey());
-    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[4].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[5].getKey());
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[6].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].getKey());
+    Assert.assertEquals("Not sorted correctly", "VOL", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "PSA", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[2].columnName);
+    Assert.assertEquals("Not sorted correctly", "AGE", contributions[3].columnName);
+    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[4].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[5].columnName);
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[6].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].columnName);
   }
 
-  private void checkSortedCorrectlyReverse(Pair<String, Double>[] contributions) {
+  private void checkSortedCorrectlyReverse(FeatureContribution[] contributions) {
     Assert.assertEquals("Wrong number of array fields", 8, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "VOL", contributions[6].getKey());
-    Assert.assertEquals("Not sorted correctly", "PSA", contributions[5].getKey());
-    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[4].getKey());
-    Assert.assertEquals("Not sorted correctly", "AGE", contributions[3].getKey());
-    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[2].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].getKey());
+    Assert.assertEquals("Not sorted correctly", "VOL", contributions[6].columnName);
+    Assert.assertEquals("Not sorted correctly", "PSA", contributions[5].columnName);
+    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[4].columnName);
+    Assert.assertEquals("Not sorted correctly", "AGE", contributions[3].columnName);
+    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[2].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].columnName);
   }
 
-  private void checkSortedCorrectlyABS(Pair<String, Double>[] contributions) {
+  private void checkSortedCorrectlyABS(FeatureContribution[] contributions) {
     Assert.assertEquals("Wrong number of array fields", 8, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "VOL", contributions[2].getKey());
-    Assert.assertEquals("Not sorted correctly", "PSA", contributions[3].getKey());
-    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[4].getKey());
-    Assert.assertEquals("Not sorted correctly", "AGE", contributions[5].getKey());
-    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[6].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].getKey());
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "VOL", contributions[2].columnName);
+    Assert.assertEquals("Not sorted correctly", "PSA", contributions[3].columnName);
+    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[4].columnName);
+    Assert.assertEquals("Not sorted correctly", "AGE", contributions[5].columnName);
+    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[6].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].columnName);
   }
 
-  private void checkSortedCorrectlyABSReverse(Pair<String, Double>[] contributions) {
+  private void checkSortedCorrectlyABSReverse(FeatureContribution[] contributions) {
     Assert.assertEquals("Wrong number of array fields", 8, contributions.length);
-    Assert.assertEquals("Not sorted correctly", "RACE", contributions[6].getKey());
-    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[5].getKey());
-    Assert.assertEquals("Not sorted correctly", "VOL", contributions[4].getKey());
-    Assert.assertEquals("Not sorted correctly", "PSA", contributions[3].getKey());
-    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[2].getKey());
-    Assert.assertEquals("Not sorted correctly", "AGE", contributions[1].getKey());
-    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[0].getKey());
-    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].getKey());
+    Assert.assertEquals("Not sorted correctly", "RACE", contributions[6].columnName);
+    Assert.assertEquals("Not sorted correctly", "GLEASON", contributions[5].columnName);
+    Assert.assertEquals("Not sorted correctly", "VOL", contributions[4].columnName);
+    Assert.assertEquals("Not sorted correctly", "PSA", contributions[3].columnName);
+    Assert.assertEquals("Not sorted correctly", "DCAPS", contributions[2].columnName);
+    Assert.assertEquals("Not sorted correctly", "AGE", contributions[1].columnName);
+    Assert.assertEquals("Not sorted correctly", "DPROS", contributions[0].columnName);
+    Assert.assertEquals("Not sorted correctly", "BiasTerm", contributions[7].columnName);
   }
 
   @Test
