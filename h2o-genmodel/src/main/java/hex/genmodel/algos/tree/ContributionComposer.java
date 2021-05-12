@@ -20,11 +20,12 @@ public class ContributionComposer implements Serializable {
      *         If topN < 0 || topBottomN < 0 then all descending sorted contributions is returned.
      */
     public final int[] composeContributions(final int[] contribNameIds, final float[] contribs, int topN, int topBottomN, boolean abs) {
-        if (topBottomN == 0) {
+        assert contribNameIds.length == contribs.length : "contribNameIds must have the same length as contribs";
+        if (returnOnlyTopN(topN, topBottomN)) {
             return composeSortedContributions(contribNameIds, contribs, topN, abs, -1);
-        } else if (topN == 0) {
+        } else if (returnOnlyTopBottomN(topN, topBottomN)) {
             return composeSortedContributions(contribNameIds, contribs, topBottomN, abs,1);
-        } else if ((topN + topBottomN) >= contribs.length || topN < 0 || topBottomN < 0) {
+        } else if (returnAllTopN(topN, topBottomN, contribs.length)) {
             return composeSortedContributions(contribNameIds, contribs, contribs.length, abs, -1);
         }
 
@@ -35,7 +36,19 @@ public class ContributionComposer implements Serializable {
 
         return ArrayUtils.append(contribNameIdsTmp, bottomSorted);
     }
-    
+
+    private boolean returnOnlyTopN(int topN, int topBottomN) {
+        return topN != 0 && topBottomN == 0;
+    }
+
+    private boolean returnOnlyTopBottomN(int topN, int topBottomN) {
+        return topN == 0 && topBottomN != 0;
+    }
+
+    private boolean returnAllTopN(int topN, int topBottomN, int len) {
+        return (topN + topBottomN) >= len || topN < 0 || topBottomN < 0;
+    }
+
     public int checkAndAdjustInput(int n, int len) {
         if (n < 0 || n > len) {
             return len;
