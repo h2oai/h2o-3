@@ -427,4 +427,10 @@ public class ArrayUtilsTest {
     assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 4));
   }
 
+  @Test
+  public void rangeTest() {
+    int[] range = ArrayUtils.range(0, 5);
+    assertArrayEquals("It is not a valid range", new int[]{0, 1, 2, 3, 4, 5}, range);
+  }
+
 }
