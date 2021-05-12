@@ -38,16 +38,16 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
     sb.append(" hit ratios: " + Arrays.toString(_hit_ratios) + "\n");
     sb.append(" AUC: "+auc()+ "\n");
-    sb.append(" auc_pr: "+ pr_auc()+ "\n");
+    sb.append(" pr_auc: "+ pr_auc()+ "\n");
     if(_auc.getAucTable() == null){
       sb.append(" AUC table: is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).\n");
-      sb.append(" auc_pr table: is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).\n");
+      sb.append(" pr_auc table: is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).\n");
     } else if(_domain.length <= 20) {
       sb.append(" AUC table: " + _auc.getAucTable()+"\n");
-      sb.append(" auc_pr table: " + _auc.getAucPrTable()+"\n");
+      sb.append(" pr_auc table: " + _auc.getAucPrTable()+"\n");
     } else {
       sb.append(" AUC table: too large to print.\n");
-      sb.append(" auc_pr table: too large to print.\n");
+      sb.append(" pr_auc table: too large to print.\n");
     }
     if (cm() != null) {
       if (cm().nclasses() <= 20)
