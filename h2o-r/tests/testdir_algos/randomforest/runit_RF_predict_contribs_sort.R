@@ -13,35 +13,35 @@ test.RF.contribs_sorted_smoke <- function() {
     expect_equal(dim(contributions), c(380,8), info="Output frame has wrong dimmension")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=2, top_bottom_n=0, abs=FALSE))
-    expect_equal("VOL", contributions[1,1], info="Not sorted correctly")
-    expect_equal("RACE", contributions[1,3], info="Not sorted correctly")
+    expect_equal("VOL", as.character(contributions[1,1]), info="Not sorted correctly")
+    expect_equal("RACE", as.character(contributions[1,3]), info="Not sorted correctly")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=0, top_bottom_n=2, abs=FALSE))
-    expect_equal("PSA", contributions[1,1], info="Not sorted correctly")
-    expect_equal("GLEASON", contributions[1,3], info="Not sorted correctly")
+    expect_equal("PSA", as.character(contributions[1,1]), info="Not sorted correctly")
+    expect_equal("GLEASON", as.character(contributions[1,3]), info="Not sorted correctly")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=2, top_bottom_n=2, abs=FALSE))
-    expect_equal("VOL", contributions[1,1], info="Not sorted correctly")
-    expect_equal("RACE", contributions[1,3], info="Not sorted correctly")
-    expect_equal("PSA", contributions[1,5], info="Not sorted correctly")
-    expect_equal("GLEASON", contributions[1,7], info="Not sorted correctly")
+    expect_equal("VOL", as.character(contributions[1,1]), info="Not sorted correctly")
+    expect_equal("RACE", as.character(contributions[1,3]), info="Not sorted correctly")
+    expect_equal("PSA", as.character(contributions[1,5]), info="Not sorted correctly")
+    expect_equal("GLEASON", as.character(contributions[1,7]), info="Not sorted correctly")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, prostate_hex, top_n=0, top_bottom_n=0, abs=TRUE))
     expect_equal(dim(contributions), c(380,1), info="Output frame has wrong dimmension")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=2, top_bottom_n=0, abs=TRUE))
-    expect_equal("PSA", contributions[1,1], info="Not sorted correctly")
-    expect_equal("GLEASON", contributions[1,3], info="Not sorted correctly")
+    expect_equal("PSA", as.character(contributions[1,1]), info="Not sorted correctly")
+    expect_equal("GLEASON", as.character(contributions[1,3]), info="Not sorted correctly")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=0, top_bottom_n=2, abs=TRUE))
-    expect_equal("DCAPS", contributions[1,1], info="Not sorted correctly")
-    expect_equal("RACE", contributions[1,3], info="Not sorted correctly")
+    expect_equal("DCAPS", as.character(contributions[1,1]), info="Not sorted correctly")
+    expect_equal("RACE", as.character(contributions[1,3]), info="Not sorted correctly")
 
     contributions <- as.data.frame(h2o.predict_contributions(rf_model, first_row, top_n=2, top_bottom_n=2, abs=TRUE))
-    expect_equal("PSA", contributions[1,1], info="Not sorted correctly")
-    expect_equal("GLEASON", contributions[1,3], info="Not sorted correctly")
-    expect_equal("DCAPS", contributions[1,5], info="Not sorted correctly")
-    expect_equal("RACE", contributions[1,7], info="Not sorted correctly")
+    expect_equal("PSA", as.character(contributions[1,1]), info="Not sorted correctly")
+    expect_equal("GLEASON", as.character(contributions[1,3]), info="Not sorted correctly")
+    expect_equal("DCAPS", as.character(contributions[1,5]), info="Not sorted correctly")
+    expect_equal("RACE", as.character(contributions[1,7]), info="Not sorted correctly")
 }
 
 doTest("RF Test: Make sure RF contributions are sorted", test.RF.contribs_sorted_smoke)

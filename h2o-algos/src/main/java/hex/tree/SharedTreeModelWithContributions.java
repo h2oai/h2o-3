@@ -77,6 +77,7 @@ public abstract class SharedTreeModelWithContributions<
     int outputSize = Math.min((topNAdjusted+topBottomNAdjusted)*2, adaptFrm.names().length*2);
     String[] names = new String[outputSize];
     byte[] types = new byte[outputSize];
+    String[][] domains = new String[outputSize+1][contribNames.length];
 
     for (int i = 0, topFeatureIterator = 1, bottomFeatureIterator = 1; i < outputSize; i+=2, topFeatureIterator++) {
       if (topFeatureIterator <= topNAdjusted) {
@@ -87,17 +88,20 @@ public abstract class SharedTreeModelWithContributions<
         names[i+1] = "bottom_top_value_" + bottomFeatureIterator;
         bottomFeatureIterator++;
       }
-      types[i] = Vec.T_STR;
+      types[i] = Vec.T_CAT;
+      domains[i] = Arrays.copyOf(contribNames, contribNames.length);
+      domains[i+1] = null;
       types[i+1] = Vec.T_NUM;
     }
 
     final String[] outputNames = ArrayUtils.append(names, "BiasTerm");
     types = ArrayUtils.append(types, Vec.T_NUM);
+    domains[domains.length -1] = null;
 
     return getScoreContributionsSoringTask(this, contribNames, topN, topBottomN, abs)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(types, adaptFrm)
-            .outputFrame(destination_key, outputNames, null);
+            .outputFrame(destination_key, outputNames, domains);
   }
 
   protected abstract ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model);
@@ -211,7 +215,7 @@ public abstract class SharedTreeModelWithContributions<
 
     protected void addContribToNewChunk(KeyValue[] contribs, NewChunk[] nc) {
       for (int i = 0, inputPointer = 0; i < nc.length-1; i+=2, inputPointer++) {
-        nc[i].addStr(contribs[inputPointer].key);
+        nc[i].addNum(ArrayUtils.indexOfLinear(_contribNames, contribs[inputPointer].key));
         nc[i+1].addNum(contribs[inputPointer].value);
       }
       nc[nc.length-1].addNum(contribs[contribs.length-1].value); // bias

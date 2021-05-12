@@ -433,4 +433,9 @@ public class ArrayUtilsTest {
     assertArrayEquals("It is not a valid range", new int[]{0, 1, 2, 3, 4, 5}, range);
   }
 
+  @Test
+  public void testIndexOfLinear() {
+    String[] arr = new String[]{"AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON", "BiasTerm"};
+    assertEquals("Index of value is not correct", 1, ArrayUtils.indexOfLinear(arr, "RACE"));
+  }
 }
