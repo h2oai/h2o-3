@@ -150,6 +150,41 @@ public class ArrayUtils {
     }
   }
 
+  /**
+   * Sort an integer array of indices based on values
+   * Updates indices in place, keeps values the same
+   * @param idxs indices
+   * @param values values
+   */
+  public static void sort(final int[] idxs, final float[] values, int fromIndex, int toIndex, boolean abs, int increasing) {
+    sort(idxs, values, fromIndex, toIndex, abs, increasing, 500);
+  }
+
+  public static void sort(final int[] idxs, final float[] values, int fromIndex, int toIndex, final boolean abs, final int increasing, int cutoff) {
+    assert toIndex > fromIndex: "toIndex must be > fromIndex";
+    if ((toIndex - fromIndex) < cutoff) {
+      //hand-rolled insertion sort
+      for (int i = fromIndex; i < toIndex; i++) {
+        // the long line means: Sorted part of the array will be compared as absolute values if necessary
+        for (int j = i; j > fromIndex && (abs ? Math.abs(values[idxs[j - 1]]) : values[idxs[j - 1]])*increasing > (abs ? Math.abs(values[idxs[j]]) : values[idxs[j]])*increasing; j--) {
+          int tmp = idxs[j];
+          idxs[j] = idxs[j - 1];
+          idxs[j - 1] = tmp;
+        }
+      }
+    } else {
+      Integer[] d = new Integer[idxs.length];
+      for (int i = 0; i < idxs.length; ++i) d[i] = idxs[i];
+      Arrays.sort(d, fromIndex, toIndex, new Comparator<Integer>() {
+        @Override
+        public int compare(Integer x, Integer y) {
+          return Float.compare((abs ? Math.abs(values[x]) : values[x]) * increasing, (abs ? Math.abs(values[y]) : values[y]) * increasing);
+        }
+      });
+      for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
+    }
+  }
+
   public static String[] append(String[] a, String... b) {
     if (a==null ) 
       return b;
