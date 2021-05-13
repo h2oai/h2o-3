@@ -119,14 +119,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     class ContributionsOptions {
       public ContributionsOutputFormat _outputFormat = ContributionsOutputFormat.Original;
+      public int _topN;
+      public int _topBottomN;
+      public boolean _abs;
 
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
         return this;
       }
+
+      public ContributionsOptions setTopN(int topN) {
+        _topN = topN;
+        return this;
+      }
+
+      public ContributionsOptions setTopBottomN(int topBottomN) {
+        _topBottomN = topBottomN;
+        return this;
+      }
+
+      public ContributionsOptions setAbs(boolean abs) {
+        _abs = abs;
+        return this;
+      }
+
+      public boolean isSortingRequired() {
+        return _topN != 0 || _topBottomN != 0;
+      }
     }
 
     Frame scoreContributions(Frame frame, Key<Frame> destination_key);
+
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
       return scoreContributions(frame, destination_key, j, new ContributionsOptions());
     }

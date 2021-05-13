@@ -150,6 +150,41 @@ public class ArrayUtils {
     }
   }
 
+  /**
+   * Sort an integer array of indices based on values
+   * Updates indices in place, keeps values the same
+   * @param idxs indices
+   * @param values values
+   */
+  public static void sort(final int[] idxs, final float[] values, int fromIndex, int toIndex, boolean abs, int increasing) {
+    sort(idxs, values, fromIndex, toIndex, abs, increasing, 500);
+  }
+
+  public static void sort(final int[] idxs, final float[] values, int fromIndex, int toIndex, final boolean abs, final int increasing, int cutoff) {
+    assert toIndex > fromIndex: "toIndex must be > fromIndex";
+    if ((toIndex - fromIndex) < cutoff) {
+      //hand-rolled insertion sort
+      for (int i = fromIndex; i < toIndex; i++) {
+        // the long line means: Sorted part of the array will be compared as absolute values if necessary
+        for (int j = i; j > fromIndex && (abs ? Math.abs(values[idxs[j - 1]]) : values[idxs[j - 1]])*increasing > (abs ? Math.abs(values[idxs[j]]) : values[idxs[j]])*increasing; j--) {
+          int tmp = idxs[j];
+          idxs[j] = idxs[j - 1];
+          idxs[j - 1] = tmp;
+        }
+      }
+    } else {
+      Integer[] d = new Integer[idxs.length];
+      for (int i = 0; i < idxs.length; ++i) d[i] = idxs[i];
+      Arrays.sort(d, fromIndex, toIndex, new Comparator<Integer>() {
+        @Override
+        public int compare(Integer x, Integer y) {
+          return Float.compare((abs ? Math.abs(values[x]) : values[x]) * increasing, (abs ? Math.abs(values[y]) : values[y]) * increasing);
+        }
+      });
+      for (int i = 0; i < idxs.length; ++i) idxs[i] = d[i];
+    }
+  }
+
   public static String[] append(String[] a, String... b) {
     if (a==null ) 
       return b;
@@ -162,6 +197,14 @@ public class ArrayUtils {
     if (a==null )
       return b;
     String[][] tmp = Arrays.copyOf(a,a.length + b.length);
+    System.arraycopy(b, 0, tmp, a.length, b.length);
+    return tmp;
+  }
+
+  public static int[] append(int[] a, int... b) {
+    if (a==null )
+      return b;
+    int[] tmp = Arrays.copyOf(a,a.length + b.length);
     System.arraycopy(b, 0, tmp, a.length, b.length);
     return tmp;
   }
@@ -204,6 +247,19 @@ public class ArrayUtils {
         result[index] += a[innerIndex]*bT[index][innerIndex];
       }
     }
+  }
+
+  /**
+   * Provide array from start to end in steps of 1
+   * @param start beginning value (inclusive)
+   * @param end   ending value (inclusive)
+   * @return specified range of integers
+   */
+  public static int[] range(int start, int end) {
+    int[] r = new int[end-start+1];
+    for(int i=0;i<r.length;i++)
+      r[i] = i+start;
+    return r;
   }
 
 }

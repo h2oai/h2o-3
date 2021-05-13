@@ -1297,7 +1297,7 @@ public class ArrayUtils {
     return c;
   }
 
-  static public byte[] append( byte[] a, byte[] b ) {
+  static public byte[] append( byte[] a, byte... b ) {
     if( a==null ) return b;
     if( b==null ) return a;
     if( a.length==0 ) return b;

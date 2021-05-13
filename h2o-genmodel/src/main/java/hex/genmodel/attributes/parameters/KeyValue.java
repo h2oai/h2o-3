@@ -1,6 +1,8 @@
 package hex.genmodel.attributes.parameters;
 
-public class KeyValue {
+import java.io.Serializable;
+
+public class KeyValue implements Serializable {
     
     public final String key;
     public final double value;

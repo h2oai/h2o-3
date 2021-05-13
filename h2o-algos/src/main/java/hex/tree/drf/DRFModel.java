@@ -50,6 +50,11 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     return new ScoreContributionsTaskDRF(this);    
   }
 
+  @Override
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
+    return new ScoreContributionsSoringTaskDRF(this, options);
+  }
+
   @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
@@ -110,6 +115,26 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
                 nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
             }
         }
+    }
+  }
+
+  public class ScoreContributionsSoringTaskDRF extends ScoreContributionsSortingTask {
+
+    public ScoreContributionsSoringTaskDRF(SharedTreeModel model, ContributionsOptions options) {
+      super(model, options);
+    }
+
+    @Override
+    public void doModelSpecificComputation(float[] contribs) {
+      for (int i = 0; i < contribs.length; i++) {
+        // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
+        if (_output.nclasses() == 1) { //Regression
+          contribs[i] = contribs[i] / _output._ntrees;
+        } else { //Binomial
+          float featurePlusBiasRatio = (float)1 / (_output.nfeatures() + 1); // + 1 for bias term
+          contribs[i] = featurePlusBiasRatio - (contribs[i] / _output._ntrees);
+        }
+      }
     }
   }
 
