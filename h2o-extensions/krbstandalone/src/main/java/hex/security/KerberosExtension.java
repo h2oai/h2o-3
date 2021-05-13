@@ -40,7 +40,13 @@ public class KerberosExtension extends AbstractH2OExtension {
     if (isKerberosEnabled(conf)) {
       UserGroupInformation.setConfiguration(conf);
       final UserGroupInformation ugi;
-      if (H2O.ARGS.keytab_path != null) {
+      if (H2O.ARGS.keytab_path != null || H2O.ARGS.principal != null) {
+        if (H2O.ARGS.keytab_path == null) {
+          throw new RuntimeException("Option keytab_path needs to be specified when option principal is given.");
+        }
+        if (H2O.ARGS.principal == null) {
+          throw new RuntimeException("Option principal needs to be specified when option keytab_path is given.");
+        }
         Log.debug("Kerberos enabled in Hadoop configuration. Trying to login user from keytab.");
         ugi = loginUserFromKeytab(H2O.ARGS.principal, H2O.ARGS.keytab_path);
       } else {
@@ -56,8 +62,18 @@ public class KerberosExtension extends AbstractH2OExtension {
                 "s (user specified " + H2O.ARGS.hdfs_token_refresh_interval + ").");
         HdfsDelegationTokenRefresher.startRefresher(conf, H2O.ARGS.principal, H2O.ARGS.keytab_path, refreshIntervalSecs);
       }
-    } else
+    } else {
       Log.info("Kerberos not configured");
+      if (H2O.ARGS.hdfs_token_refresh_interval != null) {
+        Log.warn("Option hdfs_token_refresh_interval ignored because Kerberos is not configured.");
+      }
+      if (H2O.ARGS.keytab_path != null) {
+        Log.warn("Option keytab_path ignored because Kerberos is not configured.");
+      }
+      if (H2O.ARGS.principal != null) {
+        Log.warn("Option principal ignored because Kerberos is not configured.");
+      }
+    }
   }
 
   private long parseRefreshIntervalToSecs(String refreshInterval) {
