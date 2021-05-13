@@ -16,12 +16,13 @@ import static hex.Model.Contributions.ContributionsOutputFormat;
 
 public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
 
-  private final DataInfo _di;
-  private final XGBoostModelInfo _modelInfo;
-  private final XGBoostOutput _output;
-  private final boolean _outputAggregated;
+  protected final DataInfo _di;
+  protected final XGBoostModelInfo _modelInfo;
+  protected final XGBoostOutput _output;
+  protected final boolean _outputAggregated;
 
-  private transient XGBoostJavaMojoModel _mojo;
+
+  protected transient XGBoostJavaMojoModel _mojo;
 
   public PredictTreeSHAPTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output,
                              ContributionsOptions options) {
