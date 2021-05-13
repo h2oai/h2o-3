@@ -3,7 +3,6 @@ package water.api;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.NotImplementedException;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
