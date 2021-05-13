@@ -38,24 +38,39 @@ public final class PersistS3 extends Persist {
 
   public static AmazonS3 getClient() {
     if (_s3 == null) {
+      String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
       synchronized (_lock) {
-        if( _s3 == null ) {
-          try {
-            H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
-            c.setReuseLastProvider(false);
-            ClientConfiguration cc = s3ClientCfg();
-            _s3 = configureClient(new AmazonS3Client(c, cc));
-          } catch( Throwable e ) {
-            e.printStackTrace();
-            StringBuilder msg = new StringBuilder();
-            msg.append(e.getMessage() + "\n");
-            msg.append("Unable to load S3 credentials.");
-            throw new RuntimeException(msg.toString(), e);
+        if (_s3 == null) {
+          if (StringUtils.isNullOrEmpty(factoryClassName)) {
+            _s3 = makeDefaultClient();
+          } else {
+            try {
+              S3ClientFactory factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
+              _s3 = factory.newClientInstance();
+            } catch (Exception e) {
+              throw new RuntimeException("Unable to instantiate S3 client factory for class " + factoryClassName + ".", e);
+            }
           }
+          assert _s3 != null;
         }
       }
     }
     return _s3;
+  }
+
+  static AmazonS3 makeDefaultClient() {
+    try {
+      H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+      c.setReuseLastProvider(false);
+      ClientConfiguration cc = s3ClientCfg();
+      return configureClient(new AmazonS3Client(c, cc));
+    } catch( Throwable e ) {
+      e.printStackTrace();
+      StringBuilder msg = new StringBuilder();
+      msg.append(e.getMessage() + "\n");
+      msg.append("Unable to load S3 credentials.");
+      throw new RuntimeException(msg.toString(), e);
+    }
   }
 
   /** Modified version of default credentials provider which includes H2O-specific
@@ -376,6 +391,8 @@ public final class PersistS3 extends Persist {
   public final static String S3_ENABLE_PATH_STYLE = SYSTEM_PROP_PREFIX + "persist.s3.enable.path.style";
   /** Specify custom credentials provider implementation */
   public final static String S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.customCredentialsProviderClass";
+  /** Specify class name of S3ClientFactory implementation */
+  public final static String S3_CLIENT_FACTORY_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.clientFactoryClass";
 
 
   static ClientConfiguration s3ClientCfg() {
