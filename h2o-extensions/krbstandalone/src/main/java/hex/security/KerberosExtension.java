@@ -81,7 +81,7 @@ public class KerberosExtension extends AbstractH2OExtension {
       if (!refreshInterval.contains("P")) { // convenience - allow user to specify just "10M", instead of requiring "PT10M"
         refreshInterval = "PT" + refreshInterval;
       }
-      return Duration.parse(refreshInterval.toLowerCase()).toMillis() / 1000;
+      return Duration.parse(refreshInterval.toLowerCase()).getSeconds();
     } catch (Exception e) {
       throw new IllegalArgumentException("Unable to parse refresh interval, got " + refreshInterval + 
               ". Example of correct specification '4H' (token will be refreshed every 4 hours).");
