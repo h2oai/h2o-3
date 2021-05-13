@@ -220,18 +220,18 @@ public abstract class SharedTreeModelWithContributions<
         doModelSpecificComputation(contribs);
         ContributionComposer contributionComposer = new ContributionComposer();
 
-        int[] _contribNameIdsSorted = contributionComposer.composeContributions(
+        int[] contribNameIdsSorted = contributionComposer.composeContributions(
                 contribNameIds, contribs, _options._topN, _options._topBottomN, _options._abs);
 
         // Add contribs to new chunk
-        addContribToNewChunk(contribs, _contribNameIdsSorted, nc);
+        addContribToNewChunk(contribs, contribNameIdsSorted, nc);
       }
     }
 
-    protected void addContribToNewChunk(float[] contribs, int[] contribNamesSorted, NewChunk[] nc) {
+    protected void addContribToNewChunk(float[] contribs, int[] contribNameIdsSorted, NewChunk[] nc) {
       for (int i = 0, inputPointer = 0; i < nc.length-1; i+=2, inputPointer++) {
-        nc[i].addNum(contribNamesSorted[inputPointer]);
-        nc[i+1].addNum(contribs[contribNamesSorted[inputPointer]]);
+        nc[i].addNum(contribNameIdsSorted[inputPointer]);
+        nc[i+1].addNum(contribs[contribNameIdsSorted[inputPointer]]);
       }
       nc[nc.length-1].addNum(contribs[contribs.length-1]); // bias
     }
