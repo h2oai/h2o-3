@@ -22,7 +22,7 @@ How to pass this check?
        All other changes should go to the (current) fix release branch. Such branches are prefixed 'rel-'. 
     4. Put the Jira to 'In Progress' state.
     5. Make a code change. Include Jira ticket ID (PUBDEV-XXXX) in the commit message of one of your commits. This is not checked. 
-    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines This is checked.
+    5. Submit a PR and ticket ID in PR's title, eg.: PUBDEV-4200: Adding support for Factorization Machines. This is checked.
 """
 
 task checkPullRequest {
