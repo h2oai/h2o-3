@@ -2,10 +2,9 @@ package hex.genmodel.algos.tree;
 
 import hex.genmodel.utils.ArrayUtils;
 
-import java.io.Serializable;
 import java.util.Arrays;
 
-public class ContributionComposer implements Serializable {
+public class ContributionComposer {
     
     /**
      * Sort #contribNameIds according to #contribs values and compose desired output with correct #topN, #topBottomN fields
