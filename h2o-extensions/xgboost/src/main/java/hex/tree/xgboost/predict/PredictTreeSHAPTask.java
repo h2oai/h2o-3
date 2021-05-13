@@ -2,8 +2,8 @@ package hex.tree.xgboost.predict;
 
 import hex.DataInfo;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
-import hex.tree.xgboost.XGBoostOutput;
 import hex.tree.xgboost.XGBoostModelInfo;
+import hex.tree.xgboost.XGBoostOutput;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;
@@ -11,7 +11,8 @@ import water.fvec.NewChunk;
 
 import java.util.Arrays;
 
-import static hex.Model.Contributions.*;
+import static hex.Model.Contributions.ContributionsOptions;
+import static hex.Model.Contributions.ContributionsOutputFormat;
 
 public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
 
@@ -39,6 +40,13 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
     );
   }
 
+  protected void fillInput(Chunk chks[], int row, double[] input, float[] contribs) {
+    for (int i = 0; i < chks.length; i++) {
+      input[i] = chks[i].atd(row);
+    }
+    Arrays.fill(contribs, 0);
+  }
+
   @Override
   public void map(Chunk[] chks, NewChunk[] nc) {
     MutableOneHotEncoderFVec rowFVec = new MutableOneHotEncoderFVec(_di, _output._sparse);
@@ -50,23 +58,28 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
     Object workspace = _mojo.makeContributionsWorkspace();
 
     for (int row = 0; row < chks[0]._len; row++) {
-      for (int i = 0; i < chks.length; i++) {
-        input[i] = chks[i].atd(row);
-      }
-      Arrays.fill(contribs, 0);
+      fillInput(chks, row, input, contribs);
       rowFVec.setInput(input);
 
       // calculate Shapley values
       _mojo.calculateContributions(rowFVec, contribs, workspace);
 
-      if (_outputAggregated) {
-        rowFVec.decodeAggregate(contribs, output);
-        output[output.length - 1] = contribs[contribs.length - 1]; // bias term
-      }
-      
-      for (int i = 0; i < nc.length; i++) {
-        nc[i].addNum(output[i]);
-      }
+      handleOutputFormat(rowFVec, contribs, output);
+
+      addContribToNewChunk(output, nc);
+    }
+  }
+
+  protected void handleOutputFormat(final MutableOneHotEncoderFVec rowFVec, final float[] contribs, final float[] output) {
+    if (_outputAggregated) {
+      rowFVec.decodeAggregate(contribs, output);
+      output[output.length - 1] = contribs[contribs.length - 1]; // bias term
+    }
+  }
+
+  protected void addContribToNewChunk(final float[] contribs, final NewChunk[] nc) {
+    for (int i = 0; i < nc.length; i++) {
+      nc[i].addNum(contribs[i]);
     }
   }
 
