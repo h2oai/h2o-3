@@ -41,6 +41,14 @@ test.GBM.iris.multinomial.auc <- function() {
     auc <- h2o.auc(perf2)
     print(auc)
     expect_true(auc == "NaN")
+
+    # Build GBM model with cv
+    iris.gbm <- h2o.gbm(y=response_col, x=predictors, distribution="multinomial", training_frame=train.hex, validation_frame=test.hex, ntrees=5, max_depth=2, min_rows=20, nfold=3)
+
+    # Check aucpr is not in performance table
+    print(iris.gbm@model$cross_validation_metrics_summary)
+    expect_false("aucpr" %in% row.names(iris.gbm@model$cross_validation_metrics_summary))
+    expect_true("pr_auc" %in% row.names(iris.gbm@model$cross_validation_metrics_summary))
 }
 
 doTest("GBM test checkpoint on iris", test.GBM.iris.multinomial.auc)
