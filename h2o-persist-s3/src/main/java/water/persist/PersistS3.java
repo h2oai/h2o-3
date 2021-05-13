@@ -16,8 +16,7 @@ import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
 import water.fvec.Vec;
-import water.util.ByteStreams;
-import water.util.RIStream;
+import water.util.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,24 +64,34 @@ public final class PersistS3 extends Persist {
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
     public H2OAWSCredentialsProviderChain() {
       super(constructProviderChain());
-
     }
-
-    private static List<AWSCredentialsProvider> constructProviderChain() {
-      final List<AWSCredentialsProvider> providers = new ArrayList<>();
-
-      providers.add(new H2ODynamicCredentialsProvider());
-      providers.add(new H2OArgCredentialsProvider());
-      providers.add(new InstanceProfileCredentialsProvider());
-      providers.add(new EnvironmentVariableCredentialsProvider());
-      providers.add(new SystemPropertiesCredentialsProvider());
-      providers.add(new ProfileCredentialsProvider());
-
-      return providers;
-
+    static AWSCredentialsProvider[] constructProviderChain() {
+      return constructProviderChain(System.getProperty(S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS));
     }
-  }
-  
+    static AWSCredentialsProvider[] constructProviderChain(String customProviderClassName) {
+      AWSCredentialsProvider[] defaultProviders = new AWSCredentialsProvider[]{
+              new H2ODynamicCredentialsProvider(),
+              new H2OArgCredentialsProvider(),
+              new InstanceProfileCredentialsProvider(),
+              new EnvironmentVariableCredentialsProvider(),
+              new SystemPropertiesCredentialsProvider(),
+              new ProfileCredentialsProvider()
+      };
+      if (customProviderClassName == null) {
+        return defaultProviders;
+      }
+      try {
+        AWSCredentialsProvider customProvider = ReflectionUtils.newInstance(
+                customProviderClassName, AWSCredentialsProvider.class);
+        Log.info("Added custom credentials provider (" + customProviderClassName + ") " +
+                "to credentials provider chain.");
+        return ArrayUtils.append(new AWSCredentialsProvider[]{customProvider}, defaultProviders);
+      } catch (Exception e) {
+        Log.warn("Skipping invalid credentials provider (" + customProviderClassName + ").", e);
+        return defaultProviders;
+      }
+    }
+  }  
 
   /**
    * Holds basic credentials (Secret key ID + Secret access key) pair.
@@ -365,6 +374,8 @@ public final class PersistS3 extends Persist {
   /** Enable S3 path style access via setting the property to true.
    * See: {@link com.amazonaws.services.s3.S3ClientOptions#setPathStyleAccess(boolean)} */
   public final static String S3_ENABLE_PATH_STYLE = SYSTEM_PROP_PREFIX + "persist.s3.enable.path.style";
+  /** Specify custom credentials provider implementation */
+  public final static String S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.customCredentialsProviderClass";
 
 
   static ClientConfiguration s3ClientCfg() {
