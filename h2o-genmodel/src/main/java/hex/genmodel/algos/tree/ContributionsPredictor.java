@@ -10,7 +10,6 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
   private final int _ncontribs;
   private final String[] _contribution_names;
   private final TreeSHAPPredictor<E> _treeSHAPPredictor;
-  private final ContributionComposer contributionComposer = new ContributionComposer();
 
   private static final ThreadLocal<Object> _workspace = new ThreadLocal<>();
 
@@ -50,7 +49,7 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
   public FeatureContribution[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs) {
     float[] contributions = calculateContributions(input);
     int[] contributionNameIds = ArrayUtils.range(0, _contribution_names.length -1);
-    int[] sorted = contributionComposer.composeContributions(contributionNameIds, contributions, topN, topBottomN, abs);
+    int[] sorted = (new ContributionComposer()).composeContributions(contributionNameIds, contributions, topN, topBottomN, abs);
     FeatureContribution[] out = new FeatureContribution[sorted.length];
     for (int i = 0; i < sorted.length; i++) {
       out[i] = new FeatureContribution(_contribution_names[sorted[i]], contributions[sorted[i]]);
