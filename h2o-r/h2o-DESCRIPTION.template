@@ -109,4 +109,5 @@ Collate:
          'tf-idf.R'
          'rulefit.R'
          'explain.R'
+         'permutation_varimp.R'
          'zzz.R'

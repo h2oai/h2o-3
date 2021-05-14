@@ -10,7 +10,7 @@ test.permutation.varimp <- function(){
     Log.info("Calculating Permutation Variable Importance...")
     permutation_varimp <- h2o.permutation_varimp(pros.glm, pros.train, metric = "MSE")
 
-    h2o.isnumeric(permutation_varimp[3])
+    expect_true(h2o.isnumeric(permutation_varimp[3]))
 }
 
 doTest("Testing Permutation Feature Importance", test.permutation.varimp)

@@ -1,10 +1,8 @@
 import sys, os
-
 sys.path.insert(1, os.path.join("..", ".."))
 import h2o
-from builtins import range
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+from h2o.utils.typechecks import is_type
+from h2o.estimators import H2OGradientBoostingEstimator, H2OGeneralizedLinearEstimator
 from tests import pyunit_utils
 from h2o.model.permutation_varimp import permutation_varimp
 
@@ -35,7 +33,7 @@ def gbm_model_build():
     return gbm_h2o, prostate_train
 
 
-def metrics_testing_gbm():
+def test_metrics_gbm():
     """
     test metrics values from the Permutation Variable Importance
     """
@@ -47,12 +45,12 @@ def metrics_testing_gbm():
     for col in range(1, pm_h2o_df.ncols):
         assert isinstance(pm_h2o_df[0, col], float)
 
-    # range in all tests is [1, ncols], first column is str: Importance 
-    assert isinstance(pm_h2o_df[0, 0], str)
+    # range in all tests is [1, ncols], first column is str: Importance
+    assert is_type(pm_h2o_df[0, 0], str)
 
     # case pandas
     pm_pd_df = permutation_varimp(model, fr, use_pandas=True, metric="AUC")
-    assert isinstance(pm_pd_df.loc[0][0], str)
+    assert is_type(pm_pd_df.loc[0][0], str)
     for col in pm_pd_df.columns:
         if col == "importance":
             continue
@@ -65,7 +63,7 @@ def metrics_testing_gbm():
             assert isinstance(pd_pfi[0, col], float)
 
 
-def big_data_cars():
+def test_big_data_cars():
     """
     Test big data dataset, with metric logloss. 
     """
@@ -86,10 +84,7 @@ def big_data_cars():
         assert isinstance(pm_h2o_df.loc[0][col], float)  # Relative PFI
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(metrics_testing_gbm)
-    pyunit_utils.standalone_test(big_data_cars)
-
-else:
-    metrics_testing_gbm()
-    big_data_cars()
+pyunit_utils.run_tests([
+    test_metrics_gbm,
+    test_big_data_cars,
+])
