@@ -121,7 +121,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public ContributionsOutputFormat _outputFormat = ContributionsOutputFormat.Original;
       public int _topN;
       public int _bottomN;
-      public boolean _abs;
+      public boolean _compareAbs;
 
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
@@ -138,8 +138,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return this;
       }
 
-      public ContributionsOptions setAbs(boolean abs) {
-        _abs = abs;
+      public ContributionsOptions setCompareAbs(boolean compareAbs) {
+        _compareAbs = compareAbs;
         return this;
       }
 

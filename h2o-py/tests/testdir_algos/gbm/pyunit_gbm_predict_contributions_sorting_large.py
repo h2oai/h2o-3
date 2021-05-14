@@ -14,7 +14,7 @@ def gbm_predict_contributions_sorting_large():
     m = H2OGradientBoostingEstimator(ntrees=10, seed=1234)
     m.train(x=list(range(0, fr.ncol)), y=30, training_frame=fr)
 
-    contributions = m.predict_contributions(fr, top_n=-1, top_bottom_n=0, abs_val=False)
+    contributions = m.predict_contributions(fr, top_n=-1, bottom_n=0, compare_abs=False)
     assert_equals(61, contributions.shape[1], "Wrong number of columns")
     assert_equals(284807, contributions.shape[0], "Wrong number of rows")
 

@@ -192,13 +192,13 @@ public abstract class SharedTreeModelWithContributions<
 
     private final int _topN;
     private final int _bottomN;
-    private final boolean _abs;
+    private final boolean _compareAbs;
 
     public ScoreContributionsSortingTask(SharedTreeModel model, ContributionsOptions options) {
       super(model);
       _topN = options._topN;
       _bottomN = options._bottomN;
-      _abs = options._abs;
+      _compareAbs = options._compareAbs;
     }
 
     protected void fillInput(Chunk[] chks, int row, double[] input, float[] contribs, int[] contribNameIds) {
@@ -225,7 +225,7 @@ public abstract class SharedTreeModelWithContributions<
         ContributionComposer contributionComposer = new ContributionComposer();
 
         int[] contribNameIdsSorted = contributionComposer.composeContributions(
-                contribNameIds, contribs, _topN, _bottomN, _abs);
+                contribNameIds, contribs, _topN, _bottomN, _compareAbs);
 
         // Add contribs to new chunk
         addContribToNewChunk(contribs, contribNameIdsSorted, nc);
