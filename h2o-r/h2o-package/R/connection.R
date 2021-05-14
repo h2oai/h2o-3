@@ -758,6 +758,7 @@ h2o.resume <- function(recovery_dir=NULL) {
 # or it calls stop() and does not return.
 #
 # It will download a jar file if it needs to.
+#' @importFrom utils flush.console
 .h2o.downloadJar <- function(overwrite = FALSE) {
   if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
 
