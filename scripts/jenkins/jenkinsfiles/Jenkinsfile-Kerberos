@@ -35,7 +35,6 @@ try {
                 scmEnv = checkout scm
               }
             }
-
             if (pipelineContext == null) {
               def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
               pipelineContext = initPipelineContext(scmEnv, 'MODE_KERBEROS', true)
@@ -49,9 +48,7 @@ try {
                     pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig()
             )
             if (healthCheckPassed) {
-              // Load build script and execute it
-              def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
-              buildH2O3(pipelineContext)
+                pipelineContext.getUtils().stashGit(this)
             }
           }
         }

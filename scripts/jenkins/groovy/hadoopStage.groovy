@@ -51,10 +51,9 @@ def call(final pipelineContext, final stageConfig) {
 
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
         dir(h2oFolder) {
-            retryWithTimeout(60, 3) {
-                echo "###### Checkout H2O-3 ######"
-                checkout scm
-            }
+            echo "###### Unstash H2O-3 Git Repo ######"
+            pipelineContext.getUtils().unstashFiles("git")
+            sh "git checkout ${env.GIT_SHA}"
         }
         
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
