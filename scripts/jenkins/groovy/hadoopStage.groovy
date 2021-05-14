@@ -49,12 +49,10 @@ def call(final pipelineContext, final stageConfig) {
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
-        def h2oFolder = stageConfig.stageDir + '/h2o-3'
-        dir(h2oFolder) {
-            retryWithTimeout(60, 3) {
-                echo "###### Checkout H2O-3 ######"
-                checkout scm
-            }
+        dir(stageConfig.stageDir) {
+            echo "###### Unstash H2O-3 Git Repo ######"
+            pipelineContext.getUtils().unstashFiles(this, "git")
+            sh "cd h2o-3 && git checkout ${env.GIT_SHA} && git reset --hard"
         }
         
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
