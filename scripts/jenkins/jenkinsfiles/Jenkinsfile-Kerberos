@@ -48,6 +48,8 @@ try {
                     pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig()
             )
             if (healthCheckPassed) {
+                sh "pwd"
+                sh "ls -al"
                 pipelineContext.getUtils().stashGit(this)
             }
           }
