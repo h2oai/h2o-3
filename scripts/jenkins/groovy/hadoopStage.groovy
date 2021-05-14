@@ -52,7 +52,7 @@ def call(final pipelineContext, final stageConfig) {
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
         dir(h2oFolder) {
             echo "###### Unstash H2O-3 Git Repo ######"
-            pipelineContext.getUtils().unstashFiles("git")
+            pipelineContext.getUtils().unstashFiles(this, "git")
             sh "git checkout ${env.GIT_SHA}"
         }
         
