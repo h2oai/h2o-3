@@ -826,12 +826,8 @@ h2o.resume <- function(recovery_dir=NULL) {
     # Get MD5 checksum
     md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
   }
-  # ttt <- getURLContent(md5_url, binary = FALSE)
-  # tcon <- textConnection(ttt)
-  # md5_check <- readLines(tcon, n = 1)
-  # close(tcon)
   md5_file <- tempfile(fileext = ".md5")
-  download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
+  download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE, timeout = max(1000, getOption("timeout")))
   md5_check <- readLines(md5_file, n = 1L)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
@@ -841,7 +837,7 @@ h2o.resume <- function(recovery_dir=NULL) {
   cat("Performing one-time download of h2o.jar from\n")
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
-  download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
+  download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE, timeout = max(1000, getOption("timeout")))
 
   # Apply sanity checks
   if(!file.exists(temp_file))
