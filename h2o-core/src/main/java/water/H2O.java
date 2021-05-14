@@ -396,6 +396,9 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
+    /** -configure_s3_using_s3a; use S3A(FileSystem) to configure S3 client */
+    public boolean configure_s3_using_s3a = false;
+    
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
@@ -646,6 +649,9 @@ final public class H2O {
       else if (s.matches("aws_credentials")) {
         i = s.incrementAndCheck(i, args);
         trgt.aws_credentials = args[i];
+      }
+      else if (s.matches("configure_s3_using_s3a")) {
+        trgt.configure_s3_using_s3a = true;
       }
       else if (s.matches("ga_hadoop_ver")) {
         i = s.incrementAndCheck(i, args);
