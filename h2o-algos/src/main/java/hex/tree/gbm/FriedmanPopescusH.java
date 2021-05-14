@@ -82,11 +82,19 @@ public class FriedmanPopescusH {
             denomEls[i] = (float)fValues.get(Arrays.toString(inds)).vec(0).at(i);
         }
         float[][] counts = FrameTo2DArr(new Frame(uniqueWithCounts.vec("nrow")), false);
-        float[][] numer = matrixMultiply( new float[][]{numerEls}, counts);
-        float[][] denom = matrixMultiply( new float[][]{denomEls}, counts);
+        float[][] numer = matrixMultiply(new float[][] {powArray(numerEls, 2)}, counts);//todo:fix calc of numer-> numerEls
+        float[][] denom = matrixMultiply(new float[][] {powArray(denomEls,2)}, counts);
         assert numer.length == 1; assert numer[0].length == 1;
         assert denom.length == 1; assert denom[0].length == 1;
         return numer[0][0] < denom[0][0] ? Math.sqrt(numer[0][0]/denom[0][0]) : Double.NaN;
+    }
+    
+    static float[] powArray(float[] array, int power) {
+        float[] result = new float[array.length];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = (float) Math.pow(array[i], power);
+        }
+        return result;
     }
     
     static String[] getCurrCombinationCols(int[] currCombination, String[] vars) {
