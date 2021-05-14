@@ -837,6 +837,7 @@ h2o.resume <- function(recovery_dir=NULL) {
   cat("Performing one-time download of h2o.jar from\n")
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
+  flush.console()
   download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE, timeout = max(1000, getOption("timeout")))
 
   # Apply sanity checks
