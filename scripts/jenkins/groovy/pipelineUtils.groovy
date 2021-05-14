@@ -16,7 +16,7 @@ class PipelineUtils {
     }
 
     void stashGit(final context) {
-        context.stash name: "git", includes: '.git/', useDefaultExcludes: false
+        context.stash name: "git", includes: '.git/**/*', useDefaultExcludes: false
     }
 
     void stashFiles(final context, final String stashName, final String includedFiles, final boolean allowEmpty) {
