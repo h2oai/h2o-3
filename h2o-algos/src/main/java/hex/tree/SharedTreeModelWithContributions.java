@@ -85,7 +85,7 @@ public abstract class SharedTreeModelWithContributions<
     byte[] types = new byte[outputSize+1];
     String[][] domains = new String[outputSize+1][contribNames.length];
 
-    composeScoreContritbionTaskMetadata(names, types, domains, adaptFrm.names(), options);
+    composeScoreContributionTaskMetadata(names, types, domains, adaptFrm.names(), options);
 
     return getScoreContributionsSoringTask(this, options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))

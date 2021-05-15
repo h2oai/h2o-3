@@ -161,6 +161,41 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     default Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
       return scoreContributions(frame, destination_key);
     }
+
+    default void composeScoreContributionTaskMetadata(final String[] names, final byte[] types, final String[][] domains, final String[] originalFrameNames, final Contributions.ContributionsOptions options) {
+      final String[] contribNames = hex.genmodel.utils.ArrayUtils.append(originalFrameNames, "BiasTerm");
+
+      final ContributionComposer contributionComposer = new ContributionComposer();
+      int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, originalFrameNames.length);
+      int bottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, originalFrameNames.length);
+
+      int outputSize = Math.min((topNAdjusted+bottomNAdjusted)*2, originalFrameNames.length*2);
+
+      for (int i = 0; i < outputSize; i+=2) {
+        types[i] = Vec.T_CAT;
+        domains[i] = Arrays.copyOf(contribNames, contribNames.length);
+        domains[i+1] = null;
+        types[i+1] = Vec.T_NUM;
+      }
+
+      int topFeatureIterator = 1;
+      for (int i = 0; i < topNAdjusted*2; i+=2) {
+        names[i] = "top_feature_" + topFeatureIterator;
+        names[i+1] = "top_value_" + topFeatureIterator;
+        topFeatureIterator++;
+      }
+
+      int bottomFeatureIterator = 1;
+      for (int i = topNAdjusted*2; i < outputSize; i+=2) {
+        names[i] = "bottom_feature_" + bottomFeatureIterator;
+        names[i+1] = "bottom_value_" + bottomFeatureIterator;
+        bottomFeatureIterator++;
+      }
+
+      names[outputSize] = "BiasTerm";
+      types[outputSize] = Vec.T_NUM;
+      domains[outputSize] = null;
+    }
   }
 
   public interface ExemplarMembers {
@@ -3193,40 +3228,5 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public boolean isDistributionHuber() {
     return _parms._distribution == DistributionFamily.huber;
-  }
-
-  public static void composeScoreContritbionTaskMetadata(final String[] names, final byte[] types, final String[][] domains, final String[] originalFrameNames, final Contributions.ContributionsOptions options) {
-    final String[] contribNames = hex.genmodel.utils.ArrayUtils.append(originalFrameNames, "BiasTerm");
-
-    final ContributionComposer contributionComposer = new ContributionComposer();
-    int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, originalFrameNames.length);
-    int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, originalFrameNames.length);
-
-    int outputSize = Math.min((topNAdjusted+topBottomNAdjusted)*2, originalFrameNames.length*2);
-
-    for (int i = 0; i < outputSize; i+=2) {
-      types[i] = Vec.T_CAT;
-      domains[i] = Arrays.copyOf(contribNames, contribNames.length);
-      domains[i+1] = null;
-      types[i+1] = Vec.T_NUM;
-    }
-
-    int topFeatureIterator = 1;
-    for (int i = 0; i < topNAdjusted*2; i+=2) {
-      names[i] = "top_feature_" + topFeatureIterator;
-      names[i+1] = "top_value_" + topFeatureIterator;
-      topFeatureIterator++;
-    }
-
-    int bottomFeatureIterator = 1;
-    for (int i = topNAdjusted*2; i < outputSize; i+=2) {
-      names[i] = "bottom_feature_" + bottomFeatureIterator;
-      names[i+1] = "bottom_value_" + bottomFeatureIterator;
-      bottomFeatureIterator++;
-    }
-
-    names[outputSize] = "BiasTerm";
-    types[outputSize] = Vec.T_NUM;
-    domains[outputSize] = null;
   }
 }

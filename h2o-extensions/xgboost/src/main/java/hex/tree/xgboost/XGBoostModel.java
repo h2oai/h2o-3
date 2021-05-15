@@ -687,7 +687,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       byte[] types = new byte[outputSize+1];
       String[][] domains = new String[outputSize+1][outputNames.length];
 
-      composeScoreContritbionTaskMetadata(names, types, domains, featureContribNames, options);
+      composeScoreContributionTaskMetadata(names, types, domains, featureContribNames, options);
 
       return new PredictTreeSHAPSortingTask(di, model_info(), _output, options)
               .withPostMapAction(JobUpdatePostMap.forJob(j))
