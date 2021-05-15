@@ -898,17 +898,17 @@ public class EasyPredictModelWrapper implements Serializable {
    *
    * @param data A new data point. Unknown or missing column name is treated as a NaN or ignored. Column names are case sensitive.
    * @param topN Return only #topN highest contributions + bias.
-   * @param topBottomN Return only #topBottomN lowest contributions + bias
-   *                   If topN and topBottomN are defined together then return array of #topN + #topBottomN + bias
+   * @param bottomN Return only #bottomN lowest contributions + bias
+   *                   If topN and bottomN are defined together then return array of #topN + #bottomN + bias
    * @param abs True to compare absolute values of contributions
-   * @return Sorted FeatureContribution array of contributions of size #topN + #topBottomN + bias
-   *         If topN < 0 || topBottomN < 0 then all descending sorted contributions is returned.
+   * @return Sorted FeatureContribution array of contributions of size #topN + #bottomN + bias
+   *         If topN < 0 || bottomN < 0 then all descending sorted contributions is returned.
    * @throws PredictException When #data cannot be properly translate to raw data.
    */
-  public FeatureContribution[] predictContributions(RowData data, int topN, int topBottomN, boolean abs) throws PredictException {
+  public FeatureContribution[] predictContributions(RowData data, int topN, int bottomN, boolean abs) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    return predictContributions.calculateContributions(rawData, topN, topBottomN, abs);
+    return predictContributions.calculateContributions(rawData, topN, bottomN, abs);
   }
 
   /**

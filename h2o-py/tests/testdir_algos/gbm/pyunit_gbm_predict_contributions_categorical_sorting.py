@@ -19,7 +19,7 @@ def gbm_predict_contributions_sorting():
     m = H2OGradientBoostingEstimator(ntrees=10, seed=1234, categorical_encoding="one_hot_explicit")
     m.train(x=list(range(2, fr.ncol)), y=1, training_frame=fr)
 
-    contributions = m.predict_contributions(fr, top_n=None, top_bottom_n=None, abs_val="None")
+    contributions = m.predict_contributions(fr, top_n=None, bottom_n=None, abs_val="None")
     assert_equals(11, contributions.shape[1], "Wrong number of columns")
     assert_equals(380, contributions.shape[0], "Wrong number of rows")
 
@@ -38,72 +38,72 @@ def gbm_predict_contributions_sorting():
     first_row_sorted_asc_abs = sorted(contributions_dictionary_abs.items(), key=operator.itemgetter(1))
     first_row_sorted_desc_abs = sorted(contributions_dictionary_abs.items(), key=operator.itemgetter(1), reverse=True)
 
-    contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=0, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=2, bottom_n=0, abs_val=False)
     assert_equals(first_row_sorted_desc[0][0], contributions[0, 0], "Not correctly sorted")
     assert_equals(first_row_sorted_desc[1][0], contributions[0, 2], "Not correctly sorted")
 
-    contributions = m.predict_contributions(first_row, top_n=0, top_bottom_n=2, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=0, bottom_n=2, abs_val=False)
     assert_equals(first_row_sorted_asc[0][0], contributions[0, 0], "Not correctly sorted")
     assert_equals(first_row_sorted_asc[1][0], contributions[0, 2], "Not correctly sorted")
 
-    contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=2, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=2, bottom_n=2, abs_val=False)
     check_sorted_correcty_first_two_last_two(contributions, first_row_sorted_desc, first_row_sorted_asc)
 
-    contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=0, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=-1, bottom_n=0, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
-    contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=-1, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=-1, bottom_n=-1, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
-    contributions = m.predict_contributions(first_row, top_n=0, top_bottom_n=-1, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=0, bottom_n=-1, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_asc)
 
-    contributions = m.predict_contributions(first_row, top_n=50, top_bottom_n=-1, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=50, bottom_n=-1, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
-    contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=50, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=-1, bottom_n=50, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
-    contributions = m.predict_contributions(first_row, top_n=50, top_bottom_n=50, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=50, bottom_n=50, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
-    contributions = m.predict_contributions(first_row, top_n=6, top_bottom_n=5, abs_val=False)
+    contributions = m.predict_contributions(first_row, top_n=6, bottom_n=5, abs_val=False)
     check_sorted_correctly(contributions, first_row_sorted_desc)
 
-    contributions = m.predict_contributions(fr, top_n=0, top_bottom_n=0, abs_val=True)
+    contributions = m.predict_contributions(fr, top_n=0, bottom_n=0, abs_val=True)
     assert_equals(11, contributions.shape[1], "Wrong number of columns")
     assert_equals(380, contributions.shape[0], "Wrong number of rows")
 
-    contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=0, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=2, bottom_n=0, abs_val=True)
     assert_equals(first_row_sorted_desc_abs[0][0], contributions[0, 0], "Not correctly sorted")
     assert_equals(first_row_sorted_desc_abs[1][0], contributions[0, 2], "Not correctly sorted")
 
-    contributions = m.predict_contributions(first_row, top_n=0, top_bottom_n=2, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=0, bottom_n=2, abs_val=True)
     assert_equals(first_row_sorted_asc_abs[0][0], contributions[0, 0], "Not correctly sorted")
     assert_equals(first_row_sorted_asc_abs[1][0], contributions[0, 2], "Not correctly sorted")
 
-    contributions = m.predict_contributions(first_row, top_n=2, top_bottom_n=2, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=2, bottom_n=2, abs_val=True)
     check_sorted_correcty_first_two_last_two(contributions, first_row_sorted_desc_abs, first_row_sorted_asc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=0, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=-1, bottom_n=0, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=-1, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=-1, bottom_n=-1, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=0, top_bottom_n=-1, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=0, bottom_n=-1, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_asc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=50, top_bottom_n=-1, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=50, bottom_n=-1, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=-1, top_bottom_n=50, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=-1, bottom_n=50, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=50, top_bottom_n=50, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=50, bottom_n=50, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
 
-    contributions = m.predict_contributions(first_row, top_n=6, top_bottom_n=5, abs_val=True)
+    contributions = m.predict_contributions(first_row, top_n=6, bottom_n=5, abs_val=True)
     check_sorted_correctly(contributions, first_row_sorted_desc_abs)
 
 

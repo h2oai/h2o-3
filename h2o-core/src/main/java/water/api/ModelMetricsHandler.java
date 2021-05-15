@@ -33,7 +33,7 @@ class ModelMetricsHandler extends Handler {
     public String _custom_metric_func;
     public String _auc_type;
     public int _top_n;
-    public int _top_bottom_n;
+    public int _bottom_n;
     public boolean _abs;
 
     // Fetch all metrics that match model and/or frame
@@ -142,8 +142,8 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
     public int top_n;
 
-    @API(help = "Only for predict_contributions function - sort Shapley values and return top_bottom_n lowest (optional)", json = false)
-    public int top_bottom_n;
+    @API(help = "Only for predict_contributions function - sort Shapley values and return bottom_n lowest (optional)", json = false)
+    public int bottom_n;
 
     @API(help = "Only for predict_contributions function - sort absolute Shapley values (optional)", json = false)
     public boolean abs;
@@ -184,7 +184,7 @@ class ModelMetricsHandler extends Handler {
       mml._deviances = this.deviances;
       mml._auc_type = this.auc_type;
       mml._top_n = this.top_n;
-      mml._top_bottom_n = this.top_bottom_n;
+      mml._bottom_n = this.bottom_n;
       mml._abs = this.abs;
 
       if (model_metrics != null) {
@@ -216,7 +216,7 @@ class ModelMetricsHandler extends Handler {
       this.deviances = mml._deviances;
       this.auc_type = mml._auc_type;
       this.top_n = mml._top_n;
-      this.top_bottom_n = mml._top_bottom_n;
+      this.bottom_n = mml._bottom_n;
       this.abs = mml._abs;
 
       if (null != mml._model_metrics) {
@@ -437,7 +437,7 @@ class ModelMetricsHandler extends Handler {
           Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
           options.setOutputFormat(outputFormat)
                   .setTopN(parms._top_n)
-                  .setTopBottomN(parms._top_bottom_n)
+                  .setBottomN(parms._bottom_n)
                   .setAbs(parms._abs);
           mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {

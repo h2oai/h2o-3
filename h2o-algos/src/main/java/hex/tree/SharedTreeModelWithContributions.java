@@ -78,9 +78,9 @@ public abstract class SharedTreeModelWithContributions<
 
     final ContributionComposer contributionComposer = new ContributionComposer();
     int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, adaptFrm.names().length);
-    int topBottomNAdjusted = contributionComposer.checkAndAdjustInput(options._topBottomN, adaptFrm.names().length);
+    int bottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, adaptFrm.names().length);
 
-    int outputSize = Math.min((topNAdjusted+topBottomNAdjusted)*2, adaptFrm.names().length*2);
+    int outputSize = Math.min((topNAdjusted+bottomNAdjusted)*2, adaptFrm.names().length*2);
     String[] names = new String[outputSize+1];
     byte[] types = new byte[outputSize+1];
     String[][] domains = new String[outputSize+1][contribNames.length];
@@ -101,8 +101,8 @@ public abstract class SharedTreeModelWithContributions<
 
     int bottomFeatureIterator = 1;
     for (int i = topNAdjusted*2; i < outputSize; i+=2) {
-      names[i] = "bottom_top_feature_" + bottomFeatureIterator;
-      names[i+1] = "bottom_top_value_" + bottomFeatureIterator;
+      names[i] = "bottom_feature_" + bottomFeatureIterator;
+      names[i+1] = "bottom_value_" + bottomFeatureIterator;
       bottomFeatureIterator++;
     }
 
@@ -197,7 +197,7 @@ public abstract class SharedTreeModelWithContributions<
     public ScoreContributionsSortingTask(SharedTreeModel model, ContributionsOptions options) {
       super(model);
       _topN = options._topN;
-      _bottomN = options._topBottomN;
+      _bottomN = options._bottomN;
       _abs = options._abs;
     }
 

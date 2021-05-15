@@ -173,7 +173,7 @@ class ModelBase(h2o_meta(Keyed)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original", top_n=None, top_bottom_n=None, abs_val=False):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, abs_val=False):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost and DRF models).
         
@@ -190,8 +190,8 @@ class ModelBase(h2o_meta(Keyed)):
             contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
             contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
         :param top_n: Return only #top_n highest contributions + bias.
-        :param top_bottom_n: Return only #top_bottom_n lowest contributions + bias
-                             If top_n and top_bottom_n are defined together then return array of #top_n + #top_bottom_n + bias
+        :param bottom_n: Return only #bottom_n lowest contributions + bias
+                             If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
         :param abs_val: True to compare absolute values of contributions
         :returns: A new H2OFrame made of feature contributions.
         """
@@ -201,7 +201,7 @@ class ModelBase(h2o_meta(Keyed)):
                            data={"predict_contributions": True,
                                  "predict_contributions_output_format": output_format,
                                  "top_n": top_n,
-                                 "top_bottom_n": top_bottom_n,
+                                 "bottom_n": bottom_n,
                                  "abs": abs_val}), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)

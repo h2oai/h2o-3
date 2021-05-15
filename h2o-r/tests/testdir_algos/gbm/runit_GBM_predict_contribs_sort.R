@@ -9,80 +9,80 @@ test.GBM.contribs_sorted <- function() {
 
     gbm_model <- h2o.gbm(training_frame = prostate_hex[2:9], y = "CAPSULE", nfolds=10, ntrees=10, keep_cross_validation_models=TRUE, seed=1234)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, prostate_hex, top_n=0, top_bottom_n=0, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, prostate_hex, top_n=0, bottom_n=0, abs=FALSE))
     expect_equal(dim(contributions), c(380,8), info="Output frame has wrong dimmension")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, top_bottom_n=0, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, bottom_n=0, abs=FALSE))
     expect_equal("VOL", as.character(contributions[1,1]), info="Not sorted correctly")
     expect_equal("RACE", as.character(contributions[1,3]), info="Not sorted correctly")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, top_bottom_n=2, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, bottom_n=2, abs=FALSE))
     expect_equal("GLEASON", as.character(contributions[1,1]), info="Not sorted correctly")
     expect_equal("PSA", as.character(contributions[1,3]), info="Not sorted correctly")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, top_bottom_n=2, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, bottom_n=2, abs=FALSE))
     expect_equal("VOL", as.character(contributions[1,1]), info="Not sorted correctly")
     expect_equal("RACE", as.character(contributions[1,3]), info="Not sorted correctly")
     expect_equal("GLEASON", as.character(contributions[1,5]), info="Not sorted correctly")
     expect_equal("PSA", as.character(contributions[1,7]), info="Not sorted correctly")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, top_bottom_n=0, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, bottom_n=0, abs=FALSE))
     checkSortedCorrectly(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, top_bottom_n=-1, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, bottom_n=-1, abs=FALSE))
     checkSortedCorrectly(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, top_bottom_n=-1, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, bottom_n=-1, abs=FALSE))
     checkSortedCorrectlyReverse(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, top_bottom_n=-1, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, bottom_n=-1, abs=FALSE))
     checkSortedCorrectly(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, top_bottom_n=50, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, bottom_n=50, abs=FALSE))
     checkSortedCorrectly(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, top_bottom_n=50, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, bottom_n=50, abs=FALSE))
     checkSortedCorrectly(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=4, top_bottom_n=4, abs=FALSE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=4, bottom_n=4, abs=FALSE))
     checkSortedCorrectly(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, prostate_hex, top_n=0, top_bottom_n=0, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, prostate_hex, top_n=0, bottom_n=0, abs=TRUE))
     expect_equal(dim(contributions), c(380,8), info="Output frame has wrong dimmension")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, top_bottom_n=0, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, bottom_n=0, abs=TRUE))
     expect_equal("GLEASON", as.character(contributions[1,1]), info="Not sorted correctly")
     expect_equal("PSA", as.character(contributions[1,3]), info="Not sorted correctly")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, top_bottom_n=2, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, bottom_n=2, abs=TRUE))
     expect_equal("RACE", as.character(contributions[1,1]), info="Not sorted correctly")
     expect_equal("DCAPS", as.character(contributions[1,3]), info="Not sorted correctly")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, top_bottom_n=2, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=2, bottom_n=2, abs=TRUE))
     expect_equal("GLEASON", as.character(contributions[1,1]), info="Not sorted correctly")
     expect_equal("PSA", as.character(contributions[1,3]), info="Not sorted correctly")
     expect_equal("RACE", as.character(contributions[1,5]), info="Not sorted correctly")
     expect_equal("DCAPS", as.character(contributions[1,7]), info="Not sorted correctly")
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, top_bottom_n=0, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, bottom_n=0, abs=TRUE))
     checkSortedCorrectlyAbs(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, top_bottom_n=-1, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, bottom_n=-1, abs=TRUE))
     checkSortedCorrectlyAbs(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, top_bottom_n=-1, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=0, bottom_n=-1, abs=TRUE))
     checkSortedCorrectlyReverseAbs(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, top_bottom_n=-1, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, bottom_n=-1, abs=TRUE))
     checkSortedCorrectlyAbs(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, top_bottom_n=50, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=-1, bottom_n=50, abs=TRUE))
     checkSortedCorrectlyAbs(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, top_bottom_n=50, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=50, bottom_n=50, abs=TRUE))
     checkSortedCorrectlyAbs(contributions)
 
-    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=4, top_bottom_n=4, abs=TRUE))
+    contributions <- as.data.frame(h2o.predict_contributions(gbm_model, first_row, top_n=4, bottom_n=4, abs=TRUE))
     checkSortedCorrectlyAbs(contributions)
 }
 
