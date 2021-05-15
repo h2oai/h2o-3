@@ -678,8 +678,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
     if (options.isSortingRequired()) {
-      final String[] contribNames = ArrayUtils.append(featureContribNames, "BiasTerm");
-
       final ContributionComposer contributionComposer = new ContributionComposer();
       int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, featureContribNames.length);
       int bottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, featureContribNames.length);
@@ -687,32 +685,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       int outputSize = Math.min((topNAdjusted+bottomNAdjusted)*2, featureContribNames.length*2);
       String[] names = new String[outputSize+1];
       byte[] types = new byte[outputSize+1];
-      String[][] domains = new String[outputSize+1][contribNames.length];
+      String[][] domains = new String[outputSize+1][outputNames.length];
 
-      for (int i = 0; i < outputSize; i+=2) {
-        types[i] = Vec.T_CAT;
-        domains[i] = Arrays.copyOf(contribNames, contribNames.length);
-        domains[i+1] = null;
-        types[i+1] = Vec.T_NUM;
-      }
-
-      int topFeatureIterator = 1;
-      for (int i = 0; i < topNAdjusted*2; i+=2) {
-        names[i] = "top_feature_" + topFeatureIterator;
-        names[i+1] = "top_value_" + topFeatureIterator;
-        topFeatureIterator++;
-      }
-
-      int bottomFeatureIterator = 1;
-      for (int i = topNAdjusted*2; i < outputSize; i+=2) {
-        names[i] = "bottom_top_feature_" + bottomFeatureIterator;
-        names[i+1] = "bottom_top_value_" + bottomFeatureIterator;
-        bottomFeatureIterator++;
-      }
-
-      names[outputSize] = "BiasTerm";
-      types[outputSize] = Vec.T_NUM;
-      domains[outputSize] = null;
+      composeScoreContritbionTaskMetadata(names, types, domains, featureContribNames, options);
 
       return new PredictTreeSHAPSortingTask(di, model_info(), _output, options)
               .withPostMapAction(JobUpdatePostMap.forJob(j))
