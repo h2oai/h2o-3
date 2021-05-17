@@ -15,7 +15,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.h
 
 #### New Feature
 
-- [PUBDEV-8131](https://h2oai.atlassian.net/browse/PUBDEV-8131) Added parameter `auc_type` to performance method to compute multiclass AUC
+- [PUBDEV-8131](https://h2oai.atlassian.net/browse/PUBDEV-8131) Added parameter `auc_type` to performance method to compute multiclass AUC.
 
 #### Task
 
