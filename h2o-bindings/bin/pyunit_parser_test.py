@@ -8,8 +8,6 @@ import re
 import textwrap
 import tokenize
 
-import colorama
-from colorama import Fore, Style
 from future.builtins import open
 
 import pyparser
@@ -43,7 +41,6 @@ Expression = pyparser.Expression
 Function = (pyparser.Callable, "def")
 Class = (pyparser.Callable, "class")
 
-colorama.init()
 
 def assert_same_code(code1, code2):
     """Verify whether 2 code fragments are identical, and if not print an error message."""
@@ -59,8 +56,8 @@ def assert_same_code(code1, code2):
             old_line = lines_code1[i]
             new_line = lines_code2[i] if i < len(lines_code2) else ""
             if old_line != new_line:
-                print(("%3d " % (i + 1)) + Fore.RED + "- " + old_line + Style.RESET_ALL)
-                print(("%3d " % (i + 1)) + Fore.LIGHTGREEN_EX + "+ " + new_line + Style.RESET_ALL)
+                print("%3d - %s" % (i + 1, old_line))
+                print("%3d + %s" % (i + 1, new_line))
                 n_diffs += 1
                 if n_diffs == 5: break
         raise AssertionError("Unparsed code1 does not match the original.")
@@ -321,9 +318,9 @@ def test_pyparser():
             print("ok")
         except AssertionError as e:
             print()
-            print(Style.BRIGHT + Fore.LIGHTRED_EX + u"Error: " + str(e) + Style.RESET_ALL)
-            print(Style.BRIGHT + u"Original code fragment:\n" + Style.RESET_ALL + code)
-            if unparsed: print(Style.BRIGHT + u"Unparsed code:\n" + Style.RESET_ALL + unparsed)
+            print(u"Error: " + str(e))
+            print(u"Original code fragment:\n" + code)
+            if unparsed: print(u"Unparsed code:\n" + unparsed)
             if parsed:
                 print(parsed)
                 for i, tok in enumerate(parsed.tokens):
@@ -331,7 +328,7 @@ def test_pyparser():
             raise
         except Exception as e:
             print()
-            print(Style.BRIGHT + Fore.LIGHTRED_EX + u"Error: " + str(e) + Style.RESET_ALL)
+            print(u"Error: " + str(e))
             if preparsed:
                 print("Preparsed tokens:")
                 for i, tok in enumerate(preparsed.tokens):
