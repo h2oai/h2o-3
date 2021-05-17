@@ -828,7 +828,7 @@ h2o.resume <- function(recovery_dir=NULL) {
     md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
   }
   md5_file <- tempfile(fileext = ".md5")
-  download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE, timeout = max(1000, getOption("timeout")))
+  download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
   md5_check <- readLines(md5_file, n = 1L)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
@@ -839,7 +839,7 @@ h2o.resume <- function(recovery_dir=NULL) {
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
   flush.console()
-  download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE, timeout = max(1000, getOption("timeout")))
+  download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
 
   # Apply sanity checks
   if(!file.exists(temp_file))
