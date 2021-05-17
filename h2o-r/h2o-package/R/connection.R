@@ -485,23 +485,7 @@ h2o.resume <- function(recovery_dir=NULL) {
 .h2o.pkg.path <- NULL
 .h2o.jar.env <- new.env()    # Dummy variable used to shutdown H2O when R exits
 
-.onLoad <- function(lib, pkg) {
-  .h2o.pkg.path <<- file.path(lib, pkg)
-
-  # installing RCurl requires curl and curl-config, which is typically separately installed
-  rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0L
-  if(!rcurl_package_is_installed) {
-    if(.Platform$OS.type == "unix") {
-      # packageStartupMessage("Checking libcurl version...")
-      curl_path <- Sys.which("curl-config")
-      if(!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
-        stop("libcurl not found. Please install libcurl\n",
-             "(version 7.14.0 or higher) from http://curl.haxx.se.\n",
-             "On Linux systems you will often have to explicitly install\n",
-             "libcurl-devel to have the header files and the libcurl library.")
-    }
-  }
-}
+# Note: Moved .onLoad() to zzz.R
 
 .onAttach <- function(libname, pkgname) {
   msg = paste0(
