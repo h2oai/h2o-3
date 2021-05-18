@@ -29,10 +29,6 @@
 
 # This was moved from connection.R; .onAttach, .onDetach, .Last are still in connection.R
 .onLoad <- function(lib, pkg) {
-  
-  # for file.download, used to download h2o.jar
-  options(timeout = max(1000, getOption("timeout")))
-  
   .h2o.pkg.path <<- file.path(lib, pkg)
   
   # installing RCurl requires curl and curl-config, which is typically separately installed

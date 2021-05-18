@@ -744,6 +744,8 @@ h2o.resume <- function(recovery_dir=NULL) {
 # It will download a jar file if it needs to.
 #' @importFrom utils flush.console
 .h2o.downloadJar <- function(overwrite = FALSE) {
+  old_options <- options(timeout = max(1000, getOption("timeout")))
+  on.exit(options(old_options))
   if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
 
   # PUBDEV-3534 hook to use arbitrary h2o.jar
