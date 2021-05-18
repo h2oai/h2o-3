@@ -1,5 +1,9 @@
 package hex.tree.xgboost;
 
+import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.gbm.GBTree;
+import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
@@ -16,6 +20,7 @@ import hex.FeatureInteractions;
 import hex.schemas.XGBoostV3;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import hex.tree.xgboost.predict.AuxNodeWeights;
 import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.BoosterHelper;
@@ -43,9 +48,8 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static hex.genmodel.utils.DistributionFamily.bernoulli;
-import static hex.genmodel.utils.DistributionFamily.multinomial;
 import static hex.Model.Contributions.*;
+import static hex.genmodel.utils.DistributionFamily.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -492,6 +496,9 @@ public class XGBoostTest extends TestUtil {
 
       XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
+
+      model.scoreContributions(df, Key.make());
+
       LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(df);
@@ -1646,7 +1653,54 @@ public class XGBoostTest extends TestUtil {
       }
     }
   }
-  
+
+  @Test
+  public void testUpdateAuxTreeWeights_regression() {
+    Scope.enter();
+    try {
+      String response = "AGE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = gaussian;
+
+      XGBoostModel xgb = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      
+      Frame scored = Scope.track(xgb.score(train));
+      assertTrue(xgb.testJavaScoring(train, scored, 1e-6));
+
+      checkUpdateAuxTreeWeights(xgb, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private void checkUpdateAuxTreeWeights(XGBoostModel xgb, Frame frame) {
+    Predictor orgPredictor = xgb.makePredictor(false);
+    RegTree[] orgTrees = ((GBTree) orgPredictor.getBooster()).getGroupedTrees()[0];
+
+    Frame fr = new Frame(frame);
+    fr.add("weights", fr.anyVec().makeCon(2));
+    xgb.updateAuxTreeWeights(fr, "weights");
+
+    AuxNodeWeights auxNodeWeights = xgb.model_info().auxNodeWeights();
+    assertNotNull(auxNodeWeights);
+
+    Predictor updPredictor = xgb.makePredictor(false);
+    RegTree[] updTrees = ((GBTree) updPredictor.getBooster()).getGroupedTrees()[0];
+
+    for (int i = 0; i < orgTrees.length; i++) {
+      RegTreeNodeStat[] expectedStats = orgTrees[i].getStats();
+      RegTreeNodeStat[] actualStats = updTrees[i].getStats();
+      for (int j = 0; j < expectedStats.length; j++) {
+        assertEquals(expectedStats[j].getWeight() * 2, actualStats[j].getWeight(), 0);
+      }
+    }
+  }
+
   @Test
   public void testScoringWithUnseenCategoricals() {
     try {

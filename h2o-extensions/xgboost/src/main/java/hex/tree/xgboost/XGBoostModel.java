@@ -12,6 +12,7 @@ import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.PlattScalingHelper;
+import hex.tree.SharedTreeModel;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
@@ -565,11 +566,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(model_info.getDataInfoKey());
+    ab.putKey(model_info.getAuxNodeWeightsKey());
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     ab.getKey(model_info.getDataInfoKey(), fs);
+    ab.getKey(model_info.getAuxNodeWeightsKey(), fs);
     return super.readAll_impl(ab, fs);
   }
 
@@ -619,7 +622,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     assert di != null;
     MutableOneHotEncoderFVec row = new MutableOneHotEncoderFVec(di, _output._sparse);
     row.setInput(data);
-    Predictor predictor = PredictorFactory.makePredictor(model_info._boosterBytes);
+    Predictor predictor = makePredictor(true);
     float[] out;
     if (_output.hasOffset()) {
       out = predictor.predict(row, (float) offset);
@@ -684,6 +687,30 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             .outputFrame(destination_key, outputNames, null);
   }
 
+  public void updateAuxTreeWeights(Frame frame, String weightsColumn) {
+    if (weightsColumn == null) {
+      throw new IllegalArgumentException("Weights column name is not defined");
+    }
+    Frame adaptFrm = new Frame(frame);
+    Vec weights = adaptFrm.remove(weightsColumn);
+    if (weights == null) {
+      throw new IllegalArgumentException("Input frame doesn't contain weights column `" + weightsColumn + "`");
+    }
+    adaptTestForTrain(adaptFrm, true, false);
+    // keep features only and re-introduce weights column at the end of the frame
+    Frame featureFrm = new Frame(_output.features(), frame.vecs(_output.features()));
+    featureFrm.add(weightsColumn, weights);
+
+    DataInfo di = model_info().dataInfo();
+    assert di != null;
+
+    double[][] nodeWeights = new UpdateAuxTreeWeightsTask(di, model_info(), _output)
+            .doAll(featureFrm)
+            .getNodeWeights();
+    AuxNodeWeights auxNodeWeights = new AuxNodeWeights(model_info().getAuxNodeWeightsKey(), nodeWeights);
+    DKV.put(auxNodeWeights);
+  }
+
   @Override
   public Frame scoreLeafNodeAssignment(
       Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key
@@ -709,6 +736,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (di != null) {
       di.remove(fs);
     }
+    AuxNodeWeights anw = model_info().auxNodeWeights();
+    if (anw != null) {
+      anw.remove(fs);
+    }
     if (_output._calib_model != null)
       _output._calib_model.remove(fs);
     return super.remove_impl(fs, cascade);
@@ -716,7 +747,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClassName) {
-    GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+    GradBooster booster = XGBoostJavaMojoModel
+            .makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes())
+            .getBooster();
     if (!(booster instanceof GBTree)) {
       throw new IllegalArgumentException("XGBoost model is not backed by a tree-based booster. Booster class is " + 
               booster.getClass().getCanonicalName());
@@ -849,7 +882,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       SBPrintStream sb, CodeGeneratorPipeline classCtx, CodeGeneratorPipeline fileCtx, boolean verboseCode
   ) {
     final String namePrefix = JCodeGen.toJavaId(_key.toString());
-    Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
+    Predictor p = makePredictor(false);
     XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
 
@@ -878,5 +911,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
   }
 
+  Predictor makePredictor(boolean scoringOnly) {
+    return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly);
+  }
 
 }

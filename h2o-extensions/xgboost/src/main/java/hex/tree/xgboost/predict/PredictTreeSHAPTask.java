@@ -33,7 +33,9 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
   @Override
   protected void setupLocal() {
     _mojo = new XGBoostJavaMojoModel(
-        _modelInfo._boosterBytes, _output._names, _output._domains, _output.responseName(), true
+            _modelInfo._boosterBytes, _modelInfo.auxNodeWeightBytes(), 
+            _output._names, _output._domains, _output.responseName(), 
+            true
     );
   }
 

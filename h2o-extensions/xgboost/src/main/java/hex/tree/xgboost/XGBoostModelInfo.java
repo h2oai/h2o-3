@@ -1,6 +1,7 @@
 package hex.tree.xgboost;
 
 import hex.DataInfo;
+import hex.tree.xgboost.predict.AuxNodeWeights;
 import water.Iced;
 import water.Key;
 
@@ -10,6 +11,7 @@ final public class XGBoostModelInfo extends Iced {
 
   public final XGBoostModel.XGBoostParameters _parameters; // not used, kept for debugging purposes
   private final Key<DataInfo> _dataInfoKey;
+  private final Key<AuxNodeWeights> _auxNodeWeightsKey;
 
   public String _featureMap;
   public byte[] _boosterBytes; // internal state of native backend
@@ -21,6 +23,7 @@ final public class XGBoostModelInfo extends Iced {
   public XGBoostModelInfo(final XGBoostModel.XGBoostParameters origParams, DataInfo dinfo) {
     _parameters = (XGBoostModel.XGBoostParameters) origParams.clone(); //make a copy, don't change model's parameters
     _dataInfoKey = dinfo._key;
+    _auxNodeWeightsKey = Key.make();
   }
 
   public String getFeatureMap() {
@@ -61,5 +64,18 @@ final public class XGBoostModelInfo extends Iced {
   public DataInfo scoringInfo(boolean isTrain) {
     return isTrain ? dataInfo() : dataInfo().scoringInfo();
   }
-  
+
+  public Key<AuxNodeWeights> getAuxNodeWeightsKey() {
+    return _auxNodeWeightsKey;
+  }
+
+  public AuxNodeWeights auxNodeWeights() {
+    return _auxNodeWeightsKey.get();
+  }
+
+  public byte[] auxNodeWeightBytes() {
+    AuxNodeWeights anw = _auxNodeWeightsKey.get();
+    return anw != null ? anw._nodeWeightBytes : null;
+  }
+
 }
