@@ -869,7 +869,7 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' h2o.predict(prostate_gbm, prostate)
 #' h2o.predict_contributions(prostate_gbm, prostate)
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=2)
-#' h2o.predict_contributions(prostate_gbm, prostate, top_n=0, bottom_n=2)
+#' h2o.predict_contributions(prostate_gbm, prostate, bottom_n=2)
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=1, bottom_n=2, compare_abs=TRUE)
 #' }
 #' @export
