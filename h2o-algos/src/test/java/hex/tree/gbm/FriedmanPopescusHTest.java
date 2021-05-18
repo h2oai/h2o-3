@@ -7,14 +7,9 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
-import water.Key;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.rapids.Rapids;
-import water.rapids.Val;
-import water.util.Log;
-import water.util.TwoDimTable;
 
 import java.io.IOException;
 import java.util.List;
@@ -59,7 +54,7 @@ public class FriedmanPopescusHTest {
         node_2LL.setGain(1);
         node_2LL.setColName("feature0");
         node_2LL.setCol(0, "feature0");
-        node_2LL.setSplitValue(0.3897f);
+        node_2LL.setSplitValue(0.38097f);
         // 5
         SharedTreeNode node_2LR = sharedTreeSubgraph.makeRightChildNode(node_1L);
         node_2LR.setWeight((float)35/90);
@@ -125,7 +120,7 @@ public class FriedmanPopescusHTest {
         Frame frame = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/grid.csv");
         Frame res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result012.csv");
         SharedTreeGraph tree = createSharedTreeGraphForTest();
-        double result[] = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new int[] {0,1,2}, 0.1, frame);
+        double result[] = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1,2}, 0.1, frame);
         assertEquals(result.length, res.numRows());
         for (int i = 0; i < res.numRows(); i++) {
             assertEquals(res.vec(0).at(i), result[i], 1e-4);
@@ -134,7 +129,16 @@ public class FriedmanPopescusHTest {
         res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result02.csv");
         Frame frame1 = new Frame();
         frame1.add(new String[] {"feature0", "feature2"}, new Vec[] {frame.vec(0), frame.vec(2)});
-        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new int[] {0,2}, 0.1, frame1);
+        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,2}, 0.1, frame1);
+        assertEquals(result.length, res.numRows());
+        for (int i = 0; i < res.numRows(); i++) {
+            assertEquals(res.vec(0).at(i), result[i], 1e-4);
+        }
+
+        res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/uncentd_f_vals_01.csv");
+        Frame frame2 = new Frame();
+        frame2.add(new String[] {"feature0", "feature1"}, new Vec[] {frame.vec(0), frame.vec(1)});
+        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1}, 0.1, frame2);
         assertEquals(result.length, res.numRows());
         for (int i = 0; i < res.numRows(); i++) {
             assertEquals(res.vec(0).at(i), result[i], 1e-4);
@@ -172,7 +176,7 @@ public class FriedmanPopescusHTest {
         DKV.put(frame);
         SharedTreeGraph tree = createSharedTreeGraphForTest();
 
-        Frame res = FriedmanPopescusH.computeFValuesForTest(tree.subgraphArray.get(0), new int[] {0,1,2}, frame, frame.names(), 0.1);
+        Frame res = FriedmanPopescusH.computeFValuesForTest(tree.subgraphArray.get(0), new Integer[] {0,1,2}, frame, frame.names(), 0.1);
         assertEquals(res.numCols(),1);
         Frame pyres = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/Fvals012result.csv");
         assertEquals(res.numRows(), pyres.numRows());
@@ -181,6 +185,76 @@ public class FriedmanPopescusHTest {
         }
         DKV.remove(frame._key);
     }
+
+    @Test
+    public void testComputeFvalsInner01() throws IOException {
+        String currentPath = new java.io.File(".").getCanonicalPath();
+        Frame frame = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/grid.csv");
+        DKV.put(frame);
+        SharedTreeGraph tree = createSharedTreeGraphForTest();
+
+        Frame res = FriedmanPopescusH.computeFValuesForTest(tree.subgraphArray.get(0), new Integer[] {0,1}, frame, new String[]{"feature0", "feature1"}, 0.1);
+        assertEquals(res.numCols(),1);
+        Frame pyres = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/f_vals_01.csv");
+        assertEquals(res.numRows(), pyres.numRows());
+        for (int i=0; i < res.numRows(); i++) {
+            assertEquals(res.vec(0).at(i), pyres.vec(0).at(i), 1e-4);
+        }
+        DKV.remove(frame._key);
+    }
+
+    @Test
+    public void testComputeFvalsInner12() throws IOException {
+        String currentPath = new java.io.File(".").getCanonicalPath();
+        Frame frame = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/grid.csv");
+        DKV.put(frame);
+        SharedTreeGraph tree = createSharedTreeGraphForTest();
+
+        Frame res = FriedmanPopescusH.computeFValuesForTest(tree.subgraphArray.get(0), new Integer[] {1,2}, frame,new String[]{"feature1", "feature2"}, 0.1);
+        assertEquals(res.numCols(),1);
+        Frame pyres = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_12.csv");;
+        assertEquals(res.numRows(), pyres.numRows());
+        for (int i=0; i < res.numRows(); i++) {
+            assertEquals(res.vec(0).at(i), pyres.vec(0).at(i), 1e-4);
+        }
+        DKV.remove(frame._key);
+    }
+
+
+    @Test
+    public void testComputeFvalsInner1() throws IOException {
+        String currentPath = new java.io.File(".").getCanonicalPath();
+        Frame frame = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/grid.csv");
+        DKV.put(frame);
+        SharedTreeGraph tree = createSharedTreeGraphForTest();
+
+        Frame res = FriedmanPopescusH.computeFValuesForTest(tree.subgraphArray.get(0), new Integer[] {1}, frame,new String[]{"feature1"}, 0.1);
+        assertEquals(res.numCols(),1);
+        Frame pyres = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_1.csv");
+        assertEquals(res.numRows(), pyres.numRows());
+        for (int i=0; i < res.numRows(); i++) {
+            assertEquals(res.vec(0).at(i), pyres.vec(0).at(i), 1e-4);
+        }
+        DKV.remove(frame._key);
+    }
+    
+    @Test
+    public void testMeanCalculation() throws IOException {
+        String currentPath = new java.io.File(".").getCanonicalPath();
+        Frame count = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/counts01.csv");
+        Frame fvals = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/fvals_uncentered01.csv");
+        float[][] counts = FriedmanPopescusH.FrameTo2DArr(new Frame(count.vec(0)), true);
+        float[][] fValues = FriedmanPopescusH.FrameTo2DArr(fvals, false);
+        float[][] res =  FriedmanPopescusH.matrixMultiply(counts, fValues);
+        FriedmanPopescusH.matrixScalarDivision(res, 90);
+        
+        count = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/counts12.csv");
+        fvals = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/fvals_uncentered12.csv");
+        counts = FriedmanPopescusH.FrameTo2DArr(new Frame(count.vec(0)), true);
+        fValues = FriedmanPopescusH.FrameTo2DArr(fvals, false);
+        res =  FriedmanPopescusH.matrixMultiply(counts, fValues);
+        FriedmanPopescusH.matrixScalarDivision(res, 90);
+    }
     
     
     @Test public void testComputeHvalInner() throws IOException {
@@ -188,8 +262,8 @@ public class FriedmanPopescusHTest {
         Frame frame = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/grid.csv");
         DKV.put(frame);
         SharedTreeGraph tree = createSharedTreeGraphForTest();
-        double h = FriedmanPopescusH.h_test(frame,new String[] {"feature0","feature1","feature2"}, tree.subgraphArray.get(0));
-        //todo: assertEquals(h, 0.08603547);
+        double h = FriedmanPopescusH.h_test(frame, new String[] {"feature0","feature1","feature2"}, tree.subgraphArray.get(0));
+         assertEquals(h, 0.08603547, 1e-7);
     }
 
     @Test
