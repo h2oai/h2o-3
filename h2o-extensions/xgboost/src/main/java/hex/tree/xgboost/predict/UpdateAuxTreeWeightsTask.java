@@ -4,7 +4,9 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
-import hex.DataInfo;
+import hex.*;
+import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostOutput;
 import water.MRTask;
@@ -15,19 +17,24 @@ import water.util.ArrayUtils;
 public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
 
     // IN
+    private final DistributionFamily _dist;
     private final Predictor _p;
     private final DataInfo _di;
     private final boolean _sparse;
     // OUT
     private final double[/*treeId*/][/*leafNodeId*/] _nodeWeights;
 
-    public UpdateAuxTreeWeightsTask(DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output) {
+    public UpdateAuxTreeWeightsTask(DistributionFamily dist, DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output) {
+        _dist = dist;
         _p = PredictorFactory.makePredictor(modelInfo._boosterBytes, null, false);
         _di = di;
         _sparse = output._sparse;
 
         if (_p.getNumClass() > 2) {
-            throw new UnsupportedOperationException("Calculating contributions is currently not supported for multinomial models.");
+            throw new UnsupportedOperationException("Updating tree weights is currently not supported for multinomial models.");
+        }
+        if (_dist != DistributionFamily.gaussian && _dist != DistributionFamily.bernoulli) {
+            throw new UnsupportedOperationException("Updating tree weights is currently not supported for distribution " + _dist + ".");
         }
         GBTree gbTree = (GBTree) _p.getBooster();
         RegTree[] trees = gbTree.getGroupedTrees()[0];
@@ -39,6 +46,9 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
 
     @Override
     public void map(Chunk[] chks, NewChunk[] idx) {
+        LinkFunction logit = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
+        RegTree[] trees = ((GBTree) _p.getBooster()).getGroupedTrees()[0];
+
         MutableOneHotEncoderFVec inputVec = new MutableOneHotEncoderFVec(_di, _sparse);
         double[] input = new double[chks.length - 1];
         for (int row = 0; row < chks[0]._len; row++) {
@@ -50,8 +60,20 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
             inputVec.setInput(input);
             int[] leafIdx = _p.getBooster().predictLeaf(inputVec, _nodeWeights.length);
             assert leafIdx.length == _nodeWeights.length;
-            for (int i = 0; i < leafIdx.length; i++) {
-                _nodeWeights[i][leafIdx[i]] += weight;
+            if (_dist == DistributionFamily.gaussian) {
+                for (int i = 0; i < leafIdx.length; i++) {
+                    _nodeWeights[i][leafIdx[i]] += weight;
+                }
+            } else {
+                assert _dist == DistributionFamily.bernoulli;
+                double f = -_p.getBaseScore();
+                for (int i = 0; i < leafIdx.length; i++) {
+                    RegTreeNode[] nodes = trees[i].getNodes();
+                    double p = logit.linkInv(f);
+                    double hessian = p * (1 - p);
+                    _nodeWeights[i][leafIdx[i]] += weight * hessian;
+                    f += nodes[leafIdx[i]].getLeafValue();
+                }
             }
         }
     }

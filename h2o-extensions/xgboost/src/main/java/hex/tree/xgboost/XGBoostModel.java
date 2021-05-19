@@ -704,7 +704,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     DataInfo di = model_info().dataInfo();
     assert di != null;
 
-    double[][] nodeWeights = new UpdateAuxTreeWeightsTask(di, model_info(), _output)
+    double[][] nodeWeights = new UpdateAuxTreeWeightsTask(_parms._distribution, di, model_info(), _output)
             .doAll(featureFrm)
             .getNodeWeights();
     AuxNodeWeights auxNodeWeights = new AuxNodeWeights(model_info().getAuxNodeWeightsKey(), nodeWeights);
