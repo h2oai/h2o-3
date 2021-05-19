@@ -16,7 +16,7 @@ public class AuxNodeWeightsHelper {
         int elements = 0;
         for (double[] weights : auxNodeWeights)
             elements += weights.length;
-        int len = (1 + auxNodeWeights.length) * DOUBLE_BYTES + elements * INTEGER_BYTES;
+        int len = (1 + auxNodeWeights.length) * INTEGER_BYTES + elements * DOUBLE_BYTES;
         ByteBuffer bb = ByteBuffer.wrap(new byte[len]).order(ByteOrder.nativeOrder());
         bb.putInt(auxNodeWeights.length);
         for (double[] weights : auxNodeWeights) {

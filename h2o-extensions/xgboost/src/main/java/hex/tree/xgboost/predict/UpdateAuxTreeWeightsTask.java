@@ -51,7 +51,7 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
 
         MutableOneHotEncoderFVec inputVec = new MutableOneHotEncoderFVec(_di, _sparse);
         int inputLength = chks.length - 1;
-        int weightIndex = chks.length;
+        int weightIndex = chks.length - 1;
         double[] input = new double[inputLength];
         for (int row = 0; row < chks[0]._len; row++) {
             double weight = chks[weightIndex].atd(row);

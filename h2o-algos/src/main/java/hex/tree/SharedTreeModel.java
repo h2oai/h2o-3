@@ -29,7 +29,7 @@ public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies, Model.UpdateAuxTreeWeights {
 
   private static final Logger LOG = Logger.getLogger(SharedTreeModel.class);
 
@@ -271,6 +271,7 @@ public abstract class SharedTreeModel<
     return task.execute(adaptFrm, names, destination_key);
   }
 
+  @Override
   public void updateAuxTreeWeights(Frame frame, String weightsColumn) {
     if (weightsColumn == null) {
       throw new IllegalArgumentException("Weights column name is not defined");

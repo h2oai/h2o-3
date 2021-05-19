@@ -114,6 +114,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key);
   }
 
+  public interface UpdateAuxTreeWeights {
+    void updateAuxTreeWeights(Frame frame, String weightsColumn);
+  }
+
   public interface Contributions {
     enum ContributionsOutputFormat {Original, Compact}
 

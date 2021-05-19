@@ -36,7 +36,7 @@ import static hex.tree.xgboost.util.GpuUtils.hasGPU;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector, Model.UpdateAuxTreeWeights {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -687,6 +687,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             .outputFrame(destination_key, outputNames, null);
   }
 
+  @Override
   public void updateAuxTreeWeights(Frame frame, String weightsColumn) {
     if (weightsColumn == null) {
       throw new IllegalArgumentException("Weights column name is not defined");
