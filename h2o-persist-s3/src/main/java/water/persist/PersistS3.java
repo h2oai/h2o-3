@@ -46,6 +46,13 @@ public final class PersistS3 extends Persist {
   public static AmazonS3 getClient() {
     if (_s3 == null) {
       String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
+      if (H2O.ARGS.configure_s3_using_s3a) {
+        if (factoryClassName == null) {
+          factoryClassName = S3_CLIENT_FACTORY_CLASS_DEFAULT;
+        } else
+          Log.warn("Option configure_s3_using_s3a was given alongside System property S3_CLIENT_FACTORY_CLASS=" + 
+                  factoryClassName + ". The system property will take precedence.");
+      }
       synchronized (_lock) {
         if (_s3 == null) {
           if (StringUtils.isNullOrEmpty(factoryClassName)) {
@@ -452,6 +459,8 @@ public final class PersistS3 extends Persist {
   public final static String S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.customCredentialsProviderClass";
   /** Specify class name of S3ClientFactory implementation */
   public final static String S3_CLIENT_FACTORY_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.clientFactoryClass";
+  /** Specify class name of S3ClientFactory implementation */
+  public final static String S3_CLIENT_FACTORY_CLASS_DEFAULT = "water.persist.S3AClientFactory";
 
 
   static ClientConfiguration s3ClientCfg() {

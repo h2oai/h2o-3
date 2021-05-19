@@ -3365,37 +3365,3 @@ h2o.explain_row <- function(object,
   class(result) <- "H2OExplanation"
   return(result)
 }
-
-
-#### On Load ####
-# Inspired by vctrs' s3_register function for registering s3 methods for generics from suggested packages
-.s3_register <- function(package, generic, class) {
-  method_env <- if (isNamespace(topenv())) asNamespace(environmentName(topenv())) else parent.frame()
-  method <- get(paste(generic, class, sep = "."), envir = method_env)
-
-  # Register hook in case package is unloaded & reloaded
-  setHook(packageEvent(package, "onLoad"),
-          function(...) {
-            registerS3method(generic, class, method, envir = asNamespace(package))
-          }
-  )
-
-  # Don't register if the package is not present
-  if (!isNamespaceLoaded(package)) {
-    return(invisible())
-  }
-
-  # Register iff generic exists in the package environment
-  if (exists(generic, asNamespace(package))) {
-    registerS3method(generic, class, method, envir = asNamespace(package))
-  }
-
-  invisible()
-}
-
-.onLoad <- function(...) {
-  registerS3method("print", "H2OExplanation", "print.H2OExplanation")
-  .s3_register("repr", "repr_text", "H2OExplanation")
-  .s3_register("repr", "repr_html", "H2OExplanation")
-  invisible()
-}
