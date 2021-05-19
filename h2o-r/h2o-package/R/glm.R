@@ -52,8 +52,9 @@
 #'        "GRADIENT_DESCENT_LH", "GRADIENT_DESCENT_SQERR". Defaults to AUTO.
 #' @param alpha Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
 #'        represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
-#'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
-#'        Can also be listed as a vector/list (e.g. c(0.0, 0.5))
+#'        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise. In
+#'        addition, it can also be listed as an array in Java and a vector/list (e.g.[0.0, 0.5] in Python or c(0.0, 0.5)
+#'        in R.)
 #' @param lambda Regularization strength
 #' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to FALSE.

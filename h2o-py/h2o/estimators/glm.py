@@ -749,7 +749,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha
         represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the
-        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.
+        amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise. In
+        addition, it can also be listed as an array in Java and a vector/list (e.g.[0.0, 0.5] in Python or c(0.0, 0.5)
+        in R.)
 
         Type: ``List[float]``.
 
