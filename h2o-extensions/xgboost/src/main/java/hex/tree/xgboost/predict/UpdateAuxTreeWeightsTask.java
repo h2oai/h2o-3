@@ -60,8 +60,9 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
             for (int i = 0; i < input.length; i++)
                 input[i] = chks[i].atd(row);
             inputVec.setInput(input);
-            int[] leafIdx = _p.getBooster().predictLeaf(inputVec, _nodeWeights.length);
-            assert leafIdx.length == _nodeWeights.length;
+            int ntrees = _nodeWeights.length;
+            int[] leafIdx = _p.getBooster().predictLeaf(inputVec, ntrees);
+            assert leafIdx.length == ntrees: "Leaf indices (#idx=" + leafIdx.length + ") were not returned for all trees (#trees=" + ntrees + ").";
             if (_dist == DistributionFamily.gaussian) {
                 for (int i = 0; i < leafIdx.length; i++) {
                     _nodeWeights[i][leafIdx[i]] += weight;
@@ -96,7 +97,7 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
                 int parentId = node.getParentIndex();
                 if (parentId < 0)
                     continue;
-                assert parentId < j;
+                assert parentId < j: "Broken tree #" + i + ". Tree rollups assume parentId (=" + parentId + " < childId (=" + j + ").";
                 RegTreeNode parent = nodes[parentId];
                 _nodeWeights[i][parentId] = _nodeWeights[i][parent.getLeftChildIndex()] + _nodeWeights[i][parent.getRightChildIndex()]; 
             }

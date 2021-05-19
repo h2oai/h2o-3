@@ -496,9 +496,6 @@ public class XGBoostTest extends TestUtil {
 
       XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
-
-      model.scoreContributions(df, Key.make());
-
       LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(df);
