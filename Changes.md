@@ -5,7 +5,7 @@
 
 # Release notes - Public H2O 3 - Version 3.32.1.3
 
-### Zipf (3.32.1.3) - 5/xx/2021
+### Zipf (3.32.1.3) - 5/19/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html</a>
 
