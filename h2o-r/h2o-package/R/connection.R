@@ -485,23 +485,7 @@ h2o.resume <- function(recovery_dir=NULL) {
 .h2o.pkg.path <- NULL
 .h2o.jar.env <- new.env()    # Dummy variable used to shutdown H2O when R exits
 
-.onLoad <- function(lib, pkg) {
-  .h2o.pkg.path <<- file.path(lib, pkg)
-
-  # installing RCurl requires curl and curl-config, which is typically separately installed
-  rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0L
-  if(!rcurl_package_is_installed) {
-    if(.Platform$OS.type == "unix") {
-      # packageStartupMessage("Checking libcurl version...")
-      curl_path <- Sys.which("curl-config")
-      if(!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
-        stop("libcurl not found. Please install libcurl\n",
-             "(version 7.14.0 or higher) from http://curl.haxx.se.\n",
-             "On Linux systems you will often have to explicitly install\n",
-             "libcurl-devel to have the header files and the libcurl library.")
-    }
-  }
-}
+# Note: Moved .onLoad() to zzz.R
 
 .onAttach <- function(libname, pkgname) {
   msg = paste0(
@@ -758,7 +742,10 @@ h2o.resume <- function(recovery_dir=NULL) {
 # or it calls stop() and does not return.
 #
 # It will download a jar file if it needs to.
+#' @importFrom utils flush.console
 .h2o.downloadJar <- function(overwrite = FALSE) {
+  old_options <- options(timeout = max(1000, getOption("timeout")))
+  on.exit(options(old_options))
   if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
 
   # PUBDEV-3534 hook to use arbitrary h2o.jar
@@ -826,12 +813,8 @@ h2o.resume <- function(recovery_dir=NULL) {
     # Get MD5 checksum
     md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
   }
-  # ttt <- getURLContent(md5_url, binary = FALSE)
-  # tcon <- textConnection(ttt)
-  # md5_check <- readLines(tcon, n = 1)
-  # close(tcon)
   md5_file <- tempfile(fileext = ".md5")
-  download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
+  download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
   md5_check <- readLines(md5_file, n = 1L)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
@@ -841,6 +824,7 @@ h2o.resume <- function(recovery_dir=NULL) {
   cat("Performing one-time download of h2o.jar from\n")
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
+  flush.console()
   download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
 
   # Apply sanity checks
