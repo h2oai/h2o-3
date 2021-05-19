@@ -1684,6 +1684,7 @@ public class XGBoostTest extends TestUtil {
 
     Frame fr = new Frame(frame);
     fr.add("weights", fr.anyVec().makeCon(2));
+    Scope.track(fr);
     xgb.updateAuxTreeWeights(fr, "weights");
 
     AuxNodeWeights auxNodeWeights = xgb.model_info().auxNodeWeights();
