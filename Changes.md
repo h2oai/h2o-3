@@ -18,6 +18,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.h
 
 - [PUBDEV-8147](https://h2oai.atlassian.net/browse/PUBDEV-8147) Upgraded XGBoost predictor to 0.3.18.
 
+- [PUBDEV-8145](https://h2oai.atlassian.net/browse/PUBDEV-8145) Increased the timeout duration on the R package jar download.
+
 #### Docs
 
 - [PUBDEV-8119](https://h2oai.atlassian.net/browse/PUBDEV-8119) Fixed formatting errors for local builds.
