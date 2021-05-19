@@ -46,10 +46,10 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
   }
 
   @Override
-  public FeatureContribution[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs) {
+  public FeatureContribution[] calculateContributions(double[] input, int topN, int bottomN, boolean abs) {
     float[] contributions = calculateContributions(input);
     int[] contributionNameIds = ArrayUtils.range(0, _contribution_names.length -1);
-    int[] sorted = (new ContributionComposer()).composeContributions(contributionNameIds, contributions, topN, topBottomN, abs);
+    int[] sorted = (new ContributionComposer()).composeContributions(contributionNameIds, contributions, topN, bottomN, abs);
     FeatureContribution[] out = new FeatureContribution[sorted.length];
     for (int i = 0; i < sorted.length; i++) {
       out[i] = new FeatureContribution(_contribution_names[sorted[i]], contributions[sorted[i]]);

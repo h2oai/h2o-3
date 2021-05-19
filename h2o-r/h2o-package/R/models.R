@@ -852,9 +852,13 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #'                      contributions for 1-hot encoded features, specifying a compact output format will produce
 #'                      a per-feature contribution. Defaults to original.
 #' @param top_n Return only #top_n highest contributions + bias
-#' @param top_bottom_n Return only #top_bottom_n lowest contributions + bias
-#'        If top_n and top_bottom_n are defined together then return array of #top_n + #top_bottom_n + bias
-#' @param abs True to compare absolute values of contributions
+#'              If top_n<0 then sort all SHAP values in descending order
+#'              If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+#' @param bottom_n Return only #bottom_n lowest contributions + bias
+#'                 If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
+#'                 If bottom_n<0 then sort all SHAP values in ascending order
+#'                 If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+#' @param compare_abs True to compare absolute values of contributions
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame contain feature contributions for each input row.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
@@ -867,17 +871,27 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate_gbm <- h2o.gbm(3:9, "AGE", prostate)
 #' h2o.predict(prostate_gbm, prostate)
+#' # Compute SHAP
 #' h2o.predict_contributions(prostate_gbm, prostate)
+#' # Compute SHAP and pick the top two highest
 #' h2o.predict_contributions(prostate_gbm, prostate, top_n=2)
-#' h2o.predict_contributions(prostate_gbm, prostate, top_n=0, top_bottom_n=2)
-#' h2o.predict_contributions(prostate_gbm, prostate, top_n=1, top_bottom_n=2, abs=TRUE)
+#' # Compute SHAP and pick the top two lowest
+#' h2o.predict_contributions(prostate_gbm, prostate, bottom_n=2)
+#' # Compute SHAP and pick the top two highest regardless of the sign
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, compare_abs=TRUE)
+#' # Compute SHAP and pick the top two lowest regardless of the sign
+#' h2o.predict_contributions(prostate_gbm, prostate, bottom_n=2, compare_abs=TRUE)
+#' # Compute SHAP values and show them all in descending order
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=-1)
+#' # Compute SHAP and pick the top two highest and top two lowest
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, bottom_n=2)
 #' }
 #' @export
-predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), top_n=0, top_bottom_n=0, abs=FALSE, ...) {
+predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), top_n=0, bottom_n=0, compare_abs=FALSE, ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
-    params <- list(predict_contributions = TRUE, top_n=top_n, top_bottom_n=top_bottom_n, abs=abs)
+    params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs)
     params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
     res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)

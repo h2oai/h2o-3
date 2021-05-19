@@ -7,45 +7,45 @@ import java.util.Arrays;
 public class ContributionComposer {
     
     /**
-     * Sort #contribNameIds according to #contribs values and compose desired output with correct #topN, #topBottomN fields
+     * Sort #contribNameIds according to #contribs values and compose desired output with correct #topN, #bottomN fields
      *
      * @param contribNameIds Contribution corresponding feature ids
      * @param contribs Raw contribution values
      * @param topN Return only #topN highest #contribNameIds + bias.
-     * @param topBottomN Return only #topBottomN lowest #contribNameIds + bias
-     *                   If #topN and #topBottomN are defined together then return array of #topN + #topBottomN + bias
-     * @param abs True to compare absolute values of #contribs
+     * @param bottomN Return only #bottomN lowest #contribNameIds + bias
+     *                   If #topN and #bottomN are defined together then return array of #topN + #bottomN + bias
+     * @param compareAbs True to compare absolute values of #contribs
      * @return Sorted contribNameIds array of corresponding contributions features.
-     *         The size of returned array is #topN + #topBottomN + bias
+     *         The size of returned array is #topN + #bottomN + bias
      */
-    public final int[] composeContributions(final int[] contribNameIds, final float[] contribs, int topN, int topBottomN, boolean abs) {
+    public final int[] composeContributions(final int[] contribNameIds, final float[] contribs, int topN, int bottomN, boolean compareAbs) {
         assert contribNameIds.length == contribs.length : "contribNameIds must have the same length as contribs";
-        if (returnOnlyTopN(topN, topBottomN)) {
-            return composeSortedContributions(contribNameIds, contribs, topN, abs, -1);
-        } else if (returnOnlyTopBottomN(topN, topBottomN)) {
-            return composeSortedContributions(contribNameIds, contribs, topBottomN, abs,1);
-        } else if (returnAllTopN(topN, topBottomN, contribs.length)) {
-            return composeSortedContributions(contribNameIds, contribs, contribs.length, abs, -1);
+        if (returnOnlyTopN(topN, bottomN)) {
+            return composeSortedContributions(contribNameIds, contribs, topN, compareAbs, -1);
+        } else if (returnOnlyBottomN(topN, bottomN)) {
+            return composeSortedContributions(contribNameIds, contribs, bottomN, compareAbs,1);
+        } else if (returnAllTopN(topN, bottomN, contribs.length)) {
+            return composeSortedContributions(contribNameIds, contribs, contribs.length, compareAbs, -1);
         }
 
-        composeSortedContributions(contribNameIds, contribs, contribNameIds.length, abs,-1);
-        int[] bottomSorted = Arrays.copyOfRange(contribNameIds, contribNameIds.length - 1 - topBottomN, contribNameIds.length);
+        composeSortedContributions(contribNameIds, contribs, contribNameIds.length, compareAbs,-1);
+        int[] bottomSorted = Arrays.copyOfRange(contribNameIds, contribNameIds.length - 1 - bottomN, contribNameIds.length);
         reverse(bottomSorted, contribs, bottomSorted.length - 1);
         int[] contribNameIdsTmp = Arrays.copyOf(contribNameIds, topN);
 
         return ArrayUtils.append(contribNameIdsTmp, bottomSorted);
     }
 
-    private boolean returnOnlyTopN(int topN, int topBottomN) {
-        return topN != 0 && topBottomN == 0;
+    private boolean returnOnlyTopN(int topN, int bottomN) {
+        return topN != 0 && bottomN == 0;
     }
 
-    private boolean returnOnlyTopBottomN(int topN, int topBottomN) {
-        return topN == 0 && topBottomN != 0;
+    private boolean returnOnlyBottomN(int topN, int bottomN) {
+        return topN == 0 && bottomN != 0;
     }
 
-    private boolean returnAllTopN(int topN, int topBottomN, int len) {
-        return (topN + topBottomN) >= len || topN < 0 || topBottomN < 0;
+    private boolean returnAllTopN(int topN, int bottomN, int len) {
+        return (topN + bottomN) >= len || topN < 0 || bottomN < 0;
     }
 
     public int checkAndAdjustInput(int n, int len) {
@@ -55,9 +55,9 @@ public class ContributionComposer {
         return n;
     }
     
-    private int[] composeSortedContributions(final int[] contribNameIds, final float[] contribs, int n, boolean abs, int increasing) {
+    private int[] composeSortedContributions(final int[] contribNameIds, final float[] contribs, int n, boolean compareAbs, int increasing) {
         int nAdjusted = checkAndAdjustInput(n, contribs.length);
-        sortContributions(contribNameIds, contribs, abs, increasing);
+        sortContributions(contribNameIds, contribs, compareAbs, increasing);
         if (nAdjusted < contribs.length) {
             int bias = contribNameIds[contribs.length-1];
             int[] contribNameIdsSorted = Arrays.copyOfRange(contribNameIds, 0, nAdjusted + 1);
@@ -67,8 +67,8 @@ public class ContributionComposer {
         return contribNameIds;
     }
     
-    private void sortContributions(final int[] contribNameIds, final float[] contribs, final boolean abs, final int increasing) {
-        ArrayUtils.sort(contribNameIds, contribs, 0, contribs.length -1, abs, increasing);
+    private void sortContributions(final int[] contribNameIds, final float[] contribs, final boolean compareAbs, final int increasing) {
+        ArrayUtils.sort(contribNameIds, contribs, 0, contribs.length -1, compareAbs, increasing);
     }
 
     private void reverse(int[] contribNameIds, float[] contribs, int len) {

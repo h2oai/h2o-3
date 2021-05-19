@@ -33,8 +33,8 @@ class ModelMetricsHandler extends Handler {
     public String _custom_metric_func;
     public String _auc_type;
     public int _top_n;
-    public int _top_bottom_n;
-    public boolean _abs;
+    public int _bottom_n;
+    public boolean _compare_abs;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -142,11 +142,11 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
     public int top_n;
 
-    @API(help = "Only for predict_contributions function - sort Shapley values and return top_bottom_n lowest (optional)", json = false)
-    public int top_bottom_n;
+    @API(help = "Only for predict_contributions function - sort Shapley values and return bottom_n lowest (optional)", json = false)
+    public int bottom_n;
 
     @API(help = "Only for predict_contributions function - sort absolute Shapley values (optional)", json = false)
-    public boolean abs;
+    public boolean compare_abs;
 
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
     public boolean feature_frequencies;
@@ -184,8 +184,8 @@ class ModelMetricsHandler extends Handler {
       mml._deviances = this.deviances;
       mml._auc_type = this.auc_type;
       mml._top_n = this.top_n;
-      mml._top_bottom_n = this.top_bottom_n;
-      mml._abs = this.abs;
+      mml._bottom_n = this.bottom_n;
+      mml._compare_abs = this.compare_abs;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -216,8 +216,8 @@ class ModelMetricsHandler extends Handler {
       this.deviances = mml._deviances;
       this.auc_type = mml._auc_type;
       this.top_n = mml._top_n;
-      this.top_bottom_n = mml._top_bottom_n;
-      this.abs = mml._abs;
+      this.bottom_n = mml._bottom_n;
+      this.compare_abs = mml._compare_abs;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -437,8 +437,8 @@ class ModelMetricsHandler extends Handler {
           Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
           options.setOutputFormat(outputFormat)
                   .setTopN(parms._top_n)
-                  .setTopBottomN(parms._top_bottom_n)
-                  .setAbs(parms._abs);
+                  .setBottomN(parms._bottom_n)
+                  .setCompareAbs(parms._compare_abs);
           mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));

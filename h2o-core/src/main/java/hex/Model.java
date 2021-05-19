@@ -120,8 +120,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     class ContributionsOptions {
       public ContributionsOutputFormat _outputFormat = ContributionsOutputFormat.Original;
       public int _topN;
-      public int _topBottomN;
-      public boolean _abs;
+      public int _bottomN;
+      public boolean _compareAbs;
 
       public ContributionsOptions setOutputFormat(ContributionsOutputFormat outputFormat) {
         _outputFormat = outputFormat;
@@ -133,18 +133,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return this;
       }
 
-      public ContributionsOptions setTopBottomN(int topBottomN) {
-        _topBottomN = topBottomN;
+      public ContributionsOptions setBottomN(int bottomN) {
+        _bottomN = bottomN;
         return this;
       }
 
-      public ContributionsOptions setAbs(boolean abs) {
-        _abs = abs;
+      public ContributionsOptions setCompareAbs(boolean compareAbs) {
+        _compareAbs = compareAbs;
         return this;
       }
 
       public boolean isSortingRequired() {
-        return _topN != 0 || _topBottomN != 0;
+        return _topN != 0 || _bottomN != 0;
       }
     }
 

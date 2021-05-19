@@ -173,7 +173,7 @@ class ModelBase(h2o_meta(Keyed)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original", top_n=None, top_bottom_n=None, abs_val=False):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost and DRF models).
         
@@ -190,10 +190,35 @@ class ModelBase(h2o_meta(Keyed)):
             contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
             contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
         :param top_n: Return only #top_n highest contributions + bias.
-        :param top_bottom_n: Return only #top_bottom_n lowest contributions + bias
-                             If top_n and top_bottom_n are defined together then return array of #top_n + #top_bottom_n + bias
-        :param abs_val: True to compare absolute values of contributions
+                      If top_n<0 then sort all SHAP values in descending order
+                      If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+        :param bottom_n: Return only #bottom_n lowest contributions + bias
+                         If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
+                         If bottom_n<0 then sort all SHAP values in ascending order
+                         If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+        :param compare_abs: True to compare absolute values of contributions
         :returns: A new H2OFrame made of feature contributions.
+
+        :examples:
+        >>> prostate = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
+        >>> fr = h2o.import_file(prostate)
+        >>> predictors = list(range(2, fr.ncol))
+        >>> m = H2OGradientBoostingEstimator(ntrees=10, seed=1234)
+        >>> m.train(x=predictors, y=1, training_frame=fr)
+        >>> # Compute SHAP
+        >>> m.predict_contributions(fr)
+        >>> # Compute SHAP and pick the top two highest
+        >>> m.predict_contributions(fr, top_n=2)
+        >>> # Compute SHAP and pick the top two lowest
+        >>> m.predict_contributions(fr, bottom_n=2)
+        >>> # Compute SHAP and pick the top two highest regardless of the sign
+        >>> m.predict_contributions(fr, top_n=2, compare_abs=True)
+        >>> # Compute SHAP and pick top two lowest regardless of the sign
+        >>> m.predict_contributions(fr, bottom_n=2, compare_abs=True)
+        >>> # Compute SHAP values and show them all in descending order
+        >>> m.predict_contributions(fr, top_n=-1)
+        >>> # Compute SHAP and pick the top two highest and top two lowest
+        >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
         assert_is_type(output_format, None, Enum("Original", "Compact"))
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
@@ -201,8 +226,8 @@ class ModelBase(h2o_meta(Keyed)):
                            data={"predict_contributions": True,
                                  "predict_contributions_output_format": output_format,
                                  "top_n": top_n,
-                                 "top_bottom_n": top_bottom_n,
-                                 "abs": abs_val}), "contributions")
+                                 "bottom_n": bottom_n,
+                                 "compare_abs": compare_abs}), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)
 

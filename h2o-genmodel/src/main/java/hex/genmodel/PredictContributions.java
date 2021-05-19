@@ -13,7 +13,7 @@ public interface PredictContributions extends Serializable {
    */
   float[] calculateContributions(double[] input);
 
-  FeatureContribution[] calculateContributions(double[] input, int topN, int topBottomN, boolean abs);
+  FeatureContribution[] calculateContributions(double[] input, int topN, int bottomN, boolean abs);
 
   String[] getContributionNames();
 
