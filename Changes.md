@@ -2,6 +2,28 @@
 
 ## H2O
 
+### Zipf (3.32.1.3) - 5/19/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html</a>
+
+#### Bug
+
+- [PUBDEV-8136](https://h2oai.atlassian.net/browse/PUBDEV-8136) Fixed the printing for `auc_pr` and `pr_auc` in cross-validation summaries.
+
+#### New Feature
+
+- [PUBDEV-8131](https://h2oai.atlassian.net/browse/PUBDEV-8131) Added parameter `auc_type` to performance method to compute multiclass AUC.
+
+#### Task
+
+- [PUBDEV-8147](https://h2oai.atlassian.net/browse/PUBDEV-8147) Upgraded XGBoost predictor to 0.3.18.
+
+#### Docs
+
+- [PUBDEV-8119](https://h2oai.atlassian.net/browse/PUBDEV-8119) Fixed formatting errors for local builds.
+
+- [PUBDEV-8091](https://h2oai.atlassian.net/browse/PUBDEV-8091) Updated docs examples for baseline hazard, baseline survival, and concordance.
+
 ### Zipf (3.32.1.2) - 4/29/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/2/index.html</a>
