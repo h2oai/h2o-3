@@ -50,9 +50,11 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
         RegTree[] trees = ((GBTree) _p.getBooster()).getGroupedTrees()[0];
 
         MutableOneHotEncoderFVec inputVec = new MutableOneHotEncoderFVec(_di, _sparse);
-        double[] input = new double[chks.length - 1];
+        int inputLength = chks.length - 1;
+        int weightIndex = chks.length;
+        double[] input = new double[inputLength];
         for (int row = 0; row < chks[0]._len; row++) {
-            double weight = chks[input.length].atd(row);
+            double weight = chks[weightIndex].atd(row);
             if (weight == 0 || Double.isNaN(weight))
                 continue;
             for (int i = 0; i < input.length; i++)

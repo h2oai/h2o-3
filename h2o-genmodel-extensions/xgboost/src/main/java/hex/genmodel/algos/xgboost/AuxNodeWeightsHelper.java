@@ -9,11 +9,14 @@ import java.nio.ByteOrder;
 
 public class AuxNodeWeightsHelper {
 
+    private static final int DOUBLE_BYTES = Double.SIZE / Byte.SIZE;
+    private static final int INTEGER_BYTES = Integer.SIZE / Byte.SIZE;
+    
     public static byte[] toBytes(double[][] auxNodeWeights) {
         int elements = 0;
         for (double[] weights : auxNodeWeights)
             elements += weights.length;
-        int len = (1 + auxNodeWeights.length) * 4 + elements * 8;
+        int len = (1 + auxNodeWeights.length) * DOUBLE_BYTES + elements * INTEGER_BYTES;
         ByteBuffer bb = ByteBuffer.wrap(new byte[len]).order(ByteOrder.nativeOrder());
         bb.putInt(auxNodeWeights.length);
         for (double[] weights : auxNodeWeights) {
