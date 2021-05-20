@@ -12,8 +12,12 @@ public class ContributionComposer {
      * @param contribNameIds Contribution corresponding feature ids
      * @param contribs Raw contribution values
      * @param topN Return only #topN highest #contribNameIds + bias.
+     *             If topN<0 then sort all SHAP values in descending order
+     *             If topN<0 && bottomN<0 then sort all SHAP values in descending order
      * @param bottomN Return only #bottomN lowest #contribNameIds + bias
-     *                   If #topN and #bottomN are defined together then return array of #topN + #bottomN + bias
+     *                If topN and bottomN are defined together then return array of #topN + #bottomN + bias
+     *                If bottomN<0 then sort all SHAP values in ascending order
+     *                If topN<0 && bottomN<0 then sort all SHAP values in descending order
      * @param compareAbs True to compare absolute values of #contribs
      * @return Sorted contribNameIds array of corresponding contributions features.
      *         The size of returned array is #topN + #bottomN + bias
