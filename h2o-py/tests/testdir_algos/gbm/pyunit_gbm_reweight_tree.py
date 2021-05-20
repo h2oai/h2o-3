@@ -24,13 +24,13 @@ def gbm_reweight_tree():
 
     # 2. Scale weights => contributions should stay the same 
     prostate_frame["weights"] = 2
-    h2o.rapids('(sharedtree.update.weights {} {} "{}")'.format(gbm_model.model_id, prostate_frame.frame_id, "weights"))
+    h2o.rapids('(tree.update.weights {} {} "{}")'.format(gbm_model.model_id, prostate_frame.frame_id, "weights"))
     contribs_reweighted = gbm_model.predict_contributions(prostate_frame)
     assert_frame_equal(contribs_reweighted.as_data_frame(), contribs_original.as_data_frame())
 
     # 3. Reweight based on small subset of the data => contributions are expected to change
     prostate_subset = prostate_frame.head(10)
-    h2o.rapids('(sharedtree.update.weights {} {} "{}")'.format(gbm_model.model_id, prostate_subset.frame_id, "weights"))
+    h2o.rapids('(tree.update.weights {} {} "{}")'.format(gbm_model.model_id, prostate_subset.frame_id, "weights"))
     contribs_subset = gbm_model.predict_contributions(prostate_subset)
     assert contribs_subset["BiasTerm"].min() != contribs_original["BiasTerm"].min()
 

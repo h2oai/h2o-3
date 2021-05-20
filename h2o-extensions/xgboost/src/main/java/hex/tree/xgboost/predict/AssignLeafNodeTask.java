@@ -23,7 +23,7 @@ public abstract class AssignLeafNodeTask extends MRTask<AssignLeafNodeTask> {
     private byte _resultType;
 
     protected AssignLeafNodeTask(DataInfo di, XGBoostOutput output, byte[] boosterBytes, byte resultType) {
-        this._p = PredictorFactory.makePredictor(boosterBytes, false);
+        this._p = PredictorFactory.makePredictor(boosterBytes, null, false);
         this._di = di;
         this._sparse = output._sparse;
         this._names = makeNames(output._ntrees, output.nclasses());
