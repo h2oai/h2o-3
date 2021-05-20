@@ -900,15 +900,15 @@ public class EasyPredictModelWrapper implements Serializable {
    * @param topN Return only #topN highest contributions + bias.
    * @param bottomN Return only #bottomN lowest contributions + bias
    *                   If topN and bottomN are defined together then return array of #topN + #bottomN + bias
-   * @param abs True to compare absolute values of contributions
+   * @param compareAbs True to compare absolute values of contributions
    * @return Sorted FeatureContribution array of contributions of size #topN + #bottomN + bias
    *         If topN < 0 || bottomN < 0 then all descending sorted contributions is returned.
    * @throws PredictException When #data cannot be properly translate to raw data.
    */
-  public FeatureContribution[] predictContributions(RowData data, int topN, int bottomN, boolean abs) throws PredictException {
+  public FeatureContribution[] predictContributions(RowData data, int topN, int bottomN, boolean compareAbs) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    return predictContributions.calculateContributions(rawData, topN, bottomN, abs);
+    return predictContributions.calculateContributions(rawData, topN, bottomN, compareAbs);
   }
 
   /**
