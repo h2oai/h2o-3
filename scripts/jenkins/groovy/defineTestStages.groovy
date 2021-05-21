@@ -30,7 +30,7 @@ def call(final pipelineContext) {
   def METADATA_VALIDATION_STAGES = [
     [
       stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_ANY
     ]
   ]
 

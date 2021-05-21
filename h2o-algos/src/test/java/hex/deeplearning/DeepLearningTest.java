@@ -21,6 +21,7 @@ import water.parser.ParseSetup;
 import water.util.*;
 
 import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -1073,7 +1074,7 @@ public class DeepLearningTest extends TestUtil {
   }
 
   @Test
-  public void testAutoEncoder() {
+  public void testAutoEncoder() throws Exception {
     Frame tfr = null, vfr = null, fr2 = null;
     DeepLearningModel dl = null;
 
@@ -1088,7 +1089,7 @@ public class DeepLearningTest extends TestUtil {
       DKV.put(tfr);
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
-      parms._epochs = 100;
+      parms._epochs = 10;
       parms._reproducible = true;
       parms._hidden = new int[]{5,5,5};
       parms._response_column = "Cost";
@@ -1100,8 +1101,10 @@ public class DeepLearningTest extends TestUtil {
       // Build a first model; all remaining models should be equal
       dl = new DeepLearning(parms).trainModel().get();
 
-      ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
-      Assert.assertEquals(0.0712931422088762, mm._MSE, 1e-2);
+      URI uri = dl.exportMojo("prcak", true);
+      
+      MojoModel aeMojo = MojoModel.load(uri.getPath(), true);
+      
 
       assertTrue(dl.testJavaScoring(tfr, fr2=dl.score(tfr), 1e-5));
 
