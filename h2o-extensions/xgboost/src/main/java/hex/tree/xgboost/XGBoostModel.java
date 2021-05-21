@@ -668,10 +668,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
-    if (options.isSortingRequired()) {
-      throw new UnsupportedOperationException(
-              "Sorting of Shapley for XGBooost is not yet supported");
-    }
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
@@ -680,6 +676,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ? 
             _output.features() : di.coefNames();
     final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
+
+    if (options.isSortingRequired()) {
+      final ContributionComposer contributionComposer = new ContributionComposer();
+      int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, featureContribNames.length);
+      int bottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, featureContribNames.length);
+
+      int outputSize = Math.min((topNAdjusted+bottomNAdjusted)*2, featureContribNames.length*2);
+      String[] names = new String[outputSize+1];
+      byte[] types = new byte[outputSize+1];
+      String[][] domains = new String[outputSize+1][outputNames.length];
+
+      composeScoreContributionTaskMetadata(names, types, domains, featureContribNames, options);
+
+      return new PredictTreeSHAPSortingTask(di, model_info(), _output, options)
+              .withPostMapAction(JobUpdatePostMap.forJob(j))
+              .doAll(types, adaptFrm)
+              .outputFrame(destination_key, names, domains);
+    }
 
     return new PredictTreeSHAPTask(di, model_info(), _output, options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
