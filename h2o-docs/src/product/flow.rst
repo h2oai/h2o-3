@@ -1543,6 +1543,26 @@ To create a plot from a frame, click the **Inspect** button, then click the **Pl
 
 --------------
 
+Deleting Objects
+^^^^^^^^^^^^^^^^
+
+There are several ways to delete objects in Flow: 
+
+1. Get the Frames list, check off the frame you want to delete, and click **Delete selected frames**.
+
+.. figure:: images/delete_frames.png
+  :scale: 75%
+  :alt: Flow - Deleting Frames
+
+2. List the Models, check off the model you want to delete, and click **Delete selected**.
+
+.. figure:: images/delete_models.png
+  :alt: Flow - Deleting Models
+
+3. Run the command ``deleteAll`` in the cell. 
+
+--------------
+
 Shutting Down H2O
 ^^^^^^^^^^^^^^^^^
 
