@@ -20,9 +20,19 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     algo = "word2vec"
 
-    def __init__(self, model_id=None, training_frame=None, min_word_freq=5, word_model="skip_gram", norm_model="hsm",
-                 vec_size=100, window_size=5, sent_sample_rate=0.001, init_learning_rate=0.025, epochs=5,
-                 pre_trained=None, max_runtime_secs=0, export_checkpoints_dir=None):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 min_word_freq=5,
+                 word_model="skip_gram",
+                 norm_model="hsm",
+                 vec_size=100,
+                 window_size=5,
+                 sent_sample_rate=0.001,
+                 init_learning_rate=0.025,
+                 epochs=5,
+                 pre_trained=None,
+                 max_runtime_secs=0,
+                 export_checkpoints_dir=None):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

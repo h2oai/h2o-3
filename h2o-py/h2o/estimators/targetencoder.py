@@ -25,9 +25,19 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     algo = "targetencoder"
 
-    def __init__(self, model_id=None, training_frame=None, fold_column=None, response_column=None, ignored_columns=None,
-                 columns_to_encode=None, keep_original_categorical_columns=True, blending=False, inflection_point=10,
-                 smoothing=20, data_leakage_handling="none", noise=0.01, seed=-1):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 fold_column=None,
+                 response_column=None,
+                 ignored_columns=None,
+                 columns_to_encode=None,
+                 keep_original_categorical_columns=True,
+                 blending=False,
+                 inflection_point=10,
+                 smoothing=20,
+                 data_leakage_handling="none",
+                 noise=0.01,
+                 seed=-1):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

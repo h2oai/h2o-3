@@ -219,9 +219,9 @@ def gen_module(schema, algo):
     yield ""
     yield '    algo = "%s"' % algo
     yield ""
-    yield "    def __init__(self, %s):" % bi.wrap(", ".join("%s=%s" % (p.get('pname'), stringify(p.get('default_value'), infinity=None)) 
-                                                            for p in extended_params), 
-                                                  indent=(' '*17), indent_first=False)
+    yield reformat_block("def __init__(self, %s):" % ",\n".join("%s=%s" % (p.get('pname'), stringify(p.get('default_value'), infinity=None))
+                                                                for p in extended_params),
+                         indent=4, prefix=' '*13, prefix_first=False)
     yield '        """'
     for p in extended_params:
         pname, pdefault, ptype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')

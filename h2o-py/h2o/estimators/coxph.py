@@ -21,10 +21,25 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
 
     algo = "coxph"
 
-    def __init__(self, model_id=None, training_frame=None, start_column=None, stop_column=None, response_column=None,
-                 ignored_columns=None, weights_column=None, offset_column=None, stratify_by=None, ties="efron", init=0,
-                 lre_min=9, max_iterations=20, interactions=None, interaction_pairs=None, interactions_only=None,
-                 use_all_factor_levels=False, export_checkpoints_dir=None, single_node_mode=False):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 start_column=None,
+                 stop_column=None,
+                 response_column=None,
+                 ignored_columns=None,
+                 weights_column=None,
+                 offset_column=None,
+                 stratify_by=None,
+                 ties="efron",
+                 init=0,
+                 lre_min=9,
+                 max_iterations=20,
+                 interactions=None,
+                 interaction_pairs=None,
+                 interactions_only=None,
+                 use_all_factor_levels=False,
+                 export_checkpoints_dir=None,
+                 single_node_mode=False):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

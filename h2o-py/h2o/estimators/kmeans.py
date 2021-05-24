@@ -21,12 +21,29 @@ class H2OKMeansEstimator(H2OEstimator):
 
     algo = "kmeans"
 
-    def __init__(self, model_id=None, training_frame=None, validation_frame=None, nfolds=0, keep_cross_validation_models=True,
-                 keep_cross_validation_predictions=False, keep_cross_validation_fold_assignment=False,
-                 fold_assignment="auto", fold_column=None, ignored_columns=None, ignore_const_cols=True,
-                 score_each_iteration=False, k=1, estimate_k=False, user_points=None, max_iterations=10,
-                 standardize=True, seed=-1, init="furthest", max_runtime_secs=0, categorical_encoding="auto",
-                 export_checkpoints_dir=None, cluster_size_constraints=None):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 validation_frame=None,
+                 nfolds=0,
+                 keep_cross_validation_models=True,
+                 keep_cross_validation_predictions=False,
+                 keep_cross_validation_fold_assignment=False,
+                 fold_assignment="auto",
+                 fold_column=None,
+                 ignored_columns=None,
+                 ignore_const_cols=True,
+                 score_each_iteration=False,
+                 k=1,
+                 estimate_k=False,
+                 user_points=None,
+                 max_iterations=10,
+                 standardize=True,
+                 seed=-1,
+                 init="furthest",
+                 max_runtime_secs=0,
+                 categorical_encoding="auto",
+                 export_checkpoints_dir=None,
+                 cluster_size_constraints=None):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

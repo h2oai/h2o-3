@@ -22,9 +22,20 @@ class H2ORuleFitEstimator(H2OEstimator):
 
     algo = "rulefit"
 
-    def __init__(self, model_id=None, training_frame=None, validation_frame=None, seed=-1, response_column=None,
-                 ignored_columns=None, algorithm="auto", min_rule_length=3, max_rule_length=3, max_num_rules=-1,
-                 model_type="rules_and_linear", weights_column=None, distribution="auto", rule_generation_ntrees=50):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 validation_frame=None,
+                 seed=-1,
+                 response_column=None,
+                 ignored_columns=None,
+                 algorithm="auto",
+                 min_rule_length=3,
+                 max_rule_length=3,
+                 max_num_rules=-1,
+                 model_type="rules_and_linear",
+                 weights_column=None,
+                 distribution="auto",
+                 rule_generation_ntrees=50):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

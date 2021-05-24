@@ -20,9 +20,21 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     algo = "svd"
 
-    def __init__(self, model_id=None, training_frame=None, validation_frame=None, ignored_columns=None,
-                 ignore_const_cols=True, score_each_iteration=False, transform="none", svd_method="gram_s_v_d", nv=1,
-                 max_iterations=1000, seed=-1, keep_u=True, u_name=None, use_all_factor_levels=True, max_runtime_secs=0,
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 validation_frame=None,
+                 ignored_columns=None,
+                 ignore_const_cols=True,
+                 score_each_iteration=False,
+                 transform="none",
+                 svd_method="gram_s_v_d",
+                 nv=1,
+                 max_iterations=1000,
+                 seed=-1,
+                 keep_u=True,
+                 u_name=None,
+                 use_all_factor_levels=True,
+                 max_runtime_secs=0,
                  export_checkpoints_dir=None):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).

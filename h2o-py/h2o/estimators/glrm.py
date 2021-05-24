@@ -21,13 +21,39 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     algo = "glrm"
 
-    def __init__(self, model_id=None, training_frame=None, validation_frame=None, ignored_columns=None,
-                 ignore_const_cols=True, score_each_iteration=False, representation_name=None, loading_name=None,
-                 transform="none", k=1, loss="quadratic", loss_by_col=None, loss_by_col_idx=None,
-                 multi_loss="categorical", period=1, regularization_x="none", regularization_y="none", gamma_x=0,
-                 gamma_y=0, max_iterations=1000, max_updates=2000, init_step_size=1, min_step_size=0.0001, seed=-1,
-                 init="plus_plus", svd_method="randomized", user_y=None, user_x=None, expand_user_y=True,
-                 impute_original=False, recover_svd=False, max_runtime_secs=0, export_checkpoints_dir=None):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 validation_frame=None,
+                 ignored_columns=None,
+                 ignore_const_cols=True,
+                 score_each_iteration=False,
+                 representation_name=None,
+                 loading_name=None,
+                 transform="none",
+                 k=1,
+                 loss="quadratic",
+                 loss_by_col=None,
+                 loss_by_col_idx=None,
+                 multi_loss="categorical",
+                 period=1,
+                 regularization_x="none",
+                 regularization_y="none",
+                 gamma_x=0,
+                 gamma_y=0,
+                 max_iterations=1000,
+                 max_updates=2000,
+                 init_step_size=1,
+                 min_step_size=0.0001,
+                 seed=-1,
+                 init="plus_plus",
+                 svd_method="randomized",
+                 user_y=None,
+                 user_x=None,
+                 expand_user_y=True,
+                 impute_original=False,
+                 recover_svd=False,
+                 max_runtime_secs=0,
+                 export_checkpoints_dir=None):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

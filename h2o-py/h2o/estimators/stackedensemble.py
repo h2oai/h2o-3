@@ -64,11 +64,26 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     algo = "stackedensemble"
 
-    def __init__(self, model_id=None, training_frame=None, response_column=None, validation_frame=None, blending_frame=None,
-                 base_models=[], metalearner_algorithm="auto", metalearner_nfolds=0, metalearner_fold_assignment=None,
-                 metalearner_fold_column=None, metalearner_params=None, metalearner_transform="none",
-                 max_runtime_secs=0, weights_column=None, offset_column=None, seed=-1, score_training_samples=10000,
-                 keep_levelone_frame=False, export_checkpoints_dir=None, auc_type="auto"):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 response_column=None,
+                 validation_frame=None,
+                 blending_frame=None,
+                 base_models=[],
+                 metalearner_algorithm="auto",
+                 metalearner_nfolds=0,
+                 metalearner_fold_assignment=None,
+                 metalearner_fold_column=None,
+                 metalearner_params=None,
+                 metalearner_transform="none",
+                 max_runtime_secs=0,
+                 weights_column=None,
+                 offset_column=None,
+                 seed=-1,
+                 score_training_samples=10000,
+                 keep_levelone_frame=False,
+                 export_checkpoints_dir=None,
+                 auc_type="auto"):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

@@ -20,11 +20,26 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
 
     algo = "psvm"
 
-    def __init__(self, model_id=None, training_frame=None, validation_frame=None, response_column=None, ignored_columns=None,
-                 ignore_const_cols=True, hyper_param=1, kernel_type="gaussian", gamma=-1, rank_ratio=-1,
-                 positive_weight=1, negative_weight=1, disable_training_metrics=True, sv_threshold=0.0001,
-                 fact_threshold=1e-05, feasible_threshold=0.001, surrogate_gap_threshold=0.001, mu_factor=10,
-                 max_iterations=200, seed=-1):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 validation_frame=None,
+                 response_column=None,
+                 ignored_columns=None,
+                 ignore_const_cols=True,
+                 hyper_param=1,
+                 kernel_type="gaussian",
+                 gamma=-1,
+                 rank_ratio=-1,
+                 positive_weight=1,
+                 negative_weight=1,
+                 disable_training_metrics=True,
+                 sv_threshold=0.0001,
+                 fact_threshold=1e-05,
+                 feasible_threshold=0.001,
+                 surrogate_gap_threshold=0.001,
+                 mu_factor=10,
+                 max_iterations=200,
+                 seed=-1):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

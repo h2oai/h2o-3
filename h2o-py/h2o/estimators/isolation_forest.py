@@ -25,12 +25,31 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
     algo = "isolationforest"
 
-    def __init__(self, model_id=None, training_frame=None, score_each_iteration=False, score_tree_interval=0,
-                 ignored_columns=None, ignore_const_cols=True, ntrees=50, max_depth=8, min_rows=1, max_runtime_secs=0,
-                 seed=-1, build_tree_one_node=False, mtries=-1, sample_size=256, sample_rate=-1,
-                 col_sample_rate_change_per_level=1, col_sample_rate_per_tree=1, categorical_encoding="auto",
-                 stopping_rounds=0, stopping_metric="auto", stopping_tolerance=0.01, export_checkpoints_dir=None,
-                 contamination=-1, validation_frame=None, validation_response_column=None):
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 score_each_iteration=False,
+                 score_tree_interval=0,
+                 ignored_columns=None,
+                 ignore_const_cols=True,
+                 ntrees=50,
+                 max_depth=8,
+                 min_rows=1,
+                 max_runtime_secs=0,
+                 seed=-1,
+                 build_tree_one_node=False,
+                 mtries=-1,
+                 sample_size=256,
+                 sample_rate=-1,
+                 col_sample_rate_change_per_level=1,
+                 col_sample_rate_per_tree=1,
+                 categorical_encoding="auto",
+                 stopping_rounds=0,
+                 stopping_metric="auto",
+                 stopping_tolerance=0.01,
+                 export_checkpoints_dir=None,
+                 contamination=-1,
+                 validation_frame=None,
+                 validation_response_column=None):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
         :param H2OFrame training_frame: Id of the training data frame. (default:None).

@@ -20,9 +20,17 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     algo = "aggregator"
 
-    def __init__(self, model_id=None, training_frame=None, response_column=None, ignored_columns=None, ignore_const_cols=True,
-                 target_num_exemplars=5000, rel_tol_num_exemplars=0.5, transform="normalize",
-                 categorical_encoding="auto", save_mapping_frame=False, num_iteration_without_new_exemplar=500,
+    def __init__(self, model_id=None,
+                 training_frame=None,
+                 response_column=None,
+                 ignored_columns=None,
+                 ignore_const_cols=True,
+                 target_num_exemplars=5000,
+                 rel_tol_num_exemplars=0.5,
+                 transform="normalize",
+                 categorical_encoding="auto",
+                 save_mapping_frame=False,
+                 num_iteration_without_new_exemplar=500,
                  export_checkpoints_dir=None):
         """
         :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
