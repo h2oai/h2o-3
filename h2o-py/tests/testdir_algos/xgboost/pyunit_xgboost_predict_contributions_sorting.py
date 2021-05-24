@@ -1,5 +1,6 @@
 from __future__ import division
 from builtins import range
+from collections import OrderedDict
 import sys
 
 sys.path.insert(1, "../../../")
@@ -34,12 +35,15 @@ def xgboost_predict_contributions_sorting():
         values = list(map(float, contributions.as_data_frame(use_pandas=False, header=False)[0][0:-1]))
         values_abs = list(map(abs, values))
         contributions_iterator = zip(names, values)
-        contributions_dictionary = dict(contributions_iterator)
+        # Use OrderedDict because of python2
+        # dict(..) in Python 3 is insertion ordered dictionary. In python2, dict(...) is orderless.
+        # We are using OrderedDict to keep dictionary insertion ordered in all python versions.
+        contributions_dictionary = OrderedDict(contributions_iterator)
         first_row_sorted_asc = sorted(contributions_dictionary.items(), key=operator.itemgetter(1))
         first_row_sorted_desc = sorted(contributions_dictionary.items(), key=operator.itemgetter(1), reverse=True)
     
         contributions_iterator_abs = zip(names, values_abs)
-        contributions_dictionary_abs = dict(contributions_iterator_abs)
+        contributions_dictionary_abs = OrderedDict(contributions_iterator_abs)
         first_row_sorted_asc_abs = sorted(contributions_dictionary_abs.items(), key=operator.itemgetter(1))
         first_row_sorted_desc_abs = sorted(contributions_dictionary_abs.items(), key=operator.itemgetter(1), reverse=True)
     
