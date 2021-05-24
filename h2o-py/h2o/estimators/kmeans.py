@@ -26,7 +26,58 @@ class H2OKMeansEstimator(H2OEstimator):
                    "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
                    "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints"}
 
-    def __init__(self, **kwargs):
+    def __init__(self, model_id=None, training_frame=None, validation_frame=None, nfolds=0, keep_cross_validation_models=True,
+                 keep_cross_validation_predictions=False, keep_cross_validation_fold_assignment=False,
+                 fold_assignment="auto", fold_column=None, ignored_columns=None, ignore_const_cols=True,
+                 score_each_iteration=False, k=1, estimate_k=False, user_points=None, max_iterations=10,
+                 standardize=True, seed=-1, init="furthest", max_runtime_secs=0, categorical_encoding="auto",
+                 export_checkpoints_dir=None, cluster_size_constraints=None):
+        """
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
+               None).
+        :param H2OFrame training_frame: Id of the training data frame. (default: None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
+        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:
+               0).
+        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:
+               True).
+        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-
+               validation models. (default: False).
+        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold
+               assignment. (default: False).
+        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold
+               assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify the folds based
+               on the response variable, for classification problems. (default: "auto").
+        :param str fold_column: Column with cross-validation fold index assignment per observation.
+               (default: None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
+        :param bool ignore_const_cols: Ignore constant columns. (default: True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training.
+               (default: False).
+        :param int k: The max. number of clusters. If estimate_k is disabled, the model will find k
+               centroids, otherwise it will find up to k centroids. (default: 1).
+        :param bool estimate_k: Whether to estimate the number of clusters (<=k) iteratively and
+               deterministically. (default: False).
+        :param H2OFrame user_points: This option allows you to specify a dataframe, where each row
+               represents an initial cluster center. The user-specified points must have the same number of columns as
+               the training observations. The number of rows must equal the number of clusters (default: None).
+        :param int max_iterations: Maximum training iterations (if estimate_k is enabled, then this is
+               for each inner Lloyds iteration) (default: 10).
+        :param bool standardize: Standardize columns before computing distances (default: True).
+        :param int seed: RNG Seed (default: -1).
+        :param Enum["random", "plus_plus", "furthest", "user"] init: Initialization mode (default:
+               "furthest").
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
+               disable. (default: 0).
+        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen",
+               "label_encoder", "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for
+               categorical features (default: "auto").
+        :param str export_checkpoints_dir: Automatically export generated models to this directory.
+               (default: None).
+        :param List[int] cluster_size_constraints: An array specifying the minimum number of points that
+               should be in each cluster. The length of the constraints array has to be the same as the number of
+               clusters. (default: None).
+        """
         super(H2OKMeansEstimator, self).__init__()
         self._parms = {}
         for pname, pvalue in kwargs.items():

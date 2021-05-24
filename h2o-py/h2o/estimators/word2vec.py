@@ -23,7 +23,31 @@ class H2OWord2vecEstimator(H2OEstimator):
                    "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained", "max_runtime_secs",
                    "export_checkpoints_dir"}
 
-    def __init__(self, **kwargs):
+    def __init__(self, model_id=None, training_frame=None, min_word_freq=5, word_model="skip_gram", norm_model="hsm",
+                 vec_size=100, window_size=5, sent_sample_rate=0.001, init_learning_rate=0.025, epochs=5,
+                 pre_trained=None, max_runtime_secs=0, export_checkpoints_dir=None):
+        """
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
+               None).
+        :param H2OFrame training_frame: Id of the training data frame. (default: None).
+        :param int min_word_freq: This will discard words that appear less than <int> times (default: 5).
+        :param Enum["skip_gram", "cbow"] word_model: The word model to use (SkipGram or CBOW) (default:
+               "skip_gram").
+        :param Enum["hsm"] norm_model: Use Hierarchical Softmax (default: "hsm").
+        :param int vec_size: Set size of word vectors (default: 100).
+        :param int window_size: Set max skip length between words (default: 5).
+        :param float sent_sample_rate: Set threshold for occurrence of words. Those that appear with
+               higher frequency in the training data                 will be randomly down-sampled; useful range is (0,
+               1e-5) (default: 0.001).
+        :param float init_learning_rate: Set the starting learning rate (default: 0.025).
+        :param int epochs: Number of training iterations to run (default: 5).
+        :param H2OFrame pre_trained: Id of a data frame that contains a pre-trained (external) word2vec
+               model (default: None).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
+               disable. (default: 0).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory.
+               (default: None).
+        """
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
         for pname, pvalue in kwargs.items():

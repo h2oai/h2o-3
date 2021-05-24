@@ -36,7 +36,147 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins",
                    "auc_type"}
 
-    def __init__(self, **kwargs):
+    def __init__(self, model_id=None, training_frame=None, validation_frame=None, nfolds=0, keep_cross_validation_models=True,
+                 keep_cross_validation_predictions=False, keep_cross_validation_fold_assignment=False,
+                 score_each_iteration=False, fold_assignment="auto", fold_column=None, response_column=None,
+                 ignored_columns=None, ignore_const_cols=True, offset_column=None, weights_column=None,
+                 stopping_rounds=0, stopping_metric="auto", stopping_tolerance=0.001, max_runtime_secs=0, seed=-1,
+                 distribution="auto", tweedie_power=1.5, categorical_encoding="auto", quiet_mode=True, checkpoint=None,
+                 export_checkpoints_dir=None, ntrees=50, max_depth=6, min_rows=1, min_child_weight=1, learn_rate=0.3,
+                 eta=0.3, sample_rate=1, subsample=1, col_sample_rate=1, colsample_bylevel=1,
+                 col_sample_rate_per_tree=1, colsample_bytree=1, colsample_bynode=1, max_abs_leafnode_pred=0,
+                 max_delta_step=0, monotone_constraints=None, interaction_constraints=None, score_tree_interval=0,
+                 min_split_improvement=0, gamma=0, auc_type="auto", nthread=-1, save_matrix_directory=None,
+                 build_tree_one_node=False, calibrate_model=False, calibration_frame=None, max_bins=256, max_leaves=0,
+                 sample_type="uniform", normalize_type="tree", rate_drop=0, one_drop=False, skip_drop=0,
+                 tree_method="auto", grow_policy="depthwise", booster="gbtree", reg_lambda=1, reg_alpha=0,
+                 dmatrix_type="auto", backend="auto", gpu_id=None, gainslift_bins=-1, auc_type="auto"):
+        """
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
+               None).
+        :param H2OFrame training_frame: Id of the training data frame. (default: None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
+        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:
+               0).
+        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:
+               True).
+        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-
+               validation models. (default: False).
+        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold
+               assignment. (default: False).
+        :param bool score_each_iteration: Whether to score during each iteration of model training.
+               (default: False).
+        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold
+               assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify the folds based
+               on the response variable, for classification problems. (default: "auto").
+        :param str fold_column: Column with cross-validation fold index assignment per observation.
+               (default: None).
+        :param str response_column: Response variable column. (default: None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
+        :param bool ignore_const_cols: Ignore constant columns. (default: True).
+        :param str offset_column: Offset column. This will be added to the combination of columns before
+               applying the link function. (default: None).
+        :param str weights_column: Column with observation weights. Giving some observation a weight of
+               zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is
+               equivalent to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row
+               observation weights and do not increase the size of the data frame. This is typically the number of times
+               a row is repeated, but non-integer values are supported as well. During training, rows with higher
+               weights matter more, due to the larger loss function pre-factor. (default: None).
+        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if
+               simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring
+               events (0 to disable) (default: 0).
+        :param Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
+               "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+               stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client. (default: "auto").
+        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if
+               relative improvement is not at least this much) (default: 0.001).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
+               disable. (default: 0).
+        :param int seed: Seed for pseudo random number generator (if applicable) (default: -1).
+        :param Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
+               "laplace", "quantile", "huber"] distribution: Distribution function (default: "auto").
+        :param float tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2.
+               (default: 1.5).
+        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen",
+               "label_encoder", "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for
+               categorical features (default: "auto").
+        :param bool quiet_mode: Enable quiet mode (default: True).
+        :param str checkpoint: Model checkpoint to resume training with. (default: None).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory.
+               (default: None).
+        :param int ntrees: (same as n_estimators) Number of trees. (default: 50).
+        :param int max_depth: Maximum tree depth (0 for unlimited). (default: 6).
+        :param float min_rows: (same as min_child_weight) Fewest allowed (weighted) observations in a
+               leaf. (default: 1).
+        :param float min_child_weight: (same as min_rows) Fewest allowed (weighted) observations in a
+               leaf. (default: 1).
+        :param float learn_rate: (same as eta) Learning rate (from 0.0 to 1.0) (default: 0.3).
+        :param float eta: (same as learn_rate) Learning rate (from 0.0 to 1.0) (default: 0.3).
+        :param float sample_rate: (same as subsample) Row sample rate per tree (from 0.0 to 1.0)
+               (default: 1).
+        :param float subsample: (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)
+               (default: 1).
+        :param float col_sample_rate: (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)
+               (default: 1).
+        :param float colsample_bylevel: (same as col_sample_rate) Column sample rate (from 0.0 to 1.0)
+               (default: 1).
+        :param float col_sample_rate_per_tree: (same as colsample_bytree) Column sample rate per tree
+               (from 0.0 to 1.0) (default: 1).
+        :param float colsample_bytree: (same as col_sample_rate_per_tree) Column sample rate per tree
+               (from 0.0 to 1.0) (default: 1).
+        :param float colsample_bynode: Column sample rate per tree node (from 0.0 to 1.0) (default: 1).
+        :param float max_abs_leafnode_pred: (same as max_delta_step) Maximum absolute value of a leaf
+               node prediction (default: 0).
+        :param float max_delta_step: (same as max_abs_leafnode_pred) Maximum absolute value of a leaf
+               node prediction (default: 0).
+        :param dict monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce
+               an increasing constraint and -1 to specify a decreasing constraint. (default: None).
+        :param List[List[str]] interaction_constraints: A set of allowed column interactions. (default:
+               None).
+        :param int score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
+               (default: 0).
+        :param float min_split_improvement: (same as gamma) Minimum relative improvement in squared error
+               reduction for a split to happen (default: 0).
+        :param float gamma: (same as min_split_improvement) Minimum relative improvement in squared error
+               reduction for a split to happen (default: 0).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
+               Set default multinomial AUC type. (default: "auto").
+        :param int nthread: Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O
+               cluster limits (-nthreads parameter). Defaults to maximum available (default: -1).
+        :param str save_matrix_directory: Directory where to save matrices passed to XGBoost library.
+               Useful for debugging. (default: None).
+        :param bool build_tree_one_node: Run on one node only; no network overhead but fewer cpus used.
+               Suitable for small datasets. (default: False).
+        :param bool calibrate_model: Use Platt Scaling to calculate calibrated class probabilities.
+               Calibration can provide more accurate estimates of class probabilities. (default: False).
+        :param H2OFrame calibration_frame: Calibration frame for Platt Scaling (default: None).
+        :param int max_bins: For tree_method=hist only: maximum number of bins (default: 256).
+        :param int max_leaves: For tree_method=hist only: maximum number of leaves (default: 0).
+        :param Enum["uniform", "weighted"] sample_type: For booster=dart only: sample_type (default:
+               "uniform").
+        :param Enum["tree", "forest"] normalize_type: For booster=dart only: normalize_type (default:
+               "tree").
+        :param float rate_drop: For booster=dart only: rate_drop (0..1) (default: 0).
+        :param bool one_drop: For booster=dart only: one_drop (default: False).
+        :param float skip_drop: For booster=dart only: skip_drop (0..1) (default: 0).
+        :param Enum["auto", "exact", "approx", "hist"] tree_method: Tree method (default: "auto").
+        :param Enum["depthwise", "lossguide"] grow_policy: Grow policy - depthwise is standard GBM,
+               lossguide is LightGBM (default: "depthwise").
+        :param Enum["gbtree", "gblinear", "dart"] booster: Booster type (default: "gbtree").
+        :param float reg_lambda: L2 regularization (default: 1).
+        :param float reg_alpha: L1 regularization (default: 0).
+        :param Enum["auto", "dense", "sparse"] dmatrix_type: Type of DMatrix. For sparse, NAs and 0 are
+               treated equally. (default: "auto").
+        :param Enum["auto", "gpu", "cpu"] backend: Backend. By default (auto), a GPU is used if
+               available. (default: "auto").
+        :param List[int] gpu_id: Which GPU(s) to use.  (default: None).
+        :param int gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1
+               means automatic binning. (default: -1).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
+               Set default multinomial AUC type. (default: "auto").
+        """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
         for pname, pvalue in kwargs.items():

@@ -32,7 +32,66 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                    "max_confusion_matrix_size", "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob",
                    "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins", "auc_type"}
 
-    def __init__(self, **kwargs):
+    def __init__(self, model_id=None, nfolds=0, seed=-1, fold_assignment="auto", fold_column=None,
+                 keep_cross_validation_models=True, keep_cross_validation_predictions=False,
+                 keep_cross_validation_fold_assignment=False, training_frame=None, validation_frame=None,
+                 response_column=None, ignored_columns=None, ignore_const_cols=True, score_each_iteration=False,
+                 balance_classes=False, class_sampling_factors=None, max_after_balance_size=5,
+                 max_confusion_matrix_size=20, laplace=0, min_sdev=0.001, eps_sdev=0, min_prob=0.001, eps_prob=0,
+                 compute_metrics=True, max_runtime_secs=0, export_checkpoints_dir=None, gainslift_bins=-1,
+                 auc_type="auto"):
+        """
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
+               None).
+        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:
+               0).
+        :param int seed: Seed for pseudo random number generator (only used for cross-validation and
+               fold_assignment="Random" or "AUTO") (default: -1).
+        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold
+               assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify the folds based
+               on the response variable, for classification problems. (default: "auto").
+        :param str fold_column: Column with cross-validation fold index assignment per observation.
+               (default: None).
+        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:
+               True).
+        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-
+               validation models. (default: False).
+        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold
+               assignment. (default: False).
+        :param H2OFrame training_frame: Id of the training data frame. (default: None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
+        :param str response_column: Response variable column. (default: None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
+        :param bool ignore_const_cols: Ignore constant columns. (default: True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training.
+               (default: False).
+        :param bool balance_classes: Balance training data class counts via over/under-sampling (for
+               imbalanced data). (default: False).
+        :param List[float] class_sampling_factors: Desired over/under-sampling ratios per class (in
+               lexicographic order). If not specified, sampling factors will be automatically computed to obtain class
+               balance during training. Requires balance_classes. (default: None).
+        :param float max_after_balance_size: Maximum relative size of the training data after balancing
+               class counts (can be less than 1.0). Requires balance_classes. (default: 5).
+        :param int max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion
+               matrices to be printed in the Logs (default: 20).
+        :param float laplace: Laplace smoothing parameter (default: 0).
+        :param float min_sdev: Min. standard deviation to use for observations with not enough data
+               (default: 0.001).
+        :param float eps_sdev: Cutoff below which standard deviation is replaced with min_sdev (default:
+               0).
+        :param float min_prob: Min. probability to use for observations with not enough data (default:
+               0.001).
+        :param float eps_prob: Cutoff below which probability is replaced with min_prob (default: 0).
+        :param bool compute_metrics: Compute metrics on training data (default: True).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
+               disable. (default: 0).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory.
+               (default: None).
+        :param int gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1
+               means automatic binning. (default: -1).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
+               Set default multinomial AUC type. (default: "auto").
+        """
         super(H2ONaiveBayesEstimator, self).__init__()
         self._parms = {}
         for pname, pvalue in kwargs.items():

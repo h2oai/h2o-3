@@ -52,7 +52,209 @@ class H2ODeepLearningEstimator(H2OEstimator):
                    "mini_batch_size", "categorical_encoding", "elastic_averaging", "elastic_averaging_moving_rate",
                    "elastic_averaging_regularization", "export_checkpoints_dir", "auc_type"}
 
-    def __init__(self, **kwargs):
+    def __init__(self, model_id=None, training_frame=None, validation_frame=None, nfolds=0, keep_cross_validation_models=True,
+                 keep_cross_validation_predictions=False, keep_cross_validation_fold_assignment=False,
+                 fold_assignment="auto", fold_column=None, response_column=None, ignored_columns=None,
+                 ignore_const_cols=True, score_each_iteration=False, weights_column=None, offset_column=None,
+                 balance_classes=False, class_sampling_factors=None, max_after_balance_size=5,
+                 max_confusion_matrix_size=20, checkpoint=None, pretrained_autoencoder=None,
+                 overwrite_with_best_model=True, use_all_factor_levels=True, standardize=True, activation="rectifier",
+                 hidden=[200, 200], epochs=10, train_samples_per_iteration=-2, target_ratio_comm_to_comp=0.05, seed=-1,
+                 adaptive_rate=True, rho=0.99, epsilon=1e-08, rate=0.005, rate_annealing=1e-06, rate_decay=1,
+                 momentum_start=0, momentum_ramp=1000000, momentum_stable=0, nesterov_accelerated_gradient=True,
+                 input_dropout_ratio=0, hidden_dropout_ratios=None, l1=0, l2=0, max_w2=3.4028235e+38,
+                 initial_weight_distribution="uniform_adaptive", initial_weight_scale=1, initial_weights=None,
+                 initial_biases=None, loss="automatic", distribution="auto", quantile_alpha=0.5, tweedie_power=1.5,
+                 huber_alpha=0.9, score_interval=5, score_training_samples=10000, score_validation_samples=0,
+                 score_duty_cycle=0.1, classification_stop=0, regression_stop=1e-06, stopping_rounds=5,
+                 stopping_metric="auto", stopping_tolerance=0, max_runtime_secs=0, score_validation_sampling="uniform",
+                 diagnostics=True, fast_mode=True, force_load_balance=True, variable_importances=True,
+                 replicate_training_data=True, single_node_mode=False, shuffle_training_data=False,
+                 missing_values_handling="mean_imputation", quiet_mode=False, autoencoder=False, sparse=False,
+                 col_major=False, average_activation=0, sparsity_beta=0, max_categorical_features=2147483647,
+                 reproducible=False, export_weights_and_biases=False, mini_batch_size=1, categorical_encoding="auto",
+                 elastic_averaging=False, elastic_averaging_moving_rate=0.9, elastic_averaging_regularization=0.001,
+                 export_checkpoints_dir=None, auc_type="auto"):
+        """
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
+               None).
+        :param H2OFrame training_frame: Id of the training data frame. (default: None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
+        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:
+               0).
+        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:
+               True).
+        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-
+               validation models. (default: False).
+        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold
+               assignment. (default: False).
+        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold
+               assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify the folds based
+               on the response variable, for classification problems. (default: "auto").
+        :param str fold_column: Column with cross-validation fold index assignment per observation.
+               (default: None).
+        :param str response_column: Response variable column. (default: None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
+        :param bool ignore_const_cols: Ignore constant columns. (default: True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training.
+               (default: False).
+        :param str weights_column: Column with observation weights. Giving some observation a weight of
+               zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is
+               equivalent to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row
+               observation weights and do not increase the size of the data frame. This is typically the number of times
+               a row is repeated, but non-integer values are supported as well. During training, rows with higher
+               weights matter more, due to the larger loss function pre-factor. (default: None).
+        :param str offset_column: Offset column. This will be added to the combination of columns before
+               applying the link function. (default: None).
+        :param bool balance_classes: Balance training data class counts via over/under-sampling (for
+               imbalanced data). (default: False).
+        :param List[float] class_sampling_factors: Desired over/under-sampling ratios per class (in
+               lexicographic order). If not specified, sampling factors will be automatically computed to obtain class
+               balance during training. Requires balance_classes. (default: None).
+        :param float max_after_balance_size: Maximum relative size of the training data after balancing
+               class counts (can be less than 1.0). Requires balance_classes. (default: 5).
+        :param int max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion
+               matrices to be printed in the Logs. (default: 20).
+        :param str checkpoint: Model checkpoint to resume training with. (default: None).
+        :param str pretrained_autoencoder: Pretrained autoencoder model to initialize this model with.
+               (default: None).
+        :param bool overwrite_with_best_model: If enabled, override the final model with the best model
+               found during training. (default: True).
+        :param bool use_all_factor_levels: Use all factor levels of categorical variables. Otherwise, the
+               first factor level is omitted (without loss of accuracy). Useful for variable importances and auto-
+               enabled for autoencoder. (default: True).
+        :param bool standardize: If enabled, automatically standardize the data. If disabled, the user
+               must provide properly scaled input data. (default: True).
+        :param Enum["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout",
+               "maxout_with_dropout"] activation: Activation function. (default: "rectifier").
+        :param List[int] hidden: Hidden layer sizes (e.g. [100, 100]). (default: [200, 200]).
+        :param float epochs: How many times the dataset should be iterated (streamed), can be fractional.
+               (default: 10).
+        :param int train_samples_per_iteration: Number of training samples (globally) per MapReduce
+               iteration. Special values are 0: one epoch, -1: all available data (e.g., replicated training data), -2:
+               automatic. (default: -2).
+        :param float target_ratio_comm_to_comp: Target ratio of communication overhead to computation.
+               Only for multi-node operation and train_samples_per_iteration = -2 (auto-tuning). (default: 0.05).
+        :param int seed: Seed for random numbers (affects sampling) - Note: only reproducible when
+               running single threaded. (default: -1).
+        :param bool adaptive_rate: Adaptive learning rate. (default: True).
+        :param float rho: Adaptive learning rate time decay factor (similarity to prior updates).
+               (default: 0.99).
+        :param float epsilon: Adaptive learning rate smoothing factor (to avoid divisions by zero and
+               allow progress). (default: 1e-08).
+        :param float rate: Learning rate (higher => less stable, lower => slower convergence). (default:
+               0.005).
+        :param float rate_annealing: Learning rate annealing: rate / (1 + rate_annealing * samples).
+               (default: 1e-06).
+        :param float rate_decay: Learning rate decay factor between layers (N-th layer: rate * rate_decay
+               ^ (n - 1). (default: 1).
+        :param float momentum_start: Initial momentum at the beginning of training (try 0.5). (default:
+               0).
+        :param float momentum_ramp: Number of training samples for which momentum increases. (default:
+               1000000).
+        :param float momentum_stable: Final momentum after the ramp is over (try 0.99). (default: 0).
+        :param bool nesterov_accelerated_gradient: Use Nesterov accelerated gradient (recommended).
+               (default: True).
+        :param float input_dropout_ratio: Input layer dropout ratio (can improve generalization, try 0.1
+               or 0.2). (default: 0).
+        :param List[float] hidden_dropout_ratios: Hidden layer dropout ratios (can improve
+               generalization), specify one value per hidden layer, defaults to 0.5. (default: None).
+        :param float l1: L1 regularization (can add stability and improve generalization, causes many
+               weights to become 0). (default: 0).
+        :param float l2: L2 regularization (can add stability and improve generalization, causes many
+               weights to be small. (default: 0).
+        :param float max_w2: Constraint for squared sum of incoming weights per unit (e.g. for
+               Rectifier). (default: 3.4028235e+38).
+        :param Enum["uniform_adaptive", "uniform", "normal"] initial_weight_distribution: Initial weight
+               distribution. (default: "uniform_adaptive").
+        :param float initial_weight_scale: Uniform: -value...value, Normal: stddev. (default: 1).
+        :param List[H2OFrame] initial_weights: A list of H2OFrame ids to initialize the weight matrices
+               of this model with. (default: None).
+        :param List[H2OFrame] initial_biases: A list of H2OFrame ids to initialize the bias vectors of
+               this model with. (default: None).
+        :param Enum["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"] loss:
+               Loss function. (default: "automatic").
+        :param Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
+               "laplace", "quantile", "huber"] distribution: Distribution function (default: "auto").
+        :param float quantile_alpha: Desired quantile for Quantile regression, must be between 0 and 1.
+               (default: 0.5).
+        :param float tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2.
+               (default: 1.5).
+        :param float huber_alpha: Desired quantile for Huber/M-regression (threshold between quadratic
+               and linear loss, must be between 0 and 1). (default: 0.9).
+        :param float score_interval: Shortest time interval (in seconds) between model scoring. (default:
+               5).
+        :param int score_training_samples: Number of training set samples for scoring (0 for all).
+               (default: 10000).
+        :param int score_validation_samples: Number of validation set samples for scoring (0 for all).
+               (default: 0).
+        :param float score_duty_cycle: Maximum duty cycle fraction for scoring (lower: more training,
+               higher: more scoring). (default: 0.1).
+        :param float classification_stop: Stopping criterion for classification error fraction on
+               training data (-1 to disable). (default: 0).
+        :param float regression_stop: Stopping criterion for regression error (MSE) on training data (-1
+               to disable). (default: 1e-06).
+        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if
+               simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring
+               events (0 to disable) (default: 5).
+        :param Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
+               "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+               stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client. (default: "auto").
+        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if
+               relative improvement is not at least this much) (default: 0).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
+               disable. (default: 0).
+        :param Enum["uniform", "stratified"] score_validation_sampling: Method used to sample validation
+               dataset for scoring. (default: "uniform").
+        :param bool diagnostics: Enable diagnostics for hidden layers. (default: True).
+        :param bool fast_mode: Enable fast mode (minor approximation in back-propagation). (default:
+               True).
+        :param bool force_load_balance: Force extra load balancing to increase training speed for small
+               datasets (to keep all cores busy). (default: True).
+        :param bool variable_importances: Compute variable importances for input features (Gedeon method)
+               - can be slow for large networks. (default: True).
+        :param bool replicate_training_data: Replicate the entire training dataset onto every node for
+               faster training on small datasets. (default: True).
+        :param bool single_node_mode: Run on a single node for fine-tuning of model parameters. (default:
+               False).
+        :param bool shuffle_training_data: Enable shuffling of training data (recommended if training
+               data is replicated and train_samples_per_iteration is close to #nodes x #rows, of if using
+               balance_classes). (default: False).
+        :param Enum["mean_imputation", "skip"] missing_values_handling: Handling of missing values.
+               Either MeanImputation or Skip. (default: "mean_imputation").
+        :param bool quiet_mode: Enable quiet mode for less output to standard output. (default: False).
+        :param bool autoencoder: Auto-Encoder. (default: False).
+        :param bool sparse: Sparse data handling (more efficient for data with lots of 0 values).
+               (default: False).
+        :param bool col_major: #DEPRECATED Use a column major weight matrix for input layer. Can speed up
+               forward propagation, but might slow down backpropagation. (default: False).
+        :param float average_activation: Average activation for sparse auto-encoder. #Experimental
+               (default: 0).
+        :param float sparsity_beta: Sparsity regularization. #Experimental (default: 0).
+        :param int max_categorical_features: Max. number of categorical features, enforced via hashing.
+               #Experimental (default: 2147483647).
+        :param bool reproducible: Force reproducibility on small data (will be slow - only uses 1
+               thread). (default: False).
+        :param bool export_weights_and_biases: Whether to export Neural Network weights and biases to H2O
+               Frames. (default: False).
+        :param int mini_batch_size: Mini-batch size (smaller leads to better fit, larger can speed up and
+               generalize better). (default: 1).
+        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen",
+               "label_encoder", "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for
+               categorical features (default: "auto").
+        :param bool elastic_averaging: Elastic averaging between compute nodes can improve distributed
+               model convergence. #Experimental (default: False).
+        :param float elastic_averaging_moving_rate: Elastic averaging moving rate (only if elastic
+               averaging is enabled). (default: 0.9).
+        :param float elastic_averaging_regularization: Elastic averaging regularization strength (only if
+               elastic averaging is enabled). (default: 0.001).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory.
+               (default: None).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
+               Set default multinomial AUC type. (default: "auto").
+        """
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = {}
         for pname, pvalue in kwargs.items():

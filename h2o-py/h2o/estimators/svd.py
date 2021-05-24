@@ -23,7 +23,35 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                    "score_each_iteration", "transform", "svd_method", "nv", "max_iterations", "seed", "keep_u",
                    "u_name", "use_all_factor_levels", "max_runtime_secs", "export_checkpoints_dir"}
 
-    def __init__(self, **kwargs):
+    def __init__(self, model_id=None, training_frame=None, validation_frame=None, ignored_columns=None,
+                 ignore_const_cols=True, score_each_iteration=False, transform="none", svd_method="gram_s_v_d", nv=1,
+                 max_iterations=1000, seed=-1, keep_u=True, u_name=None, use_all_factor_levels=True, max_runtime_secs=0,
+                 export_checkpoints_dir=None):
+        """
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
+               None).
+        :param H2OFrame training_frame: Id of the training data frame. (default: None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
+        :param bool ignore_const_cols: Ignore constant columns. (default: True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training.
+               (default: False).
+        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of
+               training data (default: "none").
+        :param Enum["gram_s_v_d", "power", "randomized"] svd_method: Method for computing SVD (Caution:
+               Randomized is currently experimental and unstable) (default: "gram_s_v_d").
+        :param int nv: Number of right singular vectors (default: 1).
+        :param int max_iterations: Maximum iterations (default: 1000).
+        :param int seed: RNG seed for k-means++ initialization (default: -1).
+        :param bool keep_u: Save left singular vectors? (default: True).
+        :param str u_name: Frame key to save left singular vectors (default: None).
+        :param bool use_all_factor_levels: Whether first factor level is included in each categorical
+               expansion (default: True).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
+               disable. (default: 0).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory.
+               (default: None).
+        """
         super(H2OSingularValueDecompositionEstimator, self).__init__()
         self._parms = {}
         for pname, pvalue in kwargs.items():

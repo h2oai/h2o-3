@@ -102,10 +102,19 @@ def normalize_enum_constant(s):
     return "".join(ch if ch.islower() else "_" + ch.lower() for ch in s).strip("_")
 
 
-def stringify(v):
-    if v == "Infinity": return u'∞'
-    if isinstance(v, str_type): return '"%s"' % v
-    if isinstance(v, float): return '%.10g' % v
+def stringify(v, infinity=u'∞'):
+    if v == "Infinity":
+        return infinity
+    if isinstance(v, str_type):
+        return '"%s"' % v
+    if isinstance(v, int):
+        if v > (1 << 62):  # handle Long.MAX_VALUE case 
+            return infinity
+        return str(v)
+    if isinstance(v, float): 
+        if v > (1 << 128): # handle Double.MAX_VALUE case
+            return infinity
+        return '%.10g' % v
     return str(v)
 
 
@@ -214,8 +223,14 @@ def gen_module(schema, algo):
     yield "    param_names = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                              indent=(" " * 19), indent_first=False)
     yield ""
-    yield "    def __init__(self, **kwargs):"
-    # TODO: generate __init__ docstring with all params (also generate exact signature to support auto-completion)
+    yield "    def __init__(self, %s):" % bi.wrap(", ".join("%s=%s" % (p.get('pname'), stringify(p.get('default_value'), infinity=None)) 
+                                                            for p in extended_params), 
+                                                  indent=(' '*17), indent_first=False)
+    yield '        """'
+    for p in extended_params:
+        pname, pdefault, ptype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
+        yield bi.wrap('        :param %s %s: %s (default: %s).' % (ptype, pname, pdoc, pdefault), indent=(' '*15), indent_first=False)
+    yield '        """'
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
     if class_init_validation:
