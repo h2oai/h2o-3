@@ -20,43 +20,59 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     algo = "svd"
 
-    def __init__(self, model_id=None,
-                 training_frame=None,
-                 validation_frame=None,
-                 ignored_columns=None,
-                 ignore_const_cols=True,
-                 score_each_iteration=False,
-                 transform="none",
-                 svd_method="gram_s_v_d",
-                 nv=1,
-                 max_iterations=1000,
-                 seed=-1,
-                 keep_u=True,
-                 u_name=None,
-                 use_all_factor_levels=True,
-                 max_runtime_secs=0,
-                 export_checkpoints_dir=None):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 training_frame=None,  # type: H2OFrame
+                 validation_frame=None,  # type: H2OFrame
+                 ignored_columns=None,  # type: List[str]
+                 ignore_const_cols=True,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 transform="none",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
+                 svd_method="gram_s_v_d",  # type: Enum["gram_s_v_d", "power", "randomized"]
+                 nv=1,  # type: int
+                 max_iterations=1000,  # type: int
+                 seed=-1,  # type: int
+                 keep_u=True,  # type: bool
+                 u_name=None,  # type: str
+                 use_all_factor_levels=True,  # type: bool
+                 max_runtime_secs=0,  # type: float
+                 export_checkpoints_dir=None,  # type: str
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame training_frame: Id of the training data frame. (default:None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
-        :param bool ignore_const_cols: Ignore constant columns. (default:True).
-        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of training data
-               (default:"none").
-        :param Enum["gram_s_v_d", "power", "randomized"] svd_method: Method for computing SVD (Caution: Randomized is
-               currently experimental and unstable) (default:"gram_s_v_d").
-        :param int nv: Number of right singular vectors (default:1).
-        :param int max_iterations: Maximum iterations (default:1000).
-        :param int seed: RNG seed for k-means++ initialization (default:-1).
-        :param bool keep_u: Save left singular vectors? (default:True).
-        :param str u_name: Frame key to save left singular vectors (default:None).
-        :param bool use_all_factor_levels: Whether first factor level is included in each categorical expansion
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param training_frame: Id of the training data frame. (default:None).
+        :type training_frame: H2OFrame, optional
+        :param validation_frame: Id of the validation data frame. (default:None).
+        :type validation_frame: H2OFrame, optional
+        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :type ignore_const_cols: bool, optional
+        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :type score_each_iteration: bool, optional
+        :param transform: Transformation of training data (default:"none").
+        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :param svd_method: Method for computing SVD (Caution: Randomized is currently experimental and unstable)
+               (default:"gram_s_v_d").
+        :type svd_method: Enum["gram_s_v_d", "power", "randomized"], optional
+        :param nv: Number of right singular vectors (default:1).
+        :type nv: int, optional
+        :param max_iterations: Maximum iterations (default:1000).
+        :type max_iterations: int, optional
+        :param seed: RNG seed for k-means++ initialization (default:-1).
+        :type seed: int, optional
+        :param keep_u: Save left singular vectors? (default:True).
+        :type keep_u: bool, optional
+        :param u_name: Frame key to save left singular vectors (default:None).
+        :type u_name: str, optional
+        :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
                (default:True).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
-               (default:0).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type use_all_factor_levels: bool, optional
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :type max_runtime_secs: float, optional
+        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type export_checkpoints_dir: str, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OSingularValueDecompositionEstimator, self).__init__()

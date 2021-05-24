@@ -21,55 +21,76 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
 
     algo = "coxph"
 
-    def __init__(self, model_id=None,
-                 training_frame=None,
-                 start_column=None,
-                 stop_column=None,
-                 response_column=None,
-                 ignored_columns=None,
-                 weights_column=None,
-                 offset_column=None,
-                 stratify_by=None,
-                 ties="efron",
-                 init=0,
-                 lre_min=9,
-                 max_iterations=20,
-                 interactions=None,
-                 interaction_pairs=None,
-                 interactions_only=None,
-                 use_all_factor_levels=False,
-                 export_checkpoints_dir=None,
-                 single_node_mode=False):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 training_frame=None,  # type: H2OFrame
+                 start_column=None,  # type: str
+                 stop_column=None,  # type: str
+                 response_column=None,  # type: str
+                 ignored_columns=None,  # type: List[str]
+                 weights_column=None,  # type: str
+                 offset_column=None,  # type: str
+                 stratify_by=None,  # type: List[str]
+                 ties="efron",  # type: Enum["efron", "breslow"]
+                 init=0,  # type: float
+                 lre_min=9,  # type: float
+                 max_iterations=20,  # type: int
+                 interactions=None,  # type: List[str]
+                 interaction_pairs=None,  # type: List[tuple]
+                 interactions_only=None,  # type: List[str]
+                 use_all_factor_levels=False,  # type: bool
+                 export_checkpoints_dir=None,  # type: str
+                 single_node_mode=False,  # type: bool
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame training_frame: Id of the training data frame. (default:None).
-        :param str start_column: Start Time Column. (default:None).
-        :param str stop_column: Stop Time Column. (default:None).
-        :param str response_column: Response variable column. (default:None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
-        :param str weights_column: Column with observation weights. Giving some observation a weight of zero is
-               equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent
-               to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row observation
-               weights and do not increase the size of the data frame. This is typically the number of times a row is
-               repeated, but non-integer values are supported as well. During training, rows with higher weights matter
-               more, due to the larger loss function pre-factor. (default:None).
-        :param str offset_column: Offset column. This will be added to the combination of columns before applying the
-               link function. (default:None).
-        :param List[str] stratify_by: List of columns to use for stratification. (default:None).
-        :param Enum["efron", "breslow"] ties: Method for Handling Ties. (default:"efron").
-        :param float init: Coefficient starting value. (default:0).
-        :param float lre_min: Minimum log-relative error. (default:9).
-        :param int max_iterations: Maximum number of iterations. (default:20).
-        :param List[str] interactions: A list of predictor column indices to interact. All pairwise combinations will be
-               computed for the list. (default:None).
-        :param List[tuple] interaction_pairs: A list of pairwise (first order) column interactions. (default:None).
-        :param List[str] interactions_only: A list of columns that should only be used to create interactions but should
-               not itself participate in model training. (default:None).
-        :param bool use_all_factor_levels: (Internal. For development only!) Indicates whether to use all factor levels.
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param training_frame: Id of the training data frame. (default:None).
+        :type training_frame: H2OFrame, optional
+        :param start_column: Start Time Column. (default:None).
+        :type start_column: str, optional
+        :param stop_column: Stop Time Column. (default:None).
+        :type stop_column: str, optional
+        :param response_column: Response variable column. (default:None).
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :type ignored_columns: List[str], optional
+        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
+               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
+               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
+               not increase the size of the data frame. This is typically the number of times a row is repeated, but
+               non-integer values are supported as well. During training, rows with higher weights matter more, due to
+               the larger loss function pre-factor. (default:None).
+        :type weights_column: str, optional
+        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
+               function. (default:None).
+        :type offset_column: str, optional
+        :param stratify_by: List of columns to use for stratification. (default:None).
+        :type stratify_by: List[str], optional
+        :param ties: Method for Handling Ties. (default:"efron").
+        :type ties: Enum["efron", "breslow"], optional
+        :param init: Coefficient starting value. (default:0).
+        :type init: float, optional
+        :param lre_min: Minimum log-relative error. (default:9).
+        :type lre_min: float, optional
+        :param max_iterations: Maximum number of iterations. (default:20).
+        :type max_iterations: int, optional
+        :param interactions: A list of predictor column indices to interact. All pairwise combinations will be computed
+               for the list. (default:None).
+        :type interactions: List[str], optional
+        :param interaction_pairs: A list of pairwise (first order) column interactions. (default:None).
+        :type interaction_pairs: List[tuple], optional
+        :param interactions_only: A list of columns that should only be used to create interactions but should not
+               itself participate in model training. (default:None).
+        :type interactions_only: List[str], optional
+        :param use_all_factor_levels: (Internal. For development only!) Indicates whether to use all factor levels.
                (default:False).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
-        :param bool single_node_mode: Run on a single node to reduce the effect of network overhead (for smaller
-               datasets) (default:False).
+        :type use_all_factor_levels: bool, optional
+        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type export_checkpoints_dir: str, optional
+        :param single_node_mode: Run on a single node to reduce the effect of network overhead (for smaller datasets)
+               (default:False).
+        :type single_node_mode: bool, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OCoxProportionalHazardsEstimator, self).__init__()

@@ -20,53 +20,73 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
 
     algo = "psvm"
 
-    def __init__(self, model_id=None,
-                 training_frame=None,
-                 validation_frame=None,
-                 response_column=None,
-                 ignored_columns=None,
-                 ignore_const_cols=True,
-                 hyper_param=1,
-                 kernel_type="gaussian",
-                 gamma=-1,
-                 rank_ratio=-1,
-                 positive_weight=1,
-                 negative_weight=1,
-                 disable_training_metrics=True,
-                 sv_threshold=0.0001,
-                 fact_threshold=1e-05,
-                 feasible_threshold=0.001,
-                 surrogate_gap_threshold=0.001,
-                 mu_factor=10,
-                 max_iterations=200,
-                 seed=-1):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 training_frame=None,  # type: H2OFrame
+                 validation_frame=None,  # type: H2OFrame
+                 response_column=None,  # type: str
+                 ignored_columns=None,  # type: List[str]
+                 ignore_const_cols=True,  # type: bool
+                 hyper_param=1,  # type: float
+                 kernel_type="gaussian",  # type: Enum["gaussian"]
+                 gamma=-1,  # type: float
+                 rank_ratio=-1,  # type: float
+                 positive_weight=1,  # type: float
+                 negative_weight=1,  # type: float
+                 disable_training_metrics=True,  # type: bool
+                 sv_threshold=0.0001,  # type: float
+                 fact_threshold=1e-05,  # type: float
+                 feasible_threshold=0.001,  # type: float
+                 surrogate_gap_threshold=0.001,  # type: float
+                 mu_factor=10,  # type: float
+                 max_iterations=200,  # type: int
+                 seed=-1,  # type: int
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame training_frame: Id of the training data frame. (default:None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
-        :param str response_column: Response variable column. (default:None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
-        :param bool ignore_const_cols: Ignore constant columns. (default:True).
-        :param float hyper_param: Penalty parameter C of the error term (default:1).
-        :param Enum["gaussian"] kernel_type: Type of used kernel (default:"gaussian").
-        :param float gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param training_frame: Id of the training data frame. (default:None).
+        :type training_frame: H2OFrame, optional
+        :param validation_frame: Id of the validation data frame. (default:None).
+        :type validation_frame: H2OFrame, optional
+        :param response_column: Response variable column. (default:None).
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :type ignore_const_cols: bool, optional
+        :param hyper_param: Penalty parameter C of the error term (default:1).
+        :type hyper_param: float, optional
+        :param kernel_type: Type of used kernel (default:"gaussian").
+        :type kernel_type: Enum["gaussian"], optional
+        :param gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
                (default:-1).
-        :param float rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means
-               use sqrt(#rows)). (default:-1).
-        :param float positive_weight: Weight of positive (+1) class of observations (default:1).
-        :param float negative_weight: Weight of positive (-1) class of observations (default:1).
-        :param bool disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
+        :type gamma: float, optional
+        :param rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use
+               sqrt(#rows)). (default:-1).
+        :type rank_ratio: float, optional
+        :param positive_weight: Weight of positive (+1) class of observations (default:1).
+        :type positive_weight: float, optional
+        :param negative_weight: Weight of positive (-1) class of observations (default:1).
+        :type negative_weight: float, optional
+        :param disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
                (default:True).
-        :param float sv_threshold: Threshold for accepting a candidate observation into the set of support vectors
+        :type disable_training_metrics: bool, optional
+        :param sv_threshold: Threshold for accepting a candidate observation into the set of support vectors
                (default:0.0001).
-        :param float fact_threshold: Convergence threshold of the Incomplete Cholesky Factorization (ICF)
-               (default:1e-05).
-        :param float feasible_threshold: Convergence threshold for primal-dual residuals in the IPM iteration
-               (default:0.001).
-        :param float surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta) (default:0.001).
-        :param float mu_factor: Increasing factor mu (default:10).
-        :param int max_iterations: Maximum number of iteration of the algorithm (default:200).
-        :param int seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :type sv_threshold: float, optional
+        :param fact_threshold: Convergence threshold of the Incomplete Cholesky Factorization (ICF) (default:1e-05).
+        :type fact_threshold: float, optional
+        :param feasible_threshold: Convergence threshold for primal-dual residuals in the IPM iteration (default:0.001).
+        :type feasible_threshold: float, optional
+        :param surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta) (default:0.001).
+        :type surrogate_gap_threshold: float, optional
+        :param mu_factor: Increasing factor mu (default:10).
+        :type mu_factor: float, optional
+        :param max_iterations: Maximum number of iteration of the algorithm (default:200).
+        :type max_iterations: int, optional
+        :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :type seed: int, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OSupportVectorMachineEstimator, self).__init__()

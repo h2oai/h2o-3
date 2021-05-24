@@ -21,81 +21,111 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     algo = "glrm"
 
-    def __init__(self, model_id=None,
-                 training_frame=None,
-                 validation_frame=None,
-                 ignored_columns=None,
-                 ignore_const_cols=True,
-                 score_each_iteration=False,
-                 representation_name=None,
-                 loading_name=None,
-                 transform="none",
-                 k=1,
-                 loss="quadratic",
-                 loss_by_col=None,
-                 loss_by_col_idx=None,
-                 multi_loss="categorical",
-                 period=1,
-                 regularization_x="none",
-                 regularization_y="none",
-                 gamma_x=0,
-                 gamma_y=0,
-                 max_iterations=1000,
-                 max_updates=2000,
-                 init_step_size=1,
-                 min_step_size=0.0001,
-                 seed=-1,
-                 init="plus_plus",
-                 svd_method="randomized",
-                 user_y=None,
-                 user_x=None,
-                 expand_user_y=True,
-                 impute_original=False,
-                 recover_svd=False,
-                 max_runtime_secs=0,
-                 export_checkpoints_dir=None):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 training_frame=None,  # type: H2OFrame
+                 validation_frame=None,  # type: H2OFrame
+                 ignored_columns=None,  # type: List[str]
+                 ignore_const_cols=True,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 representation_name=None,  # type: str
+                 loading_name=None,  # type: str
+                 transform="none",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
+                 k=1,  # type: int
+                 loss="quadratic",  # type: Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
+                 loss_by_col=None,  # type: List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"]]
+                 loss_by_col_idx=None,  # type: List[int]
+                 multi_loss="categorical",  # type: Enum["categorical", "ordinal"]
+                 period=1,  # type: int
+                 regularization_x="none",  # type: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+                 regularization_y="none",  # type: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+                 gamma_x=0,  # type: float
+                 gamma_y=0,  # type: float
+                 max_iterations=1000,  # type: int
+                 max_updates=2000,  # type: int
+                 init_step_size=1,  # type: float
+                 min_step_size=0.0001,  # type: float
+                 seed=-1,  # type: int
+                 init="plus_plus",  # type: Enum["random", "svd", "plus_plus", "user"]
+                 svd_method="randomized",  # type: Enum["gram_s_v_d", "power", "randomized"]
+                 user_y=None,  # type: H2OFrame
+                 user_x=None,  # type: H2OFrame
+                 expand_user_y=True,  # type: bool
+                 impute_original=False,  # type: bool
+                 recover_svd=False,  # type: bool
+                 max_runtime_secs=0,  # type: float
+                 export_checkpoints_dir=None,  # type: str
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame training_frame: Id of the training data frame. (default:None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
-        :param bool ignore_const_cols: Ignore constant columns. (default:True).
-        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :param str representation_name: Frame key to save resulting X (default:None).
-        :param str loading_name: [Deprecated] Use representation_name instead.  Frame key to save resulting X.
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param training_frame: Id of the training data frame. (default:None).
+        :type training_frame: H2OFrame, optional
+        :param validation_frame: Id of the validation data frame. (default:None).
+        :type validation_frame: H2OFrame, optional
+        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :type ignore_const_cols: bool, optional
+        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :type score_each_iteration: bool, optional
+        :param representation_name: Frame key to save resulting X (default:None).
+        :type representation_name: str, optional
+        :param loading_name: [Deprecated] Use representation_name instead.  Frame key to save resulting X.
                (default:None).
-        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of training data
-               (default:"none").
-        :param int k: Rank of matrix approximation (default:1).
-        :param Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"] loss: Numeric loss
-               function (default:"quadratic").
-        :param List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
-               "ordinal"]] loss_by_col: Loss function by column (override) (default:None).
-        :param List[int] loss_by_col_idx: Loss function by column index (override) (default:None).
-        :param Enum["categorical", "ordinal"] multi_loss: Categorical loss function (default:"categorical").
-        :param int period: Length of period (only used with periodic loss function) (default:1).
-        :param Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
-               regularization_x: Regularization function for X matrix (default:"none").
-        :param Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
-               regularization_y: Regularization function for Y matrix (default:"none").
-        :param float gamma_x: Regularization weight on X matrix (default:0).
-        :param float gamma_y: Regularization weight on Y matrix (default:0).
-        :param int max_iterations: Maximum number of iterations (default:1000).
-        :param int max_updates: Maximum number of updates, defaults to 2*max_iterations (default:2000).
-        :param float init_step_size: Initial step size (default:1).
-        :param float min_step_size: Minimum step size (default:0.0001).
-        :param int seed: RNG seed for initialization (default:-1).
-        :param Enum["random", "svd", "plus_plus", "user"] init: Initialization mode (default:"plus_plus").
-        :param Enum["gram_s_v_d", "power", "randomized"] svd_method: Method for computing SVD during initialization
-               (Caution: Randomized is currently experimental and unstable) (default:"randomized").
-        :param H2OFrame user_y: User-specified initial Y (default:None).
-        :param H2OFrame user_x: User-specified initial X (default:None).
-        :param bool expand_user_y: Expand categorical columns in user-specified initial Y (default:True).
-        :param bool impute_original: Reconstruct original training data by reversing transform (default:False).
-        :param bool recover_svd: Recover singular values and eigenvectors of XY (default:False).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
-               (default:0).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type loading_name: str, optional
+        :param transform: Transformation of training data (default:"none").
+        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :param k: Rank of matrix approximation (default:1).
+        :type k: int, optional
+        :param loss: Numeric loss function (default:"quadratic").
+        :type loss: Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"], optional
+        :param loss_by_col: Loss function by column (override) (default:None).
+        :type loss_by_col: List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
+               "ordinal"]], optional
+        :param loss_by_col_idx: Loss function by column index (override) (default:None).
+        :type loss_by_col_idx: List[int], optional
+        :param multi_loss: Categorical loss function (default:"categorical").
+        :type multi_loss: Enum["categorical", "ordinal"], optional
+        :param period: Length of period (only used with periodic loss function) (default:1).
+        :type period: int, optional
+        :param regularization_x: Regularization function for X matrix (default:"none").
+        :type regularization_x: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
+        :param regularization_y: Regularization function for Y matrix (default:"none").
+        :type regularization_y: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
+        :param gamma_x: Regularization weight on X matrix (default:0).
+        :type gamma_x: float, optional
+        :param gamma_y: Regularization weight on Y matrix (default:0).
+        :type gamma_y: float, optional
+        :param max_iterations: Maximum number of iterations (default:1000).
+        :type max_iterations: int, optional
+        :param max_updates: Maximum number of updates, defaults to 2*max_iterations (default:2000).
+        :type max_updates: int, optional
+        :param init_step_size: Initial step size (default:1).
+        :type init_step_size: float, optional
+        :param min_step_size: Minimum step size (default:0.0001).
+        :type min_step_size: float, optional
+        :param seed: RNG seed for initialization (default:-1).
+        :type seed: int, optional
+        :param init: Initialization mode (default:"plus_plus").
+        :type init: Enum["random", "svd", "plus_plus", "user"], optional
+        :param svd_method: Method for computing SVD during initialization (Caution: Randomized is currently experimental
+               and unstable) (default:"randomized").
+        :type svd_method: Enum["gram_s_v_d", "power", "randomized"], optional
+        :param user_y: User-specified initial Y (default:None).
+        :type user_y: H2OFrame, optional
+        :param user_x: User-specified initial X (default:None).
+        :type user_x: H2OFrame, optional
+        :param expand_user_y: Expand categorical columns in user-specified initial Y (default:True).
+        :type expand_user_y: bool, optional
+        :param impute_original: Reconstruct original training data by reversing transform (default:False).
+        :type impute_original: bool, optional
+        :param recover_svd: Recover singular values and eigenvectors of XY (default:False).
+        :type recover_svd: bool, optional
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :type max_runtime_secs: float, optional
+        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type export_checkpoints_dir: str, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGeneralizedLowRankEstimator, self).__init__()

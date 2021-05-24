@@ -25,76 +25,101 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
     algo = "isolationforest"
 
-    def __init__(self, model_id=None,
-                 training_frame=None,
-                 score_each_iteration=False,
-                 score_tree_interval=0,
-                 ignored_columns=None,
-                 ignore_const_cols=True,
-                 ntrees=50,
-                 max_depth=8,
-                 min_rows=1,
-                 max_runtime_secs=0,
-                 seed=-1,
-                 build_tree_one_node=False,
-                 mtries=-1,
-                 sample_size=256,
-                 sample_rate=-1,
-                 col_sample_rate_change_per_level=1,
-                 col_sample_rate_per_tree=1,
-                 categorical_encoding="auto",
-                 stopping_rounds=0,
-                 stopping_metric="auto",
-                 stopping_tolerance=0.01,
-                 export_checkpoints_dir=None,
-                 contamination=-1,
-                 validation_frame=None,
-                 validation_response_column=None):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 training_frame=None,  # type: H2OFrame
+                 score_each_iteration=False,  # type: bool
+                 score_tree_interval=0,  # type: int
+                 ignored_columns=None,  # type: List[str]
+                 ignore_const_cols=True,  # type: bool
+                 ntrees=50,  # type: int
+                 max_depth=8,  # type: int
+                 min_rows=1,  # type: float
+                 max_runtime_secs=0,  # type: float
+                 seed=-1,  # type: int
+                 build_tree_one_node=False,  # type: bool
+                 mtries=-1,  # type: int
+                 sample_size=256,  # type: int
+                 sample_rate=-1,  # type: float
+                 col_sample_rate_change_per_level=1,  # type: float
+                 col_sample_rate_per_tree=1,  # type: float
+                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 stopping_rounds=0,  # type: int
+                 stopping_metric="auto",  # type: Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "misclassification", "mean_per_class_error"]
+                 stopping_tolerance=0.01,  # type: float
+                 export_checkpoints_dir=None,  # type: str
+                 contamination=-1,  # type: float
+                 validation_frame=None,  # type: H2OFrame
+                 validation_response_column=None,  # type: str
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame training_frame: Id of the training data frame. (default:None).
-        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :param int score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
-        :param bool ignore_const_cols: Ignore constant columns. (default:True).
-        :param int ntrees: Number of trees. (default:50).
-        :param int max_depth: Maximum tree depth (0 for unlimited). (default:8).
-        :param float min_rows: Fewest allowed (weighted) observations in a leaf. (default:1).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param training_frame: Id of the training data frame. (default:None).
+        :type training_frame: H2OFrame, optional
+        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :type score_each_iteration: bool, optional
+        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
+        :type score_tree_interval: int, optional
+        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :type ignore_const_cols: bool, optional
+        :param ntrees: Number of trees. (default:50).
+        :type ntrees: int, optional
+        :param max_depth: Maximum tree depth (0 for unlimited). (default:8).
+        :type max_depth: int, optional
+        :param min_rows: Fewest allowed (weighted) observations in a leaf. (default:1).
+        :type min_rows: float, optional
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :type max_runtime_secs: float, optional
+        :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :type seed: int, optional
+        :param build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for small
+               datasets. (default:False).
+        :type build_tree_one_node: bool, optional
+        :param mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number
+               of predictors)/3. (default:-1).
+        :type mtries: int, optional
+        :param sample_size: Number of randomly sampled observations used to train each Isolation Forest tree. Only one
+               of parameters sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will
+               be ignored. (default:256).
+        :type sample_size: int, optional
+        :param sample_rate: Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be
+               in range from 0.0 to 1.0. If set to -1, sample_rate is disabled and sample_size will be used instead.
+               (default:-1).
+        :type sample_rate: float, optional
+        :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
+               0.0 and <= 2.0) (default:1).
+        :type col_sample_rate_change_per_level: float, optional
+        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1).
+        :type col_sample_rate_per_tree: float, optional
+        :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
+        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"], optional
+        :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
+               length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
                (default:0).
-        :param int seed: Seed for pseudo random number generator (if applicable) (default:-1).
-        :param bool build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for
-               small datasets. (default:False).
-        :param int mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults
-               (number of predictors)/3. (default:-1).
-        :param int sample_size: Number of randomly sampled observations used to train each Isolation Forest tree. Only
-               one of parameters sample_size and sample_rate should be defined. If sample_rate is defined, sample_size
-               will be ignored. (default:256).
-        :param float sample_rate: Rate of randomly sampled observations used to train each Isolation Forest tree. Needs
-               to be in range from 0.0 to 1.0. If set to -1, sample_rate is disabled and sample_size will be used
-               instead. (default:-1).
-        :param float col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must
-               be > 0.0 and <= 2.0) (default:1).
-        :param float col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1).
-        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-               "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for categorical features
-               (default:"auto").
-        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving
-               average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to
-               disable) (default:0).
-        :param Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
-               "misclassification", "mean_per_class_error"] stopping_metric: Metric to use for early stopping (AUTO:
-               logloss for classification, deviance for regression and anonomaly_score for Isolation Forest). Note that
-               custom and custom_increasing can only be used in GBM and DRF with the Python client. (default:"auto").
-        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative
-               improvement is not at least this much) (default:0.01).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
-        :param float contamination: Contamination ratio - the proportion of anomalies in the input dataset. If undefined
-               (-1) the predict function will not mark observations as anomalies and only anomaly score will be
-               returned. Defaults to -1 (undefined). (default:-1).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
-        :param str validation_response_column: (experimental) Name of the response column in the validation frame.
-               Response column should be binary and indicate not anomaly/anomaly. (default:None).
+        :type stopping_rounds: int, optional
+        :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client. (default:"auto").
+        :type stopping_metric: Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
+               "misclassification", "mean_per_class_error"], optional
+        :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
+               is not at least this much) (default:0.01).
+        :type stopping_tolerance: float, optional
+        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type export_checkpoints_dir: str, optional
+        :param contamination: Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1)
+               the predict function will not mark observations as anomalies and only anomaly score will be returned.
+               Defaults to -1 (undefined). (default:-1).
+        :type contamination: float, optional
+        :param validation_frame: Id of the validation data frame. (default:None).
+        :type validation_frame: H2OFrame, optional
+        :param validation_response_column: (experimental) Name of the response column in the validation frame. Response
+               column should be binary and indicate not anomaly/anomaly. (default:None).
+        :type validation_response_column: str, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OIsolationForestEstimator, self).__init__()

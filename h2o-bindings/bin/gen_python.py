@@ -112,7 +112,7 @@ def stringify(v, infinity=u'∞'):
             return infinity
         return str(v)
     if isinstance(v, float): 
-        if v > (1 << 128): # handle Double.MAX_VALUE case
+        if v > (1 << 128):  # handle Double.MAX_VALUE case
             return infinity
         return '%.10g' % v
     return str(v)
@@ -219,14 +219,18 @@ def gen_module(schema, algo):
     yield ""
     yield '    algo = "%s"' % algo
     yield ""
-    yield reformat_block("def __init__(self, %s):" % ",\n".join("%s=%s" % (p.get('pname'), stringify(p.get('default_value'), infinity=None))
-                                                                for p in extended_params),
-                         indent=4, prefix=' '*13, prefix_first=False)
+    init_sig = "def __init__(self,\n%s\n):" % "\n".join("%s=%s,  # type: %s" % (p.get('pname'),
+                                                                                stringify(p.get('default_value'), infinity=None),
+                                                                                p.get('dtype'))
+                                                        for p in extended_params)
+    yield reformat_block(init_sig, indent=4, prefix=' '*13, prefix_first=False)
     yield '        """'
     for p in extended_params:
         pname, pdefault, ptype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
-        pdesc = "%s %s: %s (default:%s)." % (ptype, pname, pdoc, pdefault)
-        yield "        :param %s" % bi.wrap(pdesc, indent=(' '*15), indent_first=False)
+        pdesc = "%s: %s (default:%s)." % (pname, pdoc, pdefault)
+        pident = ' '*15
+        yield "        :param %s" % bi.wrap(pdesc, indent=pident, indent_first=False)
+        yield "        :type %s: %s, optional" % (pname, bi.wrap(ptype, indent=pident, indent_first=False))
     yield '        """'
     yield "        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}"   # removing "hidden" variables added early due to the use of `super()` below
     yield "        super(%s, self).__init__()" % classname

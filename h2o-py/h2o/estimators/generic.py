@@ -20,13 +20,18 @@ class H2OGenericEstimator(H2OEstimator):
 
     algo = "generic"
 
-    def __init__(self, model_id=None,
-                 model_key=None,
-                 path=None):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 model_key=None,  # type: H2OFrame
+                 path=None,  # type: str
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame model_key: Key to the self-contained model archive already uploaded to H2O. (default:None).
-        :param str path: Path to file with self-contained model archive. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param model_key: Key to the self-contained model archive already uploaded to H2O. (default:None).
+        :type model_key: H2OFrame, optional
+        :param path: Path to file with self-contained model archive. (default:None).
+        :type path: str, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGenericEstimator, self).__init__()

@@ -20,36 +20,48 @@ class H2OAggregatorEstimator(H2OEstimator):
 
     algo = "aggregator"
 
-    def __init__(self, model_id=None,
-                 training_frame=None,
-                 response_column=None,
-                 ignored_columns=None,
-                 ignore_const_cols=True,
-                 target_num_exemplars=5000,
-                 rel_tol_num_exemplars=0.5,
-                 transform="normalize",
-                 categorical_encoding="auto",
-                 save_mapping_frame=False,
-                 num_iteration_without_new_exemplar=500,
-                 export_checkpoints_dir=None):
+    def __init__(self,
+                 model_id=None,  # type: str
+                 training_frame=None,  # type: H2OFrame
+                 response_column=None,  # type: str
+                 ignored_columns=None,  # type: List[str]
+                 ignore_const_cols=True,  # type: bool
+                 target_num_exemplars=5000,  # type: int
+                 rel_tol_num_exemplars=0.5,  # type: float
+                 transform="normalize",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
+                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 save_mapping_frame=False,  # type: bool
+                 num_iteration_without_new_exemplar=500,  # type: int
+                 export_checkpoints_dir=None,  # type: str
+                 ):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :param H2OFrame training_frame: Id of the training data frame. (default:None).
-        :param str response_column: Response variable column. (default:None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
-        :param bool ignore_const_cols: Ignore constant columns. (default:True).
-        :param int target_num_exemplars: Targeted number of exemplars (default:5000).
-        :param float rel_tol_num_exemplars: Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
+        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :type model_id: str, optional
+        :param training_frame: Id of the training data frame. (default:None).
+        :type training_frame: H2OFrame, optional
+        :param response_column: Response variable column. (default:None).
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :type ignore_const_cols: bool, optional
+        :param target_num_exemplars: Targeted number of exemplars (default:5000).
+        :type target_num_exemplars: int, optional
+        :param rel_tol_num_exemplars: Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
                (default:0.5).
-        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of training data
-               (default:"normalize").
-        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-               "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for categorical features
-               (default:"auto").
-        :param bool save_mapping_frame: Whether to export the mapping of the aggregated frame (default:False).
-        :param int num_iteration_without_new_exemplar: The number of iterations to run before aggregator exits if the
-               number of exemplars collected didn't change (default:500).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type rel_tol_num_exemplars: float, optional
+        :param transform: Transformation of training data (default:"normalize").
+        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
+        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"], optional
+        :param save_mapping_frame: Whether to export the mapping of the aggregated frame (default:False).
+        :type save_mapping_frame: bool, optional
+        :param num_iteration_without_new_exemplar: The number of iterations to run before aggregator exits if the number
+               of exemplars collected didn't change (default:500).
+        :type num_iteration_without_new_exemplar: int, optional
+        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :type export_checkpoints_dir: str, optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OAggregatorEstimator, self).__init__()
