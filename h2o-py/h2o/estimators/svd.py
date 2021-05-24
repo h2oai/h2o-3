@@ -27,8 +27,8 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                  ignored_columns=None,  # type: List[str]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
-                 transform="none",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
-                 svd_method="gram_s_v_d",  # type: Enum["gram_s_v_d", "power", "randomized"]
+                 transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
+                 svd_method="gram_s_v_d",  # type: Literal["gram_s_v_d", "power", "randomized"]
                  nv=1,  # type: int
                  max_iterations=1000,  # type: int
                  seed=-1,  # type: int
@@ -52,10 +52,10 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
         :type score_each_iteration: bool, optional
         :param transform: Transformation of training data (default:"none").
-        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
         :param svd_method: Method for computing SVD (Caution: Randomized is currently experimental and unstable)
                (default:"gram_s_v_d").
-        :type svd_method: Enum["gram_s_v_d", "power", "randomized"], optional
+        :type svd_method: Literal["gram_s_v_d", "power", "randomized"], optional
         :param nv: Number of right singular vectors (default:1).
         :type nv: int, optional
         :param max_iterations: Maximum iterations (default:1000).
@@ -196,7 +196,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"none"``).
 
         :examples:
 
@@ -220,7 +220,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Method for computing SVD (Caution: Randomized is currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized"]``  (default: ``"gram_s_v_d"``).
 
         :examples:
 

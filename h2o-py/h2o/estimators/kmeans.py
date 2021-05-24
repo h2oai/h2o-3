@@ -29,7 +29,7 @@ class H2OKMeansEstimator(H2OEstimator):
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
-                 fold_assignment="auto",  # type: Enum["auto", "random", "modulo", "stratified"]
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
                  ignore_const_cols=True,  # type: bool
@@ -40,9 +40,9 @@ class H2OKMeansEstimator(H2OEstimator):
                  max_iterations=10,  # type: int
                  standardize=True,  # type: bool
                  seed=-1,  # type: int
-                 init="furthest",  # type: Enum["random", "plus_plus", "furthest", "user"]
+                 init="furthest",  # type: Literal["random", "plus_plus", "furthest", "user"]
                  max_runtime_secs=0,  # type: float
-                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  export_checkpoints_dir=None,  # type: str
                  cluster_size_constraints=None,  # type: List[int]
                  ):
@@ -66,7 +66,7 @@ class H2OKMeansEstimator(H2OEstimator):
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param ignored_columns: Names of columns to ignore for training. (default:None).
@@ -93,11 +93,11 @@ class H2OKMeansEstimator(H2OEstimator):
         :param seed: RNG Seed (default:-1).
         :type seed: int, optional
         :param init: Initialization mode (default:"furthest").
-        :type init: Enum["random", "plus_plus", "furthest", "user"], optional
+        :type init: Literal["random", "plus_plus", "furthest", "user"], optional
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
         :type max_runtime_secs: float, optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
-        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"], optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -285,7 +285,7 @@ class H2OKMeansEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -590,7 +590,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Initialization mode
 
-        One of: ``"random"``, ``"plus_plus"``, ``"furthest"``, ``"user"``  (default: ``"furthest"``).
+        Type: ``Literal["random", "plus_plus", "furthest", "user"]``  (default: ``"furthest"``).
 
         :examples:
 
@@ -646,8 +646,8 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
 
         :examples:
 

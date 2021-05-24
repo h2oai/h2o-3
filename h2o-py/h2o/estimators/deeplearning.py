@@ -41,7 +41,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
-                 fold_assignment="auto",  # type: Enum["auto", "random", "modulo", "stratified"]
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: str
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
@@ -58,7 +58,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  overwrite_with_best_model=True,  # type: bool
                  use_all_factor_levels=True,  # type: bool
                  standardize=True,  # type: bool
-                 activation="rectifier",  # type: Enum["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"]
+                 activation="rectifier",  # type: Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"]
                  hidden=[200, 200],  # type: List[int]
                  epochs=10,  # type: float
                  train_samples_per_iteration=-2,  # type: int
@@ -79,12 +79,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  l1=0,  # type: float
                  l2=0,  # type: float
                  max_w2=3.4028235e+38,  # type: float
-                 initial_weight_distribution="uniform_adaptive",  # type: Enum["uniform_adaptive", "uniform", "normal"]
+                 initial_weight_distribution="uniform_adaptive",  # type: Literal["uniform_adaptive", "uniform", "normal"]
                  initial_weight_scale=1,  # type: float
                  initial_weights=None,  # type: List[H2OFrame]
                  initial_biases=None,  # type: List[H2OFrame]
-                 loss="automatic",  # type: Enum["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
-                 distribution="auto",  # type: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 loss="automatic",  # type: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  quantile_alpha=0.5,  # type: float
                  tweedie_power=1.5,  # type: float
                  huber_alpha=0.9,  # type: float
@@ -95,10 +95,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  classification_stop=0,  # type: float
                  regression_stop=1e-06,  # type: float
                  stopping_rounds=5,  # type: int
-                 stopping_metric="auto",  # type: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0,  # type: float
                  max_runtime_secs=0,  # type: float
-                 score_validation_sampling="uniform",  # type: Enum["uniform", "stratified"]
+                 score_validation_sampling="uniform",  # type: Literal["uniform", "stratified"]
                  diagnostics=True,  # type: bool
                  fast_mode=True,  # type: bool
                  force_load_balance=True,  # type: bool
@@ -106,7 +106,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  replicate_training_data=True,  # type: bool
                  single_node_mode=False,  # type: bool
                  shuffle_training_data=False,  # type: bool
-                 missing_values_handling="mean_imputation",  # type: Enum["mean_imputation", "skip"]
+                 missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip"]
                  quiet_mode=False,  # type: bool
                  autoencoder=False,  # type: bool
                  sparse=False,  # type: bool
@@ -117,12 +117,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  reproducible=False,  # type: bool
                  export_weights_and_biases=False,  # type: bool
                  mini_batch_size=1,  # type: int
-                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  elastic_averaging=False,  # type: bool
                  elastic_averaging_moving_rate=0.9,  # type: float
                  elastic_averaging_regularization=0.001,  # type: float
                  export_checkpoints_dir=None,  # type: str
-                 auc_type="auto",  # type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
@@ -144,7 +144,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param response_column: Response variable column. (default:None).
@@ -193,7 +193,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
                scaled input data. (default:True).
         :type standardize: bool, optional
         :param activation: Activation function. (default:"rectifier").
-        :type activation: Enum["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"], optional
+        :type activation: Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout",
+               "maxout_with_dropout"], optional
         :param hidden: Hidden layer sizes (e.g. [100, 100]). (default:[200, 200]).
         :type hidden: List[int], optional
         :param epochs: How many times the dataset should be iterated (streamed), can be fractional. (default:10).
@@ -245,7 +246,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                (default:3.4028235e+38).
         :type max_w2: float, optional
         :param initial_weight_distribution: Initial weight distribution. (default:"uniform_adaptive").
-        :type initial_weight_distribution: Enum["uniform_adaptive", "uniform", "normal"], optional
+        :type initial_weight_distribution: Literal["uniform_adaptive", "uniform", "normal"], optional
         :param initial_weight_scale: Uniform: -value...value, Normal: stddev. (default:1).
         :type initial_weight_scale: float, optional
         :param initial_weights: A list of H2OFrame ids to initialize the weight matrices of this model with.
@@ -254,9 +255,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param initial_biases: A list of H2OFrame ids to initialize the bias vectors of this model with. (default:None).
         :type initial_biases: List[H2OFrame], optional
         :param loss: Loss function. (default:"automatic").
-        :type loss: Enum["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"], optional
+        :type loss: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"], optional
         :param distribution: Distribution function (default:"auto").
-        :type distribution: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"], optional
         :param quantile_alpha: Desired quantile for Quantile regression, must be between 0 and 1. (default:0.5).
         :type quantile_alpha: float, optional
@@ -287,7 +288,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client. (default:"auto").
-        :type stopping_metric: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
                "misclassification", "mean_per_class_error", "custom", "custom_increasing"], optional
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0).
@@ -295,7 +296,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
         :type max_runtime_secs: float, optional
         :param score_validation_sampling: Method used to sample validation dataset for scoring. (default:"uniform").
-        :type score_validation_sampling: Enum["uniform", "stratified"], optional
+        :type score_validation_sampling: Literal["uniform", "stratified"], optional
         :param diagnostics: Enable diagnostics for hidden layers. (default:True).
         :type diagnostics: bool, optional
         :param fast_mode: Enable fast mode (minor approximation in back-propagation). (default:True).
@@ -316,7 +317,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :type shuffle_training_data: bool, optional
         :param missing_values_handling: Handling of missing values. Either MeanImputation or Skip.
                (default:"mean_imputation").
-        :type missing_values_handling: Enum["mean_imputation", "skip"], optional
+        :type missing_values_handling: Literal["mean_imputation", "skip"], optional
         :param quiet_mode: Enable quiet mode for less output to standard output. (default:False).
         :type quiet_mode: bool, optional
         :param autoencoder: Auto-Encoder. (default:False).
@@ -342,7 +343,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                better). (default:1).
         :type mini_batch_size: int, optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
-        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"], optional
         :param elastic_averaging: Elastic averaging between compute nodes can improve distributed model convergence.
                #Experimental (default:False).
@@ -356,7 +357,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2ODeepLearningEstimator, self).__init__()
@@ -550,7 +551,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -1061,8 +1062,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Activation function.
 
-        One of: ``"tanh"``, ``"tanh_with_dropout"``, ``"rectifier"``, ``"rectifier_with_dropout"``, ``"maxout"``,
-        ``"maxout_with_dropout"``  (default: ``"rectifier"``).
+        Type: ``Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout",
+        "maxout_with_dropout"]``  (default: ``"rectifier"``).
 
         :examples:
 
@@ -1780,7 +1781,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Initial weight distribution.
 
-        One of: ``"uniform_adaptive"``, ``"uniform"``, ``"normal"``  (default: ``"uniform_adaptive"``).
+        Type: ``Literal["uniform_adaptive", "uniform", "normal"]``  (default: ``"uniform_adaptive"``).
 
         :examples:
 
@@ -1914,8 +1915,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Loss function.
 
-        One of: ``"automatic"``, ``"cross_entropy"``, ``"quadratic"``, ``"huber"``, ``"absolute"``, ``"quantile"``
-        (default: ``"automatic"``).
+        Type: ``Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]``  (default:
+        ``"automatic"``).
 
         :examples:
 
@@ -1945,8 +1946,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Distribution function
 
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -2293,9 +2294,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -2399,7 +2399,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Method used to sample validation dataset for scoring.
 
-        One of: ``"uniform"``, ``"stratified"``  (default: ``"uniform"``).
+        Type: ``Literal["uniform", "stratified"]``  (default: ``"uniform"``).
 
         :examples:
 
@@ -2645,7 +2645,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Handling of missing values. Either MeanImputation or Skip.
 
-        One of: ``"mean_imputation"``, ``"skip"``  (default: ``"mean_imputation"``).
+        Type: ``Literal["mean_imputation", "skip"]``  (default: ``"mean_imputation"``).
 
         :examples:
 
@@ -2977,8 +2977,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -3137,8 +3137,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
+        ``"auto"``).
         """
         return self._parms.get("auc_type")
 

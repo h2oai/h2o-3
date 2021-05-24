@@ -31,7 +31,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  score_each_iteration=False,  # type: bool
-                 fold_assignment="auto",  # type: Enum["auto", "random", "modulo", "stratified"]
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: str
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
@@ -39,13 +39,13 @@ class H2OXGBoostEstimator(H2OEstimator):
                  offset_column=None,  # type: str
                  weights_column=None,  # type: str
                  stopping_rounds=0,  # type: int
-                 stopping_metric="auto",  # type: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  max_runtime_secs=0,  # type: float
                  seed=-1,  # type: int
-                 distribution="auto",  # type: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  tweedie_power=1.5,  # type: float
-                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  quiet_mode=True,  # type: bool
                  checkpoint=None,  # type: str
                  export_checkpoints_dir=None,  # type: str
@@ -76,21 +76,21 @@ class H2OXGBoostEstimator(H2OEstimator):
                  calibration_frame=None,  # type: H2OFrame
                  max_bins=256,  # type: int
                  max_leaves=0,  # type: int
-                 sample_type="uniform",  # type: Enum["uniform", "weighted"]
-                 normalize_type="tree",  # type: Enum["tree", "forest"]
+                 sample_type="uniform",  # type: Literal["uniform", "weighted"]
+                 normalize_type="tree",  # type: Literal["tree", "forest"]
                  rate_drop=0,  # type: float
                  one_drop=False,  # type: bool
                  skip_drop=0,  # type: float
-                 tree_method="auto",  # type: Enum["auto", "exact", "approx", "hist"]
-                 grow_policy="depthwise",  # type: Enum["depthwise", "lossguide"]
-                 booster="gbtree",  # type: Enum["gbtree", "gblinear", "dart"]
+                 tree_method="auto",  # type: Literal["auto", "exact", "approx", "hist"]
+                 grow_policy="depthwise",  # type: Literal["depthwise", "lossguide"]
+                 booster="gbtree",  # type: Literal["gbtree", "gblinear", "dart"]
                  reg_lambda=1,  # type: float
                  reg_alpha=0,  # type: float
-                 dmatrix_type="auto",  # type: Enum["auto", "dense", "sparse"]
-                 backend="auto",  # type: Enum["auto", "gpu", "cpu"]
+                 dmatrix_type="auto",  # type: Literal["auto", "dense", "sparse"]
+                 backend="auto",  # type: Literal["auto", "gpu", "cpu"]
                  gpu_id=None,  # type: List[int]
                  gainslift_bins=-1,  # type: int
-                 auc_type="auto",  # type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
@@ -114,7 +114,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param response_column: Response variable column. (default:None).
@@ -140,7 +140,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client. (default:"auto").
-        :type stopping_metric: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
                "misclassification", "mean_per_class_error", "custom", "custom_increasing"], optional
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.001).
@@ -150,12 +150,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
         :type seed: int, optional
         :param distribution: Distribution function (default:"auto").
-        :type distribution: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"], optional
         :param tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2. (default:1.5).
         :type tweedie_power: float, optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
-        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"], optional
         :param quiet_mode: Enable quiet mode (default:True).
         :type quiet_mode: bool, optional
@@ -229,9 +229,9 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param max_leaves: For tree_method=hist only: maximum number of leaves (default:0).
         :type max_leaves: int, optional
         :param sample_type: For booster=dart only: sample_type (default:"uniform").
-        :type sample_type: Enum["uniform", "weighted"], optional
+        :type sample_type: Literal["uniform", "weighted"], optional
         :param normalize_type: For booster=dart only: normalize_type (default:"tree").
-        :type normalize_type: Enum["tree", "forest"], optional
+        :type normalize_type: Literal["tree", "forest"], optional
         :param rate_drop: For booster=dart only: rate_drop (0..1) (default:0).
         :type rate_drop: float, optional
         :param one_drop: For booster=dart only: one_drop (default:False).
@@ -239,26 +239,26 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param skip_drop: For booster=dart only: skip_drop (0..1) (default:0).
         :type skip_drop: float, optional
         :param tree_method: Tree method (default:"auto").
-        :type tree_method: Enum["auto", "exact", "approx", "hist"], optional
+        :type tree_method: Literal["auto", "exact", "approx", "hist"], optional
         :param grow_policy: Grow policy - depthwise is standard GBM, lossguide is LightGBM (default:"depthwise").
-        :type grow_policy: Enum["depthwise", "lossguide"], optional
+        :type grow_policy: Literal["depthwise", "lossguide"], optional
         :param booster: Booster type (default:"gbtree").
-        :type booster: Enum["gbtree", "gblinear", "dart"], optional
+        :type booster: Literal["gbtree", "gblinear", "dart"], optional
         :param reg_lambda: L2 regularization (default:1).
         :type reg_lambda: float, optional
         :param reg_alpha: L1 regularization (default:0).
         :type reg_alpha: float, optional
         :param dmatrix_type: Type of DMatrix. For sparse, NAs and 0 are treated equally. (default:"auto").
-        :type dmatrix_type: Enum["auto", "dense", "sparse"], optional
+        :type dmatrix_type: Literal["auto", "dense", "sparse"], optional
         :param backend: Backend. By default (auto), a GPU is used if available. (default:"auto").
-        :type backend: Enum["auto", "gpu", "cpu"], optional
+        :type backend: Literal["auto", "gpu", "cpu"], optional
         :param gpu_id: Which GPU(s) to use.  (default:None).
         :type gpu_id: List[int], optional
         :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
                binning. (default:-1).
         :type gainslift_bins: int, optional
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OXGBoostEstimator, self).__init__()
@@ -496,7 +496,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -713,9 +713,8 @@ class H2OXGBoostEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -867,8 +866,8 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Distribution function
 
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -931,8 +930,8 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -1896,7 +1895,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         For booster=dart only: sample_type
 
-        One of: ``"uniform"``, ``"weighted"``  (default: ``"uniform"``).
+        Type: ``Literal["uniform", "weighted"]``  (default: ``"uniform"``).
 
         :examples:
 
@@ -1932,7 +1931,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         For booster=dart only: normalize_type
 
-        One of: ``"tree"``, ``"forest"``  (default: ``"tree"``).
+        Type: ``Literal["tree", "forest"]``  (default: ``"tree"``).
 
         :examples:
 
@@ -2063,7 +2062,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Tree method
 
-        One of: ``"auto"``, ``"exact"``, ``"approx"``, ``"hist"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "exact", "approx", "hist"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -2099,7 +2098,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Grow policy - depthwise is standard GBM, lossguide is LightGBM
 
-        One of: ``"depthwise"``, ``"lossguide"``  (default: ``"depthwise"``).
+        Type: ``Literal["depthwise", "lossguide"]``  (default: ``"depthwise"``).
 
         :examples:
 
@@ -2132,7 +2131,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Booster type
 
-        One of: ``"gbtree"``, ``"gblinear"``, ``"dart"``  (default: ``"gbtree"``).
+        Type: ``Literal["gbtree", "gblinear", "dart"]``  (default: ``"gbtree"``).
 
         :examples:
 
@@ -2228,7 +2227,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Type of DMatrix. For sparse, NAs and 0 are treated equally.
 
-        One of: ``"auto"``, ``"dense"``, ``"sparse"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "dense", "sparse"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -2258,7 +2257,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Backend. By default (auto), a GPU is used if available.
 
-        One of: ``"auto"``, ``"gpu"``, ``"cpu"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "gpu", "cpu"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -2339,8 +2338,8 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
+        ``"auto"``).
         """
         return self._parms.get("auc_type")
 

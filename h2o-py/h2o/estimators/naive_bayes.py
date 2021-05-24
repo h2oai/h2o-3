@@ -30,7 +30,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                  model_id=None,  # type: str
                  nfolds=0,  # type: int
                  seed=-1,  # type: int
-                 fold_assignment="auto",  # type: Enum["auto", "random", "modulo", "stratified"]
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: str
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -54,7 +54,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                  max_runtime_secs=0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  gainslift_bins=-1,  # type: int
-                 auc_type="auto",  # type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
@@ -67,7 +67,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
@@ -123,7 +123,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                binning. (default:-1).
         :type gainslift_bins: int, optional
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2ONaiveBayesEstimator, self).__init__()
@@ -209,7 +209,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -877,8 +877,8 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
+        ``"auto"``).
         """
         return self._parms.get("auc_type")
 

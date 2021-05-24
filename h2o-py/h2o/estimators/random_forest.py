@@ -32,7 +32,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  score_each_iteration=False,  # type: bool
                  score_tree_interval=0,  # type: int
-                 fold_assignment="auto",  # type: Enum["auto", "random", "modulo", "stratified"]
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: str
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
@@ -51,7 +51,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                  nbins_cats=1024,  # type: int
                  r2_stopping=None,  # type: float
                  stopping_rounds=0,  # type: int
-                 stopping_metric="auto",  # type: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  max_runtime_secs=0,  # type: float
                  seed=-1,  # type: int
@@ -64,16 +64,16 @@ class H2ORandomForestEstimator(H2OEstimator):
                  col_sample_rate_change_per_level=1,  # type: float
                  col_sample_rate_per_tree=1,  # type: float
                  min_split_improvement=1e-05,  # type: float
-                 histogram_type="auto",  # type: Enum["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
-                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
                  calibration_frame=None,  # type: H2OFrame
-                 distribution="auto",  # type: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  custom_metric_func=None,  # type: str
                  export_checkpoints_dir=None,  # type: str
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
-                 auc_type="auto",  # type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
@@ -99,7 +99,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param response_column: Response variable column. (default:None).
@@ -157,7 +157,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client. (default:"auto").
-        :type stopping_metric: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
                "misclassification", "mean_per_class_error", "custom", "custom_increasing"], optional
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.001).
@@ -191,9 +191,9 @@ class H2ORandomForestEstimator(H2OEstimator):
                (default:1e-05).
         :type min_split_improvement: float, optional
         :param histogram_type: What type of histogram to use for finding optimal split points (default:"auto").
-        :type histogram_type: Enum["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"], optional
+        :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"], optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
-        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"], optional
         :param calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide
                more accurate estimates of class probabilities. (default:False).
@@ -201,7 +201,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         :param calibration_frame: Calibration frame for Platt Scaling (default:None).
         :type calibration_frame: H2OFrame, optional
         :param distribution: Distribution function (default:"auto").
-        :type distribution: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"], optional
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                (default:None).
@@ -216,7 +216,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                binning. (default:-1).
         :type gainslift_bins: int, optional
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2ORandomForestEstimator, self).__init__()
@@ -472,7 +472,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -1043,9 +1043,8 @@ class H2ORandomForestEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -1486,7 +1485,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         What type of histogram to use for finding optimal split points
 
-        One of: ``"auto"``, ``"uniform_adaptive"``, ``"random"``, ``"quantiles_global"``, ``"round_robin"``  (default:
+        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]``  (default:
         ``"auto"``).
 
         :examples:
@@ -1522,8 +1521,8 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -1640,8 +1639,8 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         [Deprecated] Distribution function
 
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -1778,8 +1777,8 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
+        ``"auto"``).
         """
         return self._parms.get("auc_type")
 

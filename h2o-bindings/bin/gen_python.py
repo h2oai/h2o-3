@@ -83,7 +83,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
         self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
                                                else "str")
-        self.make_enum = lambda schema, values: ("Enum[%s]" % ", ".join(stringify(v) for v in values) if values
+        self.make_enum = lambda schema, values: ("Literal[%s]" % ", ".join(stringify(v) for v in values) if values   # see PEP-586
                                                  else schema)
 
 

@@ -31,7 +31,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                  weights_column=None,  # type: str
                  offset_column=None,  # type: str
                  stratify_by=None,  # type: List[str]
-                 ties="efron",  # type: Enum["efron", "breslow"]
+                 ties="efron",  # type: Literal["efron", "breslow"]
                  init=0,  # type: float
                  lre_min=9,  # type: float
                  max_iterations=20,  # type: int
@@ -68,7 +68,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         :param stratify_by: List of columns to use for stratification. (default:None).
         :type stratify_by: List[str], optional
         :param ties: Method for Handling Ties. (default:"efron").
-        :type ties: Enum["efron", "breslow"], optional
+        :type ties: Literal["efron", "breslow"], optional
         :param init: Coefficient starting value. (default:0).
         :type init: float, optional
         :param lre_min: Minimum log-relative error. (default:9).
@@ -285,7 +285,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Method for Handling Ties.
 
-        One of: ``"efron"``, ``"breslow"``  (default: ``"efron"``).
+        Type: ``Literal["efron", "breslow"]``  (default: ``"efron"``).
 
         :examples:
 

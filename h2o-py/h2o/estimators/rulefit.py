@@ -29,13 +29,13 @@ class H2ORuleFitEstimator(H2OEstimator):
                  seed=-1,  # type: int
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
-                 algorithm="auto",  # type: Enum["auto", "drf", "gbm"]
+                 algorithm="auto",  # type: Literal["auto", "drf", "gbm"]
                  min_rule_length=3,  # type: int
                  max_rule_length=3,  # type: int
                  max_num_rules=-1,  # type: int
-                 model_type="rules_and_linear",  # type: Enum["rules_and_linear", "rules", "linear"]
+                 model_type="rules_and_linear",  # type: Literal["rules_and_linear", "rules", "linear"]
                  weights_column=None,  # type: str
-                 distribution="auto",  # type: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  rule_generation_ntrees=50,  # type: int
                  ):
         """
@@ -52,7 +52,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param algorithm: The algorithm to use to generate rules. (default:"auto").
-        :type algorithm: Enum["auto", "drf", "gbm"], optional
+        :type algorithm: Literal["auto", "drf", "gbm"], optional
         :param min_rule_length: Minimum length of rules. Defaults to 3. (default:3).
         :type min_rule_length: int, optional
         :param max_rule_length: Maximum length of rules. Defaults to 3. (default:3).
@@ -61,7 +61,7 @@ class H2ORuleFitEstimator(H2OEstimator):
                selected  by diminishing returns in model deviance. (default:-1).
         :type max_num_rules: int, optional
         :param model_type: Specifies type of base learners in the ensemble. (default:"rules_and_linear").
-        :type model_type: Enum["rules_and_linear", "rules", "linear"], optional
+        :type model_type: Literal["rules_and_linear", "rules", "linear"], optional
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
@@ -70,7 +70,7 @@ class H2ORuleFitEstimator(H2OEstimator):
                the larger loss function pre-factor. (default:None).
         :type weights_column: str, optional
         :param distribution: Distribution function (default:"auto").
-        :type distribution: Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"], optional
         :param rule_generation_ntrees: specifies the number of trees to build in the tree model. Defaults to 50.
                (default:50).
@@ -164,7 +164,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         The algorithm to use to generate rules.
 
-        One of: ``"auto"``, ``"drf"``, ``"gbm"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "drf", "gbm"]``  (default: ``"auto"``).
         """
         return self._parms.get("algorithm")
 
@@ -225,7 +225,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Specifies type of base learners in the ensemble.
 
-        One of: ``"rules_and_linear"``, ``"rules"``, ``"linear"``  (default: ``"rules_and_linear"``).
+        Type: ``Literal["rules_and_linear", "rules", "linear"]``  (default: ``"rules_and_linear"``).
         """
         return self._parms.get("model_type")
 
@@ -259,8 +259,8 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Distribution function
 
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``  (default: ``"auto"``).
         """
         return self._parms.get("distribution")
 

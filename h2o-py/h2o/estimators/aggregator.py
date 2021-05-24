@@ -28,8 +28,8 @@ class H2OAggregatorEstimator(H2OEstimator):
                  ignore_const_cols=True,  # type: bool
                  target_num_exemplars=5000,  # type: int
                  rel_tol_num_exemplars=0.5,  # type: float
-                 transform="normalize",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
-                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 transform="normalize",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  save_mapping_frame=False,  # type: bool
                  num_iteration_without_new_exemplar=500,  # type: int
                  export_checkpoints_dir=None,  # type: str
@@ -51,9 +51,9 @@ class H2OAggregatorEstimator(H2OEstimator):
                (default:0.5).
         :type rel_tol_num_exemplars: float, optional
         :param transform: Transformation of training data (default:"normalize").
-        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
-        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"], optional
         :param save_mapping_frame: Whether to export the mapping of the aggregated frame (default:False).
         :type save_mapping_frame: bool, optional
@@ -244,7 +244,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"normalize"``).
 
         :examples:
 
@@ -271,8 +271,8 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
 
         :examples:
 

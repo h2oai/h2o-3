@@ -27,9 +27,9 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
                  ignored_columns=None,  # type: List[str]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
-                 transform="none",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
-                 pca_method="gram_s_v_d",  # type: Enum["gram_s_v_d", "power", "randomized", "glrm"]
-                 pca_impl=None,  # type: Enum["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"]
+                 transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
+                 pca_method="gram_s_v_d",  # type: Literal["gram_s_v_d", "power", "randomized", "glrm"]
+                 pca_impl=None,  # type: Literal["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"]
                  k=1,  # type: int
                  max_iterations=1000,  # type: int
                  use_all_factor_levels=False,  # type: bool
@@ -53,20 +53,20 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
         :type score_each_iteration: bool, optional
         :param transform: Transformation of training data (default:"none").
-        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
         :param pca_method: Specify the algorithm to use for computing the principal components: GramSVD - uses a
                distributed computation of the Gram matrix, followed by a local SVD; Power - computes the SVD using the
                power iteration method (experimental); Randomized - uses randomized subspace iteration method; GLRM -
                fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD
                using local matrix algebra (experimental) (default:"gram_s_v_d").
-        :type pca_method: Enum["gram_s_v_d", "power", "randomized", "glrm"], optional
+        :type pca_method: Literal["gram_s_v_d", "power", "randomized", "glrm"], optional
         :param pca_impl: Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX -
                eigenvalue decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for
                symmetric matrix using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using
                MTJ; JAMA - eigenvalue decompositions for dense matrix using JAMA. References: JAMA -
                http://math.nist.gov/javanumerics/jama/; MTJ - https://github.com/fommil/matrix-toolkits-java/
                (default:None).
-        :type pca_impl: Enum["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"], optional
+        :type pca_impl: Literal["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"], optional
         :param k: Rank of matrix approximation (default:1).
         :type k: int, optional
         :param max_iterations: Maximum training iterations (default:1000).
@@ -211,7 +211,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"none"``).
 
         :examples:
 
@@ -240,7 +240,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         (experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank model
         with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized", "glrm"]``  (default: ``"gram_s_v_d"``).
 
         :examples:
 
@@ -270,7 +270,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
         https://github.com/fommil/matrix-toolkits-java/
 
-        One of: ``"mtj_evd_densematrix"``, ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``.
+        Type: ``Literal["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"]``.
 
         :examples:
 

@@ -40,7 +40,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
-                 fold_assignment="auto",  # type: Enum["auto", "random", "modulo", "stratified"]
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
                  fold_column=None,  # type: str
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
@@ -48,18 +48,18 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  offset_column=None,  # type: str
                  weights_column=None,  # type: str
-                 family="auto",  # type: Enum["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"]
+                 family="auto",  # type: Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"]
                  tweedie_variance_power=0,  # type: float
                  tweedie_link_power=0,  # type: float
                  theta=0,  # type: float
-                 solver="auto",  # type: Enum["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
+                 solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
                  alpha=None,  # type: List[float]
                  lambda_=None,  # type: List[float]
                  lambda_search=False,  # type: bool
                  early_stopping=True,  # type: bool
                  nlambdas=-1,  # type: int
                  standardize=False,  # type: bool
-                 missing_values_handling="mean_imputation",  # type: Enum["mean_imputation", "skip", "plug_values"]
+                 missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
                  plug_values=None,  # type: H2OFrame
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
@@ -69,7 +69,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  objective_epsilon=-1,  # type: float
                  beta_epsilon=0.0001,  # type: float
                  gradient_epsilon=-1,  # type: float
-                 link="family_default",  # type: Enum["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
+                 link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
                  startval=None,  # type: List[float]
                  prior=-1,  # type: float
                  cold_start=False,  # type: bool
@@ -81,7 +81,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  obj_reg=-1,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  stopping_rounds=0,  # type: int
-                 stopping_metric="auto",  # type: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: List[float]
@@ -97,7 +97,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  bs=None,  # type: List[int]
                  scale=None,  # type: List[float]
                  keep_gam_cols=False,  # type: bool
-                 auc_type="auto",  # type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
@@ -121,7 +121,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param response_column: Response variable column. (default:None).
@@ -144,7 +144,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :type weights_column: str, optional
         :param family: Family. Use binomial for classification with logistic regression, others are for regression
                problems. (default:"auto").
-        :type family: Enum["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
+        :type family: Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
                "tweedie", "negativebinomial", "fractionalbinomial"], optional
         :param tweedie_variance_power: Tweedie variance power (default:0).
         :type tweedie_variance_power: float, optional
@@ -155,8 +155,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param solver: AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on
                problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for
                datasets with many columns. (default:"auto").
-        :type solver: Enum["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh",
-               "gradient_descent_sqerr"], optional
+        :type solver: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent",
+               "gradient_descent_lh", "gradient_descent_sqerr"], optional
         :param alpha: Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for
                alpha represents Lasso regression, a value of 0 produces Ridge regression, and anything in between
                specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5
@@ -178,7 +178,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :type standardize: bool, optional
         :param missing_values_handling: Handling of missing values. Either MeanImputation, Skip or PlugValues.
                (default:"mean_imputation").
-        :type missing_values_handling: Enum["mean_imputation", "skip", "plug_values"], optional
+        :type missing_values_handling: Literal["mean_imputation", "skip", "plug_values"], optional
         :param plug_values: Plug Values (a single row frame containing values that will be used to impute missing values
                of the training/validation frame, use with conjunction missing_values_handling = PlugValues)
                (default:None).
@@ -209,7 +209,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively. (default:-1).
         :type gradient_epsilon: float, optional
         :param link: Link function. (default:"family_default").
-        :type link: Enum["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"], optional
+        :type link: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"], optional
         :param startval: double array to initialize coefficients for GAM. (default:None).
         :type startval: List[float], optional
         :param prior: Prior probability for y==1. To be used only for logistic regression iff the data has been sampled
@@ -247,7 +247,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client. (default:"auto").
-        :type stopping_metric: Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
                "misclassification", "mean_per_class_error", "custom", "custom_increasing"], optional
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.001).
@@ -291,7 +291,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param keep_gam_cols: Save keys of model matrix (default:False).
         :type keep_gam_cols: bool, optional
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -412,7 +412,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
         """
         return self._parms.get("fold_assignment")
 
@@ -536,9 +536,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Family. Use binomial for classification with logistic regression, others are for regression problems.
 
-        One of: ``"auto"``, ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``,
-        ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``, ``"fractionalbinomial"``  (default:
-        ``"auto"``).
+        Type: ``Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
+        "tweedie", "negativebinomial", "fractionalbinomial"]``  (default: ``"auto"``).
         """
         return self._parms.get("family")
 
@@ -599,8 +598,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
         number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.
 
-        One of: ``"auto"``, ``"irlsm"``, ``"l_bfgs"``, ``"coordinate_descent_naive"``, ``"coordinate_descent"``,
-        ``"gradient_descent_lh"``, ``"gradient_descent_sqerr"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent",
+        "gradient_descent_lh", "gradient_descent_sqerr"]``  (default: ``"auto"``).
         """
         return self._parms.get("solver")
 
@@ -709,7 +708,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Handling of missing values. Either MeanImputation, Skip or PlugValues.
 
-        One of: ``"mean_imputation"``, ``"skip"``, ``"plug_values"``  (default: ``"mean_imputation"``).
+        Type: ``Literal["mean_imputation", "skip", "plug_values"]``  (default: ``"mean_imputation"``).
         """
         return self._parms.get("missing_values_handling")
 
@@ -865,8 +864,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Link function.
 
-        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
-        (default: ``"family_default"``).
+        Type: ``Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]``  (default:
+        ``"family_default"``).
         """
         return self._parms.get("link")
 
@@ -1056,9 +1055,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``  (default: ``"auto"``).
         """
         return self._parms.get("stopping_metric")
 
@@ -1304,8 +1302,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
+        ``"auto"``).
         """
         return self._parms.get("auc_type")
 

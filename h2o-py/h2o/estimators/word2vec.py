@@ -24,8 +24,8 @@ class H2OWord2vecEstimator(H2OEstimator):
                  model_id=None,  # type: str
                  training_frame=None,  # type: H2OFrame
                  min_word_freq=5,  # type: int
-                 word_model="skip_gram",  # type: Enum["skip_gram", "cbow"]
-                 norm_model="hsm",  # type: Enum["hsm"]
+                 word_model="skip_gram",  # type: Literal["skip_gram", "cbow"]
+                 norm_model="hsm",  # type: Literal["hsm"]
                  vec_size=100,  # type: int
                  window_size=5,  # type: int
                  sent_sample_rate=0.001,  # type: float
@@ -43,9 +43,9 @@ class H2OWord2vecEstimator(H2OEstimator):
         :param min_word_freq: This will discard words that appear less than <int> times (default:5).
         :type min_word_freq: int, optional
         :param word_model: The word model to use (SkipGram or CBOW) (default:"skip_gram").
-        :type word_model: Enum["skip_gram", "cbow"], optional
+        :type word_model: Literal["skip_gram", "cbow"], optional
         :param norm_model: Use Hierarchical Softmax (default:"hsm").
-        :type norm_model: Enum["hsm"], optional
+        :type norm_model: Literal["hsm"], optional
         :param vec_size: Set size of word vectors (default:100).
         :type vec_size: int, optional
         :param window_size: Set max skip length between words (default:5).
@@ -132,7 +132,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         The word model to use (SkipGram or CBOW)
 
-        One of: ``"skip_gram"``, ``"cbow"``  (default: ``"skip_gram"``).
+        Type: ``Literal["skip_gram", "cbow"]``  (default: ``"skip_gram"``).
 
         :examples:
 
@@ -159,7 +159,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Use Hierarchical Softmax
 
-        One of: ``"hsm"``  (default: ``"hsm"``).
+        Type: ``Literal["hsm"]``  (default: ``"hsm"``).
 
         :examples:
 

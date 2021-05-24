@@ -71,12 +71,12 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  validation_frame=None,  # type: H2OFrame
                  blending_frame=None,  # type: H2OFrame
                  base_models=[],  # type: List[str]
-                 metalearner_algorithm="auto",  # type: Enum["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
+                 metalearner_algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
                  metalearner_nfolds=0,  # type: int
-                 metalearner_fold_assignment=None,  # type: Enum["auto", "random", "modulo", "stratified"]
+                 metalearner_fold_assignment=None,  # type: Literal["auto", "random", "modulo", "stratified"]
                  metalearner_fold_column=None,  # type: str
                  metalearner_params=None,  # type: dict
-                 metalearner_transform="none",  # type: Enum["none", "logit"]
+                 metalearner_transform="none",  # type: Literal["none", "logit"]
                  max_runtime_secs=0,  # type: float
                  weights_column=None,  # type: str
                  offset_column=None,  # type: str
@@ -84,7 +84,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  score_training_samples=10000,  # type: int
                  keep_levelone_frame=False,  # type: bool
                  export_checkpoints_dir=None,  # type: str
-                 auc_type="auto",  # type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
@@ -107,21 +107,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
                parameters), 'glm' (GLM with default parameters), 'naivebayes' (NaiveBayes with default parameters), or
                'xgboost' (if available, XGBoost with default parameters). (default:"auto").
-        :type metalearner_algorithm: Enum["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"], optional
+        :type metalearner_algorithm: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"], optional
         :param metalearner_nfolds: Number of folds for K-fold cross-validation of the metalearner algorithm (0 to
                disable or >= 2). (default:0).
         :type metalearner_nfolds: int, optional
         :param metalearner_fold_assignment: Cross-validation fold assignment scheme for metalearner cross-validation.
                Defaults to AUTO (which is currently set to Random). The 'Stratified' option will stratify the folds
                based on the response variable, for classification problems. (default:None).
-        :type metalearner_fold_assignment: Enum["auto", "random", "modulo", "stratified"], optional
+        :type metalearner_fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param metalearner_fold_column: Column with cross-validation fold index assignment per observation for cross-
                validation of the metalearner. (default:None).
         :type metalearner_fold_column: str, optional
         :param metalearner_params: Parameters for metalearner algorithm (default:None).
         :type metalearner_params: dict, optional
         :param metalearner_transform: Transformation used for the level one frame. (default:"none").
-        :type metalearner_transform: Enum["none", "logit"], optional
+        :type metalearner_transform: Literal["none", "logit"], optional
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
         :type max_runtime_secs: float, optional
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
@@ -145,7 +145,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
         """
         sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -378,8 +378,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         default parameters), 'naivebayes' (NaiveBayes with default parameters), or 'xgboost' (if available, XGBoost with
         default parameters).
 
-        One of: ``"auto"``, ``"deeplearning"``, ``"drf"``, ``"gbm"``, ``"glm"``, ``"naivebayes"``, ``"xgboost"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -475,7 +474,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
         classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``.
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``.
 
         :examples:
 
@@ -633,7 +632,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Transformation used for the level one frame.
 
-        One of: ``"none"``, ``"logit"``  (default: ``"none"``).
+        Type: ``Literal["none", "logit"]``  (default: ``"none"``).
         """
         return self._parms.get("metalearner_transform")
 
@@ -857,8 +856,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
+        ``"auto"``).
         """
         return self._parms.get("auc_type")
 

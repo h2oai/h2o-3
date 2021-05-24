@@ -43,9 +43,9 @@ class H2OIsolationForestEstimator(H2OEstimator):
                  sample_rate=-1,  # type: float
                  col_sample_rate_change_per_level=1,  # type: float
                  col_sample_rate_per_tree=1,  # type: float
-                 categorical_encoding="auto",  # type: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  stopping_rounds=0,  # type: int
-                 stopping_metric="auto",  # type: Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "misclassification", "mean_per_class_error"]
+                 stopping_metric="auto",  # type: Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "misclassification", "mean_per_class_error"]
                  stopping_tolerance=0.01,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  contamination=-1,  # type: float
@@ -95,7 +95,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1).
         :type col_sample_rate_per_tree: float, optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
-        :type categorical_encoding: Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"], optional
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
@@ -104,7 +104,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client. (default:"auto").
-        :type stopping_metric: Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
+        :type stopping_metric: Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
                "misclassification", "mean_per_class_error"], optional
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.01).
@@ -540,8 +540,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
 
         :examples:
 
@@ -599,8 +599,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"anomaly_score"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``,
-        ``"rmsle"``, ``"auc"``, ``"aucpr"``, ``"misclassification"``, ``"mean_per_class_error"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
+        "misclassification", "mean_per_class_error"]``  (default: ``"auto"``).
 
         :examples:
 

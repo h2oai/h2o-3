@@ -28,7 +28,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
                  ignored_columns=None,  # type: List[str]
                  ignore_const_cols=True,  # type: bool
                  hyper_param=1,  # type: float
-                 kernel_type="gaussian",  # type: Enum["gaussian"]
+                 kernel_type="gaussian",  # type: Literal["gaussian"]
                  gamma=-1,  # type: float
                  rank_ratio=-1,  # type: float
                  positive_weight=1,  # type: float
@@ -58,7 +58,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         :param hyper_param: Penalty parameter C of the error term (default:1).
         :type hyper_param: float, optional
         :param kernel_type: Type of used kernel (default:"gaussian").
-        :type kernel_type: Enum["gaussian"], optional
+        :type kernel_type: Literal["gaussian"], optional
         :param gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
                (default:-1).
         :type gamma: float, optional
@@ -227,7 +227,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Type of used kernel
 
-        One of: ``"gaussian"``  (default: ``"gaussian"``).
+        Type: ``Literal["gaussian"]``  (default: ``"gaussian"``).
 
         :examples:
 

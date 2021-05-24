@@ -36,7 +36,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                  blending=False,  # type: bool
                  inflection_point=10,  # type: float
                  smoothing=20,  # type: float
-                 data_leakage_handling="none",  # type: Enum["leave_one_out", "k_fold", "none"]
+                 data_leakage_handling="none",  # type: Literal["leave_one_out", "k_fold", "none"]
                  noise=0.01,  # type: float
                  seed=-1,  # type: int
                  ):
@@ -75,7 +75,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                are: 1) "none" (default) - no holdout, using the entire training frame. 2) "leave_one_out" - current
                row's response value is subtracted from the per-level frequencies pre-calculated on the entire training
                frame. 3) "k_fold" - encodings for a fold are generated based on out-of-fold data.  (default:"none").
-        :type data_leakage_handling: Enum["leave_one_out", "k_fold", "none"], optional
+        :type data_leakage_handling: Literal["leave_one_out", "k_fold", "none"], optional
         :param noise: The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let
                the algorithm determine a reasonable amount of noise. (default:0.01).
         :type noise: float, optional
@@ -323,7 +323,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
         generated based on out-of-fold data.
 
-        One of: ``"leave_one_out"``, ``"k_fold"``, ``"none"``  (default: ``"none"``).
+        Type: ``Literal["leave_one_out", "k_fold", "none"]``  (default: ``"none"``).
 
         :examples:
 

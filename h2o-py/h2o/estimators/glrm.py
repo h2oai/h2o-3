@@ -30,15 +30,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  representation_name=None,  # type: str
                  loading_name=None,  # type: str
-                 transform="none",  # type: Enum["none", "standardize", "normalize", "demean", "descale"]
+                 transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
                  k=1,  # type: int
-                 loss="quadratic",  # type: Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
-                 loss_by_col=None,  # type: List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"]]
+                 loss="quadratic",  # type: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
+                 loss_by_col=None,  # type: List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"]]
                  loss_by_col_idx=None,  # type: List[int]
-                 multi_loss="categorical",  # type: Enum["categorical", "ordinal"]
+                 multi_loss="categorical",  # type: Literal["categorical", "ordinal"]
                  period=1,  # type: int
-                 regularization_x="none",  # type: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
-                 regularization_y="none",  # type: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+                 regularization_x="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+                 regularization_y="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
                  gamma_x=0,  # type: float
                  gamma_y=0,  # type: float
                  max_iterations=1000,  # type: int
@@ -46,8 +46,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  init_step_size=1,  # type: float
                  min_step_size=0.0001,  # type: float
                  seed=-1,  # type: int
-                 init="plus_plus",  # type: Enum["random", "svd", "plus_plus", "user"]
-                 svd_method="randomized",  # type: Enum["gram_s_v_d", "power", "randomized"]
+                 init="plus_plus",  # type: Literal["random", "svd", "plus_plus", "user"]
+                 svd_method="randomized",  # type: Literal["gram_s_v_d", "power", "randomized"]
                  user_y=None,  # type: H2OFrame
                  user_x=None,  # type: H2OFrame
                  expand_user_y=True,  # type: bool
@@ -75,24 +75,24 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                (default:None).
         :type loading_name: str, optional
         :param transform: Transformation of training data (default:"none").
-        :type transform: Enum["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
         :param k: Rank of matrix approximation (default:1).
         :type k: int, optional
         :param loss: Numeric loss function (default:"quadratic").
-        :type loss: Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"], optional
+        :type loss: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"], optional
         :param loss_by_col: Loss function by column (override) (default:None).
-        :type loss_by_col: List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
+        :type loss_by_col: List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
                "ordinal"]], optional
         :param loss_by_col_idx: Loss function by column index (override) (default:None).
         :type loss_by_col_idx: List[int], optional
         :param multi_loss: Categorical loss function (default:"categorical").
-        :type multi_loss: Enum["categorical", "ordinal"], optional
+        :type multi_loss: Literal["categorical", "ordinal"], optional
         :param period: Length of period (only used with periodic loss function) (default:1).
         :type period: int, optional
         :param regularization_x: Regularization function for X matrix (default:"none").
-        :type regularization_x: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
+        :type regularization_x: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
         :param regularization_y: Regularization function for Y matrix (default:"none").
-        :type regularization_y: Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
+        :type regularization_y: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
         :param gamma_x: Regularization weight on X matrix (default:0).
         :type gamma_x: float, optional
         :param gamma_y: Regularization weight on Y matrix (default:0).
@@ -108,10 +108,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         :param seed: RNG seed for initialization (default:-1).
         :type seed: int, optional
         :param init: Initialization mode (default:"plus_plus").
-        :type init: Enum["random", "svd", "plus_plus", "user"], optional
+        :type init: Literal["random", "svd", "plus_plus", "user"], optional
         :param svd_method: Method for computing SVD during initialization (Caution: Randomized is currently experimental
                and unstable) (default:"randomized").
-        :type svd_method: Enum["gram_s_v_d", "power", "randomized"], optional
+        :type svd_method: Literal["gram_s_v_d", "power", "randomized"], optional
         :param user_y: User-specified initial Y (default:None).
         :type user_y: H2OFrame, optional
         :param user_x: User-specified initial X (default:None).
@@ -327,7 +327,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"none"``).
 
         :examples:
 
@@ -376,8 +376,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Numeric loss function
 
-        One of: ``"quadratic"``, ``"absolute"``, ``"huber"``, ``"poisson"``, ``"hinge"``, ``"logistic"``, ``"periodic"``
-        (default: ``"quadratic"``).
+        Type: ``Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]``  (default:
+        ``"quadratic"``).
 
         :examples:
 
@@ -407,8 +407,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Loss function by column (override)
 
-        Type: ``List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
-        "ordinal"]]``.
+        Type: ``List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic",
+        "categorical", "ordinal"]]``.
 
         :examples:
 
@@ -462,7 +462,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Categorical loss function
 
-        One of: ``"categorical"``, ``"ordinal"``  (default: ``"categorical"``).
+        Type: ``Literal["categorical", "ordinal"]``  (default: ``"categorical"``).
 
         :examples:
 
@@ -517,8 +517,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Regularization function for X matrix
 
-        One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
-        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
+        Type: ``Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]``
+        (default: ``"none"``).
 
         :examples:
 
@@ -545,8 +545,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Regularization function for Y matrix
 
-        One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
-        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
+        Type: ``Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]``
+        (default: ``"none"``).
 
         :examples:
 
@@ -766,7 +766,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Initialization mode
 
-        One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``).
+        Type: ``Literal["random", "svd", "plus_plus", "user"]``  (default: ``"plus_plus"``).
 
         :examples:
 
@@ -790,7 +790,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized"]``  (default: ``"randomized"``).
 
         :examples:
 
