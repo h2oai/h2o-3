@@ -32,8 +32,8 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                  offset_column=None,  # type: str
                  stratify_by=None,  # type: List[str]
                  ties="efron",  # type: Literal["efron", "breslow"]
-                 init=0,  # type: float
-                 lre_min=9,  # type: float
+                 init=0.0,  # type: float
+                 lre_min=9.0,  # type: float
                  max_iterations=20,  # type: int
                  interactions=None,  # type: List[str]
                  interaction_pairs=None,  # type: List[tuple]
@@ -69,9 +69,9 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         :type stratify_by: List[str], optional
         :param ties: Method for Handling Ties. (default:"efron").
         :type ties: Literal["efron", "breslow"], optional
-        :param init: Coefficient starting value. (default:0).
+        :param init: Coefficient starting value. (default:0.0).
         :type init: float, optional
-        :param lre_min: Minimum log-relative error. (default:9).
+        :param lre_min: Minimum log-relative error. (default:9.0).
         :type lre_min: float, optional
         :param max_iterations: Maximum number of iterations. (default:20).
         :type max_iterations: int, optional
@@ -315,7 +315,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Coefficient starting value.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -343,7 +343,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Minimum log-relative error.
 
-        Type: ``float``  (default: ``9``).
+        Type: ``float``  (default: ``9.0``).
 
         :examples:
 

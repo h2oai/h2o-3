@@ -41,7 +41,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  seed=-1,  # type: int
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  tweedie_power=1.5,  # type: float
@@ -51,24 +51,24 @@ class H2OXGBoostEstimator(H2OEstimator):
                  export_checkpoints_dir=None,  # type: str
                  ntrees=50,  # type: int
                  max_depth=6,  # type: int
-                 min_rows=1,  # type: float
-                 min_child_weight=1,  # type: float
+                 min_rows=1.0,  # type: float
+                 min_child_weight=1.0,  # type: float
                  learn_rate=0.3,  # type: float
                  eta=0.3,  # type: float
-                 sample_rate=1,  # type: float
-                 subsample=1,  # type: float
-                 col_sample_rate=1,  # type: float
-                 colsample_bylevel=1,  # type: float
-                 col_sample_rate_per_tree=1,  # type: float
-                 colsample_bytree=1,  # type: float
-                 colsample_bynode=1,  # type: float
-                 max_abs_leafnode_pred=0,  # type: float
-                 max_delta_step=0,  # type: float
+                 sample_rate=1.0,  # type: float
+                 subsample=1.0,  # type: float
+                 col_sample_rate=1.0,  # type: float
+                 colsample_bylevel=1.0,  # type: float
+                 col_sample_rate_per_tree=1.0,  # type: float
+                 colsample_bytree=1.0,  # type: float
+                 colsample_bynode=1.0,  # type: float
+                 max_abs_leafnode_pred=0.0,  # type: float
+                 max_delta_step=0.0,  # type: float
                  monotone_constraints=None,  # type: dict
                  interaction_constraints=None,  # type: List[List[str]]
                  score_tree_interval=0,  # type: int
-                 min_split_improvement=0,  # type: float
-                 gamma=0,  # type: float
+                 min_split_improvement=0.0,  # type: float
+                 gamma=0.0,  # type: float
                  nthread=-1,  # type: int
                  save_matrix_directory=None,  # type: str
                  build_tree_one_node=False,  # type: bool
@@ -78,14 +78,14 @@ class H2OXGBoostEstimator(H2OEstimator):
                  max_leaves=0,  # type: int
                  sample_type="uniform",  # type: Literal["uniform", "weighted"]
                  normalize_type="tree",  # type: Literal["tree", "forest"]
-                 rate_drop=0,  # type: float
+                 rate_drop=0.0,  # type: float
                  one_drop=False,  # type: bool
-                 skip_drop=0,  # type: float
+                 skip_drop=0.0,  # type: float
                  tree_method="auto",  # type: Literal["auto", "exact", "approx", "hist"]
                  grow_policy="depthwise",  # type: Literal["depthwise", "lossguide"]
                  booster="gbtree",  # type: Literal["gbtree", "gblinear", "dart"]
-                 reg_lambda=1,  # type: float
-                 reg_alpha=0,  # type: float
+                 reg_lambda=1.0,  # type: float
+                 reg_alpha=0.0,  # type: float
                  dmatrix_type="auto",  # type: Literal["auto", "dense", "sparse"]
                  backend="auto",  # type: Literal["auto", "gpu", "cpu"]
                  gpu_id=None,  # type: List[int]
@@ -145,7 +145,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.001).
         :type stopping_tolerance: float, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
         :type seed: int, optional
@@ -167,35 +167,35 @@ class H2OXGBoostEstimator(H2OEstimator):
         :type ntrees: int, optional
         :param max_depth: Maximum tree depth (0 for unlimited). (default:6).
         :type max_depth: int, optional
-        :param min_rows: (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. (default:1).
+        :param min_rows: (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. (default:1.0).
         :type min_rows: float, optional
-        :param min_child_weight: (same as min_rows) Fewest allowed (weighted) observations in a leaf. (default:1).
+        :param min_child_weight: (same as min_rows) Fewest allowed (weighted) observations in a leaf. (default:1.0).
         :type min_child_weight: float, optional
         :param learn_rate: (same as eta) Learning rate (from 0.0 to 1.0) (default:0.3).
         :type learn_rate: float, optional
         :param eta: (same as learn_rate) Learning rate (from 0.0 to 1.0) (default:0.3).
         :type eta: float, optional
-        :param sample_rate: (same as subsample) Row sample rate per tree (from 0.0 to 1.0) (default:1).
+        :param sample_rate: (same as subsample) Row sample rate per tree (from 0.0 to 1.0) (default:1.0).
         :type sample_rate: float, optional
-        :param subsample: (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) (default:1).
+        :param subsample: (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) (default:1.0).
         :type subsample: float, optional
-        :param col_sample_rate: (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0) (default:1).
+        :param col_sample_rate: (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0) (default:1.0).
         :type col_sample_rate: float, optional
-        :param colsample_bylevel: (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) (default:1).
+        :param colsample_bylevel: (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) (default:1.0).
         :type colsample_bylevel: float, optional
         :param col_sample_rate_per_tree: (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)
-               (default:1).
+               (default:1.0).
         :type col_sample_rate_per_tree: float, optional
         :param colsample_bytree: (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)
-               (default:1).
+               (default:1.0).
         :type colsample_bytree: float, optional
-        :param colsample_bynode: Column sample rate per tree node (from 0.0 to 1.0) (default:1).
+        :param colsample_bynode: Column sample rate per tree node (from 0.0 to 1.0) (default:1.0).
         :type colsample_bynode: float, optional
         :param max_abs_leafnode_pred: (same as max_delta_step) Maximum absolute value of a leaf node prediction
-               (default:0).
+               (default:0.0).
         :type max_abs_leafnode_pred: float, optional
         :param max_delta_step: (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction
-               (default:0).
+               (default:0.0).
         :type max_delta_step: float, optional
         :param monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce an increasing
                constraint and -1 to specify a decreasing constraint. (default:None).
@@ -205,10 +205,10 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
         :type score_tree_interval: int, optional
         :param min_split_improvement: (same as gamma) Minimum relative improvement in squared error reduction for a
-               split to happen (default:0).
+               split to happen (default:0.0).
         :type min_split_improvement: float, optional
         :param gamma: (same as min_split_improvement) Minimum relative improvement in squared error reduction for a
-               split to happen (default:0).
+               split to happen (default:0.0).
         :type gamma: float, optional
         :param nthread: Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits
                (-nthreads parameter). Defaults to maximum available (default:-1).
@@ -232,11 +232,11 @@ class H2OXGBoostEstimator(H2OEstimator):
         :type sample_type: Literal["uniform", "weighted"], optional
         :param normalize_type: For booster=dart only: normalize_type (default:"tree").
         :type normalize_type: Literal["tree", "forest"], optional
-        :param rate_drop: For booster=dart only: rate_drop (0..1) (default:0).
+        :param rate_drop: For booster=dart only: rate_drop (0..1) (default:0.0).
         :type rate_drop: float, optional
         :param one_drop: For booster=dart only: one_drop (default:False).
         :type one_drop: bool, optional
-        :param skip_drop: For booster=dart only: skip_drop (0..1) (default:0).
+        :param skip_drop: For booster=dart only: skip_drop (0..1) (default:0.0).
         :type skip_drop: float, optional
         :param tree_method: Tree method (default:"auto").
         :type tree_method: Literal["auto", "exact", "approx", "hist"], optional
@@ -244,9 +244,9 @@ class H2OXGBoostEstimator(H2OEstimator):
         :type grow_policy: Literal["depthwise", "lossguide"], optional
         :param booster: Booster type (default:"gbtree").
         :type booster: Literal["gbtree", "gblinear", "dart"], optional
-        :param reg_lambda: L2 regularization (default:1).
+        :param reg_lambda: L2 regularization (default:1.0).
         :type reg_lambda: float, optional
-        :param reg_alpha: L1 regularization (default:0).
+        :param reg_alpha: L1 regularization (default:0.0).
         :type reg_alpha: float, optional
         :param dmatrix_type: Type of DMatrix. For sparse, NAs and 0 are treated equally. (default:"auto").
         :type dmatrix_type: Literal["auto", "dense", "sparse"], optional
@@ -789,7 +789,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1154,7 +1154,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as min_child_weight) Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1186,7 +1186,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as min_rows) Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1289,7 +1289,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as subsample) Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1325,7 +1325,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1361,7 +1361,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1397,7 +1397,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as col_sample_rate) Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1433,7 +1433,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1468,7 +1468,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1503,7 +1503,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Column sample rate per tree node (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1536,7 +1536,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as max_delta_step) Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1567,7 +1567,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1679,7 +1679,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as gamma) Minimum relative improvement in squared error reduction for a split to happen
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1711,7 +1711,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1963,7 +1963,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         For booster=dart only: rate_drop (0..1)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -2027,7 +2027,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         For booster=dart only: skip_drop (0..1)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -2163,7 +2163,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         L2 regularization
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -2198,7 +2198,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         L1 regularization
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

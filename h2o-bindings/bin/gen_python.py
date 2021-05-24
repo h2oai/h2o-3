@@ -106,7 +106,7 @@ def stringify(v, infinity=u'∞'):
     if v == "Infinity":
         return infinity
     if isinstance(v, str_type):
-        return '"%s"' % v
+        return '"{}"'.format(v)
     if isinstance(v, int):
         if v > (1 << 62):  # handle Long.MAX_VALUE case 
             return infinity
@@ -114,7 +114,7 @@ def stringify(v, infinity=u'∞'):
     if isinstance(v, float): 
         if v > (1 << 128):  # handle Double.MAX_VALUE case
             return infinity
-        return '%.10g' % v
+        return "{:.10}".format(v)
     return str(v)
 
 

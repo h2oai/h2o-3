@@ -41,7 +41,7 @@ class H2OKMeansEstimator(H2OEstimator):
                  standardize=True,  # type: bool
                  seed=-1,  # type: int
                  init="furthest",  # type: Literal["random", "plus_plus", "furthest", "user"]
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  export_checkpoints_dir=None,  # type: str
                  cluster_size_constraints=None,  # type: List[int]
@@ -94,7 +94,7 @@ class H2OKMeansEstimator(H2OEstimator):
         :type seed: int, optional
         :param init: Initialization mode (default:"furthest").
         :type init: Literal["random", "plus_plus", "furthest", "user"], optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
@@ -618,7 +618,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

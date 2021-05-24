@@ -43,11 +43,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  weights_column=None,  # type: str
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: List[float]
-                 max_after_balance_size=5,  # type: float
+                 max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  ntrees=50,  # type: int
                  max_depth=5,  # type: int
-                 min_rows=10,  # type: float
+                 min_rows=10.0,  # type: float
                  nbins=20,  # type: int
                  nbins_top_level=1024,  # type: int
                  nbins_cats=1024,  # type: int
@@ -55,25 +55,25 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  seed=-1,  # type: int
                  build_tree_one_node=False,  # type: bool
                  learn_rate=0.1,  # type: float
-                 learn_rate_annealing=1,  # type: float
+                 learn_rate_annealing=1.0,  # type: float
                  distribution="auto",  # type: Literal["auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber", "custom"]
                  quantile_alpha=0.5,  # type: float
                  tweedie_power=1.5,  # type: float
                  huber_alpha=0.9,  # type: float
                  checkpoint=None,  # type: str
-                 sample_rate=1,  # type: float
+                 sample_rate=1.0,  # type: float
                  sample_rate_per_class=None,  # type: List[float]
-                 col_sample_rate=1,  # type: float
-                 col_sample_rate_change_per_level=1,  # type: float
-                 col_sample_rate_per_tree=1,  # type: float
+                 col_sample_rate=1.0,  # type: float
+                 col_sample_rate_change_per_level=1.0,  # type: float
+                 col_sample_rate_per_tree=1.0,  # type: float
                  min_split_improvement=1e-05,  # type: float
                  histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
                  max_abs_leafnode_pred=None,  # type: float
-                 pred_noise_bandwidth=0,  # type: float
+                 pred_noise_bandwidth=0.0,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
                  calibration_frame=None,  # type: H2OFrame
@@ -136,7 +136,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                Requires balance_classes. (default:None).
         :type class_sampling_factors: List[float], optional
         :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes. (default:5).
+               less than 1.0). Requires balance_classes. (default:5.0).
         :type max_after_balance_size: float, optional
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
                the Logs (default:20).
@@ -145,7 +145,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :type ntrees: int, optional
         :param max_depth: Maximum tree depth (0 for unlimited). (default:5).
         :type max_depth: int, optional
-        :param min_rows: Fewest allowed (weighted) observations in a leaf. (default:10).
+        :param min_rows: Fewest allowed (weighted) observations in a leaf. (default:10.0).
         :type min_rows: float, optional
         :param nbins: For numerical columns (real/int), build a histogram of (at least) this many bins, then split at
                the best point (default:20).
@@ -172,7 +172,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.001).
         :type stopping_tolerance: float, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
         :type seed: int, optional
@@ -182,7 +182,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param learn_rate: Learning rate (from 0.0 to 1.0) (default:0.1).
         :type learn_rate: float, optional
         :param learn_rate_annealing: Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
-               (default:1).
+               (default:1.0).
         :type learn_rate_annealing: float, optional
         :param distribution: Distribution function (default:"auto").
         :type distribution: Literal["auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
@@ -196,17 +196,17 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :type huber_alpha: float, optional
         :param checkpoint: Model checkpoint to resume training with. (default:None).
         :type checkpoint: str, optional
-        :param sample_rate: Row sample rate per tree (from 0.0 to 1.0) (default:1).
+        :param sample_rate: Row sample rate per tree (from 0.0 to 1.0) (default:1.0).
         :type sample_rate: float, optional
         :param sample_rate_per_class: A list of row sample rates per class (relative fraction for each class, from 0.0
                to 1.0), for each tree (default:None).
         :type sample_rate_per_class: List[float], optional
-        :param col_sample_rate: Column sample rate (from 0.0 to 1.0) (default:1).
+        :param col_sample_rate: Column sample rate (from 0.0 to 1.0) (default:1.0).
         :type col_sample_rate: float, optional
         :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
-               0.0 and <= 2.0) (default:1).
+               0.0 and <= 2.0) (default:1.0).
         :type col_sample_rate_change_per_level: float, optional
-        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1).
+        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1.0).
         :type col_sample_rate_per_tree: float, optional
         :param min_split_improvement: Minimum relative improvement in squared error reduction for a split to happen
                (default:1e-05).
@@ -216,7 +216,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :param max_abs_leafnode_pred: Maximum absolute value of a leaf node prediction (default:∞).
         :type max_abs_leafnode_pred: float, optional
         :param pred_noise_bandwidth: Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node
-               predictions (default:0).
+               predictions (default:0.0).
         :type pred_noise_bandwidth: float, optional
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
@@ -759,7 +759,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``  (default: ``5.0``).
 
         :examples:
 
@@ -872,7 +872,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``10.0``).
 
         :examples:
 
@@ -1140,7 +1140,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1272,7 +1272,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1472,7 +1472,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1537,7 +1537,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1572,7 +1572,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1607,7 +1607,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1738,7 +1738,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

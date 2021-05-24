@@ -27,18 +27,18 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
                  ignore_const_cols=True,  # type: bool
-                 hyper_param=1,  # type: float
+                 hyper_param=1.0,  # type: float
                  kernel_type="gaussian",  # type: Literal["gaussian"]
-                 gamma=-1,  # type: float
-                 rank_ratio=-1,  # type: float
-                 positive_weight=1,  # type: float
-                 negative_weight=1,  # type: float
+                 gamma=-1.0,  # type: float
+                 rank_ratio=-1.0,  # type: float
+                 positive_weight=1.0,  # type: float
+                 negative_weight=1.0,  # type: float
                  disable_training_metrics=True,  # type: bool
                  sv_threshold=0.0001,  # type: float
                  fact_threshold=1e-05,  # type: float
                  feasible_threshold=0.001,  # type: float
                  surrogate_gap_threshold=0.001,  # type: float
-                 mu_factor=10,  # type: float
+                 mu_factor=10.0,  # type: float
                  max_iterations=200,  # type: int
                  seed=-1,  # type: int
                  ):
@@ -55,19 +55,19 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
         :type ignore_const_cols: bool, optional
-        :param hyper_param: Penalty parameter C of the error term (default:1).
+        :param hyper_param: Penalty parameter C of the error term (default:1.0).
         :type hyper_param: float, optional
         :param kernel_type: Type of used kernel (default:"gaussian").
         :type kernel_type: Literal["gaussian"], optional
         :param gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
-               (default:-1).
+               (default:-1.0).
         :type gamma: float, optional
         :param rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use
-               sqrt(#rows)). (default:-1).
+               sqrt(#rows)). (default:-1.0).
         :type rank_ratio: float, optional
-        :param positive_weight: Weight of positive (+1) class of observations (default:1).
+        :param positive_weight: Weight of positive (+1) class of observations (default:1.0).
         :type positive_weight: float, optional
-        :param negative_weight: Weight of positive (-1) class of observations (default:1).
+        :param negative_weight: Weight of positive (-1) class of observations (default:1.0).
         :type negative_weight: float, optional
         :param disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
                (default:True).
@@ -81,7 +81,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         :type feasible_threshold: float, optional
         :param surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta) (default:0.001).
         :type surrogate_gap_threshold: float, optional
-        :param mu_factor: Increasing factor mu (default:10).
+        :param mu_factor: Increasing factor mu (default:10.0).
         :type mu_factor: float, optional
         :param max_iterations: Maximum number of iteration of the algorithm (default:200).
         :type max_iterations: int, optional
@@ -202,7 +202,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Penalty parameter C of the error term
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -253,7 +253,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
 
         :examples:
 
@@ -277,7 +277,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use sqrt(#rows)).
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
 
         :examples:
 
@@ -301,7 +301,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Weight of positive (+1) class of observations
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -326,7 +326,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Weight of positive (-1) class of observations
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -472,7 +472,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Increasing factor mu
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``10.0``).
 
         :examples:
 

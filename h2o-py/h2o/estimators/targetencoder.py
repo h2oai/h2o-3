@@ -34,8 +34,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                  columns_to_encode=None,  # type: List[List[str]]
                  keep_original_categorical_columns=True,  # type: bool
                  blending=False,  # type: bool
-                 inflection_point=10,  # type: float
-                 smoothing=20,  # type: float
+                 inflection_point=10.0,  # type: float
+                 smoothing=20.0,  # type: float
                  data_leakage_handling="none",  # type: Literal["leave_one_out", "k_fold", "none"]
                  noise=0.01,  # type: float
                  seed=-1,  # type: int
@@ -65,11 +65,11 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         :type blending: bool, optional
         :param inflection_point: Inflection point of the sigmoid used to blend probabilities (see `blending` parameter).
                For a given categorical value, if it appears less that `inflection_point` in a data sample, then the
-               influence of the posterior probability will be smaller than the prior. (default:10).
+               influence of the posterior probability will be smaller than the prior. (default:10.0).
         :type inflection_point: float, optional
         :param smoothing: Smoothing factor corresponds to the inverse of the slope at the inflection point on the
                sigmoid used to blend probabilities (see `blending` parameter). If smoothing tends towards 0, then the
-               sigmoid used for blending turns into a Heaviside step function. (default:20).
+               sigmoid used for blending turns into a Heaviside step function. (default:20.0).
         :type smoothing: float, optional
         :param data_leakage_handling: Data leakage handling strategy used to generate the encoding. Supported options
                are: 1) "none" (default) - no holdout, using the entire training frame. 2) "leave_one_out" - current
@@ -256,7 +256,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         value, if it appears less that `inflection_point` in a data sample, then the influence of the posterior
         probability will be smaller than the prior.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``10.0``).
 
         :examples:
 
@@ -289,7 +289,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         probabilities (see `blending` parameter). If smoothing tends towards 0, then the sigmoid used for blending turns
         into a Heaviside step function.
 
-        Type: ``float``  (default: ``20``).
+        Type: ``float``  (default: ``20.0``).
 
         :examples:
 

@@ -51,7 +51,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  offset_column=None,  # type: str
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: List[float]
-                 max_after_balance_size=5,  # type: float
+                 max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  checkpoint=None,  # type: str
                  pretrained_autoencoder=None,  # type: str
@@ -60,7 +60,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  standardize=True,  # type: bool
                  activation="rectifier",  # type: Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"]
                  hidden=[200, 200],  # type: List[int]
-                 epochs=10,  # type: float
+                 epochs=10.0,  # type: float
                  train_samples_per_iteration=-2,  # type: int
                  target_ratio_comm_to_comp=0.05,  # type: float
                  seed=-1,  # type: int
@@ -69,18 +69,18 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  epsilon=1e-08,  # type: float
                  rate=0.005,  # type: float
                  rate_annealing=1e-06,  # type: float
-                 rate_decay=1,  # type: float
-                 momentum_start=0,  # type: float
-                 momentum_ramp=1000000,  # type: float
-                 momentum_stable=0,  # type: float
+                 rate_decay=1.0,  # type: float
+                 momentum_start=0.0,  # type: float
+                 momentum_ramp=1000000.0,  # type: float
+                 momentum_stable=0.0,  # type: float
                  nesterov_accelerated_gradient=True,  # type: bool
-                 input_dropout_ratio=0,  # type: float
+                 input_dropout_ratio=0.0,  # type: float
                  hidden_dropout_ratios=None,  # type: List[float]
-                 l1=0,  # type: float
-                 l2=0,  # type: float
+                 l1=0.0,  # type: float
+                 l2=0.0,  # type: float
                  max_w2=3.4028235e+38,  # type: float
                  initial_weight_distribution="uniform_adaptive",  # type: Literal["uniform_adaptive", "uniform", "normal"]
-                 initial_weight_scale=1,  # type: float
+                 initial_weight_scale=1.0,  # type: float
                  initial_weights=None,  # type: List[H2OFrame]
                  initial_biases=None,  # type: List[H2OFrame]
                  loss="automatic",  # type: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
@@ -88,16 +88,16 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  quantile_alpha=0.5,  # type: float
                  tweedie_power=1.5,  # type: float
                  huber_alpha=0.9,  # type: float
-                 score_interval=5,  # type: float
+                 score_interval=5.0,  # type: float
                  score_training_samples=10000,  # type: int
                  score_validation_samples=0,  # type: int
                  score_duty_cycle=0.1,  # type: float
-                 classification_stop=0,  # type: float
+                 classification_stop=0.0,  # type: float
                  regression_stop=1e-06,  # type: float
                  stopping_rounds=5,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
-                 stopping_tolerance=0,  # type: float
-                 max_runtime_secs=0,  # type: float
+                 stopping_tolerance=0.0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  score_validation_sampling="uniform",  # type: Literal["uniform", "stratified"]
                  diagnostics=True,  # type: bool
                  fast_mode=True,  # type: bool
@@ -111,8 +111,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  autoencoder=False,  # type: bool
                  sparse=False,  # type: bool
                  col_major=False,  # type: bool
-                 average_activation=0,  # type: float
-                 sparsity_beta=0,  # type: float
+                 average_activation=0.0,  # type: float
+                 sparsity_beta=0.0,  # type: float
                  max_categorical_features=2147483647,  # type: int
                  reproducible=False,  # type: bool
                  export_weights_and_biases=False,  # type: bool
@@ -173,7 +173,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                Requires balance_classes. (default:None).
         :type class_sampling_factors: List[float], optional
         :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes. (default:5).
+               less than 1.0). Requires balance_classes. (default:5.0).
         :type max_after_balance_size: float, optional
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
                the Logs. (default:20).
@@ -197,7 +197,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                "maxout_with_dropout"], optional
         :param hidden: Hidden layer sizes (e.g. [100, 100]). (default:[200, 200]).
         :type hidden: List[int], optional
-        :param epochs: How many times the dataset should be iterated (streamed), can be fractional. (default:10).
+        :param epochs: How many times the dataset should be iterated (streamed), can be fractional. (default:10.0).
         :type epochs: float, optional
         :param train_samples_per_iteration: Number of training samples (globally) per MapReduce iteration. Special
                values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic.
@@ -221,33 +221,34 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param rate_annealing: Learning rate annealing: rate / (1 + rate_annealing * samples). (default:1e-06).
         :type rate_annealing: float, optional
         :param rate_decay: Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).
-               (default:1).
+               (default:1.0).
         :type rate_decay: float, optional
-        :param momentum_start: Initial momentum at the beginning of training (try 0.5). (default:0).
+        :param momentum_start: Initial momentum at the beginning of training (try 0.5). (default:0.0).
         :type momentum_start: float, optional
-        :param momentum_ramp: Number of training samples for which momentum increases. (default:1000000).
+        :param momentum_ramp: Number of training samples for which momentum increases. (default:1000000.0).
         :type momentum_ramp: float, optional
-        :param momentum_stable: Final momentum after the ramp is over (try 0.99). (default:0).
+        :param momentum_stable: Final momentum after the ramp is over (try 0.99). (default:0.0).
         :type momentum_stable: float, optional
         :param nesterov_accelerated_gradient: Use Nesterov accelerated gradient (recommended). (default:True).
         :type nesterov_accelerated_gradient: bool, optional
-        :param input_dropout_ratio: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). (default:0).
+        :param input_dropout_ratio: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).
+               (default:0.0).
         :type input_dropout_ratio: float, optional
         :param hidden_dropout_ratios: Hidden layer dropout ratios (can improve generalization), specify one value per
                hidden layer, defaults to 0.5. (default:None).
         :type hidden_dropout_ratios: List[float], optional
         :param l1: L1 regularization (can add stability and improve generalization, causes many weights to become 0).
-               (default:0).
+               (default:0.0).
         :type l1: float, optional
         :param l2: L2 regularization (can add stability and improve generalization, causes many weights to be small.
-               (default:0).
+               (default:0.0).
         :type l2: float, optional
         :param max_w2: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier).
                (default:3.4028235e+38).
         :type max_w2: float, optional
         :param initial_weight_distribution: Initial weight distribution. (default:"uniform_adaptive").
         :type initial_weight_distribution: Literal["uniform_adaptive", "uniform", "normal"], optional
-        :param initial_weight_scale: Uniform: -value...value, Normal: stddev. (default:1).
+        :param initial_weight_scale: Uniform: -value...value, Normal: stddev. (default:1.0).
         :type initial_weight_scale: float, optional
         :param initial_weights: A list of H2OFrame ids to initialize the weight matrices of this model with.
                (default:None).
@@ -266,7 +267,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param huber_alpha: Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must
                be between 0 and 1). (default:0.9).
         :type huber_alpha: float, optional
-        :param score_interval: Shortest time interval (in seconds) between model scoring. (default:5).
+        :param score_interval: Shortest time interval (in seconds) between model scoring. (default:5.0).
         :type score_interval: float, optional
         :param score_training_samples: Number of training set samples for scoring (0 for all). (default:10000).
         :type score_training_samples: int, optional
@@ -276,7 +277,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
                (default:0.1).
         :type score_duty_cycle: float, optional
         :param classification_stop: Stopping criterion for classification error fraction on training data (-1 to
-               disable). (default:0).
+               disable). (default:0.0).
         :type classification_stop: float, optional
         :param regression_stop: Stopping criterion for regression error (MSE) on training data (-1 to disable).
                (default:1e-06).
@@ -291,9 +292,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
                "misclassification", "mean_per_class_error", "custom", "custom_increasing"], optional
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
-               is not at least this much) (default:0).
+               is not at least this much) (default:0.0).
         :type stopping_tolerance: float, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param score_validation_sampling: Method used to sample validation dataset for scoring. (default:"uniform").
         :type score_validation_sampling: Literal["uniform", "stratified"], optional
@@ -327,9 +328,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :param col_major: #DEPRECATED Use a column major weight matrix for input layer. Can speed up forward
                propagation, but might slow down backpropagation. (default:False).
         :type col_major: bool, optional
-        :param average_activation: Average activation for sparse auto-encoder. #Experimental (default:0).
+        :param average_activation: Average activation for sparse auto-encoder. #Experimental (default:0.0).
         :type average_activation: float, optional
-        :param sparsity_beta: Sparsity regularization. #Experimental (default:0).
+        :param sparsity_beta: Sparsity regularization. #Experimental (default:0.0).
         :type sparsity_beta: float, optional
         :param max_categorical_features: Max. number of categorical features, enforced via hashing. #Experimental
                (default:2147483647).
@@ -832,7 +833,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``  (default: ``5.0``).
 
         :examples:
 
@@ -1121,7 +1122,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         How many times the dataset should be iterated (streamed), can be fractional.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``10.0``).
 
         :examples:
 
@@ -1422,7 +1423,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -1465,7 +1466,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Initial momentum at the beginning of training (try 0.5).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1503,7 +1504,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Number of training samples for which momentum increases.
 
-        Type: ``float``  (default: ``1000000``).
+        Type: ``float``  (default: ``1000000.0``).
 
         :examples:
 
@@ -1541,7 +1542,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Final momentum after the ramp is over (try 0.99).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1622,7 +1623,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1686,7 +1687,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         L1 regularization (can add stability and improve generalization, causes many weights to become 0).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1716,7 +1717,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         L2 regularization (can add stability and improve generalization, causes many weights to be small.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -1811,7 +1812,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Uniform: -value...value, Normal: stddev.
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -2075,7 +2076,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Shortest time interval (in seconds) between model scoring.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``  (default: ``5.0``).
 
         :examples:
 
@@ -2189,7 +2190,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Stopping criterion for classification error fraction on training data (-1 to disable).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -2332,7 +2333,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -2369,7 +2370,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -2779,7 +2780,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Average activation for sparse auto-encoder. #Experimental
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -2808,7 +2809,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Sparsity regularization. #Experimental
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

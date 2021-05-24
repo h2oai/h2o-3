@@ -77,7 +77,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  metalearner_fold_column=None,  # type: str
                  metalearner_params=None,  # type: dict
                  metalearner_transform="none",  # type: Literal["none", "logit"]
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  weights_column=None,  # type: str
                  offset_column=None,  # type: str
                  seed=-1,  # type: int
@@ -122,7 +122,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         :type metalearner_params: dict, optional
         :param metalearner_transform: Transformation used for the level one frame. (default:"none").
         :type metalearner_transform: Literal["none", "logit"], optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
@@ -647,7 +647,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
         """
         return self._parms.get("max_runtime_secs")
 

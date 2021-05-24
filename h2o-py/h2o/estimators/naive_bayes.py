@@ -43,15 +43,15 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: List[float]
-                 max_after_balance_size=5,  # type: float
+                 max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
-                 laplace=0,  # type: float
+                 laplace=0.0,  # type: float
                  min_sdev=0.001,  # type: float
-                 eps_sdev=0,  # type: float
+                 eps_sdev=0.0,  # type: float
                  min_prob=0.001,  # type: float
-                 eps_prob=0,  # type: float
+                 eps_prob=0.0,  # type: float
                  compute_metrics=True,  # type: bool
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
@@ -98,24 +98,24 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                Requires balance_classes. (default:None).
         :type class_sampling_factors: List[float], optional
         :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes. (default:5).
+               less than 1.0). Requires balance_classes. (default:5.0).
         :type max_after_balance_size: float, optional
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
                the Logs (default:20).
         :type max_confusion_matrix_size: int, optional
-        :param laplace: Laplace smoothing parameter (default:0).
+        :param laplace: Laplace smoothing parameter (default:0.0).
         :type laplace: float, optional
         :param min_sdev: Min. standard deviation to use for observations with not enough data (default:0.001).
         :type min_sdev: float, optional
-        :param eps_sdev: Cutoff below which standard deviation is replaced with min_sdev (default:0).
+        :param eps_sdev: Cutoff below which standard deviation is replaced with min_sdev (default:0.0).
         :type eps_sdev: float, optional
         :param min_prob: Min. probability to use for observations with not enough data (default:0.001).
         :type min_prob: float, optional
-        :param eps_prob: Cutoff below which probability is replaced with min_prob (default:0).
+        :param eps_prob: Cutoff below which probability is replaced with min_prob (default:0.0).
         :type eps_prob: float, optional
         :param compute_metrics: Compute metrics on training data (default:True).
         :type compute_metrics: bool, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -561,7 +561,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``  (default: ``5.0``).
 
         :examples:
 
@@ -607,7 +607,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         """
         Laplace smoothing parameter
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -669,7 +669,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         """
         Cutoff below which standard deviation is replaced with min_sdev
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -734,7 +734,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         """
         Cutoff below which probability is replaced with min_prob
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -796,7 +796,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

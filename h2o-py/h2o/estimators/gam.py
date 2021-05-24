@@ -49,9 +49,9 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  offset_column=None,  # type: str
                  weights_column=None,  # type: str
                  family="auto",  # type: Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"]
-                 tweedie_variance_power=0,  # type: float
-                 tweedie_link_power=0,  # type: float
-                 theta=0,  # type: float
+                 tweedie_variance_power=0.0,  # type: float
+                 tweedie_link_power=0.0,  # type: float
+                 theta=0.0,  # type: float
                  solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
                  alpha=None,  # type: List[float]
                  lambda_=None,  # type: List[float]
@@ -66,28 +66,28 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  intercept=True,  # type: bool
                  non_negative=False,  # type: bool
                  max_iterations=-1,  # type: int
-                 objective_epsilon=-1,  # type: float
+                 objective_epsilon=-1.0,  # type: float
                  beta_epsilon=0.0001,  # type: float
-                 gradient_epsilon=-1,  # type: float
+                 gradient_epsilon=-1.0,  # type: float
                  link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
                  startval=None,  # type: List[float]
-                 prior=-1,  # type: float
+                 prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
-                 lambda_min_ratio=-1,  # type: float
+                 lambda_min_ratio=-1.0,  # type: float
                  beta_constraints=None,  # type: H2OFrame
                  max_active_predictors=-1,  # type: int
                  interactions=None,  # type: List[str]
                  interaction_pairs=None,  # type: List[tuple]
-                 obj_reg=-1,  # type: float
+                 obj_reg=-1.0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: List[float]
-                 max_after_balance_size=5,  # type: float
+                 max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  custom_metric_func=None,  # type: str
                  num_knots=None,  # type: List[int]
                  knot_ids=None,  # type: List[str]
@@ -146,11 +146,11 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                problems. (default:"auto").
         :type family: Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
                "tweedie", "negativebinomial", "fractionalbinomial"], optional
-        :param tweedie_variance_power: Tweedie variance power (default:0).
+        :param tweedie_variance_power: Tweedie variance power (default:0.0).
         :type tweedie_variance_power: float, optional
-        :param tweedie_link_power: Tweedie link power (default:0).
+        :param tweedie_link_power: Tweedie link power (default:0.0).
         :type tweedie_link_power: float, optional
-        :param theta: Theta (default:0).
+        :param theta: Theta (default:0.0).
         :type theta: float, optional
         :param solver: AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on
                problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for
@@ -198,7 +198,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param objective_epsilon: Converge if  objective value changes less than this. Default indicates: If
                lambda_search is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set
                to False and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other
-               value of lambda the default value of objective_epsilon is set to .0001. (default:-1).
+               value of lambda the default value of objective_epsilon is set to .0001. (default:-1.0).
         :type objective_epsilon: float, optional
         :param beta_epsilon: Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to
                IRLSM solver  (default:0.0001).
@@ -206,14 +206,15 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to
                L-BFGS solver. Default indicates: If lambda_search is set to False and lambda is equal to zero, the
                default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
-               lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively. (default:-1).
+               lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
+               (default:-1.0).
         :type gradient_epsilon: float, optional
         :param link: Link function. (default:"family_default").
         :type link: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"], optional
         :param startval: double array to initialize coefficients for GAM. (default:None).
         :type startval: List[float], optional
         :param prior: Prior probability for y==1. To be used only for logistic regression iff the data has been sampled
-               and the mean of response does not reflect reality. (default:-1).
+               and the mean of response does not reflect reality. (default:-1.0).
         :type prior: float, optional
         :param cold_start: Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build
                the next model for next set of alpha/lambda values starting from the values provided by current model.
@@ -222,7 +223,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param lambda_min_ratio: Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest
                lambda that drives all coefficients to zero). Default indicates: if the number of observations is greater
                than the number of variables, then lambda_min_ratio is set to 0.0001; if the number of observations is
-               less than the number of variables, then lambda_min_ratio is set to 0.01. (default:-1).
+               less than the number of variables, then lambda_min_ratio is set to 0.01. (default:-1.0).
         :type lambda_min_ratio: float, optional
         :param beta_constraints: Beta constraints (default:None).
         :type beta_constraints: H2OFrame, optional
@@ -236,7 +237,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :type interactions: List[str], optional
         :param interaction_pairs: A list of pairwise (first order) column interactions. (default:None).
         :type interaction_pairs: List[tuple], optional
-        :param obj_reg: Likelihood divider in objective value computation, default is 1/nobs (default:-1).
+        :param obj_reg: Likelihood divider in objective value computation, default is 1/nobs (default:-1.0).
         :type obj_reg: float, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -260,12 +261,12 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                Requires balance_classes. (default:None).
         :type class_sampling_factors: List[float], optional
         :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes. (default:5).
+               less than 1.0). Requires balance_classes. (default:5.0).
         :type max_after_balance_size: float, optional
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
                the Logs (default:20).
         :type max_confusion_matrix_size: int, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                (default:None).
@@ -552,7 +553,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Tweedie variance power
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
         """
         return self._parms.get("tweedie_variance_power")
 
@@ -567,7 +568,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Tweedie link power
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
         """
         return self._parms.get("tweedie_link_power")
 
@@ -582,7 +583,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Theta
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
         """
         return self._parms.get("theta")
 
@@ -816,7 +817,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
         objective_epsilon is set to .0001.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
         """
         return self._parms.get("objective_epsilon")
 
@@ -849,7 +850,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
         values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
         """
         return self._parms.get("gradient_epsilon")
 
@@ -896,7 +897,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
         of response does not reflect reality.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
         """
         return self._parms.get("prior")
 
@@ -931,7 +932,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
         lambda_min_ratio is set to 0.01.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
         """
         return self._parms.get("lambda_min_ratio")
 
@@ -1007,7 +1008,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Likelihood divider in objective value computation, default is 1/nobs
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``-1.0``).
         """
         return self._parms.get("obj_reg")
 
@@ -1118,7 +1119,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``  (default: ``5.0``).
         """
         return self._parms.get("max_after_balance_size")
 
@@ -1148,7 +1149,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
         """
         return self._parms.get("max_runtime_secs")
 

@@ -35,7 +35,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                  keep_u=True,  # type: bool
                  u_name=None,  # type: str
                  use_all_factor_levels=True,  # type: bool
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  ):
         """
@@ -69,7 +69,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
                (default:True).
         :type use_all_factor_levels: bool, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -379,7 +379,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

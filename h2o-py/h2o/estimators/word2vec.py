@@ -32,7 +32,7 @@ class H2OWord2vecEstimator(H2OEstimator):
                  init_learning_rate=0.025,  # type: float
                  epochs=5,  # type: int
                  pre_trained=None,  # type: H2OFrame
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  ):
         """
@@ -59,7 +59,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         :type epochs: int, optional
         :param pre_trained: Id of a data frame that contains a pre-trained (external) word2vec model (default:None).
         :type pre_trained: H2OFrame, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -355,7 +355,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

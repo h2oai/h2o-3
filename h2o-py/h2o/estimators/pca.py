@@ -36,7 +36,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
                  compute_metrics=True,  # type: bool
                  impute_missing=False,  # type: bool
                  seed=-1,  # type: int
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  ):
         """
@@ -80,7 +80,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         :type impute_missing: bool, optional
         :param seed: RNG seed for initialization (default:-1).
         :type seed: int, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -447,7 +447,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 

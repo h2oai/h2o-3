@@ -39,11 +39,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  period=1,  # type: int
                  regularization_x="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
                  regularization_y="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
-                 gamma_x=0,  # type: float
-                 gamma_y=0,  # type: float
+                 gamma_x=0.0,  # type: float
+                 gamma_y=0.0,  # type: float
                  max_iterations=1000,  # type: int
                  max_updates=2000,  # type: int
-                 init_step_size=1,  # type: float
+                 init_step_size=1.0,  # type: float
                  min_step_size=0.0001,  # type: float
                  seed=-1,  # type: int
                  init="plus_plus",  # type: Literal["random", "svd", "plus_plus", "user"]
@@ -53,7 +53,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  expand_user_y=True,  # type: bool
                  impute_original=False,  # type: bool
                  recover_svd=False,  # type: bool
-                 max_runtime_secs=0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: str
                  ):
         """
@@ -93,15 +93,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         :type regularization_x: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
         :param regularization_y: Regularization function for Y matrix (default:"none").
         :type regularization_y: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
-        :param gamma_x: Regularization weight on X matrix (default:0).
+        :param gamma_x: Regularization weight on X matrix (default:0.0).
         :type gamma_x: float, optional
-        :param gamma_y: Regularization weight on Y matrix (default:0).
+        :param gamma_y: Regularization weight on Y matrix (default:0.0).
         :type gamma_y: float, optional
         :param max_iterations: Maximum number of iterations (default:1000).
         :type max_iterations: int, optional
         :param max_updates: Maximum number of updates, defaults to 2*max_iterations (default:2000).
         :type max_updates: int, optional
-        :param init_step_size: Initial step size (default:1).
+        :param init_step_size: Initial step size (default:1.0).
         :type init_step_size: float, optional
         :param min_step_size: Minimum step size (default:0.0001).
         :type min_step_size: float, optional
@@ -122,7 +122,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         :type impute_original: bool, optional
         :param recover_svd: Recover singular values and eigenvectors of XY (default:False).
         :type recover_svd: bool, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
         :type max_runtime_secs: float, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
@@ -573,7 +573,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Regularization weight on X matrix
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -603,7 +603,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Regularization weight on Y matrix
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
@@ -689,7 +689,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Initial step size
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``  (default: ``1.0``).
 
         :examples:
 
@@ -976,7 +976,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``  (default: ``0.0``).
 
         :examples:
 
