@@ -1,6 +1,5 @@
 def class_extensions():
 
-    _deprecated_params_ = ['k', 'f', 'noise_level']
     k = deprecated_property('k', inflection_point)
     f = deprecated_property('f', smoothing)
     noise_level = deprecated_property('noise_level', noise)
@@ -69,10 +68,6 @@ import warnings
 from h2o.exceptions import H2ODeprecationWarning
 from h2o.utils.metaclass import deprecated_property
 from h2o.utils.typechecks import U
-""",
-    __init__setparams="""
-elif pname in self._deprecated_params_:
-    setattr(self, pname, pvalue)  # property handles the redefinition
 """,
     __class__=class_extensions,
 )

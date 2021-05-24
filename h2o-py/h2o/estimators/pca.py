@@ -19,63 +19,52 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     """
 
     algo = "pca"
-    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
-                   "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
-                   "export_checkpoints_dir"}
 
     def __init__(self, model_id=None, training_frame=None, validation_frame=None, ignored_columns=None,
                  ignore_const_cols=True, score_each_iteration=False, transform="none", pca_method="gram_s_v_d",
                  pca_impl=None, k=1, max_iterations=1000, use_all_factor_levels=False, compute_metrics=True,
                  impute_missing=False, seed=-1, max_runtime_secs=0, export_checkpoints_dir=None):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param bool ignore_const_cols: Ignore constant columns. (default: True).
-        :param bool score_each_iteration: Whether to score during each iteration of model training.
-               (default: False).
-        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of
-               training data (default: "none").
-        :param Enum["gram_s_v_d", "power", "randomized", "glrm"] pca_method: Specify the algorithm to use
-               for computing the principal components: GramSVD - uses a distributed computation of the Gram matrix,
-               followed by a local SVD; Power - computes the SVD using the power iteration method (experimental);
-               Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank model with L2
-               loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
-               (default: "gram_s_v_d").
-        :param Enum["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"] pca_impl:
-               Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
-               decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric
-               matrix using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA -
-               eigenvalue decompositions for dense matrix using JAMA. References: JAMA -
-               http://math.nist.gov/javanumerics/jama/; MTJ - https://github.com/fommil/matrix-toolkits-java/ (default:
-               None).
-        :param int k: Rank of matrix approximation (default: 1).
-        :param int max_iterations: Maximum training iterations (default: 1000).
-        :param bool use_all_factor_levels: Whether first factor level is included in each categorical
-               expansion (default: False).
-        :param bool compute_metrics: Whether to compute metrics on the training data (default: True).
-        :param bool impute_missing: Whether to impute missing entries with the column mean (default:
-               False).
-        :param int seed: RNG seed for initialization (default: -1).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param bool ignore_const_cols: Ignore constant columns. (default:True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of training data
+               (default:"none").
+        :param Enum["gram_s_v_d", "power", "randomized", "glrm"] pca_method: Specify the algorithm to use for computing
+               the principal components: GramSVD - uses a distributed computation of the Gram matrix, followed by a
+               local SVD; Power - computes the SVD using the power iteration method (experimental); Randomized - uses
+               randomized subspace iteration method; GLRM - fits a generalized low-rank model with L2 loss function and
+               no regularization and solves for the SVD using local matrix algebra (experimental)
+               (default:"gram_s_v_d").
+        :param Enum["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"] pca_impl: Specify the
+               implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue decompositions
+               for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix using
+               MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA - eigenvalue
+               decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/;
+               MTJ - https://github.com/fommil/matrix-toolkits-java/ (default:None).
+        :param int k: Rank of matrix approximation (default:1).
+        :param int max_iterations: Maximum training iterations (default:1000).
+        :param bool use_all_factor_levels: Whether first factor level is included in each categorical expansion
+               (default:False).
+        :param bool compute_metrics: Whether to compute metrics on the training data (default:True).
+        :param bool impute_missing: Whether to impute missing entries with the column mean (default:False).
+        :param int seed: RNG seed for initialization (default:-1).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

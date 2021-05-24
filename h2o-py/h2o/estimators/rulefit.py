@@ -21,51 +21,44 @@ class H2ORuleFitEstimator(H2OEstimator):
     """
 
     algo = "rulefit"
-    param_names = {"model_id", "training_frame", "validation_frame", "seed", "response_column", "ignored_columns",
-                   "algorithm", "min_rule_length", "max_rule_length", "max_num_rules", "model_type", "weights_column",
-                   "distribution", "rule_generation_ntrees"}
 
     def __init__(self, model_id=None, training_frame=None, validation_frame=None, seed=-1, response_column=None,
                  ignored_columns=None, algorithm="auto", min_rule_length=3, max_rule_length=3, max_num_rules=-1,
                  model_type="rules_and_linear", weights_column=None, distribution="auto", rule_generation_ntrees=50):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param int seed: Seed for pseudo random number generator (if applicable). (default: -1).
-        :param str response_column: Response variable column. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param Enum["auto", "drf", "gbm"] algorithm: The algorithm to use to generate rules. (default:
-               "auto").
-        :param int min_rule_length: Minimum length of rules. Defaults to 3. (default: 3).
-        :param int max_rule_length: Maximum length of rules. Defaults to 3. (default: 3).
-        :param int max_num_rules: The maximum number of rules to return. defaults to -1 which means the
-               number of rules is selected  by diminishing returns in model deviance. (default: -1).
-        :param Enum["rules_and_linear", "rules", "linear"] model_type: Specifies type of base learners in
-               the ensemble. (default: "rules_and_linear").
-        :param str weights_column: Column with observation weights. Giving some observation a weight of
-               zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is
-               equivalent to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row
-               observation weights and do not increase the size of the data frame. This is typically the number of times
-               a row is repeated, but non-integer values are supported as well. During training, rows with higher
-               weights matter more, due to the larger loss function pre-factor. (default: None).
-        :param Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
-               "laplace", "quantile", "huber"] distribution: Distribution function (default: "auto").
-        :param int rule_generation_ntrees: specifies the number of trees to build in the tree model.
-               Defaults to 50. (default: 50).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param int seed: Seed for pseudo random number generator (if applicable). (default:-1).
+        :param str response_column: Response variable column. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param Enum["auto", "drf", "gbm"] algorithm: The algorithm to use to generate rules. (default:"auto").
+        :param int min_rule_length: Minimum length of rules. Defaults to 3. (default:3).
+        :param int max_rule_length: Maximum length of rules. Defaults to 3. (default:3).
+        :param int max_num_rules: The maximum number of rules to return. defaults to -1 which means the number of rules
+               is selected  by diminishing returns in model deviance. (default:-1).
+        :param Enum["rules_and_linear", "rules", "linear"] model_type: Specifies type of base learners in the ensemble.
+               (default:"rules_and_linear").
+        :param str weights_column: Column with observation weights. Giving some observation a weight of zero is
+               equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent
+               to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row observation
+               weights and do not increase the size of the data frame. This is typically the number of times a row is
+               repeated, but non-integer values are supported as well. During training, rows with higher weights matter
+               more, due to the larger loss function pre-factor. (default:None).
+        :param Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+               "quantile", "huber"] distribution: Distribution function (default:"auto").
+        :param int rule_generation_ntrees: specifies the number of trees to build in the tree model. Defaults to 50.
+               (default:50).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2ORuleFitEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

@@ -63,11 +63,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     """
 
     algo = "stackedensemble"
-    param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
-                   "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "metalearner_transform", "max_runtime_secs",
-                   "weights_column", "offset_column", "seed", "score_training_samples", "keep_levelone_frame",
-                   "export_checkpoints_dir", "auc_type"}
 
     def __init__(self, model_id=None, training_frame=None, response_column=None, validation_frame=None, blending_frame=None,
                  base_models=[], metalearner_algorithm="auto", metalearner_nfolds=0, metalearner_fold_assignment=None,
@@ -75,65 +70,60 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  max_runtime_secs=0, weights_column=None, offset_column=None, seed=-1, score_training_samples=10000,
                  keep_levelone_frame=False, export_checkpoints_dir=None, auc_type="auto"):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param str response_column: Response variable column. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param H2OFrame blending_frame: Frame used to compute the predictions that serve as the training
-               frame for the metalearner (triggers blending mode if provided) (default: None).
-        :param List[str] base_models: List of models or grids (or their ids) to ensemble/stack together.
-               Grids are expanded to individual models. If not using blending frame, then models must have been cross-
-               validated using nfolds > 1, and folds must be identical across models. (default: []).
-        :param Enum["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
-               metalearner_algorithm: Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non
-               negative weights; if validation_frame is present, a lambda search is performed), 'deeplearning' (Deep
-               Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
-               parameters), 'glm' (GLM with default parameters), 'naivebayes' (NaiveBayes with default parameters), or
-               'xgboost' (if available, XGBoost with default parameters). (default: "auto").
-        :param int metalearner_nfolds: Number of folds for K-fold cross-validation of the metalearner
-               algorithm (0 to disable or >= 2). (default: 0).
-        :param Enum["auto", "random", "modulo", "stratified"] metalearner_fold_assignment: Cross-
-               validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is currently
-               set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
-               classification problems. (default: None).
-        :param str metalearner_fold_column: Column with cross-validation fold index assignment per
-               observation for cross-validation of the metalearner. (default: None).
-        :param dict metalearner_params: Parameters for metalearner algorithm (default: None).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param str response_column: Response variable column. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param H2OFrame blending_frame: Frame used to compute the predictions that serve as the training frame for the
+               metalearner (triggers blending mode if provided) (default:None).
+        :param List[str] base_models: List of models or grids (or their ids) to ensemble/stack together. Grids are
+               expanded to individual models. If not using blending frame, then models must have been cross-validated
+               using nfolds > 1, and folds must be identical across models. (default:[]).
+        :param Enum["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"] metalearner_algorithm: Type of
+               algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
+               validation_frame is present, a lambda search is performed), 'deeplearning' (Deep Learning with default
+               parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm'
+               (GLM with default parameters), 'naivebayes' (NaiveBayes with default parameters), or 'xgboost' (if
+               available, XGBoost with default parameters). (default:"auto").
+        :param int metalearner_nfolds: Number of folds for K-fold cross-validation of the metalearner algorithm (0 to
+               disable or >= 2). (default:0).
+        :param Enum["auto", "random", "modulo", "stratified"] metalearner_fold_assignment: Cross-validation fold
+               assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is currently set to Random).
+               The 'Stratified' option will stratify the folds based on the response variable, for classification
+               problems. (default:None).
+        :param str metalearner_fold_column: Column with cross-validation fold index assignment per observation for
+               cross-validation of the metalearner. (default:None).
+        :param dict metalearner_params: Parameters for metalearner algorithm (default:None).
         :param Enum["none", "logit"] metalearner_transform: Transformation used for the level one frame.
-               (default: "none").
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param str weights_column: Column with observation weights. Giving some observation a weight of
-               zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is
-               equivalent to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row
-               observation weights and do not increase the size of the data frame. This is typically the number of times
-               a row is repeated, but non-integer values are supported as well. During training, rows with higher
-               weights matter more, due to the larger loss function pre-factor. (default: None).
-        :param str offset_column: Offset column. This will be added to the combination of columns before
-               applying the link function. (default: None).
-        :param int seed: Seed for random numbers; passed through to the metalearner algorithm. Defaults
-               to -1 (time-based random number) (default: -1).
-        :param int score_training_samples: Specify the number of training set samples for scoring. The
-               value must be >= 0. To use all training samples, enter 0. (default: 10000).
-        :param bool keep_levelone_frame: Keep level one frame used for metalearner training. (default:
-               False).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
-        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
-               Set default multinomial AUC type. (default: "auto").
+               (default:"none").
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param str weights_column: Column with observation weights. Giving some observation a weight of zero is
+               equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent
+               to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row observation
+               weights and do not increase the size of the data frame. This is typically the number of times a row is
+               repeated, but non-integer values are supported as well. During training, rows with higher weights matter
+               more, due to the larger loss function pre-factor. (default:None).
+        :param str offset_column: Offset column. This will be added to the combination of columns before applying the
+               link function. (default:None).
+        :param int seed: Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-
+               based random number) (default:-1).
+        :param int score_training_samples: Specify the number of training set samples for scoring. The value must be >=
+               0. To use all training samples, enter 0. (default:10000).
+        :param bool keep_levelone_frame: Keep level one frame used for metalearner training. (default:False).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type: Set default
+               multinomial AUC type. (default:"auto").
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
         self._parms["_rest_version"] = 99
 
     @property

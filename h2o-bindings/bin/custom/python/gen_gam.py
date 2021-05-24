@@ -46,9 +46,6 @@ import h2o
 from h2o.utils.typechecks import U
 """,
     __class__=class_extensions,
-    __init__validation="""
-if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-"""
 )
 
 overrides = dict(

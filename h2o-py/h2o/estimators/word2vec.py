@@ -19,50 +19,38 @@ class H2OWord2vecEstimator(H2OEstimator):
     """
 
     algo = "word2vec"
-    param_names = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size", "window_size",
-                   "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained", "max_runtime_secs",
-                   "export_checkpoints_dir"}
 
     def __init__(self, model_id=None, training_frame=None, min_word_freq=5, word_model="skip_gram", norm_model="hsm",
                  vec_size=100, window_size=5, sent_sample_rate=0.001, init_learning_rate=0.025, epochs=5,
                  pre_trained=None, max_runtime_secs=0, export_checkpoints_dir=None):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param int min_word_freq: This will discard words that appear less than <int> times (default: 5).
-        :param Enum["skip_gram", "cbow"] word_model: The word model to use (SkipGram or CBOW) (default:
-               "skip_gram").
-        :param Enum["hsm"] norm_model: Use Hierarchical Softmax (default: "hsm").
-        :param int vec_size: Set size of word vectors (default: 100).
-        :param int window_size: Set max skip length between words (default: 5).
-        :param float sent_sample_rate: Set threshold for occurrence of words. Those that appear with
-               higher frequency in the training data                 will be randomly down-sampled; useful range is (0,
-               1e-5) (default: 0.001).
-        :param float init_learning_rate: Set the starting learning rate (default: 0.025).
-        :param int epochs: Number of training iterations to run (default: 5).
-        :param H2OFrame pre_trained: Id of a data frame that contains a pre-trained (external) word2vec
-               model (default: None).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param int min_word_freq: This will discard words that appear less than <int> times (default:5).
+        :param Enum["skip_gram", "cbow"] word_model: The word model to use (SkipGram or CBOW) (default:"skip_gram").
+        :param Enum["hsm"] norm_model: Use Hierarchical Softmax (default:"hsm").
+        :param int vec_size: Set size of word vectors (default:100).
+        :param int window_size: Set max skip length between words (default:5).
+        :param float sent_sample_rate: Set threshold for occurrence of words. Those that appear with higher frequency in
+               the training data                 will be randomly down-sampled; useful range is (0, 1e-5)
+               (default:0.001).
+        :param float init_learning_rate: Set the starting learning rate (default:0.025).
+        :param int epochs: Number of training iterations to run (default:5).
+        :param H2OFrame pre_trained: Id of a data frame that contains a pre-trained (external) word2vec model
+               (default:None).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname == 'pre_trained':
-                setattr(self, pname, pvalue)
-                self._determine_vec_size();
-                setattr(self, 'vec_size', self.vec_size)
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):
@@ -428,18 +416,19 @@ class H2OWord2vecEstimator(H2OEstimator):
         w2v_model.train()
         return w2v_model
 
-    def _determine_vec_size(self):
+    @staticmethod
+    def _determine_vec_size(pre_trained):
         """
         Determines vec_size for a pre-trained model after basic model verification.
         """
-        first_column = self.pre_trained.types[self.pre_trained.columns[0]]
+        first_column = pre_trained.types[pre_trained.columns[0]]
 
         if first_column != 'string':
             raise H2OValueError("First column of given pre_trained model %s is required to be a String",
-                                self.pre_trained.frame_id)
+                                pre_trained.frame_id)
 
-        if list(self.pre_trained.types.values()).count('string') > 1:
+        if list(pre_trained.types.values()).count('string') > 1:
             raise H2OValueError("There are multiple columns in given pre_trained model %s with a String type.",
-                                self.pre_trained.frame_id)
+                                pre_trained.frame_id)
 
-        self.vec_size = self.pre_trained.dim[1] - 1;
+        return pre_trained.dim[1] - 1

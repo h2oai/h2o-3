@@ -24,60 +24,49 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns",
-                   "columns_to_encode", "keep_original_categorical_columns", "blending", "inflection_point",
-                   "smoothing", "data_leakage_handling", "noise", "seed"}
 
     def __init__(self, model_id=None, training_frame=None, fold_column=None, response_column=None, ignored_columns=None,
                  columns_to_encode=None, keep_original_categorical_columns=True, blending=False, inflection_point=10,
                  smoothing=20, data_leakage_handling="none", noise=0.01, seed=-1):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param str fold_column: Column with cross-validation fold index assignment per observation.
-               (default: None).
-        :param str response_column: Response variable column. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param List[List[str]] columns_to_encode: List of categorical columns or groups of categorical
-               columns to encode. When groups of columns are specified, each group is encoded as a single column
-               (interactions are created internally). (default: None).
-        :param bool keep_original_categorical_columns: If true, the original non-encoded categorical
-               features will remain in the result frame. (default: True).
-        :param bool blending: If true, enables blending of posterior probabilities (computed for a given
-               categorical value) with prior probabilities (computed on the entire set). This allows to mitigate the
-               effect of categorical values with small cardinality. The blending effect can be tuned using the
-               `inflection_point` and `smoothing` parameters. (default: False).
-        :param float inflection_point: Inflection point of the sigmoid used to blend probabilities (see
-               `blending` parameter). For a given categorical value, if it appears less that `inflection_point` in a
-               data sample, then the influence of the posterior probability will be smaller than the prior. (default:
-               10).
-        :param float smoothing: Smoothing factor corresponds to the inverse of the slope at the
-               inflection point on the sigmoid used to blend probabilities (see `blending` parameter). If smoothing
-               tends towards 0, then the sigmoid used for blending turns into a Heaviside step function. (default: 20).
-        :param Enum["leave_one_out", "k_fold", "none"] data_leakage_handling: Data leakage handling
-               strategy used to generate the encoding. Supported options are: 1) "none" (default) - no holdout, using
-               the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from the per-
-               level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
-               generated based on out-of-fold data.  (default: "none").
-        :param float noise: The amount of noise to add to the encoded column. Use 0 to disable noise, and
-               -1 (=AUTO) to let the algorithm determine a reasonable amount of noise. (default: 0.01).
-        :param int seed: Seed used to generate the noise. By default, the seed is chosen randomly.
-               (default: -1).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param str fold_column: Column with cross-validation fold index assignment per observation. (default:None).
+        :param str response_column: Response variable column. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param List[List[str]] columns_to_encode: List of categorical columns or groups of categorical columns to
+               encode. When groups of columns are specified, each group is encoded as a single column (interactions are
+               created internally). (default:None).
+        :param bool keep_original_categorical_columns: If true, the original non-encoded categorical features will
+               remain in the result frame. (default:True).
+        :param bool blending: If true, enables blending of posterior probabilities (computed for a given categorical
+               value) with prior probabilities (computed on the entire set). This allows to mitigate the effect of
+               categorical values with small cardinality. The blending effect can be tuned using the `inflection_point`
+               and `smoothing` parameters. (default:False).
+        :param float inflection_point: Inflection point of the sigmoid used to blend probabilities (see `blending`
+               parameter). For a given categorical value, if it appears less that `inflection_point` in a data sample,
+               then the influence of the posterior probability will be smaller than the prior. (default:10).
+        :param float smoothing: Smoothing factor corresponds to the inverse of the slope at the inflection point on the
+               sigmoid used to blend probabilities (see `blending` parameter). If smoothing tends towards 0, then the
+               sigmoid used for blending turns into a Heaviside step function. (default:20).
+        :param Enum["leave_one_out", "k_fold", "none"] data_leakage_handling: Data leakage handling strategy used to
+               generate the encoding. Supported options are: 1) "none" (default) - no holdout, using the entire training
+               frame. 2) "leave_one_out" - current row's response value is subtracted from the per-level frequencies
+               pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are generated based on
+               out-of-fold data.  (default:"none").
+        :param float noise: The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to
+               let the algorithm determine a reasonable amount of noise. (default:0.01).
+        :param int seed: Seed used to generate the noise. By default, the seed is chosen randomly. (default:-1).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OTargetEncoderEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self._deprecated_params_:
-                setattr(self, pname, pvalue)  # property handles the redefinition
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):
@@ -368,7 +357,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
 
-    _deprecated_params_ = ['k', 'f', 'noise_level']
     k = deprecated_property('k', inflection_point)
     f = deprecated_property('f', smoothing)
     noise_level = deprecated_property('noise_level', noise)

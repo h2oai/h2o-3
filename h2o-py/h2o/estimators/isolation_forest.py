@@ -24,12 +24,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     """
 
     algo = "isolationforest"
-    param_names = {"model_id", "training_frame", "score_each_iteration", "score_tree_interval", "ignored_columns",
-                   "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
-                   "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
-                   "col_sample_rate_per_tree", "categorical_encoding", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "export_checkpoints_dir", "contamination", "validation_frame",
-                   "validation_response_column"}
 
     def __init__(self, model_id=None, training_frame=None, score_each_iteration=False, score_tree_interval=0,
                  ignored_columns=None, ignore_const_cols=True, ntrees=50, max_depth=8, min_rows=1, max_runtime_secs=0,
@@ -38,68 +32,60 @@ class H2OIsolationForestEstimator(H2OEstimator):
                  stopping_rounds=0, stopping_metric="auto", stopping_tolerance=0.01, export_checkpoints_dir=None,
                  contamination=-1, validation_frame=None, validation_response_column=None):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param bool score_each_iteration: Whether to score during each iteration of model training.
-               (default: False).
-        :param int score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
-               (default: 0).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param bool ignore_const_cols: Ignore constant columns. (default: True).
-        :param int ntrees: Number of trees. (default: 50).
-        :param int max_depth: Maximum tree depth (0 for unlimited). (default: 8).
-        :param float min_rows: Fewest allowed (weighted) observations in a leaf. (default: 1).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param int seed: Seed for pseudo random number generator (if applicable) (default: -1).
-        :param bool build_tree_one_node: Run on one node only; no network overhead but fewer cpus used.
-               Suitable for small datasets. (default: False).
-        :param int mtries: Number of variables randomly sampled as candidates at each split. If set to
-               -1, defaults (number of predictors)/3. (default: -1).
-        :param int sample_size: Number of randomly sampled observations used to train each Isolation
-               Forest tree. Only one of parameters sample_size and sample_rate should be defined. If sample_rate is
-               defined, sample_size will be ignored. (default: 256).
-        :param float sample_rate: Rate of randomly sampled observations used to train each Isolation
-               Forest tree. Needs to be in range from 0.0 to 1.0. If set to -1, sample_rate is disabled and sample_size
-               will be used instead. (default: -1).
-        :param float col_sample_rate_change_per_level: Relative change of the column sampling rate for
-               every level (must be > 0.0 and <= 2.0) (default: 1).
-        :param float col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:
-               1).
-        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen",
-               "label_encoder", "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for
-               categorical features (default: "auto").
-        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if
-               simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring
-               events (0 to disable) (default: 0).
-        :param Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc",
-               "aucpr", "misclassification", "mean_per_class_error"] stopping_metric: Metric to use for early stopping
-               (AUTO: logloss for classification, deviance for regression and anonomaly_score for Isolation Forest).
-               Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. (default:
-               "auto").
-        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if
-               relative improvement is not at least this much) (default: 0.01).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
-        :param float contamination: Contamination ratio - the proportion of anomalies in the input
-               dataset. If undefined (-1) the predict function will not mark observations as anomalies and only anomaly
-               score will be returned. Defaults to -1 (undefined). (default: -1).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param str validation_response_column: (experimental) Name of the response column in the
-               validation frame. Response column should be binary and indicate not anomaly/anomaly. (default: None).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param int score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param bool ignore_const_cols: Ignore constant columns. (default:True).
+        :param int ntrees: Number of trees. (default:50).
+        :param int max_depth: Maximum tree depth (0 for unlimited). (default:8).
+        :param float min_rows: Fewest allowed (weighted) observations in a leaf. (default:1).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param int seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :param bool build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for
+               small datasets. (default:False).
+        :param int mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults
+               (number of predictors)/3. (default:-1).
+        :param int sample_size: Number of randomly sampled observations used to train each Isolation Forest tree. Only
+               one of parameters sample_size and sample_rate should be defined. If sample_rate is defined, sample_size
+               will be ignored. (default:256).
+        :param float sample_rate: Rate of randomly sampled observations used to train each Isolation Forest tree. Needs
+               to be in range from 0.0 to 1.0. If set to -1, sample_rate is disabled and sample_size will be used
+               instead. (default:-1).
+        :param float col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must
+               be > 0.0 and <= 2.0) (default:1).
+        :param float col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1).
+        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for categorical features
+               (default:"auto").
+        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving
+               average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to
+               disable) (default:0).
+        :param Enum["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
+               "misclassification", "mean_per_class_error"] stopping_metric: Metric to use for early stopping (AUTO:
+               logloss for classification, deviance for regression and anonomaly_score for Isolation Forest). Note that
+               custom and custom_increasing can only be used in GBM and DRF with the Python client. (default:"auto").
+        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative
+               improvement is not at least this much) (default:0.01).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param float contamination: Contamination ratio - the proportion of anomalies in the input dataset. If undefined
+               (-1) the predict function will not mark observations as anomalies and only anomaly score will be
+               returned. Defaults to -1 (undefined). (default:-1).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param str validation_response_column: (experimental) Name of the response column in the validation frame.
+               Response column should be binary and indicate not anomaly/anomaly. (default:None).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OIsolationForestEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

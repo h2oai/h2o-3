@@ -20,12 +20,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     """
 
     algo = "glrm"
-    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "representation_name", "loading_name", "transform", "k", "loss",
-                   "loss_by_col", "loss_by_col_idx", "multi_loss", "period", "regularization_x", "regularization_y",
-                   "gamma_x", "gamma_y", "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed",
-                   "init", "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
-                   "max_runtime_secs", "export_checkpoints_dir"}
 
     def __init__(self, model_id=None, training_frame=None, validation_frame=None, ignored_columns=None,
                  ignore_const_cols=True, score_each_iteration=False, representation_name=None, loading_name=None,
@@ -35,66 +29,57 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  init="plus_plus", svd_method="randomized", user_y=None, user_x=None, expand_user_y=True,
                  impute_original=False, recover_svd=False, max_runtime_secs=0, export_checkpoints_dir=None):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param bool ignore_const_cols: Ignore constant columns. (default: True).
-        :param bool score_each_iteration: Whether to score during each iteration of model training.
-               (default: False).
-        :param str representation_name: Frame key to save resulting X (default: None).
-        :param str loading_name: [Deprecated] Use representation_name instead.  Frame key to save
-               resulting X. (default: None).
-        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of
-               training data (default: "none").
-        :param int k: Rank of matrix approximation (default: 1).
-        :param Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"] loss:
-               Numeric loss function (default: "quadratic").
-        :param List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic",
-               "categorical", "ordinal"]] loss_by_col: Loss function by column (override) (default: None).
-        :param List[int] loss_by_col_idx: Loss function by column index (override) (default: None).
-        :param Enum["categorical", "ordinal"] multi_loss: Categorical loss function (default:
-               "categorical").
-        :param int period: Length of period (only used with periodic loss function) (default: 1).
-        :param Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse",
-               "simplex"] regularization_x: Regularization function for X matrix (default: "none").
-        :param Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse",
-               "simplex"] regularization_y: Regularization function for Y matrix (default: "none").
-        :param float gamma_x: Regularization weight on X matrix (default: 0).
-        :param float gamma_y: Regularization weight on Y matrix (default: 0).
-        :param int max_iterations: Maximum number of iterations (default: 1000).
-        :param int max_updates: Maximum number of updates, defaults to 2*max_iterations (default: 2000).
-        :param float init_step_size: Initial step size (default: 1).
-        :param float min_step_size: Minimum step size (default: 0.0001).
-        :param int seed: RNG seed for initialization (default: -1).
-        :param Enum["random", "svd", "plus_plus", "user"] init: Initialization mode (default:
-               "plus_plus").
-        :param Enum["gram_s_v_d", "power", "randomized"] svd_method: Method for computing SVD during
-               initialization (Caution: Randomized is currently experimental and unstable) (default: "randomized").
-        :param H2OFrame user_y: User-specified initial Y (default: None).
-        :param H2OFrame user_x: User-specified initial X (default: None).
-        :param bool expand_user_y: Expand categorical columns in user-specified initial Y (default:
-               True).
-        :param bool impute_original: Reconstruct original training data by reversing transform (default:
-               False).
-        :param bool recover_svd: Recover singular values and eigenvectors of XY (default: False).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param bool ignore_const_cols: Ignore constant columns. (default:True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param str representation_name: Frame key to save resulting X (default:None).
+        :param str loading_name: [Deprecated] Use representation_name instead.  Frame key to save resulting X.
+               (default:None).
+        :param Enum["none", "standardize", "normalize", "demean", "descale"] transform: Transformation of training data
+               (default:"none").
+        :param int k: Rank of matrix approximation (default:1).
+        :param Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"] loss: Numeric loss
+               function (default:"quadratic").
+        :param List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
+               "ordinal"]] loss_by_col: Loss function by column (override) (default:None).
+        :param List[int] loss_by_col_idx: Loss function by column index (override) (default:None).
+        :param Enum["categorical", "ordinal"] multi_loss: Categorical loss function (default:"categorical").
+        :param int period: Length of period (only used with periodic loss function) (default:1).
+        :param Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+               regularization_x: Regularization function for X matrix (default:"none").
+        :param Enum["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+               regularization_y: Regularization function for Y matrix (default:"none").
+        :param float gamma_x: Regularization weight on X matrix (default:0).
+        :param float gamma_y: Regularization weight on Y matrix (default:0).
+        :param int max_iterations: Maximum number of iterations (default:1000).
+        :param int max_updates: Maximum number of updates, defaults to 2*max_iterations (default:2000).
+        :param float init_step_size: Initial step size (default:1).
+        :param float min_step_size: Minimum step size (default:0.0001).
+        :param int seed: RNG seed for initialization (default:-1).
+        :param Enum["random", "svd", "plus_plus", "user"] init: Initialization mode (default:"plus_plus").
+        :param Enum["gram_s_v_d", "power", "randomized"] svd_method: Method for computing SVD during initialization
+               (Caution: Randomized is currently experimental and unstable) (default:"randomized").
+        :param H2OFrame user_y: User-specified initial Y (default:None).
+        :param H2OFrame user_x: User-specified initial X (default:None).
+        :param bool expand_user_y: Expand categorical columns in user-specified initial Y (default:True).
+        :param bool impute_original: Reconstruct original training data by reversing transform (default:False).
+        :param bool recover_svd: Recover singular values and eigenvectors of XY (default:False).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGeneralizedLowRankEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

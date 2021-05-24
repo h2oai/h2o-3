@@ -19,27 +19,22 @@ class H2OGenericEstimator(H2OEstimator):
     """
 
     algo = "generic"
-    param_names = {"model_id", "model_key", "path"}
 
     def __init__(self, model_id=None, model_key=None, path=None):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame model_key: Key to the self-contained model archive already uploaded to H2O.
-               (default: None).
-        :param str path: Path to file with self-contained model archive. (default: None).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame model_key: Key to the self-contained model archive already uploaded to H2O. (default:None).
+        :param str path: Path to file with self-contained model archive. (default:None).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def model_key(self):

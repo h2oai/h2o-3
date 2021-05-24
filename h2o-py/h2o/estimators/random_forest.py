@@ -21,17 +21,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     """
 
     algo = "drf"
-    param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
-                   "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "score_each_iteration",
-                   "score_tree_interval", "fold_assignment", "fold_column", "response_column", "ignored_columns",
-                   "ignore_const_cols", "offset_column", "weights_column", "balance_classes", "class_sampling_factors",
-                   "max_after_balance_size", "max_confusion_matrix_size", "ntrees", "max_depth", "min_rows", "nbins",
-                   "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node", "mtries", "sample_rate",
-                   "sample_rate_per_class", "binomial_double_trees", "checkpoint", "col_sample_rate_change_per_level",
-                   "col_sample_rate_per_tree", "min_split_improvement", "histogram_type", "categorical_encoding",
-                   "calibrate_model", "calibration_frame", "distribution", "custom_metric_func",
-                   "export_checkpoints_dir", "check_constant_response", "gainslift_bins", "auc_type"}
 
     def __init__(self, model_id=None, training_frame=None, validation_frame=None, nfolds=0, keep_cross_validation_models=True,
                  keep_cross_validation_predictions=False, keep_cross_validation_fold_assignment=False,
@@ -47,122 +36,111 @@ class H2ORandomForestEstimator(H2OEstimator):
                  distribution="auto", custom_metric_func=None, export_checkpoints_dir=None,
                  check_constant_response=True, gainslift_bins=-1, auc_type="auto"):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:
-               0).
-        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:
-               True).
-        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-
-               validation models. (default: False).
-        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold
-               assignment. (default: False).
-        :param bool score_each_iteration: Whether to score during each iteration of model training.
-               (default: False).
-        :param int score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
-               (default: 0).
-        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold
-               assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify the folds based
-               on the response variable, for classification problems. (default: "auto").
-        :param str fold_column: Column with cross-validation fold index assignment per observation.
-               (default: None).
-        :param str response_column: Response variable column. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param bool ignore_const_cols: Ignore constant columns. (default: True).
-        :param str offset_column: Offset column. This will be added to the combination of columns before
-               applying the link function. (default: None).
-        :param str weights_column: Column with observation weights. Giving some observation a weight of
-               zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is
-               equivalent to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row
-               observation weights and do not increase the size of the data frame. This is typically the number of times
-               a row is repeated, but non-integer values are supported as well. During training, rows with higher
-               weights matter more, due to the larger loss function pre-factor. (default: None).
-        :param bool balance_classes: Balance training data class counts via over/under-sampling (for
-               imbalanced data). (default: False).
-        :param List[float] class_sampling_factors: Desired over/under-sampling ratios per class (in
-               lexicographic order). If not specified, sampling factors will be automatically computed to obtain class
-               balance during training. Requires balance_classes. (default: None).
-        :param float max_after_balance_size: Maximum relative size of the training data after balancing
-               class counts (can be less than 1.0). Requires balance_classes. (default: 5).
-        :param int max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion
-               matrices to be printed in the Logs (default: 20).
-        :param int ntrees: Number of trees. (default: 50).
-        :param int max_depth: Maximum tree depth (0 for unlimited). (default: 20).
-        :param float min_rows: Fewest allowed (weighted) observations in a leaf. (default: 1).
-        :param int nbins: For numerical columns (real/int), build a histogram of (at least) this many
-               bins, then split at the best point (default: 20).
-        :param int nbins_top_level: For numerical columns (real/int), build a histogram of (at most) this
-               many bins at the root level, then decrease by factor of two per level (default: 1024).
-        :param int nbins_cats: For categorical columns (factors), build a histogram of this many bins,
-               then split at the best point. Higher values can lead to more overfitting. (default: 1024).
-        :param float r2_stopping: r2_stopping is no longer supported and will be ignored if set - please
-               use stopping_rounds, stopping_metric and stopping_tolerance instead. Previous version of H2O would stop
-               making trees when the R^2 metric equals or exceeds this (default: ∞).
-        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if
-               simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring
-               events (0 to disable) (default: 0).
-        :param Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
-               "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
-               stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
-               used in GBM and DRF with the Python client. (default: "auto").
-        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if
-               relative improvement is not at least this much) (default: 0.001).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param int seed: Seed for pseudo random number generator (if applicable) (default: -1).
-        :param bool build_tree_one_node: Run on one node only; no network overhead but fewer cpus used.
-               Suitable for small datasets. (default: False).
-        :param int mtries: Number of variables randomly sampled as candidates at each split. If set to
-               -1, defaults to sqrt{p} for classification and p/3 for regression (where p is the # of predictors
-               (default: -1).
-        :param float sample_rate: Row sample rate per tree (from 0.0 to 1.0) (default: 0.632).
-        :param List[float] sample_rate_per_class: A list of row sample rates per class (relative fraction
-               for each class, from 0.0 to 1.0), for each tree (default: None).
-        :param bool binomial_double_trees: For binary classification: Build 2x as many trees (one per
-               class) - can lead to higher accuracy. (default: False).
-        :param str checkpoint: Model checkpoint to resume training with. (default: None).
-        :param float col_sample_rate_change_per_level: Relative change of the column sampling rate for
-               every level (must be > 0.0 and <= 2.0) (default: 1).
-        :param float col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:
-               1).
-        :param float min_split_improvement: Minimum relative improvement in squared error reduction for a
-               split to happen (default: 1e-05).
-        :param Enum["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
-               histogram_type: What type of histogram to use for finding optimal split points (default: "auto").
-        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen",
-               "label_encoder", "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for
-               categorical features (default: "auto").
-        :param bool calibrate_model: Use Platt Scaling to calculate calibrated class probabilities.
-               Calibration can provide more accurate estimates of class probabilities. (default: False).
-        :param H2OFrame calibration_frame: Calibration frame for Platt Scaling (default: None).
-        :param Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
-               "laplace", "quantile", "huber"] distribution: Distribution function (default: "auto").
-        :param str custom_metric_func: Reference to custom evaluation function, format:
-               `language:keyName=funcName` (default: None).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
-        :param bool check_constant_response: Check if response column is constant. If enabled, then an
-               exception is thrown if the response column is a constant value.If disabled, then model will train
-               regardless of the response column being a constant value or not. (default: True).
-        :param int gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1
-               means automatic binning. (default: -1).
-        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
-               Set default multinomial AUC type. (default: "auto").
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
+        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
+        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
+               (default:False).
+        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
+               (default:False).
+        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param int score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
+        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold assignment scheme,
+               if fold_column is not specified. The 'Stratified' option will stratify the folds based on the response
+               variable, for classification problems. (default:"auto").
+        :param str fold_column: Column with cross-validation fold index assignment per observation. (default:None).
+        :param str response_column: Response variable column. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param bool ignore_const_cols: Ignore constant columns. (default:True).
+        :param str offset_column: Offset column. This will be added to the combination of columns before applying the
+               link function. (default:None).
+        :param str weights_column: Column with observation weights. Giving some observation a weight of zero is
+               equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent
+               to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row observation
+               weights and do not increase the size of the data frame. This is typically the number of times a row is
+               repeated, but non-integer values are supported as well. During training, rows with higher weights matter
+               more, due to the larger loss function pre-factor. (default:None).
+        :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
+               (default:False).
+        :param List[float] class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic
+               order). If not specified, sampling factors will be automatically computed to obtain class balance during
+               training. Requires balance_classes. (default:None).
+        :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts
+               (can be less than 1.0). Requires balance_classes. (default:5).
+        :param int max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed
+               in the Logs (default:20).
+        :param int ntrees: Number of trees. (default:50).
+        :param int max_depth: Maximum tree depth (0 for unlimited). (default:20).
+        :param float min_rows: Fewest allowed (weighted) observations in a leaf. (default:1).
+        :param int nbins: For numerical columns (real/int), build a histogram of (at least) this many bins, then split
+               at the best point (default:20).
+        :param int nbins_top_level: For numerical columns (real/int), build a histogram of (at most) this many bins at
+               the root level, then decrease by factor of two per level (default:1024).
+        :param int nbins_cats: For categorical columns (factors), build a histogram of this many bins, then split at the
+               best point. Higher values can lead to more overfitting. (default:1024).
+        :param float r2_stopping: r2_stopping is no longer supported and will be ignored if set - please use
+               stopping_rounds, stopping_metric and stopping_tolerance instead. Previous version of H2O would stop
+               making trees when the R^2 metric equals or exceeds this (default:∞).
+        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving
+               average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to
+               disable) (default:0).
+        :param Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+               "misclassification", "mean_per_class_error", "custom", "custom_increasing"] stopping_metric: Metric to
+               use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score for
+               Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+               client. (default:"auto").
+        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative
+               improvement is not at least this much) (default:0.001).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param int seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :param bool build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for
+               small datasets. (default:False).
+        :param int mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults to
+               sqrt{p} for classification and p/3 for regression (where p is the # of predictors (default:-1).
+        :param float sample_rate: Row sample rate per tree (from 0.0 to 1.0) (default:0.632).
+        :param List[float] sample_rate_per_class: A list of row sample rates per class (relative fraction for each
+               class, from 0.0 to 1.0), for each tree (default:None).
+        :param bool binomial_double_trees: For binary classification: Build 2x as many trees (one per class) - can lead
+               to higher accuracy. (default:False).
+        :param str checkpoint: Model checkpoint to resume training with. (default:None).
+        :param float col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must
+               be > 0.0 and <= 2.0) (default:1).
+        :param float col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1).
+        :param float min_split_improvement: Minimum relative improvement in squared error reduction for a split to
+               happen (default:1e-05).
+        :param Enum["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"] histogram_type: What type
+               of histogram to use for finding optimal split points (default:"auto").
+        :param Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"] categorical_encoding: Encoding scheme for categorical features
+               (default:"auto").
+        :param bool calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can
+               provide more accurate estimates of class probabilities. (default:False).
+        :param H2OFrame calibration_frame: Calibration frame for Platt Scaling (default:None).
+        :param Enum["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+               "quantile", "huber"] distribution: Distribution function (default:"auto").
+        :param str custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               (default:None).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param bool check_constant_response: Check if response column is constant. If enabled, then an exception is
+               thrown if the response column is a constant value.If disabled, then model will train regardless of the
+               response column being a constant value or not. (default:True).
+        :param int gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
+               binning. (default:-1).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type: Set default
+               multinomial AUC type. (default:"auto").
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2ORandomForestEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

@@ -144,8 +144,6 @@ def gen_module(schema, algo):
     extra_imports = get_customizations_for(algo, 'extensions.__imports__')
     class_doc = get_customizations_for(algo, 'doc.__class__')
     class_examples = get_customizations_for(algo, 'examples.__class__')
-    class_init_validation = get_customizations_for(algo, 'extensions.__init__validation')
-    class_init_setparams = get_customizations_for(algo, 'extensions.__init__setparams')
     class_extras = get_customizations_for(algo, 'extensions.__class__')
     module_extras = get_customizations_for(algo, 'extensions.__module__')
 
@@ -220,8 +218,6 @@ def gen_module(schema, algo):
     yield '    """'
     yield ""
     yield '    algo = "%s"' % algo
-    yield "    param_names = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
-                                             indent=(" " * 19), indent_first=False)
     yield ""
     yield "    def __init__(self, %s):" % bi.wrap(", ".join("%s=%s" % (p.get('pname'), stringify(p.get('default_value'), infinity=None)) 
                                                             for p in extended_params), 
@@ -229,23 +225,18 @@ def gen_module(schema, algo):
     yield '        """'
     for p in extended_params:
         pname, pdefault, ptype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
-        yield bi.wrap('        :param %s %s: %s (default: %s).' % (ptype, pname, pdoc, pdefault), indent=(' '*15), indent_first=False)
+        pdesc = "%s %s: %s (default:%s)." % (ptype, pname, pdoc, pdefault)
+        yield "        :param %s" % bi.wrap(pdesc, indent=(' '*15), indent_first=False)
     yield '        """'
+    yield "        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}"   # removing "hidden" variables added early due to the use of `super()` below
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
-    if class_init_validation:
-        yield reformat_block(class_init_validation, 8)
-    yield "        for pname, pvalue in kwargs.items():"
+    yield "        for pname, pvalue in sig_params.items():"
     yield "            if pname == 'model_id':"
-    yield "                self._id = pvalue"
-    yield '                self._parms["model_id"] = pvalue'
-    if class_init_setparams:
-        yield reformat_block(class_init_setparams, 12)
-    yield "            elif pname in self.param_names:"
+    yield "                self._id = self._parms['model_id'] = pvalue"
+    yield "            else:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
-    yield "            else:"
-    yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version
     yield ""

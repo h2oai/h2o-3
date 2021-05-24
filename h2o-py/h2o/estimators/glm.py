@@ -29,20 +29,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     """
 
     algo = "glm"
-    param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "checkpoint", "export_checkpoints_dir",
-                   "seed", "keep_cross_validation_models", "keep_cross_validation_predictions",
-                   "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "response_column",
-                   "ignored_columns", "random_columns", "ignore_const_cols", "score_each_iteration",
-                   "score_iteration_interval", "offset_column", "weights_column", "family", "rand_family",
-                   "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
-                   "lambda_search", "early_stopping", "nlambdas", "standardize", "missing_values_handling",
-                   "plug_values", "compute_p_values", "remove_collinear_columns", "intercept", "non_negative",
-                   "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "rand_link",
-                   "startval", "calc_like", "HGLM", "prior", "cold_start", "lambda_min_ratio", "beta_constraints",
-                   "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "stopping_rounds",
-                   "stopping_metric", "stopping_tolerance", "balance_classes", "class_sampling_factors",
-                   "max_after_balance_size", "max_confusion_matrix_size", "max_runtime_secs", "custom_metric_func",
-                   "generate_scoring_history", "auc_type"}
 
     def __init__(self, model_id=None, training_frame=None, validation_frame=None, nfolds=0, checkpoint=None,
                  export_checkpoints_dir=None, seed=-1, keep_cross_validation_models=True,
@@ -61,164 +47,147 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  max_confusion_matrix_size=20, max_runtime_secs=0, custom_metric_func=None,
                  generate_scoring_history=False, auc_type="auto"):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:
-               0).
-        :param str checkpoint: Model checkpoint to resume training with. (default: None).
-        :param str export_checkpoints_dir: Automatically export generated models to this directory.
-               (default: None).
-        :param int seed: Seed for pseudo random number generator (if applicable) (default: -1).
-        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:
-               True).
-        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-
-               validation models. (default: False).
-        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold
-               assignment. (default: False).
-        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold
-               assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify the folds based
-               on the response variable, for classification problems. (default: "auto").
-        :param str fold_column: Column with cross-validation fold index assignment per observation.
-               (default: None).
-        :param str response_column: Response variable column. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param List[int] random_columns: random columns indices for HGLM. (default: None).
-        :param bool ignore_const_cols: Ignore constant columns. (default: True).
-        :param bool score_each_iteration: Whether to score during each iteration of model training.
-               (default: False).
-        :param int score_iteration_interval: Perform scoring for every score_iteration_interval
-               iterations (default: -1).
-        :param str offset_column: Offset column. This will be added to the combination of columns before
-               applying the link function. (default: None).
-        :param str weights_column: Column with observation weights. Giving some observation a weight of
-               zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is
-               equivalent to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row
-               observation weights and do not increase the size of the data frame. This is typically the number of times
-               a row is repeated, but non-integer values are supported as well. During training, rows with higher
-               weights matter more, due to the larger loss function pre-factor. (default: None).
-        :param Enum["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal",
-               "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"] family: Family. Use binomial for
-               classification with logistic regression, others are for regression problems. (default: "auto").
-        :param List[Enum["[gaussian]"]] rand_family: Random Component Family array.  One for each random
-               component. Only support gaussian for now. (default: None).
-        :param float tweedie_variance_power: Tweedie variance power (default: 0).
-        :param float tweedie_link_power: Tweedie link power (default: 1).
-        :param float theta: Theta (default: 1e-10).
-        :param Enum["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent",
-               "gradient_descent_lh", "gradient_descent_sqerr"] solver: AUTO will set the solver based on given data and
-               the other parameters. IRLSM is fast on on problems with small number of predictors and for lambda-search
-               with L1 penalty, L_BFGS scales better for datasets with many columns. (default: "auto").
-        :param List[float] alpha: Distribution of regularization between the L1 (Lasso) and L2 (Ridge)
-               penalties. A value of 1 for alpha represents Lasso regression, a value of 0 produces Ridge regression,
-               and anything in between specifies the amount of mixing between the two. Default value of alpha is 0 when
-               SOLVER = 'L-BFGS'; 0.5 otherwise. (default: None).
-        :param List[float] lambda_: Regularization strength (default: None).
-        :param bool lambda_search: Use lambda search starting at lambda max, given lambda is then
-               interpreted as lambda min (default: False).
-        :param bool early_stopping: Stop early when there is no more relative improvement on train or
-               validation (if provided) (default: True).
-        :param int nlambdas: Number of lambdas to be used in a search. Default indicates: If alpha is
-               zero, with lambda search set to True, the value of nlamdas is set to 30 (fewer lambdas are needed for
-               ridge regression) otherwise it is set to 100. (default: -1).
-        :param bool standardize: Standardize numeric columns to have zero mean and unit variance
-               (default: True).
-        :param Enum["mean_imputation", "skip", "plug_values"] missing_values_handling: Handling of
-               missing values. Either MeanImputation, Skip or PlugValues. (default: "mean_imputation").
-        :param H2OFrame plug_values: Plug Values (a single row frame containing values that will be used
-               to impute missing values of the training/validation frame, use with conjunction missing_values_handling =
-               PlugValues) (default: None).
-        :param bool compute_p_values: Request p-values computation, p-values work only with IRLSM solver
-               and no regularization (default: False).
-        :param bool remove_collinear_columns: In case of linearly dependent columns, remove some of the
-               dependent columns (default: False).
-        :param bool intercept: Include constant term in the model (default: True).
-        :param bool non_negative: Restrict coefficients (not intercept) to be non-negative (default:
-               False).
-        :param int max_iterations: Maximum number of iterations (default: -1).
-        :param float objective_epsilon: Converge if  objective value changes less than this. Default
-               indicates: If lambda_search is set to True the value of objective_epsilon is set to .0001. If the
-               lambda_search is set to False and lambda is equal to zero, the value of objective_epsilon is set to
-               .000001, for any other value of lambda the default value of objective_epsilon is set to .0001. (default:
-               -1).
-        :param float beta_epsilon: Converge if  beta changes less (using L-infinity norm) than beta
-               esilon, ONLY applies to IRLSM solver  (default: 0.0001).
-        :param float gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than
-               this, ONLY applies to L-BFGS solver. Default indicates: If lambda_search is set to False and lambda is
-               equal to zero, the default value of gradient_epsilon is equal to .000001, otherwise the default value is
-               .0001. If lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
-               (default: -1).
-        :param Enum["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"] link:
-               Link function. (default: "family_default").
-        :param List[Enum["[identity]", "[family_default]"]] rand_link: Link function array for random
-               component in HGLM. (default: None).
-        :param List[float] startval: double array to initialize fixed and random coefficients for HGLM,
-               coefficients for GLM. (default: None).
-        :param bool calc_like: if true, will return likelihood function value for HGLM. (default: False).
-        :param bool HGLM: If set to true, will return HGLM model.  Otherwise, normal GLM model will be
-               returned (default: False).
-        :param float prior: Prior probability for y==1. To be used only for logistic regression iff the
-               data has been sampled and the mean of response does not reflect reality. (default: -1).
-        :param bool cold_start: Only applicable to multiple alpha/lambda values.  If false, build the
-               next model for next set of alpha/lambda values starting from the values provided by current model.  If
-               true will start GLM model from scratch. (default: False).
-        :param float lambda_min_ratio: Minimum lambda used in lambda search, specified as a ratio of
-               lambda_max (the smallest lambda that drives all coefficients to zero). Default indicates: if the number
-               of observations is greater than the number of variables, then lambda_min_ratio is set to 0.0001; if the
-               number of observations is less than the number of variables, then lambda_min_ratio is set to 0.01.
-               (default: -1).
-        :param H2OFrame beta_constraints: Beta constraints (default: None).
-        :param int max_active_predictors: Maximum number of active predictors during computation. Use as
-               a stopping criterion to prevent expensive model building with many predictors. Default indicates: If the
-               IRLSM solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
-               (default: -1).
-        :param List[str] interactions: A list of predictor column indices to interact. All pairwise
-               combinations will be computed for the list. (default: None).
-        :param List[tuple] interaction_pairs: A list of pairwise (first order) column interactions.
-               (default: None).
-        :param float obj_reg: Likelihood divider in objective value computation, default is 1/nobs
-               (default: -1).
-        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if
-               simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring
-               events (0 to disable) (default: 0).
-        :param Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
-               "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
-               stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
-               used in GBM and DRF with the Python client. (default: "auto").
-        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if
-               relative improvement is not at least this much) (default: 0.001).
-        :param bool balance_classes: Balance training data class counts via over/under-sampling (for
-               imbalanced data). (default: False).
-        :param List[float] class_sampling_factors: Desired over/under-sampling ratios per class (in
-               lexicographic order). If not specified, sampling factors will be automatically computed to obtain class
-               balance during training. Requires balance_classes. (default: None).
-        :param float max_after_balance_size: Maximum relative size of the training data after balancing
-               class counts (can be less than 1.0). Requires balance_classes. (default: 5).
-        :param int max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion
-               matrices to be printed in the Logs (default: 20).
-        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to
-               disable. (default: 0).
-        :param str custom_metric_func: Reference to custom evaluation function, format:
-               `language:keyName=funcName` (default: None).
-        :param bool generate_scoring_history: If set to true, will generate scoring history for GLM.
-               This may significantly slow down the algo. (default: False).
-        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type:
-               Set default multinomial AUC type. (default: "auto").
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param int nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
+        :param str checkpoint: Model checkpoint to resume training with. (default:None).
+        :param str export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param int seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :param bool keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
+        :param bool keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
+               (default:False).
+        :param bool keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
+               (default:False).
+        :param Enum["auto", "random", "modulo", "stratified"] fold_assignment: Cross-validation fold assignment scheme,
+               if fold_column is not specified. The 'Stratified' option will stratify the folds based on the response
+               variable, for classification problems. (default:"auto").
+        :param str fold_column: Column with cross-validation fold index assignment per observation. (default:None).
+        :param str response_column: Response variable column. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param List[int] random_columns: random columns indices for HGLM. (default:None).
+        :param bool ignore_const_cols: Ignore constant columns. (default:True).
+        :param bool score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param int score_iteration_interval: Perform scoring for every score_iteration_interval iterations (default:-1).
+        :param str offset_column: Offset column. This will be added to the combination of columns before applying the
+               link function. (default:None).
+        :param str weights_column: Column with observation weights. Giving some observation a weight of zero is
+               equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent
+               to repeating that row twice. Negative weights are not allowed. Note: Weights are per-row observation
+               weights and do not increase the size of the data frame. This is typically the number of times a row is
+               repeated, but non-integer values are supported as well. During training, rows with higher weights matter
+               more, due to the larger loss function pre-factor. (default:None).
+        :param Enum["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial",
+               "poisson", "gamma", "tweedie", "negativebinomial"] family: Family. Use binomial for classification with
+               logistic regression, others are for regression problems. (default:"auto").
+        :param List[Enum["[gaussian]"]] rand_family: Random Component Family array.  One for each random component. Only
+               support gaussian for now. (default:None).
+        :param float tweedie_variance_power: Tweedie variance power (default:0).
+        :param float tweedie_link_power: Tweedie link power (default:1).
+        :param float theta: Theta (default:1e-10).
+        :param Enum["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh",
+               "gradient_descent_sqerr"] solver: AUTO will set the solver based on given data and the other parameters.
+               IRLSM is fast on on problems with small number of predictors and for lambda-search with L1 penalty,
+               L_BFGS scales better for datasets with many columns. (default:"auto").
+        :param List[float] alpha: Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A
+               value of 1 for alpha represents Lasso regression, a value of 0 produces Ridge regression, and anything in
+               between specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER =
+               'L-BFGS'; 0.5 otherwise. (default:None).
+        :param List[float] lambda_: Regularization strength (default:None).
+        :param bool lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda
+               min (default:False).
+        :param bool early_stopping: Stop early when there is no more relative improvement on train or validation (if
+               provided) (default:True).
+        :param int nlambdas: Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda
+               search set to True, the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression)
+               otherwise it is set to 100. (default:-1).
+        :param bool standardize: Standardize numeric columns to have zero mean and unit variance (default:True).
+        :param Enum["mean_imputation", "skip", "plug_values"] missing_values_handling: Handling of missing values.
+               Either MeanImputation, Skip or PlugValues. (default:"mean_imputation").
+        :param H2OFrame plug_values: Plug Values (a single row frame containing values that will be used to impute
+               missing values of the training/validation frame, use with conjunction missing_values_handling =
+               PlugValues) (default:None).
+        :param bool compute_p_values: Request p-values computation, p-values work only with IRLSM solver and no
+               regularization (default:False).
+        :param bool remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent
+               columns (default:False).
+        :param bool intercept: Include constant term in the model (default:True).
+        :param bool non_negative: Restrict coefficients (not intercept) to be non-negative (default:False).
+        :param int max_iterations: Maximum number of iterations (default:-1).
+        :param float objective_epsilon: Converge if  objective value changes less than this. Default indicates: If
+               lambda_search is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set
+               to False and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other
+               value of lambda the default value of objective_epsilon is set to .0001. (default:-1).
+        :param float beta_epsilon: Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies
+               to IRLSM solver  (default:0.0001).
+        :param float gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than this, ONLY
+               applies to L-BFGS solver. Default indicates: If lambda_search is set to False and lambda is equal to
+               zero, the default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
+               lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively. (default:-1).
+        :param Enum["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"] link: Link function.
+               (default:"family_default").
+        :param List[Enum["[identity]", "[family_default]"]] rand_link: Link function array for random component in HGLM.
+               (default:None).
+        :param List[float] startval: double array to initialize fixed and random coefficients for HGLM, coefficients for
+               GLM. (default:None).
+        :param bool calc_like: if true, will return likelihood function value for HGLM. (default:False).
+        :param bool HGLM: If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned
+               (default:False).
+        :param float prior: Prior probability for y==1. To be used only for logistic regression iff the data has been
+               sampled and the mean of response does not reflect reality. (default:-1).
+        :param bool cold_start: Only applicable to multiple alpha/lambda values.  If false, build the next model for
+               next set of alpha/lambda values starting from the values provided by current model.  If true will start
+               GLM model from scratch. (default:False).
+        :param float lambda_min_ratio: Minimum lambda used in lambda search, specified as a ratio of lambda_max (the
+               smallest lambda that drives all coefficients to zero). Default indicates: if the number of observations
+               is greater than the number of variables, then lambda_min_ratio is set to 0.0001; if the number of
+               observations is less than the number of variables, then lambda_min_ratio is set to 0.01. (default:-1).
+        :param H2OFrame beta_constraints: Beta constraints (default:None).
+        :param int max_active_predictors: Maximum number of active predictors during computation. Use as a stopping
+               criterion to prevent expensive model building with many predictors. Default indicates: If the IRLSM
+               solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
+               (default:-1).
+        :param List[str] interactions: A list of predictor column indices to interact. All pairwise combinations will be
+               computed for the list. (default:None).
+        :param List[tuple] interaction_pairs: A list of pairwise (first order) column interactions. (default:None).
+        :param float obj_reg: Likelihood divider in objective value computation, default is 1/nobs (default:-1).
+        :param int stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving
+               average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to
+               disable) (default:0).
+        :param Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+               "misclassification", "mean_per_class_error", "custom", "custom_increasing"] stopping_metric: Metric to
+               use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score for
+               Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+               client. (default:"auto").
+        :param float stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative
+               improvement is not at least this much) (default:0.001).
+        :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
+               (default:False).
+        :param List[float] class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic
+               order). If not specified, sampling factors will be automatically computed to obtain class balance during
+               training. Requires balance_classes. (default:None).
+        :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts
+               (can be less than 1.0). Requires balance_classes. (default:5).
+        :param int max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed
+               in the Logs (default:20).
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               (default:0).
+        :param str custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
+               (default:None).
+        :param bool generate_scoring_history: If set to true, will generate scoring history for GLM.  This may
+               significantly slow down the algo. (default:False).
+        :param Enum["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"] auc_type: Set default
+               multinomial AUC type. (default:"auto").
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

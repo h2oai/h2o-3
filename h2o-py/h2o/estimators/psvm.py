@@ -19,10 +19,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     """
 
     algo = "psvm"
-    param_names = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
-                   "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
-                   "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
-                   "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
 
     def __init__(self, model_id=None, training_frame=None, validation_frame=None, response_column=None, ignored_columns=None,
                  ignore_const_cols=True, hyper_param=1, kernel_type="gaussian", gamma=-1, rank_ratio=-1,
@@ -30,46 +26,42 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
                  fact_threshold=1e-05, feasible_threshold=0.001, surrogate_gap_threshold=0.001, mu_factor=10,
                  max_iterations=200, seed=-1):
         """
-        :param str model_id: Destination id for this model; auto-generated if not specified. (default:
-               None).
-        :param H2OFrame training_frame: Id of the training data frame. (default: None).
-        :param H2OFrame validation_frame: Id of the validation data frame. (default: None).
-        :param str response_column: Response variable column. (default: None).
-        :param List[str] ignored_columns: Names of columns to ignore for training. (default: None).
-        :param bool ignore_const_cols: Ignore constant columns. (default: True).
-        :param float hyper_param: Penalty parameter C of the error term (default: 1).
-        :param Enum["gaussian"] kernel_type: Type of used kernel (default: "gaussian").
-        :param float gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means
-               1/#features) (default: -1).
-        :param float rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input
-               rows (-1 means use sqrt(#rows)). (default: -1).
-        :param float positive_weight: Weight of positive (+1) class of observations (default: 1).
-        :param float negative_weight: Weight of positive (-1) class of observations (default: 1).
-        :param bool disable_training_metrics: Disable calculating training metrics (expensive on large
-               datasets) (default: True).
-        :param float sv_threshold: Threshold for accepting a candidate observation into the set of
-               support vectors (default: 0.0001).
+        :param str model_id: Destination id for this model; auto-generated if not specified. (default:None).
+        :param H2OFrame training_frame: Id of the training data frame. (default:None).
+        :param H2OFrame validation_frame: Id of the validation data frame. (default:None).
+        :param str response_column: Response variable column. (default:None).
+        :param List[str] ignored_columns: Names of columns to ignore for training. (default:None).
+        :param bool ignore_const_cols: Ignore constant columns. (default:True).
+        :param float hyper_param: Penalty parameter C of the error term (default:1).
+        :param Enum["gaussian"] kernel_type: Type of used kernel (default:"gaussian").
+        :param float gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
+               (default:-1).
+        :param float rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means
+               use sqrt(#rows)). (default:-1).
+        :param float positive_weight: Weight of positive (+1) class of observations (default:1).
+        :param float negative_weight: Weight of positive (-1) class of observations (default:1).
+        :param bool disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
+               (default:True).
+        :param float sv_threshold: Threshold for accepting a candidate observation into the set of support vectors
+               (default:0.0001).
         :param float fact_threshold: Convergence threshold of the Incomplete Cholesky Factorization (ICF)
-               (default: 1e-05).
-        :param float feasible_threshold: Convergence threshold for primal-dual residuals in the IPM
-               iteration (default: 0.001).
-        :param float surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta)
-               (default: 0.001).
-        :param float mu_factor: Increasing factor mu (default: 10).
-        :param int max_iterations: Maximum number of iteration of the algorithm (default: 200).
-        :param int seed: Seed for pseudo random number generator (if applicable) (default: -1).
+               (default:1e-05).
+        :param float feasible_threshold: Convergence threshold for primal-dual residuals in the IPM iteration
+               (default:0.001).
+        :param float surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta) (default:0.001).
+        :param float mu_factor: Increasing factor mu (default:10).
+        :param int max_iterations: Maximum number of iteration of the algorithm (default:200).
+        :param int seed: Seed for pseudo random number generator (if applicable) (default:-1).
         """
+        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OSupportVectorMachineEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
+        for pname, pvalue in sig_params.items():
             if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+                self._id = self._parms['model_id'] = pvalue
+            else:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):
