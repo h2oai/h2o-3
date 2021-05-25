@@ -6,6 +6,7 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.utils.metaclass import deprecated_params, deprecated_property
 import h2o
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
@@ -30,6 +31,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     algo = "glm"
 
+    @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,
                  model_id=None,  # type: Optional[H2OEstimator]
                  training_frame=None,  # type: Optional[H2OFrame]
@@ -1998,15 +2000,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
 
-
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
+    Lambda = deprecated_property('Lambda', lambda_)
 
     @staticmethod
     def getAlphaBest(model):

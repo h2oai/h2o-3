@@ -6,6 +6,7 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.utils.metaclass import deprecated_params, deprecated_property
 import h2o
 from h2o.utils.typechecks import U
 from h2o.estimators.estimator_base import H2OEstimator
@@ -31,6 +32,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
     algo = "gam"
 
+    @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,
                  model_id=None,  # type: Optional[H2OEstimator]
                  training_frame=None,  # type: Optional[H2OFrame]
@@ -1249,15 +1251,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
 
-
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
+    Lambda = deprecated_property('Lambda', lambda_)
 
     def _additional_used_columns(self, parms):
         """
