@@ -119,7 +119,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -141,7 +140,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def response_column(self):
         """
@@ -156,7 +154,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -170,7 +167,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -196,7 +192,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def hyper_param(self):
         """
@@ -220,7 +215,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def hyper_param(self, hyper_param):
         assert_is_type(hyper_param, None, numeric)
         self._parms["hyper_param"] = hyper_param
-
 
     @property
     def kernel_type(self):
@@ -247,7 +241,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(kernel_type, None, Enum("gaussian"))
         self._parms["kernel_type"] = kernel_type
 
-
     @property
     def gamma(self):
         """
@@ -271,7 +264,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(gamma, None, numeric)
         self._parms["gamma"] = gamma
 
-
     @property
     def rank_ratio(self):
         """
@@ -294,7 +286,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def rank_ratio(self, rank_ratio):
         assert_is_type(rank_ratio, None, numeric)
         self._parms["rank_ratio"] = rank_ratio
-
 
     @property
     def positive_weight(self):
@@ -320,7 +311,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(positive_weight, None, numeric)
         self._parms["positive_weight"] = positive_weight
 
-
     @property
     def negative_weight(self):
         """
@@ -344,7 +334,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def negative_weight(self, negative_weight):
         assert_is_type(negative_weight, None, numeric)
         self._parms["negative_weight"] = negative_weight
-
 
     @property
     def disable_training_metrics(self):
@@ -370,7 +359,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(disable_training_metrics, None, bool)
         self._parms["disable_training_metrics"] = disable_training_metrics
 
-
     @property
     def sv_threshold(self):
         """
@@ -395,7 +383,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(sv_threshold, None, numeric)
         self._parms["sv_threshold"] = sv_threshold
 
-
     @property
     def fact_threshold(self):
         """
@@ -418,7 +405,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(fact_threshold, None, numeric)
         self._parms["fact_threshold"] = fact_threshold
 
-
     @property
     def feasible_threshold(self):
         """
@@ -440,7 +426,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def feasible_threshold(self, feasible_threshold):
         assert_is_type(feasible_threshold, None, numeric)
         self._parms["feasible_threshold"] = feasible_threshold
-
 
     @property
     def surrogate_gap_threshold(self):
@@ -466,7 +451,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         assert_is_type(surrogate_gap_threshold, None, numeric)
         self._parms["surrogate_gap_threshold"] = surrogate_gap_threshold
 
-
     @property
     def mu_factor(self):
         """
@@ -489,7 +473,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def mu_factor(self, mu_factor):
         assert_is_type(mu_factor, None, numeric)
         self._parms["mu_factor"] = mu_factor
-
 
     @property
     def max_iterations(self):
@@ -515,7 +498,6 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def max_iterations(self, max_iterations):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
-
 
     @property
     def seed(self):

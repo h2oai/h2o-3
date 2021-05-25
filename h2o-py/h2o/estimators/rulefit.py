@@ -99,7 +99,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -112,7 +111,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     @validation_frame.setter
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
-
 
     @property
     def seed(self):
@@ -128,7 +126,6 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def response_column(self):
         """
@@ -142,7 +139,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def ignored_columns(self):
@@ -158,7 +154,6 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def algorithm(self):
         """
@@ -172,7 +167,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     def algorithm(self, algorithm):
         assert_is_type(algorithm, None, Enum("auto", "drf", "gbm"))
         self._parms["algorithm"] = algorithm
-
 
     @property
     def min_rule_length(self):
@@ -188,7 +182,6 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(min_rule_length, None, int)
         self._parms["min_rule_length"] = min_rule_length
 
-
     @property
     def max_rule_length(self):
         """
@@ -202,7 +195,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     def max_rule_length(self, max_rule_length):
         assert_is_type(max_rule_length, None, int)
         self._parms["max_rule_length"] = max_rule_length
-
 
     @property
     def max_num_rules(self):
@@ -219,7 +211,6 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(max_num_rules, None, int)
         self._parms["max_num_rules"] = max_num_rules
 
-
     @property
     def model_type(self):
         """
@@ -233,7 +224,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     def model_type(self, model_type):
         assert_is_type(model_type, None, Enum("rules_and_linear", "rules", "linear"))
         self._parms["model_type"] = model_type
-
 
     @property
     def weights_column(self):
@@ -253,7 +243,6 @@ class H2ORuleFitEstimator(H2OEstimator):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
 
-
     @property
     def distribution(self):
         """
@@ -268,7 +257,6 @@ class H2ORuleFitEstimator(H2OEstimator):
     def distribution(self, distribution):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
-
 
     @property
     def rule_generation_ntrees(self):

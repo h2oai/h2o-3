@@ -153,7 +153,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def score_each_iteration(self):
         """
@@ -179,7 +178,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def score_tree_interval(self):
         """
@@ -204,7 +202,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(score_tree_interval, None, int)
         self._parms["score_tree_interval"] = score_tree_interval
 
-
     @property
     def ignored_columns(self):
         """
@@ -218,7 +215,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -247,7 +243,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def ntrees(self):
         """
@@ -275,7 +270,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(ntrees, None, int)
         self._parms["ntrees"] = ntrees
 
-
     @property
     def max_depth(self):
         """
@@ -300,7 +294,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(max_depth, None, int)
         self._parms["max_depth"] = max_depth
 
-
     @property
     def min_rows(self):
         """
@@ -324,7 +317,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def min_rows(self, min_rows):
         assert_is_type(min_rows, None, numeric)
         self._parms["min_rows"] = min_rows
-
 
     @property
     def max_runtime_secs(self):
@@ -351,7 +343,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def seed(self):
@@ -381,7 +372,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def build_tree_one_node(self):
         """
@@ -405,7 +395,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def build_tree_one_node(self, build_tree_one_node):
         assert_is_type(build_tree_one_node, None, bool)
         self._parms["build_tree_one_node"] = build_tree_one_node
-
 
     @property
     def mtries(self):
@@ -431,7 +420,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(mtries, None, int)
         self._parms["mtries"] = mtries
 
-
     @property
     def sample_size(self):
         """
@@ -454,7 +442,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def sample_size(self, sample_size):
         assert_is_type(sample_size, None, int)
         self._parms["sample_size"] = sample_size
-
 
     @property
     def sample_rate(self):
@@ -482,7 +469,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(sample_rate, None, numeric)
         self._parms["sample_rate"] = sample_rate
 
-
     @property
     def col_sample_rate_change_per_level(self):
         """
@@ -508,7 +494,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(col_sample_rate_change_per_level, None, numeric)
         self._parms["col_sample_rate_change_per_level"] = col_sample_rate_change_per_level
 
-
     @property
     def col_sample_rate_per_tree(self):
         """
@@ -533,7 +518,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def col_sample_rate_per_tree(self, col_sample_rate_per_tree):
         assert_is_type(col_sample_rate_per_tree, None, numeric)
         self._parms["col_sample_rate_per_tree"] = col_sample_rate_per_tree
-
 
     @property
     def categorical_encoding(self):
@@ -562,7 +546,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def stopping_rounds(self):
         """
@@ -590,7 +573,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def stopping_rounds(self, stopping_rounds):
         assert_is_type(stopping_rounds, None, int)
         self._parms["stopping_rounds"] = stopping_rounds
-
 
     @property
     def stopping_metric(self):
@@ -622,7 +604,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(stopping_metric, None, Enum("auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
-
     @property
     def stopping_tolerance(self):
         """
@@ -649,7 +630,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def stopping_tolerance(self, stopping_tolerance):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
-
 
     @property
     def export_checkpoints_dir(self):
@@ -679,7 +659,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     @property
     def contamination(self):
         """
@@ -695,7 +674,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         assert_is_type(contamination, None, numeric)
         self._parms["contamination"] = contamination
 
-
     @property
     def validation_frame(self):
         """
@@ -708,7 +686,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
     @validation_frame.setter
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
-
 
     @property
     def validation_response_column(self):

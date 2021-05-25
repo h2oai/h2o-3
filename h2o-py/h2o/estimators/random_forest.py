@@ -6,6 +6,7 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.utils.metaclass import deprecated_params, deprecated_property
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -22,6 +23,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     algo = "drf"
 
+    @deprecated_params({'offset_column': None})
     def __init__(self,
                  model_id=None,  # type: str
                  training_frame=None,  # type: H2OFrame
@@ -37,7 +39,6 @@ class H2ORandomForestEstimator(H2OEstimator):
                  response_column=None,  # type: str
                  ignored_columns=None,  # type: List[str]
                  ignore_const_cols=True,  # type: bool
-                 offset_column=None,  # type: str
                  weights_column=None,  # type: str
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: List[float]
@@ -108,9 +109,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
         :type ignore_const_cols: bool, optional
-        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
-               function. (default:None).
-        :type offset_column: str, optional
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
@@ -256,7 +254,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -285,7 +282,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def nfolds(self):
         """
@@ -313,7 +309,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def nfolds(self, nfolds):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
-
 
     @property
     def keep_cross_validation_models(self):
@@ -344,7 +339,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_models, None, bool)
         self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
-
     @property
     def keep_cross_validation_predictions(self):
         """
@@ -374,7 +368,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_predictions, None, bool)
         self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
-
     @property
     def keep_cross_validation_fold_assignment(self):
         """
@@ -403,7 +396,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
-
 
     @property
     def score_each_iteration(self):
@@ -435,7 +427,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def score_tree_interval(self):
         """
@@ -464,7 +455,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def score_tree_interval(self, score_tree_interval):
         assert_is_type(score_tree_interval, None, int)
         self._parms["score_tree_interval"] = score_tree_interval
-
 
     @property
     def fold_assignment(self):
@@ -495,7 +485,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def fold_assignment(self, fold_assignment):
         assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
-
 
     @property
     def fold_column(self):
@@ -528,7 +517,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -543,7 +531,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -557,7 +544,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -589,22 +575,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
-
-    @property
-    def offset_column(self):
-        """
-        [Deprecated] Offset column. This will be added to the combination of columns before applying the link function.
-
-        Type: ``str``.
-        """
-        return self._parms.get("offset_column")
-
-    @offset_column.setter
-    def offset_column(self, offset_column):
-        assert_is_type(offset_column, None, str)
-        self._parms["offset_column"] = offset_column
-
 
     @property
     def weights_column(self):
@@ -640,7 +610,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
 
-
     @property
     def balance_classes(self):
         """
@@ -669,7 +638,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def balance_classes(self, balance_classes):
         assert_is_type(balance_classes, None, bool)
         self._parms["balance_classes"] = balance_classes
-
 
     @property
     def class_sampling_factors(self):
@@ -704,7 +672,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(class_sampling_factors, None, [float])
         self._parms["class_sampling_factors"] = class_sampling_factors
 
-
     @property
     def max_after_balance_size(self):
         """
@@ -738,7 +705,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(max_after_balance_size, None, float)
         self._parms["max_after_balance_size"] = max_after_balance_size
 
-
     @property
     def max_confusion_matrix_size(self):
         """
@@ -752,7 +718,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
 
     @property
     def ntrees(self):
@@ -794,7 +759,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(ntrees, None, int)
         self._parms["ntrees"] = ntrees
 
-
     @property
     def max_depth(self):
         """
@@ -827,7 +791,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(max_depth, None, int)
         self._parms["max_depth"] = max_depth
 
-
     @property
     def min_rows(self):
         """
@@ -856,7 +819,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def min_rows(self, min_rows):
         assert_is_type(min_rows, None, numeric)
         self._parms["min_rows"] = min_rows
-
 
     @property
     def nbins(self):
@@ -892,7 +854,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def nbins(self, nbins):
         assert_is_type(nbins, None, int)
         self._parms["nbins"] = nbins
-
 
     @property
     def nbins_top_level(self):
@@ -933,7 +894,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def nbins_top_level(self, nbins_top_level):
         assert_is_type(nbins_top_level, None, int)
         self._parms["nbins_top_level"] = nbins_top_level
-
 
     @property
     def nbins_cats(self):
@@ -979,7 +939,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(nbins_cats, None, int)
         self._parms["nbins_cats"] = nbins_cats
 
-
     @property
     def r2_stopping(self):
         """
@@ -995,7 +954,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def r2_stopping(self, r2_stopping):
         assert_is_type(r2_stopping, None, numeric)
         self._parms["r2_stopping"] = r2_stopping
-
 
     @property
     def stopping_rounds(self):
@@ -1034,7 +992,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def stopping_rounds(self, stopping_rounds):
         assert_is_type(stopping_rounds, None, int)
         self._parms["stopping_rounds"] = stopping_rounds
-
 
     @property
     def stopping_metric(self):
@@ -1076,7 +1033,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
-
     @property
     def stopping_tolerance(self):
         """
@@ -1114,7 +1070,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
 
-
     @property
     def max_runtime_secs(self):
         """
@@ -1145,7 +1100,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def seed(self):
@@ -1181,7 +1135,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def build_tree_one_node(self):
         """
@@ -1211,7 +1164,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(build_tree_one_node, None, bool)
         self._parms["build_tree_one_node"] = build_tree_one_node
 
-
     @property
     def mtries(self):
         """
@@ -1240,7 +1192,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def mtries(self, mtries):
         assert_is_type(mtries, None, int)
         self._parms["mtries"] = mtries
-
 
     @property
     def sample_rate(self):
@@ -1277,7 +1228,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(sample_rate, None, numeric)
         self._parms["sample_rate"] = sample_rate
 
-
     @property
     def sample_rate_per_class(self):
         """
@@ -1309,7 +1259,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def sample_rate_per_class(self, sample_rate_per_class):
         assert_is_type(sample_rate_per_class, None, [numeric])
         self._parms["sample_rate_per_class"] = sample_rate_per_class
-
 
     @property
     def binomial_double_trees(self):
@@ -1348,7 +1297,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(binomial_double_trees, None, bool)
         self._parms["binomial_double_trees"] = binomial_double_trees
 
-
     @property
     def checkpoint(self):
         """
@@ -1378,7 +1326,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
-
 
     @property
     def col_sample_rate_change_per_level(self):
@@ -1414,7 +1361,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(col_sample_rate_change_per_level, None, numeric)
         self._parms["col_sample_rate_change_per_level"] = col_sample_rate_change_per_level
 
-
     @property
     def col_sample_rate_per_tree(self):
         """
@@ -1449,7 +1395,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(col_sample_rate_per_tree, None, numeric)
         self._parms["col_sample_rate_per_tree"] = col_sample_rate_per_tree
 
-
     @property
     def min_split_improvement(self):
         """
@@ -1478,7 +1423,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def min_split_improvement(self, min_split_improvement):
         assert_is_type(min_split_improvement, None, numeric)
         self._parms["min_split_improvement"] = min_split_improvement
-
 
     @property
     def histogram_type(self):
@@ -1515,7 +1459,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"))
         self._parms["histogram_type"] = histogram_type
 
-
     @property
     def categorical_encoding(self):
         """
@@ -1551,7 +1494,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
-
 
     @property
     def calibrate_model(self):
@@ -1594,7 +1536,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(calibrate_model, None, bool)
         self._parms["calibrate_model"] = calibrate_model
 
-
     @property
     def calibration_frame(self):
         """
@@ -1633,11 +1574,10 @@ class H2ORandomForestEstimator(H2OEstimator):
     def calibration_frame(self, calibration_frame):
         self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
 
-
     @property
     def distribution(self):
         """
-        [Deprecated] Distribution function
+        Distribution function
 
         Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
         "quantile", "huber"]``  (default: ``"auto"``).
@@ -1663,7 +1603,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
 
-
     @property
     def custom_metric_func(self):
         """
@@ -1677,7 +1616,6 @@ class H2ORandomForestEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
-
 
     @property
     def export_checkpoints_dir(self):
@@ -1721,7 +1659,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     @property
     def check_constant_response(self):
         """
@@ -1747,7 +1684,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
 
-
     @property
     def gainslift_bins(self):
         """
@@ -1771,7 +1707,6 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
 
-
     @property
     def auc_type(self):
         """
@@ -1787,4 +1722,5 @@ class H2ORandomForestEstimator(H2OEstimator):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
 
+    offset_column = deprecated_property('offset_column', None)
 

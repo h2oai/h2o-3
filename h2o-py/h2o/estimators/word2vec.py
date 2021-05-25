@@ -99,7 +99,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def min_word_freq(self):
         """
@@ -125,7 +124,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def min_word_freq(self, min_word_freq):
         assert_is_type(min_word_freq, None, int)
         self._parms["min_word_freq"] = min_word_freq
-
 
     @property
     def word_model(self):
@@ -153,7 +151,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         assert_is_type(word_model, None, Enum("skip_gram", "cbow"))
         self._parms["word_model"] = word_model
 
-
     @property
     def norm_model(self):
         """
@@ -179,7 +176,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def norm_model(self, norm_model):
         assert_is_type(norm_model, None, Enum("hsm"))
         self._parms["norm_model"] = norm_model
-
 
     @property
     def vec_size(self):
@@ -207,7 +203,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         assert_is_type(vec_size, None, int)
         self._parms["vec_size"] = vec_size
 
-
     @property
     def window_size(self):
         """
@@ -233,7 +228,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def window_size(self, window_size):
         assert_is_type(window_size, None, int)
         self._parms["window_size"] = window_size
-
 
     @property
     def sent_sample_rate(self):
@@ -262,7 +256,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         assert_is_type(sent_sample_rate, None, float)
         self._parms["sent_sample_rate"] = sent_sample_rate
 
-
     @property
     def init_learning_rate(self):
         """
@@ -288,7 +281,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def init_learning_rate(self, init_learning_rate):
         assert_is_type(init_learning_rate, None, float)
         self._parms["init_learning_rate"] = init_learning_rate
-
 
     @property
     def epochs(self):
@@ -321,7 +313,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         assert_is_type(epochs, None, int)
         self._parms["epochs"] = epochs
 
-
     @property
     def pre_trained(self):
         """
@@ -349,7 +340,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def pre_trained(self, pre_trained):
         self._parms["pre_trained"] = H2OFrame._validate(pre_trained, 'pre_trained')
 
-
     @property
     def max_runtime_secs(self):
         """
@@ -375,7 +365,6 @@ class H2OWord2vecEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def export_checkpoints_dir(self):

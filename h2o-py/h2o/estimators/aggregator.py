@@ -108,7 +108,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def response_column(self):
         """
@@ -123,7 +122,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -137,7 +135,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -165,7 +162,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
 
     @property
     def target_num_exemplars(self):
@@ -202,7 +198,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(target_num_exemplars, None, int)
         self._parms["target_num_exemplars"] = target_num_exemplars
 
-
     @property
     def rel_tol_num_exemplars(self):
         """
@@ -238,7 +233,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(rel_tol_num_exemplars, None, numeric)
         self._parms["rel_tol_num_exemplars"] = rel_tol_num_exemplars
 
-
     @property
     def transform(self):
         """
@@ -264,7 +258,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def transform(self, transform):
         assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
-
 
     @property
     def categorical_encoding(self):
@@ -301,7 +294,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def save_mapping_frame(self):
         """
@@ -337,7 +329,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(save_mapping_frame, None, bool)
         self._parms["save_mapping_frame"] = save_mapping_frame
 
-
     @property
     def num_iteration_without_new_exemplar(self):
         """
@@ -372,7 +363,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def num_iteration_without_new_exemplar(self, num_iteration_without_new_exemplar):
         assert_is_type(num_iteration_without_new_exemplar, None, int)
         self._parms["num_iteration_without_new_exemplar"] = num_iteration_without_new_exemplar
-
 
     @property
     def export_checkpoints_dir(self):

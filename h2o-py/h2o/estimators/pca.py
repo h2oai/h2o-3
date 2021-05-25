@@ -115,7 +115,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -139,7 +138,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def ignored_columns(self):
         """
@@ -153,7 +151,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -180,7 +177,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def score_each_iteration(self):
         """
@@ -204,7 +200,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def score_each_iteration(self, score_each_iteration):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
-
 
     @property
     def transform(self):
@@ -230,7 +225,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def transform(self, transform):
         assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
-
 
     @property
     def pca_method(self):
@@ -260,7 +254,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(pca_method, None, Enum("gram_s_v_d", "power", "randomized", "glrm"))
         self._parms["pca_method"] = pca_method
 
-
     @property
     def pca_impl(self):
         """
@@ -289,7 +282,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(pca_impl, None, Enum("mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"))
         self._parms["pca_impl"] = pca_impl
 
-
     @property
     def k(self):
         """
@@ -314,7 +306,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def k(self, k):
         assert_is_type(k, None, int)
         self._parms["k"] = k
-
 
     @property
     def max_iterations(self):
@@ -341,7 +332,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
 
-
     @property
     def use_all_factor_levels(self):
         """
@@ -364,7 +354,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def use_all_factor_levels(self, use_all_factor_levels):
         assert_is_type(use_all_factor_levels, None, bool)
         self._parms["use_all_factor_levels"] = use_all_factor_levels
-
 
     @property
     def compute_metrics(self):
@@ -391,7 +380,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(compute_metrics, None, bool)
         self._parms["compute_metrics"] = compute_metrics
 
-
     @property
     def impute_missing(self):
         """
@@ -417,7 +405,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         assert_is_type(impute_missing, None, bool)
         self._parms["impute_missing"] = impute_missing
 
-
     @property
     def seed(self):
         """
@@ -440,7 +427,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
-
 
     @property
     def max_runtime_secs(self):
@@ -467,7 +453,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def export_checkpoints_dir(self):

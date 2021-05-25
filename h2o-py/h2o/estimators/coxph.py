@@ -129,7 +129,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def start_column(self):
         """
@@ -157,7 +156,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def start_column(self, start_column):
         assert_is_type(start_column, None, str)
         self._parms["start_column"] = start_column
-
 
     @property
     def stop_column(self):
@@ -187,7 +185,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(stop_column, None, str)
         self._parms["stop_column"] = stop_column
 
-
     @property
     def response_column(self):
         """
@@ -202,7 +199,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -216,7 +212,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def weights_column(self):
@@ -235,7 +230,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
-
 
     @property
     def offset_column(self):
@@ -264,7 +258,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
 
-
     @property
     def stratify_by(self):
         """
@@ -278,7 +271,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def stratify_by(self, stratify_by):
         assert_is_type(stratify_by, None, [str])
         self._parms["stratify_by"] = stratify_by
-
 
     @property
     def ties(self):
@@ -309,7 +301,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(ties, None, Enum("efron", "breslow"))
         self._parms["ties"] = ties
 
-
     @property
     def init(self):
         """
@@ -336,7 +327,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def init(self, init):
         assert_is_type(init, None, numeric)
         self._parms["init"] = init
-
 
     @property
     def lre_min(self):
@@ -365,7 +355,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(lre_min, None, numeric)
         self._parms["lre_min"] = lre_min
 
-
     @property
     def max_iterations(self):
         """
@@ -392,7 +381,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def max_iterations(self, max_iterations):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
-
 
     @property
     def interactions(self):
@@ -422,7 +410,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(interactions, None, [str])
         self._parms["interactions"] = interactions
 
-
     @property
     def interaction_pairs(self):
         """
@@ -450,7 +437,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def interaction_pairs(self, interaction_pairs):
         assert_is_type(interaction_pairs, None, [tuple])
         self._parms["interaction_pairs"] = interaction_pairs
-
 
     @property
     def interactions_only(self):
@@ -481,7 +467,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(interactions_only, None, [str])
         self._parms["interactions_only"] = interactions_only
 
-
     @property
     def use_all_factor_levels(self):
         """
@@ -508,7 +493,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def use_all_factor_levels(self, use_all_factor_levels):
         assert_is_type(use_all_factor_levels, None, bool)
         self._parms["use_all_factor_levels"] = use_all_factor_levels
-
 
     @property
     def export_checkpoints_dir(self):
@@ -539,7 +523,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
 
     @property
     def single_node_mode(self):

@@ -160,7 +160,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -187,7 +186,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def ignored_columns(self):
         """
@@ -201,7 +199,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -225,7 +222,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
 
     @property
     def score_each_iteration(self):
@@ -255,7 +251,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def score_each_iteration(self, score_each_iteration):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
-
 
     @property
     def representation_name(self):
@@ -287,7 +282,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def representation_name(self, representation_name):
         assert_is_type(representation_name, None, str)
         self._parms["representation_name"] = representation_name
-
 
     @property
     def loading_name(self):
@@ -321,7 +315,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(loading_name, None, str)
         self._parms["loading_name"] = loading_name
 
-
     @property
     def transform(self):
         """
@@ -348,7 +341,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
 
-
     @property
     def k(self):
         """
@@ -369,7 +361,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def k(self, k):
         assert_is_type(k, None, int)
         self._parms["k"] = k
-
 
     @property
     def loss(self):
@@ -401,7 +392,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(loss, None, Enum("quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"))
         self._parms["loss"] = loss
 
-
     @property
     def loss_by_col(self):
         """
@@ -429,7 +419,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(loss_by_col, None, [Enum("quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal")])
         self._parms["loss_by_col"] = loss_by_col
 
-
     @property
     def loss_by_col_idx(self):
         """
@@ -455,7 +444,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def loss_by_col_idx(self, loss_by_col_idx):
         assert_is_type(loss_by_col_idx, None, [int])
         self._parms["loss_by_col_idx"] = loss_by_col_idx
-
 
     @property
     def multi_loss(self):
@@ -484,7 +472,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(multi_loss, None, Enum("categorical", "ordinal"))
         self._parms["multi_loss"] = multi_loss
 
-
     @property
     def period(self):
         """
@@ -510,7 +497,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def period(self, period):
         assert_is_type(period, None, int)
         self._parms["period"] = period
-
 
     @property
     def regularization_x(self):
@@ -539,7 +525,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(regularization_x, None, Enum("none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"))
         self._parms["regularization_x"] = regularization_x
 
-
     @property
     def regularization_y(self):
         """
@@ -566,7 +551,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def regularization_y(self, regularization_y):
         assert_is_type(regularization_y, None, Enum("none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"))
         self._parms["regularization_y"] = regularization_y
-
 
     @property
     def gamma_x(self):
@@ -597,7 +581,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(gamma_x, None, numeric)
         self._parms["gamma_x"] = gamma_x
 
-
     @property
     def gamma_y(self):
         """
@@ -626,7 +609,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def gamma_y(self, gamma_y):
         assert_is_type(gamma_y, None, numeric)
         self._parms["gamma_y"] = gamma_y
-
 
     @property
     def max_iterations(self):
@@ -657,7 +639,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
 
-
     @property
     def max_updates(self):
         """
@@ -683,7 +664,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(max_updates, None, int)
         self._parms["max_updates"] = max_updates
 
-
     @property
     def init_step_size(self):
         """
@@ -706,7 +686,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def init_step_size(self, init_step_size):
         assert_is_type(init_step_size, None, numeric)
         self._parms["init_step_size"] = init_step_size
-
 
     @property
     def min_step_size(self):
@@ -732,7 +711,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def min_step_size(self, min_step_size):
         assert_is_type(min_step_size, None, numeric)
         self._parms["min_step_size"] = min_step_size
-
 
     @property
     def seed(self):
@@ -760,7 +738,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def init(self):
         """
@@ -783,7 +760,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def init(self, init):
         assert_is_type(init, None, Enum("random", "svd", "plus_plus", "user"))
         self._parms["init"] = init
-
 
     @property
     def svd_method(self):
@@ -809,7 +785,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def svd_method(self, svd_method):
         assert_is_type(svd_method, None, Enum("gram_s_v_d", "power", "randomized"))
         self._parms["svd_method"] = svd_method
-
 
     @property
     def user_y(self):
@@ -842,7 +817,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     @user_y.setter
     def user_y(self, user_y):
         self._parms["user_y"] = H2OFrame._validate(user_y, 'user_y')
-
 
     @property
     def user_x(self):
@@ -878,7 +852,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def user_x(self, user_x):
         self._parms["user_x"] = H2OFrame._validate(user_x, 'user_x')
 
-
     @property
     def expand_user_y(self):
         """
@@ -908,7 +881,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def expand_user_y(self, expand_user_y):
         assert_is_type(expand_user_y, None, bool)
         self._parms["expand_user_y"] = expand_user_y
-
 
     @property
     def impute_original(self):
@@ -940,7 +912,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(impute_original, None, bool)
         self._parms["impute_original"] = impute_original
 
-
     @property
     def recover_svd(self):
         """
@@ -970,7 +941,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(recover_svd, None, bool)
         self._parms["recover_svd"] = recover_svd
 
-
     @property
     def max_runtime_secs(self):
         """
@@ -995,7 +965,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def export_checkpoints_dir(self):

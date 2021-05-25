@@ -149,6 +149,7 @@ def gen_module(schema, algo):
 
     update_param_defaults = get_customizations_for('defaults', 'update_param')
     update_param = get_customizations_for(algo, 'update_param')
+    deprecated_params = get_customizations_for(algo, 'deprecated_params', {})
 
     def extend_schema_params(param):
         pname = param.get('name')
@@ -187,6 +188,9 @@ def gen_module(schema, algo):
         param['default_value'] = pdefault
         param['ptype'] = translate_type_for_check(ptype, enum_values)
         param['dtype'] = translate_type_for_doc(ptype, enum_values)
+        
+    if deprecated_params:
+        extended_params = [p for p in extended_params if p['pname'] not in deprecated_params.keys()]
 
     yield "#!/usr/bin/env python"
     yield "# -*- encoding: utf-8 -*-"
@@ -196,6 +200,8 @@ def gen_module(schema, algo):
     yield "#"
     yield "from __future__ import absolute_import, division, print_function, unicode_literals"
     yield ""
+    if deprecated_params:
+        yield "from h2o.utils.metaclass import deprecated_params, deprecated_property"
     if extra_imports:
         yield reformat_block(extra_imports)
     yield "from h2o.estimators.estimator_base import H2OEstimator"
@@ -219,6 +225,8 @@ def gen_module(schema, algo):
     yield ""
     yield '    algo = "%s"' % algo
     yield ""
+    if deprecated_params:
+        yield reformat_block("@deprecated_params(%s)" % deprecated_params, indent=4)
     init_sig = "def __init__(self,\n%s\n):" % "\n".join("%s=%s,  # type: %s" % (p.get('pname'),
                                                                                 stringify(p.get('default_value'), infinity=None),
                                                                                 p.get('dtype'))
@@ -248,7 +256,6 @@ def gen_module(schema, algo):
         pname = param.get('pname')
         if pname == "model_id":
             continue  # The getter is already defined in ModelBase
-
         sname = pname[:-1] if pname[-1] == '_' else pname
         ptype = param.get('ptype')
         dtype = param.get('dtype')
@@ -261,11 +268,10 @@ def gen_module(schema, algo):
             property_doc = "Type: ``%s``" % dtype
         property_doc += ("." if pdefault is None else "  (default: ``%s``)." % stringify(pdefault))
 
-        deprecated = pname in get_customizations_for(algo, 'deprecated', [])
         yield "    @property"
         yield "    def %s(self):" % pname
         yield '        """'
-        yield bi.wrap("%s%s" % ("[Deprecated] " if deprecated else "", param.get('help')), indent=8*' ')  # we need to wrap only for text coming from server
+        yield bi.wrap(param.get('help'), indent=8*' ')  # we need to wrap only for text coming from server
         yield ""
         yield bi.wrap(property_doc, indent=8*' ')
         custom_property_doc = get_customizations_for(algo, "doc.{}".format(pname))
@@ -304,7 +310,12 @@ def gen_module(schema, algo):
                 # default assignment
                 yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
-        yield ""
+        
+    for old, new in deprecated_params.items():
+        new_name = new[0] if isinstance(new, tuple) else new
+        yield "    %s = deprecated_property('%s', %s)" % (old, old, new)
+        
+    yield ""
     if class_extras:
         yield reformat_block(code_as_str(class_extras), 4)
     if module_extras:

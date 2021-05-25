@@ -1,4 +1,4 @@
-deprecated = ['offset_column', 'distribution']
+deprecated_params = dict(offset_column=None)
 
 doc = dict(
     __class__="""

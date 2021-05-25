@@ -332,7 +332,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -360,7 +359,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @validation_frame.setter
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
-
 
     @property
     def nfolds(self):
@@ -391,7 +389,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
 
-
     @property
     def checkpoint(self):
         """
@@ -405,7 +402,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
-
 
     @property
     def export_checkpoints_dir(self):
@@ -438,7 +434,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
 
     @property
     def seed(self):
@@ -474,7 +469,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def keep_cross_validation_models(self):
         """
@@ -506,7 +500,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_models, None, bool)
         self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
-
     @property
     def keep_cross_validation_predictions(self):
         """
@@ -536,7 +529,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
         assert_is_type(keep_cross_validation_predictions, None, bool)
         self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
-
 
     @property
     def keep_cross_validation_fold_assignment(self):
@@ -568,7 +560,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
-
     @property
     def fold_assignment(self):
         """
@@ -599,7 +590,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def fold_assignment(self, fold_assignment):
         assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
-
 
     @property
     def fold_column(self):
@@ -633,7 +623,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -647,7 +636,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def ignored_columns(self):
@@ -663,7 +651,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def random_columns(self):
         """
@@ -677,7 +664,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def random_columns(self, random_columns):
         assert_is_type(random_columns, None, [int])
         self._parms["random_columns"] = random_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -711,7 +697,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def score_each_iteration(self):
         """
@@ -742,7 +727,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def score_iteration_interval(self):
         """
@@ -756,7 +740,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def score_iteration_interval(self, score_iteration_interval):
         assert_is_type(score_iteration_interval, None, int)
         self._parms["score_iteration_interval"] = score_iteration_interval
-
 
     @property
     def offset_column(self):
@@ -787,7 +770,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
-
 
     @property
     def weights_column(self):
@@ -823,7 +805,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
 
-
     @property
     def family(self):
         """
@@ -853,7 +834,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
         self._parms["family"] = family
 
-
     @property
     def rand_family(self):
         """
@@ -867,7 +847,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def rand_family(self, rand_family):
         assert_is_type(rand_family, None, [Enum("[gaussian]")])
         self._parms["rand_family"] = rand_family
-
 
     @property
     def tweedie_variance_power(self):
@@ -898,7 +877,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(tweedie_variance_power, None, numeric)
         self._parms["tweedie_variance_power"] = tweedie_variance_power
 
-
     @property
     def tweedie_link_power(self):
         """
@@ -928,7 +906,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(tweedie_link_power, None, numeric)
         self._parms["tweedie_link_power"] = tweedie_link_power
 
-
     @property
     def theta(self):
         """
@@ -955,7 +932,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def theta(self, theta):
         assert_is_type(theta, None, numeric)
         self._parms["theta"] = theta
-
 
     @property
     def solver(self):
@@ -987,7 +963,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(solver, None, Enum("auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"))
         self._parms["solver"] = solver
 
-
     @property
     def alpha(self):
         """
@@ -1018,7 +993,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
         assert_is_type(alpha, None, numeric, [numeric])
         self._parms["alpha"] = alpha
-
 
     @property
     def lambda_(self):
@@ -1054,7 +1028,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(lambda_, None, numeric, [numeric])
         self._parms["lambda"] = lambda_
 
-
     @property
     def lambda_search(self):
         """
@@ -1082,7 +1055,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def lambda_search(self, lambda_search):
         assert_is_type(lambda_search, None, bool)
         self._parms["lambda_search"] = lambda_search
-
 
     @property
     def early_stopping(self):
@@ -1112,7 +1084,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def early_stopping(self, early_stopping):
         assert_is_type(early_stopping, None, bool)
         self._parms["early_stopping"] = early_stopping
-
 
     @property
     def nlambdas(self):
@@ -1144,7 +1115,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(nlambdas, None, int)
         self._parms["nlambdas"] = nlambdas
 
-
     @property
     def standardize(self):
         """
@@ -1172,7 +1142,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def standardize(self, standardize):
         assert_is_type(standardize, None, bool)
         self._parms["standardize"] = standardize
-
 
     @property
     def missing_values_handling(self):
@@ -1202,7 +1171,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def missing_values_handling(self, missing_values_handling):
         assert_is_type(missing_values_handling, None, Enum("mean_imputation", "skip", "plug_values"))
         self._parms["missing_values_handling"] = missing_values_handling
-
 
     @property
     def plug_values(self):
@@ -1237,7 +1205,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @plug_values.setter
     def plug_values(self, plug_values):
         self._parms["plug_values"] = H2OFrame._validate(plug_values, 'plug_values')
-
 
     @property
     def compute_p_values(self):
@@ -1275,7 +1242,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(compute_p_values, None, bool)
         self._parms["compute_p_values"] = compute_p_values
 
-
     @property
     def remove_collinear_columns(self):
         """
@@ -1311,7 +1277,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(remove_collinear_columns, None, bool)
         self._parms["remove_collinear_columns"] = remove_collinear_columns
 
-
     @property
     def intercept(self):
         """
@@ -1340,7 +1305,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def intercept(self, intercept):
         assert_is_type(intercept, None, bool)
         self._parms["intercept"] = intercept
-
 
     @property
     def non_negative(self):
@@ -1376,7 +1340,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(non_negative, None, bool)
         self._parms["non_negative"] = non_negative
 
-
     @property
     def max_iterations(self):
         """
@@ -1405,7 +1368,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def max_iterations(self, max_iterations):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
-
 
     @property
     def objective_epsilon(self):
@@ -1438,7 +1400,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(objective_epsilon, None, numeric)
         self._parms["objective_epsilon"] = objective_epsilon
 
-
     @property
     def beta_epsilon(self):
         """
@@ -1465,7 +1426,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def beta_epsilon(self, beta_epsilon):
         assert_is_type(beta_epsilon, None, numeric)
         self._parms["beta_epsilon"] = beta_epsilon
-
 
     @property
     def gradient_epsilon(self):
@@ -1498,7 +1458,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(gradient_epsilon, None, numeric)
         self._parms["gradient_epsilon"] = gradient_epsilon
 
-
     @property
     def link(self):
         """
@@ -1529,7 +1488,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"))
         self._parms["link"] = link
 
-
     @property
     def rand_link(self):
         """
@@ -1543,7 +1501,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def rand_link(self, rand_link):
         assert_is_type(rand_link, None, [Enum("[identity]", "[family_default]")])
         self._parms["rand_link"] = rand_link
-
 
     @property
     def startval(self):
@@ -1559,7 +1516,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(startval, None, [numeric])
         self._parms["startval"] = startval
 
-
     @property
     def calc_like(self):
         """
@@ -1574,7 +1530,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(calc_like, None, bool)
         self._parms["calc_like"] = calc_like
 
-
     @property
     def HGLM(self):
         """
@@ -1588,7 +1543,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def HGLM(self, HGLM):
         assert_is_type(HGLM, None, bool)
         self._parms["HGLM"] = HGLM
-
 
     @property
     def prior(self):
@@ -1619,7 +1573,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(prior, None, numeric)
         self._parms["prior"] = prior
 
-
     @property
     def cold_start(self):
         """
@@ -1634,7 +1587,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def cold_start(self, cold_start):
         assert_is_type(cold_start, None, bool)
         self._parms["cold_start"] = cold_start
-
 
     @property
     def lambda_min_ratio(self):
@@ -1666,7 +1618,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def lambda_min_ratio(self, lambda_min_ratio):
         assert_is_type(lambda_min_ratio, None, numeric)
         self._parms["lambda_min_ratio"] = lambda_min_ratio
-
 
     @property
     def beta_constraints(self):
@@ -1701,7 +1652,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def beta_constraints(self, beta_constraints):
         self._parms["beta_constraints"] = H2OFrame._validate(beta_constraints, 'beta_constraints')
 
-
     @property
     def max_active_predictors(self):
         """
@@ -1733,7 +1683,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(max_active_predictors, None, int)
         self._parms["max_active_predictors"] = max_active_predictors
 
-
     @property
     def interactions(self):
         """
@@ -1762,7 +1711,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def interactions(self, interactions):
         assert_is_type(interactions, None, [str])
         self._parms["interactions"] = interactions
-
 
     @property
     def interaction_pairs(self):
@@ -1798,7 +1746,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(interaction_pairs, None, [tuple])
         self._parms["interaction_pairs"] = interaction_pairs
 
-
     @property
     def obj_reg(self):
         """
@@ -1829,7 +1776,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(obj_reg, None, numeric)
         self._parms["obj_reg"] = obj_reg
 
-
     @property
     def stopping_rounds(self):
         """
@@ -1844,7 +1790,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def stopping_rounds(self, stopping_rounds):
         assert_is_type(stopping_rounds, None, int)
         self._parms["stopping_rounds"] = stopping_rounds
-
 
     @property
     def stopping_metric(self):
@@ -1863,7 +1808,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
-
     @property
     def stopping_tolerance(self):
         """
@@ -1877,7 +1821,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def stopping_tolerance(self, stopping_tolerance):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
-
 
     @property
     def balance_classes(self):
@@ -1906,7 +1849,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def balance_classes(self, balance_classes):
         assert_is_type(balance_classes, None, bool)
         self._parms["balance_classes"] = balance_classes
-
 
     @property
     def class_sampling_factors(self):
@@ -1939,7 +1881,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(class_sampling_factors, None, [float])
         self._parms["class_sampling_factors"] = class_sampling_factors
 
-
     @property
     def max_after_balance_size(self):
         """
@@ -1971,7 +1912,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(max_after_balance_size, None, float)
         self._parms["max_after_balance_size"] = max_after_balance_size
 
-
     @property
     def max_confusion_matrix_size(self):
         """
@@ -1985,7 +1925,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def max_confusion_matrix_size(self, max_confusion_matrix_size):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
 
     @property
     def max_runtime_secs(self):
@@ -2016,7 +1955,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
 
-
     @property
     def custom_metric_func(self):
         """
@@ -2031,7 +1969,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
 
-
     @property
     def generate_scoring_history(self):
         """
@@ -2045,7 +1982,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def generate_scoring_history(self, generate_scoring_history):
         assert_is_type(generate_scoring_history, None, bool)
         self._parms["generate_scoring_history"] = generate_scoring_history
-
 
     @property
     def auc_type(self):

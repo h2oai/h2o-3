@@ -6,10 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.utils.metaclass import deprecated_params, deprecated_property
 import h2o
 import warnings
 from h2o.exceptions import H2ODeprecationWarning
-from h2o.utils.metaclass import deprecated_property
 from h2o.utils.typechecks import U
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
@@ -25,6 +25,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     algo = "targetencoder"
 
+    @deprecated_params({'k': 'inflection_point', 'f': 'smoothing', 'noise_level': 'noise'})
     def __init__(self,
                  model_id=None,  # type: str
                  training_frame=None,  # type: H2OFrame
@@ -121,7 +122,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def fold_column(self):
         """
@@ -152,7 +152,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -167,7 +166,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -181,7 +179,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def columns_to_encode(self):
@@ -200,7 +197,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
             columns_to_encode = [[g] if isinstance(g, str) else g for g in columns_to_encode]
         self._parms["columns_to_encode"] = columns_to_encode
 
-
     @property
     def keep_original_categorical_columns(self):
         """
@@ -214,7 +210,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def keep_original_categorical_columns(self, keep_original_categorical_columns):
         assert_is_type(keep_original_categorical_columns, None, bool)
         self._parms["keep_original_categorical_columns"] = keep_original_categorical_columns
-
 
     @property
     def blending(self):
@@ -248,7 +243,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(blending, None, bool)
         self._parms["blending"] = blending
 
-
     @property
     def inflection_point(self):
         """
@@ -281,7 +275,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(inflection_point, None, numeric)
         self._parms["inflection_point"] = inflection_point
 
-
     @property
     def smoothing(self):
         """
@@ -313,7 +306,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def smoothing(self, smoothing):
         assert_is_type(smoothing, None, numeric)
         self._parms["smoothing"] = smoothing
-
 
     @property
     def data_leakage_handling(self):
@@ -349,7 +341,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(data_leakage_handling, None, Enum("leave_one_out", "k_fold", "none"))
         self._parms["data_leakage_handling"] = data_leakage_handling
 
-
     @property
     def noise(self):
         """
@@ -365,7 +356,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(noise, None, numeric)
         self._parms["noise"] = noise
 
-
     @property
     def seed(self):
         """
@@ -379,7 +369,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
-
 
     k = deprecated_property('k', inflection_point)
     f = deprecated_property('f', smoothing)

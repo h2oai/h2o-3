@@ -33,28 +33,95 @@ def extend_and_replace(cls, **attrs):
     return new_cls
 
 
-def deprecated_property(name, replaced_by):
+def deprecated_params(deprecations):
+    old = deprecations.keys()
+    
+    def decorator(fn):
+        fn_name = fullname(fn)
+        
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            new_kwargs = {}
+            keys = set(kwargs.keys())
+            messages = []
+            for k, v in kwargs.items():
+                if k in old:
+                    new = deprecations[k]
+                    new_std = (((lambda ov: None), None) if new in [None, ()] 
+                               else ((lambda ov: {new: ov}), None) if isinstance(new, str)
+                               else (new, None) if callable(new)
+                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], str)
+                               else new)
+                    assert (isinstance(new_std, tuple),
+                            "`deprecations` values must be one of: "
+                            "None (deprecated param removed), a string (deprecated property renamed), "
+                            "a tuple(new_name: str, message: str) to customize the deprecation message, "
+                            "or a tuple(lambda old_value: dict(param1=value1, param2=value2), message: str) "
+                            "for advanced deprecations (one param replaced with one or more params with transformation of the deprecated value).")
+                    transform_fn, msg = new_std
+                    new_params = transform_fn(v)
+                    if new_params in [None, {}]:
+                        messages.append(msg or "``{}`` param of ``{}`` is deprecated and will be ignored."
+                                               .format(k, fn_name))
+                    else:
+                        assert isinstance(new_params, dict)
+                        messages.append(msg or "``{}`` param of ``{}`` is deprecated, please use ``{}`` instead."
+                                               .format(k, fn_name, ', '.join(new_params.keys())))
+                        intersect = set(new_params.keys()) & keys
+                        if any(intersect):
+                            messages.append("Using both deprecated param ``{}`` and new params ``{}`` in call to ``{}``, "
+                                            "the deprecated param will be ignored."
+                                            .format(k, ', '.join(intersect), fn_name))
+                        else:
+                            new_kwargs.update(new_params)
+                else:
+                    new_kwargs[k] = v
+            for msg in messages:
+                warnings.warn(msg, H2ODeprecationWarning, 2)
+            return fn(*args, **new_kwargs)
+    
+        return wrapper
+    
+    return decorator
+        
+
+def deprecated_property(name, replaced_by=None, message=None):
     """
     Creates a deprecated property that forwards logic to `replaced_by` property.
     :param name: name of the deprecated property.
-    :param replaced_by: the new property object.
+    :param replaced_by: the new property object. If None, then the deprecated property will be a no-op property.
+    :param message: the custom deprecation message. If None, a default message will be used.
     :return: the deprecated property.
     """
-    new_name = replaced_by.fget.__name__
-    doc = "[Deprecated] Use ``{}`` instead".format(new_name)
-    msg = "``{}`` is deprecated, please use ``{}`` instead.".format(name, new_name)
     
-    def wrap(accessor):
-        if accessor is None: return 
+    if replaced_by:
+        new_name = replaced_by.fget.__name__
+        doc = "[Deprecated] Use ``{}`` instead".format(new_name)
+        msg = message or "``{}`` is deprecated, please use ``{}`` instead.".format(name, new_name)
         
-        def wrapper(*args):
+        def wrap(accessor):
+            if accessor is None: return 
+            
+            def wrapper(*args):
+                warnings.warn(msg, H2ODeprecationWarning, 2)
+                return accessor(*args)
+            return wrapper
+        
+        return property(wrap(replaced_by.fget), wrap(replaced_by.fset), wrap(replaced_by.fdel), doc)
+    else:
+        doc = "[Deprecated] The property was removed and will be ignored."
+        msg = message or "``{}`` is deprecated and will be ignored.".format(name)
+        
+        def _fget(self):
             warnings.warn(msg, H2ODeprecationWarning, 2)
-            return accessor(*args)
-        return wrapper
-        
-    return property(wrap(replaced_by.fget), wrap(replaced_by.fset), wrap(replaced_by.fdel), doc)
-    
-    
+            return None
+            
+        def _fset(self, _):
+            warnings.warn(msg, H2ODeprecationWarning, 2)
+
+        return property(_fget, _fset, None, doc)
+
+
 class Deprecated(object):
     """
     Decorator for deprecated methods.
@@ -129,7 +196,6 @@ class MetaFeature(object):
             return type.__getattribute__(clz, name)
         except AttributeError:
             return None
-
 
 
 class Alias(MetaFeature):

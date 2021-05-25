@@ -299,7 +299,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
@@ -329,7 +328,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def nfolds(self):
         """
@@ -358,7 +356,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def nfolds(self, nfolds):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
-
 
     @property
     def keep_cross_validation_models(self):
@@ -390,7 +387,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_models, None, bool)
         self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
-
     @property
     def keep_cross_validation_predictions(self):
         """
@@ -421,7 +417,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_predictions, None, bool)
         self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
-
     @property
     def keep_cross_validation_fold_assignment(self):
         """
@@ -451,7 +446,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
-
 
     @property
     def score_each_iteration(self):
@@ -489,7 +483,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def fold_assignment(self):
         """
@@ -519,7 +512,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def fold_assignment(self, fold_assignment):
         assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
-
 
     @property
     def fold_column(self):
@@ -553,7 +545,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -568,7 +559,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -582,7 +572,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def ignore_const_cols(self):
@@ -616,7 +605,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def offset_column(self):
         """
@@ -630,7 +618,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
-
 
     @property
     def weights_column(self):
@@ -665,7 +652,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
-
 
     @property
     def stopping_rounds(self):
@@ -704,7 +690,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def stopping_rounds(self, stopping_rounds):
         assert_is_type(stopping_rounds, None, int)
         self._parms["stopping_rounds"] = stopping_rounds
-
 
     @property
     def stopping_metric(self):
@@ -745,7 +730,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
-
     @property
     def stopping_tolerance(self):
         """
@@ -783,7 +767,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
 
-
     @property
     def max_runtime_secs(self):
         """
@@ -815,7 +798,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def seed(self):
@@ -860,7 +842,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def distribution(self):
         """
@@ -890,7 +871,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def distribution(self, distribution):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
-
 
     @property
     def tweedie_power(self):
@@ -923,7 +903,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def tweedie_power(self, tweedie_power):
         assert_is_type(tweedie_power, None, numeric)
         self._parms["tweedie_power"] = tweedie_power
-
 
     @property
     def categorical_encoding(self):
@@ -962,7 +941,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def quiet_mode(self):
         """
@@ -991,7 +969,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def quiet_mode(self, quiet_mode):
         assert_is_type(quiet_mode, None, bool)
         self._parms["quiet_mode"] = quiet_mode
-
 
     @property
     def checkpoint(self):
@@ -1029,7 +1006,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
-
 
     @property
     def export_checkpoints_dir(self):
@@ -1073,7 +1049,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     @property
     def ntrees(self):
         """
@@ -1113,7 +1088,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(ntrees, None, int)
         self._parms["ntrees"] = ntrees
 
-
     @property
     def max_depth(self):
         """
@@ -1148,7 +1122,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_depth, None, int)
         self._parms["max_depth"] = max_depth
 
-
     @property
     def min_rows(self):
         """
@@ -1180,7 +1153,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(min_rows, None, numeric)
         self._parms["min_rows"] = min_rows
 
-
     @property
     def min_child_weight(self):
         """
@@ -1211,7 +1183,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def min_child_weight(self, min_child_weight):
         assert_is_type(min_child_weight, None, numeric)
         self._parms["min_child_weight"] = min_child_weight
-
 
     @property
     def learn_rate(self):
@@ -1246,7 +1217,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def learn_rate(self, learn_rate):
         assert_is_type(learn_rate, None, numeric)
         self._parms["learn_rate"] = learn_rate
-
 
     @property
     def eta(self):
@@ -1283,7 +1253,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(eta, None, numeric)
         self._parms["eta"] = eta
 
-
     @property
     def sample_rate(self):
         """
@@ -1318,7 +1287,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def sample_rate(self, sample_rate):
         assert_is_type(sample_rate, None, numeric)
         self._parms["sample_rate"] = sample_rate
-
 
     @property
     def subsample(self):
@@ -1355,7 +1323,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(subsample, None, numeric)
         self._parms["subsample"] = subsample
 
-
     @property
     def col_sample_rate(self):
         """
@@ -1390,7 +1357,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def col_sample_rate(self, col_sample_rate):
         assert_is_type(col_sample_rate, None, numeric)
         self._parms["col_sample_rate"] = col_sample_rate
-
 
     @property
     def colsample_bylevel(self):
@@ -1427,7 +1393,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(colsample_bylevel, None, numeric)
         self._parms["colsample_bylevel"] = colsample_bylevel
 
-
     @property
     def col_sample_rate_per_tree(self):
         """
@@ -1461,7 +1426,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def col_sample_rate_per_tree(self, col_sample_rate_per_tree):
         assert_is_type(col_sample_rate_per_tree, None, numeric)
         self._parms["col_sample_rate_per_tree"] = col_sample_rate_per_tree
-
 
     @property
     def colsample_bytree(self):
@@ -1497,7 +1461,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(colsample_bytree, None, numeric)
         self._parms["colsample_bytree"] = colsample_bytree
 
-
     @property
     def colsample_bynode(self):
         """
@@ -1530,7 +1493,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(colsample_bynode, None, numeric)
         self._parms["colsample_bynode"] = colsample_bynode
 
-
     @property
     def max_abs_leafnode_pred(self):
         """
@@ -1560,7 +1522,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_abs_leafnode_pred(self, max_abs_leafnode_pred):
         assert_is_type(max_abs_leafnode_pred, None, float)
         self._parms["max_abs_leafnode_pred"] = max_abs_leafnode_pred
-
 
     @property
     def max_delta_step(self):
@@ -1592,7 +1553,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_delta_step, None, float)
         self._parms["max_delta_step"] = max_delta_step
 
-
     @property
     def monotone_constraints(self):
         """
@@ -1622,7 +1582,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(monotone_constraints, None, dict)
         self._parms["monotone_constraints"] = monotone_constraints
 
-
     @property
     def interaction_constraints(self):
         """
@@ -1636,7 +1595,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def interaction_constraints(self, interaction_constraints):
         assert_is_type(interaction_constraints, None, [[str]])
         self._parms["interaction_constraints"] = interaction_constraints
-
 
     @property
     def score_tree_interval(self):
@@ -1673,7 +1631,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(score_tree_interval, None, int)
         self._parms["score_tree_interval"] = score_tree_interval
 
-
     @property
     def min_split_improvement(self):
         """
@@ -1705,7 +1662,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(min_split_improvement, None, float)
         self._parms["min_split_improvement"] = min_split_improvement
 
-
     @property
     def gamma(self):
         """
@@ -1735,7 +1691,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gamma(self, gamma):
         assert_is_type(gamma, None, float)
         self._parms["gamma"] = gamma
-
 
     @property
     def nthread(self):
@@ -1767,7 +1722,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(nthread, None, int)
         self._parms["nthread"] = nthread
 
-
     @property
     def save_matrix_directory(self):
         """
@@ -1782,7 +1736,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(save_matrix_directory, None, str)
         self._parms["save_matrix_directory"] = save_matrix_directory
 
-
     @property
     def build_tree_one_node(self):
         """
@@ -1796,7 +1749,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def build_tree_one_node(self, build_tree_one_node):
         assert_is_type(build_tree_one_node, None, bool)
         self._parms["build_tree_one_node"] = build_tree_one_node
-
 
     @property
     def calibrate_model(self):
@@ -1813,7 +1765,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(calibrate_model, None, bool)
         self._parms["calibrate_model"] = calibrate_model
 
-
     @property
     def calibration_frame(self):
         """
@@ -1826,7 +1777,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
         self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
-
 
     @property
     def max_bins(self):
@@ -1858,7 +1808,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_bins, None, int)
         self._parms["max_bins"] = max_bins
 
-
     @property
     def max_leaves(self):
         """
@@ -1888,7 +1837,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_leaves(self, max_leaves):
         assert_is_type(max_leaves, None, int)
         self._parms["max_leaves"] = max_leaves
-
 
     @property
     def sample_type(self):
@@ -1925,7 +1873,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(sample_type, None, Enum("uniform", "weighted"))
         self._parms["sample_type"] = sample_type
 
-
     @property
     def normalize_type(self):
         """
@@ -1957,7 +1904,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(normalize_type, None, Enum("tree", "forest"))
         self._parms["normalize_type"] = normalize_type
 
-
     @property
     def rate_drop(self):
         """
@@ -1987,7 +1933,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def rate_drop(self, rate_drop):
         assert_is_type(rate_drop, None, float)
         self._parms["rate_drop"] = rate_drop
-
 
     @property
     def one_drop(self):
@@ -2020,7 +1965,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def one_drop(self, one_drop):
         assert_is_type(one_drop, None, bool)
         self._parms["one_drop"] = one_drop
-
 
     @property
     def skip_drop(self):
@@ -2055,7 +1999,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def skip_drop(self, skip_drop):
         assert_is_type(skip_drop, None, float)
         self._parms["skip_drop"] = skip_drop
-
 
     @property
     def tree_method(self):
@@ -2092,7 +2035,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(tree_method, None, Enum("auto", "exact", "approx", "hist"))
         self._parms["tree_method"] = tree_method
 
-
     @property
     def grow_policy(self):
         """
@@ -2125,7 +2067,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(grow_policy, None, Enum("depthwise", "lossguide"))
         self._parms["grow_policy"] = grow_policy
 
-
     @property
     def booster(self):
         """
@@ -2156,7 +2097,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def booster(self, booster):
         assert_is_type(booster, None, Enum("gbtree", "gblinear", "dart"))
         self._parms["booster"] = booster
-
 
     @property
     def reg_lambda(self):
@@ -2192,7 +2132,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(reg_lambda, None, float)
         self._parms["reg_lambda"] = reg_lambda
 
-
     @property
     def reg_alpha(self):
         """
@@ -2220,7 +2159,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def reg_alpha(self, reg_alpha):
         assert_is_type(reg_alpha, None, float)
         self._parms["reg_alpha"] = reg_alpha
-
 
     @property
     def dmatrix_type(self):
@@ -2251,7 +2189,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(dmatrix_type, None, Enum("auto", "dense", "sparse"))
         self._parms["dmatrix_type"] = dmatrix_type
 
-
     @property
     def backend(self):
         """
@@ -2277,7 +2214,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def backend(self, backend):
         assert_is_type(backend, None, Enum("auto", "gpu", "cpu"))
         self._parms["backend"] = backend
-
 
     @property
     def gpu_id(self):
@@ -2308,7 +2244,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(gpu_id, None, int, [int])
         self._parms["gpu_id"] = gpu_id
 
-
     @property
     def gainslift_bins(self):
         """
@@ -2331,7 +2266,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
-
 
     @property
     def auc_type(self):

@@ -203,7 +203,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def response_column(self):
         """
@@ -217,7 +216,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def validation_frame(self):
@@ -264,7 +262,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def blending_frame(self):
         """
@@ -309,7 +306,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @blending_frame.setter
     def blending_frame(self, blending_frame):
         self._parms["blending_frame"] = H2OFrame._validate(blending_frame, 'blending_frame')
-
 
     @property
     def base_models(self):
@@ -368,7 +364,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         else:
             assert_is_type(base_models, None)
 
-
     @property
     def metalearner_algorithm(self):
         """
@@ -419,7 +414,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         assert_is_type(metalearner_algorithm, None, Enum("auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"))
         self._parms["metalearner_algorithm"] = metalearner_algorithm
 
-
     @property
     def metalearner_nfolds(self):
         """
@@ -465,7 +459,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def metalearner_nfolds(self, metalearner_nfolds):
         assert_is_type(metalearner_nfolds, None, int)
         self._parms["metalearner_nfolds"] = metalearner_nfolds
-
 
     @property
     def metalearner_fold_assignment(self):
@@ -515,7 +508,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         assert_is_type(metalearner_fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["metalearner_fold_assignment"] = metalearner_fold_assignment
 
-
     @property
     def metalearner_fold_column(self):
         """
@@ -564,7 +556,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def metalearner_fold_column(self, metalearner_fold_column):
         assert_is_type(metalearner_fold_column, None, str)
         self._parms["metalearner_fold_column"] = metalearner_fold_column
-
 
     @property
     def metalearner_params(self):
@@ -626,7 +617,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         else:
             self._parms["metalearner_params"] = None
 
-
     @property
     def metalearner_transform(self):
         """
@@ -641,7 +631,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         assert_is_type(metalearner_transform, None, Enum("none", "logit"))
         self._parms["metalearner_transform"] = metalearner_transform
 
-
     @property
     def max_runtime_secs(self):
         """
@@ -655,7 +644,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def weights_column(self):
@@ -675,7 +663,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
 
-
     @property
     def offset_column(self):
         """
@@ -689,7 +676,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
-
 
     @property
     def seed(self):
@@ -737,7 +723,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def score_training_samples(self):
         """
@@ -752,7 +737,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def score_training_samples(self, score_training_samples):
         assert_is_type(score_training_samples, None, int)
         self._parms["score_training_samples"] = score_training_samples
-
 
     @property
     def keep_levelone_frame(self):
@@ -799,7 +783,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def keep_levelone_frame(self, keep_levelone_frame):
         assert_is_type(keep_levelone_frame, None, bool)
         self._parms["keep_levelone_frame"] = keep_levelone_frame
-
 
     @property
     def export_checkpoints_dir(self):
@@ -849,7 +832,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
 
     @property
     def auc_type(self):
