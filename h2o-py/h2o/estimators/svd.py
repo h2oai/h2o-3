@@ -48,41 +48,50 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :type score_each_iteration: bool, optional
+        :type score_each_iteration: bool
         :param transform: Transformation of training data (default:"none").
-        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
         :param svd_method: Method for computing SVD (Caution: Randomized is currently experimental and unstable)
                (default:"gram_s_v_d").
-        :type svd_method: Literal["gram_s_v_d", "power", "randomized"], optional
+        :type svd_method: Literal["gram_s_v_d", "power", "randomized"]
         :param nv: Number of right singular vectors (default:1).
-        :type nv: int, optional
+        :type nv: int
         :param max_iterations: Maximum iterations (default:1000).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param seed: RNG seed for k-means++ initialization (default:-1).
-        :type seed: int, optional
+        :type seed: int
         :param keep_u: Save left singular vectors? (default:True).
-        :type keep_u: bool, optional
+        :type keep_u: bool
         :param u_name: Frame key to save left singular vectors (default:None).
         :type u_name: str, optional
         :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
                (default:True).
-        :type use_all_factor_levels: bool, optional
+        :type use_all_factor_levels: bool
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
-        :type max_runtime_secs: float, optional
+        :type max_runtime_secs: float
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OSingularValueDecompositionEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.transform = transform
+        self.svd_method = svd_method
+        self.nv = nv
+        self.max_iterations = max_iterations
+        self.seed = seed
+        self.keep_u = keep_u
+        self.u_name = u_name
+        self.use_all_factor_levels = use_all_factor_levels
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
         self._parms["_rest_version"] = 99
 
     @property

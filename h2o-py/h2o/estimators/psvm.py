@@ -54,49 +54,62 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param hyper_param: Penalty parameter C of the error term (default:1.0).
-        :type hyper_param: float, optional
+        :type hyper_param: float
         :param kernel_type: Type of used kernel (default:"gaussian").
-        :type kernel_type: Literal["gaussian"], optional
+        :type kernel_type: Literal["gaussian"]
         :param gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
                (default:-1.0).
-        :type gamma: float, optional
+        :type gamma: float
         :param rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use
                sqrt(#rows)). (default:-1.0).
-        :type rank_ratio: float, optional
+        :type rank_ratio: float
         :param positive_weight: Weight of positive (+1) class of observations (default:1.0).
-        :type positive_weight: float, optional
+        :type positive_weight: float
         :param negative_weight: Weight of positive (-1) class of observations (default:1.0).
-        :type negative_weight: float, optional
+        :type negative_weight: float
         :param disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
                (default:True).
-        :type disable_training_metrics: bool, optional
+        :type disable_training_metrics: bool
         :param sv_threshold: Threshold for accepting a candidate observation into the set of support vectors
                (default:0.0001).
-        :type sv_threshold: float, optional
+        :type sv_threshold: float
         :param fact_threshold: Convergence threshold of the Incomplete Cholesky Factorization (ICF) (default:1e-05).
-        :type fact_threshold: float, optional
+        :type fact_threshold: float
         :param feasible_threshold: Convergence threshold for primal-dual residuals in the IPM iteration (default:0.001).
-        :type feasible_threshold: float, optional
+        :type feasible_threshold: float
         :param surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta) (default:0.001).
-        :type surrogate_gap_threshold: float, optional
+        :type surrogate_gap_threshold: float
         :param mu_factor: Increasing factor mu (default:10.0).
-        :type mu_factor: float, optional
+        :type mu_factor: float
         :param max_iterations: Maximum number of iteration of the algorithm (default:200).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
-        :type seed: int, optional
+        :type seed: int
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OSupportVectorMachineEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.hyper_param = hyper_param
+        self.kernel_type = kernel_type
+        self.gamma = gamma
+        self.rank_ratio = rank_ratio
+        self.positive_weight = positive_weight
+        self.negative_weight = negative_weight
+        self.disable_training_metrics = disable_training_metrics
+        self.sv_threshold = sv_threshold
+        self.fact_threshold = fact_threshold
+        self.feasible_threshold = feasible_threshold
+        self.surrogate_gap_threshold = surrogate_gap_threshold
+        self.mu_factor = mu_factor
+        self.max_iterations = max_iterations
+        self.seed = seed
 
     @property
     def training_frame(self):

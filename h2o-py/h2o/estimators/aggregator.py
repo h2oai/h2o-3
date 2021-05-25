@@ -44,34 +44,39 @@ class H2OAggregatorEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param target_num_exemplars: Targeted number of exemplars (default:5000).
-        :type target_num_exemplars: int, optional
+        :type target_num_exemplars: int
         :param rel_tol_num_exemplars: Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
                (default:0.5).
-        :type rel_tol_num_exemplars: float, optional
+        :type rel_tol_num_exemplars: float
         :param transform: Transformation of training data (default:"normalize").
-        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-               "sort_by_response", "enum_limited"], optional
+               "sort_by_response", "enum_limited"]
         :param save_mapping_frame: Whether to export the mapping of the aggregated frame (default:False).
-        :type save_mapping_frame: bool, optional
+        :type save_mapping_frame: bool
         :param num_iteration_without_new_exemplar: The number of iterations to run before aggregator exits if the number
                of exemplars collected didn't change (default:500).
-        :type num_iteration_without_new_exemplar: int, optional
+        :type num_iteration_without_new_exemplar: int
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.target_num_exemplars = target_num_exemplars
+        self.rel_tol_num_exemplars = rel_tol_num_exemplars
+        self.transform = transform
+        self.categorical_encoding = categorical_encoding
+        self.save_mapping_frame = save_mapping_frame
+        self.num_iteration_without_new_exemplar = num_iteration_without_new_exemplar
+        self.export_checkpoints_dir = export_checkpoints_dir
         self._parms["_rest_version"] = 99
 
     @property

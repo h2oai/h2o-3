@@ -33,15 +33,11 @@ class H2OGenericEstimator(H2OEstimator):
         :param path: Path to file with self-contained model archive. (default:None).
         :type path: str, optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.model_key = model_key
+        self.path = path
 
     @property
     def model_key(self):

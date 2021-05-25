@@ -244,17 +244,18 @@ def gen_module(schema, algo):
         pdesc = "%s: %s (default:%s)." % (pname, pdoc, pdefault)
         pident = ' '*15
         yield "        :param %s" % bi.wrap(pdesc, indent=pident, indent_first=False)
-        yield "        :type %s: %s, optional" % (pname, bi.wrap(ptype, indent=pident, indent_first=False))
+        yield "        :type %s: %s%s" % (pname, 
+                                          bi.wrap(ptype, indent=pident, indent_first=False),
+                                          ", optional" if pdefault is None else "")
     yield '        """'
-    yield "        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}"   # removing "hidden" variables added early due to the use of `super()` below
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
-    yield "        for pname, pvalue in sig_params.items():"
-    yield "            if pname == 'model_id':"
-    yield "                self._id = self._parms['model_id'] = pvalue"
-    yield "            else:"
-    yield "                # Using setattr(...) will invoke type-checking of the arguments"
-    yield "                setattr(self, pname, pvalue)"
+    for p in extended_params:
+        pname = p.get('pname')
+        if pname == 'model_id':
+            yield "        self._id = self._parms['model_id'] = model_id"
+        else:
+            yield "        self.%s = %s" % (pname, pname)
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version
     yield ""

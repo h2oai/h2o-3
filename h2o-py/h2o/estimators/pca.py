@@ -49,17 +49,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :type score_each_iteration: bool, optional
+        :type score_each_iteration: bool
         :param transform: Transformation of training data (default:"none").
-        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
         :param pca_method: Specify the algorithm to use for computing the principal components: GramSVD - uses a
                distributed computation of the Gram matrix, followed by a local SVD; Power - computes the SVD using the
                power iteration method (experimental); Randomized - uses randomized subspace iteration method; GLRM -
                fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD
                using local matrix algebra (experimental) (default:"gram_s_v_d").
-        :type pca_method: Literal["gram_s_v_d", "power", "randomized", "glrm"], optional
+        :type pca_method: Literal["gram_s_v_d", "power", "randomized", "glrm"]
         :param pca_impl: Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX -
                eigenvalue decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for
                symmetric matrix using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using
@@ -68,32 +68,42 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
                (default:None).
         :type pca_impl: Literal["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"], optional
         :param k: Rank of matrix approximation (default:1).
-        :type k: int, optional
+        :type k: int
         :param max_iterations: Maximum training iterations (default:1000).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
                (default:False).
-        :type use_all_factor_levels: bool, optional
+        :type use_all_factor_levels: bool
         :param compute_metrics: Whether to compute metrics on the training data (default:True).
-        :type compute_metrics: bool, optional
+        :type compute_metrics: bool
         :param impute_missing: Whether to impute missing entries with the column mean (default:False).
-        :type impute_missing: bool, optional
+        :type impute_missing: bool
         :param seed: RNG seed for initialization (default:-1).
-        :type seed: int, optional
+        :type seed: int
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
-        :type max_runtime_secs: float, optional
+        :type max_runtime_secs: float
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.transform = transform
+        self.pca_method = pca_method
+        self.pca_impl = pca_impl
+        self.k = k
+        self.max_iterations = max_iterations
+        self.use_all_factor_levels = use_all_factor_levels
+        self.compute_metrics = compute_metrics
+        self.impute_missing = impute_missing
+        self.seed = seed
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
 
     @property
     def training_frame(self):

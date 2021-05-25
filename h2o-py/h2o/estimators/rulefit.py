@@ -46,22 +46,22 @@ class H2ORuleFitEstimator(H2OEstimator):
         :param validation_frame: Id of the validation data frame. (default:None).
         :type validation_frame: H2OFrame, optional
         :param seed: Seed for pseudo random number generator (if applicable). (default:-1).
-        :type seed: int, optional
+        :type seed: int
         :param response_column: Response variable column. (default:None).
         :type response_column: str, optional
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param algorithm: The algorithm to use to generate rules. (default:"auto").
-        :type algorithm: Literal["auto", "drf", "gbm"], optional
+        :type algorithm: Literal["auto", "drf", "gbm"]
         :param min_rule_length: Minimum length of rules. Defaults to 3. (default:3).
-        :type min_rule_length: int, optional
+        :type min_rule_length: int
         :param max_rule_length: Maximum length of rules. Defaults to 3. (default:3).
-        :type max_rule_length: int, optional
+        :type max_rule_length: int
         :param max_num_rules: The maximum number of rules to return. defaults to -1 which means the number of rules is
                selected  by diminishing returns in model deviance. (default:-1).
-        :type max_num_rules: int, optional
+        :type max_num_rules: int
         :param model_type: Specifies type of base learners in the ensemble. (default:"rules_and_linear").
-        :type model_type: Literal["rules_and_linear", "rules", "linear"], optional
+        :type model_type: Literal["rules_and_linear", "rules", "linear"]
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
@@ -71,20 +71,27 @@ class H2ORuleFitEstimator(H2OEstimator):
         :type weights_column: str, optional
         :param distribution: Distribution function (default:"auto").
         :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
-               "quantile", "huber"], optional
+               "quantile", "huber"]
         :param rule_generation_ntrees: specifies the number of trees to build in the tree model. Defaults to 50.
                (default:50).
-        :type rule_generation_ntrees: int, optional
+        :type rule_generation_ntrees: int
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2ORuleFitEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.seed = seed
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.algorithm = algorithm
+        self.min_rule_length = min_rule_length
+        self.max_rule_length = max_rule_length
+        self.max_num_rules = max_num_rules
+        self.model_type = model_type
+        self.weights_column = weights_column
+        self.distribution = distribution
+        self.rule_generation_ntrees = rule_generation_ntrees
 
     @property
     def training_frame(self):

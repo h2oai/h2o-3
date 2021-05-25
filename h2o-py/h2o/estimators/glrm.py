@@ -66,76 +66,102 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :type score_each_iteration: bool, optional
+        :type score_each_iteration: bool
         :param representation_name: Frame key to save resulting X (default:None).
         :type representation_name: str, optional
         :param loading_name: [Deprecated] Use representation_name instead.  Frame key to save resulting X.
                (default:None).
         :type loading_name: str, optional
         :param transform: Transformation of training data (default:"none").
-        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"], optional
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
         :param k: Rank of matrix approximation (default:1).
-        :type k: int, optional
+        :type k: int
         :param loss: Numeric loss function (default:"quadratic").
-        :type loss: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"], optional
+        :type loss: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
         :param loss_by_col: Loss function by column (override) (default:None).
         :type loss_by_col: List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
                "ordinal"]], optional
         :param loss_by_col_idx: Loss function by column index (override) (default:None).
         :type loss_by_col_idx: List[int], optional
         :param multi_loss: Categorical loss function (default:"categorical").
-        :type multi_loss: Literal["categorical", "ordinal"], optional
+        :type multi_loss: Literal["categorical", "ordinal"]
         :param period: Length of period (only used with periodic loss function) (default:1).
-        :type period: int, optional
+        :type period: int
         :param regularization_x: Regularization function for X matrix (default:"none").
-        :type regularization_x: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
+        :type regularization_x: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
         :param regularization_y: Regularization function for Y matrix (default:"none").
-        :type regularization_y: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"], optional
+        :type regularization_y: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
         :param gamma_x: Regularization weight on X matrix (default:0.0).
-        :type gamma_x: float, optional
+        :type gamma_x: float
         :param gamma_y: Regularization weight on Y matrix (default:0.0).
-        :type gamma_y: float, optional
+        :type gamma_y: float
         :param max_iterations: Maximum number of iterations (default:1000).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param max_updates: Maximum number of updates, defaults to 2*max_iterations (default:2000).
-        :type max_updates: int, optional
+        :type max_updates: int
         :param init_step_size: Initial step size (default:1.0).
-        :type init_step_size: float, optional
+        :type init_step_size: float
         :param min_step_size: Minimum step size (default:0.0001).
-        :type min_step_size: float, optional
+        :type min_step_size: float
         :param seed: RNG seed for initialization (default:-1).
-        :type seed: int, optional
+        :type seed: int
         :param init: Initialization mode (default:"plus_plus").
-        :type init: Literal["random", "svd", "plus_plus", "user"], optional
+        :type init: Literal["random", "svd", "plus_plus", "user"]
         :param svd_method: Method for computing SVD during initialization (Caution: Randomized is currently experimental
                and unstable) (default:"randomized").
-        :type svd_method: Literal["gram_s_v_d", "power", "randomized"], optional
+        :type svd_method: Literal["gram_s_v_d", "power", "randomized"]
         :param user_y: User-specified initial Y (default:None).
         :type user_y: H2OFrame, optional
         :param user_x: User-specified initial X (default:None).
         :type user_x: H2OFrame, optional
         :param expand_user_y: Expand categorical columns in user-specified initial Y (default:True).
-        :type expand_user_y: bool, optional
+        :type expand_user_y: bool
         :param impute_original: Reconstruct original training data by reversing transform (default:False).
-        :type impute_original: bool, optional
+        :type impute_original: bool
         :param recover_svd: Recover singular values and eigenvectors of XY (default:False).
-        :type recover_svd: bool, optional
+        :type recover_svd: bool
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
-        :type max_runtime_secs: float, optional
+        :type max_runtime_secs: float
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGeneralizedLowRankEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.representation_name = representation_name
+        self.loading_name = loading_name
+        self.transform = transform
+        self.k = k
+        self.loss = loss
+        self.loss_by_col = loss_by_col
+        self.loss_by_col_idx = loss_by_col_idx
+        self.multi_loss = multi_loss
+        self.period = period
+        self.regularization_x = regularization_x
+        self.regularization_y = regularization_y
+        self.gamma_x = gamma_x
+        self.gamma_y = gamma_y
+        self.max_iterations = max_iterations
+        self.max_updates = max_updates
+        self.init_step_size = init_step_size
+        self.min_step_size = min_step_size
+        self.seed = seed
+        self.init = init
+        self.svd_method = svd_method
+        self.user_y = user_y
+        self.user_x = user_x
+        self.expand_user_y = expand_user_y
+        self.impute_original = impute_original
+        self.recover_svd = recover_svd
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
 
     @property
     def training_frame(self):

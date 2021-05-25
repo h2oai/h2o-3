@@ -41,38 +41,44 @@ class H2OWord2vecEstimator(H2OEstimator):
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param min_word_freq: This will discard words that appear less than <int> times (default:5).
-        :type min_word_freq: int, optional
+        :type min_word_freq: int
         :param word_model: The word model to use (SkipGram or CBOW) (default:"skip_gram").
-        :type word_model: Literal["skip_gram", "cbow"], optional
+        :type word_model: Literal["skip_gram", "cbow"]
         :param norm_model: Use Hierarchical Softmax (default:"hsm").
-        :type norm_model: Literal["hsm"], optional
+        :type norm_model: Literal["hsm"]
         :param vec_size: Set size of word vectors (default:100).
-        :type vec_size: int, optional
+        :type vec_size: int
         :param window_size: Set max skip length between words (default:5).
-        :type window_size: int, optional
+        :type window_size: int
         :param sent_sample_rate: Set threshold for occurrence of words. Those that appear with higher frequency in the
                training data                 will be randomly down-sampled; useful range is (0, 1e-5) (default:0.001).
-        :type sent_sample_rate: float, optional
+        :type sent_sample_rate: float
         :param init_learning_rate: Set the starting learning rate (default:0.025).
-        :type init_learning_rate: float, optional
+        :type init_learning_rate: float
         :param epochs: Number of training iterations to run (default:5).
-        :type epochs: int, optional
+        :type epochs: int
         :param pre_trained: Id of a data frame that contains a pre-trained (external) word2vec model (default:None).
         :type pre_trained: H2OFrame, optional
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
-        :type max_runtime_secs: float, optional
+        :type max_runtime_secs: float
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.min_word_freq = min_word_freq
+        self.word_model = word_model
+        self.norm_model = norm_model
+        self.vec_size = vec_size
+        self.window_size = window_size
+        self.sent_sample_rate = sent_sample_rate
+        self.init_learning_rate = init_learning_rate
+        self.epochs = epochs
+        self.pre_trained = pre_trained
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
 
     @property
     def training_frame(self):

@@ -54,51 +54,51 @@ class H2OKMeansEstimator(H2OEstimator):
         :param validation_frame: Id of the validation data frame. (default:None).
         :type validation_frame: H2OFrame, optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
-        :type nfolds: int, optional
+        :type nfolds: int
         :param keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
-        :type keep_cross_validation_models: bool, optional
+        :type keep_cross_validation_models: bool
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
                (default:False).
-        :type keep_cross_validation_predictions: bool, optional
+        :type keep_cross_validation_predictions: bool
         :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
                (default:False).
-        :type keep_cross_validation_fold_assignment: bool, optional
+        :type keep_cross_validation_fold_assignment: bool
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :type score_each_iteration: bool, optional
+        :type score_each_iteration: bool
         :param k: The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it
                will find up to k centroids. (default:1).
-        :type k: int, optional
+        :type k: int
         :param estimate_k: Whether to estimate the number of clusters (<=k) iteratively and deterministically.
                (default:False).
-        :type estimate_k: bool, optional
+        :type estimate_k: bool
         :param user_points: This option allows you to specify a dataframe, where each row represents an initial cluster
                center. The user-specified points must have the same number of columns as the training observations. The
                number of rows must equal the number of clusters (default:None).
         :type user_points: H2OFrame, optional
         :param max_iterations: Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds
                iteration) (default:10).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param standardize: Standardize columns before computing distances (default:True).
-        :type standardize: bool, optional
+        :type standardize: bool
         :param seed: RNG Seed (default:-1).
-        :type seed: int, optional
+        :type seed: int
         :param init: Initialization mode (default:"furthest").
-        :type init: Literal["random", "plus_plus", "furthest", "user"], optional
+        :type init: Literal["random", "plus_plus", "furthest", "user"]
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
-        :type max_runtime_secs: float, optional
+        :type max_runtime_secs: float
         :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-               "sort_by_response", "enum_limited"], optional
+               "sort_by_response", "enum_limited"]
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param cluster_size_constraints: An array specifying the minimum number of points that should be in each
@@ -106,15 +106,31 @@ class H2OKMeansEstimator(H2OEstimator):
                (default:None).
         :type cluster_size_constraints: List[int], optional
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OKMeansEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.nfolds = nfolds
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.fold_assignment = fold_assignment
+        self.fold_column = fold_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.k = k
+        self.estimate_k = estimate_k
+        self.user_points = user_points
+        self.max_iterations = max_iterations
+        self.standardize = standardize
+        self.seed = seed
+        self.init = init
+        self.max_runtime_secs = max_runtime_secs
+        self.categorical_encoding = categorical_encoding
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.cluster_size_constraints = cluster_size_constraints
 
     @property
     def training_frame(self):

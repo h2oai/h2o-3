@@ -68,13 +68,13 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         :param stratify_by: List of columns to use for stratification. (default:None).
         :type stratify_by: List[str], optional
         :param ties: Method for Handling Ties. (default:"efron").
-        :type ties: Literal["efron", "breslow"], optional
+        :type ties: Literal["efron", "breslow"]
         :param init: Coefficient starting value. (default:0.0).
-        :type init: float, optional
+        :type init: float
         :param lre_min: Minimum log-relative error. (default:9.0).
-        :type lre_min: float, optional
+        :type lre_min: float
         :param max_iterations: Maximum number of iterations. (default:20).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param interactions: A list of predictor column indices to interact. All pairwise combinations will be computed
                for the list. (default:None).
         :type interactions: List[str], optional
@@ -85,22 +85,34 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         :type interactions_only: List[str], optional
         :param use_all_factor_levels: (Internal. For development only!) Indicates whether to use all factor levels.
                (default:False).
-        :type use_all_factor_levels: bool, optional
+        :type use_all_factor_levels: bool
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param single_node_mode: Run on a single node to reduce the effect of network overhead (for smaller datasets)
                (default:False).
-        :type single_node_mode: bool, optional
+        :type single_node_mode: bool
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OCoxProportionalHazardsEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.start_column = start_column
+        self.stop_column = stop_column
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.weights_column = weights_column
+        self.offset_column = offset_column
+        self.stratify_by = stratify_by
+        self.ties = ties
+        self.init = init
+        self.lre_min = lre_min
+        self.max_iterations = max_iterations
+        self.interactions = interactions
+        self.interaction_pairs = interaction_pairs
+        self.interactions_only = interactions_only
+        self.use_all_factor_levels = use_all_factor_levels
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.single_node_mode = single_node_mode
 
     @property
     def training_frame(self):

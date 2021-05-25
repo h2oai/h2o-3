@@ -109,21 +109,21 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param validation_frame: Id of the validation data frame. (default:None).
         :type validation_frame: H2OFrame, optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
-        :type nfolds: int, optional
+        :type nfolds: int
         :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
-        :type seed: int, optional
+        :type seed: int
         :param keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
-        :type keep_cross_validation_models: bool, optional
+        :type keep_cross_validation_models: bool
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
                (default:False).
-        :type keep_cross_validation_predictions: bool, optional
+        :type keep_cross_validation_predictions: bool
         :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
                (default:False).
-        :type keep_cross_validation_fold_assignment: bool, optional
+        :type keep_cross_validation_fold_assignment: bool
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
                (default:"auto").
-        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
         :type fold_column: str, optional
         :param response_column: Response variable column. (default:None).
@@ -131,9 +131,9 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param ignored_columns: Names of columns to ignore for training. (default:None).
         :type ignored_columns: List[str], optional
         :param ignore_const_cols: Ignore constant columns. (default:True).
-        :type ignore_const_cols: bool, optional
+        :type ignore_const_cols: bool
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
-        :type score_each_iteration: bool, optional
+        :type score_each_iteration: bool
         :param offset_column: Offset column. This will be added to the combination of columns before applying the link
                function. (default:None).
         :type offset_column: str, optional
@@ -147,18 +147,18 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :param family: Family. Use binomial for classification with logistic regression, others are for regression
                problems. (default:"auto").
         :type family: Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
-               "tweedie", "negativebinomial", "fractionalbinomial"], optional
+               "tweedie", "negativebinomial", "fractionalbinomial"]
         :param tweedie_variance_power: Tweedie variance power (default:0.0).
-        :type tweedie_variance_power: float, optional
+        :type tweedie_variance_power: float
         :param tweedie_link_power: Tweedie link power (default:0.0).
-        :type tweedie_link_power: float, optional
+        :type tweedie_link_power: float
         :param theta: Theta (default:0.0).
-        :type theta: float, optional
+        :type theta: float
         :param solver: AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on
                problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for
                datasets with many columns. (default:"auto").
         :type solver: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent",
-               "gradient_descent_lh", "gradient_descent_sqerr"], optional
+               "gradient_descent_lh", "gradient_descent_sqerr"]
         :param alpha: Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for
                alpha represents Lasso regression, a value of 0 produces Ridge regression, and anything in between
                specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5
@@ -168,108 +168,108 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         :type lambda_: List[float], optional
         :param lambda_search: Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
                (default:False).
-        :type lambda_search: bool, optional
+        :type lambda_search: bool
         :param early_stopping: Stop early when there is no more relative improvement on train or validation (if
                provided) (default:True).
-        :type early_stopping: bool, optional
+        :type early_stopping: bool
         :param nlambdas: Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda
                search set to True, the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression)
                otherwise it is set to 100. (default:-1).
-        :type nlambdas: int, optional
+        :type nlambdas: int
         :param standardize: Standardize numeric columns to have zero mean and unit variance (default:False).
-        :type standardize: bool, optional
+        :type standardize: bool
         :param missing_values_handling: Handling of missing values. Either MeanImputation, Skip or PlugValues.
                (default:"mean_imputation").
-        :type missing_values_handling: Literal["mean_imputation", "skip", "plug_values"], optional
+        :type missing_values_handling: Literal["mean_imputation", "skip", "plug_values"]
         :param plug_values: Plug Values (a single row frame containing values that will be used to impute missing values
                of the training/validation frame, use with conjunction missing_values_handling = PlugValues)
                (default:None).
         :type plug_values: H2OFrame, optional
         :param compute_p_values: Request p-values computation, p-values work only with IRLSM solver and no
                regularization (default:False).
-        :type compute_p_values: bool, optional
+        :type compute_p_values: bool
         :param remove_collinear_columns: In case of linearly dependent columns, remove some of the dependent columns
                (default:False).
-        :type remove_collinear_columns: bool, optional
+        :type remove_collinear_columns: bool
         :param intercept: Include constant term in the model (default:True).
-        :type intercept: bool, optional
+        :type intercept: bool
         :param non_negative: Restrict coefficients (not intercept) to be non-negative (default:False).
-        :type non_negative: bool, optional
+        :type non_negative: bool
         :param max_iterations: Maximum number of iterations (default:-1).
-        :type max_iterations: int, optional
+        :type max_iterations: int
         :param objective_epsilon: Converge if  objective value changes less than this. Default indicates: If
                lambda_search is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set
                to False and lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other
                value of lambda the default value of objective_epsilon is set to .0001. (default:-1.0).
-        :type objective_epsilon: float, optional
+        :type objective_epsilon: float
         :param beta_epsilon: Converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to
                IRLSM solver  (default:0.0001).
-        :type beta_epsilon: float, optional
+        :type beta_epsilon: float
         :param gradient_epsilon: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to
                L-BFGS solver. Default indicates: If lambda_search is set to False and lambda is equal to zero, the
                default value of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If
                lambda_search is set to True, the conditional values above are 1E-8 and 1E-6 respectively.
                (default:-1.0).
-        :type gradient_epsilon: float, optional
+        :type gradient_epsilon: float
         :param link: Link function. (default:"family_default").
-        :type link: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"], optional
+        :type link: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
         :param startval: double array to initialize coefficients for GAM. (default:None).
         :type startval: List[float], optional
         :param prior: Prior probability for y==1. To be used only for logistic regression iff the data has been sampled
                and the mean of response does not reflect reality. (default:-1.0).
-        :type prior: float, optional
+        :type prior: float
         :param cold_start: Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build
                the next model for next set of alpha/lambda values starting from the values provided by current model.
                If true will start GLM model from scratch. (default:False).
-        :type cold_start: bool, optional
+        :type cold_start: bool
         :param lambda_min_ratio: Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest
                lambda that drives all coefficients to zero). Default indicates: if the number of observations is greater
                than the number of variables, then lambda_min_ratio is set to 0.0001; if the number of observations is
                less than the number of variables, then lambda_min_ratio is set to 0.01. (default:-1.0).
-        :type lambda_min_ratio: float, optional
+        :type lambda_min_ratio: float
         :param beta_constraints: Beta constraints (default:None).
         :type beta_constraints: H2OFrame, optional
         :param max_active_predictors: Maximum number of active predictors during computation. Use as a stopping
                criterion to prevent expensive model building with many predictors. Default indicates: If the IRLSM
                solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
                (default:-1).
-        :type max_active_predictors: int, optional
+        :type max_active_predictors: int
         :param interactions: A list of predictor column indices to interact. All pairwise combinations will be computed
                for the list. (default:None).
         :type interactions: List[str], optional
         :param interaction_pairs: A list of pairwise (first order) column interactions. (default:None).
         :type interaction_pairs: List[tuple], optional
         :param obj_reg: Likelihood divider in objective value computation, default is 1/nobs (default:-1.0).
-        :type obj_reg: float, optional
+        :type obj_reg: float
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
                (default:0).
-        :type stopping_rounds: int, optional
+        :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
                used in GBM and DRF with the Python client. (default:"auto").
         :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
-               "misclassification", "mean_per_class_error", "custom", "custom_increasing"], optional
+               "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
                is not at least this much) (default:0.001).
-        :type stopping_tolerance: float, optional
+        :type stopping_tolerance: float
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                (default:False).
-        :type balance_classes: bool, optional
+        :type balance_classes: bool
         :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
                specified, sampling factors will be automatically computed to obtain class balance during training.
                Requires balance_classes. (default:None).
         :type class_sampling_factors: List[float], optional
         :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
                less than 1.0). Requires balance_classes. (default:5.0).
-        :type max_after_balance_size: float, optional
+        :type max_after_balance_size: float
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
                the Logs (default:20).
-        :type max_confusion_matrix_size: int, optional
+        :type max_confusion_matrix_size: int
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
-        :type max_runtime_secs: float, optional
+        :type max_runtime_secs: float
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                (default:None).
         :type custom_metric_func: str, optional
@@ -282,9 +282,9 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                like {{'c1'},{'c2','c3'},{'c4'},...} (default:None).
         :type gam_columns: List[List[str]], optional
         :param standardize_tp_gam_cols: standardize tp (thin plate) predictor columns (default:False).
-        :type standardize_tp_gam_cols: bool, optional
+        :type standardize_tp_gam_cols: bool
         :param scale_tp_penalty_mat: Scale penalty matrix for tp (thin plate) smoothers as in R (default:False).
-        :type scale_tp_penalty_mat: bool, optional
+        :type scale_tp_penalty_mat: bool
         :param bs: Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for
                thin plate regression with SVD.  If specified, must be the same size as gam_columns (default:None).
         :type bs: List[int], optional
@@ -292,19 +292,78 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                (default:None).
         :type scale: List[float], optional
         :param keep_gam_cols: Save keys of model matrix (default:False).
-        :type keep_gam_cols: bool, optional
+        :type keep_gam_cols: bool
         :param auc_type: Set default multinomial AUC type. (default:"auto").
-        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"], optional
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
         """
-        sig_params = {k:v for k, v in locals().items() if k != 'self' and not k.startswith('__')}
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in sig_params.items():
-            if pname == 'model_id':
-                self._id = self._parms['model_id'] = pvalue
-            else:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.nfolds = nfolds
+        self.seed = seed
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.fold_assignment = fold_assignment
+        self.fold_column = fold_column
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.offset_column = offset_column
+        self.weights_column = weights_column
+        self.family = family
+        self.tweedie_variance_power = tweedie_variance_power
+        self.tweedie_link_power = tweedie_link_power
+        self.theta = theta
+        self.solver = solver
+        self.alpha = alpha
+        self.lambda_ = lambda_
+        self.lambda_search = lambda_search
+        self.early_stopping = early_stopping
+        self.nlambdas = nlambdas
+        self.standardize = standardize
+        self.missing_values_handling = missing_values_handling
+        self.plug_values = plug_values
+        self.compute_p_values = compute_p_values
+        self.remove_collinear_columns = remove_collinear_columns
+        self.intercept = intercept
+        self.non_negative = non_negative
+        self.max_iterations = max_iterations
+        self.objective_epsilon = objective_epsilon
+        self.beta_epsilon = beta_epsilon
+        self.gradient_epsilon = gradient_epsilon
+        self.link = link
+        self.startval = startval
+        self.prior = prior
+        self.cold_start = cold_start
+        self.lambda_min_ratio = lambda_min_ratio
+        self.beta_constraints = beta_constraints
+        self.max_active_predictors = max_active_predictors
+        self.interactions = interactions
+        self.interaction_pairs = interaction_pairs
+        self.obj_reg = obj_reg
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.stopping_rounds = stopping_rounds
+        self.stopping_metric = stopping_metric
+        self.stopping_tolerance = stopping_tolerance
+        self.balance_classes = balance_classes
+        self.class_sampling_factors = class_sampling_factors
+        self.max_after_balance_size = max_after_balance_size
+        self.max_confusion_matrix_size = max_confusion_matrix_size
+        self.max_runtime_secs = max_runtime_secs
+        self.custom_metric_func = custom_metric_func
+        self.num_knots = num_knots
+        self.knot_ids = knot_ids
+        self.gam_columns = gam_columns
+        self.standardize_tp_gam_cols = standardize_tp_gam_cols
+        self.scale_tp_penalty_mat = scale_tp_penalty_mat
+        self.bs = bs
+        self.scale = scale
+        self.keep_gam_cols = keep_gam_cols
+        self.auc_type = auc_type
 
     @property
     def training_frame(self):
