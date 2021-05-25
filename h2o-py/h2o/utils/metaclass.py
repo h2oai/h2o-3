@@ -8,6 +8,7 @@ This module provides helper functions to write code that is backward-compatible.
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
 from __future__ import division, print_function, absolute_import
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import _str_type
 
 from functools import wraps
 import warnings
@@ -47,19 +48,21 @@ def deprecated_params(deprecations):
             for k, v in kwargs.items():
                 if k in old:
                     new = deprecations[k]
-                    new_std = (((lambda ov: None), None) if new in [None, ()] 
-                               else ((lambda ov: {new: ov}), None) if isinstance(new, str)
+                    new_tup = (((lambda ov: None), None) if new in [None, ()] 
+                               else ((lambda ov: {new: ov}), None) if isinstance(new, _str_type)
                                else (new, None) if callable(new)
-                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], str)
+                               else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], _str_type)
                                else new)
-                    assert (isinstance(new_std, tuple),
+                    print(new)
+                    print(new_tup)
+                    assert isinstance(new_tup, tuple), (
                             "`deprecations` values must be one of: "
                             "None (deprecated param removed), a string (deprecated property renamed), "
                             "a tuple(new_name: Optional[str], message: str) to customize the deprecation message, "
                             "a callable lambda old_value: dict(param1=value1, param2=value2) for advanced deprecations "
                             "(one param replaced with one or more params with transformation of the deprecated value), "
                             "or a tuple(lambda old_value: dict(param1=value1, param2=value2), message: str).")
-                    transform_fn, msg = new_std
+                    transform_fn, msg = new_tup
                     new_params = transform_fn(v)
                     if new_params in [None, {}]:
                         messages.append(msg or "``{}`` param of ``{}`` is deprecated and will be ignored."
