@@ -43,10 +43,10 @@ public class AnovaGLMBasicTest {
   public void testFrameTransformGaussian() {
     try {
       Scope.enter();
-      Frame correctFrame = parseTestFile("smalldata/anovaglm/MooreTransformed.csv");
+      Frame correctFrame = parseTestFile("smalldata/anovaGlm/MooreTransformed.csv");
       String[] correctNames = new String[]{"fcategory1", "fcategory2", "partner.status1", "fcategory1:partner.status1",
               "fcategory2:partner.status1"};
-      Frame train = parseTestFile("smalldata/anovaglm/Moore.csv");Scope.track(correctFrame);
+      Frame train = parseTestFile("smalldata/anovaGlm/Moore.csv");Scope.track(correctFrame);
       Scope.track(train);
 
       AnovaGLMModel.AnovaGLMParameters params = new AnovaGLMModel.AnovaGLMParameters();
@@ -132,9 +132,9 @@ public class AnovaGLMBasicTest {
   public void testHighEnumColumns() {
     try {
       Scope.enter();
-      Frame train  = parseTestFile("smalldata/anovaglm/highEnumTest.csv");//C1,C2,C4:numeric, C3,C5,C6,C7,C8:enum
+      Frame train  = parseTestFile("smalldata/anovaGlm/highEnumTest.csv");//C1,C2,C4:numeric, C3,C5,C6,C7,C8:enum
       Scope.track(train);
-      Frame rTransformF = parseTestFile("smalldata/anovaglm/highEnumRTransform.csv");
+      Frame rTransformF = parseTestFile("smalldata/anovaGlm/highEnumRTransform.csv");
       Scope.track(rTransformF);
       
       AnovaGLMModel.AnovaGLMParameters params = new AnovaGLMModel.AnovaGLMParameters();
@@ -220,7 +220,7 @@ public class AnovaGLMBasicTest {
   public void testPoisson() {
     try {
       Scope.enter();
-      Frame train  = parseTestFile("smalldata/anovaglm/poissonAnova.csv");
+      Frame train  = parseTestFile("smalldata/anovaGlm/poissonAnova.csv");
       Scope.track(train);
       AnovaGLMModel.AnovaGLMParameters params = new AnovaGLMModel.AnovaGLMParameters();
       params._family = poisson;

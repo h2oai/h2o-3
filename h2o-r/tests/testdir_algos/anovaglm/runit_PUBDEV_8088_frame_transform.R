@@ -3,8 +3,8 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 # make sure anovaGlm frame transformation is working
 test.model.anovaglm.frame.transformation <- function() {
-    train <- h2o.importFile(path = locate("smalldata/anovaglm/Moore.csv"))
-    answer <- h2o.importFile("smalldata/anovaglm/MooreTransformed.csv")
+    train <- h2o.importFile(path = locate("smalldata/anovaGlm/Moore.csv"))
+    answer <- h2o.importFile("smalldata/anovaGlm/MooreTransformed.csv")
     aModel <- h2o.anovaglm(y = "conformity", x = c(1,3),  training_frame = train, family = "gaussian", save_transformed_framekeys = TRUE)
     browser()
     # get transform frame

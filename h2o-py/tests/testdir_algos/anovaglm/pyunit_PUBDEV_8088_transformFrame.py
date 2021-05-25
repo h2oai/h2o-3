@@ -6,8 +6,8 @@ from h2o.estimators.anovaglm import H2OAnovaGLMEstimator
 
 # Simple test to check correct frame transformation
 def testFrameTransform():
-  train = h2o.import_file(path=pyunit_utils.locate("smalldata/anovaglm/Moore.csv"))
-  answer = h2o.import_file(path=pyunit_utils.locate("smalldata/anovaglm/MooreTransformed.csv"))
+  train = h2o.import_file(path=pyunit_utils.locate("smalldata/anovaGlm/Moore.csv"))
+  answer = h2o.import_file(path=pyunit_utils.locate("smalldata/anovaGlm/MooreTransformed.csv"))
   myY = 'conformity'
   myX = ['fcategory', 'partner.status']
 
