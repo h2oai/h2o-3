@@ -1241,7 +1241,7 @@ public class h2odriver extends Configured implements Tool {
         swExtBackend = true;
       }
       else if (s.equals("-configure_s3_using_s3a")) {
-        configureS3UsingS3A = false;
+        configureS3UsingS3A = true;
       }
       else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
