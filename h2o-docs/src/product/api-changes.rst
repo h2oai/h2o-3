@@ -29,6 +29,7 @@ In an objective of performance optimization on the backend, and of simplificatio
 - The parameters ``data_leakage_handling``, ``seed`` are now ignored on those methods: ``transform`` will use by default the corresponding values defined when building the TargetEncoder model.
 - The other regularization parameters on these ``transform`` methods (e.g. ``noise``, ``blending``, ``inflection_point``, ``smoothing``), always default to the value defined on the TargetEncoder model.
 - A new ``as_training`` parameter has been introduced to simplify and enforce a correct usage of target encoding:
+
   - When transforming a training dataset, user should use (R) ``h2o.transform(te_model, train_dataset, as_training=TRUE)`` or (Python) ``te_model.transform(train_dataset, as_training=True)``.
   - When transforming any other dataset (validation, test, ...), user can just use (R) ``h2o.transform(te_model, train_dataset)`` or (Python) ``te_model.transform(train_dataset)``.
   - Legacy code using for example ``h2o.transform(te_model, train_dataset, data_leakage_handling="KFold")`` will now be translated internally to ``h2o.transform(te_model, train_dataset, as_training=TRUE)``.

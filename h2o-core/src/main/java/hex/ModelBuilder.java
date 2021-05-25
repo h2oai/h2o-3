@@ -1942,6 +1942,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("remove");
     excluded.add("cm");
     excluded.add("auc_obj");
+    excluded.add("aucpr");
     List<Method> methods = new ArrayList<>();
     {
       Model m = DKV.getGet(cvmodels[0]);

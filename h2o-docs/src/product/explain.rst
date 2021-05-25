@@ -509,6 +509,32 @@ An Individual Conditional Expectation (ICE) plot gives a graphical depiction of 
    :align: center
 
 
+Learning Curve Plot
+----------------------
+
+The learning curve plot shows error metric dependence on learning progress (e.g. RMSE vs. number of trees trained so far in GBM).  This plot can help to diagnose whether the model is overfitting or underfitting -- in an ideal situation, the training and validation curves converge.  There can be up to 4 curves showing the error, and all available metrics will be plotted: 
+
+- Training
+- Validation  (available when ``validation_frame`` is set)
+- Training on CV Models  (available when ``nfolds>1``)
+- Cross-validation  (available when ``nfolds>1``)
+
+If one of these is missing, that means those particular scoring metrics were not available in the model.  Learning curve plots will be included in the Explain function in a `future <https://h2oai.atlassian.net/browse/PUBDEV-8112>`__ release, but for now, this is offered as a stand-alone utility. 
+
+.. tabs::
+   .. code-tab:: r R
+
+        learning_curve_plot <- h2o.learning_curve_plot(model)
+        learning_curve_plot
+
+   .. code-tab:: python
+
+        learning_curve_plot = model.learning_curve_plot()
+
+.. figure:: images/explain_learning_curve_plot_airlines.png
+   :alt: H2O AutoML
+   :scale: 90%
+   :align: center
 
 
 
@@ -517,6 +543,6 @@ Additional Information
 
 The H2O Explainability interface is newly released and currently experimental.  From the initial release, we may evolve (and potentially break) the API, as we collect collect feedback from users and work to improve and expand the functionality.  We welcome feedback!  If you find bugs, or if you have any feature requests or suggested improvements, please create a ticket on the `H2O JIRA issue tracker <https://0xdata.atlassian.net/projects/PUBDEV>`__.
 
-Our roadmap for improving the the interface is `here <https://0xdata.atlassian.net/jira/software/c/projects/PUBDEV/issues/PUBDEV-7806?filter=allissues>`__.
+Our roadmap for improving the the interface is `here <https://h2oai.atlassian.net/browse/PUBDEV-7806>`__.
 
 

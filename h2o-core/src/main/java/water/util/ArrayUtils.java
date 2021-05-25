@@ -595,7 +595,7 @@ public class ArrayUtils {
   /**
    * Provide array from start to end in steps of 1
    * @param start beginning value (inclusive)
-   * @param end   ending value (exclusive)
+   * @param end   ending value (inclusive)
    * @return specified range of integers
    */
   public static int[] range(int start, int end) {
@@ -1367,7 +1367,7 @@ public class ArrayUtils {
     return c;
   }
 
-  static public byte[] append( byte[] a, byte[] b ) {
+  static public byte[] append( byte[] a, byte... b ) {
     if( a==null ) return b;
     if( b==null ) return a;
     if( a.length==0 ) return b;
@@ -1605,7 +1605,7 @@ public class ArrayUtils {
     if (idxs.length < cutoff) {
       //hand-rolled insertion sort
       for (int i = 0; i < idxs.length; i++) {
-        for (int j = i; j > 0 && values[idxs[j - 1]] > values[idxs[j]]; j--) {
+        for (int j = i; j > 0 && values[idxs[j - 1]]*increasing > values[idxs[j]]*increasing; j--) {
           int tmp = idxs[j];
           idxs[j] = idxs[j - 1];
           idxs[j - 1] = tmp;
@@ -1618,7 +1618,7 @@ public class ArrayUtils {
       Arrays.sort(d, new Comparator<Integer>() {
         @Override
         public int compare(Integer x, Integer y) {
-          return values[x]*increasing < values[y]*increasing ? -1 : 
+          return values[x]*increasing < values[y]*increasing ? -1 :
                   (values[x]*increasing > values[y]*increasing ? 1 : 0);
         }
       });

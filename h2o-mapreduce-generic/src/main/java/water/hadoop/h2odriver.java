@@ -142,6 +142,7 @@ public class h2odriver extends Configured implements Tool {
   static String autoRecoveryDir = null;
   static boolean disableFlow = false;
   static boolean swExtBackend = false;
+  static boolean configureS3UsingS3A = false;
 
   String proxyUrl = null;
 
@@ -1238,7 +1239,11 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-sw_ext_backend")) {
         swExtBackend = true;
-      } else if (s.equals("-session_timeout")) {
+      }
+      else if (s.equals("-configure_s3_using_s3a")) {
+        configureS3UsingS3A = true;
+      }
+      else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
         sessionTimeout = args[i];
       }
@@ -1795,6 +1800,9 @@ public class h2odriver extends Configured implements Tool {
     }
     String hadoopVersion = calcHadoopVersion();
     addMapperArg(conf, "-ga_hadoop_ver", hadoopVersion);
+    if (configureS3UsingS3A) {
+      addMapperArg(conf, "-configure_s3_using_s3a");
+    }
     if (jksPass != null) {
       addMapperArg(conf, "-jks_pass", jksPass);
     }

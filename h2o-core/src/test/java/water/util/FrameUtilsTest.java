@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -132,34 +131,6 @@ public class FrameUtilsTest extends TestUtil {
             assertEquals("Value of column " + col + " in row = " + i + " matches", expectedVal, result.vec(col).at8(i));
           }
       }
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  // This test is used to test some utilities that I have written to make sure they function as planned.
-  @Test
-  public void testIDColumnOperationEncoder() {
-    Scope.enter();
-    Random _rand = new Random();
-    int numRows = 1000;
-    int rowsToTest = _rand.nextInt(numRows);
-    try {
-      FrameTestUtil.Create1IDColumn tempO = new FrameTestUtil.Create1IDColumn(numRows);
-      Frame f = tempO.doAll(tempO.returnFrame()).returnFrame();
-      Scope.track(f);
-
-      ArrayList<Integer> badRows = new FrameTestUtil.CountAllRowsPresented(0, f).doAll(f).findMissingRows();
-      assertEquals("All rows should be present but not!", badRows.size(), 0);
-      long countAppear = new FrameTestUtil.CountIntValueRows(rowsToTest, 0,
-              0, f).doAll(f).getNumberAppear();
-      assertEquals("All values should appear only once.", countAppear, 1);
-
-      // delete a row to make sure it is not found again.
-      f.remove(rowsToTest);  // row containing value rowsToTest is no longer there.
-      countAppear = new FrameTestUtil.CountIntValueRows(2000, 0, 0,
-              f).doAll(f).getNumberAppear();
-      assertEquals("Value of interest should not been found....", countAppear, 0);
     } finally {
       Scope.exit();
     }

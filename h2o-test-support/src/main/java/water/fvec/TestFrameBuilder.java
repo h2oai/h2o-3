@@ -110,6 +110,22 @@ public class TestFrameBuilder {
     return this;
   }
 
+  /**
+   * Generate sequence of integer data
+   * @param column for which to set data
+   * @param from minimal value to generate (included)
+   * @param to maximum value to generate (excluded)
+   */
+  public TestFrameBuilder withSequenceIntDataForCol(int column, int from, int to) {
+    assert to > from;
+    int size = to-from;
+    double[] arr = new double[size];
+    for(int i = from; i < to; i++) {
+      arr[i] = i;
+    }
+    numericData.put(column, arr);
+    return this;
+  }
 
   /**
    *  Genarate random double data for a particular column

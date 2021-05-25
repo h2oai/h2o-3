@@ -8,7 +8,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 12
                 ],
                 200: [
-                    'train_time_min': 32,
+                    'train_time_min': 30,
                     'train_time_max': 36
                 ]
             ],
@@ -18,7 +18,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 14
                 ],
                 200: [
-                    'train_time_min': 42,
+                    'train_time_min': 40,
                     'train_time_max': 50
                 ]
             ],
@@ -66,11 +66,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'homesite': [
                 COORDINATE_DESCENT: [
-                    'train_time_min': 38,
+                    'train_time_min': 37,
                     'train_time_max': 48
                 ],
                 IRLSM: [
-                    'train_time_min': 71,
+                    'train_time_min': 68,
                     'train_time_max': 84
                 ]
             ],
@@ -138,12 +138,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'higgs': [
                 COORDINATE_DESCENT: [
-                    'train_time_min': 90,
-                    'train_time_max': 110
+                    'train_time_min': 60,
+                    'train_time_max': 65
                 ],
                 IRLSM: [
-                    'train_time_min': 130,
-                    'train_time_max': 145
+                    'train_time_min': 159,
+                    'train_time_max': 173
                 ]
             ]
         ],
@@ -202,11 +202,11 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'xgb': [
             'airlines-1m': [
                 [100, "cpu"]: [
-                    'train_time_min': 9,
+                    'train_time_min': 8,
                     'train_time_max': 15
                 ],
                 [100, "ext"]: [
-                    'train_time_min': 15,
+                    'train_time_min': 14,
                     'train_time_max': 19
                 ],
                 [100, "gpu"]: [
@@ -342,8 +342,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'rulefit': [
             'redhat': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 971,
-                        'train_time_max': 1081
+                        'train_time_min': 307,
+                        'train_time_max': 330
                 ]
             ],
             'homesite': [
@@ -354,20 +354,20 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'springleaf': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 20,
-                        'train_time_max': 23
+                        'train_time_min': 81,
+                        'train_time_max': 84
                 ]
             ],
             'paribas': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 7,
-                        'train_time_max': 12
+                        'train_time_min': 4,
+                        'train_time_max': 5
                 ]
             ],
             'higgs': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 71,
-                        'train_time_max': 80
+                        'train_time_min': 22,
+                        'train_time_max': 24
                 ]
             ]
         ]    
@@ -425,7 +425,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                             error("Maximum for ${column} for ${line.dataset} cannot be found")
                         }
                         def lineValue = Double.parseDouble(line[column])
-                        myecho "Checking ${column} for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
+                        echo "Checking ${column} for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
                         if ((lineValue < minValue) || (lineValue > maxValue)) {
                             failures += [
                                     algorithm: line.algorithm,
@@ -438,9 +438,9 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                                     value: lineValue.round(4)
                             ]
                             def lineValueFormatted = new java.text.DecimalFormat("#.#").format(lineValue)
-                            myecho "Check failed. Value ${lineValueFormatted}s not in [${minValue}s..${maxValue}s]. "
+                            echo "Check failed. Value ${lineValueFormatted}s not in [${minValue}s..${maxValue}s]. "
                         } else {
-                            myecho "Check OK!"
+                            echo "Check OK!"
                         }
                     } else {
                         error "Cannot find EXPECTED_VALUES for ${line.dataset} with ${testCaseKey} = ${testCaseValue}"
@@ -451,12 +451,12 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             }
         }
         if (!failures.isEmpty()) {
-            myecho failuresToText(failures)
+            echo failuresToText(failures)
             sendBenchmarksWarningMail(pipelineContext, failures)
             error "One or more checks failed"
 
         } else {
-            myecho "All checks passed!"
+            echo "All checks passed!"
         }
     }
 }
@@ -551,18 +551,4 @@ def sendBenchmarksWarningMail(final pipelineContext, final failures) {
     pipelineContext.getEmailer().sendEmail(this, benchmarksSummary.RESULT_WARNING, benchmarksSummary.getSummaryHTML(this))
 }
 
-// Calls echo with an empty context - to avoid showing "Print Message" instead of the actual message
-def myecho( String msg ) {
-    withContext( new MyEnvClearer() ) {
-        echo msg
-    }
-}
-
-// Clears all environment variables, to be used from withContext{}.
-class MyEnvClearer extends org.jenkinsci.plugins.workflow.steps.EnvironmentExpander {
-    @NonCPS
-    void expand(hudson.EnvVars env) throws IOException, InterruptedException {
-        env.clear()
-    }
-}
 return this

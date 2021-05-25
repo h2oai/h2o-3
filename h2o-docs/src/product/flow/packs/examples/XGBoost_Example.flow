@@ -11,7 +11,7 @@
     },
     {
       "type": "cs",
-      "input": "importFiles [ \"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" ]"
+      "input": "importFiles [ \"https://h2o-public-test-data.s3.amazonaws.com/smalldata/diabetes/dataset_diabetes.zip\" ]"
     },
     {
       "type": "md",
@@ -19,11 +19,11 @@
     },
     {
       "type": "cs",
-      "input": "setupParse source_frames: [ \"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\" ]"
+      "input": "setupParse source_frames: [ \"https://h2o-public-test-data.s3.amazonaws.com/smalldata/diabetes/dataset_diabetes.zip\" ]"
     },
     {
       "type": "cs",
-      "input": "parseFiles\n  source_frames: [\"https://archive.ics.uci.edu/ml/machine-learning-databases/00296/dataset_diabetes.zip\"]\n  destination_frame: \"dataset_diabetes.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 50\n  single_quotes: false\n  column_names: [\"encounter_id\",\"patient_nbr\",\"race\",\"gender\",\"age\",\"weight\",\"admission_type_id\",\"discharge_disposition_id\",\"admission_source_id\",\"time_in_hospital\",\"payer_code\",\"medical_specialty\",\"num_lab_procedures\",\"num_procedures\",\"num_medications\",\"number_outpatient\",\"number_emergency\",\"number_inpatient\",\"diag_1\",\"diag_2\",\"diag_3\",\"number_diagnoses\",\"max_glu_serum\",\"A1Cresult\",\"metformin\",\"repaglinide\",\"nateglinide\",\"chlorpropamide\",\"glimepiride\",\"acetohexamide\",\"glipizide\",\"glyburide\",\"tolbutamide\",\"pioglitazone\",\"rosiglitazone\",\"acarbose\",\"miglitol\",\"troglitazone\",\"tolazamide\",\"examide\",\"citoglipton\",\"insulin\",\"glyburide-metformin\",\"glipizide-metformin\",\"glimepiride-pioglitazone\",\"metformin-rosiglitazone\",\"metformin-pioglitazone\",\"change\",\"diabetesMed\",\"readmitted\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
+      "input": "parseFiles\n  source_frames: [\"https://h2o-public-test-data.s3.amazonaws.com/smalldata/diabetes/dataset_diabetes.zip\"]\n  destination_frame: \"dataset_diabetes.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 50\n  single_quotes: false\n  column_names: [\"encounter_id\",\"patient_nbr\",\"race\",\"gender\",\"age\",\"weight\",\"admission_type_id\",\"discharge_disposition_id\",\"admission_source_id\",\"time_in_hospital\",\"payer_code\",\"medical_specialty\",\"num_lab_procedures\",\"num_procedures\",\"num_medications\",\"number_outpatient\",\"number_emergency\",\"number_inpatient\",\"diag_1\",\"diag_2\",\"diag_3\",\"number_diagnoses\",\"max_glu_serum\",\"A1Cresult\",\"metformin\",\"repaglinide\",\"nateglinide\",\"chlorpropamide\",\"glimepiride\",\"acetohexamide\",\"glipizide\",\"glyburide\",\"tolbutamide\",\"pioglitazone\",\"rosiglitazone\",\"acarbose\",\"miglitol\",\"troglitazone\",\"tolazamide\",\"examide\",\"citoglipton\",\"insulin\",\"glyburide-metformin\",\"glipizide-metformin\",\"glimepiride-pioglitazone\",\"metformin-rosiglitazone\",\"metformin-pioglitazone\",\"change\",\"diabetesMed\",\"readmitted\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\",\"Enum\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 4194304"
     },
     {
       "type": "md",

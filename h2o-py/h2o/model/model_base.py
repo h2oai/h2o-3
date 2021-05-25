@@ -173,14 +173,14 @@ class ModelBase(h2o_meta(Keyed)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data, output_format="Original"):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False):
         """
         Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost and DRF models).
         
         Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
         feature, the last column is the model bias (same value for each row). The sum of the feature contributions
         and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
-        of the predictions of the individual trees before before the inverse link function is applied to get the actual
+        of the predictions of the individual trees before the inverse link function is applied to get the actual
         prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
 
         Note: Multinomial classification models are currently not supported.
@@ -189,14 +189,45 @@ class ModelBase(h2o_meta(Keyed)):
         :param Enum output_format: Specify how to output feature contributions in XGBoost - XGBoost by default outputs 
             contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
             contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
-
+        :param top_n: Return only #top_n highest contributions + bias.
+                      If top_n<0 then sort all SHAP values in descending order
+                      If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+        :param bottom_n: Return only #bottom_n lowest contributions + bias
+                         If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
+                         If bottom_n<0 then sort all SHAP values in ascending order
+                         If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+        :param compare_abs: True to compare absolute values of contributions
         :returns: A new H2OFrame made of feature contributions.
+
+        :examples:
+        >>> prostate = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
+        >>> fr = h2o.import_file(prostate)
+        >>> predictors = list(range(2, fr.ncol))
+        >>> m = H2OGradientBoostingEstimator(ntrees=10, seed=1234)
+        >>> m.train(x=predictors, y=1, training_frame=fr)
+        >>> # Compute SHAP
+        >>> m.predict_contributions(fr)
+        >>> # Compute SHAP and pick the top two highest
+        >>> m.predict_contributions(fr, top_n=2)
+        >>> # Compute SHAP and pick the top two lowest
+        >>> m.predict_contributions(fr, bottom_n=2)
+        >>> # Compute SHAP and pick the top two highest regardless of the sign
+        >>> m.predict_contributions(fr, top_n=2, compare_abs=True)
+        >>> # Compute SHAP and pick top two lowest regardless of the sign
+        >>> m.predict_contributions(fr, bottom_n=2, compare_abs=True)
+        >>> # Compute SHAP values and show them all in descending order
+        >>> m.predict_contributions(fr, top_n=-1)
+        >>> # Compute SHAP and pick the top two highest and top two lowest
+        >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
         assert_is_type(output_format, None, Enum("Original", "Compact"))
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True, "predict_contributions_output_format": output_format}),
-                   "contributions")
+                           data={"predict_contributions": True,
+                                 "predict_contributions_output_format": output_format,
+                                 "top_n": top_n,
+                                 "bottom_n": bottom_n,
+                                 "compare_abs": compare_abs}), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)
 
@@ -341,7 +372,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         return self._model_json["output"]["training_metrics"]._metric_json
     
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False):
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type="none"):
         """
         Generate model metrics for this model on test_data.
 
@@ -351,10 +382,14 @@ class ModelBase(h2o_meta(Keyed)):
         :param bool valid: Report the validation metrics for the model.
         :param bool xval: Report the cross-validation metrics for the model. If train and valid are True, then it
             defaults to True.
+        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when test_data is not None. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
 
         :returns: An object of class H2OModelMetrics.
         """
+        
         if test_data is None:
+            if auc_type is not None:
+                print("WARNING: The `auc_type` parameter is set but it is not used because the `test_data` parameter is None.")
             if train: 
                 return self._model_json["output"]["training_metrics"]
             if valid: 
@@ -368,7 +403,10 @@ class ModelBase(h2o_meta(Keyed)):
             if (self._model_json["response_column_name"] is not None) and not(self._model_json["response_column_name"] in test_data.names):
                 print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
                 return
-            res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
+            if auc_type is not None:
+                assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), 
+                              data={"auc_type": auc_type})
 
             # FIXME need to do the client-side filtering...  (PUBDEV-874)
             raw_metrics = None

@@ -419,7 +419,7 @@ FAQ
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.  The metalearner in both ensembles is a variant of the default Stacked Ensemble metalearner (which is a GLM with regularization to encourage more sparse ensembles).   
+  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.  The metalearner in both ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles.  The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.    
 
 -  **How do I save AutoML runs?**
 
@@ -434,13 +434,17 @@ FAQ
 
   You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
-
 -   **Why don't I see XGBoost models?** 
 
   AutoML includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
   - XGBoost is not available on Windows machines.
   - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__. You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
+
+
+-   **Why doesn't AutoML use all the time that it's given?** 
+
+  AutoML has a ``max_runtime_secs`` parameter, which is a limit on the total runtime.  However, early stopping is also enabled by default:  AutoML will stop once there's no longer "enough" incremental improvement.  The user can tweak the early stopping paramters to be more or less sensitive.  Set ``stopping_rounds`` higher if you want to slow down early stopping and let AutoML train more models before it stops. In a future release, we are planning to allow the user to specify an exact runtime, rather than just a maximum runtime.
 
 
 Resources
@@ -480,11 +484,11 @@ The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com
 ::
 
 
-    @Manual{H2OAutoML_33001,
+    @Manual{H2OAutoML_33212,
         title = {{H2O} {A}uto{ML}},
         author = {H2O.ai},
-        year = {2020},
-        note = {H2O version 3.30.0.1},
+        year = {2021},
+        note = {H2O version 3.32.1.2},
         url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html},
     }
 
@@ -497,7 +501,7 @@ Random Grid Search Parameters
 
 AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparameter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
-**Note**: AutoML does not run a grid search for GLM. Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns only the model with the best alpha-lambda combination rather than one model for each alpha.
+**Note**: AutoML does not run a standard grid search for GLM (returning all the possible models). Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns only the model with the best alpha-lambda combination rather than one model for each alpha-lambda combination.
 
 
 GLM Hyperparameters

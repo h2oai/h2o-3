@@ -515,7 +515,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     private void checkMonotonicityConstraints(XGBoostModelInfo model_info, Map<String, Integer> monotoneConstraints) {
-      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes, null).getBooster();
       if (!(booster instanceof GBTree)) {
         throw new IllegalStateException("Expected booster object to be GBTree instead it is " + booster.getClass().getName());
       }
@@ -585,7 +585,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     private void checkInteractionConstraints(XGBoostModelInfo model_info, String[][] interactionConstraints) {
-      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes, null).getBooster();
       if (!(booster instanceof GBTree)) {
         throw new IllegalStateException("Expected booster object to be GBTree instead it is " + booster.getClass().getName());
       }

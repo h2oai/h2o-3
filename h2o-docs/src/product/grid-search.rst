@@ -294,7 +294,7 @@ Random Grid Search Examples
     # 0.7810757307013204
 
 
-    For more information, refer to the `Python grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb>`__, `Python grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__, and `pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
+For more information, refer to the `Python grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb>`__, `Python grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__, and `pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
 
 
 Saving and Loading a Grid Search

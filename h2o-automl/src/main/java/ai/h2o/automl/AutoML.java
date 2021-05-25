@@ -32,7 +32,7 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
 /**
  * H2O AutoML
  *
- * AutoML  is used for automating the machine learning workflow, which includes automatic training and
+ * AutoML is used for automating the machine learning workflow, which includes automatic training and
  * tuning of many models within a user-specified time-limit. Stacked Ensembles will be automatically
  * trained on collections of individual models to produce highly predictive ensemble models which, in most cases,
  * will be the top performing models in the AutoML Leaderboard.

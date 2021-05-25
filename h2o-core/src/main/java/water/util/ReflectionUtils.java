@@ -142,4 +142,14 @@ public class ReflectionUtils {
       }
     }
   }
+
+  @SuppressWarnings("unchecked")
+  public static <T> T newInstance(String className, Class<T> instanceOf) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
+    Class<?> cls = Class.forName(className);
+    if (! instanceOf.isAssignableFrom(cls)) {
+      throw new IllegalStateException("Class " + className + " is not an instance of " + instanceOf.getName() + ".");
+    }
+    return (T) cls.newInstance();
+  }
+
 }

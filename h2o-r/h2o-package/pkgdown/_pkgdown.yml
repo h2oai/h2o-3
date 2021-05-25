@@ -105,6 +105,8 @@ reference:
       - h2o.downloadCSV
       - h2o.entropy
       - h2o.exp
+      - h2o.explain
+      - h2o.explain_row
       - h2o.exportFile
       - h2o.exportHDFS
       - h2o.fillna
@@ -144,6 +146,7 @@ reference:
       - h2o.hist
       - h2o.hit_ratio_table
       - h2o.hour
+      - h2o.ice_plot
       - h2o.ifelse
       - h2o.import_hive_table
       - h2o.import_mojo
@@ -167,6 +170,7 @@ reference:
       - h2o.kmeans
       - h2o.kolmogorov_smirnov
       - h2o.kurtosis
+      - h2o.learning_curve_plot
       - h2o.levels
       - h2o.list_all_extensions
       - h2o.list_api_extensions
@@ -198,6 +202,7 @@ reference:
       - h2o.metric
       - h2o.min
       - h2o.mktime
+      - h2o.model_correlation_heatmap
       - h2o.mojo_predict_csv
       - h2o.mojo_predict_df
       - h2o.month
@@ -220,6 +225,8 @@ reference:
       - h2o.parseRaw
       - h2o.parseSetup
       - h2o.partialPlot
+      - h2o.pd_multi_plot
+      - h2o.pd_plot
       - h2o.performance
       - h2o.pivot
       - h2o.prcomp
@@ -244,6 +251,7 @@ reference:
       - h2o.reset_threshold
       - h2o.residual_deviance 
       - h2o.residual_dof
+      - h2o.residual_analysis_plot
       - h2o.rm 
       - h2o.rmse
       - h2o.rmsle
@@ -264,6 +272,8 @@ reference:
       - h2o.set_s3_credentials
       - h2o.setLevels
       - h2o.setTimezone
+      - h2o.shap_explain_row_plot
+      - h2o.shap_summary_plot
       - h2o.show_progress
       - h2o.shutdown
       - h2o.signif
@@ -310,8 +320,9 @@ reference:
       - h2o.upload_model
       - h2o.upload_mojo
       - h2o.var 
+      - h2o.varimp
+      - h2o.varimp_heatmap
       - h2o.varimp_plot
-      - h2o.varimp 
       - h2o.varsplits
       - h2o.week 
       - h2o.weights

@@ -40,12 +40,15 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
   @Override
   protected XGBoostMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
     byte[] boosterBytes;
+    byte[] auxNodeWeights = null;
     try {
       boosterBytes = readblob("boosterBytes");
+      if (exists("auxNodeWeights"))
+        auxNodeWeights = readblob("auxNodeWeights");
     } catch (IOException e) {
       throw new IllegalStateException("MOJO is corrupted: cannot read the serialized Booster", e);
     }
-    return new XGBoostJavaMojoModel(boosterBytes, columns, domains, responseColumn);
+    return new XGBoostJavaMojoModel(boosterBytes, auxNodeWeights, columns, domains, responseColumn, false);
   }
 
   @Override public String mojoVersion() {

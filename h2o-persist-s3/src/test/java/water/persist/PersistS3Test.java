@@ -1,5 +1,6 @@
 package water.persist;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import org.junit.Rule;
@@ -449,4 +450,25 @@ public class PersistS3Test extends TestUtil {
       DKV.remove(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
     }
   }
+
+  @Test
+  public void testCustomCredentialsProvider() {
+    AWSCredentialsProvider[] defaultProviders =
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(null);
+    AWSCredentialsProvider[] extendedProviders = 
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(CustomCredentialsProvider.class.getName());
+    assertEquals(defaultProviders.length + 1, extendedProviders.length);
+    assertTrue(extendedProviders[0] instanceof CustomCredentialsProvider);
+  }
+
+  @Test
+  public void testCustomCredentialsProvider_ignoreInvalid() {
+    AWSCredentialsProvider[] defaultProviders =
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain(null);
+    AWSCredentialsProvider[] extendedProviders =
+            PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain("no.such.class");
+    assertEquals(defaultProviders.length, extendedProviders.length);
+  }
+
+
 }

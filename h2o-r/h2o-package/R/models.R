@@ -836,7 +836,7 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
 #' Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM and XGBoost models).
 #'
-#' Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
+#' Default implemntation return H2OFrame shape (#rows, #features + 1) - there is a feature contribution column for each input
 #' feature, the last column is the model bias (same value for each row). The sum of the feature contributions
 #' and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum
 #' of the predictions of the individual trees before the inverse link function is applied to get the actual
@@ -851,6 +851,14 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' @param output_format Specify how to output feature contributions in XGBoost - XGBoost by default outputs
 #'                      contributions for 1-hot encoded features, specifying a compact output format will produce
 #'                      a per-feature contribution. Defaults to original.
+#' @param top_n Return only #top_n highest contributions + bias
+#'              If top_n<0 then sort all SHAP values in descending order
+#'              If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+#' @param bottom_n Return only #bottom_n lowest contributions + bias
+#'                 If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
+#'                 If bottom_n<0 then sort all SHAP values in ascending order
+#'                 If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+#' @param compare_abs True to compare absolute values of contributions
 #' @param ... additional arguments to pass on.
 #' @return Returns an H2OFrame contain feature contributions for each input row.
 #' @seealso \code{\link{h2o.gbm}} and  \code{\link{h2o.randomForest}} for model
@@ -863,14 +871,27 @@ h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate_gbm <- h2o.gbm(3:9, "AGE", prostate)
 #' h2o.predict(prostate_gbm, prostate)
+#' # Compute SHAP
 #' h2o.predict_contributions(prostate_gbm, prostate)
+#' # Compute SHAP and pick the top two highest
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=2)
+#' # Compute SHAP and pick the top two lowest
+#' h2o.predict_contributions(prostate_gbm, prostate, bottom_n=2)
+#' # Compute SHAP and pick the top two highest regardless of the sign
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, compare_abs=TRUE)
+#' # Compute SHAP and pick the top two lowest regardless of the sign
+#' h2o.predict_contributions(prostate_gbm, prostate, bottom_n=2, compare_abs=TRUE)
+#' # Compute SHAP values and show them all in descending order
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=-1)
+#' # Compute SHAP and pick the top two highest and top two lowest
+#' h2o.predict_contributions(prostate_gbm, prostate, top_n=2, bottom_n=2)
 #' }
 #' @export
-predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), ...) {
+predict_contributions.H2OModel <- function(object, newdata, output_format = c("original", "compact"), top_n=0, bottom_n=0, compare_abs=FALSE, ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
-    params <- list(predict_contributions = TRUE)
+    params <- list(predict_contributions = TRUE, top_n=top_n, bottom_n=bottom_n, compare_abs=compare_abs)
     params$predict_contributions_output_format <- match.arg(output_format)
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
     res <- .h2o.__remoteSend(url, method = "POST", .params = params, h2oRestApiVersion = 4)
@@ -931,6 +952,8 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
 #' @param xval A logical value indicating whether to return the cross-validation metrics (constructed during training).
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
+#' @param auc_type For multinomila model only. Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Default is "NONE"
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -949,7 +972,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
 #' }
 #' @export
-h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL) {
+h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL, auc_type="NONE") {
 
   # data is now deprecated and the new arg name is newdata
   if (!is.null(data)) {
@@ -965,8 +988,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
   if(!is.logical(valid) || length(valid) != 1L || is.na(valid)) stop("`valid` must be TRUE or FALSE")
   if(!is.logical(xval) || length(xval) != 1L || is.na(xval)) stop("`xval` must be TRUE or FALSE")
   if(sum(valid, xval, train) > 1) stop("only one of `train`, `valid`, and `xval` can be TRUE")
+  if(!(auc_type %in% c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))) stop("`auc_type` must be \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", or \"WEIGHTED_OVO\".")
 
   missingNewdata <- missing(newdata) || is.null(newdata)
+  if( missingNewdata && auc_type != "NONE") {
+    print("WARNING: The `auc_type` parameter is set but it is not used because the `newdata` parameter is NULL.")
+  }
   if( !missingNewdata ) {
     if (!is.null(model@parameters$y)  &&  !(model@parameters$y %in% names(newdata))) {
       print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
@@ -976,7 +1003,12 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
     parms <- list()
     parms[["model"]] <- model@model_id
     parms[["frame"]] <- newdata.id
-    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id,newdata.id), .params = parms)
+    if(auc_type != "NONE"){
+        parms[["auc_type"]] <- auc_type 
+    } else if(!is.null(model@parameters$auc_type) && model@parameters$auc_type != "NONE"){
+        parms[["auc_type"]] <- model@parameters$auc_type
+    }
+    res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_METRICS(model@model_id, newdata.id), .params = parms)
 
     ####
     # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874

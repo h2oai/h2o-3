@@ -7,7 +7,6 @@ import biz.k11i.xgboost.learner.ObjFunction;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.TreeSHAPHelper;
 import biz.k11i.xgboost.util.FVec;
-import hex.genmodel.GenModel;
 import hex.genmodel.PredictContributionsFactory;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.PredictContributions;
@@ -15,7 +14,6 @@ import hex.genmodel.PredictContributions;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,14 +27,23 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   private TreeSHAPPredictor<FVec> _treeSHAPPredictor;
   private OneHotEncoderFactory _1hotFactory;
 
+  @Deprecated
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
-    this(boosterBytes, columns, domains, responseColumn, false);
+    this(boosterBytes, null, columns, domains, responseColumn, false);
   }
 
-  public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn, 
+  @Deprecated
+  public XGBoostJavaMojoModel(byte[] boosterBytes,
+                              String[] columns, String[][] domains, String responseColumn,
+                              boolean enableTreeSHAP) {
+    this(boosterBytes, null, columns, domains, responseColumn, enableTreeSHAP);
+  }
+
+  public XGBoostJavaMojoModel(byte[] boosterBytes, byte[] auxNodeWeightBytes, 
+                              String[] columns, String[][] domains, String responseColumn, 
                               boolean enableTreeSHAP) {
     super(columns, domains, responseColumn);
-    _predictor = makePredictor(boosterBytes);
+    _predictor = makePredictor(boosterBytes, auxNodeWeightBytes);
     _treeSHAPPredictor = enableTreeSHAP ? makeTreeSHAPPredictor(_predictor) : null;
   }
 
@@ -51,12 +58,24 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     return _mojo_version == 1.0 && !"gbtree".equals(_boosterType);
   }
 
-  public static Predictor makePredictor(byte[] boosterBytes) {
+  public static Predictor makePredictor(byte[] boosterBytes, byte[] auxNodeWeightBytes) {
     try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
-      return new Predictor(is);
+      Predictor p = new Predictor(is);
+      updateNodeWeights(p, auxNodeWeightBytes);
+      return p;
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load predictor.", e);
     }
+  }
+  public static void updateNodeWeights(Predictor predictor, byte[] auxNodeWeightBytes) {
+    if (auxNodeWeightBytes == null)
+      return;
+    assert predictor.getNumClass() <= 2;
+    GBTree gbTree = (GBTree) predictor.getBooster();
+    RegTree[] trees = gbTree.getGroupedTrees()[0];
+    double[][] weights = AuxNodeWeightsHelper.fromBytes(auxNodeWeightBytes);
+    assert trees.length == weights.length;
+    AuxNodeWeightsHelper.updateNodeWeights(trees, weights);
   }
   private static TreeSHAPPredictor<FVec> makeTreeSHAPPredictor(Predictor predictor) {
     if (predictor.getNumClass() > 2) {

@@ -3,10 +3,13 @@ package hex.security;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import water.AbstractH2OExtension;
+import water.H2O;
 import water.persist.PersistHdfs;
+import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.Log;
 
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * Authenticates the H2O Node to access secured Hadoop cluster in a standalone mode.
@@ -35,16 +38,72 @@ public class KerberosExtension extends AbstractH2OExtension {
       return; // this is theoretically possible although unlikely
 
     if (isKerberosEnabled(conf)) {
-      Log.debug("Kerberos enabled in Hadoop configuration. Trying to login the (default) user.");
       UserGroupInformation.setConfiguration(conf);
-      try {
-        UserGroupInformation.loginUserFromSubject(null);
-        Log.info("Kerberos subsystem initialized. Using the default user.");
-      } catch (IOException e) {
-        Log.err("Kerberos initialization FAILED. Kerberos ticket needs to be acquired before starting H2O (run kinit).", e);
+      final UserGroupInformation ugi;
+      if (H2O.ARGS.keytab_path != null || H2O.ARGS.principal != null) {
+        if (H2O.ARGS.keytab_path == null) {
+          throw new RuntimeException("Option keytab_path needs to be specified when option principal is given.");
+        }
+        if (H2O.ARGS.principal == null) {
+          throw new RuntimeException("Option principal needs to be specified when option keytab_path is given.");
+        }
+        Log.debug("Kerberos enabled in Hadoop configuration. Trying to login user from keytab.");
+        ugi = loginUserFromKeytab(H2O.ARGS.principal, H2O.ARGS.keytab_path);
+      } else {
+        Log.debug("Kerberos enabled in Hadoop configuration. Trying to login the (default) user.");
+        ugi = loginDefaultUser();
       }
-    } else
-      Log.debug("Kerberos not configured");
+      if (ugi != null) {
+        Log.info("Kerberos subsystem initialized. Using user '" + ugi.getShortUserName() + "'.");
+      }
+      if (H2O.ARGS.hdfs_token_refresh_interval != null) {
+        long refreshIntervalSecs = parseRefreshIntervalToSecs(H2O.ARGS.hdfs_token_refresh_interval);
+        Log.info("HDFS token will be refreshed every " + refreshIntervalSecs + 
+                "s (user specified " + H2O.ARGS.hdfs_token_refresh_interval + ").");
+        HdfsDelegationTokenRefresher.startRefresher(conf, H2O.ARGS.principal, H2O.ARGS.keytab_path, refreshIntervalSecs);
+      }
+    } else {
+      Log.info("Kerberos not configured");
+      if (H2O.ARGS.hdfs_token_refresh_interval != null) {
+        Log.warn("Option hdfs_token_refresh_interval ignored because Kerberos is not configured.");
+      }
+      if (H2O.ARGS.keytab_path != null) {
+        Log.warn("Option keytab_path ignored because Kerberos is not configured.");
+      }
+      if (H2O.ARGS.principal != null) {
+        Log.warn("Option principal ignored because Kerberos is not configured.");
+      }
+    }
+  }
+
+  private long parseRefreshIntervalToSecs(String refreshInterval) {
+    try {
+      if (!refreshInterval.contains("P")) { // convenience - allow user to specify just "10M", instead of requiring "PT10M"
+        refreshInterval = "PT" + refreshInterval;
+      }
+      return Duration.parse(refreshInterval.toLowerCase()).getSeconds();  
+    } catch (Exception e) {
+      throw new IllegalArgumentException("Unable to parse refresh interval, got " + refreshInterval + 
+              ". Example of correct specification '4H' (token will be refreshed every 4 hours).", e);
+    }
+  }
+  
+  private UserGroupInformation loginDefaultUser() {
+    try {
+      UserGroupInformation.loginUserFromSubject(null);
+      return UserGroupInformation.getCurrentUser();
+    } catch (IOException e) {
+      Log.err("Kerberos initialization FAILED. Kerberos ticket needs to be acquired before starting H2O (run kinit).", e);
+      return null;
+    }
+  }
+
+  private static UserGroupInformation loginUserFromKeytab(String authPrincipal, String authKeytabPath) {
+    try {
+      return UserGroupInformation.loginUserFromKeytabAndReturnUGI(authPrincipal, authKeytabPath);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to login user " + authPrincipal + " from keytab " + authKeytabPath);
+    }
   }
 
   private static boolean isKerberosEnabled(Configuration conf) {

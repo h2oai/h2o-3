@@ -277,6 +277,14 @@ final public class H2O {
     public String decrypt_tool = null;
 
     //-----------------------------------------------------------------------------------
+    // Kerberos
+    //-----------------------------------------------------------------------------------
+
+    public String principal = null;
+    public String keytab_path = null;
+    public String hdfs_token_refresh_interval = null;
+
+    //-----------------------------------------------------------------------------------
     // Networking
     //-----------------------------------------------------------------------------------
     /** -port=####; Specific Browser/API/HTML port */
@@ -388,6 +396,9 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
+    /** -configure_s3_using_s3a; use S3A(FileSystem) to configure S3 client */
+    public boolean configure_s3_using_s3a = false;
+    
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
 
@@ -639,6 +650,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.aws_credentials = args[i];
       }
+      else if (s.matches("configure_s3_using_s3a")) {
+        trgt.configure_s3_using_s3a = true;
+      }
       else if (s.matches("ga_hadoop_ver")) {
         i = s.incrementAndCheck(i, args);
         trgt.ga_hadoop_ver = args[i];
@@ -734,8 +748,21 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.decrypt_tool = args[i];
       }
+      else if (s.matches("principal")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.principal = args[i];
+      }
+      else if (s.matches("keytab")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.keytab_path = args[i];
+      }
+      else if (s.matches("hdfs_token_refresh_interval")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.hdfs_token_refresh_interval = args[i];
+      }
       else if (s.matches("no_latest_check")) {
         // ignored
+        Log.trace("Invoked with 'no_latest_check' option (NOOP in current release).");
       }
       else if(s.matches(("client_disconnect_timeout"))){
         i = s.incrementAndCheck(i, args);

@@ -14,13 +14,22 @@ class EfronMethod {
     EfronDJKTermTask djkTermTask = new EfronDJKTermTask(dinfo, coxMR, djkTermSetup)
             .doAll(dinfo._adaptedFrame, runLocal);
     EfronUpdateFun f = new EfronUpdateFun(cs, coxMR);
-    H2O.submitTask(new LocalMR(f, coxMR.sizeEvents.length)).join();
+    LocalMR<EfronUpdateFun> efronMR = makeEfronMRTask(f, coxMR.sizeEvents.length);
+    H2O.submitTask(efronMR).join();
     for (int i = 0; i < f._n_coef; i++)
       for (int j = 0; j < f._n_coef; j++)
         f._hessian[i][j] += djkTermTask._djkTerm[i][j];
     for (int i = 0; i < f._n_coef; i++)
       f._gradient[i] += coxMR.sumXEvents[i];
     return f.toComputationState(cs);
+  }
+
+  // We are dealing with doubles - order of summations in floating point math matter!
+  // In order to have a deterministic order we need to disable "previous task reuse" - that will give us
+  // a deterministic order of applying reduce operations.
+  static LocalMR<EfronUpdateFun> makeEfronMRTask(EfronUpdateFun f, int nEvents) {
+    return new LocalMR<EfronUpdateFun>(f, nEvents)
+            .withNoPrevTaskReuse();
   }
 
 }

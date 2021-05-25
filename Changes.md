@@ -2,6 +2,95 @@
 
 ## H2O
 
+### Zipf (3.32.1.3) - 5/19/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html</a>
+
+#### Bug
+
+- [PUBDEV-8136](https://h2oai.atlassian.net/browse/PUBDEV-8136) Fixed the printing for `auc_pr` and `pr_auc` in cross-validation summaries.
+
+#### New Feature
+
+- [PUBDEV-8131](https://h2oai.atlassian.net/browse/PUBDEV-8131) Added parameter `auc_type` to performance method to compute multiclass AUC.
+
+#### Task
+
+- [PUBDEV-8147](https://h2oai.atlassian.net/browse/PUBDEV-8147) Upgraded XGBoost predictor to 0.3.18.
+
+- [PUBDEV-8145](https://h2oai.atlassian.net/browse/PUBDEV-8145) Increased the timeout duration on the R package jar download.
+
+#### Docs
+
+- [PUBDEV-8119](https://h2oai.atlassian.net/browse/PUBDEV-8119) Fixed formatting errors for local builds.
+
+- [PUBDEV-8091](https://h2oai.atlassian.net/browse/PUBDEV-8091) Updated docs examples for baseline hazard, baseline survival, and concordance.
+
+### Zipf (3.32.1.2) - 4/29/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/2/index.html</a>
+
+#### Bug
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7842'>PUBDEV-7842</a>] - Stacked Ensemble will no longer ignore a column if any base model uses it.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7851'>PUBDEV-7851</a>] - Added a user-friendly reminder that the new explainability functions require newer versions of `ggplot2` in R.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7948'>PUBDEV-7948</a>] - NullPointerException error no longer thrown when used a saved and reloaded RuleFit model.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-7955'>PUBDEV-7955</a>] - Can now extract metrics from the validation dataset with a Rulefit Model.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8076'>PUBDEV-8076</a>] - Fixed failures from Stacked Ensemble with Multinomial GLM within tests.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8077'>PUBDEV-8077</a>] - Fixed AutoML error when an alpha array is used for GLM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8079'>PUBDEV-8079</a>] - Fixed “Rollup not possible" stats failure in GLM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8097'>PUBDEV-8097</a>] - H2O will now still start despite system properties that begin with ‘ai.h2o.’.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8098'>PUBDEV-8098</a>] - H2O exits without logging any buffered messages instead of throwing a NullPointerException when starting H2O with an invalid argument.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8100'>PUBDEV-8100</a>] - ModelDescriptor field in MOJO is now Serializable.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8102'>PUBDEV-8102</a>] - AutoML no longer crashes if model builder produces H2OIllegalArgumentException in the parameter validation phase.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8106'>PUBDEV-8106</a>] - Weights in GLM grid search is no longer used as features.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8120'>PUBDEV-8120</a>] - Fixed Stacked Ensemble MOJO for cases when sub-model doesn’t have the same columns as the metalearner.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8125'>PUBDEV-8125</a>] - Efron-method now fully deterministic in CoxPH.
+</li>
+</ul>
+
+#### Improvement
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8087'>PUBDEV-8087</a>] - User now allowed to specify the escape character for parsing CSVs.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8092'>PUBDEV-8092</a>] - Added H2O reconnection script for intermittent 401 errors to R.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8101'>PUBDEV-8101</a>] - Added ‘ice_root’ error documented in FAQ.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8118'>PUBDEV-8118</a>] - Added further regularization to the GLM metalearner.
+</li>
+</ul>
+
+#### New Feature
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-6249'>PUBDEV-6249</a>] - Warning now issued against irreproducible model when early stopping is enabled but neither `score_tree_interva`l or `score_each_iteration` are defined.
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8023'>PUBDEV-8023</a>] - Encrypted files that contain CSVs can now be imported.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8072'>PUBDEV-8072</a>] - Added guidelines for correct use of `remove_collinear_columns` for GLM.
+</li>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8111'>PUBDEV-8111</a>] - Support added for CDP 7.2.
+</li>
+</ul>
+
+#### Docs
+<ul>
+<li>[<a href='https://h2oai.atlassian.net/browse/PUBDEV-8067'>PUBDEV-8067</a>] - Added information about the `path` argument for exporting .xlsx files.
+</li>
+</ul>
+
 ### Zipf (3.32.1.1) - 3/25/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/1/index.html</a>

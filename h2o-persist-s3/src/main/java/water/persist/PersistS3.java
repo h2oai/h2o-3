@@ -11,14 +11,15 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
-import hex.genmodel.utils.IOUtils;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
 import water.fvec.Vec;
 import water.util.ByteStreams;
-import water.util.FileUtils;
+import water.util.StringUtils;
+import water.util.ReflectionUtils;
+import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.io.*;
@@ -44,24 +45,44 @@ public final class PersistS3 extends Persist {
 
   public static AmazonS3 getClient() {
     if (_s3 == null) {
+      String factoryClassName = System.getProperty(S3_CLIENT_FACTORY_CLASS);
+      if (H2O.ARGS.configure_s3_using_s3a) {
+        if (factoryClassName == null) {
+          factoryClassName = S3_CLIENT_FACTORY_CLASS_DEFAULT;
+        } else
+          Log.warn("Option configure_s3_using_s3a was given alongside System property S3_CLIENT_FACTORY_CLASS=" + 
+                  factoryClassName + ". The system property will take precedence.");
+      }
       synchronized (_lock) {
-        if( _s3 == null ) {
-          try {
-            H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
-            c.setReuseLastProvider(false);
-            ClientConfiguration cc = s3ClientCfg();
-            _s3 = configureClient(new AmazonS3Client(c, cc));
-          } catch( Throwable e ) {
-            e.printStackTrace();
-            StringBuilder msg = new StringBuilder();
-            msg.append(e.getMessage() + "\n");
-            msg.append("Unable to load S3 credentials.");
-            throw new RuntimeException(msg.toString(), e);
+        if (_s3 == null) {
+          if (StringUtils.isNullOrEmpty(factoryClassName)) {
+            _s3 = makeDefaultClient();
+          } else {
+            try {
+              S3ClientFactory factory = ReflectionUtils.newInstance(factoryClassName, S3ClientFactory.class);
+              _s3 = factory.newClientInstance();
+            } catch (Exception e) {
+              throw new RuntimeException("Unable to instantiate S3 client factory for class " + factoryClassName + ".", e);
+            }
           }
+          assert _s3 != null;
         }
       }
     }
     return _s3;
+  }
+
+  static AmazonS3 makeDefaultClient() {
+    try {
+      H2OAWSCredentialsProviderChain c = new H2OAWSCredentialsProviderChain();
+      c.setReuseLastProvider(false);
+      ClientConfiguration cc = s3ClientCfg();
+      return configureClient(new AmazonS3Client(c, cc));
+    } catch( Throwable e ) {
+      e.printStackTrace();
+      String msg = e.getMessage() + "\n" + "Unable to load S3 credentials.";
+      throw new RuntimeException(msg, e);
+    }
   }
 
   /** Modified version of default credentials provider which includes H2O-specific
@@ -69,16 +90,35 @@ public final class PersistS3 extends Persist {
    */
   public static class H2OAWSCredentialsProviderChain extends AWSCredentialsProviderChain {
     public H2OAWSCredentialsProviderChain() {
-      super(
+      super(constructProviderChain());
+    }
+    static AWSCredentialsProvider[] constructProviderChain() {
+      return constructProviderChain(System.getProperty(S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS));
+    }
+    static AWSCredentialsProvider[] constructProviderChain(String customProviderClassName) {
+      AWSCredentialsProvider[] defaultProviders = new AWSCredentialsProvider[]{
               new H2ODynamicCredentialsProvider(),
               new H2OArgCredentialsProvider(),
               new InstanceProfileCredentialsProvider(),
               new EnvironmentVariableCredentialsProvider(),
               new SystemPropertiesCredentialsProvider(),
               new ProfileCredentialsProvider()
-      );
+      };
+      if (customProviderClassName == null) {
+        return defaultProviders;
+      }
+      try {
+        AWSCredentialsProvider customProvider = ReflectionUtils.newInstance(
+                customProviderClassName, AWSCredentialsProvider.class);
+        Log.info("Added custom credentials provider (" + customProviderClassName + ") " +
+                "to credentials provider chain.");
+        return ArrayUtils.append(new AWSCredentialsProvider[]{customProvider}, defaultProviders);
+      } catch (Exception e) {
+        Log.warn("Skipping invalid credentials provider (" + customProviderClassName + ").", e);
+        return defaultProviders;
+      }
     }
-  }
+  }  
 
   /**
    * Holds basic credentials (Secret key ID + Secret access key) pair.
@@ -415,6 +455,12 @@ public final class PersistS3 extends Persist {
   /** Enable S3 path style access via setting the property to true.
    * See: {@link com.amazonaws.services.s3.S3ClientOptions#setPathStyleAccess(boolean)} */
   public final static String S3_ENABLE_PATH_STYLE = SYSTEM_PROP_PREFIX + "persist.s3.enable.path.style";
+  /** Specify custom credentials provider implementation */
+  public final static String S3_CUSTOM_CREDENTIALS_PROVIDER_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.customCredentialsProviderClass";
+  /** Specify class name of S3ClientFactory implementation */
+  public final static String S3_CLIENT_FACTORY_CLASS = SYSTEM_PROP_PREFIX + "persist.s3.clientFactoryClass";
+  /** Specify class name of S3ClientFactory implementation */
+  public final static String S3_CLIENT_FACTORY_CLASS_DEFAULT = "water.persist.S3AClientFactory";
 
 
   static ClientConfiguration s3ClientCfg() {

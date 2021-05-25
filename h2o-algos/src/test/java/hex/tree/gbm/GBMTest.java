@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -13,6 +14,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.CompressedTree;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.hamcrest.number.OrderingComparison;
@@ -34,7 +36,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.*;
@@ -588,6 +592,110 @@ public class GBMTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testUpdateAuxTreeWeights_regression() {
+    Scope.enter();
+    try {
+      String response = "AGE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = gaussian;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      checkUpdateAuxTreeWeights(gbm, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUpdateAuxTreeWeights_binomial() {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = bernoulli;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      checkUpdateAuxTreeWeights(gbm, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUpdateAuxTreeWeights_multinomial() {
+    Scope.enter();
+    try {
+      String response = "Angaus";
+      Frame train = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = DistributionFamily.multinomial;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      checkUpdateAuxTreeWeights(gbm, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void checkUpdateAuxTreeWeights(GBMModel gbm, Frame frame) {
+    Map<Integer, SharedTreeMojoModel.AuxInfo>[][] originalAuxInfos = visitTrees(
+            gbm._output._treeKeysAux, Map.class, CompressedTree::toAuxInfos);
+
+    Frame fr = new Frame(frame);
+    fr.add("weights", fr.anyVec().makeCon(2));
+    gbm.updateAuxTreeWeights(fr, "weights");
+
+    Map<Integer, SharedTreeMojoModel.AuxInfo>[][] updatedAuxInfos = visitTrees(
+            gbm._output._treeKeysAux, Map.class, CompressedTree::toAuxInfos);
+
+    for (int treeId = 0; treeId < originalAuxInfos.length; treeId++) {
+      for (int classId = 0; classId < originalAuxInfos[treeId].length; classId++) {
+        if (originalAuxInfos[treeId][classId] != null) {
+          for (Integer nodeId : originalAuxInfos[treeId][classId].keySet()) {
+            SharedTreeMojoModel.AuxInfo orig = originalAuxInfos[treeId][classId].get(nodeId);
+            SharedTreeMojoModel.AuxInfo upd = updatedAuxInfos[treeId][classId].get(nodeId);
+            assertEquals(2 * orig.weightR, upd.weightR, 0f);
+            assertEquals(2 * orig.weightL, upd.weightL, 0f);
+          }
+        } else {
+          assertNull(updatedAuxInfos[treeId][classId]);
+        }
+      }
+    }
+  }
+  
+  @SuppressWarnings("unchecked")
+  public static <T> T[][] visitTrees(Key<CompressedTree>[][] treeKeys, Class<? extends T> outputClass,
+                                     Function<CompressedTree, T> visitor) {
+    T[][] output = (T[][]) Array.newInstance(outputClass, treeKeys.length, 0);
+    for (int treeId = 0; treeId < treeKeys.length; treeId++) {
+      output[treeId] = (T[]) Array.newInstance(outputClass, treeKeys[treeId].length);
+      for (int classId = 0; classId < output[treeId].length; classId++) {
+        if (treeKeys[treeId][classId] != null)
+          output[treeId][classId] = visitor.apply(treeKeys[treeId][classId].get());
+      }
+    }
+    return output;
   }
 
   /**

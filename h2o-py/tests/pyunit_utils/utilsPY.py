@@ -4435,6 +4435,7 @@ def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
         print("val1: {0}, val2: {1}, tol: {2}".format(val1, val2, tol))
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
 
+
 def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
     for key in regCoeff:
         val1 = regCoeff[key]
@@ -4442,3 +4443,8 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
         assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
         diff = abs(val1-val2)
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
+
+
+def assert_equals(expected, actual, message=""):
+    assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+

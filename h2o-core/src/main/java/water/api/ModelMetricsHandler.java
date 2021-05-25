@@ -31,6 +31,10 @@ class ModelMetricsHandler extends Handler {
     public boolean _leaf_node_assignment;
     public int _exemplar_index = -1;
     public String _custom_metric_func;
+    public String _auc_type;
+    public int _top_n;
+    public int _bottom_n;
+    public boolean _compare_abs;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -135,6 +139,15 @@ class ModelMetricsHandler extends Handler {
             "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
     public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
 
+    @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
+    public int top_n;
+
+    @API(help = "Only for predict_contributions function - sort Shapley values and return bottom_n lowest (optional)", json = false)
+    public int bottom_n;
+
+    @API(help = "Only for predict_contributions function - sort absolute Shapley values (optional)", json = false)
+    public boolean compare_abs;
+
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
     public boolean feature_frequencies;
 
@@ -146,6 +159,9 @@ class ModelMetricsHandler extends Handler {
 
     @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", json=false)
     public String custom_metric_func;
+
+    @API(help = "Set default multinomial AUC type. Must be one of: \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", \"WEIGHTED_OVO\". Default is \"NONE\" (optional, only for multinomial classification).", json=false, direction = API.Direction.INPUT)
+    public String auc_type;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -166,6 +182,10 @@ class ModelMetricsHandler extends Handler {
       mml._leaf_node_assignment = this.leaf_node_assignment;
       mml._exemplar_index = this.exemplar_index;
       mml._deviances = this.deviances;
+      mml._auc_type = this.auc_type;
+      mml._top_n = this.top_n;
+      mml._bottom_n = this.bottom_n;
+      mml._compare_abs = this.compare_abs;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -194,6 +214,10 @@ class ModelMetricsHandler extends Handler {
       this.leaf_node_assignment = mml._leaf_node_assignment;
       this.exemplar_index = mml._exemplar_index;
       this.deviances = mml._deviances;
+      this.auc_type = mml._auc_type;
+      this.top_n = mml._top_n;
+      this.bottom_n = mml._bottom_n;
+      this.compare_abs = mml._compare_abs;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -260,6 +284,11 @@ class ModelMetricsHandler extends Handler {
     if (customMetricFunc == null) {
       customMetricFunc = parms._model._parms._custom_metric_func;
     }
+    // set user given auc type, used for scoring a testing data fe. from h2o.performance function
+    MultinomialAucType at = parms._model._parms._auc_type;
+    if(s.auc_type != null) {
+      parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type.toUpperCase());
+    }
     parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
@@ -271,7 +300,8 @@ class ModelMetricsHandler extends Handler {
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
     }
-
+    // set original auc type back
+    parms._model._parms._auc_type = at;
     return mm;
   }
 
@@ -404,7 +434,11 @@ class ModelMetricsHandler extends Handler {
           Model.Contributions mc = (Model.Contributions) parms._model;
           Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
                   Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
-          Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
+          Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
+          options.setOutputFormat(outputFormat)
+                  .setTopN(parms._top_n)
+                  .setBottomN(parms._bottom_n)
+                  .setCompareAbs(parms._compare_abs);
           mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
