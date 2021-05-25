@@ -32,35 +32,35 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     algo = "gam"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  nfolds=0,  # type: int
                  seed=-1,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
-                 offset_column=None,  # type: str
-                 weights_column=None,  # type: str
+                 offset_column=None,  # type: Optional[str]
+                 weights_column=None,  # type: Optional[str]
                  family="auto",  # type: Literal["auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"]
                  tweedie_variance_power=0.0,  # type: float
                  tweedie_link_power=0.0,  # type: float
                  theta=0.0,  # type: float
                  solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
-                 alpha=None,  # type: List[float]
-                 lambda_=None,  # type: List[float]
+                 alpha=None,  # type: Optional[List[float]]
+                 lambda_=None,  # type: Optional[List[float]]
                  lambda_search=False,  # type: bool
                  early_stopping=True,  # type: bool
                  nlambdas=-1,  # type: int
                  standardize=False,  # type: bool
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
-                 plug_values=None,  # type: H2OFrame
+                 plug_values=None,  # type: Optional[H2OFrame]
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
@@ -70,38 +70,38 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                  beta_epsilon=0.0001,  # type: float
                  gradient_epsilon=-1.0,  # type: float
                  link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
-                 startval=None,  # type: List[float]
+                 startval=None,  # type: Optional[List[float]]
                  prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=-1.0,  # type: float
-                 beta_constraints=None,  # type: H2OFrame
+                 beta_constraints=None,  # type: Optional[H2OFrame]
                  max_active_predictors=-1,  # type: int
-                 interactions=None,  # type: List[str]
-                 interaction_pairs=None,  # type: List[tuple]
+                 interactions=None,  # type: Optional[List[str]]
+                 interaction_pairs=None,  # type: Optional[List[tuple]]
                  obj_reg=-1.0,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: List[float]
+                 class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  max_runtime_secs=0.0,  # type: float
-                 custom_metric_func=None,  # type: str
-                 num_knots=None,  # type: List[int]
-                 knot_ids=None,  # type: List[str]
-                 gam_columns=None,  # type: List[List[str]]
+                 custom_metric_func=None,  # type: Optional[str]
+                 num_knots=None,  # type: Optional[List[int]]
+                 knot_ids=None,  # type: Optional[List[str]]
+                 gam_columns=None,  # type: Optional[List[List[str]]]
                  standardize_tp_gam_cols=False,  # type: bool
                  scale_tp_penalty_mat=False,  # type: bool
-                 bs=None,  # type: List[int]
-                 scale=None,  # type: List[float]
+                 bs=None,  # type: Optional[List[int]]
+                 scale=None,  # type: Optional[List[float]]
                  keep_gam_cols=False,  # type: bool
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).

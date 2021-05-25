@@ -82,6 +82,7 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
         self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
+                                               else "H2OEstimator" if schema == "Key<Model>"
                                                else "str")
         self.make_enum = lambda schema, values: ("Literal[%s]" % ", ".join(stringify(v) for v in values) if values   # see PEP-586
                                                  else schema)
@@ -103,6 +104,8 @@ def normalize_enum_constant(s):
 
 
 def stringify(v, infinity=u'∞'):
+    if v is None:
+        return None
     if v == "Infinity":
         return infinity
     if isinstance(v, str_type):
@@ -227,10 +230,13 @@ def gen_module(schema, algo):
     yield ""
     if deprecated_params:
         yield reformat_block("@deprecated_params(%s)" % deprecated_params, indent=4)
-    init_sig = "def __init__(self,\n%s\n):" % "\n".join("%s=%s,  # type: %s" % (p.get('pname'),
-                                                                                stringify(p.get('default_value'), infinity=None),
-                                                                                p.get('dtype'))
-                                                        for p in extended_params)
+    init_sig = "def __init__(self,\n%s\n):" % "\n".join("%s=%s,  # type: %s" 
+                                                        % (name, default, "Optional[%s]" % type if default is None else type)                     
+                                                        for name, default, type 
+                                                        in [(p.get('pname'),
+                                                            stringify(p.get('default_value'), infinity=None),
+                                                            p.get('dtype'))
+                                                            for p in extended_params])
     yield reformat_block(init_sig, indent=4, prefix=' '*13, prefix_first=False)
     yield '        """'
     for p in extended_params:

@@ -22,19 +22,19 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     algo = "glrm"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
-                 ignored_columns=None,  # type: List[str]
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
-                 representation_name=None,  # type: str
-                 loading_name=None,  # type: str
+                 representation_name=None,  # type: Optional[str]
+                 loading_name=None,  # type: Optional[str]
                  transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
                  k=1,  # type: int
                  loss="quadratic",  # type: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
-                 loss_by_col=None,  # type: List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"]]
-                 loss_by_col_idx=None,  # type: List[int]
+                 loss_by_col=None,  # type: Optional[List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"]]]
+                 loss_by_col_idx=None,  # type: Optional[List[int]]
                  multi_loss="categorical",  # type: Literal["categorical", "ordinal"]
                  period=1,  # type: int
                  regularization_x="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
@@ -48,17 +48,17 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  seed=-1,  # type: int
                  init="plus_plus",  # type: Literal["random", "svd", "plus_plus", "user"]
                  svd_method="randomized",  # type: Literal["gram_s_v_d", "power", "randomized"]
-                 user_y=None,  # type: H2OFrame
-                 user_x=None,  # type: H2OFrame
+                 user_y=None,  # type: Optional[H2OFrame]
+                 user_x=None,  # type: Optional[H2OFrame]
                  expand_user_y=True,  # type: bool
                  impute_original=False,  # type: bool
                  recover_svd=False,  # type: bool
                  max_runtime_secs=0.0,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).

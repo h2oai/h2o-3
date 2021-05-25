@@ -34,27 +34,27 @@ class H2ODeepLearningEstimator(H2OEstimator):
     algo = "deeplearning"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
-                 weights_column=None,  # type: str
-                 offset_column=None,  # type: str
+                 weights_column=None,  # type: Optional[str]
+                 offset_column=None,  # type: Optional[str]
                  balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: List[float]
+                 class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
-                 checkpoint=None,  # type: str
-                 pretrained_autoencoder=None,  # type: str
+                 checkpoint=None,  # type: Optional[H2OEstimator]
+                 pretrained_autoencoder=None,  # type: Optional[H2OEstimator]
                  overwrite_with_best_model=True,  # type: bool
                  use_all_factor_levels=True,  # type: bool
                  standardize=True,  # type: bool
@@ -75,14 +75,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  momentum_stable=0.0,  # type: float
                  nesterov_accelerated_gradient=True,  # type: bool
                  input_dropout_ratio=0.0,  # type: float
-                 hidden_dropout_ratios=None,  # type: List[float]
+                 hidden_dropout_ratios=None,  # type: Optional[List[float]]
                  l1=0.0,  # type: float
                  l2=0.0,  # type: float
                  max_w2=3.4028235e+38,  # type: float
                  initial_weight_distribution="uniform_adaptive",  # type: Literal["uniform_adaptive", "uniform", "normal"]
                  initial_weight_scale=1.0,  # type: float
-                 initial_weights=None,  # type: List[H2OFrame]
-                 initial_biases=None,  # type: List[H2OFrame]
+                 initial_weights=None,  # type: Optional[List[H2OFrame]]
+                 initial_biases=None,  # type: Optional[List[H2OFrame]]
                  loss="automatic",  # type: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  quantile_alpha=0.5,  # type: float
@@ -121,12 +121,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  elastic_averaging=False,  # type: bool
                  elastic_averaging_moving_rate=0.9,  # type: float
                  elastic_averaging_regularization=0.001,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).
@@ -179,9 +179,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
                the Logs. (default:20).
         :type max_confusion_matrix_size: int, optional
         :param checkpoint: Model checkpoint to resume training with. (default:None).
-        :type checkpoint: str, optional
+        :type checkpoint: H2OEstimator, optional
         :param pretrained_autoencoder: Pretrained autoencoder model to initialize this model with. (default:None).
-        :type pretrained_autoencoder: str, optional
+        :type pretrained_autoencoder: H2OEstimator, optional
         :param overwrite_with_best_model: If enabled, override the final model with the best model found during
                training. (default:True).
         :type overwrite_with_best_model: bool, optional
@@ -862,7 +862,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``.
+        Type: ``H2OEstimator``.
 
         :examples:
 
@@ -900,7 +900,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Pretrained autoencoder model to initialize this model with.
 
-        Type: ``str``.
+        Type: ``H2OEstimator``.
 
         :examples:
 

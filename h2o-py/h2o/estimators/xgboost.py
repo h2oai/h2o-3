@@ -23,21 +23,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     algo = "xgboost"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  score_each_iteration=False,  # type: bool
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
-                 offset_column=None,  # type: str
-                 weights_column=None,  # type: str
+                 offset_column=None,  # type: Optional[str]
+                 weights_column=None,  # type: Optional[str]
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
@@ -47,8 +47,8 @@ class H2OXGBoostEstimator(H2OEstimator):
                  tweedie_power=1.5,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  quiet_mode=True,  # type: bool
-                 checkpoint=None,  # type: str
-                 export_checkpoints_dir=None,  # type: str
+                 checkpoint=None,  # type: Optional[H2OEstimator]
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  ntrees=50,  # type: int
                  max_depth=6,  # type: int
                  min_rows=1.0,  # type: float
@@ -64,16 +64,16 @@ class H2OXGBoostEstimator(H2OEstimator):
                  colsample_bynode=1.0,  # type: float
                  max_abs_leafnode_pred=0.0,  # type: float
                  max_delta_step=0.0,  # type: float
-                 monotone_constraints=None,  # type: dict
-                 interaction_constraints=None,  # type: List[List[str]]
+                 monotone_constraints=None,  # type: Optional[dict]
+                 interaction_constraints=None,  # type: Optional[List[List[str]]]
                  score_tree_interval=0,  # type: int
                  min_split_improvement=0.0,  # type: float
                  gamma=0.0,  # type: float
                  nthread=-1,  # type: int
-                 save_matrix_directory=None,  # type: str
+                 save_matrix_directory=None,  # type: Optional[str]
                  build_tree_one_node=False,  # type: bool
                  calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: H2OFrame
+                 calibration_frame=None,  # type: Optional[H2OFrame]
                  max_bins=256,  # type: int
                  max_leaves=0,  # type: int
                  sample_type="uniform",  # type: Literal["uniform", "weighted"]
@@ -88,13 +88,13 @@ class H2OXGBoostEstimator(H2OEstimator):
                  reg_alpha=0.0,  # type: float
                  dmatrix_type="auto",  # type: Literal["auto", "dense", "sparse"]
                  backend="auto",  # type: Literal["auto", "gpu", "cpu"]
-                 gpu_id=None,  # type: List[int]
+                 gpu_id=None,  # type: Optional[List[int]]
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).
@@ -160,7 +160,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param quiet_mode: Enable quiet mode (default:True).
         :type quiet_mode: bool, optional
         :param checkpoint: Model checkpoint to resume training with. (default:None).
-        :type checkpoint: str, optional
+        :type checkpoint: H2OEstimator, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param ntrees: (same as n_estimators) Number of trees. (default:50).
@@ -975,7 +975,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``.
+        Type: ``H2OEstimator``.
 
         :examples:
 

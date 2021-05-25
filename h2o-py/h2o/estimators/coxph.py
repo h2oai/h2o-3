@@ -22,29 +22,29 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     algo = "coxph"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 start_column=None,  # type: str
-                 stop_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
-                 weights_column=None,  # type: str
-                 offset_column=None,  # type: str
-                 stratify_by=None,  # type: List[str]
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 start_column=None,  # type: Optional[str]
+                 stop_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 weights_column=None,  # type: Optional[str]
+                 offset_column=None,  # type: Optional[str]
+                 stratify_by=None,  # type: Optional[List[str]]
                  ties="efron",  # type: Literal["efron", "breslow"]
                  init=0.0,  # type: float
                  lre_min=9.0,  # type: float
                  max_iterations=20,  # type: int
-                 interactions=None,  # type: List[str]
-                 interaction_pairs=None,  # type: List[tuple]
-                 interactions_only=None,  # type: List[str]
+                 interactions=None,  # type: Optional[List[str]]
+                 interaction_pairs=None,  # type: Optional[List[tuple]]
+                 interactions_only=None,  # type: Optional[List[str]]
                  use_all_factor_levels=False,  # type: bool
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  single_node_mode=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param start_column: Start Time Column. (default:None).

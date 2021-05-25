@@ -21,10 +21,10 @@ class H2OAggregatorEstimator(H2OEstimator):
     algo = "aggregator"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  target_num_exemplars=5000,  # type: int
                  rel_tol_num_exemplars=0.5,  # type: float
@@ -32,11 +32,11 @@ class H2OAggregatorEstimator(H2OEstimator):
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  save_mapping_frame=False,  # type: bool
                  num_iteration_without_new_exemplar=500,  # type: int
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param response_column: Response variable column. (default:None).

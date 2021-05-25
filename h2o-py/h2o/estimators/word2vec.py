@@ -21,8 +21,8 @@ class H2OWord2vecEstimator(H2OEstimator):
     algo = "word2vec"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
                  min_word_freq=5,  # type: int
                  word_model="skip_gram",  # type: Literal["skip_gram", "cbow"]
                  norm_model="hsm",  # type: Literal["hsm"]
@@ -31,13 +31,13 @@ class H2OWord2vecEstimator(H2OEstimator):
                  sent_sample_rate=0.001,  # type: float
                  init_learning_rate=0.025,  # type: float
                  epochs=5,  # type: int
-                 pre_trained=None,  # type: H2OFrame
+                 pre_trained=None,  # type: Optional[H2OFrame]
                  max_runtime_secs=0.0,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param min_word_freq: This will discard words that appear less than <int> times (default:5).

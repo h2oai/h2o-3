@@ -21,10 +21,10 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     algo = "svd"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
-                 ignored_columns=None,  # type: List[str]
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
                  transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
@@ -33,14 +33,14 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                  max_iterations=1000,  # type: int
                  seed=-1,  # type: int
                  keep_u=True,  # type: bool
-                 u_name=None,  # type: str
+                 u_name=None,  # type: Optional[str]
                  use_all_factor_levels=True,  # type: bool
                  max_runtime_secs=0.0,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).

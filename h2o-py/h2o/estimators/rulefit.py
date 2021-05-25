@@ -23,24 +23,24 @@ class H2ORuleFitEstimator(H2OEstimator):
     algo = "rulefit"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  seed=-1,  # type: int
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  algorithm="auto",  # type: Literal["auto", "drf", "gbm"]
                  min_rule_length=3,  # type: int
                  max_rule_length=3,  # type: int
                  max_num_rules=-1,  # type: int
                  model_type="rules_and_linear",  # type: Literal["rules_and_linear", "rules", "linear"]
-                 weights_column=None,  # type: str
+                 weights_column=None,  # type: Optional[str]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  rule_generation_ntrees=50,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).

@@ -21,11 +21,11 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     algo = "psvm"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  hyper_param=1.0,  # type: float
                  kernel_type="gaussian",  # type: Literal["gaussian"]
@@ -44,7 +44,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).

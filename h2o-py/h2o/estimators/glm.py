@@ -31,40 +31,40 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     algo = "glm"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  nfolds=0,  # type: int
-                 checkpoint=None,  # type: str
-                 export_checkpoints_dir=None,  # type: str
+                 checkpoint=None,  # type: Optional[H2OEstimator]
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  seed=-1,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
-                 random_columns=None,  # type: List[int]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 random_columns=None,  # type: Optional[List[int]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
                  score_iteration_interval=-1,  # type: int
-                 offset_column=None,  # type: str
-                 weights_column=None,  # type: str
+                 offset_column=None,  # type: Optional[str]
+                 weights_column=None,  # type: Optional[str]
                  family="auto",  # type: Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"]
-                 rand_family=None,  # type: List[Literal["[gaussian]"]]
+                 rand_family=None,  # type: Optional[List[Literal["[gaussian]"]]]
                  tweedie_variance_power=0.0,  # type: float
                  tweedie_link_power=1.0,  # type: float
                  theta=1e-10,  # type: float
                  solver="auto",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
-                 alpha=None,  # type: List[float]
-                 lambda_=None,  # type: List[float]
+                 alpha=None,  # type: Optional[List[float]]
+                 lambda_=None,  # type: Optional[List[float]]
                  lambda_search=False,  # type: bool
                  early_stopping=True,  # type: bool
                  nlambdas=-1,  # type: int
                  standardize=True,  # type: bool
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
-                 plug_values=None,  # type: H2OFrame
+                 plug_values=None,  # type: Optional[H2OFrame]
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
@@ -74,33 +74,33 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  beta_epsilon=0.0001,  # type: float
                  gradient_epsilon=-1.0,  # type: float
                  link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
-                 rand_link=None,  # type: List[Literal["[identity]", "[family_default]"]]
-                 startval=None,  # type: List[float]
+                 rand_link=None,  # type: Optional[List[Literal["[identity]", "[family_default]"]]]
+                 startval=None,  # type: Optional[List[float]]
                  calc_like=False,  # type: bool
                  HGLM=False,  # type: bool
                  prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=-1.0,  # type: float
-                 beta_constraints=None,  # type: H2OFrame
+                 beta_constraints=None,  # type: Optional[H2OFrame]
                  max_active_predictors=-1,  # type: int
-                 interactions=None,  # type: List[str]
-                 interaction_pairs=None,  # type: List[tuple]
+                 interactions=None,  # type: Optional[List[str]]
+                 interaction_pairs=None,  # type: Optional[List[tuple]]
                  obj_reg=-1.0,  # type: float
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
                  balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: List[float]
+                 class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  max_runtime_secs=0.0,  # type: float
-                 custom_metric_func=None,  # type: str
+                 custom_metric_func=None,  # type: Optional[str]
                  generate_scoring_history=False,  # type: bool
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).
@@ -108,7 +108,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
         :type nfolds: int, optional
         :param checkpoint: Model checkpoint to resume training with. (default:None).
-        :type checkpoint: str, optional
+        :type checkpoint: H2OEstimator, optional
         :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
         :type export_checkpoints_dir: str, optional
         :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
@@ -394,7 +394,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``.
+        Type: ``H2OEstimator``.
         """
         return self._parms.get("checkpoint")
 

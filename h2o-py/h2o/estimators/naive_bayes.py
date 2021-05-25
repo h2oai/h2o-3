@@ -27,22 +27,22 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     algo = "naivebayes"
 
     def __init__(self,
-                 model_id=None,  # type: str
+                 model_id=None,  # type: Optional[H2OEstimator]
                  nfolds=0,  # type: int
                  seed=-1,  # type: int
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
+                 fold_column=None,  # type: Optional[str]
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
                  balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: List[float]
+                 class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  laplace=0.0,  # type: float
@@ -52,13 +52,13 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                  eps_prob=0.0,  # type: float
                  compute_metrics=True,  # type: bool
                  max_runtime_secs=0.0,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
         :type nfolds: int, optional
         :param seed: Seed for pseudo random number generator (only used for cross-validation and

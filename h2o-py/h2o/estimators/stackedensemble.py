@@ -65,30 +65,30 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 response_column=None,  # type: str
-                 validation_frame=None,  # type: H2OFrame
-                 blending_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 response_column=None,  # type: Optional[str]
+                 validation_frame=None,  # type: Optional[H2OFrame]
+                 blending_frame=None,  # type: Optional[H2OFrame]
                  base_models=[],  # type: List[str]
                  metalearner_algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
                  metalearner_nfolds=0,  # type: int
-                 metalearner_fold_assignment=None,  # type: Literal["auto", "random", "modulo", "stratified"]
-                 metalearner_fold_column=None,  # type: str
-                 metalearner_params=None,  # type: dict
+                 metalearner_fold_assignment=None,  # type: Optional[Literal["auto", "random", "modulo", "stratified"]]
+                 metalearner_fold_column=None,  # type: Optional[str]
+                 metalearner_params=None,  # type: Optional[dict]
                  metalearner_transform="none",  # type: Literal["none", "logit"]
                  max_runtime_secs=0.0,  # type: float
-                 weights_column=None,  # type: str
-                 offset_column=None,  # type: str
+                 weights_column=None,  # type: Optional[str]
+                 offset_column=None,  # type: Optional[str]
                  seed=-1,  # type: int
                  score_training_samples=10000,  # type: int
                  keep_levelone_frame=False,  # type: bool
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param response_column: Response variable column. (default:None).

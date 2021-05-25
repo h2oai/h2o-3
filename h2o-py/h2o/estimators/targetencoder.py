@@ -27,12 +27,12 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     @deprecated_params({'k': 'inflection_point', 'f': 'smoothing', 'noise_level': 'noise'})
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 fold_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
-                 columns_to_encode=None,  # type: List[List[str]]
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 columns_to_encode=None,  # type: Optional[List[List[str]]]
                  keep_original_categorical_columns=True,  # type: bool
                  blending=False,  # type: bool
                  inflection_point=10.0,  # type: float
@@ -43,7 +43,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).

@@ -25,9 +25,9 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @deprecated_params({'offset_column': None})
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -35,13 +35,13 @@ class H2ORandomForestEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  score_tree_interval=0,  # type: int
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
-                 response_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
-                 weights_column=None,  # type: str
+                 weights_column=None,  # type: Optional[str]
                  balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: List[float]
+                 class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
                  ntrees=50,  # type: int
@@ -50,7 +50,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                  nbins=20,  # type: int
                  nbins_top_level=1024,  # type: int
                  nbins_cats=1024,  # type: int
-                 r2_stopping=None,  # type: float
+                 r2_stopping=None,  # type: Optional[float]
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  stopping_tolerance=0.001,  # type: float
@@ -59,26 +59,26 @@ class H2ORandomForestEstimator(H2OEstimator):
                  build_tree_one_node=False,  # type: bool
                  mtries=-1,  # type: int
                  sample_rate=0.632,  # type: float
-                 sample_rate_per_class=None,  # type: List[float]
+                 sample_rate_per_class=None,  # type: Optional[List[float]]
                  binomial_double_trees=False,  # type: bool
-                 checkpoint=None,  # type: str
+                 checkpoint=None,  # type: Optional[H2OEstimator]
                  col_sample_rate_change_per_level=1.0,  # type: float
                  col_sample_rate_per_tree=1.0,  # type: float
                  min_split_improvement=1e-05,  # type: float
                  histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: H2OFrame
+                 calibration_frame=None,  # type: Optional[H2OFrame]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
-                 custom_metric_func=None,  # type: str
-                 export_checkpoints_dir=None,  # type: str
+                 custom_metric_func=None,  # type: Optional[str]
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).
@@ -179,7 +179,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                higher accuracy. (default:False).
         :type binomial_double_trees: bool, optional
         :param checkpoint: Model checkpoint to resume training with. (default:None).
-        :type checkpoint: str, optional
+        :type checkpoint: H2OEstimator, optional
         :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
                0.0 and <= 2.0) (default:1.0).
         :type col_sample_rate_change_per_level: float, optional
@@ -1302,7 +1302,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``.
+        Type: ``H2OEstimator``.
 
         :examples:
 

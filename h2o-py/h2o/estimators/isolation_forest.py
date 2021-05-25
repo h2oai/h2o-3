@@ -26,11 +26,11 @@ class H2OIsolationForestEstimator(H2OEstimator):
     algo = "isolationforest"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
                  score_each_iteration=False,  # type: bool
                  score_tree_interval=0,  # type: int
-                 ignored_columns=None,  # type: List[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  ntrees=50,  # type: int
                  max_depth=8,  # type: int
@@ -47,14 +47,14 @@ class H2OIsolationForestEstimator(H2OEstimator):
                  stopping_rounds=0,  # type: int
                  stopping_metric="auto",  # type: Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "misclassification", "mean_per_class_error"]
                  stopping_tolerance=0.01,  # type: float
-                 export_checkpoints_dir=None,  # type: str
+                 export_checkpoints_dir=None,  # type: Optional[str]
                  contamination=-1.0,  # type: float
-                 validation_frame=None,  # type: H2OFrame
-                 validation_response_column=None,  # type: str
+                 validation_frame=None,  # type: Optional[H2OFrame]
+                 validation_response_column=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param score_each_iteration: Whether to score during each iteration of model training. (default:False).

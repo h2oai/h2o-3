@@ -22,33 +22,33 @@ class H2OKMeansEstimator(H2OEstimator):
     algo = "kmeans"
 
     def __init__(self,
-                 model_id=None,  # type: str
-                 training_frame=None,  # type: H2OFrame
-                 validation_frame=None,  # type: H2OFrame
+                 model_id=None,  # type: Optional[H2OEstimator]
+                 training_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[H2OFrame]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
                  keep_cross_validation_fold_assignment=False,  # type: bool
                  fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: str
-                 ignored_columns=None,  # type: List[str]
+                 fold_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
                  k=1,  # type: int
                  estimate_k=False,  # type: bool
-                 user_points=None,  # type: H2OFrame
+                 user_points=None,  # type: Optional[H2OFrame]
                  max_iterations=10,  # type: int
                  standardize=True,  # type: bool
                  seed=-1,  # type: int
                  init="furthest",  # type: Literal["random", "plus_plus", "furthest", "user"]
                  max_runtime_secs=0.0,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
-                 export_checkpoints_dir=None,  # type: str
-                 cluster_size_constraints=None,  # type: List[int]
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 cluster_size_constraints=None,  # type: Optional[List[int]]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: str, optional
+        :type model_id: H2OEstimator, optional
         :param training_frame: Id of the training data frame. (default:None).
         :type training_frame: H2OFrame, optional
         :param validation_frame: Id of the validation data frame. (default:None).

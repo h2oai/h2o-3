@@ -55,9 +55,10 @@ def deprecated_params(deprecations):
                     assert (isinstance(new_std, tuple),
                             "`deprecations` values must be one of: "
                             "None (deprecated param removed), a string (deprecated property renamed), "
-                            "a tuple(new_name: str, message: str) to customize the deprecation message, "
-                            "or a tuple(lambda old_value: dict(param1=value1, param2=value2), message: str) "
-                            "for advanced deprecations (one param replaced with one or more params with transformation of the deprecated value).")
+                            "a tuple(new_name: Optional[str], message: str) to customize the deprecation message, "
+                            "a callable lambda old_value: dict(param1=value1, param2=value2) for advanced deprecations "
+                            "(one param replaced with one or more params with transformation of the deprecated value), "
+                            "or a tuple(lambda old_value: dict(param1=value1, param2=value2), message: str).")
                     transform_fn, msg = new_std
                     new_params = transform_fn(v)
                     if new_params in [None, {}]:
