@@ -131,6 +131,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
         String warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch.  This is " +
                 "due to the fact that the algo has to run initialization for every alpha value.  Setting the alpha " +
                 "array as a model parameter will skip the initialization and run faster overall.";
+        Log.warn(warningMessage);
         // Append message
         String[] m = _warning_details;
         String[] nm = Arrays.copyOf(m, m.length + 1);
@@ -437,9 +438,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     for (SearchFailure f : values) {
       searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
               f._failure_stack_traces);
-      searchFailure.appendWarningMessage(_hyper_names, "alpha");
     }
-
+    searchFailure.appendWarningMessage(_hyper_names, "alpha");
     return searchFailure;
   }
 
