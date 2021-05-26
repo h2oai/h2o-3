@@ -185,7 +185,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                 ``"XGBoost"``,
                 ``"GBM"``,
                 ``"DeepLearning"``,
-                `"StackedEnsemble"``. 
+                ``"StackedEnsemble"``. 
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
             Usage example: ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``.
         :param include_algos: List the algorithms to restrict to during the model-building phase.
@@ -351,10 +351,10 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     
     def __validate_monotone_constraints(self, monotone_constraints):
         if monotone_constraints is None:
-            if self._algo_parameters is not None:
-                self._algo_parameters.pop('monotone_constraints', None)
-        return (None if monotone_constraints is None 
-                else self.__validate_algo_parameters(dict(monotone_constraints=monotone_constraints)))
+            self._algo_parameters.pop('monotone_constraints', None)
+        else:
+            self._algo_parameters['monotone_constraints'] = monotone_constraints
+        return self.__validate_algo_parameters(self._algo_parameters)
     
     def __validate_algo_parameters(self, algo_parameters):
         if algo_parameters is None:
@@ -548,7 +548,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             build_models=self.build_models,
             input_spec=self.input_spec,
         ))
-        print(automl_build_params)
 
         resp = self._build_resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
