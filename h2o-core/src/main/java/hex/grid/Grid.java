@@ -79,12 +79,16 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     // represented in textual form, since simple <code>java.lang.Object</code>
     // cannot be serialized by H2O serialization.
     private String[][] _failed_raw_params;
+    
+    // collect warning
+    private String[] _warning_details;
 
     private SearchFailure(final Class<MP> paramsClass) {
       _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
       _failure_details = new String[]{};
       _failed_raw_params = new String[][]{};
       _failure_stack_traces = new String[]{};
+      _warning_details = new String[]{};
     }
 
     /**
@@ -121,6 +125,19 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       nst[st.length] = stackTrace;
       _failure_stack_traces = nst;
     }
+    
+    private void appendWarningMessage(String[] hyper_parameter, String checkField) {
+      if (hyper_parameter != null && Arrays.asList(hyper_parameter).contains(checkField)) {
+        String warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch.  This is " +
+                "due to the fact that the algo has to run initialization for every alpha value.  Setting the alpha " +
+                "array as a model parameter will skip the initialization and run faster overall.";
+        // Append message
+        String[] m = _warning_details;
+        String[] nm = Arrays.copyOf(m, m.length + 1);
+        nm[m.length] = warningMessage;
+        _warning_details = nm;
+      }
+    }
 
     public void appendFailedModelParameters(final MP[] params, final String[][] rawParams,
                                             final String[] failureDetails, final String[] stackTraces) {
@@ -155,6 +172,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
     public String[] getFailureDetails() {
       return _failure_details;
+    }
+    
+    public String[] getWarningDetails() {
+      return _warning_details;
     }
 
     public String[] getFailureStackTraces() {
@@ -319,6 +340,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
           _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
+      searchFailure.appendWarningMessage(_hyper_names, "alpha");
   }
 
   private static boolean isJobCanceled(final Throwable t) {
@@ -415,6 +437,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     for (SearchFailure f : values) {
       searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
               f._failure_stack_traces);
+      searchFailure.appendWarningMessage(_hyper_names, "alpha");
     }
 
     return searchFailure;
