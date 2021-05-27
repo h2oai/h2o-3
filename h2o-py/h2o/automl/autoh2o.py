@@ -18,9 +18,9 @@ _params_doc_ = dict()  # holds the doc per param extracted from H2OAutoML constr
 
 
 def _extract_params_doc(docstr):
+    pat = re.compile(r"^:param (\w+ )?(?P<name>\w+):\s?(?P<doc>.*)")  # match param doc-start in Sphinx format ":param type name: description"
     lines = docstr.splitlines()
     param, doc = None, None
-    pat = re.compile(r"^:param (\w+ )?(?P<name>\w+):\s?(?P<doc>.*)")
     for l in lines:
         m = pat.match(l)
         if m:
@@ -582,6 +582,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     # Overrides
     #-------------------------------------------------------------------------------------------------------------------
     def detach(self):
+        self.__frozen = False
         self.project_name = None
         h2o.remove(self.leaderboard)
         h2o.remove(self.event_log)
