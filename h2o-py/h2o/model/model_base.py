@@ -1537,6 +1537,114 @@ class ModelBase(h2o_meta(Keyed)):
         """DEPRECATED. Use :meth:`scoring_history` instead."""
         return self.scoring_history()
 
+    def permutation_importance(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1, use_pandas=False):
+        """
+        Get Permutation Variable Importance.
+
+        When n_repeats == 1, the result is similar to the one from varimp() method, i.e., it contains
+        the following columns "Relative Importance", "Scaled Importance", and "Percentage".
+
+        When n_repeats > 1, the individual columns correspond to the permutation variable
+        importance values from individual runs which corresponds to the "Relative Importance" and also
+        to the distance between the original prediction error and prediction error using a frame with
+        a given feature permuted.
+
+        :param model: model after training
+        :param frame: training frame
+        :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
+                       "PR_AUC".  Defaults to "AUTO".
+        :param n_samples: number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
+        :param n_repeats: number of repeated evaluations. Defaults to 1.
+        :param features: features to include in the permutation importance. Use None to include all.
+        :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
+        :param use_pandas: select true to return pandas data frame.
+        :return: H2OFrame or Pandas data frame
+        """
+        from h2o.two_dim_table import H2OTwoDimTable
+        from h2o.frame import H2OFrame
+        from h2o.expr import ExprNode
+        from h2o.exceptions import H2OValueError
+        from h2o.utils.shared_utils import can_use_pandas
+
+        if type(frame) is not H2OFrame:
+            raise H2OValueError("Frame is not H2OFrame")
+
+        existing_metrics = [k.lower() for k in self._model_json['output']['training_metrics']._metric_json.keys()]
+        if metric.lower() not in ["auto"] + existing_metrics:
+            raise H2OValueError("Metric " + metric + " doesn't exist for this model.")
+        m_frame = H2OFrame._expr(ExprNode(
+            "PermutationVarImp",
+            self,
+            frame,
+            metric,
+            n_samples,
+            n_repeats,
+            features,
+            seed))
+        if use_pandas and can_use_pandas():
+            import pandas
+            pd = h2o.as_list(m_frame)
+            return pandas.DataFrame(pd, columns=pd.columns).set_index("Variable")
+        else:
+            varimp = H2OTwoDimTable(
+                table_header="Variable Importances",
+                col_header=m_frame.columns,
+                col_types=["string"] + ["double"] * (len(m_frame.columns) - 1),
+                raw_cell_values=list(map(list, zip(*m_frame.as_data_frame(use_pandas=False, header=False))))  # transpose
+            )
+            return varimp
+
+    def permutation_importance_plot(self, frame, metric="AUTO", n_samples=-1, n_repeats=1, features=None, seed=-1,
+                                    num_of_features=10, server=False):
+        """
+        Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
+        returns the variable importance table.
+
+        :param model: model after training
+        :param frame: training frame
+        :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
+                       "PR_AUC".  Defaults to "AUTO".
+        :param n_samples: number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
+        :param n_repeats: number of repeated evaluations. Defaults to 1.
+        :param features: features to include in the permutation importance. Use None to include all.
+        :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
+        :param num_of_features: number of features to plot. Defaults to 10.
+        :param server: if true set server settings to matplotlib and show the graph
+        :return: H2OTwoDimTable with variable importance
+        """
+        plt = get_matplotlib_pyplot(server)
+        if not plt:
+            return
+        importance = self.permutation_importance(frame, metric, n_samples, n_repeats, features, seed, use_pandas=False)
+        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+        if n_repeats > 1:
+            vi = sorted([{"feature": row[0], "mean": sum(row[1:])/(len(row)-1), "values": row[1:]}
+                         for row in importance.cell_values],
+                        key=lambda x: -x["mean"])[:num_of_features][::-1]
+            ax.boxplot([x["values"] for x in vi], vert=False, labels=[x["feature"] for x in vi])
+        else:
+            importance_val = importance["Scaled Importance"]
+            # specify bar centers on the y axis, but flip the order so largest bar appears at top
+            pos = range(len(importance_val))[::-1]
+            num_of_features = min(len(importance_val), num_of_features)
+            plt.barh(pos[0:num_of_features], importance_val[0:num_of_features], align="center",
+                     height=0.8, color="#1F77B4", edgecolor="none")
+            plt.yticks(pos[0:num_of_features], importance["Variable"][0:num_of_features])  # col 0 is str: importance
+            plt.ylim([min(pos[0:num_of_features]) - 1, max(pos[0:num_of_features]) + 1])
+        # Hide the right and top spines, color others grey
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.spines["bottom"].set_color("#7B7B7B")
+        ax.spines["left"].set_color("#7B7B7B")
+        # Only show ticks on the left and bottom spines
+        ax.yaxis.set_ticks_position("left")
+        ax.xaxis.set_ticks_position("bottom")
+        plt.title("Permutation Variable Importance: " + self.algo +
+                  (" (" + metric.lower() + ")" if metric.lower() != "auto" else ""), fontsize=20)
+        if not server:
+            plt.show()
+        return importance
+
 
 def _get_mplot3d_pyplot(function_name):
     try:

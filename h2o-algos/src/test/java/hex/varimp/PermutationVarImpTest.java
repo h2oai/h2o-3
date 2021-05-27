@@ -19,6 +19,7 @@ import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static org.junit.Assert.assertEquals;
@@ -56,13 +57,7 @@ public class PermutationVarImpTest extends TestUtil {
 
             PermutationVarImp pvi = new PermutationVarImp(model, fr);
 
-            // when no metric specified "MSE
-            TwoDimTable pviTable = pvi.getPermutationVarImp();
-            assertEquals("mse", pvi._varImpMetric._metric);
-
             TwoDimTable pviTableRmse = pvi.getPermutationVarImp("rmse");
-            assertEquals("rmse", pvi._varImpMetric._metric);
-
             TwoDimTable pviTableMse = pvi.getPermutationVarImp("mse");
             TwoDimTable pviTableR2 = pvi.getPermutationVarImp("r2");
 
@@ -126,19 +121,13 @@ public class PermutationVarImpTest extends TestUtil {
             // Done building model; produce a score column with predictions
             fr2 = gbm.score(fr);
             PermutationVarImp pvi = new PermutationVarImp(gbm, fr);
-            TwoDimTable pviTable = pvi.getPermutationVarImp();
+            TwoDimTable pviTable = pvi.getPermutationVarImp("auto");
 
             String[] colTypes = pviTable.getColTypes();
 
             Assert.assertTrue(colTypes[0].equals("double"));
             Assert.assertTrue(colTypes[1].equals("double"));
             Assert.assertTrue(colTypes[2].equals("double"));
-
-            TwoDimTable pviOat = pvi.oat();
-            colTypes = pviOat.getColTypes();
-
-            Assert.assertTrue(colTypes[0].equals("double"));
-            Assert.assertTrue(colTypes[1].equals("double"));
         } finally {
             if (fr != null) fr.remove();
             if (fr2 != null) fr2.remove();
@@ -179,7 +168,7 @@ public class PermutationVarImpTest extends TestUtil {
             Frame scored = Scope.track(gbm.score(fr));
 
             PermutationVarImp fi = new PermutationVarImp(gbm, fr);
-            TwoDimTable pvi = fi.getPermutationVarImp();
+            TwoDimTable pvi = fi.getPermutationVarImp("auto");
 
             String [] colTypes = pvi.getColTypes();
 
@@ -225,7 +214,7 @@ public class PermutationVarImpTest extends TestUtil {
             model = glm.trainModel().get();
 
             PermutationVarImp PermVarImp = new PermutationVarImp(model, fr);
-            TwoDimTable table = PermVarImp.getPermutationVarImp();
+            TwoDimTable table = PermVarImp.getPermutationVarImp("auto");
 
             String ts = table.toString();
             assertTrue(ts.length() > 0);
@@ -289,8 +278,14 @@ public class PermutationVarImpTest extends TestUtil {
             assert model._parms._standardize;
 
             // Variable -> Relative Importance 
-            Map<String, Double> perVarImp = permVarImp._varImpMap;
-            Map<String, Double> coefficients = model.coefficients();
+            Map<String, Double> perVarImp = new HashMap<>();
+            for (int i = 0; i< permVarImpTable.getRowDim(); i ++)
+                perVarImp.put((String) permVarImpTable.getRowHeaders()[i], (double) permVarImpTable.get(i, 0));
+            Map<String, Double> coefficients = model
+                    .coefficients(true)
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> Math.abs(e.getValue())));
 
             // Sort the maps
             Map<String, Double> sCoefficients = MapUtil.sortByValue(coefficients);

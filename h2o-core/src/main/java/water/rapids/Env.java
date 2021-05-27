@@ -321,8 +321,7 @@ public class Env extends Iced {
 
     // Permutation Variable Importance
     init(new AstPermutationVarImp());
-    init(new AstOneAtaTimeMorris());
-    
+
     // Filters
     init(new AstDropDuplicates());
 

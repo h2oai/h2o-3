@@ -13,6 +13,8 @@ import water.parser.Categorical;
 
 import java.util.*;
 
+import static water.util.RandomUtils.getRNG;
+
 public class VecUtils {
   /**
    * Create a new {@link Vec} of categorical values from an existing {@link Vec}.
@@ -885,28 +887,34 @@ public class VecUtils {
    * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
    */
   public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
-    @Override public void map(Chunk ic, Chunk nc) {
-      Random rng = new Random();
-      for (int i = 1; i < ic._len ; i++) {
+    private final long _seed;
+    public ShuffleVecTask(final long seed) {
+      super();
+      _seed = seed;
+    }
+
+    @Override public void map(Chunk cs, Chunk ncs) {
+      Random rng = getRNG(_seed + cs.start());
+      for (int i = 1; i < cs._len ; i++) {
         int j = rng.nextInt(i); // inclusive upper bound <0,i>
-        switch (ic.vec().get_type()) {
+        switch (cs.vec().get_type()) {
           case Vec.T_BAD: break; /* NOP */
           case Vec.T_UUID:
-            if (j != i) nc.setAny(i, ic.at16l(j));
-            nc.setAny(j, ic.at16l(i));
+            if (j != i) ncs.setAny(i, cs.at16l(j));
+            ncs.setAny(j, cs.at16l(i));
             break;
           case Vec.T_STR:
-            if (j != i) nc.setAny(i, ic.stringAt(j));
-            nc.setAny(j, ic.stringAt(i));
+            if (j != i) ncs.setAny(i, cs.stringAt(j));
+            ncs.setAny(j, cs.stringAt(i));
             break;
           case Vec.T_NUM: /* fallthrough */
           case Vec.T_CAT:
           case Vec.T_TIME:
-            if (j != i) nc.setAny(i, ic.atd(j));
-            nc.setAny(j, ic.atd(i));
+            if (j != i) ncs.setAny(i, cs.atd(j));
+            ncs.setAny(j, cs.atd(i));
             break;
           default:
-            throw new IllegalArgumentException("Unsupported vector type: " + ic.vec().get_type());
+            throw new IllegalArgumentException("Unsupported vector type: " + cs.vec().get_type());
         }
       }
     }
@@ -916,10 +924,11 @@ public class VecUtils {
    * Randomly shuffle a Vec. 
    * @param iVec original Vec
    * @param srcVec a copy of original Vec, to be shuffled
+   * @param seed seed for random generator
    * @return shuffled Vec
    */
-  public static Vec ShuffleVec(Vec iVec, Vec srcVec) {
-    new ShuffleVecTask().doAll(iVec, srcVec);
+  public static Vec ShuffleVec(Vec iVec, Vec srcVec, final long seed) {
+    new ShuffleVecTask(seed).doAll(iVec, srcVec);
     return srcVec;
   }
 }

@@ -227,6 +227,8 @@ reference:
       - h2o.pd_multi_plot
       - h2o.pd_plot
       - h2o.performance
+      - h2o.permutation_importance
+      - h2o.permutation_importance_plot
       - h2o.pivot
       - h2o.prcomp
       - h2o.predict

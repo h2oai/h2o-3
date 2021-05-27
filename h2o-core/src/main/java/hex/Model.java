@@ -1815,22 +1815,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for (Frame tmp : tmpFrames) Frame.deleteTempFrameAndItsNonSharedVecs(tmp, fr);
     return output;
   }
-
-  /**
-   * Calculate Permutation Variable Importance by shuffling one feature at a time
-   * The user must call this method after training. 
-   * @param fr training frame
-   * @param metric loss function metric 
-   *               if metric not specified mse is default
-   * @return TwoDimTable of Double values having the variables as columns
-   *         and as rows their Relative, Scaled and percentage importance
-   */
-  public TwoDimTable getPermVarImpTable(Frame fr, String metric){
-    if (this._output._scoring_history == null )
-      throw new IllegalArgumentException("Model " + this._key + "must be scored!");
-    PermutationVarImp pvi = new PermutationVarImp(this, fr);
-    return pvi.getPermutationVarImp(metric);
-  }
   
   private void applyPreprocessors(Frame fr, List<Frame> tmpFrames) {
     if (_parms._preprocessors == null) return;

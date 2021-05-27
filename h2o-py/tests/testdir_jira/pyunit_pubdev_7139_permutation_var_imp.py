@@ -4,7 +4,6 @@ import h2o
 from h2o.utils.typechecks import is_type
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGeneralizedLinearEstimator
 from tests import pyunit_utils
-from h2o.model.permutation_varimp import permutation_varimp
 
 
 def gbm_model_build():
@@ -41,26 +40,22 @@ def test_metrics_gbm():
     model, fr = gbm_model_build()
 
     # case H2OFrame
-    pm_h2o_df = permutation_varimp(model, fr, use_pandas=False, metric="AUC")
-    for col in range(1, pm_h2o_df.ncols):
-        assert isinstance(pm_h2o_df[0, col], float)
+    pm_h2o_df = model.permutation_importance(fr, use_pandas=False, metric="AUC")
+    for col in ["Relative Importance", "Scaled Importance", "Percentage"]:
+        assert isinstance(pm_h2o_df[col][0], float)
 
     # range in all tests is [1, ncols], first column is str: Importance
-    assert is_type(pm_h2o_df[0, 0], str)
-
+    assert is_type(pm_h2o_df[0][0], str)
     # case pandas
-    pm_pd_df = permutation_varimp(model, fr, use_pandas=True, metric="AUC")
-    assert is_type(pm_pd_df.loc[0][0], str)
+    pm_pd_df = model.permutation_importance(fr, use_pandas=True, metric="AUC")
     for col in pm_pd_df.columns:
-        if col == "importance":
-            continue
-        assert isinstance(pm_pd_df.loc[0][col], float)
+        assert isinstance(pm_pd_df.iloc[0][col], float)
 
-    metrics = ["MSE", "RMSE", "AUC", "logloss"]
+    metrics = ["AUTO", "MSE", "RMSE", "AUC", "logloss"]
     for metric in metrics:
-        pd_pfi = permutation_varimp(model, fr, use_pandas=False, metric=metric)
-        for col in range(1, pd_pfi.ncols):
-            assert isinstance(pd_pfi[0, col], float)
+        pd_pfi = model.permutation_importance(fr, use_pandas=False, metric=metric)
+        for col in pd_pfi.col_header[1:]:
+            assert isinstance(pd_pfi[col][0], float)
 
 
 def test_big_data_cars():
@@ -76,12 +71,12 @@ def test_big_data_cars():
     model.train(y=response_col, x=predictors, training_frame=h2o_df)
 
     metric = "logloss"
-    pm_h2o_df = permutation_varimp(model, h2o_df, use_pandas=True, metric=metric)
+    pm_h2o_df = model.permutation_importance(h2o_df, use_pandas=True, metric=metric)
 
-    for col in predictors:
-        if col == "importance":
+    for pred in predictors:
+        if pred == "Variable":
             continue
-        assert isinstance(pm_h2o_df.loc[0][col], float)  # Relative PFI
+        assert isinstance(pm_h2o_df.loc[pred, "Relative Importance"], float)  # Relative PFI
 
 
 pyunit_utils.run_tests([
