@@ -53,8 +53,6 @@ def deprecated_params(deprecations):
                                else (new, None) if callable(new)
                                else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], _str_type)
                                else new)
-                    print(new)
-                    print(new_tup)
                     assert isinstance(new_tup, tuple), (
                             "`deprecations` values must be one of: "
                             "None (deprecated param removed), a string (deprecated property renamed), "
