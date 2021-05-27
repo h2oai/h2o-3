@@ -89,6 +89,8 @@ public abstract class SharedTreeModel<
 
     public boolean _parallel_main_model_building = false;
 
+    public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
@@ -220,6 +222,26 @@ public abstract class SharedTreeModel<
       _scored_train = ArrayUtils.copyAndFillOf(_scored_train, _ntrees+1, new ScoreKeeper());
       _scored_valid = _scored_valid != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoreKeeper()) : null;
       _training_time_ms = ArrayUtils.copyAndFillOf(_training_time_ms, _ntrees+1, System.currentTimeMillis());
+      fs.blockForPending();
+    }
+
+    public void trimTo(final int ntrees) {
+      Futures fs = new Futures();
+      for (int i = ntrees; i < _treeKeys.length; i++) {
+        for (int tc = 0; tc < _treeKeys[i].length; tc++) {
+          if (_treeKeys[i][tc] == null)
+            continue;
+          DKV.remove(_treeKeys[i][tc], fs);
+          DKV.remove(_treeKeysAux[i][tc], fs);
+        }
+      }
+      _ntrees = ntrees;
+      _treeKeys = Arrays.copyOf(_treeKeys ,_ntrees);
+      _treeKeysAux = Arrays.copyOf(_treeKeysAux ,_ntrees);
+      // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
+      _scored_train = Arrays.copyOf(_scored_train, _ntrees + 1);
+      _scored_valid = _scored_valid != null ? Arrays.copyOf(_scored_valid, _ntrees + 1) : null;
+      _training_time_ms = Arrays.copyOf(_training_time_ms, _ntrees + 1);
       fs.blockForPending();
     }
 

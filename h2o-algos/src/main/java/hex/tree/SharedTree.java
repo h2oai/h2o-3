@@ -165,12 +165,19 @@ public abstract class SharedTree<
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    _parms._use_best_cv_iteration = isSupervised() && H2O.getSysBoolProperty(
+            "sharedtree.crossvalidation.useBestCVIteration", _parms._use_best_cv_iteration);
     _parms._parallel_main_model_building = H2O.getSysBoolProperty(
             "sharedtree.crossvalidation.parallelMainModelBuilding", _parms._parallel_main_model_building);
     if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
       _parms._parallel_main_model_building = false;
       warn("_parallel_main_model_building", 
               "Parallel main model will be disabled because max_runtime_secs is specified.");
+    }
+    if (_parms._use_best_cv_iteration && _parms._parallel_main_model_building) {
+      _parms._parallel_main_model_building = false;
+      warn("_parallel_main_model_building",
+              "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
   }
 
@@ -424,16 +431,32 @@ public abstract class SharedTree<
      * @param oob Whether or not Out-Of-Bag scoring should be performed
      */
     protected final void scoreAndBuildTrees(boolean oob) {
+      int[] scoredNum = new int[0];
       if (_coordinator != null) {
         _coordinator.initStoppingParameters();
       }
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         final boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          _job.update(_ntrees-_model._output._ntrees); //finish
-          LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
-          return;
+        if (scored) {
+          scoredNum = ArrayUtils.append(scoredNum, tid);
+          if (ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+            if (_parms._is_cv_model && _parms._use_best_cv_iteration) {
+              ScoreKeeper[] sk = _model._output.scoreKeepers();
+              int best = ScoreKeeper.best(sk, _parms._stopping_rounds, _parms._stopping_metric);
+              if (best != sk.length - 1) {
+                int bestNTrees = scoredNum[best];
+                LOG.info(_desc + " built total of " + scoredNum[scoredNum.length - 1] +
+                        " trees, however the best score was obtained using only ntrees=" + bestNTrees +
+                        ". Trimming model to " + bestNTrees + " trees.");
+                _model._output.trimTo(bestNTrees);
+                _model.update(_job);
+              }
+            }
+            _job.update(_ntrees-_model._output._ntrees); // finish the progress bar
+            LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
+            return;
+          }
         }
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
