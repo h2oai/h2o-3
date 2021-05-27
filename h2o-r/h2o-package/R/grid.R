@@ -258,8 +258,14 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing, verbose = FALSE) {
   failure_details <- lapply(json$failure_details, function(msg) { msg })
   failure_stack_traces <- lapply(json$failure_stack_traces, function(msg) { msg })
   failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
+  warning_details <- lapply(json$warning_details, function(msg) { msg })
 
   # print out the failure/warning messages from Java if it exists
+  if (length(warning_details) > 0)  {
+    for (index in 1:length(warning_details)) {
+      warning(warning_details[[index]])
+    }
+  }
   if (length(failure_details) > 0) {
     warning("Some models were not built due to a failure, for more details run `summary(grid_object, show_stack_traces = TRUE)`")
     if (verbose) {

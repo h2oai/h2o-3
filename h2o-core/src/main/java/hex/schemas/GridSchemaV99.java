@@ -45,6 +45,9 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   @API(help = "List of failed parameters", direction = API.Direction.OUTPUT)
   public ModelParametersSchemaV3[] failed_params; // Using common ancestor of XXXParamsV3
 
+  @API(help = "List of detailed warning messages", direction = API.Direction.OUTPUT)
+  public String[] warning_details;
+  
   @API(help = "List of detailed failure messages", direction = API.Direction.OUTPUT)
   public String[] failure_details;
 
@@ -158,6 +161,7 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
     failure_details = failures.getFailureDetails();
     failure_stack_traces = failures.getFailureStackTraces();
     failed_raw_params = failures.getFailedRawParameters();
+    warning_details = failures.getWarningDetails();
     export_checkpoints_dir = grid.getParams() != null ? grid.getParams()._export_checkpoints_dir : null;
 
     TwoDimTable t = grid.createSummaryTable(keys, sort_by, decreasing);
