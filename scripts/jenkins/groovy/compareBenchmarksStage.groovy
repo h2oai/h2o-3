@@ -147,58 +147,6 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                 ]
             ]
         ],
-        'gbm-client': [
-            'paribas': [
-                50: [
-                    'train_time_min': 8,
-                    'train_time_max': 12
-                ],
-                200: [
-                    'train_time_min': 31,
-                    'train_time_max': 39
-                ]
-            ],
-            'homesite': [
-                50: [
-                    'train_time_min': 10,
-                    'train_time_max': 14
-                ],
-                200: [
-                    'train_time_min': 42,
-                    'train_time_max': 53
-                ]
-            ],
-            'redhat': [
-                50: [
-                    'train_time_min': 30,
-                    'train_time_max': 37
-                ],
-                200: [
-                    'train_time_min': 141,
-                    'train_time_max': 152
-                ]
-            ],
-            'springleaf': [
-                50: [
-                    'train_time_min': 61,
-                    'train_time_max': 69
-                ],
-                200: [
-                    'train_time_min': 497,
-                    'train_time_max': 540
-                ]
-            ],
-            'higgs': [
-                50: [
-                    'train_time_min': 88,
-                    'train_time_max': 96
-                ],
-                200: [
-                    'train_time_min': 524,
-                    'train_time_max': 544
-                ]
-            ]
-        ],
         'xgb': [
             'airlines-1m': [
                 [100, "cpu"]: [
