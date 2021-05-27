@@ -6,8 +6,7 @@ The only requirements from the original estimator are the following:
 
 """
 from collections import defaultdict, OrderedDict
-import copy
-from functools import partial, update_wrapper, wraps
+from functools import wraps
 import sys
 import types
 from weakref import ref
@@ -18,6 +17,7 @@ from .. import h2o, H2OFrame
 from ..utils.compatibility import PY2
 from ..utils.metaclass import decoration_info
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
+from ..utils.mixin import Mixin
 
 try:
     from inspect import Parameter, signature
@@ -29,42 +29,6 @@ except ImportError:
 
 if can_use_numpy():
     import numpy as np
-
-
-def mixin(obj, *mixins):
-    """
-    Function adding one or more mixin class to the list of parent classes of the current object.
-    This is done by dynamically changing the class hierarchy of the current object,
-    not only by adding the mixin methods to the object.
-
-    :param obj: the object on which to apply the mixins.
-    :param mixins: the list of mixin classes to add to the object.
-    :return: the extended object.
-    """
-    obj.__class__ = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
-    return obj
-
-
-class Mixin(object):
-    """
-    Context manager used to temporarily add mixins to an object.
-    """
-
-    def __init__(self, obj, *mixins):
-        """
-        :param obj: the object on which the mixins are temporarily added.
-        :param mixins: the list of mixins to apply.
-        """
-        self._inst = mixin(copy.copy(obj), *mixins)  # no deepcopy necessary, we just want to ensure mixin methods are not added to original instance
-
-    def __enter__(self):
-        if hasattr(self._inst, '__enter__'):
-            return self._inst.__enter__()
-        return self._inst
-
-    def __exit__(self, *args):
-        if hasattr(self._inst, '__exit__'):
-            self._inst.__exit__()
 
 
 def register_module(module_name):

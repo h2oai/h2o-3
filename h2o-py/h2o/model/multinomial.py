@@ -4,6 +4,7 @@ from h2o.utils.compatibility import *  # NOQA
 
 import h2o
 from h2o.utils.typechecks import assert_is_type
+from ..exceptions import H2OValueError
 from ..frame import H2OFrame
 from .model_base import ModelBase
 
@@ -238,12 +239,12 @@ class H2OMultinomialModel(ModelBase):
         ...           validation_frame=valid)
         >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
+        if not hasattr(self, 'scoring_history_plot'):
+            raise H2OValueError("Plotting not implemented for this type of model")
 
-        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
-            if metric == "AUTO":
-                metric = "classification_error"
-            elif metric not in ("logloss", "classification_error", "rmse"):
-                raise ValueError(
-                    "metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, rmse")
-
-        self._plot(timestep=timestep, metric=metric, **kwargs)
+        valid_metrics = self._allowed_metrics('multinomial')
+        if valid_metrics is not None:
+            assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2OMultinomialModel must be one of %s" % valid_metrics
+        if metric == "AUTO":
+            metric = self._default_metric('multinomial') or 'AUTO'
+        self.scoring_history_plot(timestep=timestep, metric=metric, **kwargs)

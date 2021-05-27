@@ -25,6 +25,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     """
 
     algo = "naivebayes"
+    supervised_learning = True
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

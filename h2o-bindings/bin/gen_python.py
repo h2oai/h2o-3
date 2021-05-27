@@ -143,7 +143,6 @@ def gen_module(schema, algo):
     as the type translation is done in this file.
     """
     classname = algo_to_classname(algo)
-    rest_api_version = get_customizations_for(algo, 'rest_api_version')
     extra_imports = get_customizations_for(algo, 'extensions.__imports__')
     class_doc = get_customizations_for(algo, 'doc.__class__')
     class_examples = get_customizations_for(algo, 'examples.__class__')
@@ -227,6 +226,10 @@ def gen_module(schema, algo):
     yield '    """'
     yield ""
     yield '    algo = "%s"' % algo
+    yield "    supervised_learning = %s" % get_customizations_for(algo, 'supervised_learning', True)
+    options = get_customizations_for(algo, 'options')
+    if options:
+        yield "    _options_ = %s" % repr(options)
     yield ""
     if deprecated_params:
         yield reformat_block("@deprecated_params(%s)" % deprecated_params, indent=4)
@@ -256,6 +259,7 @@ def gen_module(schema, algo):
             yield "        self._id = self._parms['model_id'] = model_id"
         else:
             yield "        self.%s = %s" % (pname, pname)
+    rest_api_version = get_customizations_for(algo, 'rest_api_version')
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version
     yield ""
@@ -292,7 +296,7 @@ def gen_module(schema, algo):
             yield ""
             yield reformat_block(property_examples, 8)
         yield '        """'
-        property_getter = get_customizations_for(algo, "overrides.{}.getter".format(pname))  # check gen_stackedensemble.py for an example
+        property_getter = get_customizations_or_defaults_for(algo, "overrides.{}.getter".format(pname))  # check gen_stackedensemble.py for an example
         if property_getter:
             yield reformat_block(property_getter.format(**locals()), 8)
         else:
@@ -301,7 +305,7 @@ def gen_module(schema, algo):
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        property_setter = get_customizations_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
+        property_setter = get_customizations_or_defaults_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
         if property_setter:
             yield reformat_block(property_setter.format(**locals()), 8)
         elif "H2OFrame" in ptype:                

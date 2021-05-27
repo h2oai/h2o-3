@@ -21,6 +21,8 @@ class H2OXGBoostEstimator(H2OEstimator):
     """
 
     algo = "xgboost"
+    supervised_learning = True
+    _options_ = {'verbose': True, 'model_extensions': ['h2o.model.extensions.ScoringHistory', 'h2o.model.extensions.VariableImportance', 'h2o.model.extensions.FeatureInteraction', 'h2o.model.extensions.Trees']}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -1125,7 +1127,8 @@ class H2OXGBoostEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
+        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
+        self._parms["checkpoint"] = key
 
     @property
     def export_checkpoints_dir(self):
@@ -2424,3 +2427,48 @@ class H2OXGBoostEstimator(H2OEstimator):
             return False
         else:
             return True
+
+    def convert_H2OXGBoostParams_2_XGBoostParams(self):
+        """
+        In order to use convert_H2OXGBoostParams_2_XGBoostParams and convert_H2OFrame_2_DMatrix, you must import
+        the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
+
+        Given an H2OXGBoost model, this method will generate the corresponding parameters that should be used by
+        native XGBoost in order to give exactly the same result, assuming that the same dataset
+        (derived from h2oFrame) is used to train the native XGBoost model.
+
+        Follow the steps below to compare H2OXGBoost and native XGBoost:
+
+         1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+
+          - h2oModelD = H2OXGBoostEstimator(\*\*h2oParamsD) # parameters specified as a dict()
+          - h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+          - h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+
+         2. Derive the DMatrix from H2OFrame:
+
+          - nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+
+         3. Derive the parameters for native XGBoost:
+
+          - nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+
+         4. Train your native XGBoost model and generate a prediction:
+
+          - nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+          - nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1]
+
+         5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
+
+        :return: nativeParams, num_boost_round
+        """
+        import xgboost as xgb
+
+        nativeParams = self._model_json["output"]["native_parameters"]
+        nativeXGBoostParams = dict()
+
+        for (a,keyname,keyvalue) in nativeParams.cell_values:
+            nativeXGBoostParams[keyname]=keyvalue
+        paramsSet = self.full_parameters
+
+        return nativeXGBoostParams, paramsSet['ntrees']['actual_value']

@@ -24,6 +24,8 @@ from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_t
 class ModelBase(h2o_meta(Keyed)):
     """Base class for all models."""
 
+    _options_ = {}    # dict of options declared in implementation
+
     def __init__(self):
         """Construct a new model instance."""
         self._id = None
@@ -34,7 +36,7 @@ class ModelBase(h2o_meta(Keyed)):
         self._xval_keys = None
         self._parms = {}  # internal, for object recycle
         self.parms = {}  # external
-        self._estimator_type = "unsupervised"
+        self._estimator_type = None
         self._future = False  # used by __repr__/show to query job state
         self._job = None  # used when _future is True
         self._have_pojo = False
@@ -427,73 +429,6 @@ class ModelBase(h2o_meta(Keyed)):
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
 
-    def ntrees_actual(self):
-        """
-        Returns actual number of trees in a tree model. If early stopping enabled, GBM can reset the ntrees value.
-        In this case, the actual ntrees value is less than the original ntrees value a user set before
-        building the model.
-    
-        Type: ``float``
-        """
-        tree_algos = ['gbm', 'drf', 'isolationforest', 'xgboost']
-        if self._model_json["algo"] in tree_algos:
-            return self.summary()['number_of_trees'][0]
-        print("No actual number of trees for this model")    
-
-    def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
-        """
-        Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
-        Available for XGBoost and GBM.
-
-        Metrics:
-        Gain - Total gain of each feature or feature interaction.
-        FScore - Amount of possible splits taken on a feature or feature interaction.
-        wFScore - Amount of possible splits taken on a feature or feature interaction weighed by 
-        the probability of the splits to take place.
-        Average wFScore - wFScore divided by FScore.
-        Average Gain - Gain divided by FScore.
-        Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
-        Average Tree Index
-        Average Tree Depth
-
-        :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to 100.
-        :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
-        :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
-            starting at root only). Defaults to -1.
-        :param path: (Optional) Path where to save the output in .xlsx format (e.g. ``/mypath/file.xlsx``).
-            Please note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
-
-
-        :examples:
-        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
-        >>> predictors = boston.columns[:-1]
-        >>> response = "medv"
-        >>> boston['chas'] = boston['chas'].asfactor()
-        >>> train, valid = boston.split_frame(ratios=[.8])
-        >>> boston_xgb = H2OXGBoostEstimator(seed=1234)
-        >>> boston_xgb.train(y=response, x=predictors, training_frame=train)
-        >>> feature_interactions = boston_xgb.feature_interaction()
-        """
-        supported_algos = ['gbm', 'xgboost']
-        if self._model_json["algo"] in supported_algos:
-            kwargs = {}
-            kwargs["model_id"] = self.model_id
-            kwargs["max_interaction_depth"] = max_interaction_depth
-            kwargs["max_tree_depth"] = max_tree_depth
-            kwargs["max_deepening"] = max_deepening
-            
-            json = h2o.api("POST /3/FeatureInteraction", data=kwargs)
-            if path is not None:
-                import pandas as pd
-                writer = pd.ExcelWriter(path, engine='xlsxwriter')
-                for fi in json['feature_interaction']:
-                    fi.as_data_frame().to_excel(writer, sheet_name=fi._table_header)
-                writer.save()
-            
-            return json['feature_interaction']
-        print("No calculation available for this model")
-        
-        
     def h(self, frame, variables):
         """
         Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
@@ -528,7 +463,7 @@ class ModelBase(h2o_meta(Keyed)):
             json = h2o.api("POST /3/FriedmansPopescusH", data=kwargs)
             return json['h']
 
-        print("No calculation available for this model")    
+        print("No calculation available for this model")
 
     def cross_validation_metrics_summary(self):
         """
@@ -1057,96 +992,6 @@ class ModelBase(h2o_meta(Keyed)):
             metrics["train"] = output["training_metrics"]
         return metrics
 
-    def _plot(self, timestep, metric, server=False):
-        plt = get_matplotlib_pyplot(server)
-        if plt is None: return
-
-        scoring_history = self.scoring_history()
-        # Separate functionality for GLM since its output is different from other algos
-        if self._model_json["algo"] in ("gam", "glm"):
-            if self.actual_params.get("lambda_search"):
-                allowed_timesteps = ["iteration", "duration"]
-                allowed_metrics = ["deviance_train", "deviance_test", "deviance_xval"]
-                # When provided with multiple alpha values, scoring history contains history of all...
-                scoring_history = scoring_history[scoring_history["alpha"] == self._model_json["output"]["alpha_best"]]
-            elif self.actual_params.get("HGLM"):
-                allowed_timesteps = ["iterations", "duration"]
-                allowed_metrics = ["convergence", "sumetaieta02"]
-            else:
-                allowed_timesteps = ["iterations", "duration"]
-                allowed_metrics = ["objective", "negative_log_likelihood"]
-            if metric == "AUTO":
-                metric = allowed_metrics[0]
-            elif metric not in allowed_metrics:
-                raise H2OValueError("for {}, metric must be one of: {}".format(self.algo.upper(),
-                                                                               ", ".join(allowed_metrics)))
-
-            if timestep == "AUTO":
-                timestep = allowed_timesteps[0]
-            elif timestep not in allowed_timesteps:
-                raise H2OValueError("for {}, timestep must be one of: {}".format(self.algo.upper(),
-                                                                                 ", ".join(allowed_timesteps)))
-
-            plt.xlabel(timestep)
-            plt.ylabel(metric)
-            plt.title("Validation Scoring History")
-            style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
-            plt.plot(scoring_history[timestep], scoring_history[metric], style)
-
-        elif self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
-            # Set timestep
-            if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
-                assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
-                if timestep == "AUTO":
-                    timestep = "number_of_trees"
-            else:  # self._model_json["algo"] == "deeplearning":
-                # Delete first row of DL scoring history since it contains NAs & NaNs
-                if scoring_history["samples"][0] == 0:
-                    scoring_history = scoring_history[1:]
-                assert_is_type(timestep, "AUTO", "epochs",  "samples", "duration")
-                if timestep == "AUTO":
-                    timestep = "epochs"
-
-            training_metric = "training_{}".format(metric)
-            validation_metric = "validation_{}".format(metric)
-            if timestep == "duration":
-                dur_colname = "duration_{}".format(scoring_history["duration"][1].split()[1])
-                scoring_history[dur_colname] = [str(x).split()[0] for x in scoring_history["duration"]]
-                timestep = dur_colname
-
-            if can_use_pandas():
-                valid = validation_metric in list(scoring_history)
-                ylim = (scoring_history[[training_metric, validation_metric]].min().min(),
-                        scoring_history[[training_metric, validation_metric]].max().max()) if valid \
-                    else (scoring_history[training_metric].min(), scoring_history[training_metric].max())
-            else:
-                valid = validation_metric in scoring_history.col_header
-                ylim = (min(min(scoring_history[[training_metric, validation_metric]])),
-                        max(max(scoring_history[[training_metric, validation_metric]]))) if valid \
-                    else (min(scoring_history[training_metric]), max(scoring_history[training_metric]))
-            if ylim[0] == ylim[1]: ylim = (0, 1)
-
-            if valid:  # Training and validation scoring history
-                plt.xlabel(timestep)
-                plt.ylabel(metric)
-                plt.title("Scoring History")
-                plt.ylim(ylim)
-                plt.plot(scoring_history[timestep], scoring_history[training_metric], label="Training")
-                plt.plot(scoring_history[timestep], scoring_history[validation_metric], color="orange",
-                         label="Validation")
-                plt.legend()
-            else:  # Training scoring history only
-                plt.xlabel(timestep)
-                plt.ylabel(training_metric)
-                plt.title("Training Scoring History")
-                plt.ylim(ylim)
-                plt.plot(scoring_history[timestep], scoring_history[training_metric])
-
-        else:  # algo is not glm, deeplearning, drf, gbm, xgboost
-            raise H2OValueError("Plotting not implemented for this type of model")
-        if not server: 
-            plt.show()        
-
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
                      col_pairs_2dpdp=None, save_to_file=None, row_index=None, targets=None):
@@ -1534,203 +1379,6 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def varimp_plot(self, num_of_features=None, server=False):
-        """
-        Plot the variable importance for a trained model.
-
-        :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
-        :param server: if true set server settings to matplotlib and show the graph
-
-        :returns: None.
-        """
-        assert_is_type(num_of_features, None, int)
-        assert_is_type(server, bool)
-
-        plt = get_matplotlib_pyplot(server)
-        if plt is None: 
-            return
-
-        # get the variable importances as a list of tuples, do not use pandas dataframe
-        importances = self.varimp(use_pandas=False)
-        # features labels correspond to the first value of each tuple in the importances list
-        feature_labels = [tup[0] for tup in importances]
-        # relative importances correspond to the first value of each tuple in the importances list
-        scaled_importances = [tup[2] for tup in importances]
-        # specify bar centers on the y axis, but flip the order so largest bar appears at top
-        pos = range(len(feature_labels))[::-1]
-        # specify the bar lengths
-        val = scaled_importances
-
-        # default to 10 or less features if num_of_features is not specified
-        if num_of_features is None:
-            num_of_features = min(len(val), 10)
-
-        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
-        # create separate plot for the case where num_of_features == 1
-        if num_of_features == 1:
-            plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
-                     height=0.8, color="#1F77B4", edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(None, 0.5)
-
-        else:
-            plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
-                     height=0.8, color="#1F77B4", edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            plt.ylim([min(pos[0:num_of_features])- 1, max(pos[0:num_of_features])+1])
-            # ax.margins(y=0.5)
-
-        # check which algorithm was used to select right plot title
-        if self._model_json["algo"] == "gbm":
-            plt.title("Variable Importance: H2O GBM", fontsize=20)
-            if not server: plt.show()
-        elif self._model_json["algo"] == "drf":
-            plt.title("Variable Importance: H2O DRF", fontsize=20)
-            if not server: plt.show()
-        elif self._model_json["algo"] == "xgboost":
-            plt.title("Variable Importance: H2O XGBoost", fontsize=20)
-            if not server: plt.show()
-        # if H2ODeepLearningEstimator has variable_importances == True
-        elif self._model_json["algo"] == "deeplearning":
-            plt.title("Variable Importance: H2O Deep Learning", fontsize=20)
-            if not server: plt.show()
-        elif self._model_json["algo"] == "glm":
-            plt.title("Variable Importance: H2O GLM", fontsize=20)
-            if not server: 
-                plt.show()            
-        else:
-            raise H2OValueError("A variable importances plot is not implemented for this type of model")
-
-    def std_coef_plot(self, num_of_features=None, server=False):
-        """
-        Plot a GLM model"s standardized coefficient magnitudes.
-
-        :param num_of_features: the number of features shown in the plot.
-        :param server: if true set server settings to matplotlib and show the graph
-
-        :returns: None.
-        """
-        assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
-
-        # check that model is a glm
-        if self._model_json["algo"] != "glm":
-            raise H2OValueError("This function is available for GLM models only")
-
-        plt = get_matplotlib_pyplot(server)
-        if not plt: return
-
-        # get unsorted tuple of labels and coefficients
-        unsorted_norm_coef = self.coef_norm().items()
-        # drop intercept value then sort tuples by the coefficient"s absolute value
-        drop_intercept = [tup for tup in unsorted_norm_coef if tup[0] != "Intercept"]
-        norm_coef = sorted(drop_intercept, key=lambda x: abs(x[1]), reverse=True)
-
-        signage = []
-        for element in norm_coef:
-            # if positive including zero, color blue, else color orange (use same colors as Flow)
-            if element[1] >= 0:
-                signage.append("#1F77B4")  # blue
-            else:
-                signage.append("#FF7F0E")  # dark orange
-
-        # get feature labels and their corresponding magnitudes
-        feature_labels = [tup[0] for tup in norm_coef]
-        norm_coef_magn = [abs(tup[1]) for tup in norm_coef]
-        # specify bar centers on the y axis, but flip the order so largest bar appears at top
-        pos = range(len(feature_labels))[::-1]
-        # specify the bar lengths
-        val = norm_coef_magn
-
-        # check number of features, default is all the features
-        if num_of_features is None:
-            num_of_features = len(val)
-
-        # plot horizontal plot
-        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
-        # create separate plot for the case where num_of_features = 1
-        if num_of_features == 1:
-            plt.barh(pos[0], val[0],
-                     align="center", height=0.8, color=signage[0], edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks([0], feature_labels[0])
-            ax.margins(None, 0.5)
-
-        else:
-            plt.barh(pos[0:num_of_features], val[0:num_of_features],
-                     align="center", height=0.8, color=signage[0:num_of_features], edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(None, 0.05)
-
-        # generate custom fake lines that will be used as legend entries:
-        # check if positive and negative values exist
-        # if positive create positive legend
-        if "#1F77B4" in signage[0:num_of_features] and "#FF7F0E" not in signage[0:num_of_features]:
-            color_ids = ("Positive",)
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in signage[0:num_of_features]]
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-        # if neg create neg legend
-        elif "#FF7F0E" in signage[0:num_of_features] and "#1F77B4" not in signage[0:num_of_features]:
-            color_ids = ("Negative",)
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in set(signage[0:num_of_features])]
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-        # if both provide both colors in legend
-        else:
-            color_ids = ("Positive", "Negative")
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in ['#1F77B4', '#FF7F0E']] # blue should always be positive, orange negative
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-            lgnd.legendHandles[1]._legmarker.set_markersize(10)
-
-        # Hide the right and top spines, color others grey
-        ax.spines["right"].set_visible(False)
-        ax.spines["top"].set_visible(False)
-        ax.spines["bottom"].set_color("#7B7B7B")
-        ax.spines["left"].set_color("#7B7B7B")
-
-        # Only show ticks on the left and bottom spines
-        plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-        plt.tick_params(axis="x", which="minor", bottom="off", top="off",  labelbottom="off")
-        plt.title("Standardized Coef. Magnitudes: H2O GLM", fontsize=20)
-        # show plot
-        if server: 
-            plt.show()
-
     @staticmethod
     def _check_targets(y_actual, y_predicted):
         """Check that y_actual and y_predicted have the same length.

@@ -1,10 +1,12 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 # noinspection PyUnresolvedReferences
+from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 
 from h2o.model.model_base import ModelBase
 from h2o.utils.shared_utils import _colmean
+from h2o.utils.typechecks import assert_is_type
 
 
 class H2ORegressionModel(ModelBase):
@@ -38,14 +40,15 @@ class H2ORegressionModel(ModelBase):
         ...           validation_frame=valid)
         >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
+        if not hasattr(self, 'scoring_history_plot'):
+            raise H2OValueError("Plotting not implemented for this type of model")
 
-        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
-            if metric == "AUTO":
-                metric = "rmse"
-            elif metric not in ("rmse", "deviance", "mae"):
-                raise ValueError("metric for H2ORegressionModel must be one of: AUTO, rmse, deviance, or mae")
-
-        self._plot(timestep=timestep, metric=metric, **kwargs)
+        valid_metrics = self._allowed_metrics('regression')
+        if valid_metrics is not None:
+            assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2ORegressionModel must be one of %s" % valid_metrics
+        if metric == "AUTO":
+            metric = self._default_metric('regression') or 'AUTO'
+        self.scoring_history_plot(timestep=timestep, metric=metric, **kwargs)
 
 
 def _mean_var(frame, weights=None):

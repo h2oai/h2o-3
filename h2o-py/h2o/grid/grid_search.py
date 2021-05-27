@@ -381,16 +381,14 @@ class H2OGridSearch(h2o_meta(Keyed)):
         training_frame = algo_params.pop("training_frame")
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
-        algo = self.model._compute_algo()  # unique to grid search
-        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm" or \
-                          algo == "isolationforest"
         if is_auto_encoder and y is not None:
             raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None:
-            raise ValueError("Missing response")
-        if not is_unsupervised:
-            y = y if y in training_frame.names else training_frame.names[y]
-            self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
+        if self.model.supervised_learning:
+            if y is None:
+                raise ValueError("Missing response")
+            else:
+                y = y if y in training_frame.names else training_frame.names[y]
+                self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
 
     def _model_build(self, x, y, tframe, vframe, kwargs):
@@ -412,7 +410,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         self._run_grid_job(kwargs, rest_ver=rest_ver)
 
     def _run_grid_job(self, params, end_point="", rest_ver=None):
-        algo = self.model._compute_algo()  # unique to grid search
+        algo = self.model.algo
         grid = H2OJob(h2o.api("POST /99/Grid/%s%s" % (algo, end_point), data=params), job_type=(algo + " Grid Build"))
         if self._future:
             self._job = grid

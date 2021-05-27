@@ -1,3 +1,12 @@
+options = dict(
+    verbose=True,
+    model_extensions=[
+        'h2o.model.extensions.ScoringHistory',
+        'h2o.model.extensions.VariableImportance',
+    ],
+)
+
+
 def module_extensions():
     class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
         """
@@ -12,9 +21,12 @@ def module_extensions():
         >>> model = H2OAutoEncoderEstimator()
         >>> model.train(x=range(4), training_frame=fr)
         """
+
+        supervised_learning = False
+        
         def __init__(self, **kwargs):
             super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
-            self._parms['autoencoder'] = True
+            self._parms['autoencoder'] = True          
 
 
 extensions = dict(

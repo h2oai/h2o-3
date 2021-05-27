@@ -32,6 +32,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
     """
 
     algo = "deeplearning"
+    supervised_learning = True
+    _options_ = {'verbose': True, 'model_extensions': ['h2o.model.extensions.ScoringHistory', 'h2o.model.extensions.VariableImportance']}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -1043,7 +1045,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
+        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
+        self._parms["checkpoint"] = key
 
     @property
     def pretrained_autoencoder(self):
@@ -3226,6 +3229,9 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> model = H2OAutoEncoderEstimator()
     >>> model.train(x=range(4), training_frame=fr)
     """
+
+    supervised_learning = False
+
     def __init__(self, **kwargs):
         super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
-        self._parms['autoencoder'] = True
+        self._parms['autoencoder'] = True          

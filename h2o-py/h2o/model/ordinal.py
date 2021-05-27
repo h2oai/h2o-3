@@ -4,6 +4,7 @@ from h2o.utils.compatibility import *  # NOQA
 
 import h2o
 from h2o.utils.typechecks import assert_is_type
+from ..exceptions import H2OValueError
 from ..frame import H2OFrame
 from .model_base import ModelBase
 
@@ -74,5 +75,7 @@ class H2OOrdinalModel(ModelBase):
 
         :returns: A scoring history plot.
         """
+        if not hasattr(self, 'scoring_history_plot'):
+            raise H2OValueError("Plotting not implemented for this type of model")
 
-        self._plot(timestep=timestep, metric=metric, **kwargs)
+        self.scoring_history_plot(timestep=timestep, metric=metric, **kwargs)

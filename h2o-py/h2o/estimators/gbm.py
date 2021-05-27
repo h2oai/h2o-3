@@ -23,6 +23,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     """
 
     algo = "gbm"
+    supervised_learning = True
+    _options_ = {'verbose': True, 'model_extensions': ['h2o.model.extensions.ScoringHistory', 'h2o.model.extensions.VariableImportance', 'h2o.model.extensions.FeatureInteraction', 'h2o.model.extensions.Trees']}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -1528,7 +1530,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
+        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
+        self._parms["checkpoint"] = key
 
     @property
     def sample_rate(self):

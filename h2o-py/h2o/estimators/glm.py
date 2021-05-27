@@ -30,6 +30,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     """
 
     algo = "glm"
+    supervised_learning = True
+    _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryGLM', 'h2o.model.extensions.StandardCoef', 'h2o.model.extensions.VariableImportance']}
 
     @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,
@@ -514,7 +516,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
+        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
+        self._parms["checkpoint"] = key
 
     @property
     def export_checkpoints_dir(self):

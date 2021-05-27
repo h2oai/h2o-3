@@ -1,3 +1,11 @@
+options = dict(
+    verbose=True,
+    model_extensions=[
+        'h2o.model.extensions.ScoringHistory',
+        'h2o.model.extensions.VariableImportance',
+        'h2o.model.extensions.Trees',
+    ],
+)
 deprecated_params = dict(offset_column=None)
 
 doc = dict(

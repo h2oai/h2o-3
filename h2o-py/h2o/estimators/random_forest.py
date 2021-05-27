@@ -22,6 +22,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     """
 
     algo = "drf"
+    supervised_learning = True
+    _options_ = {'verbose': True, 'model_extensions': ['h2o.model.extensions.ScoringHistory', 'h2o.model.extensions.VariableImportance', 'h2o.model.extensions.Trees']}
 
     @deprecated_params({'offset_column': None})
     def __init__(self,
@@ -1411,7 +1413,8 @@ class H2ORandomForestEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        self._parms["checkpoint"] = checkpoint
+        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
+        self._parms["checkpoint"] = key
 
     @property
     def col_sample_rate_change_per_level(self):

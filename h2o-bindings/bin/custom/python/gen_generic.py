@@ -1,3 +1,6 @@
+supervised_learning = False
+
+
 def class_extensions():
     def _requires_training_frame(self):
         """
