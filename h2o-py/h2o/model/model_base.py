@@ -1569,6 +1569,9 @@ class ModelBase(h2o_meta(Keyed)):
         if type(frame) is not H2OFrame:
             raise H2OValueError("Frame is not H2OFrame")
 
+        if features is not None and len(features) == 0:
+            features = None
+
         existing_metrics = [k.lower() for k in self._model_json['output']['training_metrics']._metric_json.keys()]
         if metric.lower() not in ["auto"] + existing_metrics:
             raise H2OValueError("Metric " + metric + " doesn't exist for this model.")

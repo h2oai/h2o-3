@@ -9,7 +9,7 @@
 #' a given feature permuted.
 #'
 #' @param object    A trained model.
-#' @param frame     Training frame of the model which is going to be permuted
+#' @param newdata   Training frame of the model which is going to be permuted
 #' @param metric    Metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
 #'                  "PR_AUC".  Defaults to "AUTO".
 #' @param n_samples Number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
@@ -64,7 +64,7 @@ h2o.permutation_importance <- function(object,
 #' This method plots either a bar plot or if n_repeats > 1 a box plot and returns the variable importance table.
 #'
 #' @param object    A trained model.
-#' @param frame     Training frame of the model which is going to be permuted
+#' @param newdata   Training frame of the model which is going to be permuted
 #' @param metric    Metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
 #'                  "PR_AUC".  Defaults to "AUTO".
 #' @param n_samples Number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
@@ -95,13 +95,13 @@ h2o.permutation_importance_plot <- function(object, newdata, metric = c("AUTO", 
   } else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) {
     stop("num_of_features must be an integer greater than 0")
   }
-  varimp <- as.data.frame(h2o.permutation_importance(object = object,
-                                                     newdata = newdata,
-                                                     metric = metric,
-                                                     n_samples = n_samples,
-                                                     n_repeats = n_repeats,
-                                                     features = features,
-                                                     seed = seed))
+  vi <- as.data.frame(h2o.permutation_importance(object = object,
+                                                 newdata = newdata,
+                                                 metric = metric,
+                                                 n_samples = n_samples,
+                                                 n_repeats = n_repeats,
+                                                 features = features,
+                                                 seed = seed))
 
   # check the model type and then update the model title
   title <- paste("Permutation Variable Importance: ", switch(object@algorithm,
@@ -116,33 +116,33 @@ h2o.permutation_importance_plot <- function(object, newdata, metric = c("AUTO", 
   op <- par(mai = c(1.02, ymargin, 0.82, 0.42))
   on.exit(par(op))
   if (n_repeats > 1) {
-    varimp_order <- order(apply(varimp[, -1], 1, mean))
-    vi <- tail(varimp[varimp_order,], n = num_of_features)
-    boxplot(t(vi[, -1]), names = vi$Variable, horizontal = TRUE, col = "white", yaxt = "n", main = title,
-            xlab = "Permutation Variable Importance", axes = FALSE)
-    axis(1)
-    axis(2, at = seq_along(vi$Variable), labels = vi$Variable, las = 2, lwd = 0)
+    varimp_order <- order(apply(vi[, -1], 1, mean))
+    vi <- tail(vi[varimp_order,], n = num_of_features)
+    graphics::boxplot(t(vi[, -1]), names = vi$Variable, horizontal = TRUE, col = "white", yaxt = "n", main = title,
+                      xlab = "Permutation Variable Importance", axes = FALSE)
+    graphics::axis(1)
+    graphics::axis(2, at = seq_along(vi$Variable), labels = vi$Variable, las = 2, lwd = 0)
   } else {
     # if num_of_features = 1, create only one bar (adjust size to look nice)
     if (num_of_features == 1) {
-      barplot(rev(head(varimp[["Scaled Importance"]], n = num_of_features)),
-              names.arg = rev(head(varimp$Variable, n = num_of_features)),
-              width = 0.2,
-              space = 1,
-              horiz = TRUE, las = 2,
-              ylim = c(0, 2),
-              xlim = c(0, 1),
-              axes = TRUE,
-              col = '#1F77B4',
-              main = title)
+      graphics::barplot(rev(head(vi[["Scaled Importance"]], n = num_of_features)),
+                        names.arg = rev(head(vi$Variable, n = num_of_features)),
+                        width = 0.2,
+                        space = 1,
+                        horiz = TRUE, las = 2,
+                        ylim = c(0, 2),
+                        xlim = c(0, 1),
+                        axes = TRUE,
+                        col = '#1F77B4',
+                        main = title)
     } else if (num_of_features > 1) {
-      barplot(rev(head(varimp[["Scaled Importance"]], n = num_of_features)),
-              names.arg = rev(head(varimp$Variable, n = num_of_features)),
-              space = 1, las = 2,
-              horiz = TRUE,
-              col = '#1F77B4', # blue
-              main = title)
+      graphics::barplot(rev(head(vi[["Scaled Importance"]], n = num_of_features)),
+                        names.arg = rev(head(vi$Variable, n = num_of_features)),
+                        space = 1, las = 2,
+                        horiz = TRUE,
+                        col = '#1F77B4', # blue
+                        main = title)
     }
   }
-  invisible(varimp)
+  invisible(vi)
 }

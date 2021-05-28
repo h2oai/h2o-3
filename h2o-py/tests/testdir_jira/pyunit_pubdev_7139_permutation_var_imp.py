@@ -37,7 +37,7 @@ def test_metrics_gbm():
     test metrics values from the Permutation Variable Importance
     """
     # train model
-    model, fr = gbm_model_build()
+    model, fr = gbm_model_build()  # type: Tuple[h2o.model.ModelBase, H2OFrame]
 
     # case H2OFrame
     pm_h2o_df = model.permutation_importance(fr, use_pandas=False, metric="AUC")
@@ -57,6 +57,39 @@ def test_metrics_gbm():
         for col in pd_pfi.col_header[1:]:
             assert isinstance(pd_pfi[col][0], float)
 
+    for metric in metrics:
+        pd_pfi = model.permutation_importance(fr, use_pandas=False, n_repeats=5, metric=metric)
+        for i, col in enumerate(pd_pfi.col_header[1:]):
+            assert col == "Run {}".format(1 + i)
+            assert isinstance(pd_pfi[col][0], float)
+
+    pfi = model.permutation_importance(fr, use_pandas=False, n_samples=0, features=[], seed=42)
+    for col in pfi.col_header[1:]:
+        assert isinstance(pfi[col][0], float)
+
+    try:
+        pfi = model.permutation_importance(fr, use_pandas=False, n_samples=1, features=[])
+        assert False, "This should throw an exception since we cannot permute one row."
+    except h2o.exceptions.H2OResponseError:
+        pass
+
+    for col in pfi.col_header[1:]:
+        assert isinstance(pfi[col][0], float)
+
+    pfi = model.permutation_importance(fr, use_pandas=False, n_samples=10, features=[])
+    for col in pfi.col_header[1:]:
+        assert isinstance(pfi[col][0], float)
+
+    pfi = model.permutation_importance(fr, use_pandas=False, n_samples=-1, features=["PSA"])
+    assert len(pfi.cell_values) == 1  # "[(PSA, ..., ..., ...)]"
+    for col in pfi.col_header[1:]:
+        assert isinstance(pfi[col][0], float)
+
+    pfi = model.permutation_importance(fr, use_pandas=False, n_samples=-1, features=["PSA", "AGE"])
+    assert len(pfi.cell_values) == 2
+    for col in pfi.col_header[1:]:
+        assert isinstance(pfi[col][0], float)
+
 
 def test_big_data_cars():
     """
@@ -71,15 +104,37 @@ def test_big_data_cars():
     model.train(y=response_col, x=predictors, training_frame=h2o_df)
 
     metric = "logloss"
-    pm_h2o_df = model.permutation_importance(h2o_df, use_pandas=True, metric=metric)
 
+    pm_h2o_df = model.permutation_importance(h2o_df, use_pandas=True, n_samples=-1, metric=metric)
+    for pred in predictors:
+        if pred == "Variable":
+            continue
+        assert isinstance(pm_h2o_df.loc[pred, "Relative Importance"], float)  # Relative PFI
+
+    pm_h2o_df = model.permutation_importance(h2o_df, use_pandas=True, n_samples=100, metric=metric)
     for pred in predictors:
         if pred == "Variable":
             continue
         assert isinstance(pm_h2o_df.loc[pred, "Relative Importance"], float)  # Relative PFI
 
 
+def test_permutation_importance_plot_works():
+    import matplotlib
+    matplotlib.use("agg")
+    import matplotlib.pyplot as plt
+    # train model
+    model, fr = gbm_model_build()  # type: Tuple[h2o.model.ModelBase, H2OFrame]
+
+    # The following should not fail
+    # barplot
+    model.permutation_importance_plot(fr)
+    # boxplot
+    model.permutation_importance_plot(fr, n_repeats=5)
+    plt.close("all")
+
+
 pyunit_utils.run_tests([
     test_metrics_gbm,
     test_big_data_cars,
+    test_permutation_importance_plot_works
 ])

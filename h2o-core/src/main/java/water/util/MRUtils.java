@@ -425,6 +425,7 @@ public class MRUtils {
 
   /**
    * Sample rows from a frame with weight column.
+   * Weights are used in the following manner: a row that has n-times higher weight should be n-times more likely to be picked.
    * Can be unlucky for small sampling fractions - will continue calling itself until at least 1 row is returned.
    * @param fr Input frame
    * @param rows Approximate number of rows to sample (across all chunks)
@@ -434,13 +435,13 @@ public class MRUtils {
    */
   public static Frame sampleFrame(Frame fr, final long rows, final String weightColumn, final long seed) {
     if (fr == null) return null;
-    final float fraction = rows > 0 ? (float)rows / fr.numRows() : 1.f;
-    if (fraction >= 1.f) return fr;
     if (null == weightColumn) return sampleFrame(fr, rows, seed);
     final int weightIdx = ArrayUtils.indexOf(fr.names(), weightColumn);
     if (-1 == weightIdx) return sampleFrame(fr, rows, seed);
     final double meanWeight = fr.vec(weightIdx).mean();
-    Key newKey = fr._key != null ? Key.make(fr._key.toString() + (fr._key.toString().contains("temporary") ? ".sample." : ".temporary.sample.") + PrettyPrint.formatPct(fraction).replace(" ","")) : null;
+    final double fractionOfWeights = rows > 0 ? rows / (fr.numRows() * meanWeight): 1.f;
+    if (fractionOfWeights >= 1.f) return fr;
+    Key newKey = fr._key != null ? Key.make(fr._key.toString() + (fr._key.toString().contains("temporary") ? ".sample." : ".temporary.sample.") + PrettyPrint.formatPct(fractionOfWeights).replace(" ","")) : null;
 
     Frame r = new MRTask() {
       @Override
@@ -450,7 +451,8 @@ public class MRUtils {
         int count = 0;
         for (int r = 0; r < cs[0]._len; r++) {
           rng.setSeed(seed+r+cs[0].start());
-          if (rng.nextFloat() < fraction * cs[weightIdx].atd(r)/meanWeight || (count == 0 && r == cs[0]._len-1) ) {
+          // A row with n-times higher weight should be n-times more likely to be picked
+          if (rng.nextFloat() < fractionOfWeights * cs[weightIdx].atd(r) || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
               if (cs[i].isNA(r)) ncs[i].addNA();

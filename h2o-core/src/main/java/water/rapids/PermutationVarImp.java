@@ -4,6 +4,7 @@ package water.rapids;
 import hex.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 import water.util.MRUtils;
 import water.util.TwoDimTable;
 import water.util.VecUtils;
@@ -34,6 +35,8 @@ public class PermutationVarImp {
      * @param fr    training frame
      */
     public PermutationVarImp(Model model, Frame fr) {
+        if (fr.numRows() < 2)
+            throw new IllegalArgumentException("Frame must contain more than 1 rows to be used in permutation variable importance!");
         _model = model;
         _inputFrame = fr;
     }
@@ -76,6 +79,9 @@ public class PermutationVarImp {
         // Use random seed if set to -1
         if (-1 == seed) seed = new Random().nextLong();
 
+        if (n_samples == 1)
+            throw new IllegalArgumentException("Unable to permute one row. Please set n_samples to higher value or to -1 to use the whole dataset.");
+
         final String[] variables = _inputFrame.names();
 
         HashSet<String> featuresToCompute = new HashSet<>(Arrays.asList((null != features && features.length > 0) ? features : variables));
@@ -84,8 +90,13 @@ public class PermutationVarImp {
             featuresToCompute.removeAll(Arrays.asList(_model._parms._ignored_columns));
 
         Frame fr = null;
-        if (n_samples > 0) {
+        if (n_samples > 1) {
             fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
+            while (fr.numRows() < 2) {
+                fr.remove();
+                Log.warn("Sampled less than 2 rows, repeating the sampling.");
+                fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, ++seed);
+            }
         } else {
             fr = _inputFrame;
         }

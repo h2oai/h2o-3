@@ -297,7 +297,7 @@ public class PermutationVarImpTest extends TestUtil {
 
             int id = 0;
             for (String name : sCoefficients.keySet()) {
-                if (name == "Intercept") continue; // ignore intercept 
+                if (name.equals("Intercept")) continue; // ignore intercept
                 coeff[id++] = name;
             }
             id = 0;
