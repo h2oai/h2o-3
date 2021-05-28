@@ -1,5 +1,8 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+
+import warnings
+
 from h2o.utils.compatibility import *  # NOQA
 
 import itertools
@@ -421,6 +424,9 @@ class H2OGridSearch(h2o_meta(Keyed)):
         grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
         failure_messages_stacks = ""
         error_index = 0
+        if len(grid_json["warning_details"]) > 0:
+            for w_message in grid_json["warning_details"]:
+                warnings.warn(w_message);
         if len(grid_json["failure_details"]) > 0:
             print("Errors/Warnings building gridsearch model\n")
             # will raise error if no grid model is returned, store error messages here
