@@ -26,7 +26,7 @@ def module_extensions():
         
         def __init__(self, **kwargs):
             super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
-            self._parms['autoencoder'] = True          
+            self._parms['autoencoder'] = True
 
 
 extensions = dict(
