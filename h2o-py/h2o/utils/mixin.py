@@ -64,7 +64,7 @@ def assign(obj, objs, deepcopy=False, reserved=False, filtr=None):
     _filtr = (lambda k, v: not _is_reserved_name(k) and (filtr is None or filtr(k, v))) if not reserved else filtr
     objs = objs if isinstance(objs, (list, tuple)) else [objs]
     for o in objs:
-        props = o.__dict__
+        props = vars(o)
         if _filtr:
             props = {k: v for k, v in props.items() if _filtr(k, v)}
         if deepcopy:
@@ -79,10 +79,11 @@ def rebind(obj, *mixins):
     inspect the methods from each mixin and bind them each to the object.
     """
     for m in reversed(mixins): 
-        for name in m.__dict__:
+        for name in vars(m):
             if _is_reserved_name(name): continue
-            if not callable(m.__dict__[name]): continue
-            obj.__dict__[name] = m.__dict__[name].__get__(obj)
+            attr = getattr(m, name)
+            if not callable(attr): continue
+            setattr(obj, name, attr.__get__(obj))
 
 
 def _is_reserved_name(name):
