@@ -6,6 +6,26 @@ parms$training_frame <- training_frame
 if(!missing(x))
   parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
 """,
+    module="""
+.h2o.fill_pca <- function(model, parameters, allparams) {
+    model$variable_importances <- model$importance
+    return(model)
+}
+
+#' Scree Plot
+#' @param model  A PCA model
+#' @param type  Type of the plot. Either "barplot" or "lines".
+#' @export
+h2o.screeplot <- function(model, type=c("barplot", "lines")) {
+    type <- match.arg(type)
+    if (type == "barplot") {
+        barplot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot")
+    } else {
+        plot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot",
+               type = "l", lty = "dashed", col = "blue", lwd = 2)
+    }
+}
+"""
 )
 
 doc = dict(

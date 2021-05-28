@@ -94,19 +94,17 @@ class H2ODimReductionModel(ModelBase):
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
 
 
-    def screeplot(self, type="barplot", **kwargs):
+    def screeplot(self, type="barplot", server=False):
         """
         Produce the scree plot.
 
         Library ``matplotlib`` is required for this function.
 
         :param str type: either ``"barplot"`` or ``"lines"``.
+        :param bool server: if true set server settings to matplotlib and show the graph
         """
         # check for matplotlib. exit if absent.
-        is_server = kwargs.pop("server")
-        if kwargs:
-            raise ValueError("Unknown arguments %s to screeplot()" % ", ".join(kwargs.keys()))
-        plt = get_matplotlib_pyplot(is_server)
+        plt = get_matplotlib_pyplot(server)
         if plt is None:
             return
 
@@ -115,8 +113,11 @@ class H2ODimReductionModel(ModelBase):
         plt.ylabel('Variances')
         plt.title('Scree Plot')
         plt.xticks(list(range(1, len(variances) + 1)))
+
         if type == "barplot":
             plt.bar(list(range(1, len(variances) + 1)), variances)
         elif type == "lines":
             plt.plot(list(range(1, len(variances) + 1)), variances, 'b--')
-        if not is_server: plt.show()
+
+        if not server:
+            plt.show()
