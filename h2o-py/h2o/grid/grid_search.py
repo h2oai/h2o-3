@@ -17,6 +17,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
+from h2o.utils.mixin import assign, mixin
 from h2o.utils.shared_utils import quoted, stringify_dict_as_map
 from h2o.utils.typechecks import assert_is_type, is_type
 
@@ -466,8 +467,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         # m._metrics_class = metrics_class
         m._parms = self._parms
         self.export_checkpoints_dir = m._grid_json["export_checkpoints_dir"]
-        H2OEstimator.mixin(self, model_class)
-        self.__dict__.update(m.__dict__.copy())
+        mixin(self, model_class)
+        assign(self, m)
 
 
     def __getitem__(self, item):
@@ -1563,8 +1564,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         m._grid_json = grid_json
         # m._metrics_class = metrics_class
         m._parms = grid._parms
-        H2OEstimator.mixin(grid, model_class)
-        grid.__dict__.update(m.__dict__.copy())
+        mixin(grid, model_class)
+        assign(grid, m)
         return grid
 
 

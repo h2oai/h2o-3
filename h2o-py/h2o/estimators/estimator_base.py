@@ -16,7 +16,7 @@ from h2o.base import Keyed
 from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
-from h2o.utils.mixin import load_ext, mixin
+from h2o.utils.mixin import assign, load_ext, mixin
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
@@ -57,6 +57,10 @@ class H2OEstimator(ModelBase):
     """
     
     supervised_learning = None  # overridden in implementation
+
+    def __init__(self):
+        super(H2OEstimator, self).__init__()
+        self._model = self
 
     def start(self, x, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, **params):
@@ -398,8 +402,8 @@ class H2OEstimator(ModelBase):
                 m.parms[p["name"]] = p
                 
         extensions = [load_ext(ext) for ext in self._options_.get('model_extensions', [])]
-        mixin(self, model_class, *extensions)
-        self.__dict__.update(m.__dict__.copy())
+        mixin(self._model, model_class, *extensions)
+        assign(self._model, m)
 
 
     #------ Scikit-learn Interface Methods -------

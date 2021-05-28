@@ -7,12 +7,27 @@ def load_ext(name):
     module = import_module(mod)
     return getattr(module, cls)
     
+
+def assign(obj, *objs):
+    """
+    Copies all the instance properties from extensions to obj.
+    The last property added takes precedence over the previous ones.
+    For example, when applying ``assign(obj, ext1, ext2)``: 
+    if all `obj`, `ext1` and `ext2` contain the property `prop` then the final object will be assigned `prop` from `ext2`.
+    :param obj: the instance that will receive the properties from others.
+    :param objs: the instances whose properties will be added to the first instance.
+    :return: the modified instance `obj`.
+    """
+    for ext in objs:
+        obj.__dict__.update(ext.__dict__.copy())
+    return obj
+    
     
 def rebind(obj, *mixins):
     """
     inspect the methods from each mixin and bind them each to the object.
     """
-    for m in reversed(mixins):
+    for m in reversed(mixins): 
         for name in m.__dict__:
             if name.startswith("__") and name.endswith("__"): continue
             if not callable(m.__dict__[name]): continue
