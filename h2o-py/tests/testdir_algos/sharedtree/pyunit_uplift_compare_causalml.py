@@ -38,8 +38,8 @@ def uplift_compare():
     train = split[0]
     test = split[1]
     
-    ntree = 1000
-    max_depth = 3
+    ntree = 100
+    max_depth = 10
     
     auuc_types = ["qini", "lift", "gain"]
     h2o_drfs = [None] * len(auuc_types)
@@ -64,8 +64,8 @@ def uplift_compare():
     uplift_model = UpliftRandomForestClassifier(
         n_estimators=ntree,
         max_depth=max_depth,
-        evaluationFunction='KL',
-        control_name='0',
+        evaluationFunction="KL",
+        control_name="0",
         min_samples_leaf=10,
         min_samples_treatment=10,
         normalization=False,
@@ -124,6 +124,15 @@ def uplift_compare():
     
     # auuc gain and h2o auuc shoudl be almost the same
     # assert auuc_gain == auuc["h2o"]
+
+    #mojo_path = h2o_drfs[0].download_mojo()
+    #mojo_dot = h2o.print_mojo(mojo_path, format='dot')
+
+    #from h2o.tree import H2OTree, H2ONode
+    #tree = H2OTree(h2o_drfs[0], 0, 0)
+    #print(tree.tree_decision_path)
+    
+    
     
     
 if __name__ == "__main__":

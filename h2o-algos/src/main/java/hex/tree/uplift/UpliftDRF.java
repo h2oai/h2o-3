@@ -76,7 +76,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         if (hasOffsetCol())
             error("_offset_column", "Offsets are not yet supported for DRF.");
         if (_nclass == 1) {
-            error("_distribution", "UpliftDRF currently support only classification problems.");
+            error("_distribution", "UpliftDRF currently support binomial classification problems only.");
         }
         if (_nclass > 2 || _parms._distribution.equals(DistributionFamily.multinomial)) {
             error("_distribution", "UpliftDRF currently does not support multinomial distribution.");
