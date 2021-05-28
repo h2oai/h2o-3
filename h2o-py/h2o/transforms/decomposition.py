@@ -1,10 +1,12 @@
 from h2o.frame import H2OFrame
+from h2o.utils.mixin import assign
 from ..estimators.estimator_base import H2OEstimator
 from ..estimators import H2OPrincipalComponentAnalysisEstimator, H2OSingularValueDecompositionEstimator
 
 
 class H2OPCA(H2OEstimator):
     """ Principal Component Analysis """
+    algo = H2OPrincipalComponentAnalysisEstimator.algo
 
     def __init__(self, 
                  model_id=None,
@@ -84,7 +86,7 @@ class H2OPCA(H2OEstimator):
             compute_metrics=compute_metrics
         )
         self._delegate._model = self
-        self._parms = self._delegate._parms
+        assign(self, self._delegate)
 
     def transform(self, X, y=None, **params):
         """
@@ -149,7 +151,7 @@ class H2OSVD(H2OEstimator):
             svd_method=svd_method
         )
         self._delegate._model = self
-        self._parms = self._delegate._parms
+        assign(self, self._delegate)
 
     def fit(self, X, y=None, **params):
         return self._delegate.fit(X)
@@ -165,3 +167,8 @@ class H2OSVD(H2OEstimator):
         :returns: The input H2OFrame transformed by the SVD.
         """
         return self._delegate.predict(X)
+
+
+# copies all class properties from estimator to transformer
+assign(H2OPCA, H2OPrincipalComponentAnalysisEstimator, filtr=lambda k, v: not callable(v))
+assign(H2OSVD, H2OSingularValueDecompositionEstimator, filtr=lambda k, v: not callable(v))
