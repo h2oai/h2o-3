@@ -1589,13 +1589,19 @@ class ModelBase(h2o_meta(Keyed)):
             pd = h2o.as_list(m_frame)
             return pandas.DataFrame(pd, columns=pd.columns).set_index("Variable")
         else:
+            def _replace_empty_str(row):
+                return [
+                    float("nan") if "" == elem else elem
+                    for elem in row
+                ]
             varimp = H2OTwoDimTable(
                 table_header="Variable Importances",
                 col_header=m_frame.columns,
                 col_types=["string"] + ["double"] * (len(m_frame.columns) - 1),
-                raw_cell_values=list(map(list, zip(*m_frame.as_data_frame(use_pandas=False, header=False))))  # transpose
+                raw_cell_values=list(map(_replace_empty_str, zip(*m_frame.as_data_frame(use_pandas=False, header=False))))  # transpose
             )
             return varimp
+
 
     def permutation_importance_plot(self, frame, metric="AUTO", n_samples=-1, n_repeats=1, features=None, seed=-1,
                                     num_of_features=10, server=False):

@@ -4,10 +4,7 @@ package water.rapids;
 import hex.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
-import water.util.MRUtils;
-import water.util.TwoDimTable;
-import water.util.VecUtils;
+import water.util.*;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -75,7 +72,7 @@ public class PermutationVarImp {
     }
 
 
-    private HashMap<String, Double> calculatePermutationVarImp(String metric, final long n_samples, final String[] features, long seed){
+    private HashMap<String, Double> calculatePermutationVarImp(String metric, long n_samples, final String[] features, long seed){
         // Use random seed if set to -1
         if (-1 == seed) seed = new Random().nextLong();
 
@@ -94,8 +91,10 @@ public class PermutationVarImp {
             fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
             while (fr.numRows() < 2) {
                 fr.remove();
-                Log.warn("Sampled less than 2 rows, repeating the sampling.");
-                fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, ++seed);
+                seed += 1;
+                n_samples *= 2;
+                Log.warn("Sampled less than 2 rows, repeating the sampling with seed = "+ seed +" and increasing n_samples to = "+ n_samples +".");
+                fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
             }
         } else {
             fr = _inputFrame;
