@@ -372,13 +372,13 @@ class H2OEstimator(ModelBase):
         m._model_json = model_json
         m._have_pojo = model_json.get('have_pojo', True)
         m._have_mojo = model_json.get('have_mojo', True)
+        m._start_time = model_json.get('output', {}).get('start_time', None)
+        m._end_time = model_json.get('output', {}).get('end_time', None)
+        m._run_time = model_json.get('output', {}).get('run_time', None)
         m._metrics_class = metrics_class
         m._metrics_class_valid = metrics_class_valid
         m._parms = self._parms
         m._estimator_type = self._estimator_type
-        m._start_time = model_json.get('output', {}).get('start_time', None)
-        m._end_time = model_json.get('output', {}).get('end_time', None)
-        m._run_time = model_json.get('output', {}).get('run_time', None)
         m._options_ = self._options_
 
         if model_id is not None and model_json is not None and metrics_class is not None:

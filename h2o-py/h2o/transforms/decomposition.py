@@ -98,7 +98,7 @@ class H2OPCA(H2OEstimator):
 
         :returns: The input H2OFrame transformed by the Principal Components.
         """
-        return self._delegate.predict(X)
+        return self.predict(X)
 
 
 class H2OSVD(H2OEstimator):
@@ -166,9 +166,10 @@ class H2OSVD(H2OEstimator):
 
         :returns: The input H2OFrame transformed by the SVD.
         """
-        return self._delegate.predict(X)
+        return self.predict(X)
 
 
-# copies all class properties from estimator to transformer
-assign(H2OPCA, H2OPrincipalComponentAnalysisEstimator, filtr=lambda k, v: not callable(v))
-assign(H2OSVD, H2OSingularValueDecompositionEstimator, filtr=lambda k, v: not callable(v))
+# copies class attributes (except methods and properties) from estimator to transformer
+__cls_props_from_delegate__ = lambda k, v: type(v) is not property and not callable(v)
+assign(H2OPCA, H2OPrincipalComponentAnalysisEstimator, filtr=__cls_props_from_delegate__)
+assign(H2OSVD, H2OSingularValueDecompositionEstimator, filtr=__cls_props_from_delegate__)
