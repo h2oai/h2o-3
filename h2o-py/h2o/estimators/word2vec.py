@@ -344,7 +344,9 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @pre_trained.setter
     def pre_trained(self, pre_trained):
-        self._parms["pre_trained"] = H2OFrame._validate(pre_trained, 'pre_trained')
+        pt = self._parms["pre_trained"] = H2OFrame._validate(pre_trained, 'pre_trained')
+        if pt is not None:
+            self.vec_size = H2OWord2vecEstimator._determine_vec_size(pt)
 
     @property
     def max_runtime_secs(self):

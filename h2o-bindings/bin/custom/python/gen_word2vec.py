@@ -51,11 +51,12 @@ extensions = dict(
     __class__=class_extensions,
 )
 
-override = dict(
+overrides = dict(
     pre_trained=dict(
         setter="""
 pt = self._parms["{sname}"] = H2OFrame._validate({pname}, '{pname}')
-self.vec_size = H2OWord2vecEstimator._determine_vec_size(pt)
+if pt is not None:
+    self.vec_size = H2OWord2vecEstimator._determine_vec_size(pt)
 """
     )
 )
