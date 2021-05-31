@@ -11,6 +11,7 @@ def mixin(obj, *mixins):
     :param mixins: the list of mixin classes to add to the object.
     :return: the extended object.
     """
+    mixins = filter(None, mixins)
     if not mixins:
         return obj
     cls = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
@@ -62,13 +63,14 @@ def assign(obj, objs, deepcopy=False, reserved=False, filtr=None):
     :return: the modified instance `obj`.
     """
     _filtr = (lambda k, v: not _is_reserved_name(k) and (filtr is None or filtr(k, v))) if not reserved else filtr
-    objs = objs if isinstance(objs, (list, tuple)) else [objs]
+    objs = filter(None, objs if isinstance(objs, (list, tuple)) else [objs])
     for o in objs:
         props = vars(o)
         if _filtr:
             props = {k: v for k, v in props.items() if _filtr(k, v)}
         if deepcopy:
             props = copy.deepcopy(props)
+        # print("%s, assigned attributes: %s" % (obj.__class__, list(props.keys())))
         for k, v in props.items():
             setattr(obj, k, v)
     return obj
@@ -78,6 +80,7 @@ def rebind(obj, *mixins):
     """
     inspect the methods from each mixin and bind them each to the object.
     """
+    mixins = filter(None, mixins)
     for m in reversed(mixins): 
         for name in vars(m):
             if _is_reserved_name(name): continue

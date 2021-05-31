@@ -390,6 +390,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
             else:
                 y = y if y in training_frame.names else training_frame.names[y]
                 self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
+        else:
+            self.model._estimator_type = "unsupervised"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
 
     def _model_build(self, x, y, tframe, vframe, kwargs):

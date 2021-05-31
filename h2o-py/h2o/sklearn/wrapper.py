@@ -611,7 +611,6 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             print(self)
 
 
-
 class H2OtoSklearnEstimator(BaseSklearnEstimator):
     """
     The base wrapper class exposing `sklearn` estimator methods.
@@ -743,7 +742,6 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
         if hasattr(self._estimator, 'inverse_transform') and callable(self._estimator.inverse_transform):
             return self._estimator.inverse_transform(X)
         raise AttributeError("{} does not support 'inverse_transform'.".format(self.__class__.__name__))
-
 
 
 class H2OEstimatorPredictProbabilitiesSupport(BaseEstimatorMixin):

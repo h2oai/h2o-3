@@ -153,9 +153,6 @@ class H2OSVD(H2OEstimator):
         self._delegate._model = self
         assign(self, self._delegate)
 
-    def fit(self, X, y=None, **params):
-        return self._delegate.fit(X)
-
     def transform(self, X, y=None, **params):
         """
         Transform the given H2OFrame with the fitted SVD model.

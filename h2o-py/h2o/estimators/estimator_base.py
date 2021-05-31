@@ -367,7 +367,7 @@ class H2OEstimator(ModelBase):
 
     def _resolve_model(self, model_id, model_json):
         metrics_class, model_class, metrics_class_valid = H2OEstimator._metrics_class(model_json)
-        m = model_class()
+        m = model_class() if model_class else self._model
         m._id = model_id
         m._model_json = model_json
         m._have_pojo = model_json.get('have_pojo', True)
@@ -512,7 +512,7 @@ class H2OEstimator(ModelBase):
             model_class = H2OCoxPHModel
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
-            model_class = h2o.estimators.H2OTargetEncoderEstimator
+            model_class = None
         else:
             raise NotImplementedError(model_type)
         if valid_metrics_class is None:
