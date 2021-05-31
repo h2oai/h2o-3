@@ -202,7 +202,7 @@ h2o.screeplot <- function(model, type=c("barplot", "lines")) {
     if (type == "barplot") {
         barplot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot")
     } else {
-        plot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot", 
+        plot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot",
                type = "l", lty = "dashed", col = "blue", lwd = 2)
     }
 }

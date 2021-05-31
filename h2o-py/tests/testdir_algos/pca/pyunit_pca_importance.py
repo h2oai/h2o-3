@@ -16,15 +16,19 @@ def test_pca_importance():
 
 def test_pca_screeplot():
   import matplotlib
+  import matplotlib.pyplot as plt
   matplotlib.use("agg")
   arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
   fitH2O = H2OPrincipalComponentAnalysisEstimator(k=4, transform="DEMEAN")
   fitH2O.train(x=list(range(4)), training_frame=arrestsH2O)
 
-  # the following should not fail
+  # The following should not fail
   fitH2O.screeplot()
   fitH2O.screeplot(server=True)
   fitH2O.screeplot(type="lines", server=True)
+  
+  # Free the memory
+  plt.close("all")
 
 
 pyunit_utils.run_tests([
