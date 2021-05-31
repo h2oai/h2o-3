@@ -405,7 +405,6 @@ class H2OEstimator(ModelBase):
         mixin(self._model, model_class, *extensions)
         assign(self._model, m)
 
-
     #------ Scikit-learn Interface Methods -------
 
     def fit(self, X, y=None, **params):
