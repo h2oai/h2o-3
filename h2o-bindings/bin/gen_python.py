@@ -370,14 +370,17 @@ def gen_init(modules):
 
 module = sys.modules[__name__]
 
+
 def _algo_for_estimator_(shortname, cls):
     if shortname == 'H2OAutoEncoderEstimator':
         return 'autoencoder'
     return cls.algo
 
+
 _estimator_cls_by_algo_ = {_algo_for_estimator_(name, cls): cls
                            for name, cls in inspect.getmembers(module, inspect.isclass)
                            if hasattr(cls, 'algo')}
+
 
 def create_estimator(algo, **params):
     if algo not in _estimator_cls_by_algo_:
