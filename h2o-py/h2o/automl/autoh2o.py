@@ -141,8 +141,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         Create a new H2OAutoML instance.
         
         :param int nfolds: Number of folds for k-fold cross-validation.
-            Defaults to ``5``.
             Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
+            Defaults to ``5``.
+
         :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
             Defaults to ``False``.
         :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order).
