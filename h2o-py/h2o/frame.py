@@ -2961,7 +2961,7 @@ class H2OFrame(Keyed):
         # This code should be removed / reworked once we have a more consistent strategy of dealing with frames.
         self._ex._eager_frame()
 
-        if by is not None or group_by_frame is not "_":
+        if by is not None or group_by_frame != "_":
             res = H2OFrame._expr(
                 expr=ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values))._frame()
         else:
