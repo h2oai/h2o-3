@@ -2,6 +2,9 @@ import copy
 from importlib import import_module
 
 
+__mixin_classes_cache__ = {}
+
+
 def mixin(obj, *mixins):
     """
     Function adding one or more mixin class to the list of parent classes of the current object.
@@ -15,8 +18,12 @@ def mixin(obj, *mixins):
     mixins = filter(lambda m: m and m not in mro, mixins)
     if not mixins:
         return obj
-    cls = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
-    cls.__module__ = obj.__class__.__module__
+    bases = (obj.__class__,)+tuple(mixins)
+    cls = __mixin_classes_cache__.get(bases, None)
+    if cls is None:
+        cls = type(obj.__class__.__name__, bases, dict())
+        cls.__module__ = obj.__class__.__module__
+        __mixin_classes_cache__[bases] = cls
     obj.__class__ = cls
     return obj
 

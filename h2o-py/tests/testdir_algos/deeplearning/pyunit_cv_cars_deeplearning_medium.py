@@ -40,6 +40,7 @@ def cv_cars_dl():
   dl1 = H2ODeepLearningEstimator(nfolds=nfolds,fold_assignment="Random",hidden=[20,20],epochs=10)
   dl1.train(x=predictors,y=response_col,training_frame=cars)
   dl2 = H2ODeepLearningEstimator(nfolds=nfolds,fold_assignment="Random",hidden=[20,20],epochs=10)
+  dl2.train(x=predictors,y=response_col,training_frame=cars)
   try:
     pyunit_utils.check_models(dl1, dl2, True)
     assert False, "Expected models to be different over repeated Random runs"
