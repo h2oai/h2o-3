@@ -13,18 +13,17 @@ def checkpointing_test():
     gbm = H2OGradientBoostingEstimator(ntrees=1)
     gbm.train(x=["Origin", "Dest"], y="Distance", training_frame=airlines, validation_frame=airlines)
     
-    checkpointed_gbm = H2OGradientBoostingEstimator(ntrees = 2, checkpoint=gbm)
+    checkpointed_gbm = H2OGradientBoostingEstimator(ntrees=2, checkpoint=gbm)
     checkpointed_gbm.train(x=["Origin", "Dest"], y="Distance", training_frame=airlines, validation_frame=airlines)
-    assert checkpointed_gbm.checkpoint == gbm
+    print(checkpointed_gbm.checkpoint)
+    assert checkpointed_gbm.checkpoint == gbm.model_id
 
-    checkpointed_gbm = H2OGradientBoostingEstimator(ntrees = 2, checkpoint=gbm.model_id)
+    checkpointed_gbm = H2OGradientBoostingEstimator(ntrees=2, checkpoint=gbm.model_id)
     checkpointed_gbm.train(x=["Origin", "Dest"], y="Distance", training_frame=airlines, validation_frame=airlines)
     assert checkpointed_gbm.checkpoint == gbm.model_id
     
 
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(checkpointing_test)
-
 else:
     checkpointing_test()

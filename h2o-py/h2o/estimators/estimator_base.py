@@ -218,7 +218,7 @@ class H2OEstimator(ModelBase):
                     model_id=None, verbose=False, extend_parms_fn=None):
         has_default_training_frame = hasattr(self, 'training_frame') and self.training_frame is not None
         training_frame = H2OFrame._validate(training_frame, 'training_frame',
-                                            required=self._requires_training_frame() and not has_default_training_frame)
+                                            required=self._options_.get('requires_training_frame', True) and not has_default_training_frame)
         validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
@@ -467,13 +467,6 @@ class H2OEstimator(ModelBase):
         for param in args:
             if param is not None:
                 raise H2OValueError("No training frame defined, yet the parameter %d is has been specified.", param)
-
-    def _requires_training_frame(self):
-        """
-        Determines if a training frame is required for given algorithm.
-        :return: True as a default value. Can be overridden by any specific algorithm.
-        """
-        return True
 
     @staticmethod
     def _metrics_class(model_json):

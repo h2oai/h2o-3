@@ -6,8 +6,7 @@ from ..estimators import H2OPrincipalComponentAnalysisEstimator, H2OSingularValu
 
 class H2OPCA(H2OEstimator):
     """ Principal Component Analysis """
-    algo = H2OPrincipalComponentAnalysisEstimator.algo
-
+    
     def __init__(self, 
                  model_id=None,
                  k=None,
@@ -71,6 +70,7 @@ class H2OPCA(H2OEstimator):
         :returns: A new instance of H2OPCA.
 
         """
+        allowed_params = locals().keys()
         super(self.__class__, self).__init__()
         self._delegate = H2OPrincipalComponentAnalysisEstimator(
             model_id=model_id,
@@ -87,6 +87,7 @@ class H2OPCA(H2OEstimator):
         )
         self._delegate._model = self
         assign(self, self._delegate)
+        self._parms = {k: v for k, v in self._delegate._parms.items() if k in allowed_params}
 
     def transform(self, X, y=None, **params):
         """
@@ -141,6 +142,7 @@ class H2OSVD(H2OEstimator):
 
         :returns: a new H2OSVD model
         """
+        allowed_params = locals().keys()
         super(self.__class__, self).__init__()
         self._delegate = H2OSingularValueDecompositionEstimator(
             nv=nv,
@@ -152,6 +154,7 @@ class H2OSVD(H2OEstimator):
         )
         self._delegate._model = self
         assign(self, self._delegate)
+        self._parms = {k: v for k, v in self._delegate._parms.items() if k in allowed_params}
 
     def transform(self, X, y=None, **params):
         """

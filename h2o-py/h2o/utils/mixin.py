@@ -11,7 +11,8 @@ def mixin(obj, *mixins):
     :param mixins: the list of mixin classes to add to the object.
     :return: the extended object.
     """
-    mixins = filter(None, mixins)
+    mro = obj.__class__.mro()
+    mixins = filter(lambda m: m and m not in mro, mixins)
     if not mixins:
         return obj
     cls = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())

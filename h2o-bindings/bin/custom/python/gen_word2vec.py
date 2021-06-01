@@ -1,14 +1,8 @@
 supervised_learning = False
+options = dict(requires_training_frame=False)
 
 
 def class_extensions():
-    def _requires_training_frame(self):
-        """
-        Determines if Word2Vec algorithm requires a training frame.
-        :return: False.
-        """
-        return False
-
     @staticmethod
     def from_external(external=H2OFrame):
         """
