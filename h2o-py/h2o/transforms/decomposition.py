@@ -1,10 +1,47 @@
 from h2o.frame import H2OFrame
-from h2o.utils.mixin import assign
-from ..estimators.estimator_base import H2OEstimator
 from ..estimators import H2OPrincipalComponentAnalysisEstimator, H2OSingularValueDecompositionEstimator
+from .transform_base import H2OTransformer
 
 
-class H2OPCA(H2OEstimator):
+class H2OTransformerProxy(H2OTransformer):
+
+    def __init__(self, delegate, allowed_params):
+        self._delegate = delegate
+        self._allowed_params = allowed_params
+
+    def __getattr__(self, key):
+        return getattr(self._delegate, key)
+
+    def __setattr__(self, key, value):
+        if key in ['_delegate', '_allowed_params']:
+            super(H2OTransformerProxy, self).__setattr__(key, value)
+        else:
+            setattr(self._delegate, key, value)
+        
+    def get_params(self, deep=True):
+        return {k: v for k, v in self._delegate.get_params().items() if k in self._allowed_params}
+
+    def set_params(self, **params):
+        return self._delegate.set_params(**params)
+
+    def fit(self, X, y=None, **params):
+        self._delegate.fit(X)
+        return self
+
+    def transform(self, X, y=None, **params):
+        """
+        Transform the given H2OFrame with the fitted PCA model.
+
+        :param H2OFrame X: May contain NAs and/or categorical data.
+        :param H2OFrame y: Ignored for PCA. Should be None.
+        :param params: Ignored.
+
+        :returns: The input H2OFrame transformed by the Principal Components.
+        """
+        return self._delegate.predict(X)
+
+
+class H2OPCA(H2OTransformerProxy):
     """ Principal Component Analysis """
     
     def __init__(self, 
@@ -71,38 +108,25 @@ class H2OPCA(H2OEstimator):
 
         """
         allowed_params = locals().keys()
-        super(self.__class__, self).__init__()
-        self._delegate = H2OPrincipalComponentAnalysisEstimator(
-            model_id=model_id,
-            k=k,
-            max_iterations=max_iterations,
-            seed=seed,
-            transform=transform,
-            use_all_factor_levels=use_all_factor_levels,
-            pca_method=pca_method,
-            pca_impl=pca_impl,
-            ignore_const_cols=ignore_const_cols,
-            impute_missing=impute_missing,
-            compute_metrics=compute_metrics
+        super(H2OPCA, self).__init__(
+            delegate=H2OPrincipalComponentAnalysisEstimator(
+                model_id=model_id,
+                k=k,
+                max_iterations=max_iterations,
+                seed=seed,
+                transform=transform,
+                use_all_factor_levels=use_all_factor_levels,
+                pca_method=pca_method,
+                pca_impl=pca_impl,
+                ignore_const_cols=ignore_const_cols,
+                impute_missing=impute_missing,
+                compute_metrics=compute_metrics
+            ), 
+            allowed_params=allowed_params
         )
-        self._delegate._model = self
-        assign(self, self._delegate)
-        self._parms = {k: v for k, v in self._delegate._parms.items() if k in allowed_params}
-
-    def transform(self, X, y=None, **params):
-        """
-        Transform the given H2OFrame with the fitted PCA model.
-
-        :param H2OFrame X: May contain NAs and/or categorical data.
-        :param H2OFrame y: Ignored for PCA. Should be None.
-        :param params: Ignored.
-
-        :returns: The input H2OFrame transformed by the Principal Components.
-        """
-        return self.predict(X)
 
 
-class H2OSVD(H2OEstimator):
+class H2OSVD(H2OTransformerProxy):
     """ Singular Value Decomposition """
 
     def __init__(self, 
@@ -143,33 +167,14 @@ class H2OSVD(H2OEstimator):
         :returns: a new H2OSVD model
         """
         allowed_params = locals().keys()
-        super(self.__class__, self).__init__()
-        self._delegate = H2OSingularValueDecompositionEstimator(
-            nv=nv,
-            max_iterations=max_iterations,
-            transform=transform,
-            seed=seed,
-            use_all_factor_levels=use_all_factor_levels,
-            svd_method=svd_method
+        super(H2OSVD, self).__init__(
+            delegate=H2OSingularValueDecompositionEstimator(
+                nv=nv,
+                max_iterations=max_iterations,
+                transform=transform,
+                seed=seed,
+                use_all_factor_levels=use_all_factor_levels,
+                svd_method=svd_method
+            ),
+            allowed_params=allowed_params
         )
-        self._delegate._model = self
-        assign(self, self._delegate)
-        self._parms = {k: v for k, v in self._delegate._parms.items() if k in allowed_params}
-
-    def transform(self, X, y=None, **params):
-        """
-        Transform the given H2OFrame with the fitted SVD model.
-
-        :param H2OFrame X: May contain NAs and/or categorical data.
-        :param H2OFrame y: Ignored for SVD. Should be None.
-        :param params: Ignored.
-
-        :returns: The input H2OFrame transformed by the SVD.
-        """
-        return self.predict(X)
-
-
-# copies class attributes (except methods and properties) from estimator to transformer
-__cls_props_from_delegate__ = lambda k, v: type(v) is not property and not callable(v)
-assign(H2OPCA, H2OPrincipalComponentAnalysisEstimator, filtr=__cls_props_from_delegate__)
-assign(H2OSVD, H2OSingularValueDecompositionEstimator, filtr=__cls_props_from_delegate__)
