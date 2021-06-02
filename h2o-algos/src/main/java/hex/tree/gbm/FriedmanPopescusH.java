@@ -4,7 +4,6 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import water.DKV;
 import water.Key;
-import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
@@ -45,30 +44,6 @@ public class FriedmanPopescusH {
             currCombinationCols[i] = modelIds[currCombination[i]];
         }
         return currCombinationCols;
-    }     
-
-
-    public static double h_test(Frame frame, String[] vars, SharedTreeSubgraph tree) {
-        Frame filteredFrame = filterFrame(frame, vars);
-        int[] modelIds = getModelIds(frame.names(), vars);
-        Map<String, Frame> fValues = new HashMap<>();
-
-        int numCols = filteredFrame.numCols();
-        int[] colIds = new int[numCols];
-        for (int i = 0; i < numCols; i++) {
-            colIds[i] = i;
-        }
-
-        for (int i = numCols; i > 0; i--) {
-            List<int[]> currCombinations = combinations(colIds, i);
-            for (int j = 0; j < currCombinations.size(); j++) {
-                int[] currCombination = currCombinations.get(j);
-                String[] cols = getCurrCombinationCols(currCombination, vars);
-                Integer[] currModelIds = getCurrentCombinationModelIds(currCombination, modelIds);
-                fValues.put(Arrays.toString(currCombination), computeFValuesForTest(tree, currModelIds, filteredFrame, cols, 0.1));
-            }
-        }
-        return computeHValue(fValues, filteredFrame, modelIds);
     }
     
     static double computeHValue(Map<String, Frame> fValues, Frame filteredFrame, int[] inds) {
@@ -83,14 +58,8 @@ public class FriedmanPopescusH {
             for (int n = inds.length; n > 0; n--) {
                 List<int[]> currCombinations = combinations(inds, n);
                 for (int j = 0; j < currCombinations.size(); j++) {
-                    // the id used in line numerEls[i] = ... has to be the order of current line (i) in frame sorted by 
-                    // the first-indice-column of current combination
-                    int firstIdOfCurrCombination = ((int[])currCombinations.toArray()[j])[0];
-                    float[] currArrSorted = FriedmanPopescusH.FrameTo2DArr(filteredFrame, true)[firstIdOfCurrCombination];
-                    Arrays.sort(currArrSorted);
-                    int id = Arrays.binarySearch(currArrSorted, (float)filteredFrame.vec(firstIdOfCurrCombination).at(i));
-                    Arrays.sort(FriedmanPopescusH.FrameTo2DArr(filteredFrame, true)[1]);
-                    numerEls[i] += (float)sign * (float)fValues.get(Arrays.toString((int[])currCombinations.toArray()[j])).vec(0).at(id);
+                    double fValue = findFValue(i, (int[])currCombinations.toArray()[j], fValues.get(Arrays.toString((int[])currCombinations.toArray()[j])), filteredFrame);
+                    numerEls[i] += (float)sign * (float)fValue;
                 }
                 sign *= -1;
             }
@@ -102,6 +71,42 @@ public class FriedmanPopescusH {
         assert numer.length == 1; assert numer[0].length == 1;
         assert denom.length == 1; assert denom[0].length == 1;
         return numer[0][0] < denom[0][0] ? Math.sqrt(numer[0][0]/denom[0][0]) : Double.NaN;
+    }
+    
+    static double[] getValueToFindFValueFor(int[] currCombination, Frame filteredFrame, int i) {
+        int combinationLength = currCombination.length;
+        double[] value = new double[combinationLength];
+        for (int j = 0; j < combinationLength; j++) {
+            value[j] = filteredFrame.vec(currCombination[j]).at(i);
+        }
+        return value;
+    }
+    
+    // put this search into MRTask
+    static double findFValue(int i, int[] currCombination, Frame currFValues, Frame filteredFrame) {
+        double[] valueToFindFValueFor = getValueToFindFValueFor(currCombination, filteredFrame, i);
+        int count = 0;
+        String[] currNames = new String[currCombination.length];
+        for (int j = 0; j < currCombination.length; j++) {
+            currNames[j] = filteredFrame.names()[currCombination[j]];
+        }
+        
+        for (int j = 0; j < currFValues.numRows(); j++) {
+            for (int k = 0; k < valueToFindFValueFor.length; k++) {
+                System.out.println(k);
+                System.out.println(Arrays.toString(currNames));
+                System.out.println(Arrays.toString(currFValues.names()));
+                if (Math.abs(valueToFindFValueFor[k] - currFValues.vec(/*k + 1*/currNames[k]).at(j)) < 1e-5) {
+                    count++;
+                }
+            }
+            if (count == valueToFindFValueFor.length) {
+                return currFValues.vec(0).at(j);
+            } else {
+                count = 0;
+            }
+        }
+        throw new RuntimeException("FValue was not found!" + Arrays.toString(currCombination) + "value: " + Arrays.toString(valueToFindFValueFor));
     }
     
     static float[] powArray(float[] array, int power) {
@@ -162,33 +167,13 @@ public class FriedmanPopescusH {
         float[][] counts = FrameTo2DArr(new Frame(uniqueWithCounts.vec("nrow")), true);
         float[][] fValues = FrameTo2DArr(uncenteredFvalues, false);
         float[][] meanUncenteredFVal = matrixScalarDivision(matrixMultiply(counts, fValues), filteredFrame.numRows());
-        // todo test this with multiclass
-        assert uncenteredFvalues.numCols() == meanUncenteredFVal[0].length;
-        for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
-            for (int j = 0; j < uncenteredFvalues.numCols(); j++) {
-                uncenteredFvalues.vec(j).set(i, uncenteredFvalues.vec(j).at(i) - meanUncenteredFVal[0][i]);
-            }
-        }
-        return uncenteredFvalues;
-    }
-
-    static Frame computeFValuesForTest(SharedTreeSubgraph tree, Integer[] modelIds, Frame filteredFrame, String[] cols, double learnRate) {
-        // filter frame -> only curr combination cols will be used
-        filteredFrame = filterFrame(filteredFrame, cols);
-        filteredFrame = new Frame(Key.make(), filteredFrame.names(), filteredFrame.vecs());
-        Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
-        Frame uncenteredFvalues = partialDependence(tree, modelIds, uniqueWithCounts, learnRate);
-        float[][] counts = FrameTo2DArr(new Frame(uniqueWithCounts.vec("nrow")), true);
-        float[][] fValues = FrameTo2DArr(uncenteredFvalues, false);
-        float[][] meanUncenteredFVal = matrixScalarDivision(matrixMultiply(counts, fValues), filteredFrame.numRows());
-        // todo test this with multiclass
         assert uncenteredFvalues.numCols() == meanUncenteredFVal[0].length;
         for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
             for (int j = 0; j < uncenteredFvalues.numCols(); j++) {
                 uncenteredFvalues.vec(j).set(i, uncenteredFvalues.vec(j).at(i) - meanUncenteredFVal[0][j]);
             }
         }
-        return uncenteredFvalues;
+        return uncenteredFvalues.add(uniqueWithCounts);
     }
     
     public static float[][] matrixScalarDivision(float[][] M, float x) {
@@ -246,31 +231,30 @@ public class FriedmanPopescusH {
     
     
     static Frame partialDependence(GBMModel model, Integer[] modelIds, Frame uniqueWithCounts) {
-        double[] pdp;
+        double[] pdp = new double[(int)uniqueWithCounts.numRows()];
         Frame result = new Frame();
-        for (int i = 0; i < (model._parms)._ntrees; i++) {
-            for (int treeClass = 0; treeClass < model._output.nclasses(); treeClass++) {
+        for (int treeClass = 0; treeClass < model._output.nclasses(); treeClass++) {
+            for (int i = 0; i < (model._parms)._ntrees; i++) {
                 SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
-                pdp = partialDependenceTree(sharedTreeSubgraph, modelIds, model._parms._learn_rate, uniqueWithCounts);
-                result.add("pdp_T" + i +"C" + treeClass , Vec.makeVec(pdp, Key.make()));
+                pdp = add(pdp, partialDependenceTree(sharedTreeSubgraph, modelIds, model._parms._learn_rate, uniqueWithCounts));
             }
+            result.add("pdp_C" + treeClass  , Vec.makeVec(pdp, Vec.newKey()));
         }
         return result;
     }
 
-
-    static Frame partialDependence(SharedTreeSubgraph tree, Integer[] modelIds, Frame uniqueWithCounts, double learnRate) {
-        double[] pdp;
-        Frame result = new Frame();
-        SharedTreeSubgraph sharedTreeSubgraph = tree;
-        pdp = partialDependenceTree(sharedTreeSubgraph, modelIds, learnRate, uniqueWithCounts);
-        result.add("pdp_T" + 0 +"C" + 0 , Vec.makeVec(pdp, Vec.newKey()));
-        return result;
+    public static double[] add(double[] first, double[] second) { 
+        int length = first.length < second.length ? first.length : second.length;
+        double[] result = new double[length]; 
+        for (int i = 0; i < length; i++) { 
+            result[i] = first[i] + second[i]; 
+        } 
+        return result; 
     }
-
+    
     
     static Frame filterFrame(Frame frame, String[] cols) {
-        //return frame with those cols of frame which have names in cols
+        // return frame with those cols of frame which have names in cols
         Frame frame1 = new Frame();
         frame1.add(cols, frame.vecs(cols));
         return frame1;
@@ -331,7 +315,8 @@ public class FriedmanPopescusH {
         // target feature = the set of target features for which the partial dependence should be evaluated
         // learn rate = constant scaling factor for the leaf predictions
         // grid = the grid points on which the partial dependence should be evaluated
-        
+
+      //  System.out.println(tree.name);
         // TODO: for now like this
         double[] out = new double[(int)grid.numRows()];
         
