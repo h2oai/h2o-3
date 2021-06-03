@@ -108,8 +108,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     };
   }
 
-  @Override public boolean havePojo() { return !_parms._HGLM; }
-  @Override public boolean haveMojo() { return !_parms._HGLM; }
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return true; }
 
   private double _lambdaCVEstimate = Double.NaN; // lambda cross-validation estimate
   private int _bestCVSubmodel;  // best submodel index found during cv
