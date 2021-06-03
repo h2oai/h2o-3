@@ -69,7 +69,7 @@ def scale_pca_rf_pipe_new_import():
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(scale_pca_rf_pipe)
-  # pyunit_utils.standalone_test(scale_pca_rf_pipe_new_import)
+  pyunit_utils.standalone_test(scale_pca_rf_pipe_new_import)
 else:
   scale_pca_rf_pipe()
-  # scale_pca_rf_pipe_new_import()
+  scale_pca_rf_pipe_new_import()
