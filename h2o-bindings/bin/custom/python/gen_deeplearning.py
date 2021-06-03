@@ -1,7 +1,7 @@
 options = dict(
     verbose=True,
     model_extensions=[
-        'h2o.model.extensions.ScoringHistory',
+        'h2o.model.extensions.ScoringHistoryDL',
         'h2o.model.extensions.VariableImportance',
     ],
 )

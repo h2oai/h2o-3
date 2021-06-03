@@ -3,7 +3,7 @@ import h2o
 
 class FeatureInteraction:
 
-    def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
+    def _feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
         """
         Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
         Available for XGBoost and GBM.

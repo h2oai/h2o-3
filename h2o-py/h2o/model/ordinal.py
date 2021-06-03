@@ -76,6 +76,6 @@ class H2OOrdinalModel(ModelBase):
         :returns: A scoring history plot.
         """
         if not hasattr(self, 'scoring_history_plot'):
-            raise H2OValueError("Plotting not implemented for this type of model")
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
         self.scoring_history_plot(timestep=timestep, metric=metric, **kwargs)

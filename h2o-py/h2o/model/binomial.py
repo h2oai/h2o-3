@@ -765,7 +765,7 @@ class H2OBinomialModel(ModelBase):
         >>> model.plot(timestep="AUTO", metric="objective", server=False)
         """
         if not hasattr(self, 'scoring_history_plot'):
-            raise H2OValueError("Plotting not implemented for this type of model")
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
             
         valid_metrics = self._allowed_metrics('binomial')
         if valid_metrics is not None:

@@ -23,25 +23,18 @@ class ScoringHistory:
     def _allowed_metrics(self, type_):
         return self._allowed_metrics_.get(type_, [])
     
+    def _get_scoring_history_to_plot(self):
+        return self.scoring_history()
+    
+    def _validate_timestep(self, timestep):
+        return timestep
+    
     def scoring_history_plot(self, timestep, metric, server=False):
         plt = get_matplotlib_pyplot(server)
         if plt is None: return
         
-        scoring_history = self.scoring_history()
-
-        # Set timestep
-        if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
-            assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
-            if timestep == "AUTO":
-                timestep = "number_of_trees"
-        else:  # self._model_json["algo"] == "deeplearning":
-            # Delete first row of DL scoring history since it contains NAs & NaNs
-            if scoring_history["samples"][0] == 0:
-                scoring_history = scoring_history[1:]
-            assert_is_type(timestep, "AUTO", "epochs",  "samples", "duration")
-            if timestep == "AUTO":
-                timestep = "epochs"
-
+        scoring_history = self._get_scoring_history_to_plot()
+        timestep = self._validate_timestep(timestep)
         training_metric = "training_{}".format(metric)
         validation_metric = "validation_{}".format(metric)
         if timestep == "duration":
@@ -78,6 +71,31 @@ class ScoringHistory:
             plt.plot(scoring_history[timestep], scoring_history[training_metric])
         if not server:
             plt.show()
+
+
+class ScoringHistoryTrees(ScoringHistory):
+
+    def _validate_timestep(self, timestep):
+        assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
+        if timestep == "AUTO":
+            timestep = "number_of_trees"
+        return timestep
+
+
+class ScoringHistoryDL(ScoringHistory):
+
+    def _get_scoring_history_to_plot(self):
+        scoring_history = self.scoring_history()
+        # Delete first row of DL scoring history since it contains NAs & NaNs
+        if scoring_history["samples"][0] == 0:
+            scoring_history = scoring_history[1:]
+        return scoring_history
+
+    def _validate_timestep(self, timestep):
+        assert_is_type(timestep, "AUTO", "epochs",  "samples", "duration")
+        if timestep == "AUTO":
+            timestep = "epochs"
+        return timestep
 
 
 class ScoringHistoryGLM(ScoringHistory):

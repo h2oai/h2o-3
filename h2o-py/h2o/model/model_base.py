@@ -429,6 +429,63 @@ class ModelBase(h2o_meta(Keyed)):
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
 
+    def ntrees_actual(self):
+        """
+        Returns actual number of trees in a tree model. If early stopping enabled, GBM can reset the ntrees value.
+        In this case, the actual ntrees value is less than the original ntrees value a user set before
+        building the model.
+    
+        Type: ``float``
+        """
+        # For now, redirect to h2o.model.extensions.trees for models that support the feature, and print legacy message for others..
+        # Later, the method will be exposed only for models supporting the feature.
+        if hasattr(self, '_ntrees_actual'):
+            return self._ntrees_actual()
+        print("No actual number of trees for this model")    
+
+    def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
+        """
+        Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
+        Available for XGBoost and GBM.
+
+        Metrics:
+        Gain - Total gain of each feature or feature interaction.
+        FScore - Amount of possible splits taken on a feature or feature interaction.
+        wFScore - Amount of possible splits taken on a feature or feature interaction weighed by 
+        the probability of the splits to take place.
+        Average wFScore - wFScore divided by FScore.
+        Average Gain - Gain divided by FScore.
+        Expected Gain - Total gain of each feature or feature interaction weighed by the probability to gather the gain.
+        Average Tree Index
+        Average Tree Depth
+
+        :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to 100.
+        :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
+        :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
+            starting at root only). Defaults to -1.
+        :param path: (Optional) Path where to save the output in .xlsx format (e.g. ``/mypath/file.xlsx``).
+            Please note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
+
+
+        :examples:
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> train, valid = boston.split_frame(ratios=[.8])
+        >>> boston_xgb = H2OXGBoostEstimator(seed=1234)
+        >>> boston_xgb.train(y=response, x=predictors, training_frame=train)
+        >>> feature_interactions = boston_xgb.feature_interaction()
+        """
+        # For now, redirect to h2o.model.extensions.feature_interaction for models that support the feature, and print legacy message for others..
+        # Later, the method will be exposed only for models supporting the feature.
+        if hasattr(self, '_feature_interaction'):
+            return self._feature_interaction(max_interaction_depth=max_interaction_depth, 
+                                             max_tree_depth=max_tree_depth, 
+                                             max_deepening=max_deepening, 
+                                             path=path)
+        print("No calculation available for this model")
+
     def h(self, frame, variables):
         """
         Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
@@ -1379,6 +1436,38 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
+    def varimp_plot(self, num_of_features=None, server=False):
+        """
+        Plot the variable importance for a trained model.
+
+        :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
+        :param server: if true set server settings to matplotlib and show the graph
+
+        :returns: None.
+        """
+        # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
+        # Later, the method will be exposed only for models supporting the feature.
+        if hasattr(self, '_varimp_plot'):
+            return self._varimp_plot(num_of_features=num_of_features, server=server)
+        else:
+            raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
+
+    def std_coef_plot(self, num_of_features=None, server=False):
+        """
+        Plot a model's standardized coefficient magnitudes.
+
+        :param num_of_features: the number of features shown in the plot.
+        :param server: if true set server settings to matplotlib and show the graph
+
+        :returns: None.
+        """
+        # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
+        # Later, the method will be exposed only for models supporting the feature.
+        if hasattr(self, '_std_coef_plot'):
+            return self._std_coef_plot(num_of_features=num_of_features, server=server)
+        else:
+            raise H2OValueError("Standardized coefficient plot is not available for this type of model (%s)." % self.algo)
+
     @staticmethod
     def _check_targets(y_actual, y_predicted):
         """Check that y_actual and y_predicted have the same length.

@@ -41,7 +41,7 @@ class H2ORegressionModel(ModelBase):
         >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
         if not hasattr(self, 'scoring_history_plot'):
-            raise H2OValueError("Plotting not implemented for this type of model")
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
         valid_metrics = self._allowed_metrics('regression')
         if valid_metrics is not None:

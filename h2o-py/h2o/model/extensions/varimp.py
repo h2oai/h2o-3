@@ -4,7 +4,7 @@ from h2o.utils.typechecks import assert_is_type
 
 class VariableImportance:
 
-    def varimp_plot(self, num_of_features=None, server=False):
+    def _varimp_plot(self, num_of_features=None, server=False):
         """
         Plot the variable importance for a trained model.
 

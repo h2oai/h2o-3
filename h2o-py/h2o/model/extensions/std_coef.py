@@ -5,7 +5,7 @@ from h2o.utils.typechecks import assert_is_type, I
 
 class StandardCoef:
 
-    def std_coef_plot(self, num_of_features=None, server=False):
+    def _std_coef_plot(self, num_of_features=None, server=False):
         """
         Plot a GLM model"s standardized coefficient magnitudes.
 
@@ -15,10 +15,6 @@ class StandardCoef:
         :returns: None.
         """
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
-
-        # check that model is a glm
-        if self._model_json["algo"] != "glm":
-            raise H2OValueError("This function is available for GLM models only")
 
         plt = get_matplotlib_pyplot(server)
         if not plt: return

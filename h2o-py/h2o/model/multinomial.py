@@ -240,7 +240,7 @@ class H2OMultinomialModel(ModelBase):
         >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
         if not hasattr(self, 'scoring_history_plot'):
-            raise H2OValueError("Plotting not implemented for this type of model")
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
         valid_metrics = self._allowed_metrics('multinomial')
         if valid_metrics is not None:
