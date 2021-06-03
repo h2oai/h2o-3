@@ -53,30 +53,47 @@ public class FriedmanPopescusH {
         if (filteredFrame._key == null)
             filteredFrame._key = Key.make();
         Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
-        int uniqHeight = (int)uniqueWithCounts.numRows();
-        float[] numerEls = new float[uniqHeight];
-        float[] denomEls = new float[uniqHeight];
-        for (int i = 0; i < uniqHeight; i++) {
+        long uniqHeight = uniqueWithCounts.numRows();
+        Vec numerEls = Vec.makeZero(uniqHeight);
+        Vec denomEls = Vec.makeZero(uniqHeight);
+        for (long i = 0; i < uniqHeight; i++) {
             int sign = 1;
             for (int n = inds.length; n > 0; n--) {
                 List<int[]> currCombinations = combinations(inds, n);
                 for (int j = 0; j < currCombinations.size(); j++) {
                     double fValue = findFValue(i, (int[])currCombinations.toArray()[j], fValues.get(Arrays.toString((int[])currCombinations.toArray()[j])), filteredFrame);
-                    numerEls[i] += (float)sign * (float)fValue;
+                    numerEls.set(i, numerEls.at(i) + (float)sign * (float)fValue);
                 }
                 sign *= -1;
             }
-            denomEls[i] = (float)fValues.get(Arrays.toString(inds)).vec(0).at(i);
+            denomEls.set(i, (float)fValues.get(Arrays.toString(inds)).vec(0).at(i));
         }
-        float[][] counts = FrameTo2DArr(new Frame(uniqueWithCounts.vec("nrow")), false);
-        float[][] numer = matrixMultiply(new float[][] {powArray(numerEls, 2)}, counts);
-        float[][] denom = matrixMultiply(new float[][] {powArray(denomEls,2)}, counts);
-        assert numer.length == 1; assert numer[0].length == 1;
-        assert denom.length == 1; assert denom[0].length == 1;
-        return numer[0][0] < denom[0][0] ? Math.sqrt(numer[0][0]/denom[0][0]) : Double.NaN;
+        double numer = new Transform(2).doAll(numerEls, uniqueWithCounts.vec("nrow")).result;
+        double denom = new Transform(2).doAll(denomEls, uniqueWithCounts.vec("nrow")).result;
+        return numer < denom ? Math.sqrt(numer/denom) : Double.NaN;
+    }
+
+    private static class Transform extends MRTask<Transform> {
+        double result;
+        int power;
+        
+        Transform(int power) {
+            this.power = power;
+        }
+        
+        @Override public void map( Chunk[] bvs ) {
+            result = 0;
+            int len = bvs[0]._len;
+            for (int i = 0; i < len; i++) {
+                result += Math.pow(bvs[0].atd(i), 2) * bvs[1].atd(i);
+            }
+        }
+        @Override public void reduce(Transform mrt ) {
+            result += mrt.result;
+        }
     }
     
-    static double[] getValueToFindFValueFor(int[] currCombination, Frame filteredFrame, int i) {
+    static double[] getValueToFindFValueFor(int[] currCombination, Frame filteredFrame, long i) {
         int combinationLength = currCombination.length;
         double[] value = new double[combinationLength];
         for (int j = 0; j < combinationLength; j++) {
@@ -85,7 +102,7 @@ public class FriedmanPopescusH {
         return value;
     }
     
-    static double findFValue(int i, int[] currCombination, Frame currFValues, Frame filteredFrame) {
+    static double findFValue(long i, int[] currCombination, Frame currFValues, Frame filteredFrame) {
         double[] valueToFindFValueFor = getValueToFindFValueFor(currCombination, filteredFrame, i);
         String[] currNames = getCurrCombinationNames(currCombination, filteredFrame.names());
         FindFValue findFValueTask = new FindFValue(valueToFindFValueFor, currNames, currFValues._names);
@@ -132,14 +149,6 @@ public class FriedmanPopescusH {
             currNames[j] = names[currCombination[j]];
         }
         return currNames;
-    }
-    
-    static float[] powArray(float[] array, int power) {
-        float[] result = new float[array.length];
-        for (int i = 0; i < array.length; i++) {
-            result[i] = (float) Math.pow(array[i], power);
-        }
-        return result;
     }
     
     static String[] getCurrCombinationCols(int[] currCombination, String[] vars) {
@@ -197,57 +206,18 @@ public class FriedmanPopescusH {
         return uncenteredFvalues.add(uniqueWithCounts);
     }
     
-    public static float[][] matrixScalarDivision(float[][] M, float x) {
-        float[][] result = new float[M.length][M[0].length];
-        for (int i = 0; i < M.length; i++) {
-            for (int j = 0; j < M[0].length; j++) {
-                result[i][j] = M[i][j]/x;
+    private static class VecMultiply extends MRTask<VecMultiply> {
+        double result;
+        @Override public void map( Chunk[] bvs ) {
+            result = 0;
+            int len = bvs[0]._len;
+            for (int i = 0; i < len; i++) {
+                result += bvs[0].atd(i) * bvs[1].atd(i);
             }
         }
-        return result;
-    }
-
-    public static float[][] matrixMultiply(float[][] A, float[][] B) {
-        int aRows = A.length;
-        int aColumns = A[0].length;
-        int bRows = B.length;
-        int bColumns = B[0].length;
-        
-        if (aColumns != bRows) {
-            throw new IllegalArgumentException("A:Rows: " + aColumns + " did not match B:Columns " + bRows + ".");
+        @Override public void reduce( VecMultiply mrt ) { 
+            result += mrt.result;
         }
-        float[][] C = new float[aRows][bColumns];
-        for (int i = 0; i < aRows; i++) {
-            for (int j = 0; j < bColumns; j++) {
-                C[i][j] = 0.00000f;
-            }
-        }
-        for (int i = 0; i < aRows; i++) { // aRow
-            for (int j = 0; j < bColumns; j++) { // bColumn
-                for (int k = 0; k < aColumns; k++) { // aColumn
-                    C[i][j] += A[i][k] * B[k][j];
-                }
-            }
-        }
-        return C;
-    }
-    
-    
-    static float[][] FrameTo2DArr(Frame frame, boolean transpose) {
-        float[][] matrix;
-        if (transpose)
-            matrix  = new float[frame.numCols()][(int)frame.numRows()];
-        else
-            matrix  = new float[(int)frame.numRows()][frame.numCols()];
-        for (int i = 0; i < frame.numRows(); i++) {
-            for (int j = 0; j < frame.numCols(); j++) {
-                if (transpose)
-                    matrix[j][i] = (float) frame.vec(j).at(i);
-                else
-                    matrix[i][j] = (float) frame.vec(j).at(i);
-            }
-        }
-        return matrix;
     }
     
     

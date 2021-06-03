@@ -1179,7 +1179,7 @@ public class FriedmanPopescusHTest {
         return sharedTreeSubgraph;
     }
 
-        public SharedTreeGraph createSharedTreeGraphForTestMLT() {
+    public SharedTreeGraph createSharedTreeGraphForTestMLT() {
         SharedTreeGraph sharedTreeGraph = new SharedTreeGraph();
         SharedTreeSubgraph sharedTreeSubgraph0k0Tree = createStage0k0Tree(sharedTreeGraph);
         SharedTreeSubgraph sharedTreeSubgraph0k1Tree = createStage0k1Tree(sharedTreeGraph);
@@ -1195,8 +1195,6 @@ public class FriedmanPopescusHTest {
     }
 
     
-
-
     
     @Test
     public void testPartialDependenceTree() throws IOException {
@@ -1394,25 +1392,6 @@ public class FriedmanPopescusHTest {
         DKV.remove(frame._key);
     }
     
-    @Test
-    public void testMeanCalculation() throws IOException {
-        String currentPath = new java.io.File(".").getCanonicalPath();
-        Frame count = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/counts01.csv");
-        Frame fvals = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/fvals_uncentered01.csv");
-        float[][] counts = FriedmanPopescusH.FrameTo2DArr(new Frame(count.vec(0)), true);
-        float[][] fValues = FriedmanPopescusH.FrameTo2DArr(fvals, false);
-        float[][] res =  FriedmanPopescusH.matrixMultiply(counts, fValues);
-        FriedmanPopescusH.matrixScalarDivision(res, 90);
-        
-        count = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/counts12.csv");
-        fvals = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/fvals_uncentered12.csv");
-        counts = FriedmanPopescusH.FrameTo2DArr(new Frame(count.vec(0)), true);
-        fValues = FriedmanPopescusH.FrameTo2DArr(fvals, false);
-        res =  FriedmanPopescusH.matrixMultiply(counts, fValues);
-        FriedmanPopescusH.matrixScalarDivision(res, 90);
-    }
-    
-
     @Test
     public void testCombinations() {
         int[] intArray = {0,1,2,3,4,5,6};
