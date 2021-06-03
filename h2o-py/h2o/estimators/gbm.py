@@ -24,7 +24,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     algo = "gbm"
     supervised_learning = True
-    _options_ = {'verbose': True, 'model_extensions': ['h2o.model.extensions.ScoringHistory', 'h2o.model.extensions.VariableImportance', 'h2o.model.extensions.FeatureInteraction', 'h2o.model.extensions.Trees']}
+    _options_ = {'verbose': True, 'model_extensions': ['h2o.model.extensions.ScoringHistoryTrees', 'h2o.model.extensions.VariableImportance', 'h2o.model.extensions.FeatureInteraction', 'h2o.model.extensions.Trees']}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
