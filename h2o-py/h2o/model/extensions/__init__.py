@@ -3,9 +3,7 @@ A collection of mixins optionally added to the model if the feature is supported
 """
 
 from .feature_interaction import FeatureInteraction
-from .scoring_history import ScoringHistory, ScoringHistoryGLM
+from .scoring_history import ScoringHistory, ScoringHistoryDL, ScoringHistoryGLM, ScoringHistoryTrees
 from .std_coef import StandardCoef
 from .trees import Trees
 from .varimp import VariableImportance
-
-__all__ = ["FeatureInteraction", "ScoringHistory", "ScoringHistoryGLM", "StandardCoef", "Trees", "VariableImportance"]

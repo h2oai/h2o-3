@@ -8,7 +8,6 @@ from h2o.utils.compatibility import *  # NOQA
 
 from datetime import datetime
 import inspect
-import types
 import warnings
 
 import h2o
