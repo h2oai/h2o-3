@@ -188,15 +188,11 @@ public class FriedmanPopescusH {
         filteredFrame = filterFrame(filteredFrame, cols);
         filteredFrame = new Frame(Key.make(), filteredFrame.names(), filteredFrame.vecs());
         Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
-        Frame uncenteredFvalues = partialDependence(model, modelIds, uniqueWithCounts);
-        float[][] counts = FrameTo2DArr(new Frame(uniqueWithCounts.vec("nrow")), true);
-        float[][] fValues = FrameTo2DArr(uncenteredFvalues, false);
-        float[][] meanUncenteredFVal = matrixScalarDivision(matrixMultiply(counts, fValues), filteredFrame.numRows());
-        assert uncenteredFvalues.numCols() == meanUncenteredFVal[0].length;
+        Frame uncenteredFvalues = new Frame(partialDependence(model, modelIds, uniqueWithCounts).vec(0));
+        VecMultiply multiply = new VecMultiply().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
+        double meanUncenteredFValue = multiply.result / filteredFrame.numRows();
         for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
-            for (int j = 0; j < uncenteredFvalues.numCols(); j++) {
-                uncenteredFvalues.vec(j).set(i, uncenteredFvalues.vec(j).at(i) - meanUncenteredFVal[0][j]);
-            }
+            uncenteredFvalues.vec(0).set(i, uncenteredFvalues.vec(0).at(i) - meanUncenteredFValue);
         }
         return uncenteredFvalues.add(uniqueWithCounts);
     }

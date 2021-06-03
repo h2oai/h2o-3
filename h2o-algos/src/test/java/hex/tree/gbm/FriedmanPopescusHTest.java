@@ -1380,14 +1380,14 @@ public class FriedmanPopescusHTest {
         output._nclasses = 3;
         mockModel._output = output;
 
-        checkFValues(mockModel, new Integer[] {0}, frame, new String[]{"sepal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0_multinomial.csv", 5);
-        checkFValues(mockModel, new Integer[] {1}, frame, new String[]{"sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_1_multinomial.csv", 5);
-        checkFValues(mockModel, new Integer[] {2}, frame, new String[]{"petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_2_multinomial.csv", 5);
-        checkFValues(mockModel, new Integer[] {3}, frame, new String[]{"petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_3_multinomial.csv", 5);
-        checkFValues(mockModel, new Integer[] {0, 1}, frame, new String[]{"sepal_len", "sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_01_multinomial.csv", 6);
-        checkFValues(mockModel, new Integer[] {0, 2}, frame, new String[]{"sepal_len", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_02_multinomial.csv", 6);
-        checkFValues(mockModel, new Integer[] {1, 2}, frame, new String[]{"sepal_wid", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_12_multinomial.csv", 6);
-        checkFValues(mockModel, new Integer[]  {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0123_multinomial.csv", 8);
+        checkFValues(mockModel, new Integer[] {0}, frame, new String[]{"sepal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0_multinomial.csv", 3);
+        checkFValues(mockModel, new Integer[] {1}, frame, new String[]{"sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_1_multinomial.csv", 3);
+        checkFValues(mockModel, new Integer[] {2}, frame, new String[]{"petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_2_multinomial.csv", 3);
+        checkFValues(mockModel, new Integer[] {3}, frame, new String[]{"petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_3_multinomial.csv", 3);
+        checkFValues(mockModel, new Integer[] {0, 1}, frame, new String[]{"sepal_len", "sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_01_multinomial.csv", 4);
+        checkFValues(mockModel, new Integer[] {0, 2}, frame, new String[]{"sepal_len", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_02_multinomial.csv", 4);
+        checkFValues(mockModel, new Integer[] {1, 2}, frame, new String[]{"sepal_wid", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_12_multinomial.csv", 4);
+        checkFValues(mockModel, new Integer[]  {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0123_multinomial.csv", 6);
         
         double h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len","petal_wid"}, mockModel);
         assertEquals(1.7358501914626407e-16, h , 1e-4);
