@@ -4,7 +4,10 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import water.DKV;
 import water.Key;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -82,31 +85,53 @@ public class FriedmanPopescusH {
         return value;
     }
     
-    // put this search into MRTask
     static double findFValue(int i, int[] currCombination, Frame currFValues, Frame filteredFrame) {
         double[] valueToFindFValueFor = getValueToFindFValueFor(currCombination, filteredFrame, i);
-        int count = 0;
-        String[] currNames = new String[currCombination.length];
-        for (int j = 0; j < currCombination.length; j++) {
-            currNames[j] = filteredFrame.names()[currCombination[j]];
+        String[] currNames = getCurrCombinationNames(currCombination, filteredFrame.names());
+        FindFValue findFValueTask = new FindFValue(valueToFindFValueFor, currNames, currFValues._names);
+        Frame result = findFValueTask.doAll(Vec.T_NUM, currFValues).outputFrame();
+        if (result.numRows() == 0) {
+            throw new RuntimeException("FValue was not found!" + Arrays.toString(currCombination) + "value: " + Arrays.toString(valueToFindFValueFor));
+        } else {
+            return result.vec(0).at(0);
         }
-        
-        for (int j = 0; j < currFValues.numRows(); j++) {
-            for (int k = 0; k < valueToFindFValueFor.length; k++) {
-                System.out.println(k);
-                System.out.println(Arrays.toString(currNames));
-                System.out.println(Arrays.toString(currFValues.names()));
-                if (Math.abs(valueToFindFValueFor[k] - currFValues.vec(/*k + 1*/currNames[k]).at(j)) < 1e-5) {
-                    count++;
+    }
+
+    static class FindFValue extends MRTask<FindFValue> {
+        double[] valueToFindFValueFor;
+        String[] currNames;
+        String[] currFValuesNames;
+
+        FindFValue(double[] valueToFindFValueFor, String[] currNames, String[] currFValuesNames) {
+            this.valueToFindFValueFor = valueToFindFValueFor;
+            this.currNames = currNames;
+            this.currFValuesNames = currFValuesNames;
+        }
+
+        @Override public void map(Chunk[] cs, NewChunk[] nc) {
+            int count = 0;
+            for (int iRow = 0; iRow < cs[0].len(); iRow++) {
+                for (int k = 0; k < valueToFindFValueFor.length; k++) {
+                    int id = ArrayUtils.find(currFValuesNames, currNames[k]);
+                    if (Math.abs(valueToFindFValueFor[k] - cs[id].atd(iRow)) < 1e-5) {
+                        count++;
+                    }
+                }
+                if (count == valueToFindFValueFor.length) {
+                    nc[0].addNum(cs[0].atd(iRow));
+                } else {
+                    count = 0;
                 }
             }
-            if (count == valueToFindFValueFor.length) {
-                return currFValues.vec(0).at(j);
-            } else {
-                count = 0;
-            }
         }
-        throw new RuntimeException("FValue was not found!" + Arrays.toString(currCombination) + "value: " + Arrays.toString(valueToFindFValueFor));
+    }
+    
+    static String[] getCurrCombinationNames(int[] currCombination, String[] names) {
+        String[] currNames = new String[currCombination.length];
+        for (int j = 0; j < currCombination.length; j++) {
+            currNames[j] = names[currCombination[j]];
+        }
+        return currNames;
     }
     
     static float[] powArray(float[] array, int power) {
