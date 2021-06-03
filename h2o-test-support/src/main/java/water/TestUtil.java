@@ -511,6 +511,39 @@ public class TestUtil extends Iced {
     return Scope.track(parseTestFile(Key.make(), fname));
   }
 
+  /**
+   * Make sure the given frame is distributed at least to given minimum number of chunks
+   * and spans at least 2 nodes of the cluster (if running on multinode).
+   * 
+   * @param frame input frame
+   * @param minChunks minimum required number of chunks
+   * @return possibly new Frame rebalanced to a minimum number of chunks
+   */
+  public static Frame ensureDistributed(Frame frame, int minChunks) {
+    if (frame.anyVec().nChunks() < minChunks) {
+      // rebalance first
+      Key<Frame> k = Key.make();
+      H2O.submitTask(new RebalanceDataSet(frame, k, minChunks)).join();
+      frame = k.get();
+    }
+    // check frame spans 2+ nodes
+    if (H2O.CLOUD.size() > 1) {
+      Vec v = frame.anyVec();
+      H2ONode node = null;
+      for (int i = 0; i < v.nChunks(); i++) {
+        H2ONode cNode = v.chunkKey(i).home_node();
+        if (v.chunkLen(i) == 0)
+          continue;
+        if (node == null)
+          node = cNode;
+        else if (cNode != node) // found proof
+          return frame;
+      }
+      throw new IllegalStateException("Frame is only stored on a sigle node");
+    }
+    return frame;
+  }
+    
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
       if (runWithoutLocalFiles()) {

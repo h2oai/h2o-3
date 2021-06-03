@@ -1727,6 +1727,8 @@ public class XGBoostTest extends TestUtil {
   }
 
   private void checkUpdateAuxTreeWeights(XGBoostModel xgb, Frame frame) {
+    frame = Scope.track(ensureDistributed(frame, 16));
+    
     Predictor orgPredictor = xgb.makePredictor(false);
     RegTree[] orgTrees = ((GBTree) orgPredictor.getBooster()).getGroupedTrees()[0];
 
