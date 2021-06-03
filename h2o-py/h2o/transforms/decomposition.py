@@ -1,11 +1,16 @@
 from h2o.frame import H2OFrame
 from ..estimators import H2OPrincipalComponentAnalysisEstimator, H2OSingularValueDecompositionEstimator
+from ..model import ModelBase
 from .transform_base import H2OTransformer
 
 
-class H2OTransformerProxy(H2OTransformer):
+class H2OTransformerProxy(H2OTransformer, ModelBase):
+    """
+    The order or base classes is important here as we don't want to inherit the instance properties of ModelBase.
+    """
 
     def __init__(self, delegate, allowed_params):
+        super(H2OTransformerProxy, self).__init__()
         self._delegate = delegate
         self._allowed_params = allowed_params
 
