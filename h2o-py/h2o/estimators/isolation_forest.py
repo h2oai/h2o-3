@@ -26,8 +26,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
     algo = "isolationforest"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  score_each_iteration=False,  # type: bool
                  score_tree_interval=0,  # type: int
                  ignored_columns=None,  # type: Optional[List[str]]
@@ -49,76 +49,99 @@ class H2OIsolationForestEstimator(H2OEstimator):
                  stopping_tolerance=0.01,  # type: float
                  export_checkpoints_dir=None,  # type: Optional[str]
                  contamination=-1.0,  # type: float
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  validation_response_column=None,  # type: Optional[str]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
         :type score_each_iteration: bool
-        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
+        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
+               Defaults to ``0``.
         :type score_tree_interval: int
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param ntrees: Number of trees. (default:50).
+        :param ntrees: Number of trees.
+               Defaults to ``50``.
         :type ntrees: int
-        :param max_depth: Maximum tree depth (0 for unlimited). (default:8).
+        :param max_depth: Maximum tree depth (0 for unlimited).
+               Defaults to ``8``.
         :type max_depth: int
-        :param min_rows: Fewest allowed (weighted) observations in a leaf. (default:1.0).
+        :param min_rows: Fewest allowed (weighted) observations in a leaf.
+               Defaults to ``1.0``.
         :type min_rows: float
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :param seed: Seed for pseudo random number generator (if applicable)
+               Defaults to ``-1``.
         :type seed: int
         :param build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for small
-               datasets. (default:False).
+               datasets.
+               Defaults to ``False``.
         :type build_tree_one_node: bool
         :param mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number
-               of predictors)/3. (default:-1).
+               of predictors)/3.
+               Defaults to ``-1``.
         :type mtries: int
         :param sample_size: Number of randomly sampled observations used to train each Isolation Forest tree. Only one
                of parameters sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will
-               be ignored. (default:256).
+               be ignored.
+               Defaults to ``256``.
         :type sample_size: int
         :param sample_rate: Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be
                in range from 0.0 to 1.0. If set to -1, sample_rate is disabled and sample_size will be used instead.
-               (default:-1.0).
+               Defaults to ``-1.0``.
         :type sample_rate: float
         :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
-               0.0 and <= 2.0) (default:1.0).
+               0.0 and <= 2.0)
+               Defaults to ``1.0``.
         :type col_sample_rate_change_per_level: float
-        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1.0).
+        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
         :type col_sample_rate_per_tree: float
-        :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
-               (default:0).
+               Defaults to ``0``.
         :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
-               used in GBM and DRF with the Python client. (default:"auto").
+               used in GBM and DRF with the Python client.
+               Defaults to ``"auto"``.
         :type stopping_metric: Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
                "misclassification", "mean_per_class_error"]
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
-               is not at least this much) (default:0.01).
+               is not at least this much)
+               Defaults to ``0.01``.
         :type stopping_tolerance: float
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         :param contamination: Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1)
                the predict function will not mark observations as anomalies and only anomaly score will be returned.
-               Defaults to -1 (undefined). (default:-1.0).
+               Defaults to -1 (undefined).
+               Defaults to ``-1.0``.
         :type contamination: float
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
         :param validation_response_column: (experimental) Name of the response column in the validation frame. Response
-               column should be binary and indicate not anomaly/anomaly. (default:None).
+               column should be binary and indicate not anomaly/anomaly.
+               Defaults to ``None``.
         :type validation_response_column: str, optional
         """
         super(H2OIsolationForestEstimator, self).__init__()
@@ -154,7 +177,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -176,7 +199,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -201,7 +224,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Score the model after every so many trees. Disabled if set to 0.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -239,7 +262,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -266,7 +289,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Number of trees.
 
-        Type: ``int``  (default: ``50``).
+        Type: ``int``, defaults to ``50``.
 
         :examples:
 
@@ -293,7 +316,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Maximum tree depth (0 for unlimited).
 
-        Type: ``int``  (default: ``8``).
+        Type: ``int``, defaults to ``8``.
 
         :examples:
 
@@ -317,7 +340,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -341,7 +364,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -367,7 +390,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Seed for pseudo random number generator (if applicable)
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -395,7 +418,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -420,7 +443,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of
         predictors)/3.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -444,7 +467,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Number of randomly sampled observations used to train each Isolation Forest tree. Only one of parameters
         sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will be ignored.
 
-        Type: ``int``  (default: ``256``).
+        Type: ``int``, defaults to ``256``.
 
         :examples:
 
@@ -467,7 +490,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be in range from 0.0 to
         1.0. If set to -1, sample_rate is disabled and sample_size will be used instead.
 
-        Type: ``float``  (default: ``-1.0``).
+        Type: ``float``, defaults to ``-1.0``.
 
         :examples:
 
@@ -492,7 +515,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -517,7 +540,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -543,7 +566,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -570,7 +593,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -600,7 +623,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         client.
 
         Type: ``Literal["auto", "anomaly_score", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr",
-        "misclassification", "mean_per_class_error"]``  (default: ``"auto"``).
+        "misclassification", "mean_per_class_error"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -627,7 +650,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
-        Type: ``float``  (default: ``0.01``).
+        Type: ``float``, defaults to ``0.01``.
 
         :examples:
 
@@ -683,7 +706,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1) the predict function
         will not mark observations as anomalies and only anomaly score will be returned. Defaults to -1 (undefined).
 
-        Type: ``float``  (default: ``-1.0``).
+        Type: ``float``, defaults to ``-1.0``.
         """
         return self._parms.get("contamination")
 
@@ -697,7 +720,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
         """
         return self._parms.get("validation_frame")
 

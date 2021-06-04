@@ -21,8 +21,8 @@ class H2OAggregatorEstimator(H2OEstimator):
     algo = "aggregator"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
@@ -35,32 +35,43 @@ class H2OAggregatorEstimator(H2OEstimator):
                  export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param response_column: Response variable column. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param target_num_exemplars: Targeted number of exemplars (default:5000).
+        :param target_num_exemplars: Targeted number of exemplars
+               Defaults to ``5000``.
         :type target_num_exemplars: int
         :param rel_tol_num_exemplars: Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
-               (default:0.5).
+               Defaults to ``0.5``.
         :type rel_tol_num_exemplars: float
-        :param transform: Transformation of training data (default:"normalize").
+        :param transform: Transformation of training data
+               Defaults to ``"normalize"``.
         :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
-        :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
-        :param save_mapping_frame: Whether to export the mapping of the aggregated frame (default:False).
+        :param save_mapping_frame: Whether to export the mapping of the aggregated frame
+               Defaults to ``False``.
         :type save_mapping_frame: bool
         :param num_iteration_without_new_exemplar: The number of iterations to run before aggregator exits if the number
-               of exemplars collected didn't change (default:500).
+               of exemplars collected didn't change
+               Defaults to ``500``.
         :type num_iteration_without_new_exemplar: int
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         """
         super(H2OAggregatorEstimator, self).__init__()
@@ -84,7 +95,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -146,7 +157,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -173,7 +184,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Targeted number of exemplars
 
-        Type: ``int``  (default: ``5000``).
+        Type: ``int``, defaults to ``5000``.
 
         :examples:
 
@@ -208,7 +219,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
 
-        Type: ``float``  (default: ``0.5``).
+        Type: ``float``, defaults to ``0.5``.
 
         :examples:
 
@@ -243,7 +254,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"normalize"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``, defaults to ``"normalize"``.
 
         :examples:
 
@@ -270,7 +281,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -304,7 +315,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Whether to export the mapping of the aggregated frame
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -339,7 +350,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 
-        Type: ``int``  (default: ``500``).
+        Type: ``int``, defaults to ``500``.
 
         :examples:
 

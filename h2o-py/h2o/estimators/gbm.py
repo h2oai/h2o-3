@@ -25,9 +25,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     algo = "gbm"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -64,7 +64,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  quantile_alpha=0.5,  # type: float
                  tweedie_power=1.5,  # type: float
                  huber_alpha=0.9,  # type: float
-                 checkpoint=None,  # type: Optional[H2OEstimator]
+                 checkpoint=None,  # type: Optional[Union[str, H2OEstimator]]
                  sample_rate=1.0,  # type: float
                  sample_rate_per_class=None,  # type: Optional[List[float]]
                  col_sample_rate=1.0,  # type: float
@@ -76,7 +76,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  pred_noise_bandwidth=0.0,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: Optional[H2OFrame]
+                 calibration_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  custom_metric_func=None,  # type: Optional[str]
                  custom_distribution_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
@@ -86,165 +86,215 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
-        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
         :type nfolds: int
-        :param keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
+        :param keep_cross_validation_models: Whether to keep the cross-validation models.
+               Defaults to ``True``.
         :type keep_cross_validation_models: bool
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
-               (default:False).
+               Defaults to ``False``.
         :type keep_cross_validation_predictions: bool
         :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
-               (default:False).
+               Defaults to ``False``.
         :type keep_cross_validation_fold_assignment: bool
-        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
         :type score_each_iteration: bool
-        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0. (default:0).
+        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
+               Defaults to ``0``.
         :type score_tree_interval: int
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
-               (default:"auto").
+               Defaults to ``"auto"``.
         :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
-        :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
         :type fold_column: str, optional
-        :param response_column: Response variable column. (default:None).
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
         :param offset_column: Offset column. This will be added to the combination of columns before applying the link
-               function. (default:None).
+               function.
+               Defaults to ``None``.
         :type offset_column: str, optional
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
                not increase the size of the data frame. This is typically the number of times a row is repeated, but
                non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor. (default:None).
+               the larger loss function pre-factor.
+               Defaults to ``None``.
         :type weights_column: str, optional
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
-               (default:False).
+               Defaults to ``False``.
         :type balance_classes: bool
         :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
                specified, sampling factors will be automatically computed to obtain class balance during training.
-               Requires balance_classes. (default:None).
+               Requires balance_classes.
+               Defaults to ``None``.
         :type class_sampling_factors: List[float], optional
         :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes. (default:5.0).
+               less than 1.0). Requires balance_classes.
+               Defaults to ``5.0``.
         :type max_after_balance_size: float
         :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
-               the Logs (default:20).
+               the Logs
+               Defaults to ``20``.
         :type max_confusion_matrix_size: int
-        :param ntrees: Number of trees. (default:50).
+        :param ntrees: Number of trees.
+               Defaults to ``50``.
         :type ntrees: int
-        :param max_depth: Maximum tree depth (0 for unlimited). (default:5).
+        :param max_depth: Maximum tree depth (0 for unlimited).
+               Defaults to ``5``.
         :type max_depth: int
-        :param min_rows: Fewest allowed (weighted) observations in a leaf. (default:10.0).
+        :param min_rows: Fewest allowed (weighted) observations in a leaf.
+               Defaults to ``10.0``.
         :type min_rows: float
         :param nbins: For numerical columns (real/int), build a histogram of (at least) this many bins, then split at
-               the best point (default:20).
+               the best point
+               Defaults to ``20``.
         :type nbins: int
         :param nbins_top_level: For numerical columns (real/int), build a histogram of (at most) this many bins at the
-               root level, then decrease by factor of two per level (default:1024).
+               root level, then decrease by factor of two per level
+               Defaults to ``1024``.
         :type nbins_top_level: int
         :param nbins_cats: For categorical columns (factors), build a histogram of this many bins, then split at the
-               best point. Higher values can lead to more overfitting. (default:1024).
+               best point. Higher values can lead to more overfitting.
+               Defaults to ``1024``.
         :type nbins_cats: int
         :param r2_stopping: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds,
                stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the
-               R^2 metric equals or exceeds this (default:∞).
+               R^2 metric equals or exceeds this
+               Defaults to ``∞``.
         :type r2_stopping: float
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
                length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
-               (default:0).
+               Defaults to ``0``.
         :type stopping_rounds: int
         :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
                regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
-               used in GBM and DRF with the Python client. (default:"auto").
+               used in GBM and DRF with the Python client.
+               Defaults to ``"auto"``.
         :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
                "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
         :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
-               is not at least this much) (default:0.001).
+               is not at least this much)
+               Defaults to ``0.001``.
         :type stopping_tolerance: float
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :param seed: Seed for pseudo random number generator (if applicable)
+               Defaults to ``-1``.
         :type seed: int
         :param build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for small
-               datasets. (default:False).
+               datasets.
+               Defaults to ``False``.
         :type build_tree_one_node: bool
-        :param learn_rate: Learning rate (from 0.0 to 1.0) (default:0.1).
+        :param learn_rate: Learning rate (from 0.0 to 1.0)
+               Defaults to ``0.1``.
         :type learn_rate: float
         :param learn_rate_annealing: Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
-               (default:1.0).
+               Defaults to ``1.0``.
         :type learn_rate_annealing: float
-        :param distribution: Distribution function (default:"auto").
+        :param distribution: Distribution function
+               Defaults to ``"auto"``.
         :type distribution: Literal["auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
                "laplace", "quantile", "huber", "custom"]
-        :param quantile_alpha: Desired quantile for Quantile regression, must be between 0 and 1. (default:0.5).
+        :param quantile_alpha: Desired quantile for Quantile regression, must be between 0 and 1.
+               Defaults to ``0.5``.
         :type quantile_alpha: float
-        :param tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2. (default:1.5).
+        :param tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2.
+               Defaults to ``1.5``.
         :type tweedie_power: float
         :param huber_alpha: Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must
-               be between 0 and 1). (default:0.9).
+               be between 0 and 1).
+               Defaults to ``0.9``.
         :type huber_alpha: float
-        :param checkpoint: Model checkpoint to resume training with. (default:None).
-        :type checkpoint: H2OEstimator, optional
-        :param sample_rate: Row sample rate per tree (from 0.0 to 1.0) (default:1.0).
+        :param checkpoint: Model checkpoint to resume training with.
+               Defaults to ``None``.
+        :type checkpoint: Union[str, H2OEstimator], optional
+        :param sample_rate: Row sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
         :type sample_rate: float
         :param sample_rate_per_class: A list of row sample rates per class (relative fraction for each class, from 0.0
-               to 1.0), for each tree (default:None).
+               to 1.0), for each tree
+               Defaults to ``None``.
         :type sample_rate_per_class: List[float], optional
-        :param col_sample_rate: Column sample rate (from 0.0 to 1.0) (default:1.0).
+        :param col_sample_rate: Column sample rate (from 0.0 to 1.0)
+               Defaults to ``1.0``.
         :type col_sample_rate: float
         :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
-               0.0 and <= 2.0) (default:1.0).
+               0.0 and <= 2.0)
+               Defaults to ``1.0``.
         :type col_sample_rate_change_per_level: float
-        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0) (default:1.0).
+        :param col_sample_rate_per_tree: Column sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
         :type col_sample_rate_per_tree: float
         :param min_split_improvement: Minimum relative improvement in squared error reduction for a split to happen
-               (default:1e-05).
+               Defaults to ``1e-05``.
         :type min_split_improvement: float
-        :param histogram_type: What type of histogram to use for finding optimal split points (default:"auto").
+        :param histogram_type: What type of histogram to use for finding optimal split points
+               Defaults to ``"auto"``.
         :type histogram_type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
-        :param max_abs_leafnode_pred: Maximum absolute value of a leaf node prediction (default:∞).
+        :param max_abs_leafnode_pred: Maximum absolute value of a leaf node prediction
+               Defaults to ``∞``.
         :type max_abs_leafnode_pred: float
         :param pred_noise_bandwidth: Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node
-               predictions (default:0.0).
+               predictions
+               Defaults to ``0.0``.
         :type pred_noise_bandwidth: float
-        :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
         :param calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide
-               more accurate estimates of class probabilities. (default:False).
+               more accurate estimates of class probabilities.
+               Defaults to ``False``.
         :type calibrate_model: bool
-        :param calibration_frame: Calibration frame for Platt Scaling (default:None).
-        :type calibration_frame: H2OFrame, optional
+        :param calibration_frame: Calibration frame for Platt Scaling
+               Defaults to ``None``.
+        :type calibration_frame: Union[str, H2OFrame], optional
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
-               (default:None).
+               Defaults to ``None``.
         :type custom_metric_func: str, optional
         :param custom_distribution_func: Reference to custom distribution, format: `language:keyName=funcName`
-               (default:None).
+               Defaults to ``None``.
         :type custom_distribution_func: str, optional
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         :param monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce an increasing
-               constraint and -1 to specify a decreasing constraint. (default:None).
+               constraint and -1 to specify a decreasing constraint.
+               Defaults to ``None``.
         :type monotone_constraints: dict, optional
         :param check_constant_response: Check if response column is constant. If enabled, then an exception is thrown if
                the response column is a constant value.If disabled, then model will train regardless of the response
-               column being a constant value or not. (default:True).
+               column being a constant value or not.
+               Defaults to ``True``.
         :type check_constant_response: bool
         :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
-               binning. (default:-1).
+               binning.
+               Defaults to ``-1``.
         :type gainslift_bins: int
-        :param auc_type: Set default multinomial AUC type. (default:"auto").
+        :param auc_type: Set default multinomial AUC type.
+               Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
         """
         super(H2OGradientBoostingEstimator, self).__init__()
@@ -314,7 +364,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -341,7 +391,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -368,7 +418,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -396,7 +446,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -427,7 +477,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -458,7 +508,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -489,7 +539,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -520,7 +570,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Score the model after every so many trees. Disabled if set to 0.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -552,7 +602,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -638,7 +688,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -732,7 +782,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -794,7 +844,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5.0``).
+        Type: ``float``, defaults to ``5.0``.
 
         :examples:
 
@@ -825,7 +875,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``, defaults to ``20``.
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -839,7 +889,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Number of trees.
 
-        Type: ``int``  (default: ``50``).
+        Type: ``int``, defaults to ``50``.
 
         :examples:
 
@@ -873,7 +923,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum tree depth (0 for unlimited).
 
-        Type: ``int``  (default: ``5``).
+        Type: ``int``, defaults to ``5``.
 
         :examples:
 
@@ -903,7 +953,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``10.0``).
+        Type: ``float``, defaults to ``10.0``.
 
         :examples:
 
@@ -932,7 +982,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``, defaults to ``20``.
 
         :examples:
 
@@ -965,7 +1015,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease
         by factor of two per level
 
-        Type: ``int``  (default: ``1024``).
+        Type: ``int``, defaults to ``1024``.
 
         :examples:
 
@@ -998,7 +1048,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
         values can lead to more overfitting.
 
-        Type: ``int``  (default: ``1024``).
+        Type: ``int``, defaults to ``1024``.
 
         :examples:
 
@@ -1037,7 +1087,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
         exceeds this
 
-        Type: ``float``  (default: ``∞``).
+        Type: ``float``, defaults to ``∞``.
         """
         return self._parms.get("r2_stopping")
 
@@ -1052,7 +1102,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -1091,7 +1141,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         client.
 
         Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
-        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``  (default: ``"auto"``).
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -1127,7 +1177,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -1163,7 +1213,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1194,7 +1244,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Seed for pseudo random number generator (if applicable)
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -1228,7 +1278,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -1257,7 +1307,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Learning rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.1``).
+        Type: ``float``, defaults to ``0.1``.
 
         :examples:
 
@@ -1291,7 +1341,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1327,7 +1377,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Distribution function
 
         Type: ``Literal["auto", "bernoulli", "quasibinomial", "multinomial", "gaussian", "poisson", "gamma", "tweedie",
-        "laplace", "quantile", "huber", "custom"]``  (default: ``"auto"``).
+        "laplace", "quantile", "huber", "custom"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -1354,7 +1404,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Desired quantile for Quantile regression, must be between 0 and 1.
 
-        Type: ``float``  (default: ``0.5``).
+        Type: ``float``, defaults to ``0.5``.
 
         :examples:
 
@@ -1384,7 +1434,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
-        Type: ``float``  (default: ``1.5``).
+        Type: ``float``, defaults to ``1.5``.
 
         :examples:
 
@@ -1415,7 +1465,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
 
-        Type: ``float``  (default: ``0.9``).
+        Type: ``float``, defaults to ``0.9``.
 
         :examples:
 
@@ -1446,7 +1496,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``H2OEstimator``.
+        Type: ``Union[str, H2OEstimator]``.
 
         :examples:
 
@@ -1485,7 +1535,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1548,7 +1598,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1582,7 +1632,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1616,7 +1666,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1650,7 +1700,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Minimum relative improvement in squared error reduction for a split to happen
 
-        Type: ``float``  (default: ``1e-05``).
+        Type: ``float``, defaults to ``1e-05``.
 
         :examples:
 
@@ -1679,8 +1729,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         What type of histogram to use for finding optimal split points
 
-        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]``  (default:
-        ``"auto"``).
+        Type: ``Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]``, defaults to
+        ``"auto"``.
 
         :examples:
 
@@ -1714,7 +1764,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``∞``).
+        Type: ``float``, defaults to ``∞``.
 
         :examples:
 
@@ -1743,7 +1793,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1774,7 +1824,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -1809,7 +1859,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
         of class probabilities.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -1849,7 +1899,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Calibration frame for Platt Scaling
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -2021,7 +2071,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         constant value.If disabled, then model will train regardless of the response column being a constant value or
         not.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -2044,7 +2094,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -2067,8 +2117,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
-        ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``, defaults to
+        ``"auto"``.
         """
         return self._parms.get("auc_type")
 

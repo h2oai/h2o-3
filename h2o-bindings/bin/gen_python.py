@@ -81,8 +81,8 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
-        self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
-                                               else "H2OEstimator" if schema == "Key<Model>"
+        self.make_key = lambda itype, schema: ("Union[str, H2OFrame]" if schema == "Key<Frame>"
+                                               else "Union[str, H2OEstimator]" if schema == "Key<Model>"
                                                else "str")
         self.make_enum = lambda schema, values: ("Literal[%s]" % ", ".join(stringify(v) for v in values) if values   # see PEP-586
                                                  else schema)
@@ -241,7 +241,7 @@ def gen_module(schema, algo):
     yield '        """'
     for p in extended_params:
         pname, pdefault, ptype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
-        pdesc = "%s: %s (default:%s)." % (pname, pdoc, pdefault)
+        pdesc = "%s: %s\nDefaults to ``%s``." % (pname, pdoc, pdefault)
         pident = ' '*15
         yield "        :param %s" % bi.wrap(pdesc, indent=pident, indent_first=False)
         yield "        :type %s: %s%s" % (pname, 
@@ -273,7 +273,7 @@ def gen_module(schema, algo):
             property_doc = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
             property_doc = "Type: ``%s``" % dtype
-        property_doc += ("." if pdefault is None else "  (default: ``%s``)." % stringify(pdefault))
+        property_doc += ("." if pdefault is None else ", defaults to ``%s``." % stringify(pdefault))
 
         yield "    @property"
         yield "    def %s(self):" % pname

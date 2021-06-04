@@ -22,9 +22,9 @@ class H2OKMeansEstimator(H2OEstimator):
     algo = "kmeans"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -36,7 +36,7 @@ class H2OKMeansEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  k=1,  # type: int
                  estimate_k=False,  # type: bool
-                 user_points=None,  # type: Optional[H2OFrame]
+                 user_points=None,  # type: Optional[Union[str, H2OFrame]]
                  max_iterations=10,  # type: int
                  standardize=True,  # type: bool
                  seed=-1,  # type: int
@@ -47,63 +47,81 @@ class H2OKMeansEstimator(H2OEstimator):
                  cluster_size_constraints=None,  # type: Optional[List[int]]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
-        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2). (default:0).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
         :type nfolds: int
-        :param keep_cross_validation_models: Whether to keep the cross-validation models. (default:True).
+        :param keep_cross_validation_models: Whether to keep the cross-validation models.
+               Defaults to ``True``.
         :type keep_cross_validation_models: bool
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
-               (default:False).
+               Defaults to ``False``.
         :type keep_cross_validation_predictions: bool
         :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
-               (default:False).
+               Defaults to ``False``.
         :type keep_cross_validation_fold_assignment: bool
         :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
                'Stratified' option will stratify the folds based on the response variable, for classification problems.
-               (default:"auto").
+               Defaults to ``"auto"``.
         :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
-        :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
         :type fold_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
         :type score_each_iteration: bool
         :param k: The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it
-               will find up to k centroids. (default:1).
+               will find up to k centroids.
+               Defaults to ``1``.
         :type k: int
         :param estimate_k: Whether to estimate the number of clusters (<=k) iteratively and deterministically.
-               (default:False).
+               Defaults to ``False``.
         :type estimate_k: bool
         :param user_points: This option allows you to specify a dataframe, where each row represents an initial cluster
                center. The user-specified points must have the same number of columns as the training observations. The
-               number of rows must equal the number of clusters (default:None).
-        :type user_points: H2OFrame, optional
+               number of rows must equal the number of clusters
+               Defaults to ``None``.
+        :type user_points: Union[str, H2OFrame], optional
         :param max_iterations: Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds
-               iteration) (default:10).
+               iteration)
+               Defaults to ``10``.
         :type max_iterations: int
-        :param standardize: Standardize columns before computing distances (default:True).
+        :param standardize: Standardize columns before computing distances
+               Defaults to ``True``.
         :type standardize: bool
-        :param seed: RNG Seed (default:-1).
+        :param seed: RNG Seed
+               Defaults to ``-1``.
         :type seed: int
-        :param init: Initialization mode (default:"furthest").
+        :param init: Initialization mode
+               Defaults to ``"furthest"``.
         :type init: Literal["random", "plus_plus", "furthest", "user"]
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param categorical_encoding: Encoding scheme for categorical features (default:"auto").
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
         :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
                "sort_by_response", "enum_limited"]
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         :param cluster_size_constraints: An array specifying the minimum number of points that should be in each
                cluster. The length of the constraints array has to be the same as the number of clusters.
-               (default:None).
+               Defaults to ``None``.
         :type cluster_size_constraints: List[int], optional
         """
         super(H2OKMeansEstimator, self).__init__()
@@ -137,7 +155,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -162,7 +180,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -187,7 +205,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -213,7 +231,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -240,7 +258,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -268,7 +286,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -295,7 +313,7 @@ class H2OKMeansEstimator(H2OEstimator):
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        Type: ``Literal["auto", "random", "modulo", "stratified"]``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -364,7 +382,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -392,7 +410,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -420,7 +438,7 @@ class H2OKMeansEstimator(H2OEstimator):
         The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will find
         up to k centroids.
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -445,7 +463,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Whether to estimate the number of clusters (<=k) iteratively and deterministically.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -476,7 +494,7 @@ class H2OKMeansEstimator(H2OEstimator):
         specified points must have the same number of columns as the training observations. The number of rows must
         equal the number of clusters
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -507,7 +525,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)
 
-        Type: ``int``  (default: ``10``).
+        Type: ``int``, defaults to ``10``.
 
         :examples:
 
@@ -533,7 +551,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Standardize columns before computing distances
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -559,7 +577,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         RNG Seed
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -589,7 +607,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Initialization mode
 
-        Type: ``Literal["random", "plus_plus", "furthest", "user"]``  (default: ``"furthest"``).
+        Type: ``Literal["random", "plus_plus", "furthest", "user"]``, defaults to ``"furthest"``.
 
         :examples:
 
@@ -616,7 +634,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -644,7 +662,7 @@ class H2OKMeansEstimator(H2OEstimator):
         Encoding scheme for categorical features
 
         Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
-        "sort_by_response", "enum_limited"]``  (default: ``"auto"``).
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 

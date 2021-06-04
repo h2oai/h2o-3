@@ -22,8 +22,8 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     algo = "coxph"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  start_column=None,  # type: Optional[str]
                  stop_column=None,  # type: Optional[str]
                  response_column=None,  # type: Optional[str]
@@ -43,53 +43,70 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
                  single_node_mode=False,  # type: bool
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param start_column: Start Time Column. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param start_column: Start Time Column.
+               Defaults to ``None``.
         :type start_column: str, optional
-        :param stop_column: Stop Time Column. (default:None).
+        :param stop_column: Stop Time Column.
+               Defaults to ``None``.
         :type stop_column: str, optional
-        :param response_column: Response variable column. (default:None).
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
                not increase the size of the data frame. This is typically the number of times a row is repeated, but
                non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor. (default:None).
+               the larger loss function pre-factor.
+               Defaults to ``None``.
         :type weights_column: str, optional
         :param offset_column: Offset column. This will be added to the combination of columns before applying the link
-               function. (default:None).
+               function.
+               Defaults to ``None``.
         :type offset_column: str, optional
-        :param stratify_by: List of columns to use for stratification. (default:None).
+        :param stratify_by: List of columns to use for stratification.
+               Defaults to ``None``.
         :type stratify_by: List[str], optional
-        :param ties: Method for Handling Ties. (default:"efron").
+        :param ties: Method for Handling Ties.
+               Defaults to ``"efron"``.
         :type ties: Literal["efron", "breslow"]
-        :param init: Coefficient starting value. (default:0.0).
+        :param init: Coefficient starting value.
+               Defaults to ``0.0``.
         :type init: float
-        :param lre_min: Minimum log-relative error. (default:9.0).
+        :param lre_min: Minimum log-relative error.
+               Defaults to ``9.0``.
         :type lre_min: float
-        :param max_iterations: Maximum number of iterations. (default:20).
+        :param max_iterations: Maximum number of iterations.
+               Defaults to ``20``.
         :type max_iterations: int
         :param interactions: A list of predictor column indices to interact. All pairwise combinations will be computed
-               for the list. (default:None).
+               for the list.
+               Defaults to ``None``.
         :type interactions: List[str], optional
-        :param interaction_pairs: A list of pairwise (first order) column interactions. (default:None).
+        :param interaction_pairs: A list of pairwise (first order) column interactions.
+               Defaults to ``None``.
         :type interaction_pairs: List[tuple], optional
         :param interactions_only: A list of columns that should only be used to create interactions but should not
-               itself participate in model training. (default:None).
+               itself participate in model training.
+               Defaults to ``None``.
         :type interactions_only: List[str], optional
         :param use_all_factor_levels: (Internal. For development only!) Indicates whether to use all factor levels.
-               (default:False).
+               Defaults to ``False``.
         :type use_all_factor_levels: bool
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         :param single_node_mode: Run on a single node to reduce the effect of network overhead (for smaller datasets)
-               (default:False).
+               Defaults to ``False``.
         :type single_node_mode: bool
         """
         super(H2OCoxProportionalHazardsEstimator, self).__init__()
@@ -119,7 +136,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -289,7 +306,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Method for Handling Ties.
 
-        Type: ``Literal["efron", "breslow"]``  (default: ``"efron"``).
+        Type: ``Literal["efron", "breslow"]``, defaults to ``"efron"``.
 
         :examples:
 
@@ -318,7 +335,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Coefficient starting value.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -345,7 +362,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Minimum log-relative error.
 
-        Type: ``float``  (default: ``9.0``).
+        Type: ``float``, defaults to ``9.0``.
 
         :examples:
 
@@ -372,7 +389,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Maximum number of iterations.
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``, defaults to ``20``.
 
         :examples:
 
@@ -484,7 +501,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         (Internal. For development only!) Indicates whether to use all factor levels.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -541,7 +558,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         """
         Run on a single node to reduce the effect of network overhead (for smaller datasets)
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
         """
         return self._parms.get("single_node_mode")
 

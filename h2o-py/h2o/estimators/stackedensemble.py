@@ -65,11 +65,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  response_column=None,  # type: Optional[str]
-                 validation_frame=None,  # type: Optional[H2OFrame]
-                 blending_frame=None,  # type: Optional[H2OFrame]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 blending_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  base_models=[],  # type: List[str]
                  metalearner_algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
                  metalearner_nfolds=0,  # type: int
@@ -87,64 +87,84 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param response_column: Response variable column. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
         :param blending_frame: Frame used to compute the predictions that serve as the training frame for the
-               metalearner (triggers blending mode if provided) (default:None).
-        :type blending_frame: H2OFrame, optional
+               metalearner (triggers blending mode if provided)
+               Defaults to ``None``.
+        :type blending_frame: Union[str, H2OFrame], optional
         :param base_models: List of models or grids (or their ids) to ensemble/stack together. Grids are expanded to
                individual models. If not using blending frame, then models must have been cross-validated using nfolds >
-               1, and folds must be identical across models. (default:[]).
+               1, and folds must be identical across models.
+               Defaults to ``[]``.
         :type base_models: List[str]
         :param metalearner_algorithm: Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non
                negative weights; if validation_frame is present, a lambda search is performed), 'deeplearning' (Deep
                Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
                parameters), 'glm' (GLM with default parameters), 'naivebayes' (NaiveBayes with default parameters), or
-               'xgboost' (if available, XGBoost with default parameters). (default:"auto").
+               'xgboost' (if available, XGBoost with default parameters).
+               Defaults to ``"auto"``.
         :type metalearner_algorithm: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
         :param metalearner_nfolds: Number of folds for K-fold cross-validation of the metalearner algorithm (0 to
-               disable or >= 2). (default:0).
+               disable or >= 2).
+               Defaults to ``0``.
         :type metalearner_nfolds: int
         :param metalearner_fold_assignment: Cross-validation fold assignment scheme for metalearner cross-validation.
                Defaults to AUTO (which is currently set to Random). The 'Stratified' option will stratify the folds
-               based on the response variable, for classification problems. (default:None).
+               based on the response variable, for classification problems.
+               Defaults to ``None``.
         :type metalearner_fold_assignment: Literal["auto", "random", "modulo", "stratified"], optional
         :param metalearner_fold_column: Column with cross-validation fold index assignment per observation for cross-
-               validation of the metalearner. (default:None).
+               validation of the metalearner.
+               Defaults to ``None``.
         :type metalearner_fold_column: str, optional
-        :param metalearner_params: Parameters for metalearner algorithm (default:None).
+        :param metalearner_params: Parameters for metalearner algorithm
+               Defaults to ``None``.
         :type metalearner_params: dict, optional
-        :param metalearner_transform: Transformation used for the level one frame. (default:"none").
+        :param metalearner_transform: Transformation used for the level one frame.
+               Defaults to ``"none"``.
         :type metalearner_transform: Literal["none", "logit"]
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
                not increase the size of the data frame. This is typically the number of times a row is repeated, but
                non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor. (default:None).
+               the larger loss function pre-factor.
+               Defaults to ``None``.
         :type weights_column: str, optional
         :param offset_column: Offset column. This will be added to the combination of columns before applying the link
-               function. (default:None).
+               function.
+               Defaults to ``None``.
         :type offset_column: str, optional
         :param seed: Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based
-               random number) (default:-1).
+               random number)
+               Defaults to ``-1``.
         :type seed: int
         :param score_training_samples: Specify the number of training set samples for scoring. The value must be >= 0.
-               To use all training samples, enter 0. (default:10000).
+               To use all training samples, enter 0.
+               Defaults to ``10000``.
         :type score_training_samples: int
-        :param keep_levelone_frame: Keep level one frame used for metalearner training. (default:False).
+        :param keep_levelone_frame: Keep level one frame used for metalearner training.
+               Defaults to ``False``.
         :type keep_levelone_frame: bool
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
-        :param auc_type: Set default multinomial AUC type. (default:"auto").
+        :param auc_type: Set default multinomial AUC type.
+               Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
         """
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -176,7 +196,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -235,7 +255,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -281,7 +301,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
         mode if provided)
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -327,7 +347,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be
         identical across models.
 
-        Type: ``List[str]``  (default: ``[]``).
+        Type: ``List[str]``, defaults to ``[]``.
 
         :examples:
 
@@ -386,7 +406,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         default parameters), 'naivebayes' (NaiveBayes with default parameters), or 'xgboost' (if available, XGBoost with
         default parameters).
 
-        Type: ``Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -432,7 +452,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -635,7 +655,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Transformation used for the level one frame.
 
-        Type: ``Literal["none", "logit"]``  (default: ``"none"``).
+        Type: ``Literal["none", "logit"]``, defaults to ``"none"``.
         """
         return self._parms.get("metalearner_transform")
 
@@ -649,7 +669,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
         """
         return self._parms.get("max_runtime_secs")
 
@@ -695,7 +715,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -742,7 +762,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
         enter 0.
 
-        Type: ``int``  (default: ``10000``).
+        Type: ``int``, defaults to ``10000``.
         """
         return self._parms.get("score_training_samples")
 
@@ -756,7 +776,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Keep level one frame used for metalearner training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -851,8 +871,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Set default multinomial AUC type.
 
-        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``  (default:
-        ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``, defaults to
+        ``"auto"``.
         """
         return self._parms.get("auc_type")
 

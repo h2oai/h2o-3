@@ -21,8 +21,8 @@ class H2OWord2vecEstimator(H2OEstimator):
     algo = "word2vec"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  min_word_freq=5,  # type: int
                  word_model="skip_gram",  # type: Literal["skip_gram", "cbow"]
                  norm_model="hsm",  # type: Literal["hsm"]
@@ -31,37 +31,51 @@ class H2OWord2vecEstimator(H2OEstimator):
                  sent_sample_rate=0.001,  # type: float
                  init_learning_rate=0.025,  # type: float
                  epochs=5,  # type: int
-                 pre_trained=None,  # type: Optional[H2OFrame]
+                 pre_trained=None,  # type: Optional[Union[str, H2OFrame]]
                  max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param min_word_freq: This will discard words that appear less than <int> times (default:5).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param min_word_freq: This will discard words that appear less than <int> times
+               Defaults to ``5``.
         :type min_word_freq: int
-        :param word_model: The word model to use (SkipGram or CBOW) (default:"skip_gram").
+        :param word_model: The word model to use (SkipGram or CBOW)
+               Defaults to ``"skip_gram"``.
         :type word_model: Literal["skip_gram", "cbow"]
-        :param norm_model: Use Hierarchical Softmax (default:"hsm").
+        :param norm_model: Use Hierarchical Softmax
+               Defaults to ``"hsm"``.
         :type norm_model: Literal["hsm"]
-        :param vec_size: Set size of word vectors (default:100).
+        :param vec_size: Set size of word vectors
+               Defaults to ``100``.
         :type vec_size: int
-        :param window_size: Set max skip length between words (default:5).
+        :param window_size: Set max skip length between words
+               Defaults to ``5``.
         :type window_size: int
         :param sent_sample_rate: Set threshold for occurrence of words. Those that appear with higher frequency in the
-               training data                 will be randomly down-sampled; useful range is (0, 1e-5) (default:0.001).
+               training data
+                               will be randomly down-sampled; useful range is (0, 1e-5)
+               Defaults to ``0.001``.
         :type sent_sample_rate: float
-        :param init_learning_rate: Set the starting learning rate (default:0.025).
+        :param init_learning_rate: Set the starting learning rate
+               Defaults to ``0.025``.
         :type init_learning_rate: float
-        :param epochs: Number of training iterations to run (default:5).
+        :param epochs: Number of training iterations to run
+               Defaults to ``5``.
         :type epochs: int
-        :param pre_trained: Id of a data frame that contains a pre-trained (external) word2vec model (default:None).
-        :type pre_trained: H2OFrame, optional
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param pre_trained: Id of a data frame that contains a pre-trained (external) word2vec model
+               Defaults to ``None``.
+        :type pre_trained: Union[str, H2OFrame], optional
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         """
         super(H2OWord2vecEstimator, self).__init__()
@@ -85,7 +99,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -110,7 +124,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         This will discard words that appear less than <int> times
 
-        Type: ``int``  (default: ``5``).
+        Type: ``int``, defaults to ``5``.
 
         :examples:
 
@@ -136,7 +150,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         The word model to use (SkipGram or CBOW)
 
-        Type: ``Literal["skip_gram", "cbow"]``  (default: ``"skip_gram"``).
+        Type: ``Literal["skip_gram", "cbow"]``, defaults to ``"skip_gram"``.
 
         :examples:
 
@@ -162,7 +176,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Use Hierarchical Softmax
 
-        Type: ``Literal["hsm"]``  (default: ``"hsm"``).
+        Type: ``Literal["hsm"]``, defaults to ``"hsm"``.
 
         :examples:
 
@@ -188,7 +202,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Set size of word vectors
 
-        Type: ``int``  (default: ``100``).
+        Type: ``int``, defaults to ``100``.
 
         :examples:
 
@@ -214,7 +228,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Set max skip length between words
 
-        Type: ``int``  (default: ``5``).
+        Type: ``int``, defaults to ``5``.
 
         :examples:
 
@@ -239,9 +253,9 @@ class H2OWord2vecEstimator(H2OEstimator):
     def sent_sample_rate(self):
         """
         Set threshold for occurrence of words. Those that appear with higher frequency in the training data
-        will be randomly down-sampled; useful range is (0, 1e-5)
+                        will be randomly down-sampled; useful range is (0, 1e-5)
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -267,7 +281,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Set the starting learning rate
 
-        Type: ``float``  (default: ``0.025``).
+        Type: ``float``, defaults to ``0.025``.
 
         :examples:
 
@@ -293,7 +307,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Number of training iterations to run
 
-        Type: ``int``  (default: ``5``).
+        Type: ``int``, defaults to ``5``.
 
         :examples:
 
@@ -324,7 +338,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of a data frame that contains a pre-trained (external) word2vec model
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -353,7 +367,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 

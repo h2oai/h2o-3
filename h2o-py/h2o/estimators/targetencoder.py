@@ -27,8 +27,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     @deprecated_params({'k': 'inflection_point', 'f': 'smoothing', 'noise_level': 'noise'})
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  fold_column=None,  # type: Optional[str]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
@@ -42,45 +42,60 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                  seed=-1,  # type: int
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param fold_column: Column with cross-validation fold index assignment per observation. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
         :type fold_column: str, optional
-        :param response_column: Response variable column. (default:None).
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
         :param columns_to_encode: List of categorical columns or groups of categorical columns to encode. When groups of
                columns are specified, each group is encoded as a single column (interactions are created internally).
-               (default:None).
+               Defaults to ``None``.
         :type columns_to_encode: List[List[str]], optional
         :param keep_original_categorical_columns: If true, the original non-encoded categorical features will remain in
-               the result frame. (default:True).
+               the result frame.
+               Defaults to ``True``.
         :type keep_original_categorical_columns: bool
         :param blending: If true, enables blending of posterior probabilities (computed for a given categorical value)
                with prior probabilities (computed on the entire set). This allows to mitigate the effect of categorical
                values with small cardinality. The blending effect can be tuned using the `inflection_point` and
-               `smoothing` parameters. (default:False).
+               `smoothing` parameters.
+               Defaults to ``False``.
         :type blending: bool
         :param inflection_point: Inflection point of the sigmoid used to blend probabilities (see `blending` parameter).
                For a given categorical value, if it appears less that `inflection_point` in a data sample, then the
-               influence of the posterior probability will be smaller than the prior. (default:10.0).
+               influence of the posterior probability will be smaller than the prior.
+               Defaults to ``10.0``.
         :type inflection_point: float
         :param smoothing: Smoothing factor corresponds to the inverse of the slope at the inflection point on the
                sigmoid used to blend probabilities (see `blending` parameter). If smoothing tends towards 0, then the
-               sigmoid used for blending turns into a Heaviside step function. (default:20.0).
+               sigmoid used for blending turns into a Heaviside step function.
+               Defaults to ``20.0``.
         :type smoothing: float
         :param data_leakage_handling: Data leakage handling strategy used to generate the encoding. Supported options
-               are: 1) "none" (default) - no holdout, using the entire training frame. 2) "leave_one_out" - current
-               row's response value is subtracted from the per-level frequencies pre-calculated on the entire training
-               frame. 3) "k_fold" - encodings for a fold are generated based on out-of-fold data.  (default:"none").
+               are:
+               1) "none" (default) - no holdout, using the entire training frame.
+               2) "leave_one_out" - current row's response value is subtracted from the per-level frequencies pre-
+               calculated on the entire training frame.
+               3) "k_fold" - encodings for a fold are generated based on out-of-fold data.
+
+               Defaults to ``"none"``.
         :type data_leakage_handling: Literal["leave_one_out", "k_fold", "none"]
         :param noise: The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let
-               the algorithm determine a reasonable amount of noise. (default:0.01).
+               the algorithm determine a reasonable amount of noise.
+               Defaults to ``0.01``.
         :type noise: float
-        :param seed: Seed used to generate the noise. By default, the seed is chosen randomly. (default:-1).
+        :param seed: Seed used to generate the noise. By default, the seed is chosen randomly.
+               Defaults to ``-1``.
         :type seed: int
         """
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -104,7 +119,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -208,7 +223,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         If true, the original non-encoded categorical features will remain in the result frame.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
         """
         return self._parms.get("keep_original_categorical_columns")
 
@@ -224,7 +239,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         probabilities (computed on the entire set). This allows to mitigate the effect of categorical values with small
         cardinality. The blending effect can be tuned using the `inflection_point` and `smoothing` parameters.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -256,7 +271,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         value, if it appears less that `inflection_point` in a data sample, then the influence of the posterior
         probability will be smaller than the prior.
 
-        Type: ``float``  (default: ``10.0``).
+        Type: ``float``, defaults to ``10.0``.
 
         :examples:
 
@@ -288,7 +303,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         probabilities (see `blending` parameter). If smoothing tends towards 0, then the sigmoid used for blending turns
         into a Heaviside step function.
 
-        Type: ``float``  (default: ``20.0``).
+        Type: ``float``, defaults to ``20.0``.
 
         :examples:
 
@@ -316,12 +331,13 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def data_leakage_handling(self):
         """
-        Data leakage handling strategy used to generate the encoding. Supported options are: 1) "none" (default) - no
-        holdout, using the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from
-        the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
-        generated based on out-of-fold data.
+        Data leakage handling strategy used to generate the encoding. Supported options are:
+        1) "none" (default) - no holdout, using the entire training frame.
+        2) "leave_one_out" - current row's response value is subtracted from the per-level frequencies pre-calculated on
+        the entire training frame.
+        3) "k_fold" - encodings for a fold are generated based on out-of-fold data.
 
-        Type: ``Literal["leave_one_out", "k_fold", "none"]``  (default: ``"none"``).
+        Type: ``Literal["leave_one_out", "k_fold", "none"]``, defaults to ``"none"``.
 
         :examples:
 
@@ -353,7 +369,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let the algorithm
         determine a reasonable amount of noise.
 
-        Type: ``float``  (default: ``0.01``).
+        Type: ``float``, defaults to ``0.01``.
         """
         return self._parms.get("noise")
 
@@ -367,7 +383,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         Seed used to generate the noise. By default, the seed is chosen randomly.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
         """
         return self._parms.get("seed")
 

@@ -21,9 +21,9 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     algo = "pca"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
@@ -40,49 +40,64 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
                  export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
         :type score_each_iteration: bool
-        :param transform: Transformation of training data (default:"none").
+        :param transform: Transformation of training data
+               Defaults to ``"none"``.
         :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
         :param pca_method: Specify the algorithm to use for computing the principal components: GramSVD - uses a
                distributed computation of the Gram matrix, followed by a local SVD; Power - computes the SVD using the
                power iteration method (experimental); Randomized - uses randomized subspace iteration method; GLRM -
                fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD
-               using local matrix algebra (experimental) (default:"gram_s_v_d").
+               using local matrix algebra (experimental)
+               Defaults to ``"gram_s_v_d"``.
         :type pca_method: Literal["gram_s_v_d", "power", "randomized", "glrm"]
         :param pca_impl: Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX -
                eigenvalue decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for
                symmetric matrix using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using
                MTJ; JAMA - eigenvalue decompositions for dense matrix using JAMA. References: JAMA -
                http://math.nist.gov/javanumerics/jama/; MTJ - https://github.com/fommil/matrix-toolkits-java/
-               (default:None).
+               Defaults to ``None``.
         :type pca_impl: Literal["mtj_evd_densematrix", "mtj_evd_symmmatrix", "mtj_svd_densematrix", "jama"], optional
-        :param k: Rank of matrix approximation (default:1).
+        :param k: Rank of matrix approximation
+               Defaults to ``1``.
         :type k: int
-        :param max_iterations: Maximum training iterations (default:1000).
+        :param max_iterations: Maximum training iterations
+               Defaults to ``1000``.
         :type max_iterations: int
         :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
-               (default:False).
+               Defaults to ``False``.
         :type use_all_factor_levels: bool
-        :param compute_metrics: Whether to compute metrics on the training data (default:True).
+        :param compute_metrics: Whether to compute metrics on the training data
+               Defaults to ``True``.
         :type compute_metrics: bool
-        :param impute_missing: Whether to impute missing entries with the column mean (default:False).
+        :param impute_missing: Whether to impute missing entries with the column mean
+               Defaults to ``False``.
         :type impute_missing: bool
-        :param seed: RNG seed for initialization (default:-1).
+        :param seed: RNG seed for initialization
+               Defaults to ``-1``.
         :type seed: int
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         """
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
@@ -110,7 +125,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -130,7 +145,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -167,7 +182,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -192,7 +207,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -216,7 +231,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``, defaults to ``"none"``.
 
         :examples:
 
@@ -244,7 +259,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         (experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank model
         with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
-        Type: ``Literal["gram_s_v_d", "power", "randomized", "glrm"]``  (default: ``"gram_s_v_d"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized", "glrm"]``, defaults to ``"gram_s_v_d"``.
 
         :examples:
 
@@ -297,7 +312,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Rank of matrix approximation
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -322,7 +337,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Maximum training iterations
 
-        Type: ``int``  (default: ``1000``).
+        Type: ``int``, defaults to ``1000``.
 
         :examples:
 
@@ -347,7 +362,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether first factor level is included in each categorical expansion
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -370,7 +385,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether to compute metrics on the training data
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -395,7 +410,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Whether to impute missing entries with the column mean
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -420,7 +435,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         RNG seed for initialization
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -443,7 +458,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 

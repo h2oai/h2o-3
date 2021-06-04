@@ -21,9 +21,9 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     algo = "psvm"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
@@ -43,49 +43,66 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
                  seed=-1,  # type: int
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
-        :param response_column: Response variable column. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param hyper_param: Penalty parameter C of the error term (default:1.0).
+        :param hyper_param: Penalty parameter C of the error term
+               Defaults to ``1.0``.
         :type hyper_param: float
-        :param kernel_type: Type of used kernel (default:"gaussian").
+        :param kernel_type: Type of used kernel
+               Defaults to ``"gaussian"``.
         :type kernel_type: Literal["gaussian"]
         :param gamma: Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
-               (default:-1.0).
+               Defaults to ``-1.0``.
         :type gamma: float
         :param rank_ratio: Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use
-               sqrt(#rows)). (default:-1.0).
+               sqrt(#rows)).
+               Defaults to ``-1.0``.
         :type rank_ratio: float
-        :param positive_weight: Weight of positive (+1) class of observations (default:1.0).
+        :param positive_weight: Weight of positive (+1) class of observations
+               Defaults to ``1.0``.
         :type positive_weight: float
-        :param negative_weight: Weight of positive (-1) class of observations (default:1.0).
+        :param negative_weight: Weight of positive (-1) class of observations
+               Defaults to ``1.0``.
         :type negative_weight: float
         :param disable_training_metrics: Disable calculating training metrics (expensive on large datasets)
-               (default:True).
+               Defaults to ``True``.
         :type disable_training_metrics: bool
         :param sv_threshold: Threshold for accepting a candidate observation into the set of support vectors
-               (default:0.0001).
+               Defaults to ``0.0001``.
         :type sv_threshold: float
-        :param fact_threshold: Convergence threshold of the Incomplete Cholesky Factorization (ICF) (default:1e-05).
+        :param fact_threshold: Convergence threshold of the Incomplete Cholesky Factorization (ICF)
+               Defaults to ``1e-05``.
         :type fact_threshold: float
-        :param feasible_threshold: Convergence threshold for primal-dual residuals in the IPM iteration (default:0.001).
+        :param feasible_threshold: Convergence threshold for primal-dual residuals in the IPM iteration
+               Defaults to ``0.001``.
         :type feasible_threshold: float
-        :param surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta) (default:0.001).
+        :param surrogate_gap_threshold: Feasibility criterion of the surrogate duality gap (eta)
+               Defaults to ``0.001``.
         :type surrogate_gap_threshold: float
-        :param mu_factor: Increasing factor mu (default:10.0).
+        :param mu_factor: Increasing factor mu
+               Defaults to ``10.0``.
         :type mu_factor: float
-        :param max_iterations: Maximum number of iteration of the algorithm (default:200).
+        :param max_iterations: Maximum number of iteration of the algorithm
+               Defaults to ``200``.
         :type max_iterations: int
-        :param seed: Seed for pseudo random number generator (if applicable) (default:-1).
+        :param seed: Seed for pseudo random number generator (if applicable)
+               Defaults to ``-1``.
         :type seed: int
         """
         super(H2OSupportVectorMachineEstimator, self).__init__()
@@ -116,7 +133,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -137,7 +154,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -186,7 +203,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -210,7 +227,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Penalty parameter C of the error term
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -234,7 +251,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Type of used kernel
 
-        Type: ``Literal["gaussian"]``  (default: ``"gaussian"``).
+        Type: ``Literal["gaussian"]``, defaults to ``"gaussian"``.
 
         :examples:
 
@@ -259,7 +276,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
 
-        Type: ``float``  (default: ``-1.0``).
+        Type: ``float``, defaults to ``-1.0``.
 
         :examples:
 
@@ -282,7 +299,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use sqrt(#rows)).
 
-        Type: ``float``  (default: ``-1.0``).
+        Type: ``float``, defaults to ``-1.0``.
 
         :examples:
 
@@ -305,7 +322,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Weight of positive (+1) class of observations
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -329,7 +346,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Weight of positive (-1) class of observations
 
-        Type: ``float``  (default: ``1.0``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -353,7 +370,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Disable calculating training metrics (expensive on large datasets)
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -377,7 +394,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Threshold for accepting a candidate observation into the set of support vectors
 
-        Type: ``float``  (default: ``0.0001``).
+        Type: ``float``, defaults to ``0.0001``.
 
         :examples:
 
@@ -401,7 +418,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Convergence threshold of the Incomplete Cholesky Factorization (ICF)
 
-        Type: ``float``  (default: ``1e-05``).
+        Type: ``float``, defaults to ``1e-05``.
 
         :examples:
 
@@ -423,7 +440,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Convergence threshold for primal-dual residuals in the IPM iteration
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -445,7 +462,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Feasibility criterion of the surrogate duality gap (eta)
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -469,7 +486,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Increasing factor mu
 
-        Type: ``float``  (default: ``10.0``).
+        Type: ``float``, defaults to ``10.0``.
 
         :examples:
 
@@ -492,7 +509,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Maximum number of iteration of the algorithm
 
-        Type: ``int``  (default: ``200``).
+        Type: ``int``, defaults to ``200``.
 
         :examples:
 
@@ -517,7 +534,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         """
         Seed for pseudo random number generator (if applicable)
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 

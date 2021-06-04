@@ -23,9 +23,9 @@ class H2ORuleFitEstimator(H2OEstimator):
     algo = "rulefit"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  seed=-1,  # type: int
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
@@ -39,41 +39,55 @@ class H2ORuleFitEstimator(H2OEstimator):
                  rule_generation_ntrees=50,  # type: int
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
-        :param seed: Seed for pseudo random number generator (if applicable). (default:-1).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
+        :param seed: Seed for pseudo random number generator (if applicable).
+               Defaults to ``-1``.
         :type seed: int
-        :param response_column: Response variable column. (default:None).
+        :param response_column: Response variable column.
+               Defaults to ``None``.
         :type response_column: str, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param algorithm: The algorithm to use to generate rules. (default:"auto").
+        :param algorithm: The algorithm to use to generate rules.
+               Defaults to ``"auto"``.
         :type algorithm: Literal["auto", "drf", "gbm"]
-        :param min_rule_length: Minimum length of rules. Defaults to 3. (default:3).
+        :param min_rule_length: Minimum length of rules. Defaults to 3.
+               Defaults to ``3``.
         :type min_rule_length: int
-        :param max_rule_length: Maximum length of rules. Defaults to 3. (default:3).
+        :param max_rule_length: Maximum length of rules. Defaults to 3.
+               Defaults to ``3``.
         :type max_rule_length: int
         :param max_num_rules: The maximum number of rules to return. defaults to -1 which means the number of rules is
-               selected  by diminishing returns in model deviance. (default:-1).
+               selected
+               by diminishing returns in model deviance.
+               Defaults to ``-1``.
         :type max_num_rules: int
-        :param model_type: Specifies type of base learners in the ensemble. (default:"rules_and_linear").
+        :param model_type: Specifies type of base learners in the ensemble.
+               Defaults to ``"rules_and_linear"``.
         :type model_type: Literal["rules_and_linear", "rules", "linear"]
         :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
                to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
                not increase the size of the data frame. This is typically the number of times a row is repeated, but
                non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor. (default:None).
+               the larger loss function pre-factor.
+               Defaults to ``None``.
         :type weights_column: str, optional
-        :param distribution: Distribution function (default:"auto").
+        :param distribution: Distribution function
+               Defaults to ``"auto"``.
         :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"]
         :param rule_generation_ntrees: specifies the number of trees to build in the tree model. Defaults to 50.
-               (default:50).
+               Defaults to ``50``.
         :type rule_generation_ntrees: int
         """
         super(H2ORuleFitEstimator, self).__init__()
@@ -98,7 +112,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
         """
         return self._parms.get("training_frame")
 
@@ -111,7 +125,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
         """
         return self._parms.get("validation_frame")
 
@@ -124,7 +138,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Seed for pseudo random number generator (if applicable).
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
         """
         return self._parms.get("seed")
 
@@ -166,7 +180,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         The algorithm to use to generate rules.
 
-        Type: ``Literal["auto", "drf", "gbm"]``  (default: ``"auto"``).
+        Type: ``Literal["auto", "drf", "gbm"]``, defaults to ``"auto"``.
         """
         return self._parms.get("algorithm")
 
@@ -180,7 +194,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Minimum length of rules. Defaults to 3.
 
-        Type: ``int``  (default: ``3``).
+        Type: ``int``, defaults to ``3``.
         """
         return self._parms.get("min_rule_length")
 
@@ -194,7 +208,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Maximum length of rules. Defaults to 3.
 
-        Type: ``int``  (default: ``3``).
+        Type: ``int``, defaults to ``3``.
         """
         return self._parms.get("max_rule_length")
 
@@ -206,10 +220,10 @@ class H2ORuleFitEstimator(H2OEstimator):
     @property
     def max_num_rules(self):
         """
-        The maximum number of rules to return. defaults to -1 which means the number of rules is selected  by
-        diminishing returns in model deviance.
+        The maximum number of rules to return. defaults to -1 which means the number of rules is selected
+        by diminishing returns in model deviance.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
         """
         return self._parms.get("max_num_rules")
 
@@ -223,7 +237,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         Specifies type of base learners in the ensemble.
 
-        Type: ``Literal["rules_and_linear", "rules", "linear"]``  (default: ``"rules_and_linear"``).
+        Type: ``Literal["rules_and_linear", "rules", "linear"]``, defaults to ``"rules_and_linear"``.
         """
         return self._parms.get("model_type")
 
@@ -256,7 +270,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         Distribution function
 
         Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
-        "quantile", "huber"]``  (default: ``"auto"``).
+        "quantile", "huber"]``, defaults to ``"auto"``.
         """
         return self._parms.get("distribution")
 
@@ -270,7 +284,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         """
         specifies the number of trees to build in the tree model. Defaults to 50.
 
-        Type: ``int``  (default: ``50``).
+        Type: ``int``, defaults to ``50``.
         """
         return self._parms.get("rule_generation_ntrees")
 

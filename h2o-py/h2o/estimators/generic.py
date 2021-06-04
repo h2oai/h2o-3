@@ -21,16 +21,19 @@ class H2OGenericEstimator(H2OEstimator):
     algo = "generic"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 model_key=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 model_key=None,  # type: Optional[Union[str, H2OFrame]]
                  path=None,  # type: Optional[str]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param model_key: Key to the self-contained model archive already uploaded to H2O. (default:None).
-        :type model_key: H2OFrame, optional
-        :param path: Path to file with self-contained model archive. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param model_key: Key to the self-contained model archive already uploaded to H2O.
+               Defaults to ``None``.
+        :type model_key: Union[str, H2OFrame], optional
+        :param path: Path to file with self-contained model archive.
+               Defaults to ``None``.
         :type path: str, optional
         """
         super(H2OGenericEstimator, self).__init__()
@@ -44,7 +47,7 @@ class H2OGenericEstimator(H2OEstimator):
         """
         Key to the self-contained model archive already uploaded to H2O.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 

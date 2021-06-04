@@ -21,9 +21,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     algo = "svd"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[H2OEstimator]
-                 training_frame=None,  # type: Optional[H2OFrame]
-                 validation_frame=None,  # type: Optional[H2OFrame]
+                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
@@ -39,39 +39,53 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                  export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
-        :param model_id: Destination id for this model; auto-generated if not specified. (default:None).
-        :type model_id: H2OEstimator, optional
-        :param training_frame: Id of the training data frame. (default:None).
-        :type training_frame: H2OFrame, optional
-        :param validation_frame: Id of the validation data frame. (default:None).
-        :type validation_frame: H2OFrame, optional
-        :param ignored_columns: Names of columns to ignore for training. (default:None).
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[str, H2OFrame], optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
         :type ignored_columns: List[str], optional
-        :param ignore_const_cols: Ignore constant columns. (default:True).
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param score_each_iteration: Whether to score during each iteration of model training. (default:False).
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
         :type score_each_iteration: bool
-        :param transform: Transformation of training data (default:"none").
+        :param transform: Transformation of training data
+               Defaults to ``"none"``.
         :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
         :param svd_method: Method for computing SVD (Caution: Randomized is currently experimental and unstable)
-               (default:"gram_s_v_d").
+               Defaults to ``"gram_s_v_d"``.
         :type svd_method: Literal["gram_s_v_d", "power", "randomized"]
-        :param nv: Number of right singular vectors (default:1).
+        :param nv: Number of right singular vectors
+               Defaults to ``1``.
         :type nv: int
-        :param max_iterations: Maximum iterations (default:1000).
+        :param max_iterations: Maximum iterations
+               Defaults to ``1000``.
         :type max_iterations: int
-        :param seed: RNG seed for k-means++ initialization (default:-1).
+        :param seed: RNG seed for k-means++ initialization
+               Defaults to ``-1``.
         :type seed: int
-        :param keep_u: Save left singular vectors? (default:True).
+        :param keep_u: Save left singular vectors?
+               Defaults to ``True``.
         :type keep_u: bool
-        :param u_name: Frame key to save left singular vectors (default:None).
+        :param u_name: Frame key to save left singular vectors
+               Defaults to ``None``.
         :type u_name: str, optional
         :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
-               (default:True).
+               Defaults to ``True``.
         :type use_all_factor_levels: bool
-        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable. (default:0.0).
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
         :type max_runtime_secs: float
-        :param export_checkpoints_dir: Automatically export generated models to this directory. (default:None).
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
         """
         super(H2OSingularValueDecompositionEstimator, self).__init__()
@@ -99,7 +113,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -119,7 +133,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[str, H2OFrame]``.
 
         :examples:
 
@@ -156,7 +170,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -178,7 +192,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -200,7 +214,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Transformation of training data
 
-        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``, defaults to ``"none"``.
 
         :examples:
 
@@ -223,7 +237,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Method for computing SVD (Caution: Randomized is currently experimental and unstable)
 
-        Type: ``Literal["gram_s_v_d", "power", "randomized"]``  (default: ``"gram_s_v_d"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized"]``, defaults to ``"gram_s_v_d"``.
 
         :examples:
 
@@ -244,7 +258,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Number of right singular vectors
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -267,7 +281,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Maximum iterations
 
-        Type: ``int``  (default: ``1000``).
+        Type: ``int``, defaults to ``1000``.
 
         :examples:
 
@@ -290,7 +304,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         RNG seed for k-means++ initialization
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -311,7 +325,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Save left singular vectors?
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -354,7 +368,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Whether first factor level is included in each categorical expansion
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -375,7 +389,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0.0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 

@@ -403,7 +403,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         weights = kwargs["weights_column"]
         ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights]))
         kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
-        kwargs = {k: H2OEstimator._keyify_if_h2oframe(kwargs[k]) for k in kwargs}
+        kwargs = {k: H2OEstimator._keyify(kwargs[k]) for k in kwargs}
         if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
         rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else None
         self._run_grid_job(kwargs, rest_ver=rest_ver)
