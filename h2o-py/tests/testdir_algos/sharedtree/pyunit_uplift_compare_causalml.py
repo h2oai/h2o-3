@@ -38,7 +38,7 @@ def uplift_compare():
     train = split[0]
     test = split[1]
     
-    ntree = 100
+    ntree = 10
     max_depth = 10
     
     auuc_types = ["qini", "lift", "gain"]
@@ -58,7 +58,11 @@ def uplift_compare():
         )
         drf.train(y=response_column, x=feature_cols, training_frame=train)
         h2o_drfs[i] = drf
-    
+        perf = h2o_drfs[i].model_performance(train)
+        perf.plot_auuc(metric=auuc_types[i], save_to_file="/home/mori/Documents/h2o/code/test/uplift/auuc_plot_"+auuc_types[i]+".png")
+        print(perf._metric_json['gains_lift_table'])
+        perf.plot_gainslift(save_to_file="/home/mori/Documents/h2o/code/test/uplift/gains_lift_plot.png")
+        
     df = train.as_data_frame()
     df[uplift_column] = df[uplift_column].astype(str)
     uplift_model = UpliftRandomForestClassifier(
@@ -105,6 +109,7 @@ def uplift_compare():
         results = results[["h2o", "causal", response_column, uplift_column]]
         plot_qini(results, outcome_col=response_column, treatment_col=uplift_column)
         plot_lift(results, outcome_col=response_column, treatment_col=uplift_column)
+        
 
     auuc_qiny = h2o_drfs[0].training_model_metrics()["AUUC"]
     auuc_lift = h2o_drfs[1].training_model_metrics()["AUUC"]
@@ -124,16 +129,9 @@ def uplift_compare():
     
     # auuc gain and h2o auuc shoudl be almost the same
     # assert auuc_gain == auuc["h2o"]
-
-    #mojo_path = h2o_drfs[0].download_mojo()
-    #mojo_dot = h2o.print_mojo(mojo_path, format='dot')
-
-    #from h2o.tree import H2OTree, H2ONode
-    #tree = H2OTree(h2o_drfs[0], 0, 0)
-    #print(tree.tree_decision_path)
     
-    
-    
+    perf = h2o_drfs[0].model_performance(testing_df)
+    uplift, n = perf.plot_auuc(metric="gain", plot=False)
     
 if __name__ == "__main__":
     #pyunit_utils.standalone_test(uplift_simple)

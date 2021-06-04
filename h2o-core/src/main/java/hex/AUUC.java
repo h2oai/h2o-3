@@ -28,6 +28,7 @@ public class AUUC extends Iced{
     public final long[] _yTreatment; // Treatment y==1
     public final long[] _yControl; // Control y==1
     public final long[] _frequency; // number of data in each bin
+    public final long[] _frequencyCumsum;
     public double[] _uplift;
     public final long _n;
 
@@ -73,15 +74,16 @@ public class AUUC extends Iced{
         _yTreatment = Arrays.copyOf(bldr._yTreatment,_nBins);
         _yControl = Arrays.copyOf(bldr._yControl,_nBins);
         _frequency = Arrays.copyOf(bldr._frequency, _nBins);
+        _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
         _uplift = new double[_nBins];
 
         // Rollup counts, so that computing the rates are easier.
-        long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0;
+        long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0, tmpf= 0;
         for( int i=0; i<_nBins; i++ ) {
             tmpt += _treatment[i]; _treatment[i] = tmpt;
             tmpc += _control[i]; _control[i] = tmpc;
             tmptp += _yTreatment[i]; _yTreatment[i] = tmptp;
-            tmpcp += _yControl[i]; _yControl[i] = tmpcp;
+            tmpf += _frequencyCumsum[i]; _frequencyCumsum[i] = tmpf;
         }
         for( int i=0; i<_nBins; i++ ) {
             _uplift[i] = _auucType.exec(this, i);
@@ -109,6 +111,8 @@ public class AUUC extends Iced{
         _yTreatment = new long[]{auuc._yTreatment[idx]};
         _yControl = new long[]{auuc._yControl[idx]};
         _frequency = new long[]{auuc._frequency[idx]};
+        _frequencyCumsum = new long[]{auuc._frequencyCumsum[idx]};
+        _uplift = new double[]{auuc._uplift[idx]};
         _auuc = auuc._auuc;
         _maxIdx = auuc._maxIdx >= 0 ? 0 : -1;
         _auucType = auuc._auucType;
@@ -118,7 +122,7 @@ public class AUUC extends Iced{
         _nBins = 0;
         _n = 0;
         _ths = new double[0];
-        _treatment = _control = _yTreatment = _yControl = _frequency = new long[0];
+        _treatment = _control = _yTreatment = _yControl = _frequency = _frequencyCumsum = new long[0];
         _auuc = Double.NaN;
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
