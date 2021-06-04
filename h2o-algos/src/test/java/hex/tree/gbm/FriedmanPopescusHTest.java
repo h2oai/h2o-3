@@ -751,9 +751,9 @@ public class FriedmanPopescusHTest {
         node17.setPredValue(0.733049424490485f);
         // 18
         SharedTreeNode node18 = sharedTreeSubgraph.makeRightChildNode(node16);
-        node16.setWeight((float)20/150);
-        node16.setGain(1);
-        node16.setPredValue(0.733049424490485f);
+        node18.setWeight((float)20/150);
+        node18.setGain(1);
+        node18.setPredValue(0.733049424490485f);
 
         return sharedTreeSubgraph;
     }
@@ -1203,29 +1203,29 @@ public class FriedmanPopescusHTest {
         Frame res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result012.csv");
 
         SharedTreeGraph tree = createSharedTreeGraphForTest();
-        
-        double result[] = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1,2}, 0.1, frame);
-        assertEquals(result.length, res.numRows());
+
+        Vec result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1,2}, 0.1, frame);
+        assertEquals(result.length(), res.numRows());
         for (int i = 0; i < res.numRows(); i++) {
-            assertEquals(res.vec(0).at(i), result[i], 1e-4);
+            assertEquals(res.vec(0).at(i), result.at(i), 1e-8);
         }
         
         res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result02.csv");
         Frame frame1 = new Frame();
         frame1.add(new String[] {"feature0", "feature2"}, new Vec[] {frame.vec(0), frame.vec(2)});
         result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,2}, 0.1, frame1);
-        assertEquals(result.length, res.numRows());
+        assertEquals(result.length(), res.numRows());
         for (int i = 0; i < res.numRows(); i++) {
-            assertEquals(res.vec(0).at(i), result[i], 1e-4);
+            assertEquals(res.vec(0).at(i), result.at(i), 1e-8);
         }
 
         res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/uncentd_f_vals_01.csv");
         Frame frame2 = new Frame();
         frame2.add(new String[] {"feature0", "feature1"}, new Vec[] {frame.vec(0), frame.vec(1)});
         result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1}, 0.1, frame2);
-        assertEquals(result.length, res.numRows());
+        assertEquals(result.length(), res.numRows());
         for (int i = 0; i < res.numRows(); i++) {
-            assertEquals(res.vec(0).at(i), result[i], 1e-4);
+            assertEquals(res.vec(0).at(i), result.at(i), 1e-8);
         }
     }
     
@@ -1323,7 +1323,7 @@ public class FriedmanPopescusHTest {
         checkFValues(mockModel2, new Integer[] {1}, frame, new String[]{"feature1"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_1.csv", 3);
 
         double h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1","feature2"}, mockModel2);
-        assertEquals(h, 0.08603547, 1e-7);
+        assertEquals(h, 0.08603547, 1e-8);
         
         DKV.remove(frame._key);
     }
@@ -1388,7 +1388,7 @@ public class FriedmanPopescusHTest {
         checkFValues(mockModel, new Integer[]  {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0123_multinomial.csv", 6);
         
         double h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len","petal_wid"}, mockModel);
-        assertEquals(1.7358501914626407e-16, h , 1e-4);
+        assertEquals(1.7358501914626407e-16, h , 1e-15);
         DKV.remove(frame._key);
     }
     

@@ -222,14 +222,17 @@ public class FriedmanPopescusH {
     
     
     static Frame partialDependence(GBMModel model, Integer[] modelIds, Frame uniqueWithCounts) {
-        double[] pdp = new double[(int)uniqueWithCounts.numRows()];
         Frame result = new Frame();
         for (int treeClass = 0; treeClass < model._output.nclasses(); treeClass++) {
+            Vec pdp = Vec.makeZero(uniqueWithCounts.numRows());
             for (int i = 0; i < (model._parms)._ntrees; i++) {
                 SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
-                pdp = add(pdp, partialDependenceTree(sharedTreeSubgraph, modelIds, model._parms._learn_rate, uniqueWithCounts));
+                Vec currTreePdp = partialDependenceTree(sharedTreeSubgraph, modelIds, model._parms._learn_rate, uniqueWithCounts);
+                for (long j = 0; j < uniqueWithCounts.numRows(); j++) {
+                    pdp.set(j, pdp.at(j) + currTreePdp.at(j));
+                }
             }
-            result.add("pdp_C" + treeClass  , Vec.makeVec(pdp, Vec.newKey()));
+            result.add("pdp_C" + treeClass  , pdp);
         }
         return result;
     }
@@ -287,7 +290,7 @@ public class FriedmanPopescusH {
 
     
     
-    public static double[] partialDependenceTree(SharedTreeSubgraph tree, Integer[] targetFeature, double learnRate, Frame grid) {
+    public static Vec partialDependenceTree(SharedTreeSubgraph tree, Integer[] targetFeature, double learnRate, Frame grid) {
         //    For each row in ``X`` a tree traversal is performed.
         //    Each traversal starts from the root with weight 1.0.
         //
@@ -307,9 +310,7 @@ public class FriedmanPopescusH {
         // learn rate = constant scaling factor for the leaf predictions
         // grid = the grid points on which the partial dependence should be evaluated
 
-      //  System.out.println(tree.name);
-        // TODO: for now like this
-        double[] out = new double[(int)grid.numRows()];
+        Vec outVec = Vec.makeZero(grid.numRows());
         
         int stackSize;
         SharedTreeNode[] nodeStackAr = new SharedTreeNode[tree.nodesArray.size() * 2];
@@ -319,7 +320,7 @@ public class FriedmanPopescusH {
         SharedTreeNode currNode;
         double currWeight;
         
-        for (int i = 0; i < grid.numRows(); i++) {
+        for (long i = 0; i < grid.numRows(); i++) {
             stackSize = 1;
             nodeStackAr[0] = tree.rootNode;
             weightStackAr[0] = 1.0;
@@ -331,7 +332,7 @@ public class FriedmanPopescusH {
                 currNode = nodeStackAr[stackSize];
                 
                 if (currNode.isLeaf()) {
-                    out[i] += weightStackAr[stackSize] * currNode.getPredValue() * learnRate;
+                    outVec.set(i, outVec.at(i) +  weightStackAr[stackSize] * currNode.getPredValue() * learnRate);
                     totalWeight += weightStackAr[stackSize];
                 } else {
                     // non-terminal node:
@@ -351,12 +352,12 @@ public class FriedmanPopescusH {
                         // split feature complement set
                         // push both children onto stack
                         currWeight = weightStackAr[stackSize];
-                        //push left
+                        // push left
                         nodeStackAr[stackSize] = currNode.getLeftChild();
                         left_sample_frac = currNode.getLeftChild().getWeight() / currNode.getWeight();
                         weightStackAr[stackSize] = currWeight * left_sample_frac;
                         stackSize++;
-                        //push right
+                        // push right
                         nodeStackAr[stackSize] = currNode.getRightChild();
                         weightStackAr[stackSize] = currWeight * (1.0 - left_sample_frac);
                         stackSize++;
@@ -367,7 +368,7 @@ public class FriedmanPopescusH {
                 throw new RuntimeException("Total weight should be 1.0 but was " + totalWeight);
             }
         }
-        return out;
+        return outVec;
     }
 
 }
