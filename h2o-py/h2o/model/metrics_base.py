@@ -103,6 +103,7 @@ class MetricsBase(h2o_meta()):
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
         types_w_cox = ['ModelMetricsRegressionCoxPH']
+        types_w_uplift = ['ModelMetricsBinomialUplift']
 
         print()
         print(metric_type + ": " + self._algo)
@@ -116,7 +117,7 @@ class MetricsBase(h2o_meta()):
         else:
             print(reported_on.format("test"))
         print()
-        if metric_type not in types_w_anomaly:
+        if metric_type not in types_w_anomaly and metric_type not in types_w_uplift:
             print("MSE: " + str(self.mse()))
             print("RMSE: " + str(self.rmse()))
         if metric_type in types_w_mean_absolute_error:
@@ -198,6 +199,9 @@ class MetricsBase(h2o_meta()):
             print("Concordance score: " + str(self.concordance()))
             print("Concordant count: " + str(self.concordance()))
             print("Tied cout: " + str(self.concordance()))
+        
+        if metric_type in types_w_uplift:
+            print("AUUC: " + str(self.auuc()))
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
@@ -1462,7 +1466,6 @@ class H2OBinomialModelMetrics(MetricsBase):
         else:
             return recalls, precisions
 
-
     @property
     def fprs(self):
         """
@@ -1759,6 +1762,15 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         TODO
         """
         return self._metric_json['AUUC']
+    
+    def uplift(self, metric):
+        return self._metric_json["thresholds_and_metric_scores"][metric]
+    
+    def thresholds(self):
+        return self._metric_json["thresholds_and_metric_scores"]["thresholds"]
+
+    def n(self):
+        return self._metric_json["thresholds_and_metric_scores"]["n"]
 
     def find_idx_by_threshold(self, threshold):
         """
@@ -1797,8 +1809,30 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         if 'gains_uplift_table' in self._metric_json:
             return self._metric_json['gains_uplift_table']
         return None
-    
-    
+
+    def plot_auuc(self, server=False, save_to_file=None, plot=True, metric='auto'):
+        if plot:
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return
+            plt.ylabel('Uplift')
+            plt.xlabel('Number of data')
+            plt.title('Area under Uplift curve - '+metric)
+            uplift = self.uplift(metric)
+            n = self.n()
+            plt.plot(n, uplift, 'b--')
+            plt.axis([min(n), max(n), min(uplift), max(uplift)])
+            plt.text(max(n), max(uplift),  r'AUUC={0:.4f}'.format(self._metric_json["AUUC"]))
+            plt.grid(True)
+            plt.tight_layout()
+            if not server:
+                plt.show()
+            if save_to_file is not None:  # only save when a figure is actually plotted
+                plt.savefig(save_to_file)
+        else:
+            return self.n(), self.uplift(metric)
+
+
 class H2OAutoEncoderModelMetrics(MetricsBase):
     """
     :examples:
