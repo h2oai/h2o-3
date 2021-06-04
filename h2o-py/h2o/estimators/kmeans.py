@@ -22,9 +22,9 @@ class H2OKMeansEstimator(H2OEstimator):
     algo = "kmeans"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -36,7 +36,7 @@ class H2OKMeansEstimator(H2OEstimator):
                  score_each_iteration=False,  # type: bool
                  k=1,  # type: int
                  estimate_k=False,  # type: bool
-                 user_points=None,  # type: Optional[Union[str, H2OFrame]]
+                 user_points=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_iterations=10,  # type: int
                  standardize=True,  # type: bool
                  seed=-1,  # type: int
@@ -49,13 +49,13 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
@@ -95,7 +95,7 @@ class H2OKMeansEstimator(H2OEstimator):
                center. The user-specified points must have the same number of columns as the training observations. The
                number of rows must equal the number of clusters
                Defaults to ``None``.
-        :type user_points: Union[str, H2OFrame], optional
+        :type user_points: Union[None, str, H2OFrame], optional
         :param max_iterations: Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds
                iteration)
                Defaults to ``10``.
@@ -155,7 +155,7 @@ class H2OKMeansEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -173,14 +173,15 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -198,7 +199,8 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def nfolds(self):
@@ -494,7 +496,7 @@ class H2OKMeansEstimator(H2OEstimator):
         specified points must have the same number of columns as the training observations. The number of rows must
         equal the number of clusters
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -518,7 +520,8 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @user_points.setter
     def user_points(self, user_points):
-        self._parms["user_points"] = H2OFrame._validate(user_points, 'user_points')
+        assert_is_type(user_points, None, str, H2OFrame)
+        self._parms["user_points"] = user_points
 
     @property
     def max_iterations(self):

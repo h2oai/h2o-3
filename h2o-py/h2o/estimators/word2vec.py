@@ -21,8 +21,8 @@ class H2OWord2vecEstimator(H2OEstimator):
     algo = "word2vec"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  min_word_freq=5,  # type: int
                  word_model="skip_gram",  # type: Literal["skip_gram", "cbow"]
                  norm_model="hsm",  # type: Literal["hsm"]
@@ -31,17 +31,17 @@ class H2OWord2vecEstimator(H2OEstimator):
                  sent_sample_rate=0.001,  # type: float
                  init_learning_rate=0.025,  # type: float
                  epochs=5,  # type: int
-                 pre_trained=None,  # type: Optional[Union[str, H2OFrame]]
+                 pre_trained=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_runtime_secs=0.0,  # type: float
                  export_checkpoints_dir=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param min_word_freq: This will discard words that appear less than <int> times
                Defaults to ``5``.
         :type min_word_freq: int
@@ -70,7 +70,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         :type epochs: int
         :param pre_trained: Id of a data frame that contains a pre-trained (external) word2vec model
                Defaults to ``None``.
-        :type pre_trained: Union[str, H2OFrame], optional
+        :type pre_trained: Union[None, str, H2OFrame], optional
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
                Defaults to ``0.0``.
         :type max_runtime_secs: float
@@ -99,7 +99,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -117,7 +117,8 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def min_word_freq(self):
@@ -338,7 +339,7 @@ class H2OWord2vecEstimator(H2OEstimator):
         """
         Id of a data frame that contains a pre-trained (external) word2vec model
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 

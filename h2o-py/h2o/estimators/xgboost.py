@@ -23,9 +23,9 @@ class H2OXGBoostEstimator(H2OEstimator):
     algo = "xgboost"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -47,7 +47,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  tweedie_power=1.5,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  quiet_mode=True,  # type: bool
-                 checkpoint=None,  # type: Optional[Union[str, H2OEstimator]]
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  export_checkpoints_dir=None,  # type: Optional[str]
                  ntrees=50,  # type: int
                  max_depth=6,  # type: int
@@ -73,7 +73,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  save_matrix_directory=None,  # type: Optional[str]
                  build_tree_one_node=False,  # type: bool
                  calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_bins=256,  # type: int
                  max_leaves=0,  # type: int
                  sample_type="uniform",  # type: Literal["uniform", "weighted"]
@@ -95,13 +95,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
@@ -181,7 +181,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :type quiet_mode: bool
         :param checkpoint: Model checkpoint to resume training with.
                Defaults to ``None``.
-        :type checkpoint: Union[str, H2OEstimator], optional
+        :type checkpoint: Union[None, str, H2OEstimator], optional
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
@@ -265,7 +265,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         :type calibrate_model: bool
         :param calibration_frame: Calibration frame for Platt Scaling
                Defaults to ``None``.
-        :type calibration_frame: Union[str, H2OFrame], optional
+        :type calibration_frame: Union[None, str, H2OFrame], optional
         :param max_bins: For tree_method=hist only: maximum number of bins
                Defaults to ``256``.
         :type max_bins: int
@@ -395,7 +395,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -417,14 +417,15 @@ class H2OXGBoostEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -446,7 +447,8 @@ class H2OXGBoostEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def nfolds(self):
@@ -1095,7 +1097,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``Union[str, H2OEstimator]``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -1890,13 +1892,14 @@ class H2OXGBoostEstimator(H2OEstimator):
         """
         Calibration frame for Platt Scaling
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
         """
         return self._parms.get("calibration_frame")
 
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
-        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
+        assert_is_type(calibration_frame, None, str, H2OFrame)
+        self._parms["calibration_frame"] = calibration_frame
 
     @property
     def max_bins(self):

@@ -21,9 +21,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     algo = "svd"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
@@ -41,13 +41,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param ignored_columns: Names of columns to ignore for training.
                Defaults to ``None``.
         :type ignored_columns: List[str], optional
@@ -113,7 +113,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -126,14 +126,15 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -149,7 +150,8 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def ignored_columns(self):

@@ -22,9 +22,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     algo = "glrm"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
                  score_each_iteration=False,  # type: bool
@@ -48,8 +48,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                  seed=-1,  # type: int
                  init="plus_plus",  # type: Literal["random", "svd", "plus_plus", "user"]
                  svd_method="randomized",  # type: Literal["gram_s_v_d", "power", "randomized"]
-                 user_y=None,  # type: Optional[Union[str, H2OFrame]]
-                 user_x=None,  # type: Optional[Union[str, H2OFrame]]
+                 user_y=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 user_x=None,  # type: Optional[Union[None, str, H2OFrame]]
                  expand_user_y=True,  # type: bool
                  impute_original=False,  # type: bool
                  recover_svd=False,  # type: bool
@@ -59,13 +59,13 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param ignored_columns: Names of columns to ignore for training.
                Defaults to ``None``.
         :type ignored_columns: List[str], optional
@@ -139,10 +139,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         :type svd_method: Literal["gram_s_v_d", "power", "randomized"]
         :param user_y: User-specified initial Y
                Defaults to ``None``.
-        :type user_y: Union[str, H2OFrame], optional
+        :type user_y: Union[None, str, H2OFrame], optional
         :param user_x: User-specified initial X
                Defaults to ``None``.
-        :type user_x: Union[str, H2OFrame], optional
+        :type user_x: Union[None, str, H2OFrame], optional
         :param expand_user_y: Expand categorical columns in user-specified initial Y
                Defaults to ``True``.
         :type expand_user_y: bool
@@ -200,7 +200,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -216,14 +216,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -242,7 +243,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def ignored_columns(self):
@@ -849,7 +851,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         """
         User-specified initial Y
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -874,14 +876,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @user_y.setter
     def user_y(self, user_y):
-        self._parms["user_y"] = H2OFrame._validate(user_y, 'user_y')
+        assert_is_type(user_y, None, str, H2OFrame)
+        self._parms["user_y"] = user_y
 
     @property
     def user_x(self):
         """
         User-specified initial X
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -908,7 +911,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @user_x.setter
     def user_x(self, user_x):
-        self._parms["user_x"] = H2OFrame._validate(user_x, 'user_x')
+        assert_is_type(user_x, None, str, H2OFrame)
+        self._parms["user_x"] = user_x
 
     @property
     def expand_user_y(self):

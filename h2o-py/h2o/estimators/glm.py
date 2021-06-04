@@ -33,11 +33,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @deprecated_params({'Lambda': 'lambda_'})
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  nfolds=0,  # type: int
-                 checkpoint=None,  # type: Optional[Union[str, H2OEstimator]]
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  export_checkpoints_dir=None,  # type: Optional[str]
                  seed=-1,  # type: int
                  keep_cross_validation_models=True,  # type: bool
@@ -66,7 +66,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  nlambdas=-1,  # type: int
                  standardize=True,  # type: bool
                  missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip", "plug_values"]
-                 plug_values=None,  # type: Optional[Union[str, H2OFrame]]
+                 plug_values=None,  # type: Optional[Union[None, str, H2OFrame]]
                  compute_p_values=False,  # type: bool
                  remove_collinear_columns=False,  # type: bool
                  intercept=True,  # type: bool
@@ -83,7 +83,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                  prior=-1.0,  # type: float
                  cold_start=False,  # type: bool
                  lambda_min_ratio=-1.0,  # type: float
-                 beta_constraints=None,  # type: Optional[Union[str, H2OFrame]]
+                 beta_constraints=None,  # type: Optional[Union[None, str, H2OFrame]]
                  max_active_predictors=-1,  # type: int
                  interactions=None,  # type: Optional[List[str]]
                  interaction_pairs=None,  # type: Optional[List[tuple]]
@@ -103,19 +103,19 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
         :param checkpoint: Model checkpoint to resume training with.
                Defaults to ``None``.
-        :type checkpoint: Union[str, H2OEstimator], optional
+        :type checkpoint: Union[None, str, H2OEstimator], optional
         :param export_checkpoints_dir: Automatically export generated models to this directory.
                Defaults to ``None``.
         :type export_checkpoints_dir: str, optional
@@ -222,7 +222,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :param plug_values: Plug Values (a single row frame containing values that will be used to impute missing values
                of the training/validation frame, use with conjunction missing_values_handling = PlugValues)
                Defaults to ``None``.
-        :type plug_values: Union[str, H2OFrame], optional
+        :type plug_values: Union[None, str, H2OFrame], optional
         :param compute_p_values: Request p-values computation, p-values work only with IRLSM solver and no
                regularization
                Defaults to ``False``.
@@ -287,7 +287,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         :type lambda_min_ratio: float
         :param beta_constraints: Beta constraints
                Defaults to ``None``.
-        :type beta_constraints: Union[str, H2OFrame], optional
+        :type beta_constraints: Union[None, str, H2OFrame], optional
         :param max_active_predictors: Maximum number of active predictors during computation. Use as a stopping
                criterion to prevent expensive model building with many predictors. Default indicates: If the IRLSM
                solver is used, the value of max_active_predictors is set to 5000 otherwise it is set to 100000000.
@@ -421,7 +421,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -443,14 +443,15 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -471,7 +472,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def nfolds(self):
@@ -507,7 +509,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``Union[str, H2OEstimator]``.
+        Type: ``Union[None, str, H2OEstimator]``.
         """
         return self._parms.get("checkpoint")
 
@@ -1291,7 +1293,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Plug Values (a single row frame containing values that will be used to impute missing values of the
         training/validation frame, use with conjunction missing_values_handling = PlugValues)
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -1317,7 +1319,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @plug_values.setter
     def plug_values(self, plug_values):
-        self._parms["plug_values"] = H2OFrame._validate(plug_values, 'plug_values')
+        assert_is_type(plug_values, None, str, H2OFrame)
+        self._parms["plug_values"] = plug_values
 
     @property
     def compute_p_values(self):
@@ -1737,7 +1740,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         Beta constraints
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -1763,7 +1766,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        self._parms["beta_constraints"] = H2OFrame._validate(beta_constraints, 'beta_constraints')
+        assert_is_type(beta_constraints, None, str, H2OFrame)
+        self._parms["beta_constraints"] = beta_constraints
 
     @property
     def max_active_predictors(self):

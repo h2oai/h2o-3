@@ -47,8 +47,8 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
-        self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
-                                               else "H2OEstimator" if schema == "Key<Model>"
+        self.make_key = lambda itype, schema: ("str, H2OFrame" if schema == "Key<Frame>"
+                                               else "str, H2OEstimator" if schema == "Key<Model>"
                                                else "str")
         self.make_enum = lambda schema, values: ("Enum(%s)" % ", ".join(stringify(v) for v in values) if values
                                                  else schema)
@@ -81,8 +81,8 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
-        self.make_key = lambda itype, schema: ("Union[str, H2OFrame]" if schema == "Key<Frame>"
-                                               else "Union[str, H2OEstimator]" if schema == "Key<Model>"
+        self.make_key = lambda itype, schema: ("Union[None, str, H2OFrame]" if schema == "Key<Frame>"
+                                               else "Union[None, str, H2OEstimator]" if schema == "Key<Model>"
                                                else "str")
         self.make_enum = lambda schema, values: ("Literal[%s]" % ", ".join(stringify(v) for v in values) if values   # see PEP-586
                                                  else schema)
@@ -240,12 +240,12 @@ def gen_module(schema, algo):
     yield reformat_block(init_sig, indent=4, prefix=' '*13, prefix_first=False)
     yield '        """'
     for p in extended_params:
-        pname, pdefault, ptype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
+        pname, pdefault, dtype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
         pdesc = "%s: %s\nDefaults to ``%s``." % (pname, pdoc, pdefault)
         pident = ' '*15
         yield "        :param %s" % bi.wrap(pdesc, indent=pident, indent_first=False)
         yield "        :type %s: %s%s" % (pname, 
-                                          bi.wrap(ptype, indent=pident, indent_first=False),
+                                          bi.wrap(dtype, indent=pident, indent_first=False),
                                           ", optional" if pdefault is None else "")
     yield '        """'
     yield "        super(%s, self).__init__()" % classname
@@ -305,17 +305,8 @@ def gen_module(schema, algo):
         if property_setter:
             yield reformat_block(property_setter.format(**locals()), 8)
         else:
-            # special types validation
-            if ptype == "H2OEstimator":
-                yield "        assert_is_type(%s, None, str, %s)" % (pname, ptype)
-            elif ptype == "H2OFrame":
-                yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
-            else:
-                # default validation
-                yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-            if ptype != "H2OFrame":
-                # default assignment
-                yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+            yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
+            yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         
     for old, new in deprecated_params.items():

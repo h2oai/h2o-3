@@ -26,8 +26,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
     algo = "isolationforest"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  score_each_iteration=False,  # type: bool
                  score_tree_interval=0,  # type: int
                  ignored_columns=None,  # type: Optional[List[str]]
@@ -49,16 +49,16 @@ class H2OIsolationForestEstimator(H2OEstimator):
                  stopping_tolerance=0.01,  # type: float
                  export_checkpoints_dir=None,  # type: Optional[str]
                  contamination=-1.0,  # type: float
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  validation_response_column=None,  # type: Optional[str]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param score_each_iteration: Whether to score during each iteration of model training.
                Defaults to ``False``.
         :type score_each_iteration: bool
@@ -138,7 +138,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         :type contamination: float
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param validation_response_column: (experimental) Name of the response column in the validation frame. Response
                column should be binary and indicate not anomaly/anomaly.
                Defaults to ``None``.
@@ -177,7 +177,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -192,7 +192,8 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def score_each_iteration(self):
@@ -720,13 +721,14 @@ class H2OIsolationForestEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
         """
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def validation_response_column(self):

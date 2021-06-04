@@ -25,9 +25,9 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @deprecated_params({'offset_column': None})
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -61,14 +61,14 @@ class H2ORandomForestEstimator(H2OEstimator):
                  sample_rate=0.632,  # type: float
                  sample_rate_per_class=None,  # type: Optional[List[float]]
                  binomial_double_trees=False,  # type: bool
-                 checkpoint=None,  # type: Optional[Union[str, H2OEstimator]]
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  col_sample_rate_change_per_level=1.0,  # type: float
                  col_sample_rate_per_tree=1.0,  # type: float
                  min_split_improvement=1e-05,  # type: float
                  histogram_type="auto",  # type: Literal["auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"]
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  custom_metric_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
@@ -79,13 +79,13 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
@@ -211,7 +211,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         :type binomial_double_trees: bool
         :param checkpoint: Model checkpoint to resume training with.
                Defaults to ``None``.
-        :type checkpoint: Union[str, H2OEstimator], optional
+        :type checkpoint: Union[None, str, H2OEstimator], optional
         :param col_sample_rate_change_per_level: Relative change of the column sampling rate for every level (must be >
                0.0 and <= 2.0)
                Defaults to ``1.0``.
@@ -235,7 +235,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         :type calibrate_model: bool
         :param calibration_frame: Calibration frame for Platt Scaling
                Defaults to ``None``.
-        :type calibration_frame: Union[str, H2OFrame], optional
+        :type calibration_frame: Union[None, str, H2OFrame], optional
         :param distribution: Distribution function
                Defaults to ``"auto"``.
         :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
@@ -317,7 +317,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -338,14 +338,15 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -366,7 +367,8 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def nfolds(self):
@@ -1388,7 +1390,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``Union[str, H2OEstimator]``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -1627,7 +1629,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Calibration frame for Platt Scaling
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -1658,7 +1660,8 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
-        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
+        assert_is_type(calibration_frame, None, str, H2OFrame)
+        self._parms["calibration_frame"] = calibration_frame
 
     @property
     def distribution(self):

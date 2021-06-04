@@ -25,9 +25,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     algo = "gbm"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -64,7 +64,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  quantile_alpha=0.5,  # type: float
                  tweedie_power=1.5,  # type: float
                  huber_alpha=0.9,  # type: float
-                 checkpoint=None,  # type: Optional[Union[str, H2OEstimator]]
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  sample_rate=1.0,  # type: float
                  sample_rate_per_class=None,  # type: Optional[List[float]]
                  col_sample_rate=1.0,  # type: float
@@ -76,7 +76,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                  pred_noise_bandwidth=0.0,  # type: float
                  categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
                  calibrate_model=False,  # type: bool
-                 calibration_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  custom_metric_func=None,  # type: Optional[str]
                  custom_distribution_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
@@ -88,13 +88,13 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
@@ -229,7 +229,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :type huber_alpha: float
         :param checkpoint: Model checkpoint to resume training with.
                Defaults to ``None``.
-        :type checkpoint: Union[str, H2OEstimator], optional
+        :type checkpoint: Union[None, str, H2OEstimator], optional
         :param sample_rate: Row sample rate per tree (from 0.0 to 1.0)
                Defaults to ``1.0``.
         :type sample_rate: float
@@ -270,7 +270,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         :type calibrate_model: bool
         :param calibration_frame: Calibration frame for Platt Scaling
                Defaults to ``None``.
-        :type calibration_frame: Union[str, H2OFrame], optional
+        :type calibration_frame: Union[None, str, H2OFrame], optional
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                Defaults to ``None``.
         :type custom_metric_func: str, optional
@@ -364,7 +364,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -384,14 +384,15 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -411,7 +412,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def nfolds(self):
@@ -1496,7 +1498,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``Union[str, H2OEstimator]``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -1899,7 +1901,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         Calibration frame for Platt Scaling
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -1931,7 +1933,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
-        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
+        assert_is_type(calibration_frame, None, str, H2OFrame)
+        self._parms["calibration_frame"] = calibration_frame
 
     @property
     def custom_metric_func(self):

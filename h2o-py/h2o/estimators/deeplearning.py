@@ -34,9 +34,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
     algo = "deeplearning"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  nfolds=0,  # type: int
                  keep_cross_validation_models=True,  # type: bool
                  keep_cross_validation_predictions=False,  # type: bool
@@ -53,8 +53,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
                  max_confusion_matrix_size=20,  # type: int
-                 checkpoint=None,  # type: Optional[Union[str, H2OEstimator]]
-                 pretrained_autoencoder=None,  # type: Optional[Union[str, H2OEstimator]]
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 pretrained_autoencoder=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  overwrite_with_best_model=True,  # type: bool
                  use_all_factor_levels=True,  # type: bool
                  standardize=True,  # type: bool
@@ -81,8 +81,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
                  max_w2=3.4028235e+38,  # type: float
                  initial_weight_distribution="uniform_adaptive",  # type: Literal["uniform_adaptive", "uniform", "normal"]
                  initial_weight_scale=1.0,  # type: float
-                 initial_weights=None,  # type: Optional[List[Union[str, H2OFrame]]]
-                 initial_biases=None,  # type: Optional[List[Union[str, H2OFrame]]]
+                 initial_weights=None,  # type: Optional[List[Union[None, str, H2OFrame]]]
+                 initial_biases=None,  # type: Optional[List[Union[None, str, H2OFrame]]]
                  loss="automatic",  # type: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  quantile_alpha=0.5,  # type: float
@@ -127,13 +127,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
                Defaults to ``0``.
         :type nfolds: int
@@ -195,10 +195,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :type max_confusion_matrix_size: int
         :param checkpoint: Model checkpoint to resume training with.
                Defaults to ``None``.
-        :type checkpoint: Union[str, H2OEstimator], optional
+        :type checkpoint: Union[None, str, H2OEstimator], optional
         :param pretrained_autoencoder: Pretrained autoencoder model to initialize this model with.
                Defaults to ``None``.
-        :type pretrained_autoencoder: Union[str, H2OEstimator], optional
+        :type pretrained_autoencoder: Union[None, str, H2OEstimator], optional
         :param overwrite_with_best_model: If enabled, override the final model with the best model found during
                training.
                Defaults to ``True``.
@@ -286,10 +286,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         :type initial_weight_scale: float
         :param initial_weights: A list of H2OFrame ids to initialize the weight matrices of this model with.
                Defaults to ``None``.
-        :type initial_weights: List[Union[str, H2OFrame]], optional
+        :type initial_weights: List[Union[None, str, H2OFrame]], optional
         :param initial_biases: A list of H2OFrame ids to initialize the bias vectors of this model with.
                Defaults to ``None``.
-        :type initial_biases: List[Union[str, H2OFrame]], optional
+        :type initial_biases: List[Union[None, str, H2OFrame]], optional
         :param loss: Loss function.
                Defaults to ``"automatic"``.
         :type loss: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
@@ -525,7 +525,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -550,14 +550,15 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -578,7 +579,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def nfolds(self):
@@ -1012,7 +1014,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Model checkpoint to resume training with.
 
-        Type: ``Union[str, H2OEstimator]``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -1050,7 +1052,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         Pretrained autoencoder model to initialize this model with.
 
-        Type: ``Union[str, H2OEstimator]``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -1946,7 +1948,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         A list of H2OFrame ids to initialize the weight matrices of this model with.
 
-        Type: ``List[Union[str, H2OFrame]]``.
+        Type: ``List[Union[None, str, H2OFrame]]``.
 
         :examples:
 
@@ -1974,7 +1976,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_weights.setter
     def initial_weights(self, initial_weights):
-        assert_is_type(initial_weights, None, [H2OFrame, None])
+        assert_is_type(initial_weights, None, [None, str, H2OFrame])
         self._parms["initial_weights"] = initial_weights
 
     @property
@@ -1982,7 +1984,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
         """
         A list of H2OFrame ids to initialize the bias vectors of this model with.
 
-        Type: ``List[Union[str, H2OFrame]]``.
+        Type: ``List[Union[None, str, H2OFrame]]``.
 
         :examples:
 
@@ -2010,7 +2012,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_biases.setter
     def initial_biases(self, initial_biases):
-        assert_is_type(initial_biases, None, [H2OFrame, None])
+        assert_is_type(initial_biases, None, [None, str, H2OFrame])
         self._parms["initial_biases"] = initial_biases
 
     @property

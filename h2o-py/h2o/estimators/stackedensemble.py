@@ -65,11 +65,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
 
     def __init__(self,
-                 model_id=None,  # type: Optional[Union[str, H2OEstimator]]
-                 training_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  response_column=None,  # type: Optional[str]
-                 validation_frame=None,  # type: Optional[Union[str, H2OFrame]]
-                 blending_frame=None,  # type: Optional[Union[str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 blending_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  base_models=[],  # type: List[str]
                  metalearner_algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"]
                  metalearner_nfolds=0,  # type: int
@@ -89,20 +89,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
                Defaults to ``None``.
-        :type model_id: Union[str, H2OEstimator], optional
+        :type model_id: Union[None, str, H2OEstimator], optional
         :param training_frame: Id of the training data frame.
                Defaults to ``None``.
-        :type training_frame: Union[str, H2OFrame], optional
+        :type training_frame: Union[None, str, H2OFrame], optional
         :param response_column: Response variable column.
                Defaults to ``None``.
         :type response_column: str, optional
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
-        :type validation_frame: Union[str, H2OFrame], optional
+        :type validation_frame: Union[None, str, H2OFrame], optional
         :param blending_frame: Frame used to compute the predictions that serve as the training frame for the
                metalearner (triggers blending mode if provided)
                Defaults to ``None``.
-        :type blending_frame: Union[str, H2OFrame], optional
+        :type blending_frame: Union[None, str, H2OFrame], optional
         :param base_models: List of models or grids (or their ids) to ensemble/stack together. Grids are expanded to
                individual models. If not using blending frame, then models must have been cross-validated using nfolds >
                1, and folds must be identical across models.
@@ -196,7 +196,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -234,7 +234,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
     @property
     def response_column(self):
@@ -255,7 +256,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         """
         Id of the validation data frame.
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -293,7 +294,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
     @property
     def blending_frame(self):
@@ -301,7 +303,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
         mode if provided)
 
-        Type: ``Union[str, H2OFrame]``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -338,7 +340,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @blending_frame.setter
     def blending_frame(self, blending_frame):
-        self._parms["blending_frame"] = H2OFrame._validate(blending_frame, 'blending_frame')
+        assert_is_type(blending_frame, None, str, H2OFrame)
+        self._parms["blending_frame"] = blending_frame
 
     @property
     def base_models(self):
