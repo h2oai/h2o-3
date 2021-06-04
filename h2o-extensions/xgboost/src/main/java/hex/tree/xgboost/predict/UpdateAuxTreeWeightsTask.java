@@ -22,7 +22,7 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
     private final DataInfo _di;
     private final boolean _sparse;
     // OUT
-    private final double[/*treeId*/][/*leafNodeId*/] _nodeWeights;
+    private double[/*treeId*/][/*leafNodeId*/] _nodeWeights;
 
     public UpdateAuxTreeWeightsTask(DistributionFamily dist, DataInfo di, XGBoostModelInfo modelInfo, XGBoostOutput output) {
         _dist = dist;
@@ -36,16 +36,22 @@ public class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
         if (_dist != DistributionFamily.gaussian && _dist != DistributionFamily.bernoulli) {
             throw new UnsupportedOperationException("Updating tree weights is currently not supported for distribution " + _dist + ".");
         }
+    }
+
+    private double[][] initNodeWeights() {
         GBTree gbTree = (GBTree) _p.getBooster();
         RegTree[] trees = gbTree.getGroupedTrees()[0];
-        _nodeWeights = new double[trees.length][];
+        double[][] nodeWeights = new double[trees.length][];
         for (int i = 0; i < trees.length; i++) {
-            _nodeWeights[i] = new double[trees[i].getStats().length];
+            nodeWeights[i] = new double[trees[i].getStats().length];
         }
+        return nodeWeights;
     }
 
     @Override
     public void map(Chunk[] chks, NewChunk[] idx) {
+        _nodeWeights = initNodeWeights();
+
         LinkFunction logit = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
         RegTree[] trees = ((GBTree) _p.getBooster()).getGroupedTrees()[0];
 
