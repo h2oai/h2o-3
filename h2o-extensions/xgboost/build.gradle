@@ -14,6 +14,7 @@ dependencies {
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
     compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
     compile "org.apache.httpcomponents:httpmime:${httpClientVersion}"
+    compile "com.github.oshi:oshi-core:5.7.4"
 
     // XGBoost dependencies published into Maven central by H2O
     // Versioning rules may differ for XGBoost artifacts published by H2O

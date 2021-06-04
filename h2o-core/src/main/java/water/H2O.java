@@ -384,6 +384,9 @@ final public class H2O {
     /** specifies a file to write when the node is up */
     public String notify_local;
 
+    /** what the is ratio of available off-heap memory to maximum JVM heap memory */
+    public double off_heap_memory_ratio = 0;
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -599,6 +602,10 @@ final public class H2O {
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
         trgt.notify_local = args[i];
+      }
+      else if (s.matches("off_heap_memory_ratio")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.off_heap_memory_ratio = Double.parseDouble(args[i]);
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
