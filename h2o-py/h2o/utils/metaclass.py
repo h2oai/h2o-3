@@ -280,6 +280,7 @@ class _BackwardsCompatible(MetaFeature):
         clz._bc = self
         new_clz = None
 
+        @wraps(clz.__init__)
         def __init__(self, *args, **kwargs):
             super(new_clz, self).__init__(*args, **kwargs)
             self._bci = {name: val.__get__(self, new_clz) if callable(val) else val for name, val in clz._bc._instance_attrs.items()}

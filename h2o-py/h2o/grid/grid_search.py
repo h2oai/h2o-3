@@ -29,42 +29,7 @@ from h2o.utils.typechecks import assert_is_type, is_type
 class H2OGridSearch(h2o_meta(Keyed)):
     """
     Grid Search of a Hyper-Parameter Space for a Model
-
-    :param model: The type of model to be explored initialized with optional parameters that will be
-        unchanged across explored models.
-    :param hyper_params: A dictionary of string parameters (keys) and a list of values to be explored by grid
-        search (values).
-    :param str grid_id: The unique id assigned to the resulting grid object. If none is given, an id will
-        automatically be generated.
-    :param search_criteria:  The optional dictionary of directives which control the search of the hyperparameter space.
-        The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, 
-        ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy, "Cartesian", covers the entire space of 
-        hyperparameter combinations. If you want to use cartesian grid search, you can leave the search_criteria 
-        argument unspecified. Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
-        your hyperparameters with three ways of specifying when to stop the search: max number of models, max time, and 
-        metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
-        Examples below::
-
-            >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
-            ...             "max_models": 100, "stopping_metric": "AUTO",
-            ...             "stopping_tolerance": 0.00001, "stopping_rounds": 5,
-            ...             "seed": 123456}
-            >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
-            ...             "max_runtime_secs": 28800, "seed": 1234}
-            >>> criteria = {"strategy": "RandomDiscrete", "stopping_metric": "AUTO",
-            ...             "stopping_tolerance": 0.001, "stopping_rounds": 10}
-            >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
-            ...             "stopping_metric": "misclassification",
-            ...             "stopping_tolerance": 0.00001}
-    :param export_checkpoints_dir: Directory to automatically export the grid and its models to.
-    :param recovery_dir: When specified, the grid and all necessary data (frames, models) will be saved to this
-        directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
-        can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
-    :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
-         Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
-         built in parallel.
-    :returns: a new H2OGridSearch instance
-
+    
     Examples
     --------
         >>> from h2o.grid.grid_search import H2OGridSearch
@@ -77,9 +42,44 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.show()
     """
 
-
     def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None,
                  recovery_dir=None, parallelism=1):
+        """
+        :param model: The type of model to be explored initialized with optional parameters that will be
+            unchanged across explored models.
+        :param hyper_params: A dictionary of string parameters (keys) and a list of values to be explored by grid
+            search (values).
+        :param str grid_id: The unique id assigned to the resulting grid object. If none is given, an id will
+            automatically be generated.
+        :param search_criteria:  The optional dictionary of directives which control the search of the hyperparameter space.
+            The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, 
+            ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy, "Cartesian", covers the entire space of 
+            hyperparameter combinations. If you want to use cartesian grid search, you can leave the search_criteria 
+            argument unspecified. Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
+            your hyperparameters with three ways of specifying when to stop the search: max number of models, max time, and 
+            metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
+            Examples below::
+
+                >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
+                ...             "max_models": 100, "stopping_metric": "AUTO",
+                ...             "stopping_tolerance": 0.00001, "stopping_rounds": 5,
+                ...             "seed": 123456}
+                >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
+                ...             "max_runtime_secs": 28800, "seed": 1234}
+                >>> criteria = {"strategy": "RandomDiscrete", "stopping_metric": "AUTO",
+                ...             "stopping_tolerance": 0.001, "stopping_rounds": 10}
+                >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
+                ...             "stopping_metric": "misclassification",
+                ...             "stopping_tolerance": 0.00001}
+        :param export_checkpoints_dir: Directory to automatically export the grid and its models to.
+        :param recovery_dir: When specified, the grid and all necessary data (frames, models) will be saved to this
+            directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
+            can be reloaded from this directory via ``h2o.load_grid``, and training can be resumed.
+        :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
+             Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
+             built in parallel.
+        :returns: a new H2OGridSearch instance
+        """
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
         assert_is_type(grid_id, None, str)
@@ -129,7 +129,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         self._id = value
         h2o.rapids('(rename "{}" "{}")'.format(oldname, value))
 
-
     @property
     def model_ids(self):
         """
@@ -148,7 +147,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.model_ids
         """
         return [i['name'] for i in self._grid_json["model_ids"]]
-
 
     @property
     def hyper_names(self):
@@ -169,7 +167,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return self._grid_json["hyper_names"]
 
-
     @property
     def failed_params(self):
         """
@@ -189,25 +186,20 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return self._grid_json.get("failed_params", None)
 
-
     @property
     def failure_details(self):
         return self._grid_json.get("failure_details", None)
-
 
     @property
     def failure_stack_traces(self):
         return self._grid_json.get("failure_stack_traces", None)
 
-
     @property
     def failed_raw_params(self):
         return self._grid_json.get("failed_raw_params", None)
 
-
     def detach(self):
         self._id = None
-
 
     def start(self, x, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
               validation_frame=None, **params):
@@ -356,6 +348,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         x = list(xset)
         parms["x"] = x
         self.build_model(parms)
+        return self.models
 
     def resume(self, recovery_dir=None, **kwargs):
         """
@@ -459,7 +452,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
             else:
                 raise ValueError("Gridsearch returns no model due to bad parameter values or other reasons....")
 
-
     def _resolve_grid(self, grid_id, grid_json, first_model_json):
         model_class = H2OGridSearch._metrics_class(first_model_json)
         m = model_class()
@@ -471,24 +463,19 @@ class H2OGridSearch(h2o_meta(Keyed)):
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
-
     def __getitem__(self, item):
         return self.models[item]
-
 
     def __iter__(self):
         nmodels = len(self.models)
         return (self[i] for i in range(nmodels))
 
-
     def __len__(self):
         return len(self.models)
-
 
     def __repr__(self):
         self.show()
         return ""
-
 
     def predict(self, test_data):
         """
@@ -513,7 +500,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.predict(test_data) for model in self.models}
 
-
     def is_cross_validated(self):
         """Return True if the model was cross-validated.
 
@@ -533,7 +519,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.is_cross_validated() for model in self.models}
 
-
     def xval_keys(self):
         """Model keys for the cross-validated model.
 
@@ -552,7 +537,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.xval_keys()
         """
         return {model.model_id: model.xval_keys() for model in self.models}
-
 
     def get_xval_models(self, key=None):
         """
@@ -574,11 +558,9 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.get_xval_models(key) for model in self.models}
 
-
     def xvals(self):
         """Return the list of cross-validated models."""
         return {model.model_id: model.xvals for model in self.models}
-
 
     def deepfeatures(self, test_data, layer):
         """
@@ -613,7 +595,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.deepfeatures(test_data, layer) for model in self.models}
 
-
     def weights(self, matrix_id=0):
         """
         Return the frame for the respective weight matrix.
@@ -633,7 +614,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.weights(matrix_id) for model in self.models}
 
-
     def biases(self, vector_id=0):
         """
         Return the frame for the respective bias vector.
@@ -651,7 +631,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> hh.biases(0)
         """
         return {model.model_id: model.biases(vector_id) for model in self.models}
-
 
     def normmul(self):
         """Normalization/Standardization multipliers for numeric predictors.
@@ -675,7 +654,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.normmul() for model in self.models}
 
-
     def normsub(self):
         """Normalization/Standardization offsets for numeric predictors.
 
@@ -697,7 +675,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.normsub()
         """
         return {model.model_id: model.normsub() for model in self.models}
-
 
     def respmul(self):
         """Normalization/Standardization multipliers for numeric response.
@@ -721,7 +698,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.respmul() for model in self.models}
 
-
     def respsub(self):
         """Normalization/Standardization offsets for numeric response.
 
@@ -744,7 +720,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.respsub() for model in self.models}
 
-
     def catoffsets(self):
         """
         Categorical offsets for one-hot encoding
@@ -760,7 +735,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> hh.catoffsets()
         """
         return {model.model_id: model.catoffsets() for model in self.models}
-
 
     def model_performance(self, test_data=None, train=False, valid=False, xval=False):
         """
@@ -805,7 +779,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.model_performance(test_data, train, valid, xval) for model in self.models}
 
-
     def scoring_history(self):
         """
         Retrieve model scoring history.
@@ -830,7 +803,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.scoring_history()
         """
         return {model.model_id: model.scoring_history() for model in self.models}
-
 
     def summary(self, header=True):
         """Print a detailed summary of the explored models.
@@ -870,7 +842,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         print()
         H2ODisplay(table, header=['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
-
     def show(self):
         """Print models sorted by metric.
 
@@ -900,7 +871,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         else:
             print(self.sorted_metric_table())
 
-
     def varimp(self, use_pandas=False):
         """
         Pretty print the variable importances, or return them in a list/pandas DataFrame.
@@ -927,7 +897,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.varimp(use_pandas=True)
         """
         return {model.model_id: model.varimp(use_pandas) for model in self.models}
-
 
     def residual_deviance(self, train=False, valid=False, xval=False):
         """
@@ -957,7 +926,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.residual_deviance(train, valid, xval) for model in self.models}
 
-
     def residual_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
         Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
@@ -985,7 +953,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.residual_degrees_of_freedom()
         """
         return {model.model_id: model.residual_degrees_of_freedom(train, valid, xval) for model in self.models}
-
 
     def null_deviance(self, train=False, valid=False, xval=False):
         """
@@ -1015,7 +982,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.null_deviance(train, valid, xval) for model in self.models}
 
-
     def null_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
         Retreive the null degress of freedom if this model has the attribute, or None otherwise.
@@ -1044,7 +1010,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.null_degrees_of_freedom(train, valid, xval) for model in self.models}
 
-
     def pprint_coef(self):
         """Pretty print the coefficents table (includes normalized coefficients).
 
@@ -1067,7 +1032,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
             model.pprint_coef()
             print()
 
-
     def coef(self):
         """Return the coefficients that can be applied to the non-standardized data.
 
@@ -1087,7 +1051,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.coef() for model in self.models}
 
-
     def coef_norm(self):
         """Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 
@@ -1104,7 +1067,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.coef_norm()
         """
         return {model.model_id: model.coef_norm() for model in self.models}
-
 
     def r2(self, train=False, valid=False, xval=False):
         """
@@ -1141,7 +1103,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.r2(train, valid, xval) for model in self.models}
 
-
     def mse(self, train=False, valid=False, xval=False):
         """
         Get the MSE(s).
@@ -1174,18 +1135,14 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.mse(train, valid, xval) for model in self.models}
 
-
     def rmse(self, train=False, valid=False, xval=False):
         return {model.model_id: model.rmse(train, valid, xval) for model in self.models}
-
 
     def mae(self, train=False, valid=False, xval=False):
         return {model.model_id: model.mae(train, valid, xval) for model in self.models}
 
-
     def rmsle(self, train=False, valid=False, xval=False):
         return {model.model_id: model.rmsle(train, valid, xval) for model in self.models}
-
 
     def logloss(self, train=False, valid=False, xval=False):
         """
@@ -1217,7 +1174,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.logloss(train, valid, xval) for model in self.models}
 
-
     def mean_residual_deviance(self, train=False, valid=False, xval=False):
         """
         Get the Mean Residual Deviances(s).
@@ -1248,7 +1204,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs.mean_residual_deviance()
         """
         return {model.model_id: model.mean_residual_deviance(train, valid, xval) for model in self.models}
-
 
     def auc(self, train=False, valid=False, xval=False):
         """
@@ -1297,7 +1252,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.auc(train, valid, xval) for model in self.models}
 
-
     def aic(self, train=False, valid=False, xval=False):
         """
         Get the AIC(s).
@@ -1332,7 +1286,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.aic(train, valid, xval) for model in self.models}
 
-
     def gini(self, train=False, valid=False, xval=False):
         """
         Get the Gini Coefficient(s).
@@ -1363,7 +1316,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.gini(train, valid, xval) for model in self.models}
 
-
     # @alias('pr_auc')
     def aucpr(self, train=False, valid=False, xval=False):
         """
@@ -1384,7 +1336,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
     @deprecated_fn(replaced_by=aucpr)
     def pr_auc(self):
         pass
-
 
     def get_hyperparams(self, id, display=True):
         """
@@ -1424,7 +1375,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
                for h in self.hyper_params]
         if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return res
-
 
     def get_hyperparams_dict(self, id, display=True):
         """
@@ -1468,7 +1418,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
 
-
     def sorted_metric_table(self):
         """
         Retrieve summary table of an H2O Grid Search.
@@ -1496,7 +1445,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         if summary is not None: return summary.as_data_frame()
         print("No sorted metric table for this grid search")
 
-
     @staticmethod
     def _metrics_class(model_json):
         model_type = model_json["output"]["model_category"]
@@ -1519,7 +1467,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         else:
             raise NotImplementedError(model_type)
         return model_class
-
 
     def get_grid(self, sort_by=None, decreasing=None):
         """
@@ -1568,7 +1515,6 @@ class H2OGridSearch(h2o_meta(Keyed)):
         H2OEstimator.mixin(grid, model_class)
         grid.__dict__.update(m.__dict__.copy())
         return grid
-
 
     @deprecated_fn("grid.sort_by() is deprecated; use grid.get_grid() instead")
     def sort_by(self, metric, increasing=True):

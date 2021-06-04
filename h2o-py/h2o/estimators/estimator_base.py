@@ -114,6 +114,7 @@ class H2OEstimator(ModelBase):
                                  validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
                                  ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
         self._train(parms, verbose=verbose)
+        return self
 
     def train_segments(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
                        weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,

@@ -1002,3 +1002,4 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         if self.metalearner() is None:
             raise H2OResponseError("Meta learner didn't get to be trained in time. "
                                    "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
+        return self
