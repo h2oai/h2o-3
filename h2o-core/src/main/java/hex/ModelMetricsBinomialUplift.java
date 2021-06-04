@@ -246,9 +246,8 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             double sigma = Double.NaN;
             if(_wcount > 0 && auuc == null) {
                 sigma = weightedSigma();
-                // TODO propagate auuc metric through API
                 auuc = new AUUC(_auuc, m._parms._auuc_type);
-            } else {
+            } else if(auuc == null){
                 auuc = new AUUC();
             }
             ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, auuc, gul, _customMetric);
