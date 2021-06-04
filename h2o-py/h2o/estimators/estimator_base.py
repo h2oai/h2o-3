@@ -379,10 +379,8 @@ class H2OEstimator(ModelBase):
     def _keyify(item):
         if isinstance(item, Keyed):
             return item.key
-        elif isinstance(item, list) and all(isinstance(i, None, str, Keyed) for i in item):
-            return [quoted(i) if isinstance(i, None, str)
-                    else quoted(i.key) 
-                    for i in item]
+        elif isinstance(item, list) and any(isinstance(i, Keyed) for i in item):
+            return [quoted(H2OEstimator._keyify(i)) for i in item]
         else:
             return item
 
