@@ -37,7 +37,7 @@ public class FriedmanPopescusH {
                 fValues.put(Arrays.toString(currCombination), computeFValues(gbmModel, currModelIds, filteredFrame, cols));
             }
         }
-        return computeHValue(fValues, filteredFrame, modelIds);
+        return computeHValue(fValues, filteredFrame, colIds);
         
     }
 

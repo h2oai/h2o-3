@@ -1200,14 +1200,33 @@ public class FriedmanPopescusHTest {
     public void testPartialDependenceTree() throws IOException {
         String currentPath = new java.io.File(".").getCanonicalPath();
         Frame frame = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/grid.csv");
-        Frame res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result012.csv");
+        Frame res; //= parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result012.csv");
+        // todo: remove result12.csv
+        // todo: remove other .csvs
+
+        double resd[] = new double[]{-2.188878791803408608e-02, -6.741245150466763925e-02, 4.768910591425746387e-03, 3.297972219392273502e-02, -2.188878791803408608e-02,
+                3.297972219392273502e-02, -2.188878791803408608e-02, 4.768910591425746387e-03, -6.741245150466763925e-02, -6.741245150466763925e-02, -2.188878791803408608e-02,
+                -6.741245150466763925e-02, 3.297972219392273502e-02, 3.297972219392273502e-02, -2.188878791803408608e-02, 3.297972219392273502e-02, 4.768910591425746387e-03,
+                -2.188878791803408608e-02, -6.741245150466763925e-02, -6.741245150466763925e-02, 2.213861966073388601e-02, -2.188878791803408608e-02, -2.188878791803408608e-02,
+                3.297972219392273502e-02, -2.188878791803408608e-02, 4.768910591425746387e-03, -2.188878791803408608e-02, -2.188878791803408608e-02, -2.188878791803408608e-02,
+                -6.741245150466763925e-02, -6.741245150466763925e-02, -2.188878791803408608e-02, -2.188878791803408608e-02, -2.188878791803408608e-02, 6.874241915520466761e-02,
+                3.297972219392273502e-02, -2.188878791803408608e-02, 4.768910591425746387e-03, 3.297972219392273502e-02, 3.297972219392273502e-02, -2.188878791803408608e-02,
+                3.297972219392273502e-02, -3.850508864319568403e-02, 6.874241915520466761e-02, 2.213861966073388601e-02, -2.188878791803408608e-02, -3.850508864319568403e-02,
+                4.768910591425746387e-03, -3.850508864319568403e-02, 3.297972219392273502e-02, -3.850508864319568403e-02, -2.188878791803408608e-02, -2.188878791803408608e-02,
+                4.768910591425746387e-03, -2.188878791803408608e-02, -2.188878791803408608e-02, -2.188878791803408608e-02, -3.850508864319568403e-02, -2.188878791803408608e-02,
+                3.297972219392273502e-02, 3.297972219392273502e-02, 4.768910591425746387e-03, 2.213861966073388601e-02, 2.213861966073388601e-02, 3.297972219392273502e-02,
+                6.874241915520466761e-02, 4.768910591425746387e-03, -2.188878791803408608e-02, 3.297972219392273502e-02, 3.297972219392273502e-02, -2.188878791803408608e-02,
+                3.297972219392273502e-02, 3.297972219392273502e-02, -2.188878791803408608e-02, 6.874241915520466761e-02, 3.297972219392273502e-02, 2.213861966073388601e-02,
+                4.768910591425746387e-03, 6.874241915520466761e-02, -3.850508864319568403e-02, 4.768910591425746387e-03, 4.768910591425746387e-03, 6.874241915520466761e-02,
+                -2.188878791803408608e-02, 4.768910591425746387e-03, 4.768910591425746387e-03, 3.297972219392273502e-02, 2.213861966073388601e-02, 1.334595684654562298e-01,
+                -2.188878791803408608e-02};
 
         SharedTreeGraph tree = createSharedTreeGraphForTest();
 
         Vec result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1,2}, 0.1, frame);
-        assertEquals(result.length(), res.numRows());
-        for (int i = 0; i < res.numRows(); i++) {
-            assertEquals(res.vec(0).at(i), result.at(i), 1e-8);
+        assertEquals(result.length(), resd.length);
+        for (int i = 0; i < resd.length; i++) {
+            assertEquals(/*res.vec(0).at(i)*/resd[i], result.at(i), 1e-8);
         }
         
         res = parseTestFile(currentPath + "/src/test/java/hex/tree/gbm/result02.csv");
@@ -1295,7 +1314,11 @@ public class FriedmanPopescusHTest {
     gbr_1.score(xs.iloc[test_ilocs], y.y.iloc[test_ilocs])
 
     # Compute the H statistic of all three predictor variables. We expect the value to be relatively small.
-    h(gbr_1, xs.iloc[train_ilocs])    
+    h(gbr_1, xs.iloc[train_ilocs])
+    h_val = h(gbr_1, xs.iloc[train_ilocs], ['x0', 'x1'])
+    h_val = h(gbr_1, xs.iloc[train_ilocs], ['x0', 'x2'])
+    h_val = h(gbr_1, xs.iloc[train_ilocs], ['x2', 'x0'])
+    h_val = h(gbr_1, xs.iloc[train_ilocs], ['x2', 'x1'])
     * 
     * */
     @Test
@@ -1323,7 +1346,16 @@ public class FriedmanPopescusHTest {
         checkFValues(mockModel2, new Integer[] {1}, frame, new String[]{"feature1"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_1.csv", 3);
 
         double h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1","feature2"}, mockModel2);
-        assertEquals(h, 0.08603547, 1e-8);
+        assertEquals(h, 0.08603547308125703, 1e-8);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1"}, mockModel2);
+        assertEquals(h, 0.1821050597335194, 1e-7);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature2"}, mockModel2);
+        assertEquals(h, 0.1695429601435328, 1e-8);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature0"}, mockModel2);
+        assertEquals(h, 0.16954296014353273, 1e-8);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature1"}, mockModel2);
+        assertEquals(h, 0.2508738347652033, 1e-8);
+       
         
         DKV.remove(frame._key);
     }
@@ -1348,6 +1380,10 @@ public class FriedmanPopescusHTest {
     //  #  clf.score(X_test, y_test)
     //
     //    h_val = h(clf, X_train)
+    //    h_val = h(clf, X_train, ['sepal_len', 'sepal_wid', 'petal_len'])
+    //    h_val = h(clf, X_train, ['sepal_len', 'sepal_wid'])
+    //    h_val = h(clf, X_train, ['sepal_wid', 'petal_len'])
+    //    h_val = h(clf, X_train, ['petal_len', 'sepal_wid'])
     
     @Test
     public void testClassification() throws IOException {
@@ -1389,6 +1425,15 @@ public class FriedmanPopescusHTest {
         
         double h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len","petal_wid"}, mockModel);
         assertEquals(1.7358501914626407e-16, h , 1e-15);
+        h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len"}, mockModel);
+        assertEquals(2.6762600878064094e-16, h , 1e-15);
+        h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid"}, mockModel);
+        assertEquals(6.8214295179305406e-12, h , 1e-11);
+        h = FriedmanPopescusH.h(frame, new String[] {"sepal_wid","petal_len"}, mockModel);
+        assertEquals(1.6283638520340696e-05, h , 1e-4);
+        h = FriedmanPopescusH.h(frame, new String[] {"petal_len","sepal_wid"}, mockModel);
+        assertEquals(1.62836385203624e-05, h , 1e-4);
+        
         DKV.remove(frame._key);
     }
     
