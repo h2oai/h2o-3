@@ -36,6 +36,10 @@ def bernoulli_gbm():
                                          distribution="bernoulli")
   gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
 
+
+  h = gbm_h2o.h(prostate_train, ['DPROS','DCAPS'])
+  assert abs(h - 0.17301172318867106) < 1e-5
+
   # Build scikit GBM classification model
   #Log.info("scikit GBM with same parameters\n")
   gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learning_rate, n_estimators=ntrees, max_depth=depth,
@@ -65,6 +69,7 @@ def bernoulli_gbm():
   #Log.info(paste("scikit AUC:", auc_sci, "\tH2O AUC:", auc_h2o))
   print(auc_h2o, auc_sci)
   assert auc_h2o >= auc_sci, "h2o (auc) performance degradation, with respect to scikit"
+
 
 
 if __name__ == "__main__":

@@ -1,9 +1,6 @@
 package water.api;
 
-import hex.FeatureInteractionsCollector;
-import hex.Model;
-import hex.ModelExportOption;
-import hex.PartialDependence;
+import hex.*;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -193,6 +190,17 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
         s.feature_interaction[i + featureInteractions[0].length + 1] = new TwoDimTableV3().fillFromImpl(featureInteractions[2][i]);
       }
       
+      return s;
+    } else {
+      throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));
+    }
+  }
+
+  @SuppressWarnings("unused")
+  public FriedmanPopescusHV3 makeFriedmansPopescusH(int version, FriedmanPopescusHV3 s) {
+    Model model = getFromDKV("key", s.model_id.key());
+    if (model instanceof FriedmanPopescusHCollector) {
+      s.h  = ((FriedmanPopescusHCollector) model).getFriedmanPopescusH(s.frame._fr, s.variables);
       return s;
     } else {
       throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));

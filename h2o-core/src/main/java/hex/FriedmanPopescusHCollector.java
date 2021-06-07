@@ -1,4 +1,4 @@
-package hex.tree;
+package hex;
 
 import water.fvec.Frame;
 

@@ -454,6 +454,36 @@ class ModelBase(h2o_meta(Keyed)):
             
             return json['feature_interaction']
         print("No calculation available for this model")
+        
+        
+    def h(self, frame, variables):
+        """
+        Calculates Friedman and Popescu's H statistics, in order to look for interactions among variables in h2o gradient-boosting models
+        
+        NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+        H varies from 0 to 1. The larger H, the stronger the evidence for an interaction among the variables.
+        
+        See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
+        **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
+
+        
+        :param frame: the frame that current model has been fitted to
+        :param variables: variables of the interest
+        :return: H statistic of the variables 
+
+        """
+        supported_algos = ['gbm', 'xgboost']
+        if self._model_json["algo"] in supported_algos:
+            kwargs = {}
+            kwargs["model_id"] = self.model_id
+            kwargs["frame"] = frame.key
+            kwargs["variables"] = variables
+          #  kwargs["max_deepening"] = max_deepening
+
+            json = h2o.api("POST /3/FriedmansPopescusH", data=kwargs)
+            return json['h']
+
+        print("No calculation available for this model")    
 
     def cross_validation_metrics_summary(self):
         """

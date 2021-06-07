@@ -14,7 +14,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteractions;
 import hex.FeatureInteractionsCollector;
 import hex.tree.FriedmanPopescusH;
-import hex.tree.FriedmanPopescusHCollector;
+import hex.FriedmanPopescusHCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
