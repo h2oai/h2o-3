@@ -14,6 +14,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.FeatureInteractions;
 import hex.FeatureInteractionsCollector;
 import hex.tree.FriedmanPopescusH;
+import hex.tree.FriedmanPopescusHCollector;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
@@ -38,7 +39,7 @@ import static hex.tree.xgboost.util.GpuUtils.hasGPU;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector, FriedmanPopescusHCollector {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -877,6 +878,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
   }
 
+  @Override
   public double getFriedmanPopescusH(Frame frame, String[] vars) {
     int nclasses = this._output.nclasses() > 2 ? this._output.nclasses() : 1;
     SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
