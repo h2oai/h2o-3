@@ -276,7 +276,7 @@ class H2OFrame(Keyed):
         >>> frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
         >>> frame.key
         """
-        return None if self._ex is None else self._ex._cache._id
+        return None if self._ex is None else self.frame_id
 
 
     @property
@@ -708,8 +708,6 @@ class H2OFrame(Keyed):
         """
         Detach the Python object from the backend, usually by clearing its key
 
-        :returns: Removed H2OFrame
-        
         :examples: 
 
         >>> from random import randrange
