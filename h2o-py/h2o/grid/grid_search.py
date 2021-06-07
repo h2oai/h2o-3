@@ -13,12 +13,12 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
-from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.shared_utils import quoted, stringify_dict_as_map
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
-@BackwardsCompatible(
+@backwards_compatibility(
     instance_attrs=dict(
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
@@ -1375,7 +1375,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.aucpr(train, valid, xval) for model in self.models}
 
-    @deprecated(replaced_by=aucpr)
+    @deprecated_fn(replaced_by=aucpr)
     def pr_auc(self):
         pass
 
@@ -1564,7 +1564,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         return grid
 
 
-    @deprecated("grid.sort_by() is deprecated; use grid.get_grid() instead")
+    @deprecated_fn("grid.sort_by() is deprecated; use grid.get_grid() instead")
     def sort_by(self, metric, increasing=True):
         """Deprecated since 2016-12-12, use grid.get_grid() instead."""
 

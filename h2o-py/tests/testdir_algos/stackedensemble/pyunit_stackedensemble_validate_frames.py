@@ -88,17 +88,6 @@ def test_frames_cannot_be_passed_as_key():
         dict(training_frame=ds['train'], blending_frame=ds['blend'].frame_id),
     ]
 
-    # Constructor validation
-    for kwargs in kw_args:
-        try:
-            H2OStackedEnsembleEstimator(base_models=[], **kwargs)
-            assert False, "should have thrown due to invalid frame"
-        except H2OTypeError as e:
-            attr = next(k for k, v in kwargs.items() if v is not ds['train'])
-            assert "'{}' must be a valid H2OFrame".format(attr) in str(e), str(e)
-
-
-    # train method validation
     se = H2OStackedEnsembleEstimator(base_models=[])
 
     for kwargs in kw_args:

@@ -32,7 +32,7 @@ from h2o.backend import H2OCluster, H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.utils.metaclass import CallableString, BackwardsCompatible, h2o_meta
+from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_meta
 from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
@@ -191,7 +191,7 @@ class H2OConnectionConf(object):
         return curl
 
 
-@BackwardsCompatible(
+@backwards_compatibility(
     class_attrs=dict(
         __ENCODING__="utf-8",
         __ENCODING_ERROR__="replace",

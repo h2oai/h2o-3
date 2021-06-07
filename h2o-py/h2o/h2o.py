@@ -27,7 +27,7 @@ from .job import H2OJob
 from .model.model_base import ModelBase
 from .utils.compatibility import *  # NOQA
 from .utils.config import H2OConfigReader
-from .utils.metaclass import Deprecated as deprecated
+from .utils.metaclass import deprecated_fn
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
@@ -2439,60 +2439,60 @@ def _connect_with_conf(conn_conf):
 #-----------------------------------------------------------------------------------------------------------------------
 
 # Deprecated since 2015-10-08
-@deprecated(replaced_by=import_file)
+@deprecated_fn(replaced_by=import_file)
 def import_frame():
     pass
 
 # Deprecated since 2015-10-08
-@deprecated("Deprecated (converted to a private method).")
+@deprecated_fn("Deprecated (converted to a private method).")
 def parse():
     """Deprecated."""
     pass
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().show_status()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().show_status()``.")
 def cluster_info():
     """Deprecated."""
     _check_connection()
     cluster().show_status()
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().show_status(True)``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().show_status(True)``.")
 def cluster_status():
     """Deprecated."""
     _check_connection()
     cluster().show_status(True)
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().shutdown()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().shutdown()``.")
 def shutdown(prompt=False):
     """Deprecated."""
     _check_connection()
     cluster().shutdown(prompt)
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().network_test()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().network_test()``.")
 def network_test():
     """Deprecated."""
     _check_connection()
     cluster().network_test()
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().timezone``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().timezone``.")
 def get_timezone():
     """Deprecated."""
     _check_connection()
     return cluster().timezone
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, set ``h2o.cluster().timezone`` instead.")
+@deprecated_fn("Deprecated, set ``h2o.cluster().timezone`` instead.")
 def set_timezone(value):
     """Deprecated."""
     _check_connection()
     cluster().timezone = value
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().list_timezones()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().list_timezones()``.")
 def list_timezones():
     """Deprecated."""
     _check_connection()

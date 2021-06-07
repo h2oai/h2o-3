@@ -11,6 +11,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import _str_type
 
 from functools import wraps
+import inspect
 import warnings
 
 from h2o.exceptions import H2ODeprecationWarning
@@ -51,6 +52,7 @@ def deprecated_params(deprecations):
                     new_tup = (((lambda ov: None), None) if new in [None, ()] 
                                else ((lambda ov: {new: ov}), None) if isinstance(new, _str_type)
                                else (new, None) if callable(new)
+                               else ((lambda ov: None), new[1]) if isinstance(new, tuple) and new[0] is None
                                else ((lambda ov: {new[0]: ov}), new[1]) if isinstance(new, tuple) and isinstance(new[0], _str_type)
                                else new)
                     assert isinstance(new_tup, tuple), (
@@ -71,7 +73,7 @@ def deprecated_params(deprecations):
                                                .format(k, fn_name, ', '.join(new_params.keys())))
                         intersect = set(new_params.keys()) & keys
                         if any(intersect):
-                            messages.append("Using both deprecated param ``{}`` and new params ``{}`` in call to ``{}``, "
+                            messages.append("Using both deprecated param ``{}`` and new param(s) ``{}`` in call to ``{}``, "
                                             "the deprecated param will be ignored."
                                             .format(k, ', '.join(intersect), fn_name))
                         else:
@@ -98,7 +100,8 @@ def deprecated_property(name, replaced_by=None, message=None):
     
     if replaced_by:
         new_name = replaced_by.fget.__name__
-        doc = "[Deprecated] Use ``{}`` instead".format(new_name)
+        doc = message or "[Deprecated] Use ``{}`` instead".format(new_name)
+        # doc += "\n\n{}".format(replaced_by.__doc__)
         msg = message or "``{}`` is deprecated, please use ``{}`` instead.".format(name, new_name)
         
         def wrap(accessor):
@@ -111,7 +114,7 @@ def deprecated_property(name, replaced_by=None, message=None):
         
         return property(wrap(replaced_by.fget), wrap(replaced_by.fset), wrap(replaced_by.fdel), doc)
     else:
-        doc = "[Deprecated] The property was removed and will be ignored."
+        doc = message or "[Deprecated] The property was removed and will be ignored."
         msg = message or "``{}`` is deprecated and will be ignored.".format(name)
         
         def _fget(self):
@@ -124,9 +127,20 @@ def deprecated_property(name, replaced_by=None, message=None):
         return property(_fget, _fset, None, doc)
 
 
-class Deprecated(object):
+def _declared_params(fn):
+    if hasattr(inspect, 'signature'):
+        return [(k, p.default if p.default != inspect.Parameter.empty else None) 
+                for k, p in inspect.signature(fn).parameters.items()]
+    else:
+        arg_names = dict(inspect.getmembers(fn.__code__))['co_varnames']
+        kw_def_values = dict(inspect.getmembers(fn))['__defaults__']
+        arg_values = ((None,) * (len(arg_names)-len(kw_def_values))) + kw_def_values
+        return list(zip(arg_names, arg_values))
+        
+
+class _DeprecatedFunction(object):
     """
-    Decorator for deprecated methods.
+    Decorator for deprecated functions or methods.
 
     :example::
         class Foo:
@@ -135,7 +149,7 @@ class Deprecated(object):
                 ...
                 do_sth(param)
 
-            @Deprecated(replaced_by=new_method)
+            @deprecated_function(replaced_by=new_method)
             def old_method(self, param=None):
                 pass
     """
@@ -151,18 +165,28 @@ class Deprecated(object):
         self._replaced_by = replaced_by
 
     def __call__(self, fn):
-        msg = self._msg if self._msg is not None \
-            else "``{}`` is deprecated, please use ``{}`` instead.".format(fullname(fn), fullname(self._replaced_by)) if self._replaced_by is not None \
-            else "``{}`` is deprecated.".format(fullname(fn))
+        msg = (self._msg if self._msg is not None
+               else "``{}`` is deprecated, please use ``{}`` instead."
+                    .format(fullname(fn), fullname(self._replaced_by)) 
+                    if self._replaced_by is not None
+               else "``{}`` is deprecated.".format(fullname(fn)))
         fn.__doc__ = "{msg}\n\n{doc}".format(msg=msg, doc=fn.__doc__) if fn.__doc__ is not None else msg
         call_fn = self._replaced_by or fn
+        declared_params = _declared_params(fn) if call_fn is not fn else []
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
             warnings.warn(msg, H2ODeprecationWarning, 2)
-            return call_fn(*args, **kwargs)
+            new_kwargs = dict(declared_params)
+            for i, arg in enumerate(args):
+                new_kwargs[declared_params[i][0]] = arg
+            new_kwargs.update(kwargs)
+            return call_fn(**new_kwargs)
 
         return wrapper
+
+
+deprecated_fn = _DeprecatedFunction
 
 
 class MetaFeature(object):
@@ -200,14 +224,14 @@ class MetaFeature(object):
             return None
 
 
-class Alias(MetaFeature):
+class _Alias(MetaFeature):
     """
     Decorator to alias the current method without having to implement any duplicating or forwarding code.
 
    :example::
     class Foo(metaclass=H2OMeta):
 
-        @Alias('ein', 'uno')
+        @alias('ein', 'uno')
         def one(self, param):
             ...
             do_sth()
@@ -234,14 +258,17 @@ class Alias(MetaFeature):
     def __call__(self, fn):
         fn._aliases = self._aliases
         return fn
+    
+    
+alias = _Alias
 
 
-class BackwardsCompatible(MetaFeature):
+class _BackwardsCompatible(MetaFeature):
     """
     Decorator to keep backward compatibility support for old methods without exposing them (non-discoverable, non-documented).
 
     :example:
-        @BackwardsCompatible(
+        @backwards_compatibility(
             class_attrs=dict(
               counter=1
             ),
@@ -291,7 +318,7 @@ class BackwardsCompatible(MetaFeature):
         bc = cls.type_attr(clz, '_bc')
         if bc is not None and name in bc._class_attrs:
             return bc._class_attrs[name]
-        return super(BackwardsCompatible, cls).get_class_attr(clz, name)
+        return super(_BackwardsCompatible, cls).get_class_attr(clz, name)
 
     @classmethod
     def set_class_attr(cls, clz, name, value):
@@ -299,7 +326,10 @@ class BackwardsCompatible(MetaFeature):
         if bc is not None and name in bc._class_attrs:
             bc._class_attrs[name] = value
             return True
-        return super(BackwardsCompatible, cls).set_class_attr(clz, name, value)
+        return super(_BackwardsCompatible, cls).set_class_attr(clz, name, value)
+
+
+backwards_compatibility = _BackwardsCompatible
 
 
 class H2OMeta(type):
@@ -308,7 +338,7 @@ class H2OMeta(type):
     Features requiring usage of this metaclass are listed and injected through the `_FEATURES` static field.
     """
 
-    _FEATURES = [Alias, BackwardsCompatible]
+    _FEATURES = [_Alias, _BackwardsCompatible]
 
     def __new__(mcs, name, bases, dct):
         for m in H2OMeta._FEATURES:
