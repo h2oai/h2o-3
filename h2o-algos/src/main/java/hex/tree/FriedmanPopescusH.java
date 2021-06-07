@@ -1,4 +1,4 @@
-package hex.tree.gbm;
+package hex.tree;
 
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -17,7 +17,7 @@ import java.util.*;
 
 public class FriedmanPopescusH {
     
-    public static double h(Frame frame, String[] vars, GBMModel gbmModel) {
+    public static double h(Frame frame, String[] vars, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
         Frame filteredFrame = filterFrame(frame, vars);
         int[] modelIds = getModelIds(frame.names(), vars);
         Map<String, Frame> fValues = new HashMap<>();
@@ -34,7 +34,7 @@ public class FriedmanPopescusH {
                 int[] currCombination = currCombinations.get(j);
                 String[] cols = getCurrCombinationCols(currCombination, vars);
                 Integer[] currModelIds = getCurrentCombinationModelIds(currCombination, modelIds);
-                fValues.put(Arrays.toString(currCombination), computeFValues(gbmModel, currModelIds, filteredFrame, cols));
+                fValues.put(Arrays.toString(currCombination), computeFValues(currModelIds, filteredFrame, cols, learnRate, sharedTreeSubgraphs));
             }
         }
         return computeHValue(fValues, filteredFrame, colIds);
@@ -192,12 +192,12 @@ public class FriedmanPopescusH {
     }
     
     
-    static Frame computeFValues(GBMModel model, Integer[] modelIds, Frame filteredFrame, String[] cols) {
+    static Frame computeFValues(Integer[] modelIds, Frame filteredFrame, String[] cols, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
         // filter frame -> only curr combination cols will be used
         filteredFrame = filterFrame(filteredFrame, cols);
         filteredFrame = new Frame(Key.make(), filteredFrame.names(), filteredFrame.vecs());
         Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
-        Frame uncenteredFvalues = new Frame(partialDependence(model, modelIds, uniqueWithCounts).vec(0));
+        Frame uncenteredFvalues = new Frame(partialDependence(modelIds, uniqueWithCounts, learnRate, sharedTreeSubgraphs).vec(0));
         VecMultiply multiply = new VecMultiply().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
         double meanUncenteredFValue = multiply.result / filteredFrame.numRows();
         for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
@@ -221,13 +221,15 @@ public class FriedmanPopescusH {
     }
     
     
-    static Frame partialDependence(GBMModel model, Integer[] modelIds, Frame uniqueWithCounts) {
+    static Frame partialDependence(Integer[] modelIds, Frame uniqueWithCounts, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
         Frame result = new Frame();
-        for (int treeClass = 0; treeClass < model._output.nclasses(); treeClass++) {
+        int nclasses = sharedTreeSubgraphs[0].length;
+        int ntrees = sharedTreeSubgraphs.length;
+        for (int treeClass = 0; treeClass < nclasses; treeClass++) {
             Vec pdp = Vec.makeZero(uniqueWithCounts.numRows());
-            for (int i = 0; i < (model._parms)._ntrees; i++) {
-                SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
-                Vec currTreePdp = partialDependenceTree(sharedTreeSubgraph, modelIds, model._parms._learn_rate, uniqueWithCounts);
+            for (int i = 0; i < ntrees; i++) {
+                SharedTreeSubgraph sharedTreeSubgraph = sharedTreeSubgraphs[i][treeClass];
+                Vec currTreePdp = partialDependenceTree(sharedTreeSubgraph, modelIds, learnRate, uniqueWithCounts);
                 for (long j = 0; j < uniqueWithCounts.numRows(); j++) {
                     pdp.set(j, pdp.at(j) + currTreePdp.at(j));
                 }

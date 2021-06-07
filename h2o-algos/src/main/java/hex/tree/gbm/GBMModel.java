@@ -295,5 +295,17 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
     return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
   }
+  
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
+    SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        sharedTreeSubgraphs[i][j] = this.getSharedTreeSubgraph(i, j);
+      }
+    }
+    
+    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+  }
 
 }

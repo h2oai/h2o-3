@@ -1,9 +1,10 @@
-package hex.tree.gbm;
+package hex.tree;
 
 
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1336,36 +1337,38 @@ public class FriedmanPopescusHTest {
         params._ntrees = 1;
         mockModel2._parms = params;
 
-        GBMModel.GBMOutput output = new GBMModel.GBMOutput(new GBM(params));
-        output._nclasses = 1;
-        mockModel2._output = output;
+        SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[1][1];
+        sharedTreeSubgraphs[0][0] = mockModel2.getSharedTreeSubgraph(0,0);
 
-        checkFValues(mockModel2, new Integer[] {0,1}, frame, new String[]{"feature0", "feature1"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_01.csv", 4);
-        checkFValues(mockModel2, new Integer[] {1,2}, frame, new String[]{"feature1", "feature2"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_12.csv", 4);
-        checkFValues(mockModel2, new Integer[] {0,1,2}, frame, frame.names(), currentPath + "/src/test/java/hex/tree/gbm/Fvals012result.csv", 5);
-        checkFValues(mockModel2, new Integer[] {1}, frame, new String[]{"feature1"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_1.csv", 3);
 
-        double h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1","feature2"}, mockModel2);
+        checkFValues(new Integer[] {0,1}, frame, new String[]{"feature0", "feature1"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_01.csv", 4, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {1,2}, frame, new String[]{"feature1", "feature2"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_12.csv", 4, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {0,1,2}, frame, frame.names(), currentPath + "/src/test/java/hex/tree/gbm/Fvals012result.csv", 5,  sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {1}, frame, new String[]{"feature1"}, currentPath + "/src/test/java/hex/tree/gbm/f_vals_inds_1.csv", 3,  sharedTreeSubgraphs, params._learn_rate);
+
+
+        
+        double h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1","feature2"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.08603547308125703, 1e-8);
-         h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1"}, mockModel2);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.1821050597335194, 1e-7);
-         h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature2"}, mockModel2);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature2"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.1695429601435328, 1e-8);
-         h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature0"}, mockModel2);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature0"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.16954296014353273, 1e-8);
-         h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature1"}, mockModel2);
+         h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature1"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.2508738347652033, 1e-8);
        
         
         DKV.remove(frame._key);
     }
     
-    void checkFValues(GBMModel model, Integer[] modelIds, Frame filteredFrame, String[] cols, String pathToResult, int expectedNumCols) {
-        Frame res = FriedmanPopescusH.computeFValues(model, modelIds, filteredFrame, cols);
+    void checkFValues(Integer[] modelIds, Frame filteredFrame, String[] cols, String pathToResult, int expectedNumCols, SharedTreeSubgraph[][] sharedTreeSubgraphs, double learn_rate ) {
+        Frame res = FriedmanPopescusH.computeFValues(modelIds, filteredFrame, cols, learn_rate, sharedTreeSubgraphs);
         assertEquals(res.numCols(),expectedNumCols);
         Frame pyres = parseTestFile(pathToResult);
         assertEquals(res.numRows(), pyres.numRows());
-        for (int i=0; i < res.numRows(); i++) {
+        for (int i = 0; i < res.numRows(); i++) {
             assertEquals(res.vec(0).at(i), pyres.vec(0).at(i), 1e-4);
         }
     }
@@ -1410,28 +1413,31 @@ public class FriedmanPopescusHTest {
         params._ntrees = 3;
         mockModel._parms = params;
 
-        GBMModel.GBMOutput output = new GBMModel.GBMOutput(new GBM(params));
-        output._nclasses = 3;
-        mockModel._output = output;
+        SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[ params._ntrees][3];
+        for (int i = 0; i <  params._ntrees; i++) {
+            for (int j = 0; j < 3; j++) {
+                sharedTreeSubgraphs[i][j] = mockModel.getSharedTreeSubgraph(i, j);
+            }
+        }
 
-        checkFValues(mockModel, new Integer[] {0}, frame, new String[]{"sepal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0_multinomial.csv", 3);
-        checkFValues(mockModel, new Integer[] {1}, frame, new String[]{"sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_1_multinomial.csv", 3);
-        checkFValues(mockModel, new Integer[] {2}, frame, new String[]{"petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_2_multinomial.csv", 3);
-        checkFValues(mockModel, new Integer[] {3}, frame, new String[]{"petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_3_multinomial.csv", 3);
-        checkFValues(mockModel, new Integer[] {0, 1}, frame, new String[]{"sepal_len", "sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_01_multinomial.csv", 4);
-        checkFValues(mockModel, new Integer[] {0, 2}, frame, new String[]{"sepal_len", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_02_multinomial.csv", 4);
-        checkFValues(mockModel, new Integer[] {1, 2}, frame, new String[]{"sepal_wid", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_12_multinomial.csv", 4);
-        checkFValues(mockModel, new Integer[]  {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0123_multinomial.csv", 6);
+        checkFValues(new Integer[] {0}, frame, new String[]{"sepal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0_multinomial.csv", 3, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {1}, frame, new String[]{"sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_1_multinomial.csv", 3, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {2}, frame, new String[]{"petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_2_multinomial.csv", 3, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {3}, frame, new String[]{"petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_3_multinomial.csv", 3, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {0, 1}, frame, new String[]{"sepal_len", "sepal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_01_multinomial.csv", 4,  sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {0, 2}, frame, new String[]{"sepal_len", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_02_multinomial.csv", 4, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {1, 2}, frame, new String[]{"sepal_wid", "petal_len"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_12_multinomial.csv", 4, sharedTreeSubgraphs, params._learn_rate);
+        checkFValues(new Integer[] {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, currentPath + "/src/test/java/hex/tree/gbm/fvals_inds_0123_multinomial.csv", 6, sharedTreeSubgraphs, params._learn_rate);
         
-        double h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len","petal_wid"}, mockModel);
+        double h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len","petal_wid"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(1.7358501914626407e-16, h , 1e-15);
-        h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len"}, mockModel);
+        h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(2.6762600878064094e-16, h , 1e-15);
-        h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid"}, mockModel);
+        h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(6.8214295179305406e-12, h , 1e-11);
-        h = FriedmanPopescusH.h(frame, new String[] {"sepal_wid","petal_len"}, mockModel);
+        h = FriedmanPopescusH.h(frame, new String[] {"sepal_wid","petal_len"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(1.6283638520340696e-05, h , 1e-4);
-        h = FriedmanPopescusH.h(frame, new String[] {"petal_len","sepal_wid"}, mockModel);
+        h = FriedmanPopescusH.h(frame, new String[] {"petal_len","sepal_wid"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(1.62836385203624e-05, h , 1e-4);
         
         DKV.remove(frame._key);
