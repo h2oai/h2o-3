@@ -2286,9 +2286,11 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     Generates string representation of an existing MOJO model. 
 
     :param mojo_path: Path to the MOJO archive on the user's local filesystem
-    :param format: Output format. Possible values: json (default), dot 
-    :param tree_index: Index of tree to print (only work dot format)
-    :return: An string representation of given MOJO in given format
+    :param format: Output format. Possible values: json (default), dot, png 
+    :param tree_index: Index of tree to print
+    :return: An string representation of the MOJO for text output formats, 
+        a path to a directory with the rendered images for image output formats
+        (or a path to a file if only a single tree is outputted)  
 
     :example:
 
@@ -2296,15 +2298,10 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
     >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
     >>> prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-    >>> ntrees = 20
-    >>> learning_rate = 0.1
-    >>> depth = 5
-    >>> min_rows = 10
-    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = ntrees,
-    ...                                        learn_rate = learning_rate,
-    ...                                        max_depth = depth,
-    ...                                        min_rows = min_rows,
-    ...                                        distribution = "bernoulli")
+    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = 5,
+    ...                                        learn_rate = 0.1,
+    ...                                        max_depth = 4,
+    ...                                        min_rows = 10)
     >>> gbm_h2o.train(x = list(range(1,prostate.ncol)),
     ...               y = "CAPSULE",
     ...               training_frame = prostate)
@@ -2314,7 +2311,7 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     """    
     assert_is_type(mojo_path, str)
     assert_is_type(format, str, None)
-    assert_satisfies(format, format in [None, "json", "dot"])
+    assert_satisfies(format, format in [None, "json", "dot", "png"])
     assert_is_type(tree_index, int, None)
 
     ls = H2OLocalServer()
@@ -2322,15 +2319,20 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     java = ls._find_java()
     if format is None:
         format = "json"
-    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format]
+    is_image = format == "png"
+    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
+    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format, 
+           "--output", output_file]
     if tree_index is not None:
         cmd += ["--tree", str(tree_index)]
-    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
     try:
-        with open(output_file, 'w+') as stdout:
-            return_code = subprocess.call(cmd, stdout=stdout)
-            stdout.seek(0)
-            output = stdout.read()
+        return_code = subprocess.call(cmd)
+        if is_image:
+            output = output_file
+        else:
+            with open(output_file, "r") as f:
+                output = f.read()
+            os.unlink(output_file)
     except OSError as e:
         traceback = getattr(e, "child_traceback", None)
         raise H2OError("Unable to print MOJO: %s" % e, traceback)

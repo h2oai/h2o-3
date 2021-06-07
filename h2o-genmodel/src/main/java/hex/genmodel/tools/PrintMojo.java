@@ -256,7 +256,7 @@ public class PrintMojo implements MojoPrinter {
     validateArgs();
     PrintStream os;
     if (outputFileName != null) {
-      os = new PrintStream(new FileOutputStream(new File(outputFileName)));
+      os = new PrintStream(new FileOutputStream(outputFileName));
     }
     else {
       os = System.out;
