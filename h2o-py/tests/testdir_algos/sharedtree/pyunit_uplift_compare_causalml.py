@@ -132,6 +132,7 @@ def uplift_compare():
     
     perf = h2o_drfs[0].model_performance(testing_df)
     uplift, n = perf.plot_auuc(metric="gain", plot=False)
+    print(uplift)
     
 if __name__ == "__main__":
     #pyunit_utils.standalone_test(uplift_simple)
