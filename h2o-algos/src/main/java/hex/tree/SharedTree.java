@@ -497,7 +497,7 @@ public abstract class SharedTree<
   
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
-  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
     // Build up the next-generation tree splits from the current histograms.
@@ -547,7 +547,7 @@ public abstract class SharedTree<
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
               respIdx, weightIdx, predsIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
@@ -576,7 +576,6 @@ public abstract class SharedTree<
     final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Numerical columns: Number of histogram bins
-    final int _nbins_cats;      // Categorical columns: Number of histogram bins
     final DTree _tree;
     final int _leafOffsets[/*nclass*/]; //Index of the first leaf node. Leaf indices range from _leafOffsets[k] to _tree._len-1
     final DHistogram _hcs[/*nclass*/][][];
@@ -592,12 +591,11 @@ public abstract class SharedTree<
 
     boolean _did_split;
 
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
                       int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
-      _nbins_cats= nbins_cats;
       _tree = tree;
       _leafOffsets = leafs;
       _hcs  = hcs;
@@ -620,8 +618,7 @@ public abstract class SharedTree<
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-//      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family, 
               _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
