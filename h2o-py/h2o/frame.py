@@ -3897,7 +3897,7 @@ class H2OFrame(Keyed):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
-    def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel):
+    def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel, return_pandas=False):
         '''
         This method requires that you import the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
 
@@ -3929,7 +3929,8 @@ class H2OFrame(Keyed):
         :param predictors: List of predictor columns, can be column names or indices
         :param yresp: response column, can be column index or name
         :param h2oXGBoostModel: H2OXGboost model that are built with the same H2OFrame as input earlier
-        :return: DMatrix that can be an input to a native XGBoost model
+        :param return_pandas: Whether to return `pandas.DataFrame` or DMatrix. Default to `False`
+        :return: DMatrix that can be an input to a native XGBoost model, or `pandas.DataFrame`
 
         :examples:
 
@@ -4023,9 +4024,11 @@ class H2OFrame(Keyed):
         pandaFtrain.drop([yresp], axis=1, inplace=True)
         pandaF = pd.concat([c0, pandaFtrain], axis=1)
         pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+        if return_pandas:
+            return pandaF
         newX = list(pandaFtrain.columns.values)
-        data = pandaF.as_matrix(newX)
-        label = pandaF.as_matrix([yresp])
+        data = pandaF[newX].values
+        label = pandaF[[yresp]].values
 
         return xgb.DMatrix(data=csr_matrix(data), label=label) \
             if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, label=label)
