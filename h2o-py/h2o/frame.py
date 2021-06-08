@@ -4030,8 +4030,9 @@ class H2OFrame(Keyed):
         data = pandaF[newX].values
         label = pandaF[[yresp]].values
 
-        return xgb.DMatrix(data=csr_matrix(data), label=label) \
-            if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, label=label)
+        return xgb.DMatrix(data=csr_matrix(data), label=label, feature_names=newX) \
+            if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, 
+                                                                                label=label, feature_names=newX)
 
     def pivot(self, index, column, value):
         """
