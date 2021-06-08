@@ -259,7 +259,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       // Adds a layer to the trees each pass.
       final int[] leafs = new int[1];
       for(int depth=0 ; depth<_parms._max_depth; depth++ ) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, ktrees, leafs, hcs, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }

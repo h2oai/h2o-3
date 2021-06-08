@@ -78,13 +78,7 @@ public final class DHistogram extends Iced {
   public void addWAtomic(int i, double wDelta) {  // used by AutoML
     AtomicUtils.DoubleArray.add(_vals, _vals_dim*i+0, wDelta);
   }
-
-  public void addNasAtomic(double y, double wy, double wyy) {
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*_nbin+0,y);
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*_nbin+1,wy);
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*_nbin+2,wyy);
-  }
-
+  
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   public double wYNA()  { return _vals[_vals_dim*_nbin+1]; }
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
@@ -349,26 +343,7 @@ public final class DHistogram extends Iced {
     // this always holds: _vals != null
     assert _nbin > 0;
   }
-
-  // Add one row to a bin found via simple linear interpolation.
-  // Compute bin min/max.
-  // Compute response mean & variance.
-  void incr( double col_data, double y, double w ) {
-    if (Double.isNaN(col_data)) {
-      addNasAtomic(w,w*y,w*y*y);
-      return;
-    }
-    assert Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
-    int b = bin(col_data);      // Compute bin# via linear interpolation
-    water.util.AtomicUtils.DoubleArray.add(_vals,_vals_dim*b,w); // Bump count in bin
-    // Track actual lower/upper bound per-bin
-    if (!Double.isInfinite(col_data)) {
-      setMin(col_data);
-      setMaxIn(col_data);
-    }
-    if( y != 0 && w != 0) incr0(b,y,w);
-  }
-
+  
   // Merge two equal histograms together.  Done in a F/J reduce, so no
   // synchronization needed.
   public void add( DHistogram dsh ) {
@@ -522,53 +497,6 @@ public final class DHistogram extends Iced {
     for(int i = 0; i < _vals.length -_vals_dim /* do not reduce precision of NAs */; i+=_vals_dim) {
       _vals[i+1] = (float)_vals[i+1];
       _vals[i+2] = (float)_vals[i+2];
-    }
-  }
-
-  public void updateSharedHistosAndReset(ScoreBuildHistogram.LocalHisto lh, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {
-    double minmax[] = new double[]{_min2,_maxIn};
-    // Gather all the data for this set of rows, for 1 column and 1 split/NID
-    // Gather min/max, wY and sum-squares.
-    for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double weight = ws[k];
-      if (weight == 0) continue;
-      double col_data = cs[k];
-      if (col_data < minmax[0]) minmax[0] = col_data;
-      if (col_data > minmax[1]) minmax[1] = col_data;
-      double y = ys[k];
-      assert(!Double.isNaN(y));
-      double wy = weight * y;
-      double wyy = wy * y;
-      if (Double.isNaN(col_data)) {
-        //separate bucket for NA - atomically added to the shared histo
-        addNasAtomic(weight,wy,wyy);
-      } else {
-        // increment local per-thread histograms
-        int b = bin(col_data);
-        lh.wAdd(b,weight);
-        lh.wYAdd(b,wy);
-        lh.wYYAdd(b,wyy);
-      }
-    }
-    // Atomically update histograms
-    setMin(minmax[0]);       // Track actual lower/upper bound per-bin
-    setMaxIn(minmax[1]);
-    final int len = _nbin;
-    for( int b=0; b<len; b++ ) {
-      int binDimStart = _vals_dim*b;
-      if (lh.w(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart, lh.w(b));
-        lh.wClear(b);
-      }
-      if (lh.wY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart+1, (float) lh.wY(b));
-        lh.wYClear(b);
-      }
-      if (lh.wYY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart+2,(float)lh.wYY(b));
-        lh.wYYClear(b);
-      }
     }
   }
 
