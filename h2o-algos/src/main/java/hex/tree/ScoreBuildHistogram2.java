@@ -284,9 +284,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     final DHistogram [] _lh;
 
     AtomicInteger _cidx;
-    private boolean _done;
-
-    public boolean isDone(){return _done || (_done = _cidx.get() >= _cids.length);}
 
     ComputeHistoThread(DHistogram [] hcs, int col, int maxChunkSz,AtomicInteger cidx){
       _lh = hcs; _col = col; _maxChunkSz = maxChunkSz;
