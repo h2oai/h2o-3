@@ -27,11 +27,17 @@ class H2OConfigReader(object):
         if not self._config_loaded:
             self.read_config()
         return self._config
-
-
+    
     #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def _get_instance():
+        """Return the singleton instance of H2OConfigReader."""
+        if not hasattr(H2OConfigReader, "_instance"):
+            H2OConfigReader._instance = H2OConfigReader()
+        return H2OConfigReader._instance
 
     _allowed_config_keys = {
         "init.check_version", "init.proxy", "init.url", "init.verify_ssl_certificates",
@@ -40,19 +46,10 @@ class H2OConfigReader(object):
     }
 
     def __init__(self, root=""):
-        """Initialize the singleton instance of H2OConfigReader."""
-        assert not hasattr(H2OConfigReader, "_instance"), "H2OConfigReader is intended to be used as a singleton"
         self._logger = logging.getLogger("h2o")
         self._root = root
         self._config = {}
         self._config_loaded = False
-
-    @staticmethod
-    def _get_instance():
-        """Return the singleton instance of H2OConfigReader."""
-        if not hasattr(H2OConfigReader, "_instance"):
-            H2OConfigReader._instance = H2OConfigReader()
-        return H2OConfigReader._instance
 
     def read_config(self):
         """Find and parse config file, storing all variables in ``self._config``."""
