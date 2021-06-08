@@ -22,7 +22,7 @@ def test_deprecated_params_without_new_param():
         def foobar(self, op='+'):
             return eval("%s %s %s" % (self.foo,  op, self.bar))
         
-    Foo.name = fullname(Foo)
+    prefix = fullname(Foo.__init__)[:-8]
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
@@ -33,12 +33,12 @@ def test_deprecated_params_without_new_param():
         f = Foo(foo=3, baz=5)
         assert not hasattr(f, 'baz')
         assert len(w) == 1
-        assert "``baz`` param of ``{}.__init__`` is deprecated and will be ignored".format(Foo.name) in str(w[0].message)
-        w.clear()
+        assert "``baz`` param of ``{}__init__`` is deprecated and will be ignored".format(prefix) in str(w[0].message)
+        del w[:]
         
         assert f.foobar(operator="*") == 5
         assert len(w) == 1
-        assert "``operator`` param of ``{}.foobar`` is deprecated and will be ignored".format(Foo.name) in str(w[0].message)
+        assert "``operator`` param of ``{}foobar`` is deprecated and will be ignored".format(prefix) in str(w[0].message)
 
 
 def test_deprecated_params_with_replacement():
@@ -54,7 +54,7 @@ def test_deprecated_params_with_replacement():
         def foobar(self, op='+'):
             return eval("%s %s %s" % (self.foo,  op, self.bar))
 
-    Foo.name = fullname(Foo)
+    prefix = fullname(Foo.__init__)[:-8]
 
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
@@ -66,29 +66,29 @@ def test_deprecated_params_with_replacement():
         assert f.bar == 5
         assert f.foobar() == 8
         assert len(w) == 1
-        assert "``Bar`` param of ``{}.__init__`` is deprecated, please use ``bar`` instead".format(Foo.name) in str(w[0].message)
-        w.clear()
+        assert "``Bar`` param of ``{}__init__`` is deprecated, please use ``bar`` instead".format(prefix) in str(w[0].message)
+        del w[:]
 
         assert f.foobar(operator="*") == 15
         assert len(w) == 1
-        assert "``operator`` param of ``{}.foobar`` is deprecated, please use ``op`` instead".format(Foo.name) in str(w[0].message)
-        w.clear()
+        assert "``operator`` param of ``{}foobar`` is deprecated, please use ``op`` instead".format(prefix) in str(w[0].message)
+        del w[:]
         
         f_conflict = Foo(foo=3, Foo=6)
         assert f_conflict.foo == 3
         assert f_conflict.foobar() == 5
         assert len(w) == 2
-        assert "``Foo`` param of ``{}.__init__`` is deprecated, please use ``foo`` instead".format(Foo.name) in str(w[0].message)
-        assert "Using both deprecated param ``Foo`` and new param(s) ``foo`` in call to ``{}.__init__``, the deprecated param will be ignored.".format(Foo.name) in str(w[1].message)
-        w.clear()
+        assert "``Foo`` param of ``{}__init__`` is deprecated, please use ``foo`` instead".format(prefix) in str(w[0].message)
+        assert "Using both deprecated param ``Foo`` and new param(s) ``foo`` in call to ``{}__init__``, the deprecated param will be ignored.".format(prefix) in str(w[1].message)
+        del w[:]
         
         f_conflict = Foo(Foo=6, foo=3)  # verifying that the order is not important
         assert f_conflict.foo == 3
         assert f_conflict.foobar() == 5
         assert len(w) == 2
-        assert "``Foo`` param of ``{}.__init__`` is deprecated, please use ``foo`` instead".format(Foo.name) in str(w[0].message)
-        assert "Using both deprecated param ``Foo`` and new param(s) ``foo`` in call to ``{}.__init__``, the deprecated param will be ignored.".format(Foo.name) in str(w[1].message)
-        w.clear()
+        assert "``Foo`` param of ``{}__init__`` is deprecated, please use ``foo`` instead".format(prefix) in str(w[0].message)
+        assert "Using both deprecated param ``Foo`` and new param(s) ``foo`` in call to ``{}__init__``, the deprecated param will be ignored.".format(prefix) in str(w[1].message)
+        del w[:]
 
 
 def test_deprecated_params_message_can_be_customized():
@@ -127,7 +127,7 @@ def test_deprecated_params_advanced_syntax():
 
 
 def test_deprecated_property():
-    class Foo:
+    class Foo(object): # required to get it working on Py2
         def __init__(self, bar=1):
             self._bar = bar
             
@@ -177,24 +177,31 @@ def test_deprecated_function():
         return foo(baz+2)
     
     @deprecated_fn(replaced_by=foo)
-    def Foo(bar=2):
-        pass
-
-    @deprecated_fn(replaced_by=foo, msg="custom FOO message")
-    def FOO(bar=10):
+    def Foo():
         pass
     
+    @deprecated_fn(replaced_by=foo, msg="custom FOO message")
+    def FOO():
+        pass
+
+    @deprecated_fn(msg="deprecated, replaced by ``foo``")
+    def foo_old_defaults(bar=2):
+        return foo(bar=bar)
+
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter('always')
         assert fee() == 25  # 1st warning
-        assert Foo() == 4  # 2nd warning
+        assert Foo() == 1  # 2nd warning
         assert Foo(3) == 9  # 3rd warning
-        assert FOO() == 100  # 4th warning
+        assert FOO() == 1  # 4th warning
         assert FOO(9) == 81  # 5th warning
-        assert len(w) == 5
+        assert foo_old_defaults() == 4  # 6th warning
+        assert foo_old_defaults(3) == 9  # 7th warning
+        assert len(w) == 7
         assert re.match(r"``[\w.<>]*fee`` is deprecated.", str(w[0].message))
         assert re.match(r"``[\w.<>]*Foo`` is deprecated, please use ``[\w.<>]*foo`` instead.", str(w[1].message))
         assert str(w[3].message) == "custom FOO message"
+        assert str(w[5].message) == "deprecated, replaced by ``foo``"
         
         
 pu.run_tests([

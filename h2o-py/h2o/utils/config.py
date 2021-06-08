@@ -25,7 +25,7 @@ class H2OConfigReader(object):
         """Retrieve the config as a dictionary of key-value pairs."""
         self = H2OConfigReader._get_instance()
         if not self._config_loaded:
-            self._read_config()
+            self.read_config()
         return self._config
 
 
@@ -39,10 +39,11 @@ class H2OConfigReader(object):
         "general.allow_breaking_changes"
     }
 
-    def __init__(self):
+    def __init__(self, root=""):
         """Initialize the singleton instance of H2OConfigReader."""
         assert not hasattr(H2OConfigReader, "_instance"), "H2OConfigReader is intended to be used as a singleton"
         self._logger = logging.getLogger("h2o")
+        self._root = root
         self._config = {}
         self._config_loaded = False
 
@@ -53,7 +54,7 @@ class H2OConfigReader(object):
             H2OConfigReader._instance = H2OConfigReader()
         return H2OConfigReader._instance
 
-    def _read_config(self):
+    def read_config(self):
         """Find and parse config file, storing all variables in ``self._config``."""
         self._config_loaded = True
         conf = []
@@ -86,23 +87,22 @@ class H2OConfigReader(object):
                             continue
                         self._logger.error("Syntax error in config file line %d: %s" % (lineno, line))
                 self._config = dict(conf)
-                return
+                return self._config
 
-    @staticmethod
-    def _candidate_log_files():
+    def _candidate_log_files(self):
         """Return possible locations for the .h2oconfig file, one at a time."""
         # Search for .h2oconfig in the current directory and all parent directories
-        relpath = ".h2oconfig"
-        prevpath = None
+        config_file = ".h2oconfig"
+        lookup_dir = self._root
+        prev_path = None
         while True:
-            abspath = os.path.abspath(relpath)
-            if abspath == prevpath: break
-            prevpath = abspath
-            relpath = "../" + relpath
-            yield abspath
+            lookup_path = os.path.abspath(os.path.join(lookup_dir, config_file))
+            if lookup_path == prev_path: break
+            prev_path = lookup_path
+            lookup_dir = os.path.join(lookup_dir, os.pardir)
+            yield lookup_path
         # Also check if .h2oconfig exists in the user's directory
         yield os.path.expanduser("~/.h2oconfig")
-
 
 
 def get_config_value(key, default=None):

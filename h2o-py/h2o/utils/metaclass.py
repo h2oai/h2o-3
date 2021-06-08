@@ -127,17 +127,6 @@ def deprecated_property(name, replaced_by=None, message=None):
         return property(_fget, _fset, None, doc)
 
 
-def _declared_params(fn):
-    if hasattr(inspect, 'signature'):
-        return [(k, p.default if p.default != inspect.Parameter.empty else None) 
-                for k, p in inspect.signature(fn).parameters.items()]
-    else:
-        arg_names = dict(inspect.getmembers(fn.__code__))['co_varnames'] or ()
-        kw_def_values = dict(inspect.getmembers(fn))['__defaults__'] or ()
-        arg_values = ((None,) * (len(arg_names)-len(kw_def_values))) + kw_def_values
-        return list(zip(arg_names, arg_values))
-        
-
 class _DeprecatedFunction(object):
     """
     Decorator for deprecated functions or methods.
@@ -172,16 +161,11 @@ class _DeprecatedFunction(object):
                else "``{}`` is deprecated.".format(fullname(fn)))
         fn.__doc__ = "{msg}\n\n{doc}".format(msg=msg, doc=fn.__doc__) if fn.__doc__ is not None else msg
         call_fn = self._replaced_by or fn
-        declared_params = _declared_params(fn) if call_fn is not fn else []
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
             warnings.warn(msg, H2ODeprecationWarning, 2)
-            new_kwargs = dict(declared_params)
-            for i, arg in enumerate(args):
-                new_kwargs[declared_params[i][0]] = arg
-            new_kwargs.update(kwargs)
-            return call_fn(**new_kwargs)
+            return call_fn(*args, **kwargs)
 
         return wrapper
 
