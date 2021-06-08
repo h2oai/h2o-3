@@ -470,7 +470,16 @@ class ModelBase(h2o_meta(Keyed)):
         :param frame: the frame that current model has been fitted to
         :param variables: variables of the interest
         :return: H statistic of the variables 
-
+        
+        :examples:
+        >>> prostate_train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate_train.csv")
+        >>> prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
+        >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees=100, learn_rate=0.1,
+        >>>                                 max_depth=5,
+        >>>                                 min_rows=10,
+        >>>                                 distribution="bernoulli")
+        >>> gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
+        >>> h = gbm_h2o.h(prostate_train, ['DPROS','DCAPS'])
         """
         supported_algos = ['gbm', 'xgboost']
         if self._model_json["algo"] in supported_algos:
@@ -478,7 +487,6 @@ class ModelBase(h2o_meta(Keyed)):
             kwargs["model_id"] = self.model_id
             kwargs["frame"] = frame.key
             kwargs["variables"] = variables
-          #  kwargs["max_deepening"] = max_deepening
 
             json = h2o.api("POST /3/FriedmansPopescusH", data=kwargs)
             return json['h']
