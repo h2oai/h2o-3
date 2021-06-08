@@ -3,10 +3,7 @@ package hex.tree;
 import hex.genmodel.utils.DistributionFamily;
 import water.H2O.H2OCountedCompleter;
 import water.MRTask;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 
 /**  Score and Build Histogram
  *
