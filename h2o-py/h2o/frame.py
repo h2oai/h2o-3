@@ -230,7 +230,12 @@ class H2OFrame(Keyed):
             else:
                 return
         else:
-            assert_is_type(param, H2OFrame, message=message)
+            assert_is_type(param, str, H2OFrame, message=message)
+            if is_type(param, str):
+                fr = h2o.get_frame(param)
+                if fr is None:
+                    raise ValueError(message)
+                return fr
             return param
 
 

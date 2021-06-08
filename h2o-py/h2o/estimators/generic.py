@@ -70,8 +70,7 @@ class H2OGenericEstimator(H2OEstimator):
 
     @model_key.setter
     def model_key(self, model_key):
-        assert_is_type(model_key, None, str, H2OFrame)
-        self._parms["model_key"] = model_key
+        self._parms["model_key"] = H2OFrame._validate(model_key, 'model_key')
 
     @property
     def path(self):

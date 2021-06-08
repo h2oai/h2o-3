@@ -304,6 +304,8 @@ def gen_module(schema, algo):
         property_setter = get_customizations_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
         if property_setter:
             yield reformat_block(property_setter.format(**locals()), 8)
+        elif "H2OFrame" in ptype:                
+            yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
             yield "        self._parms[\"%s\"] = %s" % (sname, pname)

@@ -216,8 +216,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, str, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
     @property
     def validation_frame(self):
@@ -243,8 +242,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, str, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
     @property
     def ignored_columns(self):
@@ -876,8 +874,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @user_y.setter
     def user_y(self, user_y):
-        assert_is_type(user_y, None, str, H2OFrame)
-        self._parms["user_y"] = user_y
+        self._parms["user_y"] = H2OFrame._validate(user_y, 'user_y')
 
     @property
     def user_x(self):
@@ -911,8 +908,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @user_x.setter
     def user_x(self, user_x):
-        assert_is_type(user_x, None, str, H2OFrame)
-        self._parms["user_x"] = user_x
+        self._parms["user_x"] = H2OFrame._validate(user_x, 'user_x')
 
     @property
     def expand_user_y(self):

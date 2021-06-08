@@ -132,8 +132,8 @@ def _declared_params(fn):
         return [(k, p.default if p.default != inspect.Parameter.empty else None) 
                 for k, p in inspect.signature(fn).parameters.items()]
     else:
-        arg_names = dict(inspect.getmembers(fn.__code__))['co_varnames']
-        kw_def_values = dict(inspect.getmembers(fn))['__defaults__']
+        arg_names = dict(inspect.getmembers(fn.__code__))['co_varnames'] or ()
+        kw_def_values = dict(inspect.getmembers(fn))['__defaults__'] or ()
         arg_values = ((None,) * (len(arg_names)-len(kw_def_values))) + kw_def_values
         return list(zip(arg_names, arg_values))
         

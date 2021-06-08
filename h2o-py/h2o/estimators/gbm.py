@@ -384,8 +384,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, str, H2OFrame)
-        self._parms["training_frame"] = training_frame
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
     @property
     def validation_frame(self):
@@ -412,8 +411,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, str, H2OFrame)
-        self._parms["validation_frame"] = validation_frame
+        self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
     @property
     def nfolds(self):
@@ -1933,8 +1931,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @calibration_frame.setter
     def calibration_frame(self, calibration_frame):
-        assert_is_type(calibration_frame, None, str, H2OFrame)
-        self._parms["calibration_frame"] = calibration_frame
+        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
 
     @property
     def custom_metric_func(self):
