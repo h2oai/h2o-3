@@ -3,13 +3,10 @@ package hex.tree;
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
 import org.apache.log4j.Logger;
-import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
@@ -44,7 +41,7 @@ import java.util.Random;
  *  available as well, via {@code _histoType}.
  *
 */
-public final class DHistogram extends Iced {
+public final class DHistogram extends Iced<DHistogram> {
   
   private static final Logger LOG = Logger.getLogger(DHistogram.class);
   
@@ -75,10 +72,6 @@ public final class DHistogram extends Iced {
   public double wY(int i){ return _vals[_vals_dim*i+1];}
   public double wYY(int i){return _vals[_vals_dim*i+2];}
 
-  public void addWAtomic(int i, double wDelta) {  // used by AutoML
-    AtomicUtils.DoubleArray.add(_vals, _vals_dim*i+0, wDelta);
-  }
-  
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   public double wYNA()  { return _vals[_vals_dim*_nbin+1]; }
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
@@ -108,20 +101,7 @@ public final class DHistogram extends Iced {
     return _vals_dim == 7;
   }
 
-  // Atomically updated double min/max
-  protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
-  private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-  static private final long _min2Offset;
-  static private final long _max2Offset;
-  static {
-    try {
-      _min2Offset = _unsafe.objectFieldOffset(DHistogram.class.getDeclaredField("_min2"));
-      _max2Offset = _unsafe.objectFieldOffset(DHistogram.class.getDeclaredField("_maxIn"));
-    } catch( Exception e ) {
-      throw H2O.fail();
-    }
-  }
-
+  protected double  _min2, _maxIn; // Min/Max, _maxIn is Inclusive.
   public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
   transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
   transient int _zeroSplitPntPos;
@@ -161,20 +141,6 @@ public final class DHistogram extends Iced {
       this.splitPts = splitPts;
     }
     double[/*nbins*/] splitPts;
-  }
-
-  public void setMin( double min ) {
-    long imin = Double.doubleToRawLongBits(min);
-    double old = _min2;
-    while( min < old && !_unsafe.compareAndSwapLong(this, _min2Offset, Double.doubleToRawLongBits(old), imin ) )
-      old = _min2;
-  }
-  // Find Inclusive _max2
-  public void setMaxIn( double max ) {
-    long imax = Double.doubleToRawLongBits(max);
-    double old = _maxIn;
-    while( max > old && !_unsafe.compareAndSwapLong(this, _max2Offset, Double.doubleToRawLongBits(old), imax ) )
-      old = _maxIn;
   }
 
   static class StepOutOfRangeException extends RuntimeException {
@@ -426,14 +392,6 @@ public final class DHistogram extends Iced {
     double n = w(b);
     if( n<=1 ) return 0;
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
-  }
-
-  // Add one row to a bin found via simple linear interpolation.
-  // Compute response mean & variance.
-  // Done racily instead F/J map calls, so atomic
-  public void incr0( int b, double y, double w ) {
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*b+1,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*b+2,(float)(w*y*y));
   }
 
   /**
