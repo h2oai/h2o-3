@@ -5,27 +5,27 @@ from importlib import import_module
 __mixin_classes_cache__ = {}
 
 
-def mixin(obj, *mixins):
+def mixin(target, *mixins):
     """
     Function adding one or more mixin class to the list of parent classes of the current object.
     It's the safest and recommended way to apply mixins as it just adds base classes to the class hierarchy of the object.
 
-    :param obj: the object on which to apply the mixins.
+    :param target: the object on which to apply the mixins.
     :param mixins: the list of mixin classes to add to the object.
     :return: the extended object.
     """
-    mro = obj.__class__.mro()
+    mro = target.__class__.mro()
     mixins = filter(lambda m: m and m not in mro, mixins)
     if not mixins:
-        return obj
-    bases = (obj.__class__,)+tuple(mixins)
+        return target
+    bases = (target.__class__,) + tuple(mixins)
     cls = __mixin_classes_cache__.get(bases, None)
     if cls is None:
-        cls = type(obj.__class__.__name__, bases, dict())
-        cls.__module__ = obj.__class__.__module__
+        cls = type(target.__class__.__name__, bases, dict())
+        cls.__module__ = target.__class__.__module__
         __mixin_classes_cache__[bases] = cls
-    obj.__class__ = cls
-    return obj
+    target.__class__ = cls
+    return target
 
 
 class Mixin:
@@ -33,12 +33,12 @@ class Mixin:
     Context manager used to temporarily add mixins to an object.
     """
 
-    def __init__(self, obj, *mixins):
+    def __init__(self, target, *mixins):
         """
-        :param obj: the object on which the mixins are temporarily added.
+        :param target: the object on which the mixins are temporarily added.
         :param mixins: the list of mixins to apply.
         """
-        self._inst = mixin(copy.copy(obj), *mixins)  # no deepcopy necessary, we just want to ensure that the mixin methods are not added to original instance
+        self._inst = mixin(copy.copy(target), *mixins)  # no deepcopy necessary, we just want to ensure that the mixin methods are not added to original instance
 
     def __enter__(self):
         if hasattr(self._inst, '__enter__'):
@@ -56,37 +56,36 @@ def load_ext(name):
     return getattr(module, cls)
 
 
-def assign(obj, objs, deepcopy=False, reserved=False, filtr=None):
+def assign(target, objs, deepcopy=False, reserved=False, predicate=None):
     """
     Copies (shallow) all the instance properties from objs to obj.
     The last property added takes precedence over the previous ones.
     For example, when applying ``assign(obj, ext1, ext2)``: 
     if all `obj`, `ext1` and `ext2` contain the property `prop` then the final object will be assigned `prop` from `ext2`.
-    :param obj: the instance that will receive the properties from others.
+    :param target: the instance that will receive the properties from others.
     :param objs: the instances whose properties will be added to the first instance.
     :param deepcopy: True if the added properties should be deep copied (default: False).
     :param reserved: True if reserved properties (e.g. __dict__, __doc__, ...) should also be assigned (default: False).
-    :param filtr: function fn(key, value) returning True for the properties that should be assigned.
+    :param predicate: function fn(key, value) returning True for the properties that should be assigned.
         If None (default), then all are assigned.
     :return: the modified instance `obj`.
     """
-    _filtr = (lambda k, v: not _is_reserved_name(k) and (filtr is None or filtr(k, v))) if not reserved else filtr
+    _filter = (lambda k, v: not _is_reserved_name(k) and (predicate is None or predicate(k, v))) if not reserved else predicate
     objs = filter(None, objs if isinstance(objs, (list, tuple)) else [objs])
     for o in objs:
         props = vars(o)
-        if _filtr:
-            props = {k: v for k, v in props.items() if _filtr(k, v)}
+        if _filter:
+            props = {k: v for k, v in props.items() if _filter(k, v)}
         if deepcopy:
             props = copy.deepcopy(props)
-        # print("%s, assigned attributes: %s" % (obj.__class__, list(props.keys())))
         for k, v in props.items():
-            setattr(obj, k, v)
-    return obj
+            setattr(target, k, v)
+    return target
     
     
-def rebind(obj, *mixins):
+def rebind(target, *mixins):
     """
-    inspect the methods from each mixin and bind them each to the object.
+    inspect the methods from each mixin and bind them each to the target object.
     """
     mixins = filter(None, mixins)
     for m in reversed(mixins): 
@@ -94,7 +93,7 @@ def rebind(obj, *mixins):
             if _is_reserved_name(name): continue
             attr = getattr(m, name)
             if not callable(attr): continue
-            setattr(obj, name, attr.__get__(obj))
+            setattr(target, name, attr.__get__(target))
 
 
 def _is_reserved_name(name):
