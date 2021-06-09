@@ -35,6 +35,7 @@ def bernoulli_gbm():
                                          min_rows=min_rows,
                                          distribution="bernoulli")
   gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
+
   # Build scikit GBM classification model
   #Log.info("scikit GBM with same parameters\n")
   gbm_sci = ensemble.GradientBoostingClassifier(learning_rate=learning_rate, n_estimators=ntrees, max_depth=depth,

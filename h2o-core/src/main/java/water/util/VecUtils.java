@@ -863,4 +863,20 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Multiplies two Vecs of the same length
+   */
+  public static class VecMultiply extends MRTask<VecMultiply> {
+    public double result;
+    @Override public void map(Chunk[] bvs) {
+      result = 0;
+      int len = bvs[0]._len;
+      for (int i = 0; i < len; i++) {
+        result += bvs[0].atd(i) * bvs[1].atd(i);
+      }
+    }
+    @Override public void reduce(VecMultiply mrt) {
+      result += mrt.result;
+    }
+  }
 }

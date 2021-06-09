@@ -12,9 +12,21 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.util.ArrayUtils;
+import water.util.VecUtils;
 
 import java.util.*;
 
+/**
+ * Calculates Friedman and Popescu's H statistics, in order to look for interactions among variables in h2o gradient-boosting models
+ *
+ * NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+ * H varies from 0 to 1. The larger H, the stronger the evidence for an interaction among the variables.
+ *
+ * See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
+ * **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
+ *         
+ * Reference implementation: https://pypi.org/project/sklearn-gbmi/
+ * */
 public class FriedmanPopescusH {
     
     public static double h(Frame frame, String[] vars, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
@@ -105,7 +117,7 @@ public class FriedmanPopescusH {
     static double findFValue(long i, int[] currCombination, Frame currFValues, Frame filteredFrame) {
         double[] valueToFindFValueFor = getValueToFindFValueFor(currCombination, filteredFrame, i);
         String[] currNames = getCurrCombinationNames(currCombination, filteredFrame.names());
-        FindFValue findFValueTask = new FindFValue(valueToFindFValueFor, currNames, currFValues._names);
+        FindFValue findFValueTask = new FindFValue(valueToFindFValueFor, currNames, currFValues._names, 1e-5);
         Frame result = findFValueTask.doAll(Vec.T_NUM, currFValues).outputFrame();
         if (result.numRows() == 0) {
             throw new RuntimeException("FValue was not found!" + Arrays.toString(currCombination) + "value: " + Arrays.toString(valueToFindFValueFor));
@@ -118,11 +130,13 @@ public class FriedmanPopescusH {
         double[] valueToFindFValueFor;
         String[] currNames;
         String[] currFValuesNames;
+        double eps;
 
-        FindFValue(double[] valueToFindFValueFor, String[] currNames, String[] currFValuesNames) {
+        FindFValue(double[] valueToFindFValueFor, String[] currNames, String[] currFValuesNames, double eps) {
             this.valueToFindFValueFor = valueToFindFValueFor;
             this.currNames = currNames;
             this.currFValuesNames = currFValuesNames;
+            this.eps = eps;
         }
 
         @Override public void map(Chunk[] cs, NewChunk[] nc) {
@@ -130,7 +144,7 @@ public class FriedmanPopescusH {
             for (int iRow = 0; iRow < cs[0].len(); iRow++) {
                 for (int k = 0; k < valueToFindFValueFor.length; k++) {
                     int id = ArrayUtils.find(currFValuesNames, currNames[k]);
-                    if (Math.abs(valueToFindFValueFor[k] - cs[id].atd(iRow)) < 1e-5) {
+                    if (Math.abs(valueToFindFValueFor[k] - cs[id].atd(iRow)) < eps) {
                         count++;
                     }
                 }
@@ -198,7 +212,7 @@ public class FriedmanPopescusH {
         filteredFrame = new Frame(Key.make(), filteredFrame.names(), filteredFrame.vecs());
         Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
         Frame uncenteredFvalues = new Frame(partialDependence(modelIds, uniqueWithCounts, learnRate, sharedTreeSubgraphs).vec(0));
-        VecMultiply multiply = new VecMultiply().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
+        VecUtils.VecMultiply multiply = new VecUtils.VecMultiply().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
         double meanUncenteredFValue = multiply.result / filteredFrame.numRows();
         for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
             uncenteredFvalues.vec(0).set(i, uncenteredFvalues.vec(0).at(i) - meanUncenteredFValue);
@@ -206,19 +220,6 @@ public class FriedmanPopescusH {
         return uncenteredFvalues.add(uniqueWithCounts);
     }
     
-    private static class VecMultiply extends MRTask<VecMultiply> {
-        double result;
-        @Override public void map( Chunk[] bvs ) {
-            result = 0;
-            int len = bvs[0]._len;
-            for (int i = 0; i < len; i++) {
-                result += bvs[0].atd(i) * bvs[1].atd(i);
-            }
-        }
-        @Override public void reduce( VecMultiply mrt ) { 
-            result += mrt.result;
-        }
-    }
     
     
     static Frame partialDependence(Integer[] modelIds, Frame uniqueWithCounts, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
@@ -250,7 +251,6 @@ public class FriedmanPopescusH {
     
     
     static Frame filterFrame(Frame frame, String[] cols) {
-        // return frame with those cols of frame which have names in cols
         Frame frame1 = new Frame();
         frame1.add(cols, frame.vecs(cols));
         return frame1;
@@ -290,28 +290,28 @@ public class FriedmanPopescusH {
         }
     }
 
-    
-    
-    public static Vec partialDependenceTree(SharedTreeSubgraph tree, Integer[] targetFeature, double learnRate, Frame grid) {
-        //    For each row in ``X`` a tree traversal is performed.
-        //    Each traversal starts from the root with weight 1.0.
-        //
-        //    At each non-terminal node that splits on a target variable either
-        //    the left child or the right child is visited based on the feature
-        //    value of the current sample and the weight is not modified.
-        //    At each non-terminal node that splits on a complementary feature
-        //    both children are visited and the weight is multiplied by the fraction
-        //    of training samples which went to each child.
-        //
-        //    At each terminal node the value of the node is multiplied by the
-        //    current weight (weights sum to 1 for all visited terminal nodes).
-        
-        //params:
-        // tree = regression tree
-        // target feature = the set of target features for which the partial dependence should be evaluated
-        // learn rate = constant scaling factor for the leaf predictions
-        // grid = the grid points on which the partial dependence should be evaluated
 
+    /**
+     * For each row in ``X`` a tree traversal is performed.
+     * Each traversal starts from the root with weight 1.0.
+     *
+     * At each non-terminal node that splits on a target variable either
+     * the left child or the right child is visited based on the feature
+     * value of the current sample and the weight is not modified.
+     * At each non-terminal node that splits on a complementary feature
+     * both children are visited and the weight is multiplied by the fraction
+     * of training samples which went to each child.
+     *
+     * At each terminal node the value of the node is multiplied by the
+     * current weight (weights sum to 1 for all visited terminal nodes).
+     *
+     * params:
+     * tree = tree to traverse
+     * target feature = the set of target features for which the partial dependence should be evaluated
+     * learn rate = constant scaling factor for the leaf predictions
+     * grid = the grid points on which the partial dependence should be evaluated
+     */
+    public static Vec partialDependenceTree(SharedTreeSubgraph tree, Integer[] targetFeature, double learnRate, Frame grid) {
         Vec outVec = Vec.makeZero(grid.numRows());
         
         int stackSize;
