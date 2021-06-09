@@ -1,5 +1,7 @@
 import copy
 from importlib import import_module
+import sys
+import types
 
 
 __mixin_classes_cache__ = {}
@@ -27,6 +29,29 @@ def mixin(target, *mixins):
     target.__class__ = cls
     return target
 
+
+def register_module(module_name):
+    """
+    Creates and globally registers a module with given name.
+
+    :param module_name: the name of the module to register.
+    :return: the module with given name.
+    """
+    if module_name not in sys.modules:
+        mod = types.ModuleType(module_name)
+        sys.modules[module_name] = mod
+    return sys.modules[module_name]
+
+
+def register_class(cls):
+    """
+    Register a class module, and adds it to it's module.
+
+    :param cls: the class to register.
+    """
+    module = register_module(cls.__module__)
+    setattr(module, cls.__name__, cls)
+    
 
 class Mixin:
     """

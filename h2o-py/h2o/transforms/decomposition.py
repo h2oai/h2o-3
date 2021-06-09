@@ -4,13 +4,13 @@ from ..model import ModelBase
 from .transform_base import H2OTransformer
 
 
-class H2OTransformerProxy(H2OTransformer, ModelBase):
+class _H2OTransformerProxy(H2OTransformer, ModelBase):
     """
     The order or base classes is important here as we don't want to inherit the instance properties of ModelBase.
     """
 
     def __init__(self, delegate, allowed_params):
-        super(H2OTransformerProxy, self).__init__()
+        super(_H2OTransformerProxy, self).__init__()
         self._delegate = delegate
         self._allowed_params = allowed_params
 
@@ -19,7 +19,7 @@ class H2OTransformerProxy(H2OTransformer, ModelBase):
 
     def __setattr__(self, key, value):
         if key in ['_delegate', '_allowed_params']:
-            super(H2OTransformerProxy, self).__setattr__(key, value)
+            super(_H2OTransformerProxy, self).__setattr__(key, value)
         else:
             setattr(self._delegate, key, value)
         
@@ -35,18 +35,18 @@ class H2OTransformerProxy(H2OTransformer, ModelBase):
 
     def transform(self, X, y=None, **params):
         """
-        Transform the given H2OFrame with the fitted PCA model.
+        Transform the given H2OFrame using the fitted model.
 
         :param H2OFrame X: May contain NAs and/or categorical data.
-        :param H2OFrame y: Ignored for PCA. Should be None.
+        :param H2OFrame y: Ignored by transformers. Should be None.
         :param params: Ignored.
 
-        :returns: The input H2OFrame transformed by the Principal Components.
+        :returns: The transformed H2OFrame.
         """
         return self._delegate.predict(X)
 
 
-class H2OPCA(H2OTransformerProxy):
+class H2OPCA(_H2OTransformerProxy):
     """ Principal Component Analysis """
     
     def __init__(self, 
@@ -131,7 +131,7 @@ class H2OPCA(H2OTransformerProxy):
         )
 
 
-class H2OSVD(H2OTransformerProxy):
+class H2OSVD(_H2OTransformerProxy):
     """ Singular Value Decomposition """
 
     def __init__(self, 

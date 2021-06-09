@@ -7,8 +7,6 @@ The only requirements from the original estimator are the following:
 """
 from collections import defaultdict, OrderedDict
 from functools import wraps
-import sys
-import types
 from weakref import ref
 
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
@@ -17,7 +15,7 @@ from .. import h2o, H2OFrame
 from ..utils.compatibility import PY2
 from ..utils.metaclass import decoration_info
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
-from ..utils.mixin import Mixin
+from ..utils.mixin import Mixin, register_class
 
 try:
     from inspect import Parameter, signature
@@ -29,29 +27,6 @@ except ImportError:
 
 if can_use_numpy():
     import numpy as np
-
-
-def register_module(module_name):
-    """
-    Creates and globally registers a module with given name.
-
-    :param module_name: the name of the module to register.
-    :return: the module with given name.
-    """
-    if module_name not in sys.modules:
-        mod = types.ModuleType(module_name)
-        sys.modules[module_name] = mod
-    return sys.modules[module_name]
-
-
-def register_class(cls):
-    """
-    Register a class module, and adds it to it's module.
-
-    :param cls: the class to register.
-    """
-    module = register_module(cls.__module__)
-    setattr(module, cls.__name__, cls)
 
 
 def _unwrap(fn):
