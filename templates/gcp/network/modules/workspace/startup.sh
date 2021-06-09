@@ -4,6 +4,10 @@ set -o xtrace
 ZONE=$(basename $(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/zone))
 INSTANCE=$(curl --silent -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/name)
 
+# Fix for know issue with GCP startup scripts failure
+# https://cloud.google.com/compute/docs/troubleshooting/known-issues#keyexpired
+sed -i 's/repo_gpgcheck=1/repo_gpgcheck=0/g' /etc/yum.repos.d/google-cloud.repo
+
 # install dependencies
 yum install -y wget unzip python3 tree
 
