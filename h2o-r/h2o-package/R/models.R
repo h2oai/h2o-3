@@ -2324,7 +2324,8 @@ h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree
 #'         )
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.hex$RACE <- as.factor(prostate.hex$RACE)
-#' prostate.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, distribution = "bernoulli", ntrees = 100, max_depth = 5, min_rows = 10, learn_rate = 0.1)
+#' prostate.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, 
+#' distribution = "bernoulli", ntrees = 100, max_depth = 5, min_rows = 10, learn_rate = 0.1)
 #' h_val <- h2o.h(prostate.h2o, prostate.hex, c('DPROS','DCAPS'))
 #' }
 #' @export
