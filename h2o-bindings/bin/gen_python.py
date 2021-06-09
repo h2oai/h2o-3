@@ -3,7 +3,9 @@
 from __future__ import unicode_literals
 from copy import deepcopy
 from functools import partial
+from io import StringIO
 from inspect import getsource
+from pprint import pformat
 import sys
 
 import bindings as bi
@@ -229,7 +231,7 @@ def gen_module(schema, algo):
     yield "    supervised_learning = %s" % get_customizations_for(algo, 'supervised_learning', True)
     options = get_customizations_for(algo, 'options')
     if options:
-        yield "    _options_ = %s" % repr(options)
+        yield "    _options_ = %s" % reformat_block(pformat(options), prefix=' '*16, prefix_first=False)
     yield ""
     if deprecated_params:
         yield reformat_block("@deprecated_params(%s)" % deprecated_params, indent=4)
