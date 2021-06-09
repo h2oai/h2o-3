@@ -516,8 +516,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
-        self._parms["checkpoint"] = key
+        self._parms["checkpoint"] = checkpoint
 
     @property
     def export_checkpoints_dir(self):

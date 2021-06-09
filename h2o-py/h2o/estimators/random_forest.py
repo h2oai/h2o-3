@@ -1413,8 +1413,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     @checkpoint.setter
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
-        key = checkpoint.key if isinstance(checkpoint, H2OEstimator) else checkpoint
-        self._parms["checkpoint"] = key
+        self._parms["checkpoint"] = checkpoint
 
     @property
     def col_sample_rate_change_per_level(self):
