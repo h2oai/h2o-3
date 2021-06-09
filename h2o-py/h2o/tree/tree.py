@@ -2,7 +2,7 @@ import math
 
 import h2o
 from h2o.estimators import H2OXGBoostEstimator
-from h2o.utils.metaclass import Deprecated as deprecated
+from h2o.utils.metaclass import deprecated_fn
 
 
 class H2OTree(object):

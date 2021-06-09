@@ -40,8 +40,10 @@ from .wrapper import estimator, params_as_h2o_frames, register_module, transform
 
 module = sys.modules[__name__]
 
+
 def _noop(*args, **kwargs):
     pass
+
 
 def _register_submodule(name=None):
     """
@@ -55,17 +57,6 @@ def _register_submodule(name=None):
         mod = register_module(mod_name)
         setattr(module, name, mod)
     return mod_name
-
-
-def _make_default_params(cls):
-    """
-    :param cls: the original h2o estimator class.
-    :return: a dictionary representing the default estimator params
-    that will be used to generate the constructor for the sklearn wrapper.
-    """
-    if hasattr(cls, 'param_names'):  # for subclasses of H2OEstimator
-        return {k: None for k in cls.param_names}
-    return None
 
 
 def _get_custom_params(cls):
@@ -145,7 +136,6 @@ def make_estimator(cls, name=None, submodule=None):
     if name is None:
         name = cls.__name__.replace('Estimator', '') + 'Estimator'
     return estimator(cls, name=name, module=_register_submodule(submodule),
-                     default_params=_make_default_params(cls),
                      mixins=_order_estimator_mixins(cls, type='estimator'),
                      is_generic=True,
                      custom_params=_get_custom_params(cls),
@@ -156,7 +146,6 @@ def make_classifier(cls, name=None, submodule=None):
     if name is None:
         name = cls.__name__.replace('Estimator', '') + 'Classifier'
     return estimator(cls, name=name, module=_register_submodule(submodule),
-                     default_params=_make_default_params(cls),
                      mixins=_order_estimator_mixins(cls, extra=(ClassifierMixin,), type='classifier'),
                      is_generic=False,
                      custom_params=_get_custom_params(cls),
@@ -167,7 +156,6 @@ def make_regressor(cls, name=None, submodule=None):
     if name is None:
         name = cls.__name__.replace('Estimator', '') + 'Regressor'
     return estimator(cls, name=name, module=_register_submodule(submodule),
-                     default_params=_make_default_params(cls),
                      mixins=_order_estimator_mixins(cls, extra=(RegressorMixin,), type='regressor'),
                      is_generic=False,
                      custom_params=_get_custom_params(cls),
@@ -178,7 +166,6 @@ def make_transformer(cls, name=None, submodule=None):
     if name is None:
         name = cls.__name__
     return transformer(cls, name=name, module=_register_submodule(submodule),
-                       default_params=_make_default_params(cls),
                        custom_params=_get_custom_params(cls),
                        )
 

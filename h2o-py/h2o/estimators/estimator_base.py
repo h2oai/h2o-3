@@ -12,6 +12,7 @@ import types
 import warnings
 
 import h2o
+from h2o.base import Keyed
 from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
@@ -173,7 +174,7 @@ class H2OEstimator(ModelBase):
                                  ignored_columns=ignored_columns, model_id=None, verbose=verbose)
 
         if isinstance(segments, H2OFrame):
-            parms["segments"] = H2OEstimator._keyify_if_h2oframe(segments)
+            parms["segments"] = H2OEstimator._keyify(segments)
         else:
             parms["segment_columns"] = segments
         if segment_models_id:
@@ -346,7 +347,7 @@ class H2OEstimator(ModelBase):
         if extend_parms_fn is not None:
             extend_parms_fn(parms)
     
-        parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
+        parms = {k: H2OEstimator._keyify(parms[k]) for k in parms}
         if "r2" in (parms.get('stopping_metric') or []):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         return parms
@@ -375,11 +376,11 @@ class H2OEstimator(ModelBase):
 
 
     @staticmethod
-    def _keyify_if_h2oframe(item):
-        if isinstance(item, H2OFrame):
-            return item.frame_id
-        elif isinstance(item, list) and all(i is None or isinstance(i, H2OFrame) for i in item):
-            return [quoted(i) if i is None else quoted(i.frame_id) for i in item]
+    def _keyify(item):
+        if isinstance(item, Keyed):
+            return item.key
+        elif isinstance(item, list) and any(isinstance(i, Keyed) for i in item):
+            return [quoted(H2OEstimator._keyify(i)) for i in item]
         else:
             return item
 

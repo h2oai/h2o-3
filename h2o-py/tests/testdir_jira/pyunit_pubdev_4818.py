@@ -66,10 +66,11 @@ def test_estimator():
             training_frame=data['train'],
             validation_frame=data['test']
         )
-    except H2OValueError:
+    except TypeError as e:
         raised = True
+        assert "unexpected keyword argument 'col_sample_rate_change_per_level'" in str(e)
 
-    assert raised is True, \
+    assert raised, \
         'H2O should throw an exception if unknown parameter is passed to XGBoostEstimator!'
 
 

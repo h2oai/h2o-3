@@ -230,7 +230,12 @@ class H2OFrame(Keyed):
             else:
                 return
         else:
-            assert_is_type(param, H2OFrame, message=message)
+            assert_is_type(param, str, H2OFrame, message=message)
+            if is_type(param, str):
+                fr = h2o.get_frame(param)
+                if fr is None:
+                    raise ValueError(message)
+                return fr
             return param
 
 
@@ -276,7 +281,7 @@ class H2OFrame(Keyed):
         >>> frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
         >>> frame.key
         """
-        return None if self._ex is None else self._ex._cache._id
+        return None if self._ex is None else self.frame_id
 
 
     @property
@@ -708,8 +713,6 @@ class H2OFrame(Keyed):
         """
         Detach the Python object from the backend, usually by clearing its key
 
-        :returns: Removed H2OFrame
-        
         :examples: 
 
         >>> from random import randrange

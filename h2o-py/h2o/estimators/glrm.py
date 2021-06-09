@@ -20,32 +20,187 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     """
 
     algo = "glrm"
-    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "representation_name", "loading_name", "transform", "k", "loss",
-                   "loss_by_col", "loss_by_col_idx", "multi_loss", "period", "regularization_x", "regularization_y",
-                   "gamma_x", "gamma_y", "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed",
-                   "init", "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
-                   "max_runtime_secs", "export_checkpoints_dir"}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 representation_name=None,  # type: Optional[str]
+                 loading_name=None,  # type: Optional[str]
+                 transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
+                 k=1,  # type: int
+                 loss="quadratic",  # type: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
+                 loss_by_col=None,  # type: Optional[List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"]]]
+                 loss_by_col_idx=None,  # type: Optional[List[int]]
+                 multi_loss="categorical",  # type: Literal["categorical", "ordinal"]
+                 period=1,  # type: int
+                 regularization_x="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+                 regularization_y="none",  # type: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+                 gamma_x=0.0,  # type: float
+                 gamma_y=0.0,  # type: float
+                 max_iterations=1000,  # type: int
+                 max_updates=2000,  # type: int
+                 init_step_size=1.0,  # type: float
+                 min_step_size=0.0001,  # type: float
+                 seed=-1,  # type: int
+                 init="plus_plus",  # type: Literal["random", "svd", "plus_plus", "user"]
+                 svd_method="randomized",  # type: Literal["gram_s_v_d", "power", "randomized"]
+                 user_y=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 user_x=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 expand_user_y=True,  # type: bool
+                 impute_original=False,  # type: bool
+                 recover_svd=False,  # type: bool
+                 max_runtime_secs=0.0,  # type: float
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[None, str, H2OFrame], optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
+        :type score_each_iteration: bool
+        :param representation_name: Frame key to save resulting X
+               Defaults to ``None``.
+        :type representation_name: str, optional
+        :param loading_name: [Deprecated] Use representation_name instead.  Frame key to save resulting X.
+               Defaults to ``None``.
+        :type loading_name: str, optional
+        :param transform: Transformation of training data
+               Defaults to ``"none"``.
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
+        :param k: Rank of matrix approximation
+               Defaults to ``1``.
+        :type k: int
+        :param loss: Numeric loss function
+               Defaults to ``"quadratic"``.
+        :type loss: Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]
+        :param loss_by_col: Loss function by column (override)
+               Defaults to ``None``.
+        :type loss_by_col: List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
+               "ordinal"]], optional
+        :param loss_by_col_idx: Loss function by column index (override)
+               Defaults to ``None``.
+        :type loss_by_col_idx: List[int], optional
+        :param multi_loss: Categorical loss function
+               Defaults to ``"categorical"``.
+        :type multi_loss: Literal["categorical", "ordinal"]
+        :param period: Length of period (only used with periodic loss function)
+               Defaults to ``1``.
+        :type period: int
+        :param regularization_x: Regularization function for X matrix
+               Defaults to ``"none"``.
+        :type regularization_x: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+        :param regularization_y: Regularization function for Y matrix
+               Defaults to ``"none"``.
+        :type regularization_y: Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]
+        :param gamma_x: Regularization weight on X matrix
+               Defaults to ``0.0``.
+        :type gamma_x: float
+        :param gamma_y: Regularization weight on Y matrix
+               Defaults to ``0.0``.
+        :type gamma_y: float
+        :param max_iterations: Maximum number of iterations
+               Defaults to ``1000``.
+        :type max_iterations: int
+        :param max_updates: Maximum number of updates, defaults to 2*max_iterations
+               Defaults to ``2000``.
+        :type max_updates: int
+        :param init_step_size: Initial step size
+               Defaults to ``1.0``.
+        :type init_step_size: float
+        :param min_step_size: Minimum step size
+               Defaults to ``0.0001``.
+        :type min_step_size: float
+        :param seed: RNG seed for initialization
+               Defaults to ``-1``.
+        :type seed: int
+        :param init: Initialization mode
+               Defaults to ``"plus_plus"``.
+        :type init: Literal["random", "svd", "plus_plus", "user"]
+        :param svd_method: Method for computing SVD during initialization (Caution: Randomized is currently experimental
+               and unstable)
+               Defaults to ``"randomized"``.
+        :type svd_method: Literal["gram_s_v_d", "power", "randomized"]
+        :param user_y: User-specified initial Y
+               Defaults to ``None``.
+        :type user_y: Union[None, str, H2OFrame], optional
+        :param user_x: User-specified initial X
+               Defaults to ``None``.
+        :type user_x: Union[None, str, H2OFrame], optional
+        :param expand_user_y: Expand categorical columns in user-specified initial Y
+               Defaults to ``True``.
+        :type expand_user_y: bool
+        :param impute_original: Reconstruct original training data by reversing transform
+               Defaults to ``False``.
+        :type impute_original: bool
+        :param recover_svd: Recover singular values and eigenvectors of XY
+               Defaults to ``False``.
+        :type recover_svd: bool
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
+        :type max_runtime_secs: float
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        """
         super(H2OGeneralizedLowRankEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.representation_name = representation_name
+        self.loading_name = loading_name
+        self.transform = transform
+        self.k = k
+        self.loss = loss
+        self.loss_by_col = loss_by_col
+        self.loss_by_col_idx = loss_by_col_idx
+        self.multi_loss = multi_loss
+        self.period = period
+        self.regularization_x = regularization_x
+        self.regularization_y = regularization_y
+        self.gamma_x = gamma_x
+        self.gamma_y = gamma_y
+        self.max_iterations = max_iterations
+        self.max_updates = max_updates
+        self.init_step_size = init_step_size
+        self.min_step_size = min_step_size
+        self.seed = seed
+        self.init = init
+        self.svd_method = svd_method
+        self.user_y = user_y
+        self.user_x = user_x
+        self.expand_user_y = expand_user_y
+        self.impute_original = impute_original
+        self.recover_svd = recover_svd
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
 
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -63,13 +218,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -90,7 +244,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def ignored_columns(self):
         """
@@ -105,13 +258,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -129,13 +281,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def score_each_iteration(self):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -158,7 +309,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def score_each_iteration(self, score_each_iteration):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
-
 
     @property
     def representation_name(self):
@@ -190,7 +340,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def representation_name(self, representation_name):
         assert_is_type(representation_name, None, str)
         self._parms["representation_name"] = representation_name
-
 
     @property
     def loading_name(self):
@@ -224,13 +373,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(loading_name, None, str)
         self._parms["loading_name"] = loading_name
 
-
     @property
     def transform(self):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``, defaults to ``"none"``.
 
         :examples:
 
@@ -251,13 +399,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
 
-
     @property
     def k(self):
         """
         Rank of matrix approximation
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -273,14 +420,13 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(k, None, int)
         self._parms["k"] = k
 
-
     @property
     def loss(self):
         """
         Numeric loss function
 
-        One of: ``"quadratic"``, ``"absolute"``, ``"huber"``, ``"poisson"``, ``"hinge"``, ``"logistic"``, ``"periodic"``
-        (default: ``"quadratic"``).
+        Type: ``Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"]``, defaults to
+        ``"quadratic"``.
 
         :examples:
 
@@ -304,14 +450,13 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(loss, None, Enum("quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"))
         self._parms["loss"] = loss
 
-
     @property
     def loss_by_col(self):
         """
         Loss function by column (override)
 
-        Type: ``List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
-        "ordinal"]]``.
+        Type: ``List[Literal["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic",
+        "categorical", "ordinal"]]``.
 
         :examples:
 
@@ -331,7 +476,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def loss_by_col(self, loss_by_col):
         assert_is_type(loss_by_col, None, [Enum("quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal")])
         self._parms["loss_by_col"] = loss_by_col
-
 
     @property
     def loss_by_col_idx(self):
@@ -359,13 +503,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(loss_by_col_idx, None, [int])
         self._parms["loss_by_col_idx"] = loss_by_col_idx
 
-
     @property
     def multi_loss(self):
         """
         Categorical loss function
 
-        One of: ``"categorical"``, ``"ordinal"``  (default: ``"categorical"``).
+        Type: ``Literal["categorical", "ordinal"]``, defaults to ``"categorical"``.
 
         :examples:
 
@@ -387,13 +530,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(multi_loss, None, Enum("categorical", "ordinal"))
         self._parms["multi_loss"] = multi_loss
 
-
     @property
     def period(self):
         """
         Length of period (only used with periodic loss function)
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -414,14 +556,13 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(period, None, int)
         self._parms["period"] = period
 
-
     @property
     def regularization_x(self):
         """
         Regularization function for X matrix
 
-        One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
-        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
+        Type: ``Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]``,
+        defaults to ``"none"``.
 
         :examples:
 
@@ -442,14 +583,13 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(regularization_x, None, Enum("none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"))
         self._parms["regularization_x"] = regularization_x
 
-
     @property
     def regularization_y(self):
         """
         Regularization function for Y matrix
 
-        One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
-        ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
+        Type: ``Literal["none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"]``,
+        defaults to ``"none"``.
 
         :examples:
 
@@ -470,13 +610,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(regularization_y, None, Enum("none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"))
         self._parms["regularization_y"] = regularization_y
 
-
     @property
     def gamma_x(self):
         """
         Regularization weight on X matrix
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -500,13 +639,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(gamma_x, None, numeric)
         self._parms["gamma_x"] = gamma_x
 
-
     @property
     def gamma_y(self):
         """
         Regularization weight on Y matrix
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -530,13 +668,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(gamma_y, None, numeric)
         self._parms["gamma_y"] = gamma_y
 
-
     @property
     def max_iterations(self):
         """
         Maximum number of iterations
 
-        Type: ``int``  (default: ``1000``).
+        Type: ``int``, defaults to ``1000``.
 
         :examples:
 
@@ -560,13 +697,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
 
-
     @property
     def max_updates(self):
         """
         Maximum number of updates, defaults to 2*max_iterations
 
-        Type: ``int``  (default: ``2000``).
+        Type: ``int``, defaults to ``2000``.
 
         :examples:
 
@@ -586,13 +722,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(max_updates, None, int)
         self._parms["max_updates"] = max_updates
 
-
     @property
     def init_step_size(self):
         """
         Initial step size
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -610,13 +745,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(init_step_size, None, numeric)
         self._parms["init_step_size"] = init_step_size
 
-
     @property
     def min_step_size(self):
         """
         Minimum step size
 
-        Type: ``float``  (default: ``0.0001``).
+        Type: ``float``, defaults to ``0.0001``.
 
         :examples:
 
@@ -636,13 +770,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(min_step_size, None, numeric)
         self._parms["min_step_size"] = min_step_size
 
-
     @property
     def seed(self):
         """
         RNG seed for initialization
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -663,13 +796,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def init(self):
         """
         Initialization mode
 
-        One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``).
+        Type: ``Literal["random", "svd", "plus_plus", "user"]``, defaults to ``"plus_plus"``.
 
         :examples:
 
@@ -687,13 +819,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(init, None, Enum("random", "svd", "plus_plus", "user"))
         self._parms["init"] = init
 
-
     @property
     def svd_method(self):
         """
         Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized"]``, defaults to ``"randomized"``.
 
         :examples:
 
@@ -713,13 +844,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(svd_method, None, Enum("gram_s_v_d", "power", "randomized"))
         self._parms["svd_method"] = svd_method
 
-
     @property
     def user_y(self):
         """
         User-specified initial Y
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -746,13 +876,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def user_y(self, user_y):
         self._parms["user_y"] = H2OFrame._validate(user_y, 'user_y')
 
-
     @property
     def user_x(self):
         """
         User-specified initial X
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -781,13 +910,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def user_x(self, user_x):
         self._parms["user_x"] = H2OFrame._validate(user_x, 'user_x')
 
-
     @property
     def expand_user_y(self):
         """
         Expand categorical columns in user-specified initial Y
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -812,13 +940,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(expand_user_y, None, bool)
         self._parms["expand_user_y"] = expand_user_y
 
-
     @property
     def impute_original(self):
         """
         Reconstruct original training data by reversing transform
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -843,13 +970,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(impute_original, None, bool)
         self._parms["impute_original"] = impute_original
 
-
     @property
     def recover_svd(self):
         """
         Recover singular values and eigenvectors of XY
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -873,13 +999,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         assert_is_type(recover_svd, None, bool)
         self._parms["recover_svd"] = recover_svd
 
-
     @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -898,7 +1023,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def export_checkpoints_dir(self):

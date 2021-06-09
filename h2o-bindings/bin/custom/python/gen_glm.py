@@ -1,3 +1,6 @@
+deprecated_params = dict(Lambda='lambda_')
+
+
 def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('custom')
@@ -6,15 +9,6 @@ def update_param(name, param):
 
 
 def class_extensions():
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
-
     @staticmethod
     def getAlphaBest(model):
         """
@@ -189,9 +183,6 @@ def class_extensions():
 extensions = dict(
     __imports__="""import h2o""",
     __class__=class_extensions,
-    __init__validation="""
-if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-"""
 )
 
 overrides = dict(

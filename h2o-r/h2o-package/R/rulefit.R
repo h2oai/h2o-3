@@ -22,8 +22,8 @@
 #' @param algorithm The algorithm to use to generate rules. Must be one of: "AUTO", "DRF", "GBM". Defaults to AUTO.
 #' @param min_rule_length Minimum length of rules. Defaults to 3.
 #' @param max_rule_length Maximum length of rules. Defaults to 3.
-#' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected  by
-#'        diminishing returns in model deviance. Defaults to -1.
+#' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected
+#'        by diminishing returns in model deviance. Defaults to -1.
 #' @param model_type Specifies type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", "linear". Defaults to rules_and_linear.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative

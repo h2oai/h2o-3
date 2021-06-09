@@ -47,8 +47,8 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "[%s]" % vtype
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
-        self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
-                                               else "H2OEstimator" if schema == "Key<Model>"
+        self.make_key = lambda itype, schema: ("str, H2OFrame" if schema == "Key<Frame>"
+                                               else "str, H2OEstimator" if schema == "Key<Model>"
                                                else "str")
         self.make_enum = lambda schema, values: ("Enum(%s)" % ", ".join(stringify(v) for v in values) if values
                                                  else schema)
@@ -81,9 +81,10 @@ class PythonTypeTranslatorForDoc(bi.TypeTranslator):
         self.make_array = lambda vtype: "dict" if vtype == "dict" else "List[%s]" % vtype
         self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
-        self.make_key = lambda itype, schema: ("H2OFrame" if schema == "Key<Frame>"
+        self.make_key = lambda itype, schema: ("Union[None, str, H2OFrame]" if schema == "Key<Frame>"
+                                               else "Union[None, str, H2OEstimator]" if schema == "Key<Model>"
                                                else "str")
-        self.make_enum = lambda schema, values: ("Enum[%s]" % ", ".join(stringify(v) for v in values) if values
+        self.make_enum = lambda schema, values: ("Literal[%s]" % ", ".join(stringify(v) for v in values) if values   # see PEP-586
                                                  else schema)
 
 
@@ -102,10 +103,21 @@ def normalize_enum_constant(s):
     return "".join(ch if ch.islower() else "_" + ch.lower() for ch in s).strip("_")
 
 
-def stringify(v):
-    if v == "Infinity": return u'∞'
-    if isinstance(v, str_type): return '"%s"' % v
-    if isinstance(v, float): return '%.10g' % v
+def stringify(v, infinity=u'∞'):
+    if v is None:
+        return None
+    if v == "Infinity":
+        return infinity
+    if isinstance(v, str_type):
+        return '"{}"'.format(v)
+    if isinstance(v, int):
+        if v > (1 << 62):  # handle Long.MAX_VALUE case 
+            return infinity
+        return str(v)
+    if isinstance(v, float): 
+        if v > (1 << 128):  # handle Double.MAX_VALUE case
+            return infinity
+        return "{:.10}".format(v)
     return str(v)
 
 
@@ -135,13 +147,12 @@ def gen_module(schema, algo):
     extra_imports = get_customizations_for(algo, 'extensions.__imports__')
     class_doc = get_customizations_for(algo, 'doc.__class__')
     class_examples = get_customizations_for(algo, 'examples.__class__')
-    class_init_validation = get_customizations_for(algo, 'extensions.__init__validation')
-    class_init_setparams = get_customizations_for(algo, 'extensions.__init__setparams')
     class_extras = get_customizations_for(algo, 'extensions.__class__')
     module_extras = get_customizations_for(algo, 'extensions.__module__')
 
     update_param_defaults = get_customizations_for('defaults', 'update_param')
     update_param = get_customizations_for(algo, 'update_param')
+    deprecated_params = get_customizations_for(algo, 'deprecated_params', {})
 
     def extend_schema_params(param):
         pname = param.get('name')
@@ -180,6 +191,9 @@ def gen_module(schema, algo):
         param['default_value'] = pdefault
         param['ptype'] = translate_type_for_check(ptype, enum_values)
         param['dtype'] = translate_type_for_doc(ptype, enum_values)
+        
+    if deprecated_params:
+        extended_params = [p for p in extended_params if p['pname'] not in deprecated_params.keys()]
 
     yield "#!/usr/bin/env python"
     yield "# -*- encoding: utf-8 -*-"
@@ -189,6 +203,8 @@ def gen_module(schema, algo):
     yield "#"
     yield "from __future__ import absolute_import, division, print_function, unicode_literals"
     yield ""
+    if deprecated_params:
+        yield "from h2o.utils.metaclass import deprecated_params, deprecated_property"
     if extra_imports:
         yield reformat_block(extra_imports)
     yield "from h2o.estimators.estimator_base import H2OEstimator"
@@ -211,26 +227,35 @@ def gen_module(schema, algo):
     yield '    """'
     yield ""
     yield '    algo = "%s"' % algo
-    yield "    param_names = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
-                                             indent=(" " * 19), indent_first=False)
     yield ""
-    yield "    def __init__(self, **kwargs):"
-    # TODO: generate __init__ docstring with all params (also generate exact signature to support auto-completion)
+    if deprecated_params:
+        yield reformat_block("@deprecated_params(%s)" % deprecated_params, indent=4)
+    init_sig = "def __init__(self,\n%s\n):" % "\n".join("%s=%s,  # type: %s" 
+                                                        % (name, default, "Optional[%s]" % type if default is None else type)                     
+                                                        for name, default, type 
+                                                        in [(p.get('pname'),
+                                                            stringify(p.get('default_value'), infinity=None),
+                                                            p.get('dtype'))
+                                                            for p in extended_params])
+    yield reformat_block(init_sig, indent=4, prefix=' '*13, prefix_first=False)
+    yield '        """'
+    for p in extended_params:
+        pname, pdefault, dtype, pdoc = p.get('pname'), stringify(p.get('default_value')), p.get('dtype'), p.get('help')
+        pdesc = "%s: %s\nDefaults to ``%s``." % (pname, pdoc, pdefault)
+        pident = ' '*15
+        yield "        :param %s" % bi.wrap(pdesc, indent=pident, indent_first=False)
+        yield "        :type %s: %s%s" % (pname, 
+                                          bi.wrap(dtype, indent=pident, indent_first=False),
+                                          ", optional" if pdefault is None else "")
+    yield '        """'
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
-    if class_init_validation:
-        yield reformat_block(class_init_validation, 8)
-    yield "        for pname, pvalue in kwargs.items():"
-    yield "            if pname == 'model_id':"
-    yield "                self._id = pvalue"
-    yield '                self._parms["model_id"] = pvalue'
-    if class_init_setparams:
-        yield reformat_block(class_init_setparams, 12)
-    yield "            elif pname in self.param_names:"
-    yield "                # Using setattr(...) will invoke type-checking of the arguments"
-    yield "                setattr(self, pname, pvalue)"
-    yield "            else:"
-    yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
+    for p in extended_params:
+        pname = p.get('pname')
+        if pname == 'model_id':
+            yield "        self._id = self._parms['model_id'] = model_id"
+        else:
+            yield "        self.%s = %s" % (pname, pname)
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version
     yield ""
@@ -238,7 +263,6 @@ def gen_module(schema, algo):
         pname = param.get('pname')
         if pname == "model_id":
             continue  # The getter is already defined in ModelBase
-
         sname = pname[:-1] if pname[-1] == '_' else pname
         ptype = param.get('ptype')
         dtype = param.get('dtype')
@@ -249,13 +273,12 @@ def gen_module(schema, algo):
             property_doc = "One of: " + ", ".join("``%s``" % v for v in vals)
         else:
             property_doc = "Type: ``%s``" % dtype
-        property_doc += ("." if pdefault is None else "  (default: ``%s``)." % stringify(pdefault))
+        property_doc += ("." if pdefault is None else ", defaults to ``%s``." % stringify(pdefault))
 
-        deprecated = pname in get_customizations_for(algo, 'deprecated', [])
         yield "    @property"
         yield "    def %s(self):" % pname
         yield '        """'
-        yield bi.wrap("%s%s" % ("[Deprecated] " if deprecated else "", param.get('help')), indent=8*' ')  # we need to wrap only for text coming from server
+        yield bi.wrap(param.get('help'), indent=8*' ')  # we need to wrap only for text coming from server
         yield ""
         yield bi.wrap(property_doc, indent=8*' ')
         custom_property_doc = get_customizations_for(algo, "doc.{}".format(pname))
@@ -281,20 +304,18 @@ def gen_module(schema, algo):
         property_setter = get_customizations_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
         if property_setter:
             yield reformat_block(property_setter.format(**locals()), 8)
+        elif "H2OFrame" in ptype:                
+            yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
         else:
-            # special types validation
-            if ptype == "H2OEstimator":
-                yield "        assert_is_type(%s, None, str, %s)" % (pname, ptype)
-            elif ptype == "H2OFrame":
-                yield "        self._parms[\"%s\"] = H2OFrame._validate(%s, '%s')" % (sname, pname, pname)
-            else:
-                # default validation
-                yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
-            if ptype != "H2OFrame":
-                # default assignment
-                yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+            yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
+            yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
-        yield ""
+        
+    for old, new in deprecated_params.items():
+        new_name = new[0] if isinstance(new, tuple) else new
+        yield "    %s = deprecated_property('%s', %s)" % (old, old, new)
+        
+    yield ""
     if class_extras:
         yield reformat_block(code_as_str(class_extras), 4)
     if module_extras:

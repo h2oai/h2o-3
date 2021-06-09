@@ -78,8 +78,7 @@ def test_frames_can_be_overridden_in_train_method():
     assert se.auc() > 0
 
 
-
-def test_frames_cannot_be_passed_as_key():
+def test_frames_can_be_passed_as_key():
     ds = import_dataset()
 
     kw_args = [
@@ -90,28 +89,24 @@ def test_frames_cannot_be_passed_as_key():
 
     # Constructor validation
     for kwargs in kw_args:
-        try:
-            H2OStackedEnsembleEstimator(base_models=[], **kwargs)
-            assert False, "should have thrown due to invalid frame"
-        except H2OTypeError as e:
-            attr = next(k for k, v in kwargs.items() if v is not ds['train'])
-            assert "'{}' must be a valid H2OFrame".format(attr) in str(e), str(e)
-
+        H2OStackedEnsembleEstimator(base_models=[], **kwargs)
 
     # train method validation
-    se = H2OStackedEnsembleEstimator(base_models=[])
-
+    base_model_params = dict(ntrees=3, nfolds=3, seed=seed, keep_cross_validation_predictions=True)
     for kwargs in kw_args:
-        try:
-            se.train(y=ds['target'], **kwargs)
-            assert False, "should have thrown due to invalid frame"
-        except H2OTypeError as e:
-            attr = next(k for k, v in kwargs.items() if v is not ds['train'])
-            assert "'{}' must be a valid H2OFrame".format(attr) in str(e), str(e)
+        base_training_args = {k: v for k, v in kwargs.items() if k != 'blending_frame'}
+        base_training_args['y'] = ds['target']
+        gbm = H2OGradientBoostingEstimator(**base_model_params)
+        gbm.train(**base_training_args)
+        rf = H2ORandomForestEstimator(**base_model_params)
+        rf.train(**base_training_args)
+        
+        se = H2OStackedEnsembleEstimator(base_models=[gbm, rf])
+        se.train(y=ds['target'], **kwargs)
 
 
 pu.run_tests([
     test_frames_can_be_passed_to_constructor,
     test_frames_can_be_overridden_in_train_method,
-    test_frames_cannot_be_passed_as_key
+    test_frames_can_be_passed_as_key
 ])
