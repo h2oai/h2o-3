@@ -15,8 +15,7 @@ def checkpointing_test():
     
     checkpointed_gbm = H2OGradientBoostingEstimator(ntrees=2, checkpoint=gbm)
     checkpointed_gbm.train(x=["Origin", "Dest"], y="Distance", training_frame=airlines, validation_frame=airlines)
-    print(checkpointed_gbm.checkpoint)
-    assert checkpointed_gbm.checkpoint == gbm.model_id
+    assert checkpointed_gbm.checkpoint == gbm
 
     checkpointed_gbm = H2OGradientBoostingEstimator(ntrees=2, checkpoint=gbm.model_id)
     checkpointed_gbm.train(x=["Origin", "Dest"], y="Distance", training_frame=airlines, validation_frame=airlines)
