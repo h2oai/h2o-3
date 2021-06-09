@@ -226,6 +226,8 @@ test-package-java:
 		h2o-algos/build/libs/h2o-algos-*.jar \
 		h2o-automl/src/ \
 		h2o-automl/build/libs/h2o-automl-*.jar \
+		h2o-admissibleml/src/ \
+		h2o-admissibleml/build/libs/h2o-admissibleml-*.jar \
 		h2o-logger/src/ \
 		h2o-logger/build/libs/h2o-logger-*.jar \
 		h2o-parsers/h2o-avro-parser/src/ \
