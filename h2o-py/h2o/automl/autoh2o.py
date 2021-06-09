@@ -155,9 +155,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs``.
             Defaults to 3600 seconds (1 hour).
         :param int max_runtime_secs_per_model: Controls the max time the AutoML run will dedicate to each individual model.
-            Defaults to `0` (disabled: no time limit).
+            Defaults to ``0`` (disabled: no time limit).
         :param int max_models: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.
-            Defaults to `0` (disabled: no limitation).
+            Defaults to ``0`` (disabled: no limitation).
         :param str stopping_metric: Specifies the metric to use for early stopping. 
             The available options are:
             ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
@@ -212,14 +212,14 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Deleting them will save memory in the H2O cluster. 
             Defaults to ``False``.
         :param sort_metric: Metric to sort the leaderboard by. 
-            For binomial classification choose between ``auc``, ``aucpr``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
+            For binomial classification choose between ``"auc"``, ``"aucpr"``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
             For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
             For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``.
-            Defaults to ``"AUTO"`` (This translates to ``auc`` for binomial classification, ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression).
+            Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are None (live log disabled), 'debug', 'info' or 'warn'.
-            Defaults to 'warn'.
+            Available options are None (live log disabled), ``"debug"``, ``"info"`` or ``"warn"``.
+            Defaults to ``"warn"``.
         """
         
         # early validate kwargs, extracting hidden parameters:
@@ -298,7 +298,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         return project_name
     
     def __validate_nfolds(self, nfolds):
-        assert nfolds == 0 or nfolds > 1, "nfolds set to %s; Use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable." % nfolds
+        assert nfolds == 0 or nfolds > 1, "nfolds set to %s; use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable." % nfolds
         return nfolds
         
     def __validate_modeling_plan(self, modeling_plan):
