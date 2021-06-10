@@ -15,8 +15,6 @@ import water.Key;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-
-import java.io.IOException;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -1197,10 +1195,7 @@ public class FriedmanPopescusHTest {
 
     
     @Test
-    public void testPartialDependenceTree() throws IOException {
-//        String currentPath = new java.io.File(".").getCanonicalPath();
-//        Frame frame = parseTestFile(currentPath + "/src/test/resources/hex/tree/h_test_input.csv");
-//        
+    public void testPartialDependenceTree() {
         Frame frame = parseTestFile( "smalldata/h_test_input.csv");
 
         double res[] = new double[] {-2.188878791803408608e-02, -6.741245150466763925e-02, 4.768910591425746387e-03, 3.297972219392273502e-02, -2.188878791803408608e-02,
@@ -1352,10 +1347,8 @@ public class FriedmanPopescusHTest {
     * 
     * */
     @Test
-    public void testRegression() throws IOException {
-      //  Frame frame = parseTestFile( "smalldata/h_test_input.csv");
-        String currentPath = new java.io.File(".").getCanonicalPath();
-        Frame frame = parseTestFile(currentPath + "/src/test/resources/hex/tree/h_test_input.csv");
+    public void testRegression() {
+        Frame frame = parseTestFile( "smalldata/h_test_input.csv");
 
         DKV.put(frame);
 
