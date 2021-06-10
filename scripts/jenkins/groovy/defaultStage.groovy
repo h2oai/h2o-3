@@ -8,11 +8,8 @@ def call(final pipelineContext, final stageConfig) {
     insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), stageConfig.timeoutValue, 'MINUTES', stageConfig.customDockerArgs.join(' '), stageConfig.addToDockerGroup) {
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
 
-        // pull the test package unless this is a COMPONENT_ANY stage
-        if (stageConfig.component != pipelineContext.getBuildConfig().COMPONENT_ANY) {
-            pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), stageConfig.component, stageConfig.stageDir)
-        }
-        // pull aditional test packages
+        pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), stageConfig.component, stageConfig.stageDir)
+        // pull additional test packages
         for (additionalPackage in stageConfig.additionalTestPackages) {
             echo "Pulling additional test-package-${additionalPackage}.zip"
             pipelineContext.getUtils().unpackTestPackage(this, pipelineContext.getBuildConfig(), additionalPackage, stageConfig.stageDir)
