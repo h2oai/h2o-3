@@ -42,6 +42,25 @@ h2o.permutation_importance <- function(object,
   metric <- match.arg(arg = if (missing(metric)) "mse" else tolower(metric),
                       choices = tolower(eval(formals()$metric)))
 
+  if (n_samples < -1 || n_samples %in% c(0, 1)) {
+    stop("Argument n_samples must be either -1 or greater than 2.")
+  }
+
+  if (n_samples > nrow(newdata)) {
+    n_samples <- -1
+  }
+
+  if (n_repeats < 1) {
+    stop("Argument n_repeats must be greater than 0!")
+  }
+
+  if (length(features) > 0) {
+    not_in_frame <- Filter(function(f) ! f %in% names(newdata), features)
+    if (length(not_in_frame)) {
+      stop(paste("Features ", paste0(features, collapse = ", "), " are not present in the newdata frame!"))
+    }
+  }
+
   vi <- as.data.frame(.newExpr("PermutationVarImp",
                                object@model_id,
                                newdata,

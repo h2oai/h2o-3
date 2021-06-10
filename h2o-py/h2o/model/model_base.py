@@ -1572,6 +1572,21 @@ class ModelBase(h2o_meta(Keyed)):
         if features is not None and len(features) == 0:
             features = None
 
+        if n_samples < -1 or n_samples in (0, 1):
+            raise H2OValueError("Argument n_samples has to be either -1 to use the whole frame or greater than 2!")
+
+        if n_samples > frame.nrows:
+            n_samples = -1
+
+        if n_repeats < 1:
+            raise H2OValueError("Argument n_repeats must be greater than 0!")
+
+        assert_is_type(features, None, [str])
+        if features is not None:
+            not_in_frame = [f for f in features if f not in frame.columns]
+            if len(not_in_frame) > 0:
+                raise H2OValueError("Features " + ", ".join(not_in_frame) + " are not present in the provided frame!")
+
         existing_metrics = [k.lower() for k in self._model_json['output']['training_metrics']._metric_json.keys()]
         if metric.lower() not in ["auto"] + existing_metrics:
             raise H2OValueError("Metric " + metric + " doesn't exist for this model.")
@@ -1603,7 +1618,7 @@ class ModelBase(h2o_meta(Keyed)):
             return varimp
 
 
-    def permutation_importance_plot(self, frame, metric="AUTO", n_samples=-1, n_repeats=1, features=None, seed=-1,
+    def permutation_importance_plot(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1,
                                     num_of_features=10, server=False):
         """
         Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
@@ -1624,6 +1639,7 @@ class ModelBase(h2o_meta(Keyed)):
         plt = get_matplotlib_pyplot(server)
         if not plt:
             return
+
         importance = self.permutation_importance(frame, metric, n_samples, n_repeats, features, seed, use_pandas=False)
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
         if n_repeats > 1:

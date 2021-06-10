@@ -63,18 +63,30 @@ def test_metrics_gbm():
             assert col == "Run {}".format(1 + i)
             assert isinstance(pd_pfi[col][0], float)
 
-    pfi = model.permutation_importance(fr, use_pandas=False, n_samples=0, features=[], seed=42)
-    for col in pfi.col_header[1:]:
-        assert isinstance(pfi[col][0], float)
+    try:
+        pfi = model.permutation_importance(fr, use_pandas=False, n_samples=0, features=[], seed=42)
+        assert False, "This should fail on validation."
+    except h2o.exceptions.H2OValueError:
+        pass
+
+    try:
+        pfi = model.permutation_importance(fr, use_pandas=False, n_repeats=0, features=[], seed=42)
+        assert False, "This should fail on validation."
+    except h2o.exceptions.H2OValueError:
+        pass
+
+    try:
+        pfi = model.permutation_importance(fr, use_pandas=False, features=["lorem", "ipsum", "dolor"], seed=42)
+        assert False, "This should fail on validation."
+    except h2o.exceptions.H2OValueError:
+        pass
+
 
     try:
         pfi = model.permutation_importance(fr, use_pandas=False, n_samples=1, features=[])
         assert False, "This should throw an exception since we cannot permute one row."
-    except h2o.exceptions.H2OResponseError:
+    except h2o.exceptions.H2OValueError:
         pass
-
-    for col in pfi.col_header[1:]:
-        assert isinstance(pfi[col][0], float)
 
     pfi = model.permutation_importance(fr, use_pandas=False, n_samples=10, features=[])
     for col in pfi.col_header[1:]:

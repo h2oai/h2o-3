@@ -11,8 +11,10 @@ import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -41,6 +43,28 @@ public class AstPermutationVarImp extends AstPrimitive {
         if (!featuresVal.isEmpty()) // empty string list is interpreted as nums
             features = featuresVal.getStrs();
         long seed = (long) stk.track(asts[7].exec(env)).getNum();
+
+        if (n_samples < -1 || n_samples == 0 || n_samples == 1 || n_samples > fr.numRows()) {
+            throw new IllegalArgumentException("Argument n_samples has to be either -1 to use the whole frame " +
+                    "or greater than 2 and lower than or equal to the number of rows of the provided frame!");
+        }
+
+        if (n_repeats < 1) {
+            throw new IllegalArgumentException("Argument n_repeats must be greater than 0!");
+        }
+
+        if (features != null) {
+            String[] notInFrame = Arrays.stream(features).filter((f) ->
+                    !ArrayUtils.contains(fr.names(), f)).toArray(String[]::new);
+            if (notInFrame.length > 0) {
+                throw new IllegalArgumentException("Features " + String.join(", ", notInFrame) + " are not present in the provided frame!");
+            }
+            String[] notUsedInModel = Arrays.stream(features).filter((f) ->
+                    !ArrayUtils.contains(model._output._origNames == null ? model._output._names : model._output._origNames, f)).toArray(String[]::new);
+            if (notUsedInModel.length > 0) {
+                throw new IllegalArgumentException("Features " + String.join(", ", notInFrame) + " weren't used for training!");
+            }
+        }
 
         Scope.enter();
         Frame pviFr = null;

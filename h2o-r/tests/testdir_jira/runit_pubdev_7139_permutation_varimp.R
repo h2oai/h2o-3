@@ -46,6 +46,15 @@ test.permutation.varimp <- function(){
     permutation_varimp <- h2o.permutation_importance(pros.gbm, pros.train, n_repeats = 5)
     expect_equal(names(permutation_varimp), c("Variable", paste("Run", 1:5)))
     expect_true(is.numeric(permutation_varimp[,3]))
+
+    e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train, n_samples = 0), error = function (e) e)
+    expect_is(e, "error")
+
+    e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train, n_repeats = 0), error = function (e) e)
+    expect_is(e, "error")
+
+    e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train, features = c("lorem", "ipsum")), error = function (e) e)
+    expect_is(e, "error")
 }
 
 
