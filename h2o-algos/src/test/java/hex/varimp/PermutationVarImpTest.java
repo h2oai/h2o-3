@@ -93,7 +93,7 @@ public class PermutationVarImpTest extends TestUtil {
     }
 
     /**
-     * Test the TwoDimTable of Permutation Variable Importance and One At a Time
+     * Test the TwoDimTable of Permutation Variable Importance
      * GBM gaussian model
      */
     @Test
