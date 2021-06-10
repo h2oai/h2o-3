@@ -57,6 +57,7 @@ public class AutoMLConcurrencyTest {
                 })
                 .map(spec -> () -> {
                     AutoML aml = AutoML.startAutoML(spec);
+                    cleanMe.add(aml);
                     aml.get();
                     return aml;
                 });
@@ -69,7 +70,6 @@ public class AutoMLConcurrencyTest {
         CompletableFuture.allOf(futures).join();
         
         List<AutoML> amls = Arrays.stream(futures).map(CompletableFuture::join).collect(Collectors.toList());
-        cleanMe.addAll(amls);
         
         assertEquals(5, amls.stream().map(AutoML::projectName).distinct().count());
         assertEquals(15, amls.stream().flatMap(aml -> Arrays.stream(aml.leaderboard().getModelKeys()))
