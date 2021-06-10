@@ -234,7 +234,7 @@ public class PermutationVarImpTest extends TestUtil {
     /**
      * Sorting a map by value.
      */
-    public static class MapUtil {
+    public static class MapSort {
         public static <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
             List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
             list.sort(Collections.reverseOrder(Map.Entry.comparingByValue()));
@@ -288,8 +288,8 @@ public class PermutationVarImpTest extends TestUtil {
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> Math.abs(e.getValue())));
 
             // Sort the maps
-            Map<String, Double> sCoefficients = MapUtil.sortByValue(coefficients);
-            Map<String, Double> sPvi = MapUtil.sortByValue(perVarImp);
+            Map<String, Double> sCoefficients = MapSort.sortByValue(coefficients);
+            Map<String, Double> sPvi = MapSort.sortByValue(perVarImp);
 
             // Instead of comparing values compare positions (rank)
             String [] coeff = new String[sCoefficients.size() - 1];

@@ -136,7 +136,7 @@ public class PermutationVarImp {
      * Get PermutationVarImp
      *
      * @param metric    Metric to use to calculate the variable (feature) importance
-     * @param n_samples Number of samples to use to calculate the feature importance; Use -1 to use the whole frame
+     * @param n_samples Number of samples to use to calculate the variable (feature) importance; Use -1 to use the whole frame
      * @param features  Features to evaluate
      * @param seed      Seed for random generator
      * @return TwoDimTable of Permutation Feature Importance scores
@@ -162,8 +162,8 @@ public class PermutationVarImp {
     /**
      * Get Repeated Permutation Variable Importance
      *
-     * @param metric    Metric to use to calculate the feature importance
-     * @param n_samples Number of samples to use to calculate the feature importance; Use -1 to use the whole frame
+     * @param metric    Metric to use to calculate the variable (feature) importance
+     * @param n_samples Number of samples to use to calculate the  variable (feature) importance; Use -1 to use the whole frame
      * @param n_repeats Number of repeats
      * @param features  Features to evaluate
      * @param seed      Seed for random generator
@@ -178,7 +178,8 @@ public class PermutationVarImp {
         }
 
         String[] names = new String[varImps[0].size()];
-        double[/*r*/][/*c*/] importance = new double[varImps[0].size()][n_repeats];
+        // One row per feature, one column per PVI evaluation
+        double[/* features */][/* repeats */] importance = new double[varImps[0].size()][n_repeats];
         List<Map.Entry<String, Double>> sortedFeatures = new ArrayList<>(varImps[0].entrySet());
         sortedFeatures.sort(Map.Entry.comparingByValue(Collections.reverseOrder()));
         int i = 0;
