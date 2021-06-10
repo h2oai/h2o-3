@@ -1,15 +1,72 @@
 # -*- encoding: utf-8 -*-
 import functools as ft
+from inspect import getdoc
+import re
 
 import h2o
 from h2o.automl._base import H2OAutoMLBaseMixin
 from h2o.automl._h2o_automl_output import H2OAutoMLOutput
 from h2o.base import Keyed
+from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
+
+
+_params_doc_ = dict()  # holds the doc per param extracted from H2OAutoML constructor
+
+
+def _extract_params_doc(docstr):
+    pat = re.compile(r"^:param (\w+ )?(?P<name>\w+):\s?(?P<doc>.*)")  # match param doc-start in Sphinx format ":param type name: description"
+    lines = docstr.splitlines()
+    param, doc = None, None
+    for l in lines:
+        m = pat.match(l)
+        if m:
+            if param:
+                _params_doc_[param] = "\n".join(doc)
+            param = m.group('name')
+            doc = [m.group('doc')]
+        elif param:
+            doc.append(l)
+
+
+def _aml_property(param_path, name=None, types=None, validate_fn=None, freezable=False, set_input=True):
+    path = param_path.split('.')
+    name = name or path[-1]
+
+    def attr_name(self, attr):
+        return ("_"+self.__class__.__name__+attr) if attr.startswith('__') and not attr.endswith('__') else attr
+    
+    def _fget(self):
+        _input = getattr(self, attr_name(self, '__input'))
+        return _input.get(name)
+
+    def _fset(self, value):
+        if freezable and getattr(self, attr_name(self, '__frozen'), False):
+            raise H2OValueError("Param ``%s`` can not be modified after the first call to ``train``." % name, name)
+        if types is not None:
+            assert_is_type(value, *types)
+        input_val = value
+        if validate_fn:
+            value = validate_fn(self, value)
+        _input = getattr(self, attr_name(self, '__input'))
+        _input[name] = input_val if set_input else value
+        group = getattr(self, attr_name(self, path[0]))
+        if group is None:
+            group = {}
+            setattr(self, attr_name(self, path[0]), group)
+        obj = group
+        for t in path[1:-1]:
+            tmp = obj.get(t)
+            if tmp is None:
+                tmp = obj[t] = {}
+            obj = tmp
+        obj[path[-1]] = value
+
+    return property(fget=_fget, fset=_fset, doc=_params_doc_.get(name, None))
 
 
 class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
@@ -84,69 +141,93 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         """
         Create a new H2OAutoML instance.
         
-        :param int nfolds: Number of folds for k-fold cross-validation. Defaults to ``5``. Use ``0`` to disable cross-validation; this will also 
-          disable Stacked Ensemble (thus decreasing the overall model performance).
-        :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).  Defaults to ``False``.
-        :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
-          factors will be automatically computed to obtain class balance during training. Requires ``balance_classes``.
+        :param int nfolds: Number of folds for k-fold cross-validation.
+            Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
+            Defaults to ``5``.
+
+        :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
+            Defaults to ``False``.
+        :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order).
+            If not specified, sampling factors will be automatically computed to obtain class balance during training.
         :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
-          Requires ``balance_classes``. Defaults to ``5.0``.
-        :param int max_runtime_secs: This argument specifies the maximum time that the AutoML process will run for, prior to training the final Stacked Ensemble models. If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs`` defaults to 3600 seconds (1 hour).
-        :param int max_runtime_secs_per_model: This argument controls the max time the AutoML run will dedicate to each individual model. Defaults to `0` (disabled).
-        :param int max_models: Specify the maximum number of models to build in an AutoML run. Not limited by default. (Does not include the Stacked Ensemble models.)
-        :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
-          The available options are:
-          ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
-          ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
-          ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
-        :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
-          to stop the AutoML run if the improvement is less than this value. This value defaults to ``0.001``
-          if the dataset is at least 1 million rows; otherwise it defaults to a value determined by the size of the dataset
-          and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
-        :param int stopping_rounds: This argument stops training new models in the AutoML run when the option selected for
-          stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
-          To disable this feature, set it to ``0``. Defaults to ``3`` and must be an non-negative integer.
-        :param int seed: Set a seed for reproducibility. AutoML can only guarantee reproducibility if ``max_models`` or
-          early stopping is used because ``max_runtime_secs`` is resource limited, meaning that if the resources are
-          not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``None``.
-        :param str project_name: Character string to identify an AutoML project. Defaults to ``None``, which means
-          a project name will be auto-generated based on the training frame ID.  More models can be trained on an
-          existing AutoML project by specifying the same project name in muliple calls to the AutoML function
-          (as long as the same training frame is used in subsequent runs).
-        :param exclude_algos: List of character strings naming the algorithms to skip during the model-building phase. 
-          An example use is ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``, and the full list of options is: ``"DRF"`` 
-          (Random Forest and Extremely-Randomized Trees), ``"GLM"``, ``"XGBoost"``, ``"GBM"``, ``"DeepLearning"`` and ``"StackedEnsemble"``. 
-          Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-        :param include_algos: List of character strings naming the algorithms to restrict to during the model-building phase.
-          This can't be used in combination with `exclude_algos` param.
-          Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-        :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
+            Requires ``balance_classes``.
+            Defaults to ``5.0``.
+        :param int max_runtime_secs: Specify the maximum time that the AutoML process will run for, prior to training the final Stacked Ensemble models.
+            If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs``.
+            Defaults to 3600 seconds (1 hour).
+        :param int max_runtime_secs_per_model: Controls the max time the AutoML run will dedicate to each individual model.
+            Defaults to ``0`` (disabled: no time limit).
+        :param int max_models: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.
+            Defaults to ``0`` (disabled: no limitation).
+        :param str stopping_metric: Specifies the metric to use for early stopping. 
+            The available options are:
+            ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
+            ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
+            ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
+            Defaults to ``"AUTO"``.
+        :param float stopping_tolerance: Specify the relative tolerance for the metric-based stopping to stop the AutoML run if the improvement is less than this value. 
+            Defaults to ``0.001`` if the dataset is at least 1 million rows;
+            otherwise it defaults to a value determined by the size of the dataset and the non-NA-rate, in which case the value is computed as 1/sqrt(nrows * non-NA-rate).
+        :param int stopping_rounds: Stop training new models in the AutoML run when the option selected for
+            stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
+            To disable this feature, set it to ``0``.
+            Defaults to ``3`` and must be an non-negative integer.
+        :param int seed: Set a seed for reproducibility. 
+            AutoML can only guarantee reproducibility if ``max_models`` or early stopping is used because ``max_runtime_secs`` is resource limited, 
+            meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another. 
+            Defaults to ``None``.
+        :param str project_name: Character string to identify an AutoML project.
+            Defaults to ``None``, which means a project name will be auto-generated based on the training frame ID.
+            More models can be trained on an existing AutoML project by specifying the same project name in multiple calls to the AutoML function
+            (as long as the same training frame, or a sample, is used in subsequent runs).
+        :param exclude_algos: List the algorithms to skip during the model-building phase. 
+            The full list of options is: 
+                ``"DRF"`` (Random Forest and Extremely-Randomized Trees),
+                ``"GLM"``,
+                ``"XGBoost"``,
+                ``"GBM"``,
+                ``"DeepLearning"``,
+                ``"StackedEnsemble"``. 
+            Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+            Usage example: ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``.
+        :param include_algos: List the algorithms to restrict to during the model-building phase.
+            This can't be used in combination with `exclude_algos` param.
+            Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+        :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase.
+            By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental;
+            to activate it, it is recommended to try a ratio around 0.1.
+            Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
-          Defaults to None (Expert usage only).
+            Defaults to None (Expert usage only).
         :param preprocessing: List of preprocessing steps to run. Only 'target_encoding' is currently supported.
         :param monotone_constraints: Dict representing monotonic constraints.
-          Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
+            Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
-          This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
-          additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
-        :param keep_cross_validation_models: Whether to keep the cross-validated models. Keeping cross-validation models may consume 
-          significantly more memory in the H2O cluster. Defaults to ``False``.
-        :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models. Deleting them will save memory 
-          in the H2O cluster. This option defaults to ``False``.
-        :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, 
-          ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
-          ``auc``, ``aucpr``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
-          ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
+            This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
+            additional Stacked Ensemble models in AutoML. 
+            Defaults to ``False``.
+        :param keep_cross_validation_models: Whether to keep the cross-validated models.
+            Keeping cross-validation models may consume significantly more memory in the H2O cluster.
+            Defaults to ``False``.
+        :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models.
+            Deleting them will save memory in the H2O cluster. 
+            Defaults to ``False``.
+        :param sort_metric: Metric to sort the leaderboard by. 
+            For binomial classification choose between ``"auc"``, ``"aucpr"``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
+            For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
+            For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``.
+            Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are None (live log disabled), 'debug', 'info' or 'warn'. Defaults to 'warn'.
+            Available options are None (live log disabled), ``"debug"``, ``"info"`` or ``"warn"``.
+            Defaults to ``"warn"``.
         """
         
-        # early validate kwargs:
-        algo_parameters = None
+        # early validate kwargs, extracting hidden parameters:
+        algo_parameters = {}
         for k in kwargs:
             if k == 'algo_parameters':
-                algo_parameters = kwargs[k]
+                algo_parameters = kwargs[k] or {}
             else:
                 raise TypeError("H2OAutoML got an unexpected keyword argument '%s'" % k)
         
@@ -169,170 +250,182 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         self._state_json = None
         self._build_resp = None  # contains all the actual parameters used on backend
 
+        self.__frozen = False
+        self.__input = dict()  # contains all the input params as entered by the user
+        
         # Make bare minimum params containers
-        self.build_control = dict(
-            stopping_criteria=dict()
-        )
+        self.build_control = dict()
         self.build_models = dict()
         self.input_spec = dict()
 
-        # build_control params #
+        self.project_name = project_name
+        self.nfolds = nfolds
+        self.balance_classes = balance_classes
+        self.class_sampling_factors = class_sampling_factors
+        self.max_after_balance_size = max_after_balance_size
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.export_checkpoints_dir = export_checkpoints_dir
 
-        assert_is_type(project_name, None, str)
-        check_id(project_name, "H2OAutoML")
-        self._project_name = self.build_control["project_name"] = project_name
-
-        assert_is_type(nfolds, int)
-        assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
-        assert nfolds != 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
-        self.nfolds = self.build_control["nfolds"] = nfolds
-
-        assert_is_type(balance_classes, bool)
-        self.balance_classes = self.build_control["balance_classes"] = balance_classes
-
-        assert_is_type(class_sampling_factors, None, [numeric])
-        self.class_sampling_factors = self.build_control["class_sampling_factors"] = class_sampling_factors
-
-        assert_is_type(max_after_balance_size, None, numeric)
-        self.max_after_balance_size = self.build_control["max_after_balance_size"] = max_after_balance_size
-
-        assert_is_type(keep_cross_validation_models, bool)
-        self.keep_cross_validation_models = self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
-
-        assert_is_type(keep_cross_validation_fold_assignment, bool)
-        self.keep_cross_validation_fold_assignment = self.build_control["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
-
-        assert_is_type(keep_cross_validation_predictions, bool)
-        self.keep_cross_validation_predictions = self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
-
-        assert_is_type(export_checkpoints_dir, None, str)
-        self.export_checkpoints_dir = self.build_control["export_checkpoints_dir"] = export_checkpoints_dir
-
-
-        # stopping criteria params #
-
-        assert_is_type(max_runtime_secs, None, int)
-        self.max_runtime_secs = self.build_control['stopping_criteria']['max_runtime_secs'] = max_runtime_secs
-
-        assert_is_type(max_runtime_secs_per_model, None, int)
-        self.max_runtime_secs_per_model = self.build_control["stopping_criteria"]["max_runtime_secs_per_model"] = max_runtime_secs_per_model
-
-        assert_is_type(max_models, None, int)
-        self.max_models = self.build_control["stopping_criteria"]["max_models"] = max_models
-
-        assert_is_type(stopping_metric, None, str)
-        self.stopping_metric = self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
-
-        assert_is_type(stopping_tolerance, None, numeric)
-        self.stopping_tolerance = self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
-
-        assert_is_type(stopping_rounds, None, int)
-        self.stopping_rounds = self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-
-        assert_is_type(seed, None, int)
-        self.seed = self.build_control["stopping_criteria"]["seed"] = seed
-
-        # build models params #
-
-        assert_is_type(exclude_algos, None, [str])
-        self.exclude_algos = self.build_models['exclude_algos'] = exclude_algos
-
-        assert_is_type(include_algos, None, [str])
-        if include_algos is not None:
-            assert exclude_algos is None, "Use either include_algos or exclude_algos, not both."
-        self.include_algos = self.build_models['include_algos'] = include_algos
-
-        assert_is_type(exploitation_ratio, None, numeric)
-        self.exploitation_ratio = self.build_models['exploitation_ratio'] = exploitation_ratio
-
-        assert_is_type(modeling_plan, None, list)
-        if modeling_plan is not None:
-            supported_aliases = ['all', 'defaults', 'grids']
-
-            def assert_is_step_def(sd):
-                assert 'name' in sd, "each definition must have a 'name' key"
-                assert 0 < len(sd) < 3, "each definition must have only 1 or 2 keys: name, name+alias or name+steps"
-                assert len(sd) == 1 or 'alias' in sd or 'steps' in sd, "steps definitions support only the following keys: name, alias, steps"
-                assert 'alias' not in sd or sd['alias'] in supported_aliases, "alias must be one of %s" % supported_aliases
-                assert 'steps' not in sd or (is_type(sd['steps'], list) and all(assert_is_step(s) for s in sd['steps']))
-
-            def assert_is_step(s):
-                assert is_type(s, dict), "each step must be a dict with an 'id' key and an optional 'weight' key"
-                assert 'id' in s, "each step must have an 'id' key"
-                assert len(s) == 1 or ('weight' in s and is_type(s['weight'], int)), "weight must be an integer"
-                return True
-
-            plan = []
-            for step_def in modeling_plan:
-                assert_is_type(step_def, dict, tuple, str)
-                if is_type(step_def, dict):
-                    assert_is_step_def(step_def)
-                    plan.append(step_def)
-                elif is_type(step_def, str):
-                    plan.append(dict(name=step_def))
-                else:
-                    assert 0 < len(step_def) < 3
-                    assert_is_type(step_def[0], str)
-                    name = step_def[0]
-                    if len(step_def) == 1:
-                        plan.append(dict(name=name))
-                    else:
-                        assert_is_type(step_def[1], str, list)
-                        ids = step_def[1]
-                        if is_type(ids, str):
-                            assert_is_type(ids, *supported_aliases)
-                            plan.append(dict(name=name, alias=ids))
-                        else:
-                            plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
-            self.modeling_plan = self.build_models['modeling_plan'] = plan
-        else:
-            self.modeling_plan = None
-
-        assert_is_type(preprocessing, None, [str])  # for now
-        if preprocessing is not None:
-            assert all(p in ['target_encoding'] for p in preprocessing)
-            self.preprocessing = self.build_models['preprocessing'] = [dict(type=p.replace("_", "")) for p in preprocessing]
-        else:
-            self.preprocessing = None
-
-        assert_is_type(monotone_constraints, None, dict)
+        self.max_runtime_secs = max_runtime_secs
+        self.max_runtime_secs_per_model = max_runtime_secs_per_model
+        self.max_models = max_models
+        self.stopping_metric = stopping_metric
+        self.stopping_tolerance = stopping_tolerance
+        self.stopping_rounds = stopping_rounds
+        self.seed = seed
+        self.exclude_algos = exclude_algos
+        self.include_algos = include_algos
+        self.exploitation_ratio = exploitation_ratio
+        self.modeling_plan = modeling_plan
+        self.preprocessing = preprocessing
         if monotone_constraints is not None:
-            if algo_parameters is None:
-                algo_parameters = {}
-            self.monotone_constraints = algo_parameters['monotone_constraints'] = monotone_constraints
+            algo_parameters['monotone_constraints'] = monotone_constraints
+        self._algo_parameters = algo_parameters
+
+        self.sort_metric = sort_metric
+        
+    #---------------------------------------------------------------------------
+    # AutoML params
+    #---------------------------------------------------------------------------
+    
+    def __validate_not_set(self, val, prop=None, message=None):
+        assert val is None or getattr(self, prop, None) is None, message
+        return val
+    
+    def __validate_project_name(self, project_name):
+        check_id(project_name, "H2OAutoML")
+        return project_name
+    
+    def __validate_nfolds(self, nfolds):
+        assert nfolds == 0 or nfolds > 1, "nfolds set to %s; use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable." % nfolds
+        return nfolds
+        
+    def __validate_modeling_plan(self, modeling_plan):
+        if modeling_plan is None:
+            return None
+            
+        supported_aliases = ['all', 'defaults', 'grids']
+
+        def assert_is_step_def(sd):
+            assert 'name' in sd, "each definition must have a 'name' key"
+            assert 0 < len(sd) < 3, "each definition must have only 1 or 2 keys: name, name+alias or name+steps"
+            assert len(sd) == 1 or 'alias' in sd or 'steps' in sd, "steps definitions support only the following keys: name, alias, steps"
+            assert 'alias' not in sd or sd['alias'] in supported_aliases, "alias must be one of %s" % supported_aliases
+            assert 'steps' not in sd or (is_type(sd['steps'], list) and all(assert_is_step(s) for s in sd['steps']))
+
+        def assert_is_step(s):
+            assert is_type(s, dict), "each step must be a dict with an 'id' key and an optional 'weight' key"
+            assert 'id' in s, "each step must have an 'id' key"
+            assert len(s) == 1 or ('weight' in s and is_type(s['weight'], int)), "weight must be an integer"
+            return True
+
+        plan = []
+        for step_def in modeling_plan:
+            assert_is_type(step_def, dict, tuple, str)
+            if is_type(step_def, dict):
+                assert_is_step_def(step_def)
+                plan.append(step_def)
+            elif is_type(step_def, str):
+                plan.append(dict(name=step_def))
+            else:
+                assert 0 < len(step_def) < 3
+                assert_is_type(step_def[0], str)
+                name = step_def[0]
+                if len(step_def) == 1:
+                    plan.append(dict(name=name))
+                else:
+                    assert_is_type(step_def[1], str, list)
+                    ids = step_def[1]
+                    if is_type(ids, str):
+                        assert_is_type(ids, *supported_aliases)
+                        plan.append(dict(name=name, alias=ids))
+                    else:
+                        plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
+        return plan
+    
+    def __validate_preprocessing(self, preprocessing):
+        if preprocessing is None:
+            return 
+        assert all(p in ['target_encoding'] for p in preprocessing)
+        return [dict(type=p.replace("_", "")) for p in preprocessing]
+    
+    def __validate_monotone_constraints(self, monotone_constraints):
+        if monotone_constraints is None:
+            self._algo_parameters.pop('monotone_constraints', None)
         else:
-            self.monotone_constraints = None
+            self._algo_parameters['monotone_constraints'] = monotone_constraints
+        return self.__validate_algo_parameters(self._algo_parameters)
+    
+    def __validate_algo_parameters(self, algo_parameters):
+        if algo_parameters is None:
+            return None
+        algo_parameters_json = []
+        for k, v in algo_parameters.items():
+            scope, __, name = k.partition('__')
+            if len(name) == 0:
+                name, scope = scope, 'any'
+            value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
+            algo_parameters_json.append(dict(scope=scope, name=name, value=value))
+        return algo_parameters_json
 
-        assert_is_type(algo_parameters, None, dict)
-        if algo_parameters is not None:
-            algo_parameters_json = []
-            for k, v in algo_parameters.items():
-                scope, __, name = k.partition('__')
-                if len(name) == 0:
-                    name, scope = scope, 'any'
-                value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
-                algo_parameters_json.append(dict(scope=scope, name=name, value=value))
+    def __validate_frame(self, fr, name=None, required=False):
+        return H2OFrame._validate(fr, name, required=required)
 
-            self.algo_parameters = self.build_models['algo_parameters'] = algo_parameters_json
-        else:
-            self.algo_parameters = None
+    _extract_params_doc(getdoc(__init__))
+    project_name = _aml_property('build_control.project_name', types=(None, str), freezable=True,
+                                  validate_fn=__validate_project_name)
+    nfolds = _aml_property('build_control.nfolds', types=(int,), freezable=True,
+                           validate_fn=__validate_nfolds)
+    balance_classes = _aml_property('build_control.balance_classes', types=(bool,), freezable=True)
+    class_sampling_factors = _aml_property('build_control.class_sampling_factors', types=(None, [numeric]), freezable=True)
+    max_after_balance_size = _aml_property('build_control.max_after_balance_size', types=(None, numeric), freezable=True)
+    keep_cross_validation_models = _aml_property('build_control.keep_cross_validation_models', types=(bool,), freezable=True)
+    keep_cross_validation_fold_assignment = _aml_property('build_control.keep_cross_validation_fold_assignment', types=(bool,), freezable=True)
+    keep_cross_validation_predictions = _aml_property('build_control.keep_cross_validation_predictions', types=(bool,), freezable=True)
+    export_checkpoints_dir = _aml_property('build_control.export_checkpoints_dir', types=(None, str), freezable=True)
+    max_runtime_secs = _aml_property('build_control.stopping_criteria.max_runtime_secs', types=(None, int), freezable=True)
+    max_runtime_secs_per_model = _aml_property('build_control.stopping_criteria.max_runtime_secs_per_model', types=(None, int), freezable=True)
+    max_models = _aml_property('build_control.stopping_criteria.max_models', types=(None, int), freezable=True)
+    stopping_metric = _aml_property('build_control.stopping_criteria.stopping_metric', types=(None, str), freezable=True)
+    stopping_tolerance = _aml_property('build_control.stopping_criteria.stopping_tolerance', types=(None, numeric), freezable=True)
+    stopping_rounds = _aml_property('build_control.stopping_criteria.stopping_rounds', types=(None, int), freezable=True)
+    seed = _aml_property('build_control.stopping_criteria.seed', types=(None, int), freezable=True)
+    exclude_algos = _aml_property('build_models.exclude_algos', types=(None, [str]), freezable=True,
+                                  validate_fn=ft.partial(__validate_not_set, prop='include_algos',
+                                                         message="Use either `exclude_algos` or `include_algos`, not both."))
+    include_algos = _aml_property('build_models.include_algos', types=(None, [str]), freezable=True,
+                                  validate_fn=ft.partial(__validate_not_set, prop='exclude_algos',
+                                                         message="Use either `exclude_algos` or `include_algos`, not both."))
+    exploitation_ratio = _aml_property('build_models.exploitation_ratio', types=(None, numeric), freezable=True)
+    modeling_plan = _aml_property('build_models.modeling_plan', types=(None, list), freezable=True,
+                                  validate_fn=__validate_modeling_plan)
+    preprocessing = _aml_property('build_models.preprocessing', types=(None, [str]), freezable=True,
+                                  validate_fn=__validate_preprocessing)
+    monotone_constraints = _aml_property('build_models.algo_parameters', name='monotone_constraints', types=(None, dict), freezable=True, 
+                                         validate_fn=__validate_monotone_constraints)
+    _algo_parameters = _aml_property('build_models.algo_parameters', types=(None, dict), freezable=True,
+                                     validate_fn=__validate_algo_parameters)
 
-        # input spec params #
+    sort_metric = _aml_property('input_spec.sort_metric', types=(None, str))
+    fold_column = _aml_property('input_spec.fold_column', types=(None, int, str))
+    weights_column = _aml_property('input_spec.weights_column', types=(None, int, str))
 
-        assert_is_type(sort_metric, None, str)
-        self.sort_metric = self.input_spec['sort_metric'] = sort_metric
+    training_frame = _aml_property('input_spec.training_frame', set_input=False,
+                                   validate_fn=ft.partial(__validate_frame, name='training_frame', required=True))
+    validation_frame = _aml_property('input_spec.validation_frame', set_input=False,
+                                     validate_fn=ft.partial(__validate_frame, name='validation_frame'))
+    leaderboard_frame = _aml_property('input_spec.leaderboard_frame', set_input=False,
+                                      validate_fn=ft.partial(__validate_frame, name='leaderboard_frame'))
+    blending_frame = _aml_property('input_spec.blending_frame', set_input=False,
+                                   validate_fn=ft.partial(__validate_frame, name='blending_frame'))
+    response_column = _aml_property('input_spec.response_column', types=(str,))
 
     #---------------------------------------------------------------------------
     # Basic properties
     #---------------------------------------------------------------------------
-    @property
-    def project_name(self):
-        return self._project_name
-
-    @project_name.setter
-    def project_name(self, value):
-        self._project_name = value
-
+    
     @property
     def key(self):
         return self._job.dest_key if self._job else self.project_name
@@ -403,16 +496,15 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         >>> aml.train(y=y, training_frame=train)
         """
         # Minimal required arguments are training_frame and y (response)
-        training_frame = H2OFrame._validate(training_frame, 'training_frame', required=True)
-        self.input_spec['training_frame'] = training_frame.frame_id
+        self.training_frame = training_frame
 
-        ncols = training_frame.ncols
-        names = training_frame.names
+        ncols = self.training_frame.ncols
+        names = self.training_frame.names
 
-        if y is None:
+        if y is None and self.response_column is None:
             raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
-        else:
-            assert_is_type(y,int,str)
+        elif y is not None:
+            assert_is_type(y, int, str)
             if is_type(y, int):
                 if not (-ncols <= y < ncols):
                     raise H2OValueError("Column %d does not exist in the training frame" % y)
@@ -420,23 +512,14 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             else:
                 if y not in names:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
-            self.input_spec['response_column'] = y
+            self.response_column = y
 
+        self.fold_column = fold_column
+        self.weights_column = weights_column
 
-        assert_is_type(fold_column, None, int, str)
-        self.input_spec['fold_column'] = fold_column
-
-        assert_is_type(weights_column, None, int, str)
-        self.input_spec['weights_column'] = weights_column
-
-        validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
-        self.input_spec['validation_frame'] = validation_frame.frame_id if validation_frame is not None else None
-
-        leaderboard_frame = H2OFrame._validate(leaderboard_frame, 'leaderboard_frame')
-        self.input_spec['leaderboard_frame'] = leaderboard_frame.frame_id if leaderboard_frame is not None else None
-
-        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame')
-        self.input_spec['blending_frame'] = blending_frame.frame_id if blending_frame is not None else None
+        self.validation_frame = validation_frame
+        self.leaderboard_frame = leaderboard_frame
+        self.blending_frame = blending_frame
 
         if x is not None:
             assert_is_type(x, list)
@@ -458,9 +541,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             if ignored_columns is not None:
                 self.input_spec['ignored_columns'] = list(ignored_columns)
 
-
         def clean_params(params):
-            return {k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) else params
+            return ({k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) 
+                    else H2OEstimator._keyify(params))
 
         automl_build_params = clean_params(dict(
             build_control=self.build_control,
@@ -473,8 +556,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             raise H2OResponseError("Backend failed to build the AutoML job: {}".format(resp))
 
         if not self.project_name:
-            self.project_name = self.build_control['project_name'] = resp['build_control']['project_name']
-
+            self.project_name = resp['build_control']['project_name']
+        self.__frozen = True
+        
         self._job = H2OJob(resp['job'], "AutoML")
         poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
         try:
@@ -500,6 +584,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     # Overrides
     #-------------------------------------------------------------------------------------------------------------------
     def detach(self):
+        self.__frozen = False
         self.project_name = None
         h2o.remove(self.leaderboard)
         h2o.remove(self.event_log)

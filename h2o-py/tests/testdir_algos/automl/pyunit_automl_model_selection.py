@@ -66,7 +66,7 @@ def test_include_exclude_algos():
                   seed=1)
         assert False, "Should have thrown AssertionError"
     except AssertionError as e:
-        assert "Use either include_algos or exclude_algos" in str(e)
+        assert "Use either `exclude_algos` or `include_algos`, not both" in str(e)
 
 
 def test_bad_modeling_plan_using_full_syntax():
