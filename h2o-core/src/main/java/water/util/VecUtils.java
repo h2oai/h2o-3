@@ -864,9 +864,9 @@ public class VecUtils {
   }
 
   /**
-   * Multiplies two Vecs of the same length
+   * DotProduct of two Vecs of the same length
    */
-  public static class VecMultiply extends MRTask<VecMultiply> {
+  public static class DotProduct extends MRTask<DotProduct> {
     public double result;
     @Override public void map(Chunk[] bvs) {
       result = 0;
@@ -875,7 +875,7 @@ public class VecUtils {
         result += bvs[0].atd(i) * bvs[1].atd(i);
       }
     }
-    @Override public void reduce(VecMultiply mrt) {
+    @Override public void reduce(DotProduct mrt) {
       result += mrt.result;
     }
   }

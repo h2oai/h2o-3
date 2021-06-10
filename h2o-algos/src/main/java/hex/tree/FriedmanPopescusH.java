@@ -17,10 +17,9 @@ import water.util.VecUtils;
 import java.util.*;
 
 /**
- * Calculates Friedman and Popescu's H statistics, in order to look for interactions among variables in h2o gradient-boosting models
- *
- * NaN is returned if a computation is spoiled by weak main effects and rounding errors.
- * H varies from 0 to 1. The larger H, the stronger the evidence for an interaction among the variables.
+ * Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
+ * H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a 
+ * stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
  *
  * See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
  * **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
@@ -212,7 +211,7 @@ public class FriedmanPopescusH {
         filteredFrame = new Frame(Key.make(), filteredFrame.names(), filteredFrame.vecs());
         Frame uniqueWithCounts = uniqueRowsWithCounts(filteredFrame);
         Frame uncenteredFvalues = new Frame(partialDependence(modelIds, uniqueWithCounts, learnRate, sharedTreeSubgraphs).vec(0));
-        VecUtils.VecMultiply multiply = new VecUtils.VecMultiply().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
+        VecUtils.DotProduct multiply = new VecUtils.DotProduct().doAll(uniqueWithCounts.vec("nrow"), uncenteredFvalues.vec(0));
         double meanUncenteredFValue = multiply.result / filteredFrame.numRows();
         for (int i = 0; i < uncenteredFvalues.numRows(); i++) {
             uncenteredFvalues.vec(0).set(i, uncenteredFvalues.vec(0).at(i) - meanUncenteredFValue);
