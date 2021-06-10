@@ -56,7 +56,7 @@ public class ModelingStepTest {
                 new StepDefinition("dummy")
         };
         buildSpec.build_models.exploitation_ratio = 0.5;
-        aml = new AutoML(null, new Date(), buildSpec);
+        aml = new AutoML(buildSpec);
         DKV.put(aml); toDelete.add(aml);
     }
 
