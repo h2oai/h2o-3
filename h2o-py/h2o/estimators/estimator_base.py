@@ -347,7 +347,7 @@ class H2OEstimator(ModelBase):
         if extend_parms_fn is not None:
             extend_parms_fn(parms)
     
-        parms = {k: H2OEstimator._keyify(parms[k]) for k in parms}
+        parms = {k: H2OEstimator._keyify(v) for k, v in parms.items()}
         if "r2" in (parms.get('stopping_metric') or []):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         return parms

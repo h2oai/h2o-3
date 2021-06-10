@@ -7,6 +7,7 @@ import h2o
 from h2o.automl._base import H2OAutoMLBaseMixin
 from h2o.automl._h2o_automl_output import H2OAutoMLOutput
 from h2o.base import Keyed
+from h2o.estimators import H2OEstimator
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
@@ -32,7 +33,7 @@ def _extract_params_doc(docstr):
             doc.append(l)
 
 
-def _aml_property(param_path, name=None, types=None, validate_fn=None, freezable=False):
+def _aml_property(param_path, name=None, types=None, validate_fn=None, freezable=False, set_input=True):
     path = param_path.split('.')
     name = name or path[-1]
 
@@ -52,7 +53,7 @@ def _aml_property(param_path, name=None, types=None, validate_fn=None, freezable
         if validate_fn:
             value = validate_fn(self, value)
         _input = getattr(self, attr_name(self, '__input'))
-        _input[name] = input_val
+        _input[name] = input_val if set_input else value
         group = getattr(self, attr_name(self, path[0]))
         if group is None:
             group = {}
@@ -370,8 +371,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         return algo_parameters_json
 
     def __validate_frame(self, fr, name=None, required=False):
-        fr = H2OFrame._validate(fr, name, required=required)
-        return fr.frame_id if fr is not None else None
+        return H2OFrame._validate(fr, name, required=required)
 
     _extract_params_doc(getdoc(__init__))
     project_name = _aml_property('build_control.project_name', types=(None, str), freezable=True,
@@ -412,13 +412,13 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     fold_column = _aml_property('input_spec.fold_column', types=(None, int, str))
     weights_column = _aml_property('input_spec.weights_column', types=(None, int, str))
 
-    training_frame = _aml_property('input_spec.training_frame', 
+    training_frame = _aml_property('input_spec.training_frame', set_input=False,
                                    validate_fn=ft.partial(__validate_frame, name='training_frame', required=True))
-    validation_frame = _aml_property('input_spec.validation_frame',
+    validation_frame = _aml_property('input_spec.validation_frame', set_input=False,
                                      validate_fn=ft.partial(__validate_frame, name='validation_frame'))
-    leaderboard_frame = _aml_property('input_spec.leaderboard_frame',
+    leaderboard_frame = _aml_property('input_spec.leaderboard_frame', set_input=False,
                                       validate_fn=ft.partial(__validate_frame, name='leaderboard_frame'))
-    blending_frame = _aml_property('input_spec.blending_frame',
+    blending_frame = _aml_property('input_spec.blending_frame', set_input=False,
                                    validate_fn=ft.partial(__validate_frame, name='blending_frame'))
     response_column = _aml_property('input_spec.response_column', types=(str,))
 
@@ -498,8 +498,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         # Minimal required arguments are training_frame and y (response)
         self.training_frame = training_frame
 
-        ncols = training_frame.ncols
-        names = training_frame.names
+        ncols = self.training_frame.ncols
+        names = self.training_frame.names
 
         if y is None and self.response_column is None:
             raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
@@ -542,7 +542,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                 self.input_spec['ignored_columns'] = list(ignored_columns)
 
         def clean_params(params):
-            return {k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) else params
+            return ({k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) 
+                    else H2OEstimator._keyify(params))
 
         automl_build_params = clean_params(dict(
             build_control=self.build_control,
