@@ -14,7 +14,7 @@ import java.util.stream.IntStream;
  * the variables' values, which breaks the relationship between the variables and the true outcome.
  * https://christophm.github.io/interpretable-ml-book/feature-importance.html
  * <p>
- * Calculate permutation variables importance, by shuffling randomly each variables of the training Frame,
+ * Calculate permutation variables importance, by shuffling randomly each variable of the training Frame,
  * scoring the model with the newly created frame using One At a Time approach
  * and Morris method; creating TwoDimTable with relative, scaled, and percentage value
  * TwoDimTable with mean of the absolute value, and standard deviation of all features importance
