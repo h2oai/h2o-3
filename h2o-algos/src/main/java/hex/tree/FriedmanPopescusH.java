@@ -305,11 +305,12 @@ public class FriedmanPopescusH {
      * At each terminal node the value of the node is multiplied by the
      * current weight (weights sum to 1 for all visited terminal nodes).
      *
-     * params:
-     * tree = tree to traverse
-     * target feature = the set of target features for which the partial dependence should be evaluated
-     * learn rate = constant scaling factor for the leaf predictions
-     * grid = the grid points on which the partial dependence should be evaluated
+     * @param tree tree to traverse
+     * @param targetFeature the set of target features for which the partial dependence should be evaluated
+     * @param learnRate constant scaling factor for the leaf predictions
+     * @param grid the grid points on which the partial dependence should be evaluated
+     *             
+     * @return Vec with the resulting partial dependence values for each point of the input grid         
      */
     public static Vec partialDependenceTree(SharedTreeSubgraph tree, Integer[] targetFeature, double learnRate, Frame grid) {
         Vec outVec = Vec.makeZero(grid.numRows());
