@@ -135,7 +135,7 @@ public class PermutationVarImp {
     /**
      * Get PermutationVarImp
      *
-     * @param metric    Metric to use to calculate the feature importance
+     * @param metric    Metric to use to calculate the variable (feature) importance
      * @param n_samples Number of samples to use to calculate the feature importance; Use -1 to use the whole frame
      * @param features  Features to evaluate
      * @param seed      Seed for random generator
