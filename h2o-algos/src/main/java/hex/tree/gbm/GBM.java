@@ -546,7 +546,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _model._output.addKTrees(ktrees);
 
       // If there is no row/col-sampling and trees are just roots with 0 prediction (==no change) we can stop building
-      if (_parms.isStochastic()) {
+      if (!_parms.isStochastic()) {
         boolean converged = true;
         for (DTree tree : ktrees) {
           if (tree == null)
