@@ -27,8 +27,8 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
     transient private static final Logger LOG = Logger.getLogger(ExtendedIsolationForest.class);
-    public static final int MAX_NTREES = 100_000; // todo valenad consult the size
-    public static final int MAX_SAMPLE_SIZE = 100_000; // todo valenad consult the size
+    public static final int MAX_NTREES = 100_000;
+    public static final int MAX_SAMPLE_SIZE = 100_000;
 
     private ExtendedIsolationForestModel _model;
     transient Random _rand;
@@ -138,12 +138,12 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 _rand = RandomUtils.getRNG(_parms._seed);
                 _model = new ExtendedIsolationForestModel(dest(), _parms,
                         new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
-                _model.delete_and_lock(_job); // todo valenad what is it good for?
+                _model.delete_and_lock(_job);
                 buildIsolationTreeEnsemble();
                 _model._output._model_summary = createModelSummaryTable();
             } finally {
                 if(_model != null)
-                    _model.unlock(_job); // todo valenad what is it good for?
+                    _model.unlock(_job);
             }
         }
 
