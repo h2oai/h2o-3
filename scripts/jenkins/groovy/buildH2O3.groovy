@@ -67,11 +67,20 @@ def call(final pipelineContext) {
                                 makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
                                 activatePythonEnv = true
                             }
+                        } else {
+                            makeTarget(pipelineContext) {
+                                target = 'test-package-gradle'
+                                hasJUnit = false
+                                archiveFiles = false
+                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                activatePythonEnv = true
+                            }
                         }
                     } finally {
                         archiveArtifacts "**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/status.*"
                         pipelineContext.getBuildConfig().TEST_PACKAGES_COMPONENTS.each { component ->
-                            if (pipelineContext.getBuildConfig().stashComponent(component)) {
+                            if (pipelineContext.getBuildConfig().stashComponent(component) || 
+                                    (component == pipelineContext.getBuildConfig().COMPONENT_JAVA && pipelineContext.getBuildConfig().stashComponent(pipelineContext.getBuildConfig().COMPONENT_ANY))) {
                                 echo "********* Stash ${component} *********"
                                 pipelineContext.getUtils().stashFiles(
                                         this,
