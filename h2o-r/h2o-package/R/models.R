@@ -2313,6 +2313,55 @@ h2o.feature_interaction <- function(model, max_interaction_depth = 100, max_tree
 }
 
 
+#' Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
+#' H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a 
+#' stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+#' 
+#' See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
+#' **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
+#'
+#' @param model A trained gradient-boosting model.  
+#' @param frame A frame that current model has been fitted to.
+#' @param variables Variables of the interest.
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate.hex <- h2o.importFile(
+#'        "https://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv",
+#'         destination_frame="prostate.hex"
+#'         )
+#' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
+#' prostate.hex$RACE <- as.factor(prostate.hex$RACE)
+#' prostate.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, 
+#' distribution = "bernoulli", ntrees = 100, max_depth = 5, min_rows = 10, learn_rate = 0.1)
+#' h_val <- h2o.h(prostate.h2o, prostate.hex, c('DPROS','DCAPS'))
+#' }
+#' @export
+h2o.h <- function(model, frame, variables) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "gbm" | o@algorithm == "xgboost"){
+            parms <- list()
+            parms$model_id <- model@model_id
+            parms$frame <- h2o.getId(frame)
+            parms$variables <- .collapse.char(variables)
+
+            json <- .h2o.doSafePOST(urlSuffix = "FriedmansPopescusH", parms=parms)
+            source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+
+            return(source$h)
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+
 #'
 #' Retrieve the respective weight matrix
 #'

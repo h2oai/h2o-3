@@ -265,6 +265,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/FeatureInteraction", ModelsHandler.class, "makeFeatureInteraction",
             "Fetch feature interaction data");
 
+    context.registerEndpoint("makeH",
+            "POST /3/FriedmansPopescusH", ModelsHandler.class, "makeFriedmansPopescusH",
+            "Fetch Friedman Popescus H.");
+
     context.registerEndpoint("fetchPDP",
             "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",
             "Fetch partial dependence data.");
