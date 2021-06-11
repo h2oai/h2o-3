@@ -230,5 +230,4 @@ public abstract class ChunkVisitor {
       _k = kmax;
     }
   }
-
 }
