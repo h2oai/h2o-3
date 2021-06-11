@@ -180,7 +180,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         // Pass 1: Score a prior partially-built tree model, and make new Node
         // assignments to every row.  This involves pulling out the current
         // assigned DecidedNode, "scoring" the row against that Node's decision
-        // assigned DecidedNode, "scoring" the row against that Node's decision
         // criteria, and assigning the row to a new child UndecidedNode (and
         // giving it an improved prediction).
         int [] nnids;
