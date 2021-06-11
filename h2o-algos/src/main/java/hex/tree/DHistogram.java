@@ -424,7 +424,7 @@ public final class DHistogram extends Iced<DHistogram> {
       final double col_data = cs[k];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
-      final double y = ys[k];
+      final double y = ys[r-lo];
       // these assertions hold for GBM, but not for DRF 
       // assert weight != 0 || y == 0;
       // assert !Double.isNaN(y);
@@ -457,16 +457,16 @@ public final class DHistogram extends Iced<DHistogram> {
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
 
-    int min2_int = (int) _min2;
-    int maxIn_int = (int) _maxIn;
-    
+    int min2_int = _min2 == Double.MAX_VALUE ? Integer.MAX_VALUE : (int) _min2;
+    int maxIn_int = _maxIn == -Double.MIN_VALUE ? Integer.MIN_VALUE : (int) _maxIn;
+
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
       final double weight = ws[k];
       final int col_data = cs[k];
       if (col_data < min2_int) min2_int = col_data;
       if (col_data > maxIn_int) maxIn_int = col_data;
-      final double y = ys[k];
+      final double y = ys[r-lo];
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);

@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   transient int []   _cids;
   transient Chunk[][] _chks;
-  transient double [][] _ys;
+  transient double [][][] _ys;
   transient double [][] _ws;
   transient int [][] _nhs;
   transient int [][] _rss;
@@ -160,7 +160,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     assert(v!=null);
     _cids = VecUtils.getLocalChunkIds(v);
     _chks = new Chunk[_cids.length][_fr2.numCols()];
-    _ys = new double[_cids.length][];
+    _ys = new double[_cids.length][][];
     _ws = new double[_cids.length][];
     _nhs = new int[_cids.length][];
     _rss = new int[_cids.length][];
@@ -226,9 +226,23 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           chks[_nidIdx].close(cidx,_fs);
           Chunk resChk = chks[_workIdx];
           int len = resChk.len();
+          double[] y;
           if(resChk instanceof C8DVolatileChunk){
-            _ys[id] = ((C8DVolatileChunk)resChk).getValues();
-          } else _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
+            y = ((C8DVolatileChunk)resChk).getValues();
+          } else 
+            y = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
+          int[] nh = _nhs[id];
+          _ys[id] = new double[nh.length][];
+          for (int n = 0; n < nh.length; n++) {
+            int lo = (n == 0 ? 0 : nh[n - 1]);
+            int hi = nh[n];
+            if (hi == lo)
+              continue;
+            _ys[id][n] = new double[hi - lo];
+            for (int i = 0; i < _ys[id][n].length; i++) {
+              _ys[id][n][i] = y[_rss[id][lo + i]];
+            }
+          }
           if(_weightIdx != -1){
             _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, len);
           }
@@ -325,7 +339,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
-      double [] ys = ScoreBuildHistogram2.this._ys[id];
+      double [][] ys = ScoreBuildHistogram2.this._ys[id];
       final int hcslen = _lh.length;
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
@@ -340,7 +354,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             _chks[id][_col].getIntegers(cs, 0, len, -1);
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          h.updateHisto(ws, resp, cs, ys[n], preds, rs, hi, lo);
         }
       }
     }
@@ -350,7 +364,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
       int len = resChk._len;
-      double [] ys = ScoreBuildHistogram2.this._ys[id];
+      double [][] ys = ScoreBuildHistogram2.this._ys[id];
       final int hcslen = _lh.length;
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
@@ -371,7 +385,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          h.updateHisto(ws, resp, cs, ys[n], preds, rs, hi, lo);
         }
       }
     }
