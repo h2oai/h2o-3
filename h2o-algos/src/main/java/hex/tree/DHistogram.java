@@ -4,6 +4,7 @@ import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
 import org.apache.log4j.Logger;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -48,6 +49,7 @@ public final class DHistogram extends Iced<DHistogram> {
   public final transient String _name; // Column name (for debugging)
   public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
+  public final boolean _intOpt;
   public char  _nbin;     // Bin count (excluding NA bucket)
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
@@ -210,6 +212,8 @@ public final class DHistogram extends Iced<DHistogram> {
     assert(_nbin>0);
     assert(_vals == null);
 
+    _intOpt = _isInt == 2 && (_maxEx < nbins_cats) && _vals_dim == 3;
+    
     if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
@@ -357,8 +361,9 @@ public final class DHistogram extends Iced<DHistogram> {
       final long nacnt = v.naCnt();
       try {
         byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
+        double maxGlobal = v.max();
         hs[c] = nacnt == vlen || v.isConst(true) ?
-            null : make(fr._names[c], nbins, type, minIn, maxEx, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
+            null : make(fr._names[c], nbins, type, minIn, maxEx, maxGlobal, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
         LOG.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -403,6 +408,13 @@ public final class DHistogram extends Iced<DHistogram> {
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
   }
 
+  void updateHisto(double[] ws, double resp[], Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+    if (_intOpt)
+      updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
+    else
+      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo);
+  }
+  
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
    * @param ws observation weights
@@ -455,7 +467,7 @@ public final class DHistogram extends Iced<DHistogram> {
     }
   }
 
-  void updateHisto(double[] ws, double resp[], int[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+  void updateHistoInt(double[] ws, int[] cs, double[] ys, int[] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
 
@@ -479,6 +491,21 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     _min2 = min2_int;
     _maxIn = maxIn_int;
+  }
+
+  Object extractData(Chunk chk, Object cs, int len, int maxChunkSz) {
+    if (cs == null) {
+      if (_intOpt) {
+        cs = MemoryManager.malloc4(maxChunkSz);
+      } else {
+        cs = MemoryManager.malloc8d(maxChunkSz);
+      }
+    }
+    if (_intOpt)
+      chk.getIntegers((int[])cs, 0, len, -1);
+    else
+      chk.getDoubles((double[])cs, 0, len);
+    return cs;
   }
 
   /**

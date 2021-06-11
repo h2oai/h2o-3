@@ -306,30 +306,21 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     @Override
     protected void map(int id){
-      double[] cs = null;
-      int[] csInt = null;
+      Object cs = null;
       double[] resp = null;
       double[] preds = null;
       for(int i = _cidx.getAndIncrement(); i < _cids.length; i = _cidx.getAndIncrement()) {
-        if (cs == null && csInt == null) {
-          if (_chks[i][_col].vec().isCategorical() && _chks[i][_col].vec().domain().length < 1024) {
-            csInt = MemoryManager.malloc4(_maxChunkSz);
-          } else {
-            cs = MemoryManager.malloc8d(_maxChunkSz);
-          }
+        if (cs == null) {
           if (_respIdx >= 0)
             resp = MemoryManager.malloc8d(_maxChunkSz);
           if (_predsIdx >= 0)
             preds = MemoryManager.malloc8d(_maxChunkSz);
         }
-        if (cs != null)
-          computeChunk(i, cs, _ws[i], resp, preds);
-        else
-          computeChunk(i, csInt, _ws[i], resp, preds);
+        cs = computeChunk(i, cs, _ws[i], resp, preds);
       }
     }
 
-    private void computeChunk(int id, int[] cs, double[] ws, double[] resp, double[] preds){
+    private Object computeChunk(int id, Object cs, double[] ws, double[] resp, double[] preds){
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
@@ -346,32 +337,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
           if (! extracted) {
-            _chks[id][_col].getIntegers(cs, 0, len, -1);
-            extracted = true;
-          }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
-        }
-      }
-    }
-
-    private void computeChunk(int id, double[] cs, double[] ws, double[] resp, double[] preds){
-      int [] nh = _nhs[id];
-      int [] rs = _rss[id];
-      Chunk resChk = _chks[id][_workIdx];
-      int len = resChk._len;
-      double [] ys = ScoreBuildHistogram2.this._ys[id];
-      final int hcslen = _lh.length;
-      boolean extracted = false;
-      for (int n = 0; n < hcslen; n++) {
-        int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-        if (sCols == null || ArrayUtils.find(sCols, _col) >= 0) {
-          DHistogram h = _lh[n];
-          int hi = nh[n];
-          int lo = (n == 0 ? 0 : nh[n - 1]);
-          if (hi == lo || h == null) continue; // Ignore untracked columns in this split
-          if (h._vals == null) h.init();
-          if (! extracted) {
-            _chks[id][_col].getDoubles(cs, 0, len);
+            cs = h.extractData(_chks[id][_col], cs, len, _maxChunkSz);
             if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
               if (h._vals_dim == 7) {
@@ -383,6 +349,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
         }
       }
+      return cs;
     }
 
     @Override
