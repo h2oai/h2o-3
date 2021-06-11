@@ -243,6 +243,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
       _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split
+      assert !_parms.useColSampling() || _mtry == _ncols;
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
@@ -497,7 +498,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      Timer gamma_timer = new Timer();
       GammaPass gp = new GammaPass(frameMap, ktrees, leaves, distributionImpl, _nclass);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
@@ -514,7 +514,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } else {
         fitBestConstants(ktrees, leaves, gp, cs);
       }
-      System.out.println("gamma_timer " + gamma_timer.toString());
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == DistributionFamily.gamma ||
@@ -534,11 +533,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
       // Tree <== f(Tree)
       // Nids <== 0
-      Timer add_tree_contribs = new Timer();
       new AddTreeContributions(
               frameMap, ktrees, _parms._pred_noise_bandwidth, _parms._seed, _parms._ntrees, _model._output._ntrees
       ).doAll(_train);
-      System.out.println("add_tree_contribs " + add_tree_contribs.toString());
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
@@ -548,9 +545,23 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
-      // FIXME : need to consider row/col-sampling!!! and multi-class as well
-      if (ktrees[0].root() instanceof LeafNode && ((LeafNode) ktrees[0].root())._pred == 0) {
-        return true;
+      // If there is no row/col-sampling and trees are just roots with 0 prediction (==no change) we can stop building
+      if (_parms.isStochastic()) {
+        boolean converged = true;
+        for (DTree tree : ktrees) {
+          if (tree == null)
+            continue;
+          DTree.Node root = tree.root();
+          converged = root instanceof LeafNode && ((LeafNode) root)._pred == 0.0f;
+          if (! converged) {
+            break;
+          }
+        }
+        if (converged) {
+          LOG.warn("Model cannot be further improved by building more trees, " +
+                  "stopping with ntrees=" + _model._output._ntrees + ".");
+          return true;
+        }
       }
       
       boolean converged = effective_learning_rate() < 1e-6;
@@ -594,7 +605,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
-      if (_parms._sample_rate < 1 || _parms._sample_rate_per_class != null) {
+      if (_parms.useRowSampling()) {
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)

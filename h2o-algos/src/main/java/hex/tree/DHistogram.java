@@ -152,7 +152,7 @@ public final class DHistogram extends Iced<DHistogram> {
       super("column=" + name + " leads to invalid histogram(check numeric range) -> [max=" + maxEx + ", min = " + min + "], step= " + step + ", xbin= " + xbins);
     }
   }
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean initNA,
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
                     Constraints cs) {
     assert nbins >= 1;
@@ -184,6 +184,7 @@ public final class DHistogram extends Iced<DHistogram> {
     _maxEx = maxEx;             // Set Exclusive max
     _min2 = Double.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Double.MAX_VALUE;
+    _intOpt = intOpt;
     _initNA = initNA;
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
@@ -211,8 +212,6 @@ public final class DHistogram extends Iced<DHistogram> {
     _nbin = (char) xbins;
     assert(_nbin>0);
     assert(_vals == null);
-
-    _intOpt = _isInt == 2 && (_maxEx < nbins_cats) && _vals_dim == 3;
     
     if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
@@ -334,6 +333,7 @@ public final class DHistogram extends Iced<DHistogram> {
     else
       ArrayUtils.add(_vals,dsh._vals);
     if (_min2 > dsh._min2) _min2 = dsh._min2;
+
     if (_maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
   }
 
@@ -361,9 +361,9 @@ public final class DHistogram extends Iced<DHistogram> {
       final long nacnt = v.naCnt();
       try {
         byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
-        double maxGlobal = v.max();
+        boolean intOpt = useIntOpt(v, parms, cs);
         hs[c] = nacnt == vlen || v.isConst(true) ?
-            null : make(fr._names[c], nbins, type, minIn, maxEx, maxGlobal, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
+            null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
         LOG.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -373,9 +373,13 @@ public final class DHistogram extends Iced<DHistogram> {
     return hs;
   }
   
-  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean hasNAs, 
+  public static boolean useIntOpt(Vec v, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
+    return v.isCategorical() && v.domain().length < parms._nbins_cats && cs == null;
+  }
+  
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
-    return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, hasNAs, 
+    return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs, 
             parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs);
   }
 
@@ -437,6 +441,7 @@ public final class DHistogram extends Iced<DHistogram> {
         continue; // Needed for DRF only
       final double col_data = cs[k];
       if (col_data < _min2) _min2 = col_data;
+
       if (col_data > _maxIn) _maxIn = col_data;
       final double y = ys[r];
       // these assertions hold for GBM, but not for DRF 
@@ -478,8 +483,10 @@ public final class DHistogram extends Iced<DHistogram> {
       final int k = rows[r];
       final int col_data = cs[k];
       final double weight = ws == null ? 1 : ws[k];
-      if (col_data < min2_int) min2_int = col_data;
-      if (col_data > maxIn_int) maxIn_int = col_data;
+      if (col_data >= 0) {
+        if (col_data < min2_int) min2_int = col_data;
+        if (col_data > maxIn_int) maxIn_int = col_data;
+      }
       final double y = ys[r];
       double wy = weight * y;
       double wyy = wy * y;
