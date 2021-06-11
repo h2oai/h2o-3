@@ -171,11 +171,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       if(sz > largestChunkSz) largestChunkSz = sz;
     }
     final int fLargestChunkSz = largestChunkSz;
-    if(_weightIdx == -1){
-      double [] ws = new double[largestChunkSz];
-      Arrays.fill(ws,1);
-      Arrays.fill(_ws,ws);
-    }
     final AtomicInteger cidx = new AtomicInteger(0);
     // First do the phase 1 on all local data
     new LocalMR(new MrFun(){
