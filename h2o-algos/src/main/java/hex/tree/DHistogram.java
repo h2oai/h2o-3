@@ -462,11 +462,11 @@ public final class DHistogram extends Iced<DHistogram> {
 
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
-      final double weight = ws[k];
       final int col_data = cs[k];
       if (col_data < min2_int) min2_int = col_data;
       if (col_data > maxIn_int) maxIn_int = col_data;
       final double y = ys[r];
+      final double weight = ws[r]; // FIXME - only for experiment
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);
