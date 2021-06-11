@@ -3,11 +3,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 import logging
 import os
-from tempfile import TemporaryDirectory
-
 import h2o
 import h2o.utils.config
-from tests import pyunit_utils as pu
+from tests import TemporaryDirectory, pyunit_utils as pu
 
 
 def test_h2oconfig():

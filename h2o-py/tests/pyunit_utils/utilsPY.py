@@ -25,11 +25,30 @@ import threading
 import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
 
-try:        # works with python 2.7 not 3
-    from StringIO import StringIO
-except:     # works with python 3
-    from io import StringIO
+try:  
+    from io import StringIO  # py3
+except:
+    from StringIO import StringIO  # py2
     
+
+try:
+    from tempfile import TemporaryDirectory
+except ImportError:
+    import tempfile
+    
+    class TemporaryDirectory:
+
+        def __init__(self):
+            self.tmp_dir = None
+
+        def __enter__(self):
+            self.tmp_dir = tempfile.mkdtemp()
+            return self.tmp_dir
+
+        def __exit__(self, *args):
+            shutil.rmtree(self.tmp_dir)
+
+
 # 3rd parties
 import numpy as np
 import pandas as pd
