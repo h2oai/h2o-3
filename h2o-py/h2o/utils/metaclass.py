@@ -95,7 +95,7 @@ def deprecated_params(deprecations):
                 warnings.warn(msg, H2ODeprecationWarning, 2)
             return fn(*args, **new_kwargs)
     
-        _set_decoration_info(wrapper, fn, 'deprecated')
+        _set_decoration_info(wrapper, fn, 'deprecation')
     
         return wrapper
     
