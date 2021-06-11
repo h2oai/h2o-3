@@ -312,7 +312,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double[] preds = null;
       for(int i = _cidx.getAndIncrement(); i < _cids.length; i = _cidx.getAndIncrement()) {
         if (cs == null && csInt == null) {
-          if (_chks[i][_col].vec().isCategorical() && _chks[i][_col].vec().domain().length < 1024 && Boolean.getBoolean("opt")) {
+          if (_chks[i][_col].vec().isCategorical() && _chks[i][_col].vec().domain().length < 1024) {
             csInt = MemoryManager.malloc4(_maxChunkSz);
           } else {
             cs = MemoryManager.malloc8d(_maxChunkSz);

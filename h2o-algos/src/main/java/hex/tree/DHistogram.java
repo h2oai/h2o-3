@@ -239,6 +239,8 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   public final int bin(final int col_data) {
+    if (col_data == -1)
+      return _nbin;
     return col_data - _minInt;
   }
 
@@ -418,7 +420,7 @@ public final class DHistogram extends Iced<DHistogram> {
     
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
-      final double weight = ws == null ? 1 : ws[r];
+      final double weight = ws == null ? 1 : ws[k];
       if (weight == 0)
         continue; // Needed for DRF only
       final double col_data = cs[k];
@@ -463,10 +465,10 @@ public final class DHistogram extends Iced<DHistogram> {
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
       final int col_data = cs[k];
+      final double weight = ws == null ? 1 : ws[k];
       if (col_data < min2_int) min2_int = col_data;
       if (col_data > maxIn_int) maxIn_int = col_data;
       final double y = ys[r];
-      final double weight = ws == null ? 1 : ws[r];
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);
