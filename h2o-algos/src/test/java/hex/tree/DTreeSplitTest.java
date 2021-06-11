@@ -43,7 +43,7 @@ public class DTreeSplitTest {
         double min = ArrayUtils.minValue(data);
         double max = ArrayUtils.maxValue(data);
         double maxEx = DHistogram.find_maxEx(max, 0);
-        DHistogram histo = new DHistogram("histo" + nbins, nbins, 2, (byte) 0, min, maxEx, false, 0,
+        DHistogram histo = new DHistogram("histo" + nbins, nbins, 2, (byte) 0, min, maxEx, false, false, 0,
                 SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 42L, null, null, checkFloatSplits);
         histo.init();
         histo.updateHisto(

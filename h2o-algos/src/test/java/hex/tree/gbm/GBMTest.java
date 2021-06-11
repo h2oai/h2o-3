@@ -4842,5 +4842,39 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testMulticlassStopping() {
+    try {
+      Scope.enter();
+      Frame f = new TestFrameBuilder()
+              .withDataForCol(0, ar(0, 1, 2))
+              .withDataForCol(1, new String[]{"a", "b", "c"})
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .build();
+
+      GBMModel.GBMParameters p = makeGBMParameters();
+      p._response_column = f.lastVecName();
+      p._ntrees = 1000;
+      p._max_depth = 1;
+      p._train = f._key;
+      p._min_rows = 1;
+      p._distribution = multinomial;
+      p._learn_rate = 1;
+
+      GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
+
+      assertTrue(model._output._ntrees < 1000);
+      
+      int lastTreeIndex = model._output._ntrees - 1;
+      for (int i = 0; i < f.lastVec().domain().length; i++) {
+        SharedTreeSubgraph lastTree = model.getSharedTreeSubgraph(lastTreeIndex, i);
+        assertTrue(lastTree.rootNode.isLeaf());
+        assertEquals(lastTree.rootNode.getPredValue(), 0f, 0f);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

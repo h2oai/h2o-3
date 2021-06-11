@@ -79,6 +79,10 @@ public abstract class SharedTreeModel<
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
+    public boolean useRowSampling() {
+      return _sample_rate < 1 || _sample_rate_per_class != null;
+    }
+
     public boolean _calibrate_model = false; // Use Platt Scaling
     public Key<Frame> _calibration_frame;
 
@@ -86,6 +90,14 @@ public abstract class SharedTreeModel<
 
     public double _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level
     public double _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
+
+    public boolean useColSampling() {
+      return _col_sample_rate_change_per_level != 1.0f || _col_sample_rate_per_tree != 1.0f;
+    }
+
+    public boolean isStochastic() {
+      return useRowSampling() || useColSampling();
+    }
 
     public boolean _parallel_main_model_building = false;
 
