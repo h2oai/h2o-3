@@ -51,6 +51,7 @@ public final class DHistogram extends Iced<DHistogram> {
   public char  _nbin;     // Bin count (excluding NA bucket)
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
+  public final int _minInt;
   public final boolean _initNA;  // Does the initial histogram have any NAs? 
                                  // Needed to correctly count actual number of bins of the initial histogram. 
   public final double _pred1; // We calculate what would be the SE for a possible fallback predictions _pred1
@@ -177,6 +178,7 @@ public final class DHistogram extends Iced<DHistogram> {
     _isInt = isInt;
     _name = name;
     _min = min;
+    _minInt = (int) min;
     _maxEx = maxEx;             // Set Exclusive max
     _min2 = Double.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Double.MAX_VALUE;
@@ -235,6 +237,11 @@ public final class DHistogram extends Iced<DHistogram> {
     assert 0 <= idx1 && idx1 < _nbin : idx1 + " " + _nbin;
     return idx1;
   }
+
+  public final int bin(final int col_data) {
+    return col_data - _minInt;
+  }
+
   public double binAt( int b ) {
     if (_hasQuantiles) return _splitPts[b];
     return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
@@ -444,6 +451,32 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
     }
+  }
+
+  void updateHisto(double[] ws, double resp[], int[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+    // Gather all the data for this set of rows, for 1 column and 1 split/NID
+    // Gather min/max, wY and sum-squares.
+
+    int min2_int = (int) _min2;
+    int maxIn_int = (int) _maxIn;
+    
+    for(int r = lo; r< hi; ++r) {
+      final int k = rows[r];
+      final double weight = ws[k];
+      final int col_data = cs[k];
+      if (col_data < min2_int) min2_int = col_data;
+      if (col_data > maxIn_int) maxIn_int = col_data;
+      final double y = ys[k];
+      double wy = weight * y;
+      double wyy = wy * y;
+      int b = bin(col_data);
+      final int binDimStart = _vals_dim*b;
+      _vals[binDimStart + 0] += weight;
+      _vals[binDimStart + 1] += wy;
+      _vals[binDimStart + 2] += wyy;
+    }
+    _min2 = min2_int;
+    _maxIn = maxIn_int;
   }
 
   /**

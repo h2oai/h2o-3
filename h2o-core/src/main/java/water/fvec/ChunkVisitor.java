@@ -230,4 +230,47 @@ public abstract class ChunkVisitor {
       _k = kmax;
     }
   }
+
+  public static final class ShortAryVisitor extends ChunkVisitor {
+    public final short [] vals;
+    private int _k = 0;
+    private final short _na;
+    ShortAryVisitor(short[] vals) {this(vals, (short) C2Chunk._NA); }
+    ShortAryVisitor(short[] vals, short NA){this.vals = vals; _na = NA;}
+    @Override
+    public void addValue(int val) {vals[_k++] = (short) val;}
+    @Override
+    public void addValue(long val) {
+      if(Short.MAX_VALUE < val || val < Short.MIN_VALUE)
+        throw new RuntimeException(val + " does not fit into int");
+      vals[_k++] = (short) val;
+    }
+    @Override
+    public void addValue(double val) {
+      if (Double.isNaN(val)) {
+        vals[_k++] = _na;
+      } else {
+        short i = (short) val;
+        if (i != val)
+          throw new RuntimeException(val + " does not fit into shor");
+        vals[_k++] = i;
+      }
+    }
+    @Override
+    public void addZeros(int zeros) {
+      int k = _k;
+      int kmax = k +zeros;
+      for(;k < kmax; k++)vals[k] = 0;
+      _k = kmax;
+    }
+    @Override
+    public void addNAs(int nas) {
+      int k = _k;
+      int kmax = k + nas;
+      for(;k < kmax; k++)vals[k] = _na;
+      _k = kmax;
+    }
+  }
+
+
 }

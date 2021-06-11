@@ -14,10 +14,7 @@ import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.util.ArrayUtils;
-import water.util.MathUtils;
-import water.util.RandomUtils;
-import water.util.VecUtils;
+import water.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -500,6 +497,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
+      Timer gamma_timer = new Timer();
       GammaPass gp = new GammaPass(frameMap, ktrees, leaves, distributionImpl, _nclass);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
@@ -516,6 +514,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } else {
         fitBestConstants(ktrees, leaves, gp, cs);
       }
+      System.out.println("gamma_timer " + gamma_timer.toString());
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
       if (_parms._distribution == DistributionFamily.gamma ||
@@ -535,9 +534,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
       // Tree <== f(Tree)
       // Nids <== 0
+      Timer add_tree_contribs = new Timer();
       new AddTreeContributions(
               frameMap, ktrees, _parms._pred_noise_bandwidth, _parms._seed, _parms._ntrees, _model._output._ntrees
       ).doAll(_train);
+      System.out.println("add_tree_contribs " + add_tree_contribs.toString());
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
@@ -547,6 +548,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
+      if (ktrees[0].root() instanceof LeafNode && ((LeafNode) ktrees[0].root())._pred == 0) {
+        return true;
+      }
+      
       boolean converged = effective_learning_rate() < 1e-6;
       if (converged) {
         LOG.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");

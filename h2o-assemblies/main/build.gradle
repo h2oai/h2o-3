@@ -42,29 +42,6 @@ jar {
     enabled = false
 }
 
-//
-// Bundle optional modules
-// The process is defined by convention. There are two flags:
-//  - -Pwith${componentName}=true - enables component "componentName" and includes it in assembly
-//  - -P${componentName}Version=3.14 - overrides default component version
-//
-for (comp in optionalComponents) {
-    def compName = comp['name']
-    def compVersion = comp['version']
-    def compEnabled = comp['enabled']
-    def compPropName = "with${compName.capitalize()}"
-    def compPropVersionName = "${compName}Version"
-
-    if (!project.hasProperty(compPropVersionName)) {
-        project.ext.set(compPropVersionName, compVersion)
-    }
-    if (compEnabled || project.hasProperty(compPropName) && project.property(compPropName)) {
-        logger.lifecycle("== ${project.path}: Using optional component: ${compName}, version ${project.findProperty(compPropVersionName)}")
-        apply from: "$rootDir/gradle/components/${compName}.gradle"
-    }
-
-}
-
 shadowJar {
   mergeServiceFiles()
   classifier = ''
