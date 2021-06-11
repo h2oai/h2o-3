@@ -372,11 +372,13 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     return hs;
   }
-  
+
   public static boolean useIntOpt(Vec v, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
-    return v.isCategorical() && v.domain().length < parms._nbins_cats && cs == null;
+    return v.isCategorical() && v.domain().length < parms._nbins_cats // small cardinality categoricals 
+            && cs == null // no constraints - complicates code and is slow for other reasons anyway
+            && (parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.AUTO || parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive); // only when binning is straightforward
   }
-  
+
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs, 
