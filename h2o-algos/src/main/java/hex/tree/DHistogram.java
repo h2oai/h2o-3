@@ -424,7 +424,7 @@ public final class DHistogram extends Iced<DHistogram> {
       final double col_data = cs[k];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
-      final double y = ys[r-lo];
+      final double y = ys[r];
       // these assertions hold for GBM, but not for DRF 
       // assert weight != 0 || y == 0;
       // assert !Double.isNaN(y);
@@ -466,7 +466,7 @@ public final class DHistogram extends Iced<DHistogram> {
       final int col_data = cs[k];
       if (col_data < min2_int) min2_int = col_data;
       if (col_data > maxIn_int) maxIn_int = col_data;
-      final double y = ys[r-lo];
+      final double y = ys[r];
       double wy = weight * y;
       double wyy = wy * y;
       int b = bin(col_data);

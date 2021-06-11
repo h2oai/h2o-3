@@ -548,6 +548,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
+      // FIXME : need to consider row/col-sampling!!! and multi-class as well
       if (ktrees[0].root() instanceof LeafNode && ((LeafNode) ktrees[0].root())._pred == 0) {
         return true;
       }
