@@ -35,6 +35,17 @@ def extend_and_replace(cls, **attrs):
     return new_cls
 
 
+def decoration_info(fn):
+    return getattr(fn, '__decoration__', None)
+
+
+def _set_decoration_info(wrapper, wrapped, decoration_type):
+    wrapper.__decoration__ = dict(
+        wrapped=wrapped,
+        type=decoration_type
+    )
+    
+
 def deprecated_params(deprecations):
     old = deprecations.keys()
     
@@ -83,6 +94,8 @@ def deprecated_params(deprecations):
             for msg in messages:
                 warnings.warn(msg, H2ODeprecationWarning, 2)
             return fn(*args, **new_kwargs)
+    
+        _set_decoration_info(wrapper, fn, 'deprecated')
     
         return wrapper
     
@@ -280,6 +293,7 @@ class _BackwardsCompatible(MetaFeature):
         clz._bc = self
         new_clz = None
 
+        @wraps(clz.__init__)
         def __init__(self, *args, **kwargs):
             super(new_clz, self).__init__(*args, **kwargs)
             self._bci = {name: val.__get__(self, new_clz) if callable(val) else val for name, val in clz._bc._instance_attrs.items()}
