@@ -53,7 +53,7 @@ public final class DHistogram extends Iced<DHistogram> {
   public char  _nbin;     // Bin count (excluding NA bucket)
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
-  public final int _minInt;
+  public final int _minInt;         // Integer version of _min. Used in integer optimized histograms. 
   public final boolean _initNA;  // Does the initial histogram have any NAs? 
                                  // Needed to correctly count actual number of bins of the initial histogram. 
   public final double _pred1; // We calculate what would be the SE for a possible fallback predictions _pred1
@@ -373,10 +373,33 @@ public final class DHistogram extends Iced<DHistogram> {
     return hs;
   }
 
+  /**
+   * Determines if histogram making can use integer optimization when extracting data.
+   * 
+   * @param v input Vec
+   * @param parms algo params
+   * @param cs constraints specification
+   * @return can we use integer representation for extracted data? 
+   */
   public static boolean useIntOpt(Vec v, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
-    return v.isCategorical() && v.domain().length < parms._nbins_cats // small cardinality categoricals 
-            && cs == null // no constraints - complicates code and is slow for other reasons anyway
-            && (parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.AUTO || parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive); // only when binning is straightforward
+    if (cs != null) {
+      // if constraints are not handled on the optimized path to avoid higher code complexity
+      // (the benefit of this optimization would be small anyway as constraints introduce overhead)
+      return false;
+    }
+    if (parms._histogram_type != SharedTreeModel.SharedTreeParameters.HistogramType.AUTO &&
+            parms._histogram_type != SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive) {
+      // we cannot handle non-integer split points in fast-binning
+      return false;
+    }
+    if (v.isCategorical()) {
+      // small cardinality categoricals are optimized (default for nbin_cats is 1024)
+      return v.domain().length < parms._nbins_cats;
+    } else {
+      return v.isInt() && // only small positive integer columns (this covers eg. binary columns)
+              v.min() >= 0 &&
+              v.max() < parms._nbins; // only if we can fit any value in the smallest number of bins could make (nbins, 20 is default)
+    }
   }
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
@@ -423,6 +446,10 @@ public final class DHistogram extends Iced<DHistogram> {
   
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
+   * 
+   * NOTE: Any changes to this method need to be also made in the integer version of this function
+   * (updateHistoInt).
+   * 
    * @param ws observation weights
    * @param resp original response (response column of the outer model, needed to calculate Gamma denominator) 
    * @param cs column data
@@ -473,14 +500,27 @@ public final class DHistogram extends Iced<DHistogram> {
     }
   }
 
-  void updateHistoInt(double[] ws, int[] cs, double[] ys, int[] rows, int hi, int lo){
-    // Gather all the data for this set of rows, for 1 column and 1 split/NID
-    // Gather min/max, wY and sum-squares.
-
+  /**
+   * This is an integer version of method updateHisto - optimized for handling small
+   * positive integer numbers and low-cardinality categoricals.
+   * 
+   * NOTE: Any changes to this method need to be also made in the original updateHisto
+   * function.
+   * 
+   * @param ws optional vector of weights, indexed indirectly using rows indices
+   * @param cs chunk data, indexed indirectly using rows indices
+   * @param ys targets, uses absolute indexing - maintains data co-locality and optimized for sequential access
+   * @param rows row indices
+   * @param hi upper boundary in rows array (exclusive)
+   * @param lo lower boundary in rows array (inclusive)
+   */
+  void updateHistoInt(double[] ws, int[] cs, double[] ys, 
+                      int[] rows, final int hi, final int lo){
+    // min2_int/maxIn_int integer version of the boundaries, only cast once - only int ops within the loop
     int min2_int = _min2 == Double.MAX_VALUE ? Integer.MAX_VALUE : (int) _min2;
     int maxIn_int = _maxIn == -Double.MIN_VALUE ? Integer.MIN_VALUE : (int) _maxIn;
 
-    for(int r = lo; r< hi; ++r) {
+    for(int r = lo; r < hi; r++) {
       final int k = rows[r];
       final double weight = ws == null ? 1 : ws[k];
       if (weight == 0)
@@ -499,23 +539,33 @@ public final class DHistogram extends Iced<DHistogram> {
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;
     }
+
     _min2 = min2_int;
     _maxIn = maxIn_int;
   }
 
-  Object extractData(Chunk chk, Object cs, int len, int maxChunkSz) {
-    if (cs == null) {
+  /**
+   * Extracts data from a chunk into a structure that is optimized for given column type
+   * 
+   * @param chk input chunk
+   * @param cache optional - already existing instance of the cache
+   * @param len length of the data
+   * @param maxChunkSz maximum chunk size on the local node, will determine the size of the cache
+   * @return extracted data
+   */
+  Object extractData(Chunk chk, Object cache, int len, int maxChunkSz) {
+    if (cache == null) {
       if (_intOpt) {
-        cs = MemoryManager.malloc4(maxChunkSz);
+        cache = MemoryManager.malloc4(maxChunkSz);
       } else {
-        cs = MemoryManager.malloc8d(maxChunkSz);
+        cache = MemoryManager.malloc8d(maxChunkSz);
       }
     }
     if (_intOpt)
-      chk.getIntegers((int[])cs, 0, len, -1);
+      chk.getIntegers((int[])cache, 0, len, -1);
     else
-      chk.getDoubles((double[])cs, 0, len);
-    return cs;
+      chk.getDoubles((double[])cache, 0, len);
+    return cache;
   }
 
   /**
