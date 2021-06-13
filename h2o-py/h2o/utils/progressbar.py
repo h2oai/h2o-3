@@ -14,8 +14,6 @@ import sys
 import time
 from types import FunctionType, GeneratorType, MethodType
 
-import colorama
-
 from h2o.utils.shared_utils import clamp
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
@@ -659,7 +657,7 @@ class PBWBar(ProgressBarFlexibleWidget):
             out += self._bar_symbols[frac_chars - 1] if frac_chars > 0 else ""
             rendered_len = len(out)
             if status:
-                out += colorama.Fore.RED + " (" + status + ")" + colorama.Style.RESET_ALL
+                out += " (%s)" % status
                 rendered_len += 3 + len(status)
             out += " " * (width - 1 - rendered_len)
             out += endl
@@ -691,7 +689,6 @@ class PBWBar(ProgressBarFlexibleWidget):
                 print("Warning: unknown encoding %s" % encoding)
 
 
-
 class PBWPercentage(ProgressBarWidget):
     """
     Simple percentage indicator.
@@ -705,6 +702,3 @@ class PBWPercentage(ProgressBarWidget):
         current_pct = int(progress * 100 + 0.1)
         return RenderResult(rendered="%3d%%" % current_pct, next_progress=(current_pct + 1) / 100)
 
-
-# Initialize colorama
-colorama.init()

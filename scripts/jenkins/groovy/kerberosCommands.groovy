@@ -91,6 +91,7 @@ private GString getCommandHadoop(
                 -n 1 -mapperXmx 2g -baseport 54445 ${impersonationArgs} -timeout 300 \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \$REFRESH_HIVE_TOKENS_CONF ${usePreparedToken} \\
                 ${refreshHdfsTokensOption} \\
+                -JJ -Daws.accessKeyId=\$AWS_ACCESS_KEY_ID -JJ -Daws.secretKey=\$AWS_SECRET_ACCESS_KEY \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy -port ${defaultPort} \\
                 -jks mykeystore.jks \\

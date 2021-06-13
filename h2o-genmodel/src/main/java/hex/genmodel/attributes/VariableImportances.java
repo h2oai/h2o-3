@@ -7,8 +7,6 @@ import hex.genmodel.attributes.parameters.KeyValue;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Represents model's variables and their relative importances in the model.

@@ -7,6 +7,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -120,6 +121,10 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       return new ScoreContributionsTask(this);
   }
 
+  @Override
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
+    return new ScoreContributionsSortingTask(model, options);
+  }
 
   @Override
   public Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key) {

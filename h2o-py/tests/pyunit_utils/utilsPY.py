@@ -25,11 +25,30 @@ import threading
 import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
 
-try:        # works with python 2.7 not 3
-    from StringIO import StringIO
-except:     # works with python 3
-    from io import StringIO
+try:  
+    from io import StringIO  # py3
+except:
+    from StringIO import StringIO  # py2
     
+
+try:
+    from tempfile import TemporaryDirectory
+except ImportError:
+    import tempfile
+    
+    class TemporaryDirectory:
+
+        def __init__(self):
+            self.tmp_dir = None
+
+        def __enter__(self):
+            self.tmp_dir = tempfile.mkdtemp()
+            return self.tmp_dir
+
+        def __exit__(self, *args):
+            shutil.rmtree(self.tmp_dir)
+
+
 # 3rd parties
 import numpy as np
 import pandas as pd
@@ -4435,6 +4454,7 @@ def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
         print("val1: {0}, val2: {1}, tol: {2}".format(val1, val2, tol))
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
 
+
 def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
     for key in regCoeff:
         val1 = regCoeff[key]
@@ -4442,3 +4462,8 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
         assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
         diff = abs(val1-val2)
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
+
+
+def assert_equals(expected, actual, message=""):
+    assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+

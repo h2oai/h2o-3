@@ -214,9 +214,6 @@ def _run_demo(body_fn, interactive, echo, testing):
     :param testing: Used for pyunit testing. h2o.init() will not be called if set to True.
     :type body_fn: function
     """
-    import colorama
-    from colorama import Style, Fore
-    colorama.init()
 
     class StopExecution(Exception):
         """Helper class for cancelling the demo."""
@@ -231,12 +228,10 @@ def _run_demo(body_fn, interactive, echo, testing):
             desc_lines = desc_lines[:-1]
         strip_spaces = min(len(line) - len(line.lstrip(" ")) for line in desc_lines[1:] if line.strip() != "")
         maxlen = max(len(line) for line in desc_lines)
-        print(Fore.CYAN)
         print("-" * maxlen)
         for line in desc_lines:
             print(line[strip_spaces:].rstrip())
         print("-" * maxlen)
-        print(Style.RESET_ALL, end="")
 
     # Prepare the executor function
     def controller():
@@ -264,10 +259,8 @@ def _run_demo(body_fn, interactive, echo, testing):
                     if line[:indent_len].strip() != "": break
                     line = line[indent_len:]
                     if line == "go()": break
-                    style = Fore.LIGHTBLACK_EX if line.lstrip().startswith("#") else Style.BRIGHT
                     prompt = "... " if line.startswith(" ") else ">>> "
-                    output_lines.append(Fore.CYAN + prompt + Fore.RESET + style + line + Style.RESET_ALL)
-                    del style  # Otherwise exception print-outs may get messed-up...
+                    output_lines.append(prompt + line)
                     if line.strip() == "":
                         n_blank_lines += 1
                         if n_blank_lines > 5: break  # Just in case we hit file end or something
@@ -278,7 +271,7 @@ def _run_demo(body_fn, interactive, echo, testing):
 
             # Prompt for user input
             if interactive:
-                print("\n" + Style.DIM + "(press any key)" + Style.RESET_ALL, end="")
+                print("\n(press any key)", end="")
                 key = _wait_for_keypress()
                 print("\r                     \r", end="")
                 if key.lower() == "q":
@@ -292,15 +285,14 @@ def _run_demo(body_fn, interactive, echo, testing):
     # Run the test
     try:
         body_fn(controller)
-        print("\n" + Fore.CYAN + "---- End of Demo ----" + Style.RESET_ALL)
+        print("\n---- End of Demo ----")
     except (StopExecution, KeyboardInterrupt):
-        print("\n" + Fore.RED + "---- Demo aborted ----" + Style.RESET_ALL)
+        print("\n---- Demo aborted ----")
 
     # Clean-up
     if testing:
         h2o.init = _h2o_init
     print()
-    colorama.deinit()
 
 
 def _wait_for_keypress():

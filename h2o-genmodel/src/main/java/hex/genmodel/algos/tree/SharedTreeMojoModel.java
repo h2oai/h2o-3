@@ -10,6 +10,7 @@ import hex.genmodel.utils.GenmodelBitSet;
 import water.logging.Logger;
 import water.logging.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -578,6 +579,22 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
       computeTreeGraph(sg, node, tree, ab, auxMap, names, domains, options);
     }
 
+    public static Map<Integer, AuxInfo> readAuxInfos(byte[] auxTreeInfo) {
+      ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
+      return readAuxInfos(abAux); 
+    }
+
+    public static int findMaxNodeId(byte[] auxTreeInfo) {
+      int maxNodeId = -1;
+      AuxInfoLightReader reader = new AuxInfoLightReader(auxTreeInfo);
+      while (reader.hasNext()) {
+        int nodeId = reader.readMaxChildNodeIdAndSkip();
+        if (maxNodeId < nodeId)
+          maxNodeId = nodeId;
+      }
+      return maxNodeId;
+    }
+    
     private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
       HashMap<Integer, AuxInfo> auxMap = new HashMap<>();
       Map<Integer, AuxInfo> nodeIdToParent = new HashMap<>();
@@ -601,6 +618,21 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
       return auxMap;
     }
 
+    public static void writeUpdatedAuxInfos(byte[] origAux, Map<Integer, AuxInfo> updatedAuxInfos, ByteBuffer bb) {
+      AuxInfoLightReader reader = new AuxInfoLightReader(origAux);
+      int count = 0;
+      while (reader.hasNext()) {
+          count++;
+          int nid = reader.readNodeIdAndSkip();
+          AuxInfo auxInfo = updatedAuxInfos.get(nid);
+          if (auxInfo == null)
+              throw new IllegalStateException("Updated AuxInfo for nodeId=" + nid + " doesn't exist. " +
+                      "All AuxInfos need to be represented in the updated structure.");
+          auxInfo.writeTo(bb);
+      }
+      assert count == updatedAuxInfos.size();
+    }
+    
     public static String treeName(int groupIndex, int classIndex, String[] domainValues) {
       String className = "";
       {
@@ -617,6 +649,10 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
       int _nid;
       int _numLeftChildren;
 
+      private AuxInfoLightReader(byte[] auxInfo) {
+        this(new ByteBufferWrapper(auxInfo));
+      }
+
       private AuxInfoLightReader(ByteBufferWrapper abAux) {
         _abAux = abAux;
       }
@@ -630,6 +666,19 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
         return _abAux.hasRemaining();
       }
 
+      private int readMaxChildNodeIdAndSkip() {
+        _abAux.skip(AuxInfo.SIZE - 8);
+        int leftId = _abAux.get4();
+        int rightId = _abAux.get4();
+        return Math.max(leftId, rightId);
+      }
+      
+      private int readNodeIdAndSkip() {
+        readNext();
+        skipNode();
+        return _nid;
+      }
+      
       private int getLeftNodeIdAndSkipNode() {
         _abAux.skip(4 * 6);
         int n = _abAux.get4();
@@ -652,8 +701,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
 
     }
 
-    static class AuxInfo {
-      private static int SIZE = 10 * 4;
+    public static class AuxInfo {
+      private static final int SIZE = 10 * 4;
 
       private AuxInfo() {
         nid = -1;
@@ -683,6 +732,30 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
         //node IDs (consistent with tree construction)
         nidL = abAux.get4();
         nidR = abAux.get4();
+      }
+
+      void writeTo(ByteBuffer bb) {
+        // node ID
+        bb.putInt(nid);
+
+        // reserved
+        bb.putInt(reserved);
+
+        // sum of observation weights
+        bb.putFloat(weightL);
+        bb.putFloat(weightR);
+
+        // predicted values
+        bb.putFloat(predL);
+        bb.putFloat(predR);
+
+        // squared error
+        bb.putFloat(sqErrL);
+        bb.putFloat(sqErrR);
+
+        // node IDs
+        bb.putInt(nidL);
+        bb.putInt(nidR);
       }
 
       final void setPid(int parentId) {

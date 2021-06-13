@@ -1,12 +1,16 @@
 package hex.tree;
 
-import java.util.Random;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.*;
 
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
+
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.AuxInfo;
 
 //---------------------------------------------------------------------------
 // Note: this description seems to be out-of-date
@@ -37,6 +41,12 @@ public class CompressedTree extends Keyed<CompressedTree> {
     _seed = seed;
   }
 
+  private CompressedTree(Key<CompressedTree> key, byte[] bits, long seed) {
+    super(key);
+    _bits = bits;
+    _seed = seed;
+  }
+
   public double score(final double row[], final String[][] domains) {
     return SharedTreeMojoModel.scoreTree(_bits, row, false, domains);
   }
@@ -52,6 +62,40 @@ public class CompressedTree extends Keyed<CompressedTree> {
     return SharedTreeMojoModel.getDecisionPath(d, tr);
   }
 
+  public Map<Integer, AuxInfo> toAuxInfos() {
+    return SharedTreeMojoModel.readAuxInfos(_bits);
+  }
+
+  public int findMaxNodeId() {
+    return SharedTreeMojoModel.findMaxNodeId(_bits);
+  }
+
+  public CompressedTree updateLeafNodeWeights(double[] leafNodeWeights) {
+    Map<Integer, AuxInfo> nodeIdToAuxInfo = SharedTreeMojoModel.readAuxInfos(_bits);
+    List<AuxInfo> auxInfos = new ArrayList<>(nodeIdToAuxInfo.values());
+    auxInfos.sort(Comparator.comparingInt(o -> -o.pid));
+    for (AuxInfo auxInfo : auxInfos) {
+      auxInfo.weightL = 0;
+      auxInfo.weightR = 0;
+    }
+    for (AuxInfo auxInfo : auxInfos) {
+      auxInfo.weightL += (float) leafNodeWeights[auxInfo.nidL];
+      auxInfo.weightR += (float) leafNodeWeights[auxInfo.nidR];
+      if (auxInfo.pid >= 0) {
+        AuxInfo parentInfo = nodeIdToAuxInfo.get(auxInfo.pid);
+        float nodeWeight = auxInfo.weightL + auxInfo.weightR;
+        if (parentInfo.nidL == auxInfo.nid)
+          parentInfo.weightL += nodeWeight;
+        else
+          parentInfo.weightR += nodeWeight;
+      }
+    }
+    ByteBuffer bb = ByteBuffer.allocate(_bits.length).order(ByteOrder.nativeOrder());
+    SharedTreeMojoModel.writeUpdatedAuxInfos(_bits, nodeIdToAuxInfo, bb);
+    byte[] bits = bb.array();
+    return new CompressedTree(_key, bits, _seed);
+  }
+  
   public SharedTreeSubgraph toSharedTreeSubgraph(final CompressedTree auxTreeInfo,
                                                  final String[] colNames, final String[][] domains) {
     TreeCoords tc = getTreeCoords();

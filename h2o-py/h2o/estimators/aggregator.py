@@ -19,22 +19,75 @@ class H2OAggregatorEstimator(H2OEstimator):
     """
 
     algo = "aggregator"
-    param_names = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                   "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
-                   "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir"}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 target_num_exemplars=5000,  # type: int
+                 rel_tol_num_exemplars=0.5,  # type: float
+                 transform="normalize",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 save_mapping_frame=False,  # type: bool
+                 num_iteration_without_new_exemplar=500,  # type: int
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param target_num_exemplars: Targeted number of exemplars
+               Defaults to ``5000``.
+        :type target_num_exemplars: int
+        :param rel_tol_num_exemplars: Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
+               Defaults to ``0.5``.
+        :type rel_tol_num_exemplars: float
+        :param transform: Transformation of training data
+               Defaults to ``"normalize"``.
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"]
+        :param save_mapping_frame: Whether to export the mapping of the aggregated frame
+               Defaults to ``False``.
+        :type save_mapping_frame: bool
+        :param num_iteration_without_new_exemplar: The number of iterations to run before aggregator exits if the number
+               of exemplars collected didn't change
+               Defaults to ``500``.
+        :type num_iteration_without_new_exemplar: int
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        """
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.target_num_exemplars = target_num_exemplars
+        self.rel_tol_num_exemplars = rel_tol_num_exemplars
+        self.transform = transform
+        self.categorical_encoding = categorical_encoding
+        self.save_mapping_frame = save_mapping_frame
+        self.num_iteration_without_new_exemplar = num_iteration_without_new_exemplar
+        self.export_checkpoints_dir = export_checkpoints_dir
         self._parms["_rest_version"] = 99
 
     @property
@@ -42,7 +95,7 @@ class H2OAggregatorEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -71,7 +124,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def response_column(self):
         """
@@ -85,7 +137,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def ignored_columns(self):
@@ -101,13 +152,12 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -129,13 +179,12 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def target_num_exemplars(self):
         """
         Targeted number of exemplars
 
-        Type: ``int``  (default: ``5000``).
+        Type: ``int``, defaults to ``5000``.
 
         :examples:
 
@@ -165,13 +214,12 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(target_num_exemplars, None, int)
         self._parms["target_num_exemplars"] = target_num_exemplars
 
-
     @property
     def rel_tol_num_exemplars(self):
         """
         Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
 
-        Type: ``float``  (default: ``0.5``).
+        Type: ``float``, defaults to ``0.5``.
 
         :examples:
 
@@ -201,13 +249,12 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(rel_tol_num_exemplars, None, numeric)
         self._parms["rel_tol_num_exemplars"] = rel_tol_num_exemplars
 
-
     @property
     def transform(self):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``, defaults to ``"normalize"``.
 
         :examples:
 
@@ -228,14 +275,13 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
 
-
     @property
     def categorical_encoding(self):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -264,13 +310,12 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def save_mapping_frame(self):
         """
         Whether to export the mapping of the aggregated frame
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -300,13 +345,12 @@ class H2OAggregatorEstimator(H2OEstimator):
         assert_is_type(save_mapping_frame, None, bool)
         self._parms["save_mapping_frame"] = save_mapping_frame
 
-
     @property
     def num_iteration_without_new_exemplar(self):
         """
         The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 
-        Type: ``int``  (default: ``500``).
+        Type: ``int``, defaults to ``500``.
 
         :examples:
 
@@ -335,7 +379,6 @@ class H2OAggregatorEstimator(H2OEstimator):
     def num_iteration_without_new_exemplar(self, num_iteration_without_new_exemplar):
         assert_is_type(num_iteration_without_new_exemplar, None, int)
         self._parms["num_iteration_without_new_exemplar"] = num_iteration_without_new_exemplar
-
 
     @property
     def export_checkpoints_dir(self):

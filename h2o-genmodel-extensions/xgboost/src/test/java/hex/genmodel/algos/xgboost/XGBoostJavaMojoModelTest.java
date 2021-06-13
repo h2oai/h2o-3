@@ -4,7 +4,10 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.PredictContributions;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
@@ -59,6 +62,22 @@ public class XGBoostJavaMojoModelTest {
     assertNotNull(res2.leafNodeAssignments);
     assertArrayEquals(res._nodeIds, res2.leafNodeAssignmentIds);
     assertArrayEquals(res._paths, res2.leafNodeAssignments);
+  }
+
+  @Test
+  public void testConvertWithWeights() throws Exception {
+    MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(
+            XGBoostJavaMojoModelTest.class.getResource("xgboost_java.zip"),
+            MojoReaderBackendFactory.CachingStrategy.MEMORY);
+    XGBoostJavaMojoModel mojo = (XGBoostJavaMojoModel) MojoModel.load(readerBackend);
+    SharedTreeGraph graph = mojo.convert(0, null);
+    int expectedWeight = 380; // prostate dataset, 380 rows
+    assertEquals(graph.subgraphArray.get(0).rootNode.getWeight(), expectedWeight, 0);
+    double actualWeight = 0;
+    for (SharedTreeNode node : graph.subgraphArray.get(0).nodesArray) {
+      actualWeight += node.getWeight();
+    }
+    assertEquals(expectedWeight, actualWeight, 0);
   }
 
   private static byte[] serialize(Object o) throws Exception {

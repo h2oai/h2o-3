@@ -1,9 +1,11 @@
 package hex.tree.gbm;
 
+import com.google.common.io.Files;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -12,7 +14,9 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.tools.PredictCsv;
+import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.CompressedTree;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.hamcrest.number.OrderingComparison;
@@ -34,7 +38,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.charset.Charset;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.DistributionFamily.*;
@@ -588,6 +595,111 @@ public class GBMTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testUpdateAuxTreeWeights_regression() {
+    Scope.enter();
+    try {
+      String response = "AGE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = gaussian;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      checkUpdateAuxTreeWeights(gbm, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUpdateAuxTreeWeights_binomial() {
+    Scope.enter();
+    try {
+      String response = "CAPSULE";
+      Frame train = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = bernoulli;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      checkUpdateAuxTreeWeights(gbm, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUpdateAuxTreeWeights_multinomial() {
+    Scope.enter();
+    try {
+      String response = "Angaus";
+      Frame train = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+      train.toCategoricalCol(response);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._response_column = response;
+      parms._distribution = DistributionFamily.multinomial;
+
+      GBMModel gbm = (GBMModel) Scope.track_generic(new GBM(parms).trainModel().get());
+      checkUpdateAuxTreeWeights(gbm, train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void checkUpdateAuxTreeWeights(GBMModel gbm, Frame frame) {
+    Map<Integer, SharedTreeMojoModel.AuxInfo>[][] originalAuxInfos = visitTrees(
+            gbm._output._treeKeysAux, Map.class, CompressedTree::toAuxInfos);
+
+    frame = Scope.track(ensureDistributed(frame, 16));
+    Frame fr = new Frame(frame);
+    fr.add("weights", fr.anyVec().makeCon(2));
+    gbm.updateAuxTreeWeights(fr, "weights");
+
+    Map<Integer, SharedTreeMojoModel.AuxInfo>[][] updatedAuxInfos = visitTrees(
+            gbm._output._treeKeysAux, Map.class, CompressedTree::toAuxInfos);
+
+    for (int treeId = 0; treeId < originalAuxInfos.length; treeId++) {
+      for (int classId = 0; classId < originalAuxInfos[treeId].length; classId++) {
+        if (originalAuxInfos[treeId][classId] != null) {
+          for (Integer nodeId : originalAuxInfos[treeId][classId].keySet()) {
+            SharedTreeMojoModel.AuxInfo orig = originalAuxInfos[treeId][classId].get(nodeId);
+            SharedTreeMojoModel.AuxInfo upd = updatedAuxInfos[treeId][classId].get(nodeId);
+            assertEquals(2 * orig.weightR, upd.weightR, 0f);
+            assertEquals(2 * orig.weightL, upd.weightL, 0f);
+          }
+        } else {
+          assertNull(updatedAuxInfos[treeId][classId]);
+        }
+      }
+    }
+  }
+  
+  @SuppressWarnings("unchecked")
+  public static <T> T[][] visitTrees(Key<CompressedTree>[][] treeKeys, Class<? extends T> outputClass,
+                                     Function<CompressedTree, T> visitor) {
+    T[][] output = (T[][]) Array.newInstance(outputClass, treeKeys.length, 0);
+    for (int treeId = 0; treeId < treeKeys.length; treeId++) {
+      output[treeId] = (T[]) Array.newInstance(outputClass, treeKeys[treeId].length);
+      for (int classId = 0; classId < output[treeId].length; classId++) {
+        if (treeKeys[treeId][classId] != null)
+          output[treeId][classId] = visitor.apply(treeKeys[treeId][classId].get());
+      }
+    }
+    return output;
   }
 
   /**
@@ -4099,6 +4211,71 @@ public class GBMTest extends TestUtil {
       target.remove();
       zeros.remove();
       nonzeros.remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testPrintMojoWithFloatToDouble() throws Exception {
+    try {
+      Scope.enter();
+      double splitPoint = 2841.083;
+      String splitPointStr = splitPoint + "f";
+      Frame frame = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(splitPoint*2, 0, splitPoint*2, splitPoint*2, splitPoint*2, 0, splitPoint*2))
+              .withDataForCol(1, ard(1, 0, 1, 1, 1, 0, 1))
+              .build();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      String pojo = gbm.toJava(false, false);
+      assertTrue(pojo.contains(splitPointStr));
+
+      File mojoFile = temporaryFolder.newFile("gbm_mojo");
+      gbm.exportMojo(mojoFile.getAbsolutePath(), true);
+
+      String[] pmArgs = new String[]{"-i", mojoFile.getAbsolutePath(), "--format", "json"};
+
+      File outputOrig = temporaryFolder.newFile("output_orig");
+      PrintMojo pmOrig = new PrintMojo();
+      pmOrig.parseArgs(ArrayUtils.append(pmArgs, new String[]{"-o", outputOrig.getAbsolutePath()}));
+      pmOrig.run();
+
+      File outputAsDouble = temporaryFolder.newFile("output_as_double");
+      PrintMojo pmAsDouble = new PrintMojo();
+      pmAsDouble.parseArgs(ArrayUtils.append(pmArgs, new String[]{"-o", outputAsDouble.getAbsolutePath(), "--floattodouble"}));
+      pmAsDouble.run();
+
+      List<String> jsonLinesOrig = Files.readLines(outputOrig, Charset.defaultCharset());
+      List<String> jsonLinesAsDouble = Files.readLines(outputAsDouble, Charset.defaultCharset());
+      assertEquals(jsonLinesOrig.size(), jsonLinesAsDouble.size());
+
+      for (int i = 0; i < jsonLinesOrig.size(); i++) {
+        String jsonLineOrig = jsonLinesOrig.get(i);
+        String jsonLineAsDouble = jsonLinesAsDouble.get(i);
+        if (jsonLineOrig.contains("predValue") || jsonLineOrig.contains("splitValue")) {
+          // interpret the predValue/splitValue as FLOAT from the original output, then cast to DOUBLE
+          // (this is what would POJO do)
+          double fVal = Float.parseFloat(jsonLineOrig.split(":")[1].replaceAll(",", ""));
+          // interpret the modified output as DOUBLE directly with no casting
+          double dVal = Double.parseDouble(jsonLineAsDouble.split(":")[1].replaceAll(",", ""));
+          // values need to match perfectly
+          assertEquals(fVal, dVal, 0);
+        } else {
+          assertEquals(jsonLineOrig, jsonLineAsDouble);
+        }
+      }
+    } finally {
       Scope.exit();
     }
   }

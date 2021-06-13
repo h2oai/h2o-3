@@ -29,7 +29,7 @@ public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies, Model.UpdateAuxTreeWeights {
 
   private static final Logger LOG = Logger.getLogger(SharedTreeModel.class);
 
@@ -88,6 +88,8 @@ public abstract class SharedTreeModel<
     public double _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
     public boolean _parallel_main_model_building = false;
+
+    public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
 
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
@@ -223,6 +225,26 @@ public abstract class SharedTreeModel<
       fs.blockForPending();
     }
 
+    public void trimTo(final int ntrees) {
+      Futures fs = new Futures();
+      for (int i = ntrees; i < _treeKeys.length; i++) {
+        for (int tc = 0; tc < _treeKeys[i].length; tc++) {
+          if (_treeKeys[i][tc] == null)
+            continue;
+          DKV.remove(_treeKeys[i][tc], fs);
+          DKV.remove(_treeKeysAux[i][tc], fs);
+        }
+      }
+      _ntrees = ntrees;
+      _treeKeys = Arrays.copyOf(_treeKeys ,_ntrees);
+      _treeKeysAux = Arrays.copyOf(_treeKeysAux ,_ntrees);
+      // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
+      _scored_train = Arrays.copyOf(_scored_train, _ntrees + 1);
+      _scored_valid = _scored_valid != null ? Arrays.copyOf(_scored_valid, _ntrees + 1) : null;
+      _training_time_ms = Arrays.copyOf(_training_time_ms, _ntrees + 1);
+      fs.blockForPending();
+    }
+
     @Override
     public int getNTrees() {
       return _ntrees;
@@ -271,6 +293,24 @@ public abstract class SharedTreeModel<
     return task.execute(adaptFrm, names, destination_key);
   }
 
+  @Override
+  public void updateAuxTreeWeights(Frame frame, String weightsColumn) {
+    if (weightsColumn == null) {
+      throw new IllegalArgumentException("Weights column name is not defined");
+    }
+    Frame adaptFrm = new Frame(frame);
+    Vec weights = adaptFrm.remove(weightsColumn);
+    if (weights == null) {
+      throw new IllegalArgumentException("Input frame doesn't contain weights column `" + weightsColumn + "`");
+    }
+    adaptTestForTrain(adaptFrm, true, false);
+    // keep features only and re-introduce weights column at the end of the frame
+    Frame featureFrm = new Frame(_output.features(), frame.vecs(_output.features()));
+    featureFrm.add(weightsColumn, weights);
+    
+    new UpdateAuxTreeWeightsTask(_output).doAll(featureFrm);
+  }
+
   public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
     private final byte[] _buf = new byte[__INTERNAL_MAX_TREE_DEPTH];
     private final BufferedString _bs = new BufferedString(_buf, 0, 0);
@@ -295,7 +335,7 @@ public abstract class SharedTreeModel<
 
   private static abstract class AssignLeafNodeTaskBase extends MRTask<AssignLeafNodeTaskBase> {
     final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
-    final String _domains[][];
+    final String[][] _domains;
 
     AssignLeafNodeTaskBase(SharedTreeOutput output) {
       _treeKeys = output._treeKeys;
@@ -308,7 +348,7 @@ public abstract class SharedTreeModel<
                                        final NewChunk out);
 
     @Override
-    public void map(Chunk chks[], NewChunk[] idx) {
+    public void map(Chunk[] chks, NewChunk[] ncs) {
       double[] input = new double[chks.length];
 
       initMap();
@@ -323,11 +363,11 @@ public abstract class SharedTreeModel<
             Key key = keys[cls];
             if (key != null) {
               CompressedTree tree = DKV.get(key).get();
-              assignNode(tidx, cls, tree, input, idx[col++]);
+              assignNode(tidx, cls, tree, input, ncs[col++]);
             }
           }
         }
-        assert (col == idx.length);
+        assert (col == ncs.length);
       }
     }
 
@@ -344,7 +384,7 @@ public abstract class SharedTreeModel<
       }
     }
   }
-
+  
   private static class AssignTreePathTask extends AssignLeafNodeTaskBase {
     private transient BufStringDecisionPathTracker _tr;
 
@@ -358,9 +398,10 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, 
+                              NewChunk nc) {
       BufferedString pred = tree.getDecisionPath(input, _domains, _tr);
-      out.addStr(pred);
+      nc.addStr(pred);
     }
 
     @Override
@@ -392,9 +433,9 @@ public abstract class SharedTreeModel<
       return res;
     }
   }
-
+  
   private static class AssignLeafNodeIdTask extends AssignLeafNodeTaskBase {
-    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
 
     private AssignLeafNodeIdTask(SharedTreeOutput output) {
       super(output);
@@ -406,14 +447,14 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk nc) {
       CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
       assert auxTree != null;
 
       final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
       final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
 
-      out.addNum(nodeId, 0);
+      nc.addNum(nodeId, 0);
     }
 
     @Override
@@ -427,6 +468,109 @@ public abstract class SharedTreeModel<
     }
   }
 
+  private static class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
+    // IN
+    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    private final String[][] _domains;
+    // WORKING
+    private transient int[/*treeId*/][/*classId*/] _maxNodeIds;
+    // OUT
+    private double[/*treeId*/][/*classId*/][/*leafNodeId*/] _leafNodeWeights;
+
+    private UpdateAuxTreeWeightsTask(SharedTreeOutput output) {
+      _treeKeys = output._treeKeys;
+      _auxTreeKeys = output._treeKeysAux;
+      _domains = output._domains;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _maxNodeIds = new int[_auxTreeKeys.length][];
+      for (int treeId = 0; treeId < _auxTreeKeys.length; treeId++) {
+        Key<CompressedTree>[] classAuxTreeKeys = _auxTreeKeys[treeId];
+        _maxNodeIds[treeId] = new int[classAuxTreeKeys.length];
+        for (int classId = 0; classId < classAuxTreeKeys.length; classId++) {
+          if (classAuxTreeKeys[classId] == null) {
+            _maxNodeIds[treeId][classId] = -1;
+            continue;
+          }
+          CompressedTree tree = classAuxTreeKeys[classId].get();
+          assert tree != null;
+          _maxNodeIds[treeId][classId] = tree.findMaxNodeId();
+        }
+      }
+    }
+
+    protected void initMap() {
+      _leafNodeWeights = new double[_maxNodeIds.length][][];
+      for (int treeId = 0; treeId < _maxNodeIds.length; treeId++) {
+        int[] classMaxNodeIds = _maxNodeIds[treeId];
+        _leafNodeWeights[treeId] = new double[classMaxNodeIds.length][];
+        for (int classId = 0; classId < classMaxNodeIds.length; classId++) {
+          if (classMaxNodeIds[classId] < 0)
+            continue;
+          _leafNodeWeights[treeId][classId] = new double[classMaxNodeIds[classId] + 1];
+        }
+      }
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      double[] input = new double[chks.length - 1];
+
+      initMap();
+      for (int row = 0; row < chks[0]._len; row++) {
+        double weight = chks[input.length].atd(row);
+        if (weight == 0 || Double.isNaN(weight))
+          continue;
+        for (int i = 0; i < input.length; i++)
+          input[i] = chks[i].atd(row);
+
+        for (int tidx = 0; tidx < _treeKeys.length; tidx++) {
+          Key<CompressedTree>[] keys = _treeKeys[tidx];
+          for (int cls = 0; cls < keys.length; cls++) {
+            Key<CompressedTree> key = keys[cls];
+            if (key != null) {
+              CompressedTree tree = DKV.get(key).get();
+              CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
+              assert auxTree != null;
+
+              final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
+              final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
+
+              _leafNodeWeights[tidx][cls][nodeId] += weight;
+            }
+          }
+        }
+      }
+    }
+
+    @Override
+    public void reduce(UpdateAuxTreeWeightsTask mrt) {
+      ArrayUtils.add(_leafNodeWeights, mrt._leafNodeWeights);
+    }
+
+    @Override
+    protected void postGlobal() {
+      Futures fs = new Futures();
+      for (int treeId = 0; treeId < _leafNodeWeights.length; treeId++) {
+        double[][] classWeights = _leafNodeWeights[treeId];
+        for (int classId = 0; classId < classWeights.length; classId++) {
+          double[] nodeWeights = classWeights[classId];
+          if (nodeWeights == null)
+            continue;
+          CompressedTree auxTree = _auxTreeKeys[treeId][classId].get();
+          assert auxTree != null;
+          CompressedTree updatedTree = auxTree.updateLeafNodeWeights(nodeWeights);
+          assert auxTree._key.equals(updatedTree._key);
+          DKV.put(updatedTree, fs);
+        }
+      }
+      fs.blockForPending();
+    }
+  }
+  
   @Override
   public Frame scoreFeatureFrequencies(Frame frame, Key<Frame> destination_key) {
     Frame adaptFrm = new Frame(frame);

@@ -165,12 +165,19 @@ public abstract class SharedTree<
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    _parms._use_best_cv_iteration = isSupervised() && H2O.getSysBoolProperty(
+            "sharedtree.crossvalidation.useBestCVIteration", _parms._use_best_cv_iteration);
     _parms._parallel_main_model_building = H2O.getSysBoolProperty(
             "sharedtree.crossvalidation.parallelMainModelBuilding", _parms._parallel_main_model_building);
     if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
       _parms._parallel_main_model_building = false;
       warn("_parallel_main_model_building", 
               "Parallel main model will be disabled because max_runtime_secs is specified.");
+    }
+    if (_parms._use_best_cv_iteration && _parms._parallel_main_model_building) {
+      _parms._parallel_main_model_building = false;
+      warn("_parallel_main_model_building",
+              "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
   }
 
@@ -424,16 +431,32 @@ public abstract class SharedTree<
      * @param oob Whether or not Out-Of-Bag scoring should be performed
      */
     protected final void scoreAndBuildTrees(boolean oob) {
+      int[] scoredNum = new int[0];
       if (_coordinator != null) {
         _coordinator.initStoppingParameters();
       }
       for( int tid=0; tid< _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         final boolean scored = doScoringAndSaveModel(false, oob, _parms._build_tree_one_node);
-        if (scored && ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          _job.update(_ntrees-_model._output._ntrees); //finish
-          LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
-          return;
+        if (scored) {
+          scoredNum = ArrayUtils.append(scoredNum, tid);
+          if (ScoreKeeper.stopEarly(_model._output.scoreKeepers(), _parms._stopping_rounds, getProblemType(), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
+            if (_parms._is_cv_model && _parms._use_best_cv_iteration) {
+              ScoreKeeper[] sk = _model._output.scoreKeepers();
+              int best = ScoreKeeper.best(sk, _parms._stopping_rounds, _parms._stopping_metric);
+              if (best != sk.length - 1) {
+                int bestNTrees = scoredNum[best];
+                LOG.info(_desc + " built total of " + scoredNum[scoredNum.length - 1] +
+                        " trees, however the best score was obtained using only ntrees=" + bestNTrees +
+                        ". Trimming model to " + bestNTrees + " trees.");
+                _model._output.trimTo(bestNTrees);
+                _model.update(_job);
+              }
+            }
+            _job.update(_ntrees-_model._output._ntrees); // finish the progress bar
+            LOG.info(_model.toString()); // we don't know if doScoringAndSaveModel printed the model or not
+            return;
+          }
         }
         Timer kb_timer = new Timer();
         boolean converged = buildNextKTrees();
@@ -474,7 +497,7 @@ public abstract class SharedTree<
   
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
-  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
+  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
     // Build up the next-generation tree splits from the current histograms.
@@ -524,7 +547,7 @@ public abstract class SharedTree<
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
               respIdx, weightIdx, predsIdx, workIdx, nidIdx));
     }
     // Block for all K trees to complete.
@@ -553,7 +576,6 @@ public abstract class SharedTree<
     final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Numerical columns: Number of histogram bins
-    final int _nbins_cats;      // Categorical columns: Number of histogram bins
     final DTree _tree;
     final int _leafOffsets[/*nclass*/]; //Index of the first leaf node. Leaf indices range from _leafOffsets[k] to _tree._len-1
     final DHistogram _hcs[/*nclass*/][][];
@@ -569,12 +591,11 @@ public abstract class SharedTree<
 
     boolean _did_split;
 
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
                       int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
-      _nbins_cats= nbins_cats;
       _tree = tree;
       _leafOffsets = leafs;
       _hcs  = hcs;
@@ -597,8 +618,7 @@ public abstract class SharedTree<
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-//      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family, 
               _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {

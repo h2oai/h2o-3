@@ -1,9 +1,7 @@
-def class_extensions():
+deprecated_params = dict(k='inflection_point', f='smoothing', noise_level='noise')
 
-    _deprecated_params_ = ['k', 'f', 'noise_level']
-    k = deprecated_property('k', inflection_point)
-    f = deprecated_property('f', smoothing)
-    noise_level = deprecated_property('noise_level', noise)
+
+def class_extensions():
 
     def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, as_training=False, **kwargs):
         """
@@ -67,12 +65,7 @@ extensions = dict(
 import h2o
 import warnings
 from h2o.exceptions import H2ODeprecationWarning
-from h2o.utils.metaclass import deprecated_property
 from h2o.utils.typechecks import U
-""",
-    __init__setparams="""
-elif pname in self._deprecated_params_:
-    setattr(self, pname, pvalue)  # property handles the redefinition
 """,
     __class__=class_extensions,
 )

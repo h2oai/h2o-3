@@ -480,9 +480,9 @@ Step 2: Compile and Run the MOJO
          System.out.println("Shapley contributions: ");
          for (int i=0; i < p.contributions; i++) {
            if (i > 0) {
-             System.out.print(",");
+             System.out.print(", ");
            }
-           System.out.print(p.contributions[i]);
+           System.out.print(model.getContributionNames()[i] + ": " + p.contributions[i]);
          }
          System.out.println("");
        }

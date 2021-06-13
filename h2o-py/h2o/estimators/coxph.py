@@ -20,30 +20,123 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     """
 
     algo = "coxph"
-    param_names = {"model_id", "training_frame", "start_column", "stop_column", "response_column", "ignored_columns",
-                   "weights_column", "offset_column", "stratify_by", "ties", "init", "lre_min", "max_iterations",
-                   "interactions", "interaction_pairs", "interactions_only", "use_all_factor_levels",
-                   "export_checkpoints_dir", "single_node_mode"}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 start_column=None,  # type: Optional[str]
+                 stop_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 weights_column=None,  # type: Optional[str]
+                 offset_column=None,  # type: Optional[str]
+                 stratify_by=None,  # type: Optional[List[str]]
+                 ties="efron",  # type: Literal["efron", "breslow"]
+                 init=0.0,  # type: float
+                 lre_min=9.0,  # type: float
+                 max_iterations=20,  # type: int
+                 interactions=None,  # type: Optional[List[str]]
+                 interaction_pairs=None,  # type: Optional[List[tuple]]
+                 interactions_only=None,  # type: Optional[List[str]]
+                 use_all_factor_levels=False,  # type: bool
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 single_node_mode=False,  # type: bool
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param start_column: Start Time Column.
+               Defaults to ``None``.
+        :type start_column: str, optional
+        :param stop_column: Stop Time Column.
+               Defaults to ``None``.
+        :type stop_column: str, optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
+               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
+               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
+               not increase the size of the data frame. This is typically the number of times a row is repeated, but
+               non-integer values are supported as well. During training, rows with higher weights matter more, due to
+               the larger loss function pre-factor.
+               Defaults to ``None``.
+        :type weights_column: str, optional
+        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
+               function.
+               Defaults to ``None``.
+        :type offset_column: str, optional
+        :param stratify_by: List of columns to use for stratification.
+               Defaults to ``None``.
+        :type stratify_by: List[str], optional
+        :param ties: Method for Handling Ties.
+               Defaults to ``"efron"``.
+        :type ties: Literal["efron", "breslow"]
+        :param init: Coefficient starting value.
+               Defaults to ``0.0``.
+        :type init: float
+        :param lre_min: Minimum log-relative error.
+               Defaults to ``9.0``.
+        :type lre_min: float
+        :param max_iterations: Maximum number of iterations.
+               Defaults to ``20``.
+        :type max_iterations: int
+        :param interactions: A list of predictor column indices to interact. All pairwise combinations will be computed
+               for the list.
+               Defaults to ``None``.
+        :type interactions: List[str], optional
+        :param interaction_pairs: A list of pairwise (first order) column interactions.
+               Defaults to ``None``.
+        :type interaction_pairs: List[tuple], optional
+        :param interactions_only: A list of columns that should only be used to create interactions but should not
+               itself participate in model training.
+               Defaults to ``None``.
+        :type interactions_only: List[str], optional
+        :param use_all_factor_levels: (Internal. For development only!) Indicates whether to use all factor levels.
+               Defaults to ``False``.
+        :type use_all_factor_levels: bool
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        :param single_node_mode: Run on a single node to reduce the effect of network overhead (for smaller datasets)
+               Defaults to ``False``.
+        :type single_node_mode: bool
+        """
         super(H2OCoxProportionalHazardsEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.start_column = start_column
+        self.stop_column = stop_column
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.weights_column = weights_column
+        self.offset_column = offset_column
+        self.stratify_by = stratify_by
+        self.ties = ties
+        self.init = init
+        self.lre_min = lre_min
+        self.max_iterations = max_iterations
+        self.interactions = interactions
+        self.interaction_pairs = interaction_pairs
+        self.interactions_only = interactions_only
+        self.use_all_factor_levels = use_all_factor_levels
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.single_node_mode = single_node_mode
 
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -64,7 +157,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     @training_frame.setter
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
-
 
     @property
     def start_column(self):
@@ -94,7 +186,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(start_column, None, str)
         self._parms["start_column"] = start_column
 
-
     @property
     def stop_column(self):
         """
@@ -123,7 +214,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(stop_column, None, str)
         self._parms["stop_column"] = stop_column
 
-
     @property
     def response_column(self):
         """
@@ -138,7 +228,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -152,7 +241,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def weights_column(self):
@@ -171,7 +259,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
-
 
     @property
     def offset_column(self):
@@ -200,7 +287,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
 
-
     @property
     def stratify_by(self):
         """
@@ -215,13 +301,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(stratify_by, None, [str])
         self._parms["stratify_by"] = stratify_by
 
-
     @property
     def ties(self):
         """
         Method for Handling Ties.
 
-        One of: ``"efron"``, ``"breslow"``  (default: ``"efron"``).
+        Type: ``Literal["efron", "breslow"]``, defaults to ``"efron"``.
 
         :examples:
 
@@ -245,13 +330,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(ties, None, Enum("efron", "breslow"))
         self._parms["ties"] = ties
 
-
     @property
     def init(self):
         """
         Coefficient starting value.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -273,13 +357,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(init, None, numeric)
         self._parms["init"] = init
 
-
     @property
     def lre_min(self):
         """
         Minimum log-relative error.
 
-        Type: ``float``  (default: ``9``).
+        Type: ``float``, defaults to ``9.0``.
 
         :examples:
 
@@ -301,13 +384,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(lre_min, None, numeric)
         self._parms["lre_min"] = lre_min
 
-
     @property
     def max_iterations(self):
         """
         Maximum number of iterations.
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``, defaults to ``20``.
 
         :examples:
 
@@ -328,7 +410,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def max_iterations(self, max_iterations):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
-
 
     @property
     def interactions(self):
@@ -358,7 +439,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(interactions, None, [str])
         self._parms["interactions"] = interactions
 
-
     @property
     def interaction_pairs(self):
         """
@@ -386,7 +466,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def interaction_pairs(self, interaction_pairs):
         assert_is_type(interaction_pairs, None, [tuple])
         self._parms["interaction_pairs"] = interaction_pairs
-
 
     @property
     def interactions_only(self):
@@ -417,13 +496,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(interactions_only, None, [str])
         self._parms["interactions_only"] = interactions_only
 
-
     @property
     def use_all_factor_levels(self):
         """
         (Internal. For development only!) Indicates whether to use all factor levels.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -444,7 +522,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def use_all_factor_levels(self, use_all_factor_levels):
         assert_is_type(use_all_factor_levels, None, bool)
         self._parms["use_all_factor_levels"] = use_all_factor_levels
-
 
     @property
     def export_checkpoints_dir(self):
@@ -476,13 +553,12 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     @property
     def single_node_mode(self):
         """
         Run on a single node to reduce the effect of network overhead (for smaller datasets)
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
         """
         return self._parms.get("single_node_mode")
 

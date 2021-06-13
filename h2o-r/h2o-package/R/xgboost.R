@@ -73,8 +73,6 @@
 #' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
 #' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 #'        Defaults to 0.0.
-#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
-#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
 #'        parameter). Defaults to maximum available Defaults to -1.
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
@@ -102,6 +100,8 @@
 #'        auto.
 #' @param gpu_id Which GPU(s) to use.
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -175,7 +175,6 @@ h2o.xgboost <- function(x,
                         score_tree_interval = 0,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
-                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         nthread = -1,
                         save_matrix_directory = NULL,
                         build_tree_one_node = FALSE,
@@ -197,6 +196,7 @@ h2o.xgboost <- function(x,
                         backend = c("auto", "gpu", "cpu"),
                         gpu_id = NULL,
                         gainslift_bins = -1,
+                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -309,8 +309,6 @@ h2o.xgboost <- function(x,
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
-  if (!missing(auc_type))
-    parms$auc_type <- auc_type
   if (!missing(nthread))
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))
@@ -353,6 +351,8 @@ h2o.xgboost <- function(x,
     parms$gpu_id <- gpu_id
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -403,7 +403,6 @@ h2o.xgboost <- function(x,
                                         score_tree_interval = 0,
                                         min_split_improvement = 0.0,
                                         gamma = 0.0,
-                                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         nthread = -1,
                                         save_matrix_directory = NULL,
                                         build_tree_one_node = FALSE,
@@ -425,6 +424,7 @@ h2o.xgboost <- function(x,
                                         backend = c("auto", "gpu", "cpu"),
                                         gpu_id = NULL,
                                         gainslift_bins = -1,
+                                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -541,8 +541,6 @@ h2o.xgboost <- function(x,
     parms$min_split_improvement <- min_split_improvement
   if (!missing(gamma))
     parms$gamma <- gamma
-  if (!missing(auc_type))
-    parms$auc_type <- auc_type
   if (!missing(nthread))
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))
@@ -585,6 +583,8 @@ h2o.xgboost <- function(x,
     parms$gpu_id <- gpu_id
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   # Build segment-models specific parameters
   segment_parms <- list()

@@ -27,7 +27,7 @@ from .job import H2OJob
 from .model.model_base import ModelBase
 from .utils.compatibility import *  # NOQA
 from .utils.config import H2OConfigReader
-from .utils.metaclass import Deprecated as deprecated
+from .utils.metaclass import deprecated_fn
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
@@ -2286,9 +2286,11 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     Generates string representation of an existing MOJO model. 
 
     :param mojo_path: Path to the MOJO archive on the user's local filesystem
-    :param format: Output format. Possible values: json (default), dot 
-    :param tree_index: Index of tree to print (only work dot format)
-    :return: An string representation of given MOJO in given format
+    :param format: Output format. Possible values: json (default), dot, png 
+    :param tree_index: Index of tree to print
+    :return: An string representation of the MOJO for text output formats, 
+        a path to a directory with the rendered images for image output formats
+        (or a path to a file if only a single tree is outputted)  
 
     :example:
 
@@ -2296,15 +2298,10 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
     >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
     >>> prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-    >>> ntrees = 20
-    >>> learning_rate = 0.1
-    >>> depth = 5
-    >>> min_rows = 10
-    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = ntrees,
-    ...                                        learn_rate = learning_rate,
-    ...                                        max_depth = depth,
-    ...                                        min_rows = min_rows,
-    ...                                        distribution = "bernoulli")
+    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = 5,
+    ...                                        learn_rate = 0.1,
+    ...                                        max_depth = 4,
+    ...                                        min_rows = 10)
     >>> gbm_h2o.train(x = list(range(1,prostate.ncol)),
     ...               y = "CAPSULE",
     ...               training_frame = prostate)
@@ -2314,7 +2311,7 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     """    
     assert_is_type(mojo_path, str)
     assert_is_type(format, str, None)
-    assert_satisfies(format, format in [None, "json", "dot"])
+    assert_satisfies(format, format in [None, "json", "dot", "png"])
     assert_is_type(tree_index, int, None)
 
     ls = H2OLocalServer()
@@ -2322,15 +2319,20 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     java = ls._find_java()
     if format is None:
         format = "json"
-    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format]
+    is_image = format == "png"
+    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
+    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format, 
+           "--output", output_file]
     if tree_index is not None:
         cmd += ["--tree", str(tree_index)]
-    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
     try:
-        with open(output_file, 'w+') as stdout:
-            return_code = subprocess.call(cmd, stdout=stdout)
-            stdout.seek(0)
-            output = stdout.read()
+        return_code = subprocess.call(cmd)
+        if is_image:
+            output = output_file
+        else:
+            with open(output_file, "r") as f:
+                output = f.read()
+            os.unlink(output_file)
     except OSError as e:
         traceback = getattr(e, "child_traceback", None)
         raise H2OError("Unable to print MOJO: %s" % e, traceback)
@@ -2439,60 +2441,60 @@ def _connect_with_conf(conn_conf):
 #-----------------------------------------------------------------------------------------------------------------------
 
 # Deprecated since 2015-10-08
-@deprecated(replaced_by=import_file)
+@deprecated_fn(replaced_by=import_file)
 def import_frame():
     pass
 
 # Deprecated since 2015-10-08
-@deprecated("Deprecated (converted to a private method).")
+@deprecated_fn("Deprecated (converted to a private method).")
 def parse():
     """Deprecated."""
     pass
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().show_status()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().show_status()``.")
 def cluster_info():
     """Deprecated."""
     _check_connection()
     cluster().show_status()
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().show_status(True)``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().show_status(True)``.")
 def cluster_status():
     """Deprecated."""
     _check_connection()
     cluster().show_status(True)
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().shutdown()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().shutdown()``.")
 def shutdown(prompt=False):
     """Deprecated."""
     _check_connection()
     cluster().shutdown(prompt)
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().network_test()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().network_test()``.")
 def network_test():
     """Deprecated."""
     _check_connection()
     cluster().network_test()
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().timezone``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().timezone``.")
 def get_timezone():
     """Deprecated."""
     _check_connection()
     return cluster().timezone
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, set ``h2o.cluster().timezone`` instead.")
+@deprecated_fn("Deprecated, set ``h2o.cluster().timezone`` instead.")
 def set_timezone(value):
     """Deprecated."""
     _check_connection()
     cluster().timezone = value
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().list_timezones()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().list_timezones()``.")
 def list_timezones():
     """Deprecated."""
     _check_connection()

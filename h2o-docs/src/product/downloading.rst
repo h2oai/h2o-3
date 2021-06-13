@@ -78,7 +78,6 @@ Run the following commands in a Terminal window to install H2O for Python.
 
 	pip install requests
 	pip install tabulate
-	pip install "colorama>=0.3.8"
 	pip install future
 
  **Note**: These are the dependencies required to run H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml>`__.

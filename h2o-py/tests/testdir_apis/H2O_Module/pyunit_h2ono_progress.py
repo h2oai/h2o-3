@@ -5,9 +5,10 @@ from tests import pyunit_utils
 import h2o
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 try:
-    from StringIO import StringIO
+    from io import StringIO  # py3
 except ImportError:
-    from io import StringIO
+    from StringIO import StringIO  # py2
+
 
 def h2ono_progress():
     """
@@ -21,12 +22,11 @@ def h2ono_progress():
         sys.stdout = s   # redirect output
         h2o.no_progress()   # true by default.
         run_test()
-        sys.stdout=sys.__stdout__       # restore old stdout
         # make sure the word progress is found and % is found.  That is how progress is displayed.
-        assert s.getvalue()=="", "Nothing should have been printed, instead got " + s.getvalue()
-    except Exception as e:  # may get error for python 2
-        sys.stdout=sys.__stdout__       # restore old stdout
-        assert s.buf=="", "Nothing should have been printed, instead got " + s.buf
+        assert not s.getvalue(), "Nothing should have been printed, instead got " + s.getvalue()
+    finally:
+        sys.stdout = sys.__stdout__       # restore old stdout
+        
 
 def run_test():
     training_data = h2o.import_file(pyunit_utils.locate("smalldata/logreg/benign.csv"))

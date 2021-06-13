@@ -24,8 +24,6 @@ import sys
 import tokenize
 from tokenize import INDENT, DEDENT, NEWLINE, NL, COMMENT, NAME, OP, STRING, ENDMARKER
 
-import colorama
-
 if sys.version_info < (3,):
     # On Python 2, we need this newer version of ``open`` in order to read file in utf-8 encoding.
     from io import open
@@ -170,10 +168,7 @@ def _tokenize(readline):
 
 
 def _warn(message):
-    if not hasattr(_warn, "colorama_initialized"):
-        colorama.init()
-        _warn.colorama_initialized = True
-    print(colorama.Fore.YELLOW + "    Warning: " + message + colorama.Fore.RESET)
+    print("    Warning: " + message)
 
 
 

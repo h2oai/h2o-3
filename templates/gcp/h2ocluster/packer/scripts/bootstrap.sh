@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -o xtrace
 
+# fix issues with yum installation
+# https://cloud.google.com/compute/docs/troubleshooting/known-issues#keyexpired
+sed -i 's/repo_gpgcheck=1/repo_gpgcheck=0/g' /etc/yum.repos.d/google-cloud.repo
+
 # install dependencies
 unzip -v || { echo "Installing Unzip"; sudo yum install -y unzip; }
 java -version || { echo "Installing Java JDK"; sudo yum install -y java-1.8.0-openjdk-devel; }

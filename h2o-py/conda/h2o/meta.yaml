@@ -12,21 +12,18 @@ requirements:
     - python
     - pip >=9.0.1
     - setuptools
-    - colorama >=0.3.7
     - future >=0.15.2
     - tabulate >=0.7.5
     - requests >=2.10
 
   run:
     - python
-    - colorama >=0.3.7
     - future >=0.15.2
     - tabulate >=0.7.5
     - requests >=2.10
 
   test:
     - pip >= 9.0.3
-    - colorama >= 0.3.9
     - future >= 0.16.0
     - requests >= 2.18.4
     - tabulate >= 0.8.2

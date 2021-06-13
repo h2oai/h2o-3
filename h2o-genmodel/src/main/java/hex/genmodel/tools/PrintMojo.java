@@ -1,7 +1,7 @@
 package hex.genmodel.tools;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.ConvertTreeOptions;
 import hex.genmodel.algos.gbm.GbmMojoModel;
@@ -9,10 +9,10 @@ import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.List;
 
@@ -32,6 +32,7 @@ public class PrintMojo implements MojoPrinter {
   protected String optionalTitle = null;
   protected PrintTreeOptions pTreeOptions;
   protected boolean internal;
+  protected boolean floatToDouble;
   protected final String tmpOutputFileName = "tmpOutputFileName.gv";
 
   public static void main(String[] args) {
@@ -225,6 +226,10 @@ public class PrintMojo implements MojoPrinter {
             internal = true;
             break;
 
+          case "--floattodouble":
+            floatToDouble = true;
+            break;
+
           case "-o":
           case "--output":
             i++;
@@ -256,7 +261,7 @@ public class PrintMojo implements MojoPrinter {
     validateArgs();
     PrintStream os;
     if (outputFileName != null) {
-      os = new PrintStream(new FileOutputStream(new File(outputFileName)));
+      os = new PrintStream(new FileOutputStream(outputFileName));
     }
     else {
       os = System.out;
@@ -327,7 +332,7 @@ public class PrintMojo implements MojoPrinter {
     }
     return domainValues;
   }
-  
+
   private void printJson(TreeBackedMojoModel mojo, SharedTreeGraph trees, PrintStream os) {
     Map<String, Object> json = new LinkedHashMap<>();
     json.put("params", getParamsAsJson(mojo));
@@ -336,8 +341,21 @@ public class PrintMojo implements MojoPrinter {
     if (optionalTitle != null) {
       json.put("title", optionalTitle);
     }
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    GsonBuilder gsonBuilder = new GsonBuilder().setPrettyPrinting();
+    if (floatToDouble) {
+      Type floatType = new TypeToken<Float>(){}.getType();
+      JsonSerializer<Float> serializer = new FloatCastingSerializer();
+      gsonBuilder.registerTypeAdapter(floatType, serializer);
+    }
+    Gson gson = gsonBuilder.create();
     os.print(gson.toJson(json));
+  }
+
+  static class FloatCastingSerializer implements JsonSerializer<Float> {
+    @Override 
+    public JsonElement serialize(Float src, Type typeOfSrc, JsonSerializationContext context) { 
+      return new JsonPrimitive(new Double(src)); 
+    }
   }
 
   public static class PrintTreeOptions {

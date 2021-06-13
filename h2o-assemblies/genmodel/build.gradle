@@ -11,7 +11,6 @@ targetCompatibility = 1.7
 // Dependencies
 dependencies {
     compile project(":h2o-genmodel")
-    compile project(path: ':h2o-genmodel-ext-jgrapht', configuration: 'default')
 }
 
 // Include optional components
@@ -22,7 +21,6 @@ for (comp in optionalComponents) {
     def compPropName = "with${compName.capitalize()}"
     def compPropVersionName = "${compName}Version"
     def compIsGenModel = comp['genmodel']
-    def compPropGenModelName = "${compPropName}GenModel"
 
     if (!project.hasProperty(compPropVersionName)) {
         project.ext.set(compPropVersionName, compVersion)

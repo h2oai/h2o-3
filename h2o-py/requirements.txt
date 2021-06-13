@@ -2,7 +2,6 @@
 future
 requests
 tabulate
-colorama>=0.3.8
 
 # [optional/integration dependencies]
 # Commented out libraries below are used in h2o-py module or in demos
