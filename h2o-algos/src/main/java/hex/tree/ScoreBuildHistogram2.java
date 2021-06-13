@@ -204,9 +204,11 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         for (int i = 0; i <_numLeafs; i++) nh[i + 1] += nh[i];
         // Splat the rows into NID-groups
         int rows[] = (_rss[id] = new int[nnids.length]);
-        for (int row = 0; row < nnids.length; row++)
+        for (int row = 0; row < rows.length; row++)
           if (nnids[row] >= 0)
-            rows[nh[nnids[row]]++] = row;
+            rows[row] = nh[nnids[row]]++;
+          else
+            rows[row] = -1;
 
       }
       @Override
@@ -221,34 +223,12 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           chks[_nidIdx].close(cidx,_fs);
           Chunk resChk = chks[_workIdx];
           int len = resChk.len();
-          final double[] y;
-          if(resChk instanceof C8DVolatileChunk){
-            y = ((C8DVolatileChunk)resChk).getValues();
-          } else 
-            y = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
-          int[] nh = _nhs[id];
-          _ys[id] = MemoryManager.malloc8d(len);
-          // Important optimization that helps to avoid cache misses when working on larger datasets
-          // `y` has original order corresponding to row order
-          // In binning we are accessing data semi-randomly - we only touch values/rows that are in the given
-          // node. These are not necessarily next to each other in memory. This is done on a per-feature basis.
-          // To optimize for sequential access we reorder the target so that values corresponding to the same node
-          // are co-located. Observed speed-up is up to 50% for larger datasets.
-          // See DHistogram#updateHisto for reference.
-          for (int n = 0; n < nh.length; n++) {
-            final int lo = (n == 0 ? 0 : nh[n - 1]);
-            final int hi = nh[n];
-            if (hi == lo)
-              continue;
-            for (int i = lo; i < hi; i++) {
-              _ys[id][i] = y[_rss[id][i]];
-            }
-          }
+          _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, _rss[id].length, _rss[id]);
           // Only allocate weights if weight columns is actually used. It is faster to handle null case
           // in binning that to represent the weights using a constant array (it still needs to be in memory
           // and is accessed frequently - waste of CPU cache). 
           if (_weightIdx != -1) {
-            _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, len);
+            _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, _rss[id].length, _rss[id]);
           }
         }
       }
@@ -346,7 +326,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
           if (! extracted) {
-            cs = h.extractData(_chks[id][_col], cs, len, _maxChunkSz);
+            cs = h.extractData(_chks[id][_col], cs, rs, _maxChunkSz);
             if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
               if (h._vals_dim == 7) {

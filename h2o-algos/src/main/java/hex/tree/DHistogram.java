@@ -439,7 +439,7 @@ public final class DHistogram extends Iced<DHistogram> {
 
   void updateHisto(double[] ws, double resp[], Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     if (_intOpt)
-      updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
+      updateHistoInt(ws, (int[])cs, ys, hi, lo);
     else
       updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo);
   }
@@ -464,11 +464,10 @@ public final class DHistogram extends Iced<DHistogram> {
     // Gather min/max, wY and sum-squares.
     
     for(int r = lo; r< hi; ++r) {
-      final int k = rows[r];
-      final double weight = ws == null ? 1 : ws[k];
+      final double weight = ws == null ? 1 : ws[r];
       if (weight == 0)
         continue; // Needed for DRF only
-      final double col_data = cs[k];
+      final double col_data = cs[r];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
       final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
@@ -482,7 +481,8 @@ public final class DHistogram extends Iced<DHistogram> {
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;
-      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) {
+      if (_vals_dim >= 5 && !Double.isNaN(resp[rows[r]])) {
+        int k = rows[r];
         if (_dist._family.equals(DistributionFamily.quantile)) {
           _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
           _vals[binDimStart + 4] += _dist.deviance(weight, y, _pred2);
@@ -510,22 +510,19 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param ws optional vector of weights, indexed indirectly using rows indices
    * @param cs chunk data, indexed indirectly using rows indices
    * @param ys targets, uses absolute indexing - maintains data co-locality and optimized for sequential access
-   * @param rows row indices
    * @param hi upper boundary in rows array (exclusive)
    * @param lo lower boundary in rows array (inclusive)
    */
-  void updateHistoInt(double[] ws, int[] cs, double[] ys, 
-                      int[] rows, final int hi, final int lo){
+  void updateHistoInt(double[] ws, int[] cs, double[] ys, final int hi, final int lo){
     // min2_int/maxIn_int integer version of the boundaries, only cast once - only int ops within the loop
     int min2_int = _min2 == Double.MAX_VALUE ? Integer.MAX_VALUE : (int) _min2;
     int maxIn_int = _maxIn == -Double.MIN_VALUE ? Integer.MIN_VALUE : (int) _maxIn;
 
     for(int r = lo; r < hi; r++) {
-      final int k = rows[r];
-      final double weight = ws == null ? 1 : ws[k];
+      final double weight = ws == null ? 1 : ws[r];
       if (weight == 0)
         continue; // Needed for DRF only
-      final int col_data = cs[k];
+      final int col_data = cs[r];
       if (col_data >= 0) {
         if (col_data < min2_int) min2_int = col_data;
         if (col_data > maxIn_int) maxIn_int = col_data;
@@ -549,11 +546,10 @@ public final class DHistogram extends Iced<DHistogram> {
    * 
    * @param chk input chunk
    * @param cache optional - already existing instance of the cache
-   * @param len length of the data
    * @param maxChunkSz maximum chunk size on the local node, will determine the size of the cache
    * @return extracted data
    */
-  Object extractData(Chunk chk, Object cache, int len, int maxChunkSz) {
+  Object extractData(Chunk chk, Object cache, int[] rs, int maxChunkSz) {
     if (cache == null) {
       if (_intOpt) {
         cache = MemoryManager.malloc4(maxChunkSz);
@@ -562,9 +558,10 @@ public final class DHistogram extends Iced<DHistogram> {
       }
     }
     if (_intOpt)
-      chk.getIntegers((int[])cache, 0, len, -1);
-    else
-      chk.getDoubles((double[])cache, 0, len);
+      chk.getIntegers((int[])cache, 0, rs.length, rs);
+    else {
+      chk.getDoubles((double[]) cache, 0, rs.length, rs);
+    }
     return cache;
   }
 
