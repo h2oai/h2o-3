@@ -475,6 +475,21 @@ public class ArrayUtilsTest {
   }
 
   @Test
+  public void testMinMaxNaN() {
+    double[] array = new double[]{Double.NaN, 4.0, -1.0};
+    double[] res = minMaxValue(array);
+    System.out.println("res = " + Arrays.toString(res));
+    assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
+  }
+
+  @Test
+  public void testMinMaxNaNs() {
+    double[] array = new double[]{Double.NaN, Double.NaN, Double.NaN};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{Double.MAX_VALUE, Double.MIN_VALUE}, res, 0);
+  }
+
+  @Test
   public void testSubAndMul() {
     double[] row = new double[]{2.0, 5.0, 6.0};
     double[] p = new double[]{1.0, 4.0, -1.0};

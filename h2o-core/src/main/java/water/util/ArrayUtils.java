@@ -918,9 +918,9 @@ public class ArrayUtils {
    * @return Array with 2 fields. First field is minimum and second field is maximum.
    */
   public static double[] minMaxValue(double[] from) {
-    double min = from[0];
-    double max = from[0];
-    for (int i = 1; i < from.length; ++i) {
+    double min = Double.MAX_VALUE;
+    double max = Double.MIN_VALUE;
+    for (int i = 0; i < from.length; ++i) {
       if (from[i] < min) min = from[i];
       if (from[i] > max) max = from[i];
     }
