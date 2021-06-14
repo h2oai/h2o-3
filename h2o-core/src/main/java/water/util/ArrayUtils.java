@@ -1118,29 +1118,18 @@ public class ArrayUtils {
   }
   public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
   public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
-  public static double[] gaussianVector(int n, Random random) { return gaussianVector(n, random, 0); }
-  public static double[] gaussianVector(int n, long seed, int zeroNum) {return gaussianVector(n, getRNG(seed), zeroNum); }
   /**
    * Make a new array initialized to random Gaussian N(0,1) values with the given seed.
-   * Make randomly selected {@code zeroNum} items zeros. Used in Extended isolation forest.
    *
    * @param n length of generated vector
-   * @param zeroNum set randomly selected {@code zeroNum} items of vector to zero
    * @return array with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
    */
-  public static double[] gaussianVector(int n, Random random, int zeroNum) {
+  public static double[] gaussianVector(int n, Random random) {
     if(n <= 0) return null;
     double[] result = new double[n];  // ToDo: Get rid of this new action.
 
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
-
-    if (zeroNum > 0) {
-      Set<Long> indexToMakeZero = CollectionUtils.setOfUniqueRandomNumbers(zeroNum, n, random);
-      for (Long index : indexToMakeZero) {
-        result[index.intValue()] = 0;
-      }
-    }
     return result;
   }  
 

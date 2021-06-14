@@ -2,6 +2,14 @@ package hex.tree.isoforextended.isolationtree;
 
 import org.apache.log4j.Logger;
 import water.util.ArrayUtils;
+import water.util.CollectionUtils;
+import water.util.RandomUtils;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * IsolationTree class implements Algorithm 2 (iTree)
@@ -50,8 +58,8 @@ public class IsolationTree {
                     currentHeight++;
 
                     node._p = ArrayUtils.uniformDistFromArray(nodeData, seed + i);
-                    node._n = ArrayUtils.gaussianVector(
-                            nodeData.length, seed + i, nodeData.length - _extensionLevel - 1);
+                    node._n = gaussianVector(
+                            nodeData.length, nodeData.length - _extensionLevel - 1, seed + i);
 
                     FilteredData ret = extendedIsolationForestSplit(nodeData, node._p, node._n);
 
@@ -231,5 +239,23 @@ public class IsolationTree {
         public double[][] getRight() {
             return right;
         }
+    }
+
+    /**
+     * Make a new array initialized to random Gaussian N(0,1) values with the given seed.
+     * Make randomly selected {@code zeroNum} items zeros (based on extensionLevel value).
+     *
+     * @param n length of generated vector
+     * @param zeroNum set randomly selected {@code zeroNum} items of vector to zero
+     * @return array with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
+     */
+    public static double[] gaussianVector(int n, int zeroNum, long seed) {
+        double[] gaussian = ArrayUtils.gaussianVector(n, seed);
+        HashSet<Long> indexToMakeZero = CollectionUtils.setOfUniqueRandomNumbers(zeroNum, n, seed);
+
+        for (Long index: indexToMakeZero) {
+            gaussian[index.intValue()] = 0.0;
+        }
+        return gaussian;
     }
 }

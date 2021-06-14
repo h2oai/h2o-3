@@ -17,6 +17,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
@@ -356,7 +357,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             double[] normalPoint = toNumericRow(train, 0);
 
             long start = System.currentTimeMillis();
-            IsolationTree isolationTree = new IsolationTree(16, 127);
+            IsolationTree isolationTree = new IsolationTree(16, 31);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
             isolationTree.logNodesNumRows();
@@ -418,5 +419,11 @@ public class ExtendedIsolationForestTest extends TestUtil {
         finally {
             Scope.exit();
         }
+    }
+
+    @Test
+    public void testGaussianVector() {
+        double[] a = IsolationTree.gaussianVector(5,  2, 0xCAFFE);
+        assertArrayEquals(new double[]{0.866, 0.0, 1.657, -0.166, 0.0}, a, 1e-3);
     }
 }

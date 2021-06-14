@@ -426,12 +426,6 @@ public class ArrayUtilsTest {
   }
 
   @Test
-  public void testGaussianVector2() {
-    double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE, 2);
-    assertArrayEquals(new double[]{0, 0.53975, 1.65799, -0.16698, 0}, a, 1e-3);
-  }
-
-  @Test
   public void testInnerProductDouble() {
     double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
     double[] b = new double[]{2, 2, 2, 2, 2, 2};
