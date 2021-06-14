@@ -8,7 +8,6 @@ import water.util.ArrayUtils;
 import water.util.IcedBitSet;
 import water.util.VecUtils;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

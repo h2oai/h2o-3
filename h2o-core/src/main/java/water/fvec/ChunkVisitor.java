@@ -194,7 +194,6 @@ public abstract class ChunkVisitor {
     public final int [] vals;
     private int _k = 0;
     private final int _na;
-    IntAryVisitor(int [] vals){this(vals,(int)C4Chunk._NA);}
     IntAryVisitor(int [] vals, int NA){this.vals = vals; _na = NA;}
     @Override
     public void addValue(int val) {vals[_k++] = val;}

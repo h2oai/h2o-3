@@ -13,6 +13,8 @@ import water.util.RandomUtils;
 import java.util.Arrays;
 import java.util.Random;
 
+import static hex.tree.SharedTreeModel.SharedTreeParameters.HistogramType;
+
 /** A Histogram, computed in parallel over a Vec.
  *
  *  <p>A {@code DHistogram} bins every value added to it, and computes a the
@@ -45,7 +47,9 @@ import java.util.Random;
 public final class DHistogram extends Iced<DHistogram> {
   
   private static final Logger LOG = Logger.getLogger(DHistogram.class);
-  
+
+  public static final int INT_NA = Integer.MIN_VALUE; // integer representation of NA
+
   public final transient String _name; // Column name (for debugging)
   public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
@@ -105,7 +109,7 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   protected double  _min2, _maxIn; // Min/Max, _maxIn is Inclusive.
-  public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
+  public HistogramType _histoType; //whether ot use random split points
   transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
   transient int _zeroSplitPntPos;
   public final long _seed;
@@ -153,7 +157,7 @@ public final class DHistogram extends Iced<DHistogram> {
     }
   }
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
-                    double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
+                    double minSplitImprovement, HistogramType histogramType, long seed, Key globalQuantilesKey,
                     Constraints cs) {
     assert nbins >= 1;
     assert nbins_cats >= 1;
@@ -189,13 +193,13 @@ public final class DHistogram extends Iced<DHistogram> {
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
     _seed = seed;
-    while (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
-      SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
+    while (_histoType == HistogramType.RoundRobin) {
+      HistogramType[] h = HistogramType.values();
       _histoType = h[(int)Math.abs(seed++ % h.length)];
     }
-    if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
-      _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
-    assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
+    if (_histoType== HistogramType.AUTO)
+      _histoType= HistogramType.UniformAdaptive;
+    assert(_histoType!= HistogramType.RoundRobin);
     _globalQuantilesKey = globalQuantilesKey;
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
@@ -241,12 +245,6 @@ public final class DHistogram extends Iced<DHistogram> {
     return idx1;
   }
 
-  public final int bin(final int col_data) {
-    if (col_data == -1)
-      return _nbin;
-    return col_data - _minInt;
-  }
-
   public double binAt( int b ) {
     if (_hasQuantiles) return _splitPts[b];
     return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
@@ -271,13 +269,13 @@ public final class DHistogram extends Iced<DHistogram> {
   public void init() { init(null);}
   public void init(final double[] vals) {
     assert _vals == null;
-    if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
+    if (_histoType==HistogramType.Random) {
       // every node makes the same split points
       Random rng = RandomUtils.getRNG((Double.doubleToRawLongBits(((_step+0.324)*_min+8.3425)+89.342*_maxEx) + 0xDECAF*_nbin + 0xC0FFEE*_isInt + _seed));
       assert _nbin > 1;
       _splitPts = makeRandomSplitPoints(_nbin, rng);
     }
-    else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+    else if (_histoType== HistogramType.QuantilesGlobal) {
       assert (_splitPts == null);
       if (_globalQuantilesKey != null) {
         HistoQuantiles hq = DKV.getGet(_globalQuantilesKey);
@@ -290,7 +288,7 @@ public final class DHistogram extends Iced<DHistogram> {
               _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
             if (_splitPts.length <= 1) {
               _splitPts = null; //abort, fall back to uniform binning
-              _histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
+              _histoType = HistogramType.UniformAdaptive;
             }
             else {
               _hasQuantiles=true;
@@ -301,7 +299,7 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
     }
-    else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
+    else assert(_histoType== HistogramType.UniformAdaptive);
     if (_splitPts != null) {
       // Inject canonical representation of zero - convert "negative zero" to 0.0d
       // This is for PUBDEV-7161 - Arrays.binarySearch used in bin() method is not able to find a negative zero,
@@ -320,6 +318,8 @@ public final class DHistogram extends Iced<DHistogram> {
     _vals = vals == null ? MemoryManager.malloc8d(_vals_dim * _nbin + _vals_dim) : vals;
     // this always holds: _vals != null
     assert _nbin > 0;
+    assert !_intOpt || _splitPts == null : "Integer-optimization cannot be enabled when split points are defined";
+    assert !_intOpt || _histoType == HistogramType.UniformAdaptive : "Integer-optimization can only be enabled for histogram type 'UniformAdaptive'.";
   }
   
   // Merge two equal histograms together.  Done in a F/J reduce, so no
@@ -387,19 +387,23 @@ public final class DHistogram extends Iced<DHistogram> {
       // (the benefit of this optimization would be small anyway as constraints introduce overhead)
       return false;
     }
-    if (parms._histogram_type != SharedTreeModel.SharedTreeParameters.HistogramType.AUTO &&
-            parms._histogram_type != SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive) {
+    if (parms._histogram_type != HistogramType.AUTO &&
+            parms._histogram_type != HistogramType.UniformAdaptive) {
       // we cannot handle non-integer split points in fast-binning
       return false;
     }
     if (v.isCategorical()) {
       // small cardinality categoricals are optimized (default for nbin_cats is 1024)
       return v.domain().length < parms._nbins_cats;
-    } else {
-      return v.isInt() && // only small positive integer columns (this covers eg. binary columns)
-              v.min() >= 0 &&
-              v.max() < parms._nbins; // only if we can fit any value in the smallest number of bins could make (nbins, 20 is default)
+    } else if (v.isInt()) {
+      double min = v.min();
+      double max = v.max();
+      double intLen = max - min; // length of the interval
+      // only if we can fit any value in the smallest number of bins could make (nbins, 20 is default)
+      return intLen < parms._nbins &&
+              (int) max - (int) min == (int) intLen; // make sure the math can be done in integer domain without overflow
     }
+    return false;
   }
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
@@ -437,7 +441,7 @@ public final class DHistogram extends Iced<DHistogram> {
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
   }
 
-  void updateHisto(double[] ws, double resp[], Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+  void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     if (_intOpt)
       updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
     else
@@ -459,7 +463,7 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    */
-  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+  void updateHisto(double[] ws, double[] resp, double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
     
@@ -526,14 +530,16 @@ public final class DHistogram extends Iced<DHistogram> {
       if (weight == 0)
         continue; // Needed for DRF only
       final int col_data = cs[k];
-      if (col_data >= 0) {
+      final int b;
+      if (col_data != INT_NA) {
         if (col_data < min2_int) min2_int = col_data;
         if (col_data > maxIn_int) maxIn_int = col_data;
-      }
+        b = col_data - _minInt;
+      } else 
+        b = _nbin;
       final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
       double wy = weight * y;
       double wyy = wy * y;
-      int b = bin(col_data);
       final int binDimStart = _vals_dim*b;
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
@@ -562,7 +568,7 @@ public final class DHistogram extends Iced<DHistogram> {
       }
     }
     if (_intOpt)
-      chk.getIntegers((int[])cache, 0, len, -1);
+      chk.getIntegers((int[])cache, 0, len, INT_NA);
     else
       chk.getDoubles((double[])cache, 0, len);
     return cache;
