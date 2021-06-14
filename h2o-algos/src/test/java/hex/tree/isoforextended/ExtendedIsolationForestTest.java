@@ -393,44 +393,6 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test
-    public void testSubSampleTaskSmoke() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            int tries = 100;
-            long sum = 0;
-            for(int i = 0; i < tries; i++) {
-                Frame subSample = SamplingUtils.sampleOfApproxSize(train, 256, 0xBEEF + i);
-                assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
-                sum += subSample.numRows();
-            }
-            double average = ((double) sum) / tries;
-            assertEquals("SubSample has different number of rows", 256, average, 2);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testSubSampleTaskLarge() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
-            int tries = 100;
-            long sum = 0;
-            for(int i = 0; i < tries; i++) {
-                Frame subSample = SamplingUtils.sampleOfApproxSize(train, 256, 0xBEEF + i);
-                assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
-                sum += subSample.numRows();
-            }
-            double average = ((double) sum) / tries;
-            assertEquals("SubSample has different number of rows", 256, average, 2);
-        } finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
     public void testSubSampleFixedSizeSmoke() {
         try {
             Scope.enter();

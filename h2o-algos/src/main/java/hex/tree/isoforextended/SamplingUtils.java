@@ -15,18 +15,6 @@ public class SamplingUtils  {
     /**
      *
      * @param frame Frame to be sampled
-     * @param sampleSize approximate size of sample
-     * @param seed ...
-     * @return Random sub-sample of frame with size approximately {@code sampleSize}
-     */
-    public static Frame sampleOfApproxSize(Frame frame, int sampleSize, long seed) {
-        return new SubSampleTask(sampleSize, frame.numRows(),seed)
-                .doAll(frame.types(), frame.vecs()).outputFrame();
-    }
-
-    /**
-     *
-     * @param frame Frame to be sampled
      * @param sampleSize exact size of sample
      * @param seed ...
      * @return Random sub-sample of frame with size equals to {@code sampleSize}
@@ -48,32 +36,6 @@ public class SamplingUtils  {
         public void map(Chunk[] cs, NewChunk[] ncs) {
             for (int row = 0; row < cs[0]._len; row++) {
                 if (rowsToChoose.contains(row + cs[0].start())) {
-                    for (int column = 0; column < cs.length; column++) {
-                        ncs[column].addNum(cs[column].atd(row));
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Task to create random sub-sample of given Frame
-     */
-    private static class SubSampleTask extends MRTask<SubSampleTask> {
-
-        private final long seed;
-        private final double sampleRate;
-
-        public SubSampleTask(int sampleSize, long frameNumRows, long seed) {
-            this.seed = seed;
-            this.sampleRate = ((double) sampleSize) / frameNumRows;
-        }
-
-        @Override
-        public void map(Chunk[] cs, NewChunk[] ncs) {
-            Random random = RandomUtils.getRNG(seed + cs[0].start());
-            for (int row = 0; row < cs[0]._len; row++) {
-                if (random.nextDouble() <= sampleRate) {
                     for (int column = 0; column < cs.length; column++) {
                         ncs[column].addNum(cs[column].atd(row));
                     }
