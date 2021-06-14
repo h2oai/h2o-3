@@ -345,7 +345,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
           if (! extracted) {
-            cs = h.extractData(_chks[id][_col], cs, len, _maxChunkSz);
+            boolean useIntOpt = h.canUseIntOpt(_lh);
+            cs = DHistogram.extractData(_chks[id][_col], cs, len, _maxChunkSz, useIntOpt);
             if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
               if (h._vals_dim == 7) {

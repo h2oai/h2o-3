@@ -17,7 +17,7 @@ public class DTreeTest {
     double[] ys = new double[]{0,          1,          0,   1  };
     int[] rows  = new int[]   {0,          1,          2,   3  };
 
-    DHistogram hs = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, false, true, 0.01,
+    DHistogram hs = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, (byte) 0, true, 0.01,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hs.init();
     hs.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
@@ -31,7 +31,7 @@ public class DTreeTest {
     assertNull(s2); // not enough improvement => no split
 
     // 3. allow negative (!!!) split improvement, min_rows = #NAs + 1
-    DHistogram hsN = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, false, true, -9,
+    DHistogram hsN = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, (byte) 0, true, -9,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hsN.init();
     hsN.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
@@ -74,7 +74,7 @@ public class DTreeTest {
             .withNewConstraint(0, 0, max_pred);
     assertEquals(min_pred, c._min, 0);
     assertEquals(max_pred, c._max, 0);
-    return new DHistogram("test_hs", nbins, 2, (byte) 0, 0, 10, false, false, 0.01,
+    return new DHistogram("test_hs", nbins, 2, (byte) 0, 0, 10, (byte) 0, false, 0.01,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, c);
   }
   

@@ -53,9 +53,10 @@ public final class DHistogram extends Iced<DHistogram> {
   public final transient String _name; // Column name (for debugging)
   public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
-  public final boolean _intOpt;
+  public final byte _intOpt;    // 0: disabled, 1: whole column, 3: per chunk
   public char  _nbin;     // Bin count (excluding NA bucket)
-  public double _step;     // Linear interpolation step per bin
+  public final double _step;     // Linear interpolation step per bin
+  public final boolean _unitStep; // Is step == 1?
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public final int _minInt;         // Integer version of _min. Used in integer optimized histograms. 
   public final boolean _initNA;  // Does the initial histogram have any NAs? 
@@ -156,7 +157,7 @@ public final class DHistogram extends Iced<DHistogram> {
       super("column=" + name + " leads to invalid histogram(check numeric range) -> [max=" + maxEx + ", min = " + min + "], step= " + step + ", xbin= " + xbins);
     }
   }
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, byte intOpt, boolean initNA,
                     double minSplitImprovement, HistogramType histogramType, long seed, Key globalQuantilesKey,
                     Constraints cs) {
     assert nbins >= 1;
@@ -204,7 +205,8 @@ public final class DHistogram extends Iced<DHistogram> {
     // See if we can show there are fewer unique elements than nbins.
     // Common for e.g. boolean columns, or near leaves.
     int xbins = isInt == 2 ? nbins_cats : nbins;
-    if (isInt > 0 && maxEx - min <= xbins) {
+    _unitStep = isInt > 0 && maxEx - min <= xbins;
+    if (_unitStep) {
       assert ((long) min) == min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
       xbins = (char) ((long) maxEx - (long) min);  // Shrink bins
       _step = 1.0f;                           // Fixed stepsize
@@ -318,8 +320,8 @@ public final class DHistogram extends Iced<DHistogram> {
     _vals = vals == null ? MemoryManager.malloc8d(_vals_dim * _nbin + _vals_dim) : vals;
     // this always holds: _vals != null
     assert _nbin > 0;
-    assert !_intOpt || _splitPts == null : "Integer-optimization cannot be enabled when split points are defined";
-    assert !_intOpt || _histoType == HistogramType.UniformAdaptive : "Integer-optimization can only be enabled for histogram type 'UniformAdaptive'.";
+    assert _intOpt == 0 || _splitPts == null : "Integer-optimization cannot be enabled when split points are defined";
+    assert _intOpt == 0 || _histoType == HistogramType.UniformAdaptive : "Integer-optimization can only be enabled for histogram type 'UniformAdaptive'.";
   }
   
   // Merge two equal histograms together.  Done in a F/J reduce, so no
@@ -361,7 +363,7 @@ public final class DHistogram extends Iced<DHistogram> {
       final long nacnt = v.naCnt();
       try {
         byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
-        boolean intOpt = useIntOpt(v, parms, cs);
+        byte intOpt = useIntOpt(v, parms, cs);
         hs[c] = nacnt == vlen || v.isConst(true) ?
             null : make(fr._names[c], nbins, type, minIn, maxEx, intOpt, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
       } catch(StepOutOfRangeException e) {
@@ -381,32 +383,39 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param cs constraints specification
    * @return can we use integer representation for extracted data? 
    */
-  public static boolean useIntOpt(Vec v, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
+  public static byte useIntOpt(Vec v, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
     if (cs != null) {
       // if constraints are not handled on the optimized path to avoid higher code complexity
       // (the benefit of this optimization would be small anyway as constraints introduce overhead)
-      return false;
+      return 0;
     }
     if (parms._histogram_type != HistogramType.AUTO &&
             parms._histogram_type != HistogramType.UniformAdaptive) {
       // we cannot handle non-integer split points in fast-binning
-      return false;
+      return 0;
     }
     if (v.isCategorical()) {
       // small cardinality categoricals are optimized (default for nbin_cats is 1024)
-      return v.domain().length < parms._nbins_cats;
+      return v.domain().length < parms._nbins_cats ? (byte) 1 : (byte) 2;
     } else if (v.isInt()) {
       double min = v.min();
       double max = v.max();
-      double intLen = max - min; // length of the interval
       // only if we can fit any value in the smallest number of bins could make (nbins, 20 is default)
-      return intLen < parms._nbins &&
-              (int) max - (int) min == (int) intLen; // make sure the math can be done in integer domain without overflow
+      return valuesFitInIntBins(min, max, parms._nbins) ? (byte) 1 : (byte) 2;
     }
-    return false;
+    return 0;
   }
 
-  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
+  static boolean valuesFitInIntBins(double min, double max, int nbins) {
+    assert INT_NA == Integer.MIN_VALUE : "valuesFitInIntBins doesn't work if NA value is not represented by Integer.MIN_VALUE";
+    double intLen = max - min; // length of the interval
+    return intLen < nbins &&
+            min > Integer.MIN_VALUE && // this also validates that min value is not INT_NA
+            max <= Integer.MAX_VALUE &&
+            (int) max - (int) min == (int) intLen; // make sure the math can be done in integer domain without overflow
+  }
+
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, byte intOpt, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs, 
             parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs);
@@ -442,7 +451,7 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
-    if (_intOpt)
+    if (cs instanceof int[])
       updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
     else
       updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo);
@@ -559,19 +568,42 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param maxChunkSz maximum chunk size on the local node, will determine the size of the cache
    * @return extracted data
    */
-  Object extractData(Chunk chk, Object cache, int len, int maxChunkSz) {
-    if (cache == null) {
-      if (_intOpt) {
+  static Object extractData(Chunk chk, Object cache, int len, int maxChunkSz, boolean useIntOpt) {
+    if (cache == null || (useIntOpt && !(cache instanceof int[]))) {
+      if (useIntOpt) {
         cache = MemoryManager.malloc4(maxChunkSz);
       } else {
         cache = MemoryManager.malloc8d(maxChunkSz);
       }
     }
-    if (_intOpt)
+    if (useIntOpt)
       chk.getIntegers((int[])cache, 0, len, INT_NA);
     else
       chk.getDoubles((double[])cache, 0, len);
     return cache;
+  }
+
+  boolean canUseIntOpt(DHistogram[] hs) {
+    if (_intOpt == (byte) 0)
+      return false;
+    if (_intOpt == (byte) 1) {
+      boolean allType1 = true;
+      for (DHistogram h : hs)
+        allType1 &= h == null || _intOpt == h._intOpt;
+      assert allType1 : "All histograms for the same column are expected to be of the same integer type";
+      return allType1;
+    } else {
+      for (DHistogram h : hs) {
+        if (h == null)
+          continue;
+        if (!h._unitStep)
+          return false;
+        double max = (long) h._maxEx; // convert _exclusive_ max (non-integer) to integer, we know the column is integer
+        if (!valuesFitInIntBins(h._min, max, h._nbin))
+          return false;
+      }
+      return true;
+    }
   }
 
   /**
