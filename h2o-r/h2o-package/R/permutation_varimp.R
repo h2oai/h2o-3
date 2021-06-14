@@ -39,6 +39,10 @@ h2o.permutation_importance <- function(object,
   if (missing(object)) stop("Parameter 'object' needs to be specified.")
   if (!is(object, "H2OModel")) stop("Parameter 'object' has to be an H2O model.")
   .validate.H2OFrame(newdata, required = TRUE)
+
+  if (!object@parameters$y %in% names(newdata))
+    stop("The frame 'newdata' must contain the response column!")
+
   metric <- match.arg(arg = if (missing(metric)) "mse" else tolower(metric),
                       choices = tolower(eval(formals()$metric)))
 

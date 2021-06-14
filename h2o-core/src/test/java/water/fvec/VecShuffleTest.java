@@ -55,7 +55,7 @@ public class VecShuffleTest extends TestUtil{
             fr = makeTestFrame();
             for (int i = 0 ; i < 5 ; i++) {
                 // Get shuffled Vec
-                Vec shuffledFeature = VecUtils.ShuffleVec(fr.vec(i), fr.vec(i).makeCopy(), 0);
+                Vec shuffledFeature = VecUtils.shuffleVec(fr.vec(i), fr.vec(i).makeCopy(), 0);
                 Assert.assertFalse(checkElements(fr.vec(i), shuffledFeature));
             }
         } finally {
@@ -154,7 +154,7 @@ public class VecShuffleTest extends TestUtil{
             for (int i = 0 ; i < 10 ; i++) {
                 for (int j = 0; j < 2 ; j++){
                     // Get shuffled Vec
-                    Vec shuffledFeature = VecUtils.ShuffleVec(fr.vec(j), fr.vec(j).makeCopy(), 0);
+                    Vec shuffledFeature = VecUtils.shuffleVec(fr.vec(j), fr.vec(j).makeCopy(), 0);
                     double rndCoe = randomnessCoefficient(fr.vec(j), shuffledFeature);
                     Assert.assertEquals(1.0, rndCoe, 1e-2);
                     Assert.assertFalse(checkElements(fr.vec(j), shuffledFeature));
@@ -180,7 +180,7 @@ public class VecShuffleTest extends TestUtil{
             DKV.put(fr);
             for (int i = 0 ; i < fr.numCols() ; i++) {
                 // get the shuffled vec
-                shuffledFeature = VecUtils.ShuffleVec(fr.vec(i), fr.vec(i).makeCopy(), 0);
+                shuffledFeature = VecUtils.shuffleVec(fr.vec(i), fr.vec(i).makeCopy(), 0);
                 double rndCoe = randomnessCoefficient(fr.vec(i), shuffledFeature);
                 Assert.assertNotEquals(0.0, rndCoe);
             }
@@ -204,7 +204,7 @@ public class VecShuffleTest extends TestUtil{
             fr = parse_test_file("smalldata/gbm_test/30k_cattest.csv");
             assert fr.vec(0).isString();
 
-            Vec shuffledFeature = VecUtils.ShuffleVec(fr.vec(0), fr.vec(0).makeCopy(), 0);
+            Vec shuffledFeature = VecUtils.shuffleVec(fr.vec(0), fr.vec(0).makeCopy(), 0);
             Assert.assertFalse(checkElements(fr.vec(0), shuffledFeature));
         } finally {
             Scope.exit();
@@ -225,7 +225,7 @@ public class VecShuffleTest extends TestUtil{
             Scope.track(fr);
             DKV.put(fr);
             for (int i = 0; i < fr.numCols(); i++) {
-                Vec shuffledFeature = VecUtils.ShuffleVec(fr.vec(i), fr.vec(i).makeCopy(), 0);
+                Vec shuffledFeature = VecUtils.shuffleVec(fr.vec(i), fr.vec(i).makeCopy(), 0);
                 // Testing only elements. Frame has multiple not unique variables which leads no low Random Coefficient
                 Assert.assertFalse(checkElements(fr.vec(i), shuffledFeature));
             }

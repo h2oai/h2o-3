@@ -1549,7 +1549,6 @@ class ModelBase(h2o_meta(Keyed)):
         to the distance between the original prediction error and prediction error using a frame with
         a given feature permuted.
 
-        :param model: model after training
         :param frame: training frame
         :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
                        "PR_AUC".  Defaults to "AUTO".
@@ -1568,6 +1567,9 @@ class ModelBase(h2o_meta(Keyed)):
 
         if type(frame) is not H2OFrame:
             raise H2OValueError("Frame is not H2OFrame")
+
+        if self.actual_params["response_column"] not in frame.columns:
+            raise H2OValueError("Frame must contain the response column!")
 
         if features is not None and len(features) == 0:
             features = None
@@ -1624,7 +1626,6 @@ class ModelBase(h2o_meta(Keyed)):
         Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
         returns the variable importance table.
 
-        :param model: model after training
         :param frame: training frame
         :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
                        "PR_AUC".  Defaults to "AUTO".

@@ -23,40 +23,7 @@ public class MRUtils {
    * @return Sampled frame
    */
   public static Frame sampleFrame(Frame fr, final long rows, final long seed) {
-    if (fr == null) return null;
-    final float fraction = rows > 0 ? (float)rows / fr.numRows() : 1.f;
-    if (fraction >= 1.f) return fr;
-    Key newKey = fr._key != null ? Key.make(fr._key.toString() + (fr._key.toString().contains("temporary") ? ".sample." : ".temporary.sample.") + PrettyPrint.formatPct(fraction).replace(" ","")) : null;
-
-    Frame r = new MRTask() {
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        final Random rng = getRNG(0);
-        final BufferedString bStr = new BufferedString();
-        int count = 0;
-        for (int r = 0; r < cs[0]._len; r++) {
-          rng.setSeed(seed+r+cs[0].start());
-          if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
-            count++;
-            for (int i = 0; i < ncs.length; i++) {
-              if (cs[i].isNA(r)) ncs[i].addNA();
-              else if (cs[i] instanceof CStrChunk)
-                ncs[i].addStr(cs[i].atStr(bStr,r));
-              else if (cs[i] instanceof C16Chunk)
-                ncs[i].addUUID(cs[i].at16l(r),cs[i].at16h(r));
-              else
-                ncs[i].addNum(cs[i].atd(r));
-            }
-          }
-        }
-      }
-    }.doAll(fr.types(), fr).outputFrame(newKey, fr.names(), fr.domains());
-    if (r.numRows() == 0) {
-      Log.warn("You asked for " + rows + " rows (out of " + fr.numRows() + "), but you got none (seed=" + seed + ").");
-      Log.warn("Let's try again. You've gotta ask yourself a question: \"Do I feel lucky?\"");
-      return sampleFrame(fr, rows, seed+1);
-    }
-    return r;
+    return sampleFrame(fr, rows, null, seed);
   }
 
   /**
@@ -435,11 +402,14 @@ public class MRUtils {
    */
   public static Frame sampleFrame(Frame fr, final long rows, final String weightColumn, final long seed) {
     if (fr == null) return null;
-    if (null == weightColumn) return sampleFrame(fr, rows, seed);
-    final int weightIdx = ArrayUtils.indexOf(fr.names(), weightColumn);
-    if (-1 == weightIdx) return sampleFrame(fr, rows, seed);
-    final double meanWeight = fr.vec(weightIdx).mean();
-    final double fractionOfWeights = rows > 0 ? rows / (fr.numRows() * meanWeight): 1.f;
+    final int weightIdx = weightColumn != null ? ArrayUtils.indexOf(fr.names(), weightColumn) : -1;
+    final double fractionOfWeights;
+    if (weightIdx < 0) {
+      fractionOfWeights = rows > 0 ? (double)rows / fr.numRows(): 1.f;
+    } else {
+      final double meanWeight = fr.vec(weightIdx).mean();
+      fractionOfWeights = rows > 0 ? (double)rows / (fr.numRows() * meanWeight): 1.f;
+    }
     if (fractionOfWeights >= 1.f) return fr;
     Key newKey = fr._key != null ? Key.make(fr._key.toString() + (fr._key.toString().contains("temporary") ? ".sample." : ".temporary.sample.") + PrettyPrint.formatPct(fractionOfWeights).replace(" ","")) : null;
 
@@ -451,8 +421,9 @@ public class MRUtils {
         int count = 0;
         for (int r = 0; r < cs[0]._len; r++) {
           rng.setSeed(seed+r+cs[0].start());
+          final double threshold = weightIdx < 0 ? fractionOfWeights : (fractionOfWeights * cs[weightIdx].atd(r));
           // A row with n-times higher weight should be n-times more likely to be picked
-          if (rng.nextFloat() < fractionOfWeights * cs[weightIdx].atd(r) || (count == 0 && r == cs[0]._len-1) ) {
+          if (rng.nextFloat() < threshold || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
               if (cs[i].isNA(r)) ncs[i].addNA();

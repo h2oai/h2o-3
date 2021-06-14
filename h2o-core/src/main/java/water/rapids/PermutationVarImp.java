@@ -9,6 +9,8 @@ import water.util.*;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static water.util.RandomUtils.getRNG;
+
 /**
  * Permutation Variable (feature) importance measures the increase in the prediction error of the model after permuting
  * the variables' values, which breaks the relationship between the variables and the true outcome.
@@ -25,8 +27,7 @@ public class PermutationVarImp {
     private final Frame _inputFrame;
 
     /**
-     * Constructor that stores the model, frame, response column, variable Strings and
-     * sets the allowed metrics
+     * Constructor that stores the model, frame
      *
      * @param model trained model
      * @param fr    training frame
@@ -34,6 +35,9 @@ public class PermutationVarImp {
     public PermutationVarImp(Model model, Frame fr) {
         if (fr.numRows() < 2)
             throw new IllegalArgumentException("Frame must contain more than 1 rows to be used in permutation variable importance!");
+        if (!ArrayUtils.contains(fr.names(), model._parms._response_column)) {
+            throw new IllegalArgumentException("Frame must contain the response column for the use in permutation variable importance!");
+        }
         _model = model;
         _inputFrame = fr;
     }
@@ -88,13 +92,11 @@ public class PermutationVarImp {
 
         Frame fr = null;
         if (n_samples > 1) {
-            fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
-            while (fr.numRows() < 2) {
-                fr.remove();
-                seed += 1;
-                n_samples *= 2;
-                Log.warn("Sampled less than 2 rows, repeating the sampling with seed = "+ seed +" and increasing n_samples to = "+ n_samples +".");
+            if (n_samples > 1000) {
                 fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
+            } else {
+                Random rand = getRNG(seed);
+                fr = _inputFrame.deepSlice(rand.longs(n_samples, 0, _inputFrame.numRows()).toArray(), null);
             }
         } else {
             fr = _inputFrame;
@@ -110,7 +112,7 @@ public class PermutationVarImp {
                     continue;
 
                 // shuffle values of feature
-                shuffledFeature = VecUtils.ShuffleVec(fr.vec(f), fr.vec(f).makeCopy(), seed);
+                shuffledFeature = VecUtils.shuffleVec(fr.vec(f), fr.vec(f).makeCopy(), seed);
                 Vec origFeature = fr.replace(f, shuffledFeature);
 
                 // score the model again and compute diff

@@ -927,7 +927,7 @@ public class VecUtils {
    * @param seed seed for random generator
    * @return shuffled Vec
    */
-  public static Vec ShuffleVec(Vec iVec, Vec srcVec, final long seed) {
+  public static Vec shuffleVec(Vec iVec, Vec srcVec, final long seed) {
     new ShuffleVecTask(seed).doAll(iVec, srcVec);
     return srcVec;
   }

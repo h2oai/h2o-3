@@ -65,19 +65,25 @@ def test_metrics_gbm():
 
     try:
         pfi = model.permutation_importance(fr, use_pandas=False, n_samples=0, features=[], seed=42)
-        assert False, "This should fail on validation."
+        assert False, "This should fail on validation - n_samples=0."
     except h2o.exceptions.H2OValueError:
         pass
 
     try:
         pfi = model.permutation_importance(fr, use_pandas=False, n_repeats=0, features=[], seed=42)
-        assert False, "This should fail on validation."
+        assert False, "This should fail on validation - n_repeats = 0."
+    except h2o.exceptions.H2OValueError:
+        pass
+
+    try:
+        pfi = model.permutation_importance(fr[["AGE", "PSA"]], use_pandas=False, seed=42)
+        assert False, "This should fail on validation - missing response."
     except h2o.exceptions.H2OValueError:
         pass
 
     try:
         pfi = model.permutation_importance(fr, use_pandas=False, features=["lorem", "ipsum", "dolor"], seed=42)
-        assert False, "This should fail on validation."
+        assert False, "This should fail on validation - non-existent features."
     except h2o.exceptions.H2OValueError:
         pass
 

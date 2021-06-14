@@ -53,6 +53,9 @@ test.permutation.varimp <- function(){
     e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train, n_repeats = 0), error = function (e) e)
     expect_is(e, "error")
 
+    e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train[,c("AGE", "PSA")]), error = function (e) e)
+    expect_is(e, "error")
+
     e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train, features = c("lorem", "ipsum")), error = function (e) e)
     expect_is(e, "error")
 }
