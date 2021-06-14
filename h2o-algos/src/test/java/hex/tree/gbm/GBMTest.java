@@ -4534,4 +4534,33 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testHStatistic() {
+    Frame fr=null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._ntrees = 3;
+      parms._seed = 1234L;
+
+      model = new GBM(parms).trainModel().get();
+
+      double h = model.getFriedmanPopescusH(f, new String[] {"GLEASON","VOL"});
+      assertEquals(h, 0.0, 1e-5);
+
+      DKV.remove(f._key);
+    } finally {
+      if( model != null ) model.delete();
+      if( fr  != null )   fr.remove();
+      Scope.exit();
+    }
+  }
+
 }

@@ -11,6 +11,7 @@ import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.FriedmanPopescusH;
 import hex.tree.PlattScalingHelper;
 import hex.tree.SharedTreeModel;
 import hex.tree.xgboost.predict.*;
@@ -36,7 +37,7 @@ import static hex.tree.xgboost.util.GpuUtils.hasGPU;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector, Model.UpdateAuxTreeWeights {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector, Model.UpdateAuxTreeWeights, FriedmanPopescusHCollector {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -929,5 +930,20 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   Predictor makePredictor(boolean scoringOnly) {
     return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly);
   }
+  @Override
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    int nclasses = this._output.nclasses() > 2 ? this._output.nclasses() : 1;
+    SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        SharedTreeGraph graph = this.convert(i, this._output.classNames()[j]);
+        assert graph.subgraphArray.size() == 1;
+        sharedTreeSubgraphs[i][j] = graph.subgraphArray.get(0);
+      }
+    }
+
+    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
+  }
+
 
 }
