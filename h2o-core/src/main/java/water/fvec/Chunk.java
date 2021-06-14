@@ -792,9 +792,14 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   public int [] getIntegers(int [] vals, int from, int to, int NA){
     return processRows(new ChunkVisitor.IntAryVisitor(vals,NA),from,to).vals;
   }
-  public int [] getIntegers(int [] vals, int from, int to, int rs[]){
-    return processRows(new ChunkVisitor.ShufflingIntAryVisitor(vals,rs),from,to).vals;
+  public void processRows(int from, int to, ChunkVisitor cv) {
+    processRows(cv,from,to);
   }
+  /*
+  public int [] getIntegers(int [] vals, int from, int to, int rs[], int[] nbins, double[][] minsStepsZipped){
+    return processRows(new ChunkVisitor.BinningIntAryVisitor(vals,rs, nbins, minsStepsZipped),from,to).vals;
+  }
+  */
   /**
    * Dense bulk interface, fetch values from the given ids
    * @param vals

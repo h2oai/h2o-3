@@ -5,6 +5,7 @@ import hex.genmodel.utils.DistributionFamily;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkVisitor;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -217,12 +218,36 @@ public final class DHistogram extends Iced<DHistogram> {
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
 
+  public static int bin(final double col_data, final double min, final double step, final int nbin) {
+    if(Double.isNaN(col_data)) 
+      return nbin; // NA bucket
+    if (Double.isInfinite(col_data)) 
+      if (col_data<0) return 0;
+      else return nbin-1; // Put infinity to most left/right bin
+    int idx1;
+
+    double pos = ((col_data - min) * step);
+    idx1 = (int) pos;
+
+    if (idx1 == nbin) idx1--;
+    return idx1;
+  }
+
+  public static int bin(final int col_data, final int minInt, final int nbin) {
+    if (col_data == -1)
+      return nbin;
+    return col_data - minInt;
+  }
+ 
   // Interpolate d to find bin#
   public int bin(final double col_data) {
     if(Double.isNaN(col_data)) return _nbin; // NA bucket
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _nbin-1;
+    if (_min <= col_data && col_data < _maxEx) {} else {
+      System.out.println();
+    }
     assert _min <= col_data && col_data < _maxEx : "Coldata " + col_data + " out of range " + this;
     // When the model is exposed to new test data, we could have data that is
     // out of range of any bin - however this binning call only happens during
@@ -437,13 +462,6 @@ public final class DHistogram extends Iced<DHistogram> {
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
   }
 
-  void updateHisto(double[] ws, double resp[], Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
-    if (_intOpt)
-      updateHistoInt(ws, (int[])cs, ys, hi, lo);
-    else
-      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo);
-  }
-  
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
    * 
@@ -459,30 +477,36 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    */
-  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+  void updateHisto(double[] ws, double resp[], int[] cs, double[] col_data, double[] ys, double[] preds, int[] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
-    
+    double min2 = Double.MAX_VALUE;
+    double maxIn = -Double.MAX_VALUE;
     for(int r = lo; r< hi; ++r) {
       final double weight = ws == null ? 1 : ws[r];
       if (weight == 0)
         continue; // Needed for DRF only
-      final double col_data = cs[r];
-      if (col_data < _min2) _min2 = col_data;
-      if (col_data > _maxIn) _maxIn = col_data;
+      final int k = rows[r];
+
+      if (col_data[k] < min2) min2 = col_data[k];
+      if (col_data[k] > maxIn) maxIn = col_data[k];
+
+      final int b = cs[k];
+      int bin = bin(col_data[k]);
+      if (bin != b) {
+        System.out.println();
+      }
       final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
       // these assertions hold for GBM, but not for DRF 
       // assert weight != 0 || y == 0;
       // assert !Double.isNaN(y);
       double wy = weight * y;
       double wyy = wy * y;
-      int b = bin(col_data);
       final int binDimStart = _vals_dim*b;
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;
-      if (_vals_dim >= 5 && !Double.isNaN(resp[rows[r]])) {
-        int k = rows[r];
+      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) {
         if (_dist._family.equals(DistributionFamily.quantile)) {
           _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
           _vals[binDimStart + 4] += _dist.deviance(weight, y, _pred2);
@@ -497,6 +521,10 @@ public final class DHistogram extends Iced<DHistogram> {
           }
         }
       }
+    }
+    
+    if ((_min2 != min2) || (maxIn != _maxIn)) {
+      System.out.println();
     }
   }
 
@@ -541,6 +569,102 @@ public final class DHistogram extends Iced<DHistogram> {
     _maxIn = maxIn_int;
   }
 
+  public static final class BinningIntAryVisitor extends ChunkVisitor {
+    public final int [] vals;
+    private static final int _na = -1;
+    private final int[] _hist;
+    private final int[] _nbins;
+    public final double[] _minsStepsZipped;
+    public final double[] _min2sMaxInsZipped;
+
+    private int _k = 0;
+    BinningIntAryVisitor(int[] vals, int[] hist, int[] nbins, double[] minsStepsZipped){
+      this.vals = vals;
+      _hist = hist;
+      _nbins = nbins;
+      _minsStepsZipped = minsStepsZipped;
+      _min2sMaxInsZipped = new double[minsStepsZipped.length];
+      for (int i = 0; i < _min2sMaxInsZipped.length; i++) {
+        _min2sMaxInsZipped[i] = i % 2 == 0 ? Double.MAX_VALUE : -Double.MAX_VALUE;
+      }
+    }
+    @Override
+    public void addValue(int val) {
+      int h = _hist[_k];
+      if (h < 0) {
+        _k++;
+        return;
+      }
+      int t = h << 1;
+      double min = _minsStepsZipped[t];
+      double step = _minsStepsZipped[t+1];
+      double d = val;
+      vals[_k++] = bin(d, min, step, _nbins[h]);
+      if (d < _min2sMaxInsZipped[t]) _min2sMaxInsZipped[t] = d;
+      if (d > _min2sMaxInsZipped[t+1]) _min2sMaxInsZipped[t+1] = d;
+    }
+    @Override
+    public void addValue(long val) {
+      int h = _hist[_k];
+      if (h < 0) {
+        _k++;
+        return;
+      }
+      int t = h << 1;
+      double min = _minsStepsZipped[t];
+      double step = _minsStepsZipped[t+1];
+      double d = val;
+      vals[_k++] = bin(d, min, step, _nbins[h]);
+      if (d < _min2sMaxInsZipped[t]) _min2sMaxInsZipped[t] = d;
+      if (d > _min2sMaxInsZipped[t+1]) _min2sMaxInsZipped[t+1] = d;
+    }
+    @Override
+    public void addValue(double val) {
+      int h = _hist[_k];
+      if (h < 0) {
+        _k++;
+        return;
+      }
+      int t = h << 1;
+      double min = _minsStepsZipped[t];
+      double step = _minsStepsZipped[t+1];
+      vals[_k++] = bin(val, min, step, _nbins[h]);
+      if (val < _min2sMaxInsZipped[t]) _min2sMaxInsZipped[t] = val;
+      if (val > _min2sMaxInsZipped[t+1]) _min2sMaxInsZipped[t+1] = val;
+    }
+    @Override
+    public void addZeros(int zeros) {
+      int k = _k;
+      int kmax = k + zeros;
+      for(;k < kmax; k++) {
+        int h = _hist[_k];
+        if (h < 0) {
+          continue;
+        }
+        int t = h << 1;
+        double min = _minsStepsZipped[t];
+        double step = _minsStepsZipped[t+1];
+        vals[_k++] = bin(0.0d, min, step, _nbins[h]);
+        if (0.0d < _min2sMaxInsZipped[t]) _min2sMaxInsZipped[t] = 0.0d;
+        if (0.0d > _min2sMaxInsZipped[t+1]) _min2sMaxInsZipped[t+1] = 0.0d;
+      }
+      _k = kmax;
+    }
+    @Override
+    public void addNAs(int nas) {
+      int k = _k;
+      int kmax = k + nas;
+      for(;k < kmax; k++) {
+        int h = _hist[_k];
+        if (h < 0) {
+          continue;
+        }
+        vals[_k++] = _nbins[h];
+      }
+      _k = kmax;
+    }
+  }
+
   /**
    * Extracts data from a chunk into a structure that is optimized for given column type
    * 
@@ -549,20 +673,13 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param maxChunkSz maximum chunk size on the local node, will determine the size of the cache
    * @return extracted data
    */
-  Object extractData(Chunk chk, Object cache, int[] rs, int maxChunkSz) {
+  BinningIntAryVisitor extractData(Chunk chk, int[] cache, int[] rs, int maxChunkSz, int[] nbins, double[] minsStepsZipped) {
     if (cache == null) {
-      if (_intOpt) {
-        cache = MemoryManager.malloc4(maxChunkSz);
-      } else {
-        cache = MemoryManager.malloc8d(maxChunkSz);
-      }
+      cache = MemoryManager.malloc4(maxChunkSz);
     }
-    if (_intOpt)
-      chk.getIntegers((int[])cache, 0, rs.length, rs);
-    else {
-      chk.getDoubles((double[]) cache, 0, rs.length, rs);
-    }
-    return cache;
+    BinningIntAryVisitor v = new BinningIntAryVisitor(cache, rs, nbins, minsStepsZipped);
+    chk.processRows(v, 0, chk._len);
+    return v;
   }
 
   /**

@@ -64,6 +64,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   transient double [][] _ws;
   transient int [][] _nhs;
   transient int [][] _rss;
+  transient int [][] _nnids;
   Frame _fr2;
   final int _numLeafs;
   final IcedBitSet _activeCols;
@@ -164,6 +165,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     _ws = new double[_cids.length][];
     _nhs = new int[_cids.length][];
     _rss = new int[_cids.length][];
+    _nnids = new int[_cids.length][];
     long [] espc = v.espc();
     int largestChunkSz = 0;
     for(int i = 1; i < espc.length; ++i){
@@ -204,12 +206,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         for (int i = 0; i <_numLeafs; i++) nh[i + 1] += nh[i];
         // Splat the rows into NID-groups
         int rows[] = (_rss[id] = new int[nnids.length]);
-        for (int row = 0; row < rows.length; row++)
+        for (int row = 0; row < nnids.length; row++)
           if (nnids[row] >= 0)
-            rows[row] = nh[nnids[row]]++;
-          else
-            rows[row] = -1;
-
+            rows[nh[nnids[row]]++] = row;
+        _nnids[id] = nnids;
       }
       @Override
       protected void map(int id) {
@@ -223,12 +223,37 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           chks[_nidIdx].close(cidx,_fs);
           Chunk resChk = chks[_workIdx];
           int len = resChk.len();
-          _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, _rss[id].length, _rss[id]);
+          final double[] y;
+          if(resChk instanceof C8DVolatileChunk){
+            _ys[id] = ((C8DVolatileChunk)resChk).getValues();
+          } else _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
+          if(_weightIdx != -1){
+            y = ((C8DVolatileChunk)resChk).getValues();
+          } else
+            y = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
+          int[] nh = _nhs[id];
+          _ys[id] = MemoryManager.malloc8d(len);
+          // Important optimization that helps to avoid cache misses when working on larger datasets
+          // `y` has original order corresponding to row order
+          // In binning we are accessing data semi-randomly - we only touch values/rows that are in the given
+          // node. These are not necessarily next to each other in memory. This is done on a per-feature basis.
+          // To optimize for sequential access we reorder the target so that values corresponding to the same node
+          // are co-located. Observed speed-up is up to 50% for larger datasets.
+          // See DHistogram#updateHisto for reference.
+          for (int n = 0; n < nh.length; n++) {
+            final int lo = (n == 0 ? 0 : nh[n - 1]);
+            final int hi = nh[n];
+            if (hi == lo)
+              continue;
+            for (int i = lo; i < hi; i++) {
+              _ys[id][i] = y[_rss[id][i]];
+            }
+          }
           // Only allocate weights if weight columns is actually used. It is faster to handle null case
           // in binning that to represent the weights using a constant array (it still needs to be in memory
           // and is accessed frequently - waste of CPU cache). 
           if (_weightIdx != -1) {
-            _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, _rss[id].length, _rss[id]);
+            _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, len);
           }
         }
       }
@@ -295,7 +320,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     @Override
     protected void map(int id){
-      Object cs = null;
+      int[] cs = null;
       double[] resp = null;
       double[] preds = null;
       for(int i = _cidx.getAndIncrement(); i < _cids.length; i = _cidx.getAndIncrement()) {
@@ -309,7 +334,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       }
     }
 
-    private Object computeChunk(int id, Object cs, double[] ws, double[] resp, double[] preds){
+    private int[] computeChunk(int id, int[] cs, double[] ws, double[] resp, double[] preds){
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
@@ -317,6 +342,19 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double [] ys = ScoreBuildHistogram2.this._ys[id];
       final int hcslen = _lh.length;
       boolean extracted = false;
+      DHistogram.BinningIntAryVisitor v = null;
+      
+      int nbins[] = new int[hcslen];
+      double[] minsStepsZipped = new double[hcslen * 2];
+      
+      for (int n = 0; n < hcslen; n++) {
+        if (_lh[n] == null)
+          continue;
+        nbins[n] = _lh[n]._nbin;
+        int t = n * 2;
+        minsStepsZipped[t] = _lh[n]._min;
+        minsStepsZipped[t+1] = _lh[n]._step;
+      }
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols, _col) >= 0) {
@@ -326,7 +364,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
           if (! extracted) {
-            cs = h.extractData(_chks[id][_col], cs, rs, _maxChunkSz);
+            v = h.extractData(_chks[id][_col], cs, ScoreBuildHistogram2.this._nnids[id], _maxChunkSz, nbins, minsStepsZipped);
+            cs = v.vals;
             if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
               if (h._vals_dim == 7) {
@@ -335,7 +374,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
+          h._min2 = v._min2sMaxInsZipped[n * 2];
+          h._maxIn = v._min2sMaxInsZipped[(n * 2) + 1];
+          double[] col_data = _chks[id][_col].getDoubles(new double[cs.length], 0, len);
+          h.updateHisto(ws, resp, cs, col_data, ys, preds, rs, hi, lo);
         }
       }
       return cs;

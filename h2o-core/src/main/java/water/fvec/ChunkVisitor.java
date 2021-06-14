@@ -12,35 +12,35 @@ public abstract class ChunkVisitor {
     return false;
   }
 
-  void addValue(BufferedString bs) {
+  public void addValue(BufferedString bs) {
     throw new UnsupportedOperationException();
   }
 
-  void addValue(long uuid_lo, long uuid_hi) {
+  public void addValue(long uuid_lo, long uuid_hi) {
     throw new UnsupportedOperationException();
   }
 
-  void addValue(int val) {
+  public void addValue(int val) {
     throw new UnsupportedOperationException();
   }
 
-  void addValue(double val) {
+  public void addValue(double val) {
     throw new UnsupportedOperationException();
   }
 
-  void addValue(long val) {
+  public void addValue(long val) {
     throw new UnsupportedOperationException();
   }
 
-  void addValue(long m, int e) {
+  public void addValue(long m, int e) {
     addValue(PrettyPrint.pow10(m,e));
   }
 
-  void addZeros(int zeros) {
+  public void addZeros(int zeros) {
     throw new UnsupportedOperationException();
   }
 
-  void addNAs(int nas) {
+  public void addNAs(int nas) {
     throw new UnsupportedOperationException();
   }
 
@@ -53,21 +53,21 @@ public abstract class ChunkVisitor {
     @Override
     public boolean expandedVals(){return true;}
     @Override
-    void addValue(BufferedString bs){_nc.addStr(bs);}
+    public void addValue(BufferedString bs){_nc.addStr(bs);}
     @Override
-    void addValue(long uuid_lo, long uuid_hi){_nc.addUUID(uuid_lo,uuid_hi);}
+    public void addValue(long uuid_lo, long uuid_hi){_nc.addUUID(uuid_lo,uuid_hi);}
     @Override
-    void addValue(int val) {_nc.addNum(val,0);}
+    public void addValue(int val) {_nc.addNum(val,0);}
     @Override
-    void addValue(long val) {_nc.addNum(val,0);}
+    public void addValue(long val) {_nc.addNum(val,0);}
     @Override
-    void addValue(long val, int exp) {_nc.addNum(val,exp);}
+    public void addValue(long val, int exp) {_nc.addNum(val,exp);}
     @Override
-    void addValue(double val) {_nc.addNum(val);}
+    public void addValue(double val) {_nc.addNum(val);}
     @Override
-    void addZeros(int zeros) {_nc.addZeros(zeros);}
+    public void addZeros(int zeros) {_nc.addZeros(zeros);}
     @Override
-    void addNAs(int nas) {_nc.addNAs(nas);}
+    public void addNAs(int nas) {_nc.addNAs(nas);}
   }
 
   /**
@@ -81,23 +81,23 @@ public abstract class ChunkVisitor {
     DoubleAryVisitor(double [] vals, double NA){
       this.vals = vals; _na = NA;}
     @Override
-    void addValue(int val) {
+    public void addValue(int val) {
       vals[_k++] = val;}
     @Override
-    void addValue(long val) {
+    public void addValue(long val) {
       vals[_k++] = val;}
     @Override
-    void addValue(double val) {
+    public void addValue(double val) {
       vals[_k++] = Double.isNaN(val)?_na:val;}
     @Override
-    void addZeros(int zeros) {
+    public void addZeros(int zeros) {
       int k = _k;
       int kmax = k +zeros;
       for(;k < kmax; k++) vals[k] = 0;
       _k = kmax;
     }
     @Override
-    void addNAs(int nas) {
+    public void addNAs(int nas) {
       int k = _k;
       int kmax = k + nas;
       for(;k < kmax; k++) vals[k] = _na;
@@ -114,25 +114,25 @@ public abstract class ChunkVisitor {
       _dest = dest;
     }
     @Override
-    void addValue(int val) {
+    public void addValue(int val) {
       int d = _dest[_k++];
       if (d >= 0)
         vals[d] = val;
     }
     @Override
-    void addValue(long val) {
+    public void addValue(long val) {
       int d = _dest[_k++];
       if (d >= 0)
         vals[d] = val;
     }
     @Override
-    void addValue(double val) {
+    public void addValue(double val) {
       int d = _dest[_k++];
       if (d >= 0)
         vals[d] = val;
     }
     @Override
-    void addZeros(int zeros) {
+    public void addZeros(int zeros) {
       int k = _k;
       int kmax = k + zeros;
       for(;k < kmax; k++) {
@@ -143,7 +143,7 @@ public abstract class ChunkVisitor {
       _k = kmax;
     }
     @Override
-    void addNAs(int nas) {
+    public void addNAs(int nas) {
       int k = _k;
       int kmax = k + nas;
       for(;k < kmax; k++) {
@@ -172,13 +172,13 @@ public abstract class ChunkVisitor {
     SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse){this(vals, ids, naSparse, Double.NaN);}
     SparseDoubleAryVisitor(double [] vals, int [] ids, boolean naSparse, double NA){this.vals = vals; this.ids = ids; _na = NA; this.naSparse = naSparse;}
     @Override
-    void addValue(int val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    public void addValue(int val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
     @Override
-    void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
+    public void addValue(long val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = val;}
     @Override
-    void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = Double.isNaN(val)?_na:val;}
+    public void addValue(double val) {ids[_sparseLen] = _len++; vals[_sparseLen++] = Double.isNaN(val)?_na:val;}
     @Override
-    void addZeros(int zeros) {
+    public void addZeros(int zeros) {
       if(naSparse) {
         int kmax = _sparseLen + zeros;
         for (int k = _sparseLen; k < kmax; k++) {
@@ -190,7 +190,7 @@ public abstract class ChunkVisitor {
         _len += zeros;
     }
     @Override
-    void addNAs(int nas) {
+    public void addNAs(int nas) {
       if(!naSparse) {
         int kmax = _sparseLen + nas;
         for (int k = _sparseLen; k < kmax; k++) {
@@ -213,23 +213,23 @@ public abstract class ChunkVisitor {
     CombiningDoubleAryVisitor(double [] vals, double NA){
       this.vals = vals; _na = NA;}
     @Override
-    void addValue(int val) {
+    public void addValue(int val) {
       vals[_k++] += val;}
     @Override
-    void addValue(long val) {
+    public void addValue(long val) {
       vals[_k++] += val;}
     @Override
-    void addValue(double val) {
+    public void addValue(double val) {
       if (Double.isNaN(val))
         vals[_k++] = _na;
       else
         vals[_k++] += val;}
     @Override
-    void addZeros(int zeros) {
+    public void addZeros(int zeros) {
       _k += zeros;
     }
     @Override
-    void addNAs(int nas) {
+    public void addNAs(int nas) {
       int k = _k;
       int kmax = k + nas;
       for(;k < kmax; k++) vals[k] = _na;
@@ -282,67 +282,5 @@ public abstract class ChunkVisitor {
       _k = kmax;
     }
   }
-
-  public static final class ShufflingIntAryVisitor extends ChunkVisitor {
-    public final int [] vals;
-    private static final int _na = -1;
-    private final int[] _dest;
-    private int _k = 0;
-    ShufflingIntAryVisitor(int[] vals, int[] dest){
-      this.vals = vals; 
-      _dest = dest;
-    }
-    @Override
-    public void addValue(int val) {
-      int d = _dest[_k++];
-      if (d >= 0)
-        vals[d] = val;
-    }
-    @Override
-    public void addValue(long val) {
-      if(Integer.MAX_VALUE < val || val < Integer.MIN_VALUE)
-        throw new RuntimeException(val + " does not fit into int");
-      int d = _dest[_k++];
-      if (d >= 0)
-        vals[d] = (int)val;
-    }
-    @Override
-    public void addValue(double val) {
-      int d = _dest[_k++];
-      if (d < 0)
-        return;
-      if (Double.isNaN(val)) {
-        vals[d] = _na;
-      } else {
-        int i = (int) val;
-        if (i != val)
-          throw new RuntimeException(val + " does not fit into int");
-        vals[d] = i;
-      }
-    }
-    @Override
-    public void addZeros(int zeros) {
-      int k = _k;
-      int kmax = k + zeros;
-      for(;k < kmax; k++) {
-        int d = _dest[k];
-        if (d >= 0)
-          vals[d] = 0;
-      }
-      _k = kmax;
-    }
-    @Override
-    public void addNAs(int nas) {
-      int k = _k;
-      int kmax = k + nas;
-      for(;k < kmax; k++) {
-        int d = _dest[k];
-        if (d >= 0)
-          vals[d] = _na;
-      }
-      _k = kmax;
-    }
-  }
-
 
 }
