@@ -6,6 +6,7 @@ import h2o
 from h2o.utils.typechecks import assert_is_type
 from ..exceptions import H2OValueError
 from ..frame import H2OFrame
+from .extensions import has_extension
 from .model_base import ModelBase
 
 
@@ -239,7 +240,7 @@ class H2OMultinomialModel(ModelBase):
         ...           validation_frame=valid)
         >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
-        if not hasattr(self, 'scoring_history_plot'):
+        if not has_extension(self, 'ScoringHistory'):
             raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
         valid_metrics = self._allowed_metrics('multinomial')

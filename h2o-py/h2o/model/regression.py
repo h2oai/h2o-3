@@ -1,9 +1,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
 # noinspection PyUnresolvedReferences
-from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 
+from h2o.exceptions import H2OValueError
+from h2o.model.extensions import has_extension
 from h2o.model.model_base import ModelBase
 from h2o.utils.shared_utils import _colmean
 from h2o.utils.typechecks import assert_is_type
@@ -40,7 +41,7 @@ class H2ORegressionModel(ModelBase):
         ...           validation_frame=valid)
         >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
-        if not hasattr(self, 'scoring_history_plot'):
+        if not has_extension(self, 'ScoringHistory'):
             raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
         valid_metrics = self._allowed_metrics('regression')

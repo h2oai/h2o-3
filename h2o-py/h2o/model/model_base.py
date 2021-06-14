@@ -9,6 +9,7 @@ import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
+from h2o.model.extensions import has_extension
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.compatibility import viewitems
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
@@ -439,7 +440,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         # For now, redirect to h2o.model.extensions.trees for models that support the feature, and print legacy message for others..
         # Later, the method will be exposed only for models supporting the feature.
-        if hasattr(self, '_ntrees_actual'):
+        if has_extension(self, 'Trees'):
             return self._ntrees_actual()
         print("No actual number of trees for this model")    
 
@@ -479,7 +480,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         # For now, redirect to h2o.model.extensions.feature_interaction for models that support the feature, and print legacy message for others..
         # Later, the method will be exposed only for models supporting the feature.
-        if hasattr(self, '_feature_interaction'):
+        if has_extension(self, 'FeatureInteraction'):
             return self._feature_interaction(max_interaction_depth=max_interaction_depth, 
                                              max_tree_depth=max_tree_depth, 
                                              max_deepening=max_deepening, 
@@ -510,16 +511,8 @@ class ModelBase(h2o_meta(Keyed)):
         >>> gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
         >>> h = gbm_h2o.h(prostate_train, ['DPROS','DCAPS'])
         """
-        supported_algos = ['gbm', 'xgboost']
-        if self._model_json["algo"] in supported_algos:
-            kwargs = {}
-            kwargs["model_id"] = self.model_id
-            kwargs["frame"] = frame.key
-            kwargs["variables"] = variables
-
-            json = h2o.api("POST /3/FriedmansPopescusH", data=kwargs)
-            return json['h']
-
+        if has_extension(self, 'HStatistic'):
+            return self._h(frame=frame, variables=variables)
         print("No calculation available for this model")
 
     def cross_validation_metrics_summary(self):
@@ -1447,10 +1440,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
-        if hasattr(self, '_varimp_plot'):
+        if has_extension(self, 'VariableImportance'):
             return self._varimp_plot(num_of_features=num_of_features, server=server)
-        else:
-            raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
+        raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
 
     def std_coef_plot(self, num_of_features=None, server=False):
         """
@@ -1463,10 +1455,9 @@ class ModelBase(h2o_meta(Keyed)):
         """
         # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
-        if hasattr(self, '_std_coef_plot'):
+        if has_extension(self, 'StandardCoef'):
             return self._std_coef_plot(num_of_features=num_of_features, server=server)
-        else:
-            raise H2OValueError("Standardized coefficient plot is not available for this type of model (%s)." % self.algo)
+        raise H2OValueError("Standardized coefficient plot is not available for this type of model (%s)." % self.algo)
 
     @staticmethod
     def _check_targets(y_actual, y_predicted):

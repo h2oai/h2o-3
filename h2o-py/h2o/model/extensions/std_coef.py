@@ -1,4 +1,3 @@
-from h2o.exceptions import H2OValueError
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type, I
 

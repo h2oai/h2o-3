@@ -4,6 +4,7 @@ from h2o.utils.compatibility import *  # NOQA
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type
+from .extensions import has_extension
 from .model_base import ModelBase
 
 
@@ -764,7 +765,7 @@ class H2OBinomialModel(ModelBase):
         >>> model.train(x=predictors, y=response, training_frame=benign)
         >>> model.plot(timestep="AUTO", metric="objective", server=False)
         """
-        if not hasattr(self, 'scoring_history_plot'):
+        if not has_extension(self, 'ScoringHistory'):
             raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
             
         valid_metrics = self._allowed_metrics('binomial')

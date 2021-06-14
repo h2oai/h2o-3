@@ -25,7 +25,8 @@ class H2OXGBoostEstimator(H2OEstimator):
     _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryTrees',
                                       'h2o.model.extensions.VariableImportance',
                                       'h2o.model.extensions.FeatureInteraction',
-                                      'h2o.model.extensions.Trees'],
+                                      'h2o.model.extensions.Trees',
+                                      'h2o.model.extensions.HStatistic'],
                  'verbose': True}
 
     def __init__(self,
