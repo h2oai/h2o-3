@@ -374,10 +374,15 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             }
             extracted = true;
           }
-          h._min2 = v._min2sMaxInsZipped[n * 2];
-          h._maxIn = v._min2sMaxInsZipped[(n * 2) + 1];
-          double[] col_data = _chks[id][_col].getDoubles(new double[cs.length], 0, len);
-          h.updateHisto(ws, resp, cs, col_data, ys, preds, rs, hi, lo);
+          double min2 = v._min2sMaxInsZipped[n * 2];
+          double maxIn = v._min2sMaxInsZipped[(n * 2) + 1];
+          if (min2 < h._min2) {
+            h._min2 = min2;
+          }
+          if (maxIn > h._maxIn) {
+            h._maxIn = maxIn;
+          }
+          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
         }
       }
       return cs;

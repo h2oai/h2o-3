@@ -233,21 +233,12 @@ public final class DHistogram extends Iced<DHistogram> {
     return idx1;
   }
 
-  public static int bin(final int col_data, final int minInt, final int nbin) {
-    if (col_data == -1)
-      return nbin;
-    return col_data - minInt;
-  }
- 
   // Interpolate d to find bin#
   public int bin(final double col_data) {
     if(Double.isNaN(col_data)) return _nbin; // NA bucket
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _nbin-1;
-    if (_min <= col_data && col_data < _maxEx) {} else {
-      System.out.println();
-    }
     assert _min <= col_data && col_data < _maxEx : "Coldata " + col_data + " out of range " + this;
     // When the model is exposed to new test data, we could have data that is
     // out of range of any bin - however this binning call only happens during
@@ -264,12 +255,6 @@ public final class DHistogram extends Iced<DHistogram> {
     if (idx1 == _nbin) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
     assert 0 <= idx1 && idx1 < _nbin : idx1 + " " + _nbin;
     return idx1;
-  }
-
-  public final int bin(final int col_data) {
-    if (col_data == -1)
-      return _nbin;
-    return col_data - _minInt;
   }
 
   public double binAt( int b ) {
@@ -477,25 +462,15 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    */
-  void updateHisto(double[] ws, double resp[], int[] cs, double[] col_data, double[] ys, double[] preds, int[] rows, int hi, int lo){
+  void updateHisto(double[] ws, double resp[], int[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
-    double min2 = Double.MAX_VALUE;
-    double maxIn = -Double.MAX_VALUE;
     for(int r = lo; r< hi; ++r) {
-      final double weight = ws == null ? 1 : ws[r];
+      final int k = rows[r];
+      final double weight = ws == null ? 1 : ws[k];
       if (weight == 0)
         continue; // Needed for DRF only
-      final int k = rows[r];
-
-      if (col_data[k] < min2) min2 = col_data[k];
-      if (col_data[k] > maxIn) maxIn = col_data[k];
-
       final int b = cs[k];
-      int bin = bin(col_data[k]);
-      if (bin != b) {
-        System.out.println();
-      }
       final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
       // these assertions hold for GBM, but not for DRF 
       // assert weight != 0 || y == 0;
@@ -522,56 +497,10 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
     }
-    
-    if ((_min2 != min2) || (maxIn != _maxIn)) {
-      System.out.println();
-    }
-  }
-
-  /**
-   * This is an integer version of method updateHisto - optimized for handling small
-   * positive integer numbers and low-cardinality categoricals.
-   * 
-   * NOTE: Any changes to this method need to be also made in the original updateHisto
-   * function.
-   * 
-   * @param ws optional vector of weights, indexed indirectly using rows indices
-   * @param cs chunk data, indexed indirectly using rows indices
-   * @param ys targets, uses absolute indexing - maintains data co-locality and optimized for sequential access
-   * @param hi upper boundary in rows array (exclusive)
-   * @param lo lower boundary in rows array (inclusive)
-   */
-  void updateHistoInt(double[] ws, int[] cs, double[] ys, final int hi, final int lo){
-    // min2_int/maxIn_int integer version of the boundaries, only cast once - only int ops within the loop
-    int min2_int = _min2 == Double.MAX_VALUE ? Integer.MAX_VALUE : (int) _min2;
-    int maxIn_int = _maxIn == -Double.MIN_VALUE ? Integer.MIN_VALUE : (int) _maxIn;
-
-    for(int r = lo; r < hi; r++) {
-      final double weight = ws == null ? 1 : ws[r];
-      if (weight == 0)
-        continue; // Needed for DRF only
-      final int col_data = cs[r];
-      if (col_data >= 0) {
-        if (col_data < min2_int) min2_int = col_data;
-        if (col_data > maxIn_int) maxIn_int = col_data;
-      }
-      final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
-      double wy = weight * y;
-      double wyy = wy * y;
-      int b = bin(col_data);
-      final int binDimStart = _vals_dim*b;
-      _vals[binDimStart + 0] += weight;
-      _vals[binDimStart + 1] += wy;
-      _vals[binDimStart + 2] += wyy;
-    }
-
-    _min2 = min2_int;
-    _maxIn = maxIn_int;
   }
 
   public static final class BinningIntAryVisitor extends ChunkVisitor {
     public final int [] vals;
-    private static final int _na = -1;
     private final int[] _hist;
     private final int[] _nbins;
     public final double[] _minsStepsZipped;
@@ -637,14 +566,14 @@ public final class DHistogram extends Iced<DHistogram> {
       int k = _k;
       int kmax = k + zeros;
       for(;k < kmax; k++) {
-        int h = _hist[_k];
+        int h = _hist[k];
         if (h < 0) {
           continue;
         }
         int t = h << 1;
         double min = _minsStepsZipped[t];
         double step = _minsStepsZipped[t+1];
-        vals[_k++] = bin(0.0d, min, step, _nbins[h]);
+        vals[k] = bin(0.0d, min, step, _nbins[h]);
         if (0.0d < _min2sMaxInsZipped[t]) _min2sMaxInsZipped[t] = 0.0d;
         if (0.0d > _min2sMaxInsZipped[t+1]) _min2sMaxInsZipped[t+1] = 0.0d;
       }
@@ -655,11 +584,11 @@ public final class DHistogram extends Iced<DHistogram> {
       int k = _k;
       int kmax = k + nas;
       for(;k < kmax; k++) {
-        int h = _hist[_k];
+        int h = _hist[k];
         if (h < 0) {
           continue;
         }
-        vals[_k++] = _nbins[h];
+        vals[k] = _nbins[h];
       }
       _k = kmax;
     }
