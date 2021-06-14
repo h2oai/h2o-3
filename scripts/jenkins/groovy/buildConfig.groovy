@@ -231,6 +231,7 @@ class BuildConfig {
     def version
     switch (component) {
       case COMPONENT_JAVA:
+      case COMPONENT_ANY:
         imageComponentName = 'jdk'
         version = stageConfig.javaVersion
         break
@@ -258,7 +259,7 @@ class BuildConfig {
   }
 
   String getStashNameForTestPackage(final String platform) {
-    return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform)
+    return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform == 'any' ? 'java' : platform)
   }
 
   List<String> getAdditionalGradleOpts() {

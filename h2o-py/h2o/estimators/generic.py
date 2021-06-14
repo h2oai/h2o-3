@@ -19,27 +19,35 @@ class H2OGenericEstimator(H2OEstimator):
     """
 
     algo = "generic"
-    param_names = {"model_id", "model_key", "path"}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 model_key=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 path=None,  # type: Optional[str]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param model_key: Key to the self-contained model archive already uploaded to H2O.
+               Defaults to ``None``.
+        :type model_key: Union[None, str, H2OFrame], optional
+        :param path: Path to file with self-contained model archive.
+               Defaults to ``None``.
+        :type path: str, optional
+        """
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.model_key = model_key
+        self.path = path
 
     @property
     def model_key(self):
         """
         Key to the self-contained model archive already uploaded to H2O.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -63,7 +71,6 @@ class H2OGenericEstimator(H2OEstimator):
     @model_key.setter
     def model_key(self, model_key):
         self._parms["model_key"] = H2OFrame._validate(model_key, 'model_key')
-
 
     @property
     def path(self):

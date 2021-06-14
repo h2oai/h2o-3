@@ -30,7 +30,7 @@ def call(final pipelineContext) {
   def METADATA_VALIDATION_STAGES = [
     [
       stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_ANY
     ]
   ]
 
@@ -229,14 +229,6 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'gam'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
-      healthCheckSuppressed: true
-    ],
-    [
-      stageName: 'GBM Benchmark Client', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark-gbm-client-mode', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'gbm-client'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],

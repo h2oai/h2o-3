@@ -1,3 +1,6 @@
+deprecated_params = dict(Lambda='lambda_')
+
+
 def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('custom')
@@ -6,15 +9,6 @@ def update_param(name, param):
 
 
 def class_extensions():
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
-
     def _additional_used_columns(self, parms):
         """
         :return: Gam columns if specified.
@@ -46,9 +40,6 @@ import h2o
 from h2o.utils.typechecks import U
 """,
     __class__=class_extensions,
-    __init__validation="""
-if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-"""
 )
 
 overrides = dict(

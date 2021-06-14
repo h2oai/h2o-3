@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import com.google.common.io.Files;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
@@ -13,6 +14,7 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.tools.PredictCsv;
+import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.CompressedTree;
 import hex.tree.Constraints;
@@ -37,6 +39,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -661,6 +664,7 @@ public class GBMTest extends TestUtil {
     Map<Integer, SharedTreeMojoModel.AuxInfo>[][] originalAuxInfos = visitTrees(
             gbm._output._treeKeysAux, Map.class, CompressedTree::toAuxInfos);
 
+    frame = Scope.track(ensureDistributed(frame, 16));
     Frame fr = new Frame(frame);
     fr.add("weights", fr.anyVec().makeCon(2));
     gbm.updateAuxTreeWeights(fr, "weights");
@@ -4212,6 +4216,71 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
+  public void testPrintMojoWithFloatToDouble() throws Exception {
+    try {
+      Scope.enter();
+      double splitPoint = 2841.083;
+      String splitPointStr = splitPoint + "f";
+      Frame frame = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(splitPoint*2, 0, splitPoint*2, splitPoint*2, splitPoint*2, 0, splitPoint*2))
+              .withDataForCol(1, ard(1, 0, 1, 1, 1, 0, 1))
+              .build();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+
+      String pojo = gbm.toJava(false, false);
+      assertTrue(pojo.contains(splitPointStr));
+
+      File mojoFile = temporaryFolder.newFile("gbm_mojo");
+      gbm.exportMojo(mojoFile.getAbsolutePath(), true);
+
+      String[] pmArgs = new String[]{"-i", mojoFile.getAbsolutePath(), "--format", "json"};
+
+      File outputOrig = temporaryFolder.newFile("output_orig");
+      PrintMojo pmOrig = new PrintMojo();
+      pmOrig.parseArgs(ArrayUtils.append(pmArgs, new String[]{"-o", outputOrig.getAbsolutePath()}));
+      pmOrig.run();
+
+      File outputAsDouble = temporaryFolder.newFile("output_as_double");
+      PrintMojo pmAsDouble = new PrintMojo();
+      pmAsDouble.parseArgs(ArrayUtils.append(pmArgs, new String[]{"-o", outputAsDouble.getAbsolutePath(), "--floattodouble"}));
+      pmAsDouble.run();
+
+      List<String> jsonLinesOrig = Files.readLines(outputOrig, Charset.defaultCharset());
+      List<String> jsonLinesAsDouble = Files.readLines(outputAsDouble, Charset.defaultCharset());
+      assertEquals(jsonLinesOrig.size(), jsonLinesAsDouble.size());
+
+      for (int i = 0; i < jsonLinesOrig.size(); i++) {
+        String jsonLineOrig = jsonLinesOrig.get(i);
+        String jsonLineAsDouble = jsonLinesAsDouble.get(i);
+        if (jsonLineOrig.contains("predValue") || jsonLineOrig.contains("splitValue")) {
+          // interpret the predValue/splitValue as FLOAT from the original output, then cast to DOUBLE
+          // (this is what would POJO do)
+          double fVal = Float.parseFloat(jsonLineOrig.split(":")[1].replaceAll(",", ""));
+          // interpret the modified output as DOUBLE directly with no casting
+          double dVal = Double.parseDouble(jsonLineAsDouble.split(":")[1].replaceAll(",", ""));
+          // values need to match perfectly
+          assertEquals(fVal, dVal, 0);
+        } else {
+          assertEquals(jsonLineOrig, jsonLineAsDouble);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testResetThreshold() throws Exception {
     GBMModel gbm = null;
     try {
@@ -4461,6 +4530,35 @@ public class GBMTest extends TestUtil {
 
       assertArrayEquals(new String[0], gbm._warningsP); // no predict warnings
     } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testHStatistic() {
+    Frame fr=null;
+    GBMModel model = null;
+    Scope.enter();
+    try {
+      Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
+      f.replace(f.find("CAPSULE"), f.vec("CAPSULE").toNumericVec());
+      DKV.put(f);
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._response_column = "CAPSULE";
+      parms._train = f._key;
+      parms._ntrees = 3;
+      parms._seed = 1234L;
+
+      model = new GBM(parms).trainModel().get();
+
+      double h = model.getFriedmanPopescusH(f, new String[] {"GLEASON","VOL"});
+      assertEquals(h, 0.0, 1e-5);
+
+      DKV.remove(f._key);
+    } finally {
+      if( model != null ) model.delete();
+      if( fr  != null )   fr.remove();
       Scope.exit();
     }
   }

@@ -73,6 +73,7 @@ ext {
       project(':h2o-parquet-parser'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
+      project(':h2o-admissibleml'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
@@ -112,6 +113,7 @@ ext {
       project(':h2o-parquet-v17-compat'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
+      project(':h2o-admissibleml'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
@@ -174,6 +176,7 @@ ext {
             [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false, genmodel: false ],
             [name: "xgboost", version: "$version", enabled: true, genmodel: true ],
             [name: "jython-cfunc", version: "$version", enabled: true, genmodel: false],
+            [name: "jgrapht", version: "$version", enabled: true, genmodel: true],
     ]
 
     //

@@ -95,7 +95,6 @@ Run the following commands in a Terminal window to install H2O for Python.
 
   pip install requests
   pip install tabulate
-  pip install "colorama>=0.3.8"
   pip install future
 
 2. Run the following command to remove any existing H2O module for Python (append with ``--user`` if needed):

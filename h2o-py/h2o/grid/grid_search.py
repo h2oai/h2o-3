@@ -1,5 +1,8 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+
+import warnings
+
 from h2o.utils.compatibility import *  # NOQA
 
 import itertools
@@ -13,12 +16,12 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
-from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.shared_utils import quoted, stringify_dict_as_map
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
-@BackwardsCompatible(
+@backwards_compatibility(
     instance_attrs=dict(
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
@@ -404,7 +407,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         weights = kwargs["weights_column"]
         ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights]))
         kwargs["ignored_columns"] = None if not ignored_columns else [quoted(col) for col in ignored_columns]
-        kwargs = {k: H2OEstimator._keyify_if_h2oframe(kwargs[k]) for k in kwargs}
+        kwargs = {k: H2OEstimator._keyify(kwargs[k]) for k in kwargs}
         if self.grid_id is not None: kwargs["grid_id"] = self.grid_id
         rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else None
         self._run_grid_job(kwargs, rest_ver=rest_ver)
@@ -422,6 +425,9 @@ class H2OGridSearch(h2o_meta(Keyed)):
         grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
         failure_messages_stacks = ""
         error_index = 0
+        if len(grid_json["warning_details"]) > 0:
+            for w_message in grid_json["warning_details"]:
+                warnings.warn(w_message);
         if len(grid_json["failure_details"]) > 0:
             print("Errors/Warnings building gridsearch model\n")
             # will raise error if no grid model is returned, store error messages here
@@ -1376,7 +1382,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         """
         return {model.model_id: model.aucpr(train, valid, xval) for model in self.models}
 
-    @deprecated(replaced_by=aucpr)
+    @deprecated_fn(replaced_by=aucpr)
     def pr_auc(self):
         pass
 
@@ -1565,7 +1571,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         return grid
 
 
-    @deprecated("grid.sort_by() is deprecated; use grid.get_grid() instead")
+    @deprecated_fn("grid.sort_by() is deprecated; use grid.get_grid() instead")
     def sort_by(self, metric, increasing=True):
         """Deprecated since 2016-12-12, use grid.get_grid() instead."""
 

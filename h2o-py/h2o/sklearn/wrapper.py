@@ -15,6 +15,8 @@ from weakref import ref
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
 
 from .. import h2o, H2OFrame
+from ..utils.compatibility import PY2
+from ..utils.metaclass import decoration_info
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
 
 try:
@@ -88,6 +90,17 @@ def register_class(cls):
     setattr(module, cls.__name__, cls)
 
 
+def _unwrap(fn):
+    """
+    Hack to be sure we get the function with the correct signature in Py2.
+    Can be removed when we stop supporting Py2.
+    """
+    decoration = decoration_info(fn)
+    if PY2 and decoration is not None:
+        return _unwrap(decoration['wrapped'])
+    return fn
+
+
 def wrap_estimator(cls,
                    bases,
                    name=None,
@@ -116,7 +129,7 @@ def wrap_estimator(cls,
     assert isinstance(bases, tuple) and len(bases) > 0
     if default_params is None:
         # obtain the default params from signature of the estimator class constructor
-        sig = signature(cls.__init__)
+        sig = signature(_unwrap(cls.__init__))
         ignored_names = ['self']
         ignored_kind = [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL]
         default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
@@ -295,6 +308,7 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
         :param fn: the function to be decorated
         :return: a new function that will convert X, and y parameters before passing them to the original function.
         """
+        fn = _unwrap(fn)
         sig = signature(fn)
         has_self = 'self' in sig.parameters
         assert any(arg in sig.parameters for arg in frame_params), \

@@ -3,13 +3,17 @@ import os
 import sys
 import warnings
 
+
 sys.path.insert(1, os.path.join("..","..","..",".."))
 import h2o
 from h2o.estimators import H2OTargetEncoderEstimator
 from h2o.exceptions import H2ODeprecationWarning
+from h2o.utils.metaclass import fullname
 from tests import pyunit_utils as pu
 
 seed = 42
+
+te_init_name = fullname(H2OTargetEncoderEstimator.__init__)
 
 
 def load_dataset(incl_test=False, incl_foldc=False):
@@ -37,7 +41,7 @@ def test_deprecated_k_param_is_alias_for_inflection_point():
         te_k = H2OTargetEncoderEstimator(noise=0, k=5, blending=True)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
-        assert "``k`` is deprecated" in str(w[0].message)
+        assert "``k`` param of ``{}`` is deprecated".format(te_init_name) in str(w[0].message)
         
     te_k.train(y=ds.target, training_frame=ds.train)
     encoded_k = te_k.predict(ds.test)
@@ -65,7 +69,7 @@ def test_deprecated_f_param_is_alias_for_smoothing():
         te_f = H2OTargetEncoderEstimator(noise=0, f=25, blending=True)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
-        assert "``f`` is deprecated" in str(w[0].message)
+        assert "``f`` param of ``{}`` is deprecated".format(te_init_name) in str(w[0].message)
         
     te_f.train(y=ds.target, training_frame=ds.train)
     encoded_f = te_f.predict(ds.test)
@@ -93,7 +97,7 @@ def test_deprecated_noise_level_param_is_alias_for_noise():
         te_nl = H2OTargetEncoderEstimator(noise_level=0)
         assert len(w) == 1
         assert issubclass(w[0].category, H2ODeprecationWarning)
-        assert "``noise_level`` is deprecated" in str(w[0].message)
+        assert "``noise_level`` param of ``{}`` is deprecated".format(te_init_name) in str(w[0].message)
 
     te_nl.train(y=ds.target, training_frame=ds.train)
     encoded_nl = te_nl.predict(ds.test)

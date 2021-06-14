@@ -30,8 +30,9 @@ def test_all_params_are_visible_in_get_params():
     assert params['estimator__max_depth'] == 5
     assert params['estimator__seed'] == seed
     # also the ones that were not set explicitly
-    assert params['pca__max_iterations'] is None
-    assert params['estimator__learn_rate'] is None
+    assert params['pca__max_iterations'] is None   # H2OPCA default (!= H2OPrincipalComponentAnalysisEstimator default)
+    assert params['estimator__learn_rate'] == 0.1  # H2OGradientBoostingEstimator default
+    assert params['estimator__class_sampling_factors'] is None # idem
 
 
 def test_all_params_can_be_set_using_set_params():
@@ -79,7 +80,8 @@ def test_all_params_are_accessible_as_properties():
     assert pipeline.named_steps.estimator.seed == seed
     # also the ones that were not set explicitly
     assert pipeline.named_steps.pca.max_iterations is None
-    assert pipeline.named_steps.estimator.learn_rate is None
+    assert pipeline.named_steps.estimator.learn_rate == 0.1
+    assert pipeline.named_steps.estimator.class_sampling_factors is None
 
 
 def test_all_params_can_be_set_as_properties():

@@ -355,10 +355,9 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
         assert model._model_json['output']['stacking_strategy'] == 'blending'
 
 
-def test_frames_cannot_be_passed_as_key():
+def test_frames_can_be_passed_as_key():
     print("Check that all AutoML frames can be passed as keys.")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_frames_as_keys", seed=1, max_models=3, nfolds=0)
 
     kw_args = [
         dict(training_frame=ds['train'].frame_id),
@@ -366,13 +365,11 @@ def test_frames_cannot_be_passed_as_key():
         dict(training_frame=ds['train'], blending_frame=ds['valid'].frame_id),
         dict(training_frame=ds['train'], leaderboard_frame=ds['test'].frame_id),
     ]
+    
     for kwargs in kw_args:
-        try:
-            aml.train(y=ds['target'], **kwargs)
-            assert False, "should have thrown due to wrong frame key"
-        except H2OTypeError as e:
-            attr = next(k for k, v in kwargs.items() if v is not ds['train'])
-            assert "'{}' must be a valid H2OFrame".format(attr) in str(e)
+        aml = H2OAutoML(project_name="py_aml_frames_as_keys", seed=1, max_models=1, nfolds=0)
+        aml.train(y=ds['target'], **kwargs)
+        h2o.remove(aml)
 
 
 def test_no_time_limit_if_max_models_is_provided():
@@ -456,7 +453,7 @@ pu.run_tests([
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
     test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
-    test_frames_cannot_be_passed_as_key,
+    test_frames_can_be_passed_as_key,
     test_no_time_limit_if_max_models_is_provided,
     test_max_runtime_secs_alone,
     test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_models_wins,

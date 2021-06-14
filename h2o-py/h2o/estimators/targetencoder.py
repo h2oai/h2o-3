@@ -6,10 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from h2o.utils.metaclass import deprecated_params, deprecated_property
 import h2o
 import warnings
 from h2o.exceptions import H2ODeprecationWarning
-from h2o.utils.metaclass import deprecated_property
 from h2o.utils.typechecks import U
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
@@ -24,31 +24,102 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns",
-                   "columns_to_encode", "keep_original_categorical_columns", "blending", "inflection_point",
-                   "smoothing", "data_leakage_handling", "noise", "seed"}
 
-    def __init__(self, **kwargs):
+    @deprecated_params({'k': 'inflection_point', 'f': 'smoothing', 'noise_level': 'noise'})
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 columns_to_encode=None,  # type: Optional[List[List[str]]]
+                 keep_original_categorical_columns=True,  # type: bool
+                 blending=False,  # type: bool
+                 inflection_point=10.0,  # type: float
+                 smoothing=20.0,  # type: float
+                 data_leakage_handling="none",  # type: Literal["leave_one_out", "k_fold", "none"]
+                 noise=0.01,  # type: float
+                 seed=-1,  # type: int
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
+        :type fold_column: str, optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param columns_to_encode: List of categorical columns or groups of categorical columns to encode. When groups of
+               columns are specified, each group is encoded as a single column (interactions are created internally).
+               Defaults to ``None``.
+        :type columns_to_encode: List[List[str]], optional
+        :param keep_original_categorical_columns: If true, the original non-encoded categorical features will remain in
+               the result frame.
+               Defaults to ``True``.
+        :type keep_original_categorical_columns: bool
+        :param blending: If true, enables blending of posterior probabilities (computed for a given categorical value)
+               with prior probabilities (computed on the entire set). This allows to mitigate the effect of categorical
+               values with small cardinality. The blending effect can be tuned using the `inflection_point` and
+               `smoothing` parameters.
+               Defaults to ``False``.
+        :type blending: bool
+        :param inflection_point: Inflection point of the sigmoid used to blend probabilities (see `blending` parameter).
+               For a given categorical value, if it appears less that `inflection_point` in a data sample, then the
+               influence of the posterior probability will be smaller than the prior.
+               Defaults to ``10.0``.
+        :type inflection_point: float
+        :param smoothing: Smoothing factor corresponds to the inverse of the slope at the inflection point on the
+               sigmoid used to blend probabilities (see `blending` parameter). If smoothing tends towards 0, then the
+               sigmoid used for blending turns into a Heaviside step function.
+               Defaults to ``20.0``.
+        :type smoothing: float
+        :param data_leakage_handling: Data leakage handling strategy used to generate the encoding. Supported options
+               are:
+               1) "none" (default) - no holdout, using the entire training frame.
+               2) "leave_one_out" - current row's response value is subtracted from the per-level frequencies pre-
+               calculated on the entire training frame.
+               3) "k_fold" - encodings for a fold are generated based on out-of-fold data.
+
+               Defaults to ``"none"``.
+        :type data_leakage_handling: Literal["leave_one_out", "k_fold", "none"]
+        :param noise: The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let
+               the algorithm determine a reasonable amount of noise.
+               Defaults to ``0.01``.
+        :type noise: float
+        :param seed: Seed used to generate the noise. By default, the seed is chosen randomly.
+               Defaults to ``-1``.
+        :type seed: int
+        """
         super(H2OTargetEncoderEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self._deprecated_params_:
-                setattr(self, pname, pvalue)  # property handles the redefinition
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.fold_column = fold_column
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.columns_to_encode = columns_to_encode
+        self.keep_original_categorical_columns = keep_original_categorical_columns
+        self.blending = blending
+        self.inflection_point = inflection_point
+        self.smoothing = smoothing
+        self.data_leakage_handling = data_leakage_handling
+        self.noise = noise
+        self.seed = seed
 
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -71,7 +142,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @training_frame.setter
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
-
 
     @property
     def fold_column(self):
@@ -103,7 +173,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -118,7 +187,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
 
-
     @property
     def ignored_columns(self):
         """
@@ -132,7 +200,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def ignored_columns(self, ignored_columns):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
-
 
     @property
     def columns_to_encode(self):
@@ -151,13 +218,12 @@ class H2OTargetEncoderEstimator(H2OEstimator):
             columns_to_encode = [[g] if isinstance(g, str) else g for g in columns_to_encode]
         self._parms["columns_to_encode"] = columns_to_encode
 
-
     @property
     def keep_original_categorical_columns(self):
         """
         If true, the original non-encoded categorical features will remain in the result frame.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
         """
         return self._parms.get("keep_original_categorical_columns")
 
@@ -166,7 +232,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(keep_original_categorical_columns, None, bool)
         self._parms["keep_original_categorical_columns"] = keep_original_categorical_columns
 
-
     @property
     def blending(self):
         """
@@ -174,7 +239,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         probabilities (computed on the entire set). This allows to mitigate the effect of categorical values with small
         cardinality. The blending effect can be tuned using the `inflection_point` and `smoothing` parameters.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -199,7 +264,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(blending, None, bool)
         self._parms["blending"] = blending
 
-
     @property
     def inflection_point(self):
         """
@@ -207,7 +271,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         value, if it appears less that `inflection_point` in a data sample, then the influence of the posterior
         probability will be smaller than the prior.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``, defaults to ``10.0``.
 
         :examples:
 
@@ -232,7 +296,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(inflection_point, None, numeric)
         self._parms["inflection_point"] = inflection_point
 
-
     @property
     def smoothing(self):
         """
@@ -240,7 +303,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         probabilities (see `blending` parameter). If smoothing tends towards 0, then the sigmoid used for blending turns
         into a Heaviside step function.
 
-        Type: ``float``  (default: ``20``).
+        Type: ``float``, defaults to ``20.0``.
 
         :examples:
 
@@ -265,16 +328,16 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(smoothing, None, numeric)
         self._parms["smoothing"] = smoothing
 
-
     @property
     def data_leakage_handling(self):
         """
-        Data leakage handling strategy used to generate the encoding. Supported options are: 1) "none" (default) - no
-        holdout, using the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from
-        the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
-        generated based on out-of-fold data.
+        Data leakage handling strategy used to generate the encoding. Supported options are:
+        1) "none" (default) - no holdout, using the entire training frame.
+        2) "leave_one_out" - current row's response value is subtracted from the per-level frequencies pre-calculated on
+        the entire training frame.
+        3) "k_fold" - encodings for a fold are generated based on out-of-fold data.
 
-        One of: ``"leave_one_out"``, ``"k_fold"``, ``"none"``  (default: ``"none"``).
+        Type: ``Literal["leave_one_out", "k_fold", "none"]``, defaults to ``"none"``.
 
         :examples:
 
@@ -300,14 +363,13 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(data_leakage_handling, None, Enum("leave_one_out", "k_fold", "none"))
         self._parms["data_leakage_handling"] = data_leakage_handling
 
-
     @property
     def noise(self):
         """
         The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let the algorithm
         determine a reasonable amount of noise.
 
-        Type: ``float``  (default: ``0.01``).
+        Type: ``float``, defaults to ``0.01``.
         """
         return self._parms.get("noise")
 
@@ -316,13 +378,12 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(noise, None, numeric)
         self._parms["noise"] = noise
 
-
     @property
     def seed(self):
         """
         Seed used to generate the noise. By default, the seed is chosen randomly.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
         """
         return self._parms.get("seed")
 
@@ -331,8 +392,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
-    _deprecated_params_ = ['k', 'f', 'noise_level']
     k = deprecated_property('k', inflection_point)
     f = deprecated_property('f', smoothing)
     noise_level = deprecated_property('noise_level', noise)

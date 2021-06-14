@@ -150,7 +150,6 @@ Building `h2o` requires a properly set up R environment with [required packages]
 
 ```
 grip
-colorama
 future
 tabulate
 requests
@@ -244,7 +243,7 @@ open target/docs-website/h2o-docs/index.html
 
 ##### Step 2: Install required Python packages:
 
-    pip install grip 'colorama>=0.3.8' future tabulate wheel
+    pip install grip future tabulate wheel
 
 ##### Step 3: Install JDK
 
@@ -369,7 +368,7 @@ Install pip package manager:
 
 Next install required packages:
 
-    sudo pip install wheel requests 'colorama>=0.3.8' future tabulate  
+    sudo pip install wheel requests future tabulate  
 
 ##### Step 5. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 

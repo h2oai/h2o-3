@@ -13,7 +13,7 @@
 #' @param vec_size Set size of word vectors Defaults to 100.
 #' @param window_size Set max skip length between words Defaults to 5.
 #' @param sent_sample_rate Set threshold for occurrence of words. Those that appear with higher frequency in the training data
-#'        will be randomly down-sampled; useful range is (0, 1e-5) Defaults to 0.001.
+#'                        will be randomly down-sampled; useful range is (0, 1e-5) Defaults to 0.001.
 #' @param init_learning_rate Set the starting learning rate Defaults to 0.025.
 #' @param epochs Number of training iterations to run Defaults to 5.
 #' @param pre_trained Id of a data frame that contains a pre-trained (external) word2vec model

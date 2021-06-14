@@ -4,6 +4,7 @@ import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.*;
@@ -120,7 +121,8 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     return PlattScalingMojoHelper.calibrateClassProbabilities(this, preds);
   }
 
-  protected void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
+  protected void constructSubgraph(final RegTreeNode[] xgBoostNodes, final RegTreeNodeStat[] nodeStats, 
+                                   final SharedTreeNode sharedTreeNode,
                                    final int nodeIndex, final SharedTreeSubgraph sharedTreeSubgraph,
                                    final boolean[] oneHotEncodedMap, final boolean inclusiveNA, final String[] features) {
     final RegTreeNode xgBoostNode = xgBoostNodes[nodeIndex];
@@ -137,15 +139,16 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
     sharedTreeNode.setCol(xgBoostNode.getSplitIndex(), features[xgBoostNode.getSplitIndex()].split(SPACE)[1]);
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
+    sharedTreeNode.setWeight(nodeStats[nodeIndex].getWeight());
 
     if (xgBoostNode.getLeftChildIndex() != -1) {
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, nodeStats, sharedTreeSubgraph.makeLeftChildNode(sharedTreeNode),
               xgBoostNode.getLeftChildIndex(), sharedTreeSubgraph, oneHotEncodedMap, xgBoostNode.default_left(),
               features);
     }
 
     if (xgBoostNode.getRightChildIndex() != -1) {
-      constructSubgraph(xgBoostNodes, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
+      constructSubgraph(xgBoostNodes, nodeStats, sharedTreeSubgraph.makeRightChildNode(sharedTreeNode),
               xgBoostNode.getRightChildIndex(), sharedTreeSubgraph, oneHotEncodedMap, !xgBoostNode.default_left(),
               features);
     }
@@ -223,11 +226,12 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
         if (j >= treesAndClasses[i].length || treesAndClasses[i][j] == null)
           continue; // tree doesn't exist for the given class (in multiclass some can be missing)
         RegTreeNode[] treeNodes = treesAndClasses[i][j].getNodes();
+        RegTreeNodeStat[] nodeStats = treesAndClasses[i][j].getStats();
         assert treeNodes.length >= 1;
         String[] domainValues = isSupervised() ? getDomainValues(getResponseIdx()) : null;
         String treeName = treeName(j, i, domainValues);
         SharedTreeSubgraph sg = g.makeSubgraph(treeName);
-        constructSubgraph(treeNodes, sg.makeRootNode(), 0, sg, oneHotEncodedMap,
+        constructSubgraph(treeNodes, nodeStats, sg.makeRootNode(), 0, sg, oneHotEncodedMap,
                 true, features); // Root node is at index 0
       }
 

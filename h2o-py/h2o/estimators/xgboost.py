@@ -21,40 +21,381 @@ class H2OXGBoostEstimator(H2OEstimator):
     """
 
     algo = "xgboost"
-    param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
-                   "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "score_each_iteration",
-                   "fold_assignment", "fold_column", "response_column", "ignored_columns", "ignore_const_cols",
-                   "offset_column", "weights_column", "stopping_rounds", "stopping_metric", "stopping_tolerance",
-                   "max_runtime_secs", "seed", "distribution", "tweedie_power", "categorical_encoding", "quiet_mode",
-                   "checkpoint", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows", "min_child_weight",
-                   "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
-                   "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
-                   "max_delta_step", "monotone_constraints", "interaction_constraints", "score_tree_interval",
-                   "min_split_improvement", "gamma", "auc_type", "nthread", "save_matrix_directory",
-                   "build_tree_one_node", "calibrate_model", "calibration_frame", "max_bins", "max_leaves",
-                   "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy",
-                   "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins",
-                   "auc_type"}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 nfolds=0,  # type: int
+                 keep_cross_validation_models=True,  # type: bool
+                 keep_cross_validation_predictions=False,  # type: bool
+                 keep_cross_validation_fold_assignment=False,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 offset_column=None,  # type: Optional[str]
+                 weights_column=None,  # type: Optional[str]
+                 stopping_rounds=0,  # type: int
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_tolerance=0.001,  # type: float
+                 max_runtime_secs=0.0,  # type: float
+                 seed=-1,  # type: int
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 tweedie_power=1.5,  # type: float
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 quiet_mode=True,  # type: bool
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 ntrees=50,  # type: int
+                 max_depth=6,  # type: int
+                 min_rows=1.0,  # type: float
+                 min_child_weight=1.0,  # type: float
+                 learn_rate=0.3,  # type: float
+                 eta=0.3,  # type: float
+                 sample_rate=1.0,  # type: float
+                 subsample=1.0,  # type: float
+                 col_sample_rate=1.0,  # type: float
+                 colsample_bylevel=1.0,  # type: float
+                 col_sample_rate_per_tree=1.0,  # type: float
+                 colsample_bytree=1.0,  # type: float
+                 colsample_bynode=1.0,  # type: float
+                 max_abs_leafnode_pred=0.0,  # type: float
+                 max_delta_step=0.0,  # type: float
+                 monotone_constraints=None,  # type: Optional[dict]
+                 interaction_constraints=None,  # type: Optional[List[List[str]]]
+                 score_tree_interval=0,  # type: int
+                 min_split_improvement=0.0,  # type: float
+                 gamma=0.0,  # type: float
+                 nthread=-1,  # type: int
+                 save_matrix_directory=None,  # type: Optional[str]
+                 build_tree_one_node=False,  # type: bool
+                 calibrate_model=False,  # type: bool
+                 calibration_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 max_bins=256,  # type: int
+                 max_leaves=0,  # type: int
+                 sample_type="uniform",  # type: Literal["uniform", "weighted"]
+                 normalize_type="tree",  # type: Literal["tree", "forest"]
+                 rate_drop=0.0,  # type: float
+                 one_drop=False,  # type: bool
+                 skip_drop=0.0,  # type: float
+                 tree_method="auto",  # type: Literal["auto", "exact", "approx", "hist"]
+                 grow_policy="depthwise",  # type: Literal["depthwise", "lossguide"]
+                 booster="gbtree",  # type: Literal["gbtree", "gblinear", "dart"]
+                 reg_lambda=1.0,  # type: float
+                 reg_alpha=0.0,  # type: float
+                 dmatrix_type="auto",  # type: Literal["auto", "dense", "sparse"]
+                 backend="auto",  # type: Literal["auto", "gpu", "cpu"]
+                 gpu_id=None,  # type: Optional[List[int]]
+                 gainslift_bins=-1,  # type: int
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[None, str, H2OFrame], optional
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
+        :type nfolds: int
+        :param keep_cross_validation_models: Whether to keep the cross-validation models.
+               Defaults to ``True``.
+        :type keep_cross_validation_models: bool
+        :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
+               Defaults to ``False``.
+        :type keep_cross_validation_predictions: bool
+        :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
+               Defaults to ``False``.
+        :type keep_cross_validation_fold_assignment: bool
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
+        :type score_each_iteration: bool
+        :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
+               'Stratified' option will stratify the folds based on the response variable, for classification problems.
+               Defaults to ``"auto"``.
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
+        :type fold_column: str, optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
+               function.
+               Defaults to ``None``.
+        :type offset_column: str, optional
+        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
+               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
+               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
+               not increase the size of the data frame. This is typically the number of times a row is repeated, but
+               non-integer values are supported as well. During training, rows with higher weights matter more, due to
+               the larger loss function pre-factor.
+               Defaults to ``None``.
+        :type weights_column: str, optional
+        :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
+               length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+               Defaults to ``0``.
+        :type stopping_rounds: int
+        :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client.
+               Defaults to ``"auto"``.
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+               "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+        :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
+               is not at least this much)
+               Defaults to ``0.001``.
+        :type stopping_tolerance: float
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
+        :type max_runtime_secs: float
+        :param seed: Seed for pseudo random number generator (if applicable)
+               Defaults to ``-1``.
+        :type seed: int
+        :param distribution: Distribution function
+               Defaults to ``"auto"``.
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+               "quantile", "huber"]
+        :param tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2.
+               Defaults to ``1.5``.
+        :type tweedie_power: float
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"]
+        :param quiet_mode: Enable quiet mode
+               Defaults to ``True``.
+        :type quiet_mode: bool
+        :param checkpoint: Model checkpoint to resume training with.
+               Defaults to ``None``.
+        :type checkpoint: Union[None, str, H2OEstimator], optional
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        :param ntrees: (same as n_estimators) Number of trees.
+               Defaults to ``50``.
+        :type ntrees: int
+        :param max_depth: Maximum tree depth (0 for unlimited).
+               Defaults to ``6``.
+        :type max_depth: int
+        :param min_rows: (same as min_child_weight) Fewest allowed (weighted) observations in a leaf.
+               Defaults to ``1.0``.
+        :type min_rows: float
+        :param min_child_weight: (same as min_rows) Fewest allowed (weighted) observations in a leaf.
+               Defaults to ``1.0``.
+        :type min_child_weight: float
+        :param learn_rate: (same as eta) Learning rate (from 0.0 to 1.0)
+               Defaults to ``0.3``.
+        :type learn_rate: float
+        :param eta: (same as learn_rate) Learning rate (from 0.0 to 1.0)
+               Defaults to ``0.3``.
+        :type eta: float
+        :param sample_rate: (same as subsample) Row sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type sample_rate: float
+        :param subsample: (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type subsample: float
+        :param col_sample_rate: (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type col_sample_rate: float
+        :param colsample_bylevel: (same as col_sample_rate) Column sample rate (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type colsample_bylevel: float
+        :param col_sample_rate_per_tree: (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type col_sample_rate_per_tree: float
+        :param colsample_bytree: (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type colsample_bytree: float
+        :param colsample_bynode: Column sample rate per tree node (from 0.0 to 1.0)
+               Defaults to ``1.0``.
+        :type colsample_bynode: float
+        :param max_abs_leafnode_pred: (same as max_delta_step) Maximum absolute value of a leaf node prediction
+               Defaults to ``0.0``.
+        :type max_abs_leafnode_pred: float
+        :param max_delta_step: (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction
+               Defaults to ``0.0``.
+        :type max_delta_step: float
+        :param monotone_constraints: A mapping representing monotonic constraints. Use +1 to enforce an increasing
+               constraint and -1 to specify a decreasing constraint.
+               Defaults to ``None``.
+        :type monotone_constraints: dict, optional
+        :param interaction_constraints: A set of allowed column interactions.
+               Defaults to ``None``.
+        :type interaction_constraints: List[List[str]], optional
+        :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
+               Defaults to ``0``.
+        :type score_tree_interval: int
+        :param min_split_improvement: (same as gamma) Minimum relative improvement in squared error reduction for a
+               split to happen
+               Defaults to ``0.0``.
+        :type min_split_improvement: float
+        :param gamma: (same as min_split_improvement) Minimum relative improvement in squared error reduction for a
+               split to happen
+               Defaults to ``0.0``.
+        :type gamma: float
+        :param nthread: Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits
+               (-nthreads parameter). Defaults to maximum available
+               Defaults to ``-1``.
+        :type nthread: int
+        :param save_matrix_directory: Directory where to save matrices passed to XGBoost library. Useful for debugging.
+               Defaults to ``None``.
+        :type save_matrix_directory: str, optional
+        :param build_tree_one_node: Run on one node only; no network overhead but fewer cpus used. Suitable for small
+               datasets.
+               Defaults to ``False``.
+        :type build_tree_one_node: bool
+        :param calibrate_model: Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide
+               more accurate estimates of class probabilities.
+               Defaults to ``False``.
+        :type calibrate_model: bool
+        :param calibration_frame: Calibration frame for Platt Scaling
+               Defaults to ``None``.
+        :type calibration_frame: Union[None, str, H2OFrame], optional
+        :param max_bins: For tree_method=hist only: maximum number of bins
+               Defaults to ``256``.
+        :type max_bins: int
+        :param max_leaves: For tree_method=hist only: maximum number of leaves
+               Defaults to ``0``.
+        :type max_leaves: int
+        :param sample_type: For booster=dart only: sample_type
+               Defaults to ``"uniform"``.
+        :type sample_type: Literal["uniform", "weighted"]
+        :param normalize_type: For booster=dart only: normalize_type
+               Defaults to ``"tree"``.
+        :type normalize_type: Literal["tree", "forest"]
+        :param rate_drop: For booster=dart only: rate_drop (0..1)
+               Defaults to ``0.0``.
+        :type rate_drop: float
+        :param one_drop: For booster=dart only: one_drop
+               Defaults to ``False``.
+        :type one_drop: bool
+        :param skip_drop: For booster=dart only: skip_drop (0..1)
+               Defaults to ``0.0``.
+        :type skip_drop: float
+        :param tree_method: Tree method
+               Defaults to ``"auto"``.
+        :type tree_method: Literal["auto", "exact", "approx", "hist"]
+        :param grow_policy: Grow policy - depthwise is standard GBM, lossguide is LightGBM
+               Defaults to ``"depthwise"``.
+        :type grow_policy: Literal["depthwise", "lossguide"]
+        :param booster: Booster type
+               Defaults to ``"gbtree"``.
+        :type booster: Literal["gbtree", "gblinear", "dart"]
+        :param reg_lambda: L2 regularization
+               Defaults to ``1.0``.
+        :type reg_lambda: float
+        :param reg_alpha: L1 regularization
+               Defaults to ``0.0``.
+        :type reg_alpha: float
+        :param dmatrix_type: Type of DMatrix. For sparse, NAs and 0 are treated equally.
+               Defaults to ``"auto"``.
+        :type dmatrix_type: Literal["auto", "dense", "sparse"]
+        :param backend: Backend. By default (auto), a GPU is used if available.
+               Defaults to ``"auto"``.
+        :type backend: Literal["auto", "gpu", "cpu"]
+        :param gpu_id: Which GPU(s) to use.
+               Defaults to ``None``.
+        :type gpu_id: List[int], optional
+        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
+               binning.
+               Defaults to ``-1``.
+        :type gainslift_bins: int
+        :param auc_type: Set default multinomial AUC type.
+               Defaults to ``"auto"``.
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.nfolds = nfolds
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.score_each_iteration = score_each_iteration
+        self.fold_assignment = fold_assignment
+        self.fold_column = fold_column
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.offset_column = offset_column
+        self.weights_column = weights_column
+        self.stopping_rounds = stopping_rounds
+        self.stopping_metric = stopping_metric
+        self.stopping_tolerance = stopping_tolerance
+        self.max_runtime_secs = max_runtime_secs
+        self.seed = seed
+        self.distribution = distribution
+        self.tweedie_power = tweedie_power
+        self.categorical_encoding = categorical_encoding
+        self.quiet_mode = quiet_mode
+        self.checkpoint = checkpoint
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.ntrees = ntrees
+        self.max_depth = max_depth
+        self.min_rows = min_rows
+        self.min_child_weight = min_child_weight
+        self.learn_rate = learn_rate
+        self.eta = eta
+        self.sample_rate = sample_rate
+        self.subsample = subsample
+        self.col_sample_rate = col_sample_rate
+        self.colsample_bylevel = colsample_bylevel
+        self.col_sample_rate_per_tree = col_sample_rate_per_tree
+        self.colsample_bytree = colsample_bytree
+        self.colsample_bynode = colsample_bynode
+        self.max_abs_leafnode_pred = max_abs_leafnode_pred
+        self.max_delta_step = max_delta_step
+        self.monotone_constraints = monotone_constraints
+        self.interaction_constraints = interaction_constraints
+        self.score_tree_interval = score_tree_interval
+        self.min_split_improvement = min_split_improvement
+        self.gamma = gamma
+        self.nthread = nthread
+        self.save_matrix_directory = save_matrix_directory
+        self.build_tree_one_node = build_tree_one_node
+        self.calibrate_model = calibrate_model
+        self.calibration_frame = calibration_frame
+        self.max_bins = max_bins
+        self.max_leaves = max_leaves
+        self.sample_type = sample_type
+        self.normalize_type = normalize_type
+        self.rate_drop = rate_drop
+        self.one_drop = one_drop
+        self.skip_drop = skip_drop
+        self.tree_method = tree_method
+        self.grow_policy = grow_policy
+        self.booster = booster
+        self.reg_lambda = reg_lambda
+        self.reg_alpha = reg_alpha
+        self.dmatrix_type = dmatrix_type
+        self.backend = backend
+        self.gpu_id = gpu_id
+        self.gainslift_bins = gainslift_bins
+        self.auc_type = auc_type
 
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -78,13 +419,12 @@ class H2OXGBoostEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -108,13 +448,12 @@ class H2OXGBoostEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def nfolds(self):
         """
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -138,13 +477,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
 
-
     @property
     def keep_cross_validation_models(self):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -169,13 +507,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_models, None, bool)
         self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
-
     @property
     def keep_cross_validation_predictions(self):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -200,13 +537,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_predictions, None, bool)
         self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
-
     @property
     def keep_cross_validation_fold_assignment(self):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -231,13 +567,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
-
     @property
     def score_each_iteration(self):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -268,14 +603,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def fold_assignment(self):
         """
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -298,7 +632,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def fold_assignment(self, fold_assignment):
         assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
-
 
     @property
     def fold_column(self):
@@ -332,7 +665,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -346,7 +678,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def ignored_columns(self):
@@ -362,13 +693,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -395,7 +725,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def offset_column(self):
         """
@@ -409,7 +738,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def offset_column(self, offset_column):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
-
 
     @property
     def weights_column(self):
@@ -445,14 +773,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
 
-
     @property
     def stopping_rounds(self):
         """
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -484,7 +811,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(stopping_rounds, None, int)
         self._parms["stopping_rounds"] = stopping_rounds
 
-
     @property
     def stopping_metric(self):
         """
@@ -492,9 +818,8 @@ class H2OXGBoostEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -525,13 +850,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
-
     @property
     def stopping_tolerance(self):
         """
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -563,13 +887,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
 
-
     @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -596,13 +919,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
 
-
     @property
     def seed(self):
         """
         Seed for pseudo random number generator (if applicable)
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -640,14 +962,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def distribution(self):
         """
         Distribution function
 
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -671,13 +992,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
 
-
     @property
     def tweedie_power(self):
         """
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
-        Type: ``float``  (default: ``1.5``).
+        Type: ``float``, defaults to ``1.5``.
 
         :examples:
 
@@ -704,14 +1024,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(tweedie_power, None, numeric)
         self._parms["tweedie_power"] = tweedie_power
 
-
     @property
     def categorical_encoding(self):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -742,13 +1061,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def quiet_mode(self):
         """
         Enable quiet mode
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -772,13 +1090,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(quiet_mode, None, bool)
         self._parms["quiet_mode"] = quiet_mode
 
-
     @property
     def checkpoint(self):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -809,7 +1126,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
-
 
     @property
     def export_checkpoints_dir(self):
@@ -853,13 +1169,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     @property
     def ntrees(self):
         """
         (same as n_estimators) Number of trees.
 
-        Type: ``int``  (default: ``50``).
+        Type: ``int``, defaults to ``50``.
 
         :examples:
 
@@ -893,13 +1208,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(ntrees, None, int)
         self._parms["ntrees"] = ntrees
 
-
     @property
     def max_depth(self):
         """
         Maximum tree depth (0 for unlimited).
 
-        Type: ``int``  (default: ``6``).
+        Type: ``int``, defaults to ``6``.
 
         :examples:
 
@@ -928,13 +1242,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_depth, None, int)
         self._parms["max_depth"] = max_depth
 
-
     @property
     def min_rows(self):
         """
         (same as min_child_weight) Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -960,13 +1273,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(min_rows, None, numeric)
         self._parms["min_rows"] = min_rows
 
-
     @property
     def min_child_weight(self):
         """
         (same as min_rows) Fewest allowed (weighted) observations in a leaf.
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -992,13 +1304,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(min_child_weight, None, numeric)
         self._parms["min_child_weight"] = min_child_weight
 
-
     @property
     def learn_rate(self):
         """
         (same as eta) Learning rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.3``).
+        Type: ``float``, defaults to ``0.3``.
 
         :examples:
 
@@ -1027,13 +1338,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(learn_rate, None, numeric)
         self._parms["learn_rate"] = learn_rate
 
-
     @property
     def eta(self):
         """
         (same as learn_rate) Learning rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.3``).
+        Type: ``float``, defaults to ``0.3``.
 
         :examples:
 
@@ -1063,13 +1373,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(eta, None, numeric)
         self._parms["eta"] = eta
 
-
     @property
     def sample_rate(self):
         """
         (same as subsample) Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1099,13 +1408,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(sample_rate, None, numeric)
         self._parms["sample_rate"] = sample_rate
 
-
     @property
     def subsample(self):
         """
         (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1135,13 +1443,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(subsample, None, numeric)
         self._parms["subsample"] = subsample
 
-
     @property
     def col_sample_rate(self):
         """
         (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1171,13 +1478,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(col_sample_rate, None, numeric)
         self._parms["col_sample_rate"] = col_sample_rate
 
-
     @property
     def colsample_bylevel(self):
         """
         (same as col_sample_rate) Column sample rate (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1207,13 +1513,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(colsample_bylevel, None, numeric)
         self._parms["colsample_bylevel"] = colsample_bylevel
 
-
     @property
     def col_sample_rate_per_tree(self):
         """
         (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1242,13 +1547,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(col_sample_rate_per_tree, None, numeric)
         self._parms["col_sample_rate_per_tree"] = col_sample_rate_per_tree
 
-
     @property
     def colsample_bytree(self):
         """
         (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1277,13 +1581,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(colsample_bytree, None, numeric)
         self._parms["colsample_bytree"] = colsample_bytree
 
-
     @property
     def colsample_bynode(self):
         """
         Column sample rate per tree node (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1310,13 +1613,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(colsample_bynode, None, numeric)
         self._parms["colsample_bynode"] = colsample_bynode
 
-
     @property
     def max_abs_leafnode_pred(self):
         """
         (same as max_delta_step) Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1341,13 +1643,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_abs_leafnode_pred, None, float)
         self._parms["max_abs_leafnode_pred"] = max_abs_leafnode_pred
 
-
     @property
     def max_delta_step(self):
         """
         (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1371,7 +1672,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_delta_step(self, max_delta_step):
         assert_is_type(max_delta_step, None, float)
         self._parms["max_delta_step"] = max_delta_step
-
 
     @property
     def monotone_constraints(self):
@@ -1402,7 +1702,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(monotone_constraints, None, dict)
         self._parms["monotone_constraints"] = monotone_constraints
 
-
     @property
     def interaction_constraints(self):
         """
@@ -1417,13 +1716,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(interaction_constraints, None, [[str]])
         self._parms["interaction_constraints"] = interaction_constraints
 
-
     @property
     def score_tree_interval(self):
         """
         Score the model after every so many trees. Disabled if set to 0.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -1453,13 +1751,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(score_tree_interval, None, int)
         self._parms["score_tree_interval"] = score_tree_interval
 
-
     @property
     def min_split_improvement(self):
         """
         (same as gamma) Minimum relative improvement in squared error reduction for a split to happen
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1485,13 +1782,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(min_split_improvement, None, float)
         self._parms["min_split_improvement"] = min_split_improvement
 
-
     @property
     def gamma(self):
         """
         (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1516,30 +1812,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(gamma, None, float)
         self._parms["gamma"] = gamma
 
-
-    @property
-    def auc_type(self):
-        """
-        Set default multinomial AUC type.
-
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
-        """
-        return self._parms.get("auc_type")
-
-    @auc_type.setter
-    def auc_type(self, auc_type):
-        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
-        self._parms["auc_type"] = auc_type
-
-
     @property
     def nthread(self):
         """
         Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
         parameter). Defaults to maximum available
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -1563,7 +1842,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(nthread, None, int)
         self._parms["nthread"] = nthread
 
-
     @property
     def save_matrix_directory(self):
         """
@@ -1578,13 +1856,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(save_matrix_directory, None, str)
         self._parms["save_matrix_directory"] = save_matrix_directory
 
-
     @property
     def build_tree_one_node(self):
         """
         Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
         """
         return self._parms.get("build_tree_one_node")
 
@@ -1593,14 +1870,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(build_tree_one_node, None, bool)
         self._parms["build_tree_one_node"] = build_tree_one_node
 
-
     @property
     def calibrate_model(self):
         """
         Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
         of class probabilities.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
         """
         return self._parms.get("calibrate_model")
 
@@ -1609,13 +1885,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(calibrate_model, None, bool)
         self._parms["calibrate_model"] = calibrate_model
 
-
     @property
     def calibration_frame(self):
         """
         Calibration frame for Platt Scaling
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
         """
         return self._parms.get("calibration_frame")
 
@@ -1623,13 +1898,12 @@ class H2OXGBoostEstimator(H2OEstimator):
     def calibration_frame(self, calibration_frame):
         self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
 
-
     @property
     def max_bins(self):
         """
         For tree_method=hist only: maximum number of bins
 
-        Type: ``int``  (default: ``256``).
+        Type: ``int``, defaults to ``256``.
 
         :examples:
 
@@ -1654,13 +1928,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_bins, None, int)
         self._parms["max_bins"] = max_bins
 
-
     @property
     def max_leaves(self):
         """
         For tree_method=hist only: maximum number of leaves
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -1685,13 +1958,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(max_leaves, None, int)
         self._parms["max_leaves"] = max_leaves
 
-
     @property
     def sample_type(self):
         """
         For booster=dart only: sample_type
 
-        One of: ``"uniform"``, ``"weighted"``  (default: ``"uniform"``).
+        Type: ``Literal["uniform", "weighted"]``, defaults to ``"uniform"``.
 
         :examples:
 
@@ -1721,13 +1993,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(sample_type, None, Enum("uniform", "weighted"))
         self._parms["sample_type"] = sample_type
 
-
     @property
     def normalize_type(self):
         """
         For booster=dart only: normalize_type
 
-        One of: ``"tree"``, ``"forest"``  (default: ``"tree"``).
+        Type: ``Literal["tree", "forest"]``, defaults to ``"tree"``.
 
         :examples:
 
@@ -1753,13 +2024,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(normalize_type, None, Enum("tree", "forest"))
         self._parms["normalize_type"] = normalize_type
 
-
     @property
     def rate_drop(self):
         """
         For booster=dart only: rate_drop (0..1)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1784,13 +2054,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(rate_drop, None, float)
         self._parms["rate_drop"] = rate_drop
 
-
     @property
     def one_drop(self):
         """
         For booster=dart only: one_drop
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -1817,13 +2086,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(one_drop, None, bool)
         self._parms["one_drop"] = one_drop
 
-
     @property
     def skip_drop(self):
         """
         For booster=dart only: skip_drop (0..1)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1852,13 +2120,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(skip_drop, None, float)
         self._parms["skip_drop"] = skip_drop
 
-
     @property
     def tree_method(self):
         """
         Tree method
 
-        One of: ``"auto"``, ``"exact"``, ``"approx"``, ``"hist"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "exact", "approx", "hist"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -1888,13 +2155,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(tree_method, None, Enum("auto", "exact", "approx", "hist"))
         self._parms["tree_method"] = tree_method
 
-
     @property
     def grow_policy(self):
         """
         Grow policy - depthwise is standard GBM, lossguide is LightGBM
 
-        One of: ``"depthwise"``, ``"lossguide"``  (default: ``"depthwise"``).
+        Type: ``Literal["depthwise", "lossguide"]``, defaults to ``"depthwise"``.
 
         :examples:
 
@@ -1921,13 +2187,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(grow_policy, None, Enum("depthwise", "lossguide"))
         self._parms["grow_policy"] = grow_policy
 
-
     @property
     def booster(self):
         """
         Booster type
 
-        One of: ``"gbtree"``, ``"gblinear"``, ``"dart"``  (default: ``"gbtree"``).
+        Type: ``Literal["gbtree", "gblinear", "dart"]``, defaults to ``"gbtree"``.
 
         :examples:
 
@@ -1953,13 +2218,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(booster, None, Enum("gbtree", "gblinear", "dart"))
         self._parms["booster"] = booster
 
-
     @property
     def reg_lambda(self):
         """
         L2 regularization
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1988,13 +2252,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(reg_lambda, None, float)
         self._parms["reg_lambda"] = reg_lambda
 
-
     @property
     def reg_alpha(self):
         """
         L1 regularization
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -2017,13 +2280,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(reg_alpha, None, float)
         self._parms["reg_alpha"] = reg_alpha
 
-
     @property
     def dmatrix_type(self):
         """
         Type of DMatrix. For sparse, NAs and 0 are treated equally.
 
-        One of: ``"auto"``, ``"dense"``, ``"sparse"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "dense", "sparse"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -2047,13 +2309,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(dmatrix_type, None, Enum("auto", "dense", "sparse"))
         self._parms["dmatrix_type"] = dmatrix_type
 
-
     @property
     def backend(self):
         """
         Backend. By default (auto), a GPU is used if available.
 
-        One of: ``"auto"``, ``"gpu"``, ``"cpu"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "gpu", "cpu"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -2073,7 +2334,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def backend(self, backend):
         assert_is_type(backend, None, Enum("auto", "gpu", "cpu"))
         self._parms["backend"] = backend
-
 
     @property
     def gpu_id(self):
@@ -2104,13 +2364,12 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(gpu_id, None, int, [int])
         self._parms["gpu_id"] = gpu_id
 
-
     @property
     def gainslift_bins(self):
         """
         Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -2128,14 +2387,13 @@ class H2OXGBoostEstimator(H2OEstimator):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
 
-
     @property
     def auc_type(self):
         """
         Set default multinomial AUC type.
 
-        One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"``
-        (default: ``"auto"``).
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``, defaults to
+        ``"auto"``.
         """
         return self._parms.get("auc_type")
 

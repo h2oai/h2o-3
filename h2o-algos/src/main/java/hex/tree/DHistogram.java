@@ -3,13 +3,10 @@ package hex.tree;
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
 import org.apache.log4j.Logger;
-import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
-import water.util.AtomicUtils;
 import water.util.RandomUtils;
 
 import java.util.Arrays;
@@ -44,7 +41,7 @@ import java.util.Random;
  *  available as well, via {@code _histoType}.
  *
 */
-public final class DHistogram extends Iced {
+public final class DHistogram extends Iced<DHistogram> {
   
   private static final Logger LOG = Logger.getLogger(DHistogram.class);
   
@@ -75,16 +72,6 @@ public final class DHistogram extends Iced {
   public double wY(int i){ return _vals[_vals_dim*i+1];}
   public double wYY(int i){return _vals[_vals_dim*i+2];}
 
-  public void addWAtomic(int i, double wDelta) {  // used by AutoML
-    AtomicUtils.DoubleArray.add(_vals, _vals_dim*i+0, wDelta);
-  }
-
-  public void addNasAtomic(double y, double wy, double wyy) {
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*_nbin+0,y);
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*_nbin+1,wy);
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*_nbin+2,wyy);
-  }
-
   public double wNA()   { return _vals[_vals_dim*_nbin+0]; }
   public double wYNA()  { return _vals[_vals_dim*_nbin+1]; }
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
@@ -114,20 +101,7 @@ public final class DHistogram extends Iced {
     return _vals_dim == 7;
   }
 
-  // Atomically updated double min/max
-  protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
-  private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
-  static private final long _min2Offset;
-  static private final long _max2Offset;
-  static {
-    try {
-      _min2Offset = _unsafe.objectFieldOffset(DHistogram.class.getDeclaredField("_min2"));
-      _max2Offset = _unsafe.objectFieldOffset(DHistogram.class.getDeclaredField("_maxIn"));
-    } catch( Exception e ) {
-      throw H2O.fail();
-    }
-  }
-
+  protected double  _min2, _maxIn; // Min/Max, _maxIn is Inclusive.
   public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
   transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
   transient int _zeroSplitPntPos;
@@ -167,20 +141,6 @@ public final class DHistogram extends Iced {
       this.splitPts = splitPts;
     }
     double[/*nbins*/] splitPts;
-  }
-
-  public void setMin( double min ) {
-    long imin = Double.doubleToRawLongBits(min);
-    double old = _min2;
-    while( min < old && !_unsafe.compareAndSwapLong(this, _min2Offset, Double.doubleToRawLongBits(old), imin ) )
-      old = _min2;
-  }
-  // Find Inclusive _max2
-  public void setMaxIn( double max ) {
-    long imax = Double.doubleToRawLongBits(max);
-    double old = _maxIn;
-    while( max > old && !_unsafe.compareAndSwapLong(this, _max2Offset, Double.doubleToRawLongBits(old), imax ) )
-      old = _maxIn;
   }
 
   static class StepOutOfRangeException extends RuntimeException {
@@ -349,26 +309,7 @@ public final class DHistogram extends Iced {
     // this always holds: _vals != null
     assert _nbin > 0;
   }
-
-  // Add one row to a bin found via simple linear interpolation.
-  // Compute bin min/max.
-  // Compute response mean & variance.
-  void incr( double col_data, double y, double w ) {
-    if (Double.isNaN(col_data)) {
-      addNasAtomic(w,w*y,w*y*y);
-      return;
-    }
-    assert Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
-    int b = bin(col_data);      // Compute bin# via linear interpolation
-    water.util.AtomicUtils.DoubleArray.add(_vals,_vals_dim*b,w); // Bump count in bin
-    // Track actual lower/upper bound per-bin
-    if (!Double.isInfinite(col_data)) {
-      setMin(col_data);
-      setMaxIn(col_data);
-    }
-    if( y != 0 && w != 0) incr0(b,y,w);
-  }
-
+  
   // Merge two equal histograms together.  Done in a F/J reduce, so no
   // synchronization needed.
   public void add( DHistogram dsh ) {
@@ -453,14 +394,6 @@ public final class DHistogram extends Iced {
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
   }
 
-  // Add one row to a bin found via simple linear interpolation.
-  // Compute response mean & variance.
-  // Done racily instead F/J map calls, so atomic
-  public void incr0( int b, double y, double w ) {
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*b+1,(float)(w*y)); //See 'HistogramTest' JUnit for float-casting rationalization
-    AtomicUtils.DoubleArray.add(_vals,_vals_dim*b+2,(float)(w*y*y));
-  }
-
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
    * @param ws observation weights
@@ -522,53 +455,6 @@ public final class DHistogram extends Iced {
     for(int i = 0; i < _vals.length -_vals_dim /* do not reduce precision of NAs */; i+=_vals_dim) {
       _vals[i+1] = (float)_vals[i+1];
       _vals[i+2] = (float)_vals[i+2];
-    }
-  }
-
-  public void updateSharedHistosAndReset(ScoreBuildHistogram.LocalHisto lh, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {
-    double minmax[] = new double[]{_min2,_maxIn};
-    // Gather all the data for this set of rows, for 1 column and 1 split/NID
-    // Gather min/max, wY and sum-squares.
-    for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double weight = ws[k];
-      if (weight == 0) continue;
-      double col_data = cs[k];
-      if (col_data < minmax[0]) minmax[0] = col_data;
-      if (col_data > minmax[1]) minmax[1] = col_data;
-      double y = ys[k];
-      assert(!Double.isNaN(y));
-      double wy = weight * y;
-      double wyy = wy * y;
-      if (Double.isNaN(col_data)) {
-        //separate bucket for NA - atomically added to the shared histo
-        addNasAtomic(weight,wy,wyy);
-      } else {
-        // increment local per-thread histograms
-        int b = bin(col_data);
-        lh.wAdd(b,weight);
-        lh.wYAdd(b,wy);
-        lh.wYYAdd(b,wyy);
-      }
-    }
-    // Atomically update histograms
-    setMin(minmax[0]);       // Track actual lower/upper bound per-bin
-    setMaxIn(minmax[1]);
-    final int len = _nbin;
-    for( int b=0; b<len; b++ ) {
-      int binDimStart = _vals_dim*b;
-      if (lh.w(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart, lh.w(b));
-        lh.wClear(b);
-      }
-      if (lh.wY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart+1, (float) lh.wY(b));
-        lh.wYClear(b);
-      }
-      if (lh.wYY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_vals, binDimStart+2,(float)lh.wYY(b));
-        lh.wYYClear(b);
-      }
     }
   }
 

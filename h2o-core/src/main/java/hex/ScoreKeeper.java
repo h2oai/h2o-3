@@ -230,6 +230,34 @@ public class ScoreKeeper extends Iced {
     }
   }
 
+  /** Based on the given array of ScoreKeeper and stopping criteria what is the best scoring iteration of the last k iterations? */
+  public static int best(ScoreKeeper[] sk, final int k, IStoppingMetric criterion) {
+    int best = sk.length - 1;
+    ScoreKeeper.IConvergenceStrategy cs = criterion.getConvergenceStrategy();
+    if (cs != ConvergenceStrategy.LESS_IS_BETTER && cs != ConvergenceStrategy.MORE_IS_BETTER) {
+      return best;
+    }
+    double bestVal = criterion.metricValue(sk[best]);
+    for (int i = 1; i < k; i++) {
+      int idx = sk.length - i - 1;
+      if (idx < 0)
+        break;
+      double val = criterion.metricValue(sk[idx]);
+      if (cs == ConvergenceStrategy.LESS_IS_BETTER) {
+        if (val < bestVal) {
+          best = idx;
+          bestVal = val;
+        }
+      } else {
+        if (val > bestVal) {
+          best = idx;
+          bestVal = val;
+        }
+      }
+    }
+    return best;
+  }
+
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */
   public static boolean stopEarly(ScoreKeeper[] sk, int k, ProblemType type, IStoppingMetric criterion, double rel_improvement, String what, boolean verbose) {
     if (k == 0) return false;

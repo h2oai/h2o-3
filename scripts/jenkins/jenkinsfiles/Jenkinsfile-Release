@@ -408,7 +408,7 @@ EOF
                                 try {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         echo "Check Conda package for Python ${pyVersion}"
-                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests colorama"
+                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests"
                                         sh "s3cmd get ${condaS3Dir}/linux-64/${pkgName}"
                                         sh """
                                                 bash -c \"\"\"

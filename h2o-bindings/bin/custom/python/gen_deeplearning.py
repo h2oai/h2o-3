@@ -24,14 +24,14 @@ extensions = dict(
 overrides = dict(
     initial_biases=dict(
         setter="""
-assert_is_type({pname}, None, [H2OFrame, None])
+assert_is_type({pname}, None, [None, str, H2OFrame])
 self._parms["{sname}"] = {pname}
 """
     ),
 
     initial_weights=dict(
         setter="""
-assert_is_type({pname}, None, [H2OFrame, None])
+assert_is_type({pname}, None, [None, str, H2OFrame])
 self._parms["{sname}"] = {pname}
 """
     ),

@@ -27,11 +27,12 @@
 #' @param smoothing Smoothing factor corresponds to the inverse of the slope at the inflection point on the sigmoid used to blend
 #'        probabilities (see `blending` parameter). If smoothing tends towards 0, then the sigmoid used for blending
 #'        turns into a Heaviside step function. Defaults to 20.
-#' @param data_leakage_handling Data leakage handling strategy used to generate the encoding. Supported options are: 1) "none" (default) - no
-#'        holdout, using the entire training frame. 2) "leave_one_out" - current row's response value is subtracted from
-#'        the per-level frequencies pre-calculated on the entire training frame. 3) "k_fold" - encodings for a fold are
-#'        generated based on out-of-fold data.  Must be one of: "leave_one_out", "k_fold", "none", "LeaveOneOut",
-#'        "KFold", "None". Defaults to None.
+#' @param data_leakage_handling Data leakage handling strategy used to generate the encoding. Supported options are:
+#'        1) "none" (default) - no holdout, using the entire training frame.
+#'        2) "leave_one_out" - current row's response value is subtracted from the per-level frequencies pre-calculated
+#'        on the entire training frame.
+#'        3) "k_fold" - encodings for a fold are generated based on out-of-fold data.
+#'         Must be one of: "leave_one_out", "k_fold", "none", "LeaveOneOut", "KFold", "None". Defaults to None.
 #' @param noise The amount of noise to add to the encoded column. Use 0 to disable noise, and -1 (=AUTO) to let the algorithm
 #'        determine a reasonable amount of noise. Defaults to 0.01.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
