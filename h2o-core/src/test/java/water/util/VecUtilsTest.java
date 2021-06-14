@@ -55,20 +55,4 @@ public class VecUtilsTest extends TestUtil {
       if (frame != null) frame.remove();
     }
   }
-
-  @Test
-  public void testUniformDistrFromArray() {
-    Frame frame = null;
-    try {
-      frame = parse_test_file("smalldata/anomaly/single_blob.csv");
-      double [][] frameArray = FrameUtils.asDoubles(frame);
-      double [] dist = VecUtils.uniformDistrFromArray(frameArray, 0xDECAF);
-      Assert.assertNotNull(dist);
-      Assert.assertEquals(-2.69738, ArrayUtils.minValue(dist), 10e-5);
-      Assert.assertEquals(2.56836, ArrayUtils.maxValue(dist), 10e-5);
-    } finally {
-      if (frame != null)
-        frame.remove();
-    }
-  }
 }

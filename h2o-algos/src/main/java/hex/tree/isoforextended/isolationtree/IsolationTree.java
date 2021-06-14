@@ -2,7 +2,6 @@ package hex.tree.isoforextended.isolationtree;
 
 import org.apache.log4j.Logger;
 import water.util.ArrayUtils;
-import water.util.VecUtils;
 
 /**
  * IsolationTree class implements Algorithm 2 (iTree)
@@ -50,7 +49,7 @@ public class IsolationTree {
                 if (rightChildIndex(i) < _nodes.length) {
                     currentHeight++;
 
-                    node._p = VecUtils.uniformDistrFromArray(nodeData, seed + i);
+                    node._p = ArrayUtils.uniformDistFromArray(nodeData, seed + i);
                     node._n = ArrayUtils.gaussianVector(
                             nodeData.length, seed + i, nodeData.length - _extensionLevel - 1);
 

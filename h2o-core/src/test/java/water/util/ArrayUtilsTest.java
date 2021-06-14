@@ -527,4 +527,11 @@ public class ArrayUtilsTest {
     int[] range = ArrayUtils.range(0, 5);
     assertArrayEquals("It is not a valid range", new int[]{0, 1, 2, 3, 4, 5}, range);
   }
+
+  @Test
+  public void testUniformDistFromArray() {
+    double[][] array = new double[][]{{1.0, 2.0, 3.0},{-1.0, -2.0, -3.0}};
+    double[] dist = uniformDistFromArray(array, 0xDECAF);
+    assertArrayEquals("Not expected array of size", new double[]{2.763, -2.958}, dist, 10e-3);
+  }
 }
