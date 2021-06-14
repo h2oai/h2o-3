@@ -29,28 +29,67 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     """
 
     algo = "extendedisolationforest"
-    param_names = {"model_id", "training_frame", "ignored_columns", "ignore_const_cols", "categorical_encoding",
-                   "ntrees", "sample_size", "extension_level", "seed"}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 ntrees=100,  # type: int
+                 sample_size=256,  # type: int
+                 extension_level=0,  # type: int
+                 seed=-1,  # type: int
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"]
+        :param ntrees: Number of Extended Isolation Forest trees.
+               Defaults to ``100``.
+        :type ntrees: int
+        :param sample_size: Number of randomly sampled observations used to train each Extended Isolation Forest tree.
+               Defaults to ``256``.
+        :type sample_size: int
+        :param extension_level: Maximum is N - 1 (N = numCols). Minimum is 0. Extended Isolation Forest with
+               extension_Level = 0 behaves like Isolation Forest.
+               Defaults to ``0``.
+        :type extension_level: int
+        :param seed: Seed for pseudo random number generator (if applicable)
+               Defaults to ``-1``.
+        :type seed: int
+        """
         super(H2OExtendedIsolationForestEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.categorical_encoding = categorical_encoding
+        self.ntrees = ntrees
+        self.sample_size = sample_size
+        self.extension_level = extension_level
+        self.seed = seed
 
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -69,7 +108,6 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def ignored_columns(self):
         """
@@ -84,13 +122,12 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -112,14 +149,13 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def categorical_encoding(self):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -140,13 +176,12 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def ntrees(self):
         """
         Number of Extended Isolation Forest trees.
 
-        Type: ``int``  (default: ``100``).
+        Type: ``int``, defaults to ``100``.
 
         :examples:
 
@@ -168,13 +203,12 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(ntrees, None, int)
         self._parms["ntrees"] = ntrees
 
-
     @property
     def sample_size(self):
         """
         Number of randomly sampled observations used to train each Extended Isolation Forest tree.
 
-        Type: ``int``  (default: ``256``).
+        Type: ``int``, defaults to ``256``.
 
         :examples:
 
@@ -191,14 +225,13 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(sample_size, None, int)
         self._parms["sample_size"] = sample_size
 
-
     @property
     def extension_level(self):
         """
         Maximum is N - 1 (N = numCols). Minimum is 0. Extended Isolation Forest with extension_Level = 0 behaves like
         Isolation Forest.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -215,13 +248,12 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
         assert_is_type(extension_level, None, int)
         self._parms["extension_level"] = extension_level
 
-
     @property
     def seed(self):
         """
         Seed for pseudo random number generator (if applicable)
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
