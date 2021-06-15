@@ -1,6 +1,5 @@
 package water.util;
 
-import org.w3c.dom.ranges.Range;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;

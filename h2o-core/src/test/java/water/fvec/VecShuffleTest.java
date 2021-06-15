@@ -4,7 +4,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.util.Pair;
 import water.util.VecUtils;
+
+import java.util.HashSet;
 
 
 public class VecShuffleTest extends TestUtil{
@@ -70,32 +73,39 @@ public class VecShuffleTest extends TestUtil{
     public boolean checkElements(Vec src, Vec shuffled){
         boolean seen = false;
         boolean elementMissing = false;
-        for (long i = 0; i < src.length(); ++i) {
-            for (long j = 0; j < shuffled.length(); ++j){
-                if (src._type == Vec.T_UUID) {
-                    if (shuffled.at16l(j) == src.at16l(i)) {
-                        seen = true;
-                        continue;
-                    }
-                }
-                else if (src._type == Vec.T_STR) {
-                    if (shuffled.stringAt(j).equals(src.stringAt(i))) {
-                        seen = true;
-                        continue;
-                    }
-                }
-                else if (shuffled.at(j) == src.at(i)){
-                    seen = true;
-                    continue;
-                }
-                // If element not seen before and its the last position, element is missing
-                if (!seen && j == shuffled.length()){
-                    elementMissing = true;
-                }
+        HashSet srcSet;
+        HashSet shuffledSet;
+
+        if (src._type == Vec.T_UUID) {
+            srcSet = new HashSet<Pair<Long, Long>>();
+            shuffledSet = new HashSet<Pair<Long, Long>>();
+            for (long i = 0; i < src.length(); i++) {
+                srcSet.add(new Pair(src.at16h(i), src.at16l(i)));
             }
-            seen = false;
+            for (long i = 0; i < shuffled.length(); i++) {
+                shuffledSet.add(new Pair(shuffled.at16h(i), shuffled.at16l(i)));
+            }
+        } else if (src._type == Vec.T_STR) {
+            srcSet = new HashSet<String>();
+            shuffledSet = new HashSet<String>();
+            for (long i = 0; i < src.length(); i++) {
+                srcSet.add(src.stringAt(i));
+            }
+            for (long i = 0; i < shuffled.length(); i++) {
+                shuffledSet.add(shuffled.stringAt(i));
+            }
+        } else {
+            srcSet = new HashSet<Double>();
+            shuffledSet = new HashSet<Double>();
+            for (long i = 0; i < src.length(); i++) {
+                srcSet.add(src.at(i));
+            }
+            for (long i = 0; i < shuffled.length(); i++) {
+                shuffledSet.add(shuffled.at(i));
+            }
         }
-        return elementMissing;
+
+        return !srcSet.equals(shuffledSet);
     }
 
     /**

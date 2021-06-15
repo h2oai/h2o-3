@@ -2,11 +2,16 @@
 package water.rapids;
 
 import hex.*;
+import water.Futures;
+import water.H2O;
+import water.H2OError;
+import water.exceptions.H2OFailException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
 import static water.util.RandomUtils.getRNG;
@@ -75,8 +80,22 @@ public class PermutationVarImp {
         return metric;
     }
 
+    /**
+     * Used for shuffling the next feature asynchronously while the previous one is being evaluated.
+     */
+    private Future<Vec> precomputeShuffledVec(ExecutorService executor, Frame fr, HashSet<String> featuresToCompute, String[] variables, int currentFeature, long seed) {
+        for (int f = currentFeature + 1; f < fr.numCols(); f++) {
+            if (!featuresToCompute.contains(variables[f]))
+                continue;
+            int finalF = f;
+            return executor.submit(
+                    () -> VecUtils.shuffleVec(fr.vec(finalF), seed)
+            );
+        }
+        return null;
+    }
 
-    private HashMap<String, Double> calculatePermutationVarImp(String metric, long n_samples, final String[] features, long seed){
+    private HashMap<String, Double> calculatePermutationVarImp(String metric, long n_samples, final String[] features, long seed) {
         // Use random seed if set to -1
         if (-1 == seed) seed = new Random().nextLong();
 
@@ -104,7 +123,9 @@ public class PermutationVarImp {
         _model.score(fr).remove();
         final double origMetric = getMetric(ModelMetrics.getFromDKV(_model, fr), metric);
 
+        ExecutorService executor = Executors.newSingleThreadExecutor();
         Vec shuffledFeature = null;
+        Future<Vec> shuffledFeatureFuture = precomputeShuffledVec(executor, fr, featuresToCompute, variables, -1, seed);
         HashMap<String, Double> result = new HashMap<>();
         try {
             for (int f = 0; f < fr.numCols(); f++) {
@@ -112,8 +133,10 @@ public class PermutationVarImp {
                     continue;
 
                 // shuffle values of feature
-                shuffledFeature = VecUtils.shuffleVec(fr.vec(f),  seed);
-                Vec origFeature = fr.replace(f, shuffledFeature);
+                assert shuffledFeatureFuture != null;
+                shuffledFeature = shuffledFeatureFuture.get();
+                shuffledFeatureFuture = precomputeShuffledVec(executor, fr, featuresToCompute, variables, f, seed);
+                final Vec origFeature = fr.replace(f, shuffledFeature);
 
                 // score the model again and compute diff
                 _model.score(fr).remove();
@@ -127,9 +150,13 @@ public class PermutationVarImp {
                 shuffledFeature.remove();
                 shuffledFeature = null;
             }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Unable to calculate the permutation variable importance.", e);
         } finally {
             if (null != fr && fr != _inputFrame) fr.remove();
             if (null != shuffledFeature) shuffledFeature.remove();
+            if (null != shuffledFeatureFuture) shuffledFeatureFuture.cancel(true);
+            executor.shutdownNow();
         }
         return result;
     }
