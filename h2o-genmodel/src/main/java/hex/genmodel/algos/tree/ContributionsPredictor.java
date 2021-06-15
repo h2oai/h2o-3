@@ -7,13 +7,15 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
   private final int _ncontribs;
   private final String[] _contribution_names;
   private final TreeSHAPPredictor<E> _treeSHAPPredictor;
+  private final int _workspaceSize;
 
-  private static final ThreadLocal<Object> _workspace = new ThreadLocal<>();
+  private static final ThreadLocal<TreeSHAPPredictor.Workspace> _workspace = new ThreadLocal<>();
 
   public ContributionsPredictor(int ncontribs, String[] featureContributionNames, TreeSHAPPredictor<E> treeSHAPPredictor) {
     _ncontribs = ncontribs;
     _contribution_names = ArrayUtils.append(featureContributionNames, "BiasTerm");
     _treeSHAPPredictor = treeSHAPPredictor;
+    _workspaceSize = _treeSHAPPredictor.getWorkspaceSize();
   }
 
   @Override
@@ -33,10 +35,11 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
     return contribs;
   }
 
-  private Object getWorkspace() {
-    Object workspace = _workspace.get();
+  private TreeSHAPPredictor.Workspace getWorkspace() {
+    TreeSHAPPredictor.Workspace workspace = _workspace.get();
     if (workspace == null) {
       workspace = _treeSHAPPredictor.makeWorkspace();
+      assert workspace.getSize() == _workspaceSize;
       _workspace.set(workspace);
     }
     return workspace;

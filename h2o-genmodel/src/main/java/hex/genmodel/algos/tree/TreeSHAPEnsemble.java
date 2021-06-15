@@ -21,7 +21,7 @@ public class TreeSHAPEnsemble<R> implements TreeSHAPPredictor<R> {
   }
 
   @Override
-  public float[] calculateContributions(R feat, float[] out_contribs, int condition, int condition_feature, Object workspace) {
+  public float[] calculateContributions(R feat, float[] out_contribs, int condition, int condition_feature, TreeSHAP.Workspace workspace) {
     if (condition == 0) {
       out_contribs[out_contribs.length - 1] += _initPred;
     }
@@ -32,7 +32,7 @@ public class TreeSHAPEnsemble<R> implements TreeSHAPPredictor<R> {
   }
 
   @Override
-  public Object makeWorkspace() {
+  public TreeSHAPPredictor.Workspace makeWorkspace() {
     return _wsMakerIndex >= 0 ? _predictors[_wsMakerIndex].makeWorkspace() : null;
   }
 
