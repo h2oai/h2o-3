@@ -161,7 +161,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicBigData() {
         try {
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(128, 100_000, 0, 0xCAFFE));
+            Frame train = Scope.track(generateRealOnly(128, 100_000, 0, 0xCAFFE));
 
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
@@ -190,7 +190,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicBigDataRows() {
         try {
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(2, 65536, 0, 0xCAFFE));
+            Frame train = Scope.track(generateRealOnly(2, 65536, 0, 0xCAFFE));
 
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
@@ -218,7 +218,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testBasicBigDataCols() {
         try {
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(128, 500, 0, 0xCAFFE));
+            Frame train = Scope.track(generateRealOnly(128, 500, 0, 0xCAFFE));
 
             ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
                     new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
@@ -353,7 +353,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testIsolationTreeLarge() {
         try {
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+            Frame train = Scope.track(generateRealOnly(32, 32768, 0, 0xBEEF));
             double[] normalPoint = toNumericRow(train, 0);
 
             long start = System.currentTimeMillis();
@@ -411,7 +411,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     public void testSubSampleFixedSizeLarge() {
         try {
             Scope.enter();
-            Frame train = Scope.track(generate_real_only(32, 32768, 0, 0xBEEF));
+            Frame train = Scope.track(generateRealOnly(32, 32768, 0, 0xBEEF));
             Frame subSample = SamplingUtils.sampleOfFixedSize(train, 256, 0xBEEF);
             assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
             assertEquals("SubSample has different number of rows", 256, subSample.numRows());
