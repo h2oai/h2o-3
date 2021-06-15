@@ -184,6 +184,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       validateBuildSpec(buildSpec);
       _buildSpec = buildSpec;
       // now that buildSpec is validated, we can assign it: all future logic can now safely access parameters through _buildSpec.
+      _runId = _buildSpec.instanceId();
       _runCountdown = Countdown.fromSeconds(_buildSpec.build_control.stopping_criteria.max_runtime_secs());
       _incrementalSeed.set(_buildSpec.build_control.stopping_criteria.seed());
 
@@ -401,7 +402,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   public void submit() {
     if (_job == null || !_job.isRunning()) {
-      _runId = _buildSpec.instanceId();
       H2OJob<AutoML> j = new H2OJob<>(this, _key, _runCountdown.remainingTime());
       _job = j._job;
       eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(_startTime))
@@ -522,15 +522,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       if (splitRatios != null) {
         Key[] keys = new Key[] {
-            Key.make("automl_training_"+ _origTrainingFrame._key),
-            Key.make("automl_validation_"+ _origTrainingFrame._key),
-            Key.make("automl_leaderboard_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_training_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_validation_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_leaderboard_"+ _origTrainingFrame._key),
         };
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
-                _origTrainingFrame,
-            keys,
-            splitRatios,
-            _buildSpec.build_control.stopping_criteria.seed()
+                _origTrainingFrame, 
+                keys, 
+                splitRatios, 
+                _buildSpec.build_control.stopping_criteria.seed()
         );
         _trainingFrame = splits[0];
 
@@ -562,7 +562,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       // but cloning to keep an internal ref just in case the original ref gets deleted from client side
       // (can occur in some corner cases with Python GC for example if frame get's out of scope during an AutoML rerun)
       _trainingFrame = new Frame(_origTrainingFrame);
-      _trainingFrame._key = Key.make("automl_training_" + _origTrainingFrame._key);
+      _trainingFrame._key = Key.make(_runId+"_training_" + _origTrainingFrame._key);
       DKV.put(_trainingFrame);
     }
 
