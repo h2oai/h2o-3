@@ -24,14 +24,12 @@ test.permutation.varimp <- function(){
     e <- tryCatch(h2o.permutation_importance(pros.gbm, pros.train, n_samples = 1), error = function(e) e)
     expect_true(is(e, "error"))
 
-    # Using just two rows works
-    permutation_varimp <- h2o.permutation_importance(pros.gbm, pros.train, n_samples = 2)
+    # Using just ten rows works
+    permutation_varimp <- h2o.permutation_importance(pros.gbm, pros.train, n_samples = 10)
     expect_true(is.numeric(permutation_varimp[,3]))
-
     # Using all features works
     permutation_varimp <- h2o.permutation_importance(pros.gbm, pros.train, features = c())
     expect_true(is.numeric(permutation_varimp[,3]))
-
     # Using just one feature works
     permutation_varimp <- h2o.permutation_importance(pros.gbm, pros.train, features = c("PSA"))
     expect_equal(nrow(permutation_varimp), 1)

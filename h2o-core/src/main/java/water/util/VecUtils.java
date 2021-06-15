@@ -1,5 +1,6 @@
 package water.util;
 
+import org.w3c.dom.ranges.Range;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
@@ -12,6 +13,7 @@ import water.parser.BufferedString;
 import water.parser.Categorical;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -888,33 +890,66 @@ public class VecUtils {
    */
   public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
     private final long _seed;
-    public ShuffleVecTask(final long seed) {
+    private final Vec _vec;
+    private transient int[] _localChunks;
+    private transient int[] _permutatedChunks;
+
+    public ShuffleVecTask(final Vec vec, final long seed) {
       super();
       _seed = seed;
+      _vec = vec;
     }
 
-    @Override public void map(Chunk cs, Chunk ncs) {
-      Random rng = getRNG(_seed + cs.start());
-      for (int i = 1; i < cs._len ; i++) {
-        int j = rng.nextInt(i); // inclusive upper bound <0,i>
-        switch (cs.vec().get_type()) {
-          case Vec.T_BAD: break; /* NOP */
-          case Vec.T_UUID:
-            if (j != i) ncs.setAny(i, cs.at16l(j));
-            ncs.setAny(j, cs.at16l(i));
-            break;
-          case Vec.T_STR:
-            if (j != i) ncs.setAny(i, cs.stringAt(j));
-            ncs.setAny(j, cs.stringAt(i));
-            break;
-          case Vec.T_NUM: /* fallthrough */
-          case Vec.T_CAT:
-          case Vec.T_TIME:
-            if (j != i) ncs.setAny(i, cs.atd(j));
-            ncs.setAny(j, cs.atd(i));
-            break;
-          default:
-            throw new IllegalArgumentException("Unsupported vector type: " + cs.vec().get_type());
+    @Override
+    protected void setupLocal() {
+      _localChunks = VecUtils.getLocalChunkIds(_vec);
+      _permutatedChunks = _localChunks.clone();
+      permute(_permutatedChunks, null);
+    }
+
+    private void permute(int[] arr, Random rng) {
+      if (null == rng) rng = getRNG(_seed);
+      for (int i = arr.length - 1; i > 0; i--) {
+        int j = rng.nextInt(i + 1);
+        final int old = arr[i];
+        arr[i] = arr[j];
+        arr[j] = old;
+      }
+    }
+
+    @Override
+    public void map(Chunk _cs, NewChunk nc) {
+      Random rng = getRNG(_seed + _cs.start());
+      Chunk cs = _vec.chunkForChunkIdx(_permutatedChunks[Arrays.binarySearch(_localChunks, _cs.cidx())]);
+
+      int[] permutedRows = IntStream.range(0, cs._len).toArray();
+      permute(permutedRows, rng);
+
+      for (int row : permutedRows) {
+        if (cs.isNA(row)) {
+          nc.addNA();
+        } else {
+          switch (_cs.vec().get_type()) {
+            case Vec.T_BAD:
+              break;
+            case Vec.T_UUID:
+              nc.addUUID(cs, row);
+              break;
+            case Vec.T_STR:
+              nc.addStr(cs, row);
+              break;
+            case Vec.T_NUM:
+              nc.addNum(cs.atd(row));
+              break;
+            case Vec.T_CAT:
+              nc.addCategorical((int) cs.at8(row));
+              break;
+            case Vec.T_TIME:
+              nc.addNum(cs.at8(row), 0);
+              break;
+            default:
+              throw new IllegalArgumentException("Unsupported vector type: " + cs.vec().get_type());
+          }
         }
       }
     }
@@ -922,13 +957,19 @@ public class VecUtils {
 
   /**
    * Randomly shuffle a Vec. 
-   * @param iVec original Vec
-   * @param srcVec a copy of original Vec, to be shuffled
+   * @param origVec original Vec
    * @param seed seed for random generator
    * @return shuffled Vec
    */
-  public static Vec shuffleVec(Vec iVec, Vec srcVec, final long seed) {
-    new ShuffleVecTask(seed).doAll(iVec, srcVec);
-    return srcVec;
+  public static Vec shuffleVec(final Vec origVec, final long seed) {
+    Vec v =  new ShuffleVecTask(origVec, seed).doAll( origVec.get_type(), origVec).outputFrame().anyVec();
+    if (origVec.isCategorical())
+      v.setDomain(origVec.domain());
+
+    return v;
   }
+
+
+
+
 }

@@ -112,7 +112,7 @@ public class PermutationVarImp {
                     continue;
 
                 // shuffle values of feature
-                shuffledFeature = VecUtils.shuffleVec(fr.vec(f), fr.vec(f).makeCopy(), seed);
+                shuffledFeature = VecUtils.shuffleVec(fr.vec(f),  seed);
                 Vec origFeature = fr.replace(f, shuffledFeature);
 
                 // score the model again and compute diff
