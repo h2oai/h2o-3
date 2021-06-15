@@ -251,10 +251,10 @@ public class IsolationTree {
      */
     public static double[] gaussianVector(int n, int zeroNum, long seed) {
         double[] gaussian = ArrayUtils.gaussianVector(n, seed);
-        HashSet<Long> indexToMakeZero = CollectionUtils.setOfUniqueRandomNumbers(zeroNum, n, seed);
+        int[] indexToMakeZero = CollectionUtils.setOfUniqueRandomNumbers(zeroNum, n, seed);
 
-        for (Long index: indexToMakeZero) {
-            gaussian[index.intValue()] = 0.0;
+        for (int index: indexToMakeZero) {
+            gaussian[index] = 0.0;
         }
         return gaussian;
     }
