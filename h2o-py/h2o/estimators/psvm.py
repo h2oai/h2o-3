@@ -19,6 +19,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     """
 
     algo = "psvm"
+    supervised_learning = True
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

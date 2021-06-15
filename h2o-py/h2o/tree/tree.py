@@ -1,8 +1,6 @@
 import math
 
 import h2o
-from h2o.estimators import H2OXGBoostEstimator
-from h2o.utils.metaclass import deprecated_fn
 
 
 class H2OTree(object):
@@ -406,7 +404,7 @@ class H2OTree(object):
     def __decode_categoricals(self, model, levels):
         string_levels = len(self._left_children) * [None]
 
-        if type(model) is H2OXGBoostEstimator:
+        if model.algo == 'xgboost':
             return string_levels
 
         for i in range(0, len(self._left_children)):

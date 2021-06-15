@@ -19,6 +19,7 @@ class H2OAggregatorEstimator(H2OEstimator):
     """
 
     algo = "aggregator"
+    supervised_learning = False
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

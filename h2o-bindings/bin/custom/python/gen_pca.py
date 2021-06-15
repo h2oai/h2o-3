@@ -1,3 +1,6 @@
+supervised_learning = False
+
+
 def class_extensions():
     def init_for_pipeline(self):
         """

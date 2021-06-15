@@ -1,3 +1,15 @@
+options = dict(
+    verbose=True,
+    model_extensions=[
+        'h2o.model.extensions.ScoringHistoryTrees',
+        'h2o.model.extensions.VariableImportance',
+        'h2o.model.extensions.FeatureInteraction',
+        'h2o.model.extensions.Trees',
+        'h2o.model.extensions.HStatistic',
+    ],
+)
+
+
 def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('ordinal')

@@ -32,6 +32,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     """
 
     algo = "deeplearning"
+    supervised_learning = True
+    _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryDL',
+                                      'h2o.model.extensions.VariableImportance'],
+                 'verbose': True}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -3226,6 +3230,9 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> model = H2OAutoEncoderEstimator()
     >>> model.train(x=range(4), training_frame=fr)
     """
+
+    supervised_learning = False
+
     def __init__(self, **kwargs):
         super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
         self._parms['autoencoder'] = True

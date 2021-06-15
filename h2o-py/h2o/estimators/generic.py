@@ -19,6 +19,8 @@ class H2OGenericEstimator(H2OEstimator):
     """
 
     algo = "generic"
+    supervised_learning = False
+    _options_ = {'requires_training_frame': False}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -98,13 +100,6 @@ class H2OGenericEstimator(H2OEstimator):
         assert_is_type(path, None, str)
         self._parms["path"] = path
 
-
-    def _requires_training_frame(self):
-        """
-        Determines if Generic model requires a training frame.
-        :return: False.
-        """
-        return False
 
     @staticmethod
     def from_file(file=str):

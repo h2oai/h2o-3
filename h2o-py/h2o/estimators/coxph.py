@@ -20,6 +20,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     """
 
     algo = "coxph"
+    supervised_learning = True
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

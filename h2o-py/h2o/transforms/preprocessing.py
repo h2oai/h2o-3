@@ -31,16 +31,13 @@ class H2OScaler(H2OTransformer):
         self._means = None
         self._stds = None
 
-
     @property
     def means(self):
         return self._means
 
-
     @property
     def stds(self):
         return self._stds
-
 
     def fit(self, X, y=None, **params):
         """
@@ -63,7 +60,6 @@ class H2OScaler(H2OTransformer):
             self._stds = False
         return self
 
-
     def transform(self, X, y=None, **params):
         """
         Scale an H2OFrame with the fitted means and standard deviations.
@@ -74,7 +70,6 @@ class H2OScaler(H2OTransformer):
         :returns: A scaled H2OFrame.
         """
         return X.scale(self.means, self.stds)
-
 
     def inverse_transform(self, X, y=None, **params):
         """
@@ -90,28 +85,20 @@ class H2OScaler(H2OTransformer):
         return X
 
 
-
-
 class H2OColSelect(H2OTransformer):
 
     def __init__(self, cols):
         self.cols = cols
 
-
     def fit(self, X, y=None, **params):
         return self
-
 
     def transform(self, X, y=None, **params):
         return X[self.cols]
 
-
     def to_rest(self, step_name):
         args = [step_name, "H2OColSelect", ("(cols_py dummy %r)" % self.cols), False, "|"]
         return super(H2OColSelect, self).to_rest(args)
-
-
-
 
 
 class H2OColOp(H2OTransformer):
@@ -165,8 +152,6 @@ class H2OColOp(H2OTransformer):
             [step_name, self.__class__.__name__, ast, self.inplace, "|".join(new_col_names)])
 
 
-
-
 class H2OBinaryOp(H2OColOp):
     """Perform a binary operation on a column.
 
@@ -188,7 +173,6 @@ class H2OBinaryOp(H2OColOp):
     def _transform_helper(self, X, **params):
         if self.left is None: return self.fun(X[self.col], X[self.right.col] if self.right_is_col else self.right)
         return self.fun(X[self.left.col] if self.left_is_col else self.left, X[self.col])
-
 
 
 class H2OCol(object):

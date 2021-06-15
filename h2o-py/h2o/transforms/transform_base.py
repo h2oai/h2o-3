@@ -31,8 +31,8 @@ class H2OTransformer(object):
       - to_rest
     """
 
-    # def __init__(self):
-    #   self.parms=None
+    def __init__(self):
+        pass
 
 
     def fit(self, X, y=None, **params):

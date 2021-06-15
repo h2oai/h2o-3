@@ -64,14 +64,9 @@ from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
-from h2o.estimators.kmeans import H2OKMeansEstimator
-from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
-from h2o.estimators.random_forest import H2ORandomForestEstimator
-from h2o.transforms.decomposition import H2OPCA
+from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
+    H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2ORandomForestEstimator, \
+    H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
 from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
@@ -353,7 +348,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     elif algo == "gam": model = H2OGeneralizedAdditiveEstimator(**kwargs)
     elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
     elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
-    elif algo == "pca": model = H2OPCA(**kwargs)
+    elif algo == "pca": model = H2OPrincipalComponentAnalysisEstimator(**kwargs)
     else: raise ValueError
     if algo == "kmeans" or algo == "pca": model.train(x=x, training_frame=train)
     else: model.train(x=x, y=y, training_frame=train)

@@ -20,6 +20,7 @@ class H2OKMeansEstimator(H2OEstimator):
     """
 
     algo = "kmeans"
+    supervised_learning = False
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
