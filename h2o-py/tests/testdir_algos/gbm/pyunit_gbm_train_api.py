@@ -19,6 +19,7 @@ def test_train_returns_the_trained_model():
     
     assert isinstance(model, ModelBase)
     assert model is gbm
+    model.predict(fr)
 
 
 pu.run_tests([

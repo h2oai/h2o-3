@@ -19,6 +19,7 @@ def test_train_returns_leader_model():
     
     assert isinstance(model, ModelBase)
     assert model.key == aml.leader.key
+    model.predict(fr)
 
 
 pu.run_tests([

@@ -348,7 +348,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         x = list(xset)
         parms["x"] = x
         self.build_model(parms)
-        return self.models
+        return self
 
     def resume(self, recovery_dir=None, **kwargs):
         """

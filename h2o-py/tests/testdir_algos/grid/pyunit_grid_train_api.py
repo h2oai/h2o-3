@@ -22,10 +22,10 @@ def test_train_returns_the_trained_models():
             learn_rate=[0.1, 0.5]
         )
     )
-    models = grid.train(y=target, training_frame=fr)
-    assert isinstance(models, list)
-    assert len(models) == 4
-    assert all([isinstance(m, ModelBase) for m in models])
+    result = grid.train(y=target, training_frame=fr)
+    assert isinstance(result, H2OGridSearch)
+    assert result is grid
+    result.predict(fr)
 
 
 pu.run_tests([
