@@ -7,10 +7,7 @@ import water.Scope;
 import water.rapids.Env;
 import water.rapids.Session;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -355,6 +352,15 @@ public class TestFrameBuilder {
             else
               nchunks[colIdx].addNA();
             break;
+          case Vec.T_UUID:
+            final String strValue = stringData.get(colIdx)[i];
+            if (strValue == null)
+              nchunks[colIdx].addNA();
+            else {
+              UUID uuidValue = UUID.fromString(strValue);
+              nchunks[colIdx].addUUID(uuidValue);
+            }
+            break;
           case Vec.T_BAD:
             nchunks[colIdx].addNum(numericData.get(colIdx)[i]);
             break;
@@ -392,6 +398,7 @@ public class TestFrameBuilder {
         case Vec.T_CAT:
           // initiate domains if there is any categorical column and fall-through
           domains = new String[vecTypes.length][];
+        case Vec.T_UUID:
         case Vec.T_STR:
           if(stringData.get(i)==null){
             stringData.put(i, new String[0]); // init with no data as default
@@ -449,6 +456,7 @@ public class TestFrameBuilder {
           break;
         case Vec.T_CAT: // fall-through to T_CAT
         case Vec.T_STR:
+        case Vec.T_UUID:
           if (numRows == NOT_SET) {
             numRows = stringData.get(colIdx).length;
           } else {
@@ -458,8 +466,8 @@ public class TestFrameBuilder {
         case Vec.T_BAD:
           final double[] data = numericData.get(colIdx);
           numRows = data.length;
-          for (int i = 0; i < data.length; i++) {
-            throwIf(!Double.isNaN(data[i]), "All elements in a bad column must be NAs.");
+          for (double datum : data) {
+            throwIf(!Double.isNaN(datum), "All elements in a bad column must be NAs.");
           }
           break;
         default:
