@@ -8,7 +8,6 @@ test.Glrm.mojo <-
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    e <- tryCatch({
       numTest = 1000 # set test dataset to contain 1000 rows
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
       modelAndDir<-buildModelSaveMojoGLRM(params_prob_data$params) # build the model and save mojo
@@ -39,9 +38,6 @@ test.Glrm.mojo <-
       twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename)
       xFactorTest <- h2o.getFrame(paste("GLRMLoading", twoFrames$frameId, sep="_"))
       compareFrames(xFactorTest, twoFrames$mojoPredict, prob=1, tolerance =1e-6)
-    }, error = function(x) x)
-    if (!is.null(e)&& (!all(sapply("wget", grepl, e[[1]]))))
-      FAIL(e)   # throw error unless it is the stupid wget error.
   }
 
 setParmsData <- function(numTest=1000) {

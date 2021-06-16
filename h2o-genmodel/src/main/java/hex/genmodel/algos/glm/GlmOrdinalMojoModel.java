@@ -1,5 +1,7 @@
 package hex.genmodel.algos.glm;
 
+import hex.genmodel.utils.ArrayUtils;
+
 import java.util.Arrays;
 
 public class GlmOrdinalMojoModel extends GlmMojoModelBase {
@@ -51,7 +53,6 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
           }
         }
       }
-
       for (int i = 0; i < _nums; ++i) {
         preds[c + 1] += _beta[i+noff + c * P] * data[i+_cats];
       }
@@ -64,19 +65,10 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
       double currCDF = 1.0 / (1 + Math.exp(-eta));
       preds[cInd + 1] = currCDF - previousCDF;
       previousCDF = currCDF;
-
-      if (eta > 0) { // found the correct class
-        preds[0] = cInd;
-        break;
-      }
-    }
-    for (int cInd = (int) preds[0] + 1; cInd < lastClass; cInd++) {  // continue PDF calculation
-      double currCDF = 1.0 / (1 + Math.exp(-preds[cInd + 1]));
-      preds[cInd + 1] = currCDF - previousCDF;
-      previousCDF = currCDF;
-
     }
     preds[_nclasses] = 1-previousCDF;
+    preds[0] = 0;
+    preds[0] = ArrayUtils.maxIndex(preds)-1;
     return preds;
   }
 }
