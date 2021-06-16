@@ -8,8 +8,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
-import static org.junit.Assert.*;
-import static water.TestUtil.ar;
+import static org.junit.Assert.assertEquals;
 
 public class MatrixUtilsTest extends TestUtil {
 

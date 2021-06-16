@@ -2263,7 +2263,7 @@ h2o.scoreHistoryGAM <- function(object) {
 h2o.get_ntrees_actual <- function(object) {
     o <- object
     if( is(o, "H2OModel") ) {
-        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost"){
+        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost" | o@algorithm == "extendedisolationforest"){
             sh <- o@model$model_summary['number_of_trees'][,1]
             if( is.null(sh) ) return(NULL)
             sh

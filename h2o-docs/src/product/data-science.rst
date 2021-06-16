@@ -59,6 +59,7 @@ H2O supports the following unsupervised algorithms:
    data-science/aggregator
    data-science/glrm
    data-science/if
+   data-science/eif
    data-science/k-means
    data-science/pca
 

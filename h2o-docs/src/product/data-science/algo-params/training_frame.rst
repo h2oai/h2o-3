@@ -1,7 +1,7 @@
 ``training_frame``
 ------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, AutoML, XGBoost, Aggregator, CoxPH
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, AutoML, XGBoost, Aggregator, CoxPH, Isolation Forest, Extended Isolation Forest
 - Hyperparameter: no
 
 Description

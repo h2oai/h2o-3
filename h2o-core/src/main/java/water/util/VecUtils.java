@@ -7,6 +7,7 @@ import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;

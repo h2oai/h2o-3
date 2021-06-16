@@ -95,6 +95,12 @@ Unsupervised
     :show-inheritance:
     :members:
 
+:mod:`H2OExtendedIsolationForestEstimator`
+------------------------------------------
+.. autoclass:: h2o.estimators.extended_isolation_forest.H2OExtendedIsolationForestEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OGenericEstimator`
 --------------------------
 .. autoclass:: h2o.estimators.generic.H2OGenericEstimator

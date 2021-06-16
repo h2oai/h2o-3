@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class FrameUtils {
 
+  public static final int MAX_VEC_NUM_ROWS_FOR_ARRAY_EXPORT = 100_000;
+
   /** Parse given file(s) into the form of single frame represented by the given key.
    *
    * @param okey  destination key for parsed frame
@@ -180,8 +182,22 @@ public class FrameUtils {
   }
 
   public static double [] asDoubles(Vec v){
-    if(v.length() > 100000) throw new IllegalArgumentException("Vec is too big to be extracted into array");
+    if(v.length() > MAX_VEC_NUM_ROWS_FOR_ARRAY_EXPORT) throw new IllegalArgumentException("Vec is too big to be extracted into array");
     return new Vec2ArryTsk((int)v.length()).doAll(v).res;
+  }
+
+  public static double [][] asDoubles(Frame frame){
+    if (frame.numRows() > MAX_VEC_NUM_ROWS_FOR_ARRAY_EXPORT)
+      throw new IllegalArgumentException("Frame is too big to be extracted into array");
+
+    double [][] frameArray = new double[frame.numCols()][(int) frame.numRows()];
+
+    for (int i = 0; i < frame.numCols(); i++) {
+      Vec v = frame.vec(i);
+      frameArray[i] = new Vec2ArryTsk((int)v.length()).doAll(v).res;
+    }
+
+    return frameArray;
   }
 
   private static class Vec2IntArryTsk extends MRTask<Vec2IntArryTsk> {

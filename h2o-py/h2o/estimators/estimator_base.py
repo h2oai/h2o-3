@@ -300,7 +300,6 @@ class H2OEstimator(ModelBase):
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
             parms["model_id"] = model_id
-    
         if override_default_training_frame:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]

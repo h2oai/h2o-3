@@ -86,6 +86,10 @@ hex.schemas.Word2VecSynonymsV3
 hex.schemas.Word2VecTransformV3
 hex.schemas.Word2VecV3
 hex.schemas.Word2VecV3$Word2VecParametersV3
+hex.schemas.ExtendedIsolationForestModelV3
+hex.schemas.ExtendedIsolationForestModelV3$ExtendedIsolationForestModelOutputV3
+hex.schemas.ExtendedIsolationForestV3
+hex.schemas.ExtendedIsolationForestV3$ExtendedIsolationForestParametersV3
 water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3

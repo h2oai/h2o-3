@@ -343,6 +343,7 @@ def algo_to_classname(algo):
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
+    if algo == "extendedisolationforest": return "H2OExtendedIsolationForestEstimator"
     if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     if algo == "gam": return "H2OGeneralizedAdditiveEstimator"
     if algo == "targetencoder": return "H2OTargetEncoderEstimator"
@@ -443,7 +444,8 @@ def main():
     algo_to_module = dict(
         drf="random_forest",
         naivebayes="naive_bayes",
-        isolationforest="isolation_forest"
+        isolationforest="isolation_forest",
+        extendedisolationforest="extended_isolation_forest"
     )
     algo_to_category = dict(
         svd="Miscellaneous",

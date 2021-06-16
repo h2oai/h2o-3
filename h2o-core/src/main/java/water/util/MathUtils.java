@@ -17,6 +17,12 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 public class MathUtils {
+
+  /**
+   *  Euler–Mascheroni constant (also called Euler's constant)
+   */
+  public static final double EULER_MASCHERONI_CONSTANT = 0.5772156649;
+
   public static double weightedSigma(long nobs, double wsum, double xSum, double xxSum) {
     double reg = 1.0/wsum;
     return nobs <= 1? 0 : Math.sqrt(xxSum*reg - (xSum*xSum) * reg * reg);
@@ -804,5 +810,14 @@ public class MathUtils {
       }
     }
     return transposed;
+  }
+
+  /**
+   * Compute harmonic number estimated by natural logarithm
+   */
+  public static double harmonicNumberEstimation(long value) {
+    if (value <= 0)
+      return 0;
+    return Math.log(value) + EULER_MASCHERONI_CONSTANT;
   }
 }

@@ -388,6 +388,58 @@ public class ArrayUtilsTest {
     assertArrayEquals("Selected array elements mismatch.",
                       expectedSelectedElements, ArrayUtils.select(arr, idxs));
   }
+
+  @Test
+  public void testSubArrayByte() {
+    byte[] a = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    byte[] subA = ArrayUtils.subarray(a, 0, 6);
+    assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5}, subA);
+
+    byte[] subA2 = ArrayUtils.subarray(a, 1, 6);
+    assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, subA2);
+
+    subA2[2] = 2;
+    assertArrayEquals(subA2, new byte[]{1, 2, 2, 4, 5, 6});
+    assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, a);
+  }
+
+  @Test
+  public void testSubArray2D() {
+    Integer[][] a = new Integer[][]{{0, 1}, {2, 3, 4}, {5, 6, 7, 8, 9}, {5}, {5, 6}, {5, 6, 8}};
+    Integer[][] subA = ArrayUtils.subarray2DLazy(a, 0, 2);
+    assertArrayEquals("Wrong column subarray", new Integer[][]{{0, 1}, {2, 3, 4}}, subA);
+
+    Integer[][] subA2 = ArrayUtils.subarray2DLazy(a, 1, 5);
+    assertArrayEquals("Wrong column subarray", new Integer[][]{{2, 3, 4}, {5, 6, 7, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, subA2);
+
+    subA2[1][2] = 2;
+    assertArrayEquals("Subarray not changed",
+            new Integer[][]{{2, 3, 4}, {5, 6, 2, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, subA2);
+    assertArrayEquals("Original array not changed",
+            new Integer[][]{{0, 1}, {2, 3, 4}, {5, 6, 2, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, a);
+  }
+
+  @Test
+  public void testGaussianVector() {
+    double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE);
+    assertArrayEquals(new double[]{0.86685, 0.539654, 1.65799, -0.16698, 2.332985}, a, 1e-3);
+  }
+
+  @Test
+  public void testInnerProductDouble() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double res = ArrayUtils.innerProduct(a, b);
+    assertEquals(21, res, 0);
+  }
+
+  @Test
+  public void testSubDouble() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double[] res = ArrayUtils.subtract(a, b);
+    assertArrayEquals(new double[]{-1, 0.5, 0.25, -8.25, 2, 5}, res, 0);
+  }
   
   @Test
   public void testToStringQuotedElements(){
@@ -407,6 +459,43 @@ public class ArrayUtilsTest {
     final Object[] emptyNames = new String[0];
     final String outputString = toStringQuotedElements(emptyNames);
     assertEquals("[]", outputString);
+  }
+
+  @Test
+  public void testMinMax() {
+    double[] array = new double[]{1.0, 4.0, -1.0};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
+  }
+
+  @Test
+  public void testMinMaxNaN() {
+    double[] array = new double[]{Double.NaN, 4.0, -1.0};
+    double[] res = minMaxValue(array);
+    System.out.println("res = " + Arrays.toString(res));
+    assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
+  }
+
+  @Test
+  public void testMinMaxNaNs() {
+    double[] array = new double[]{Double.NaN, Double.NaN, Double.NaN};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{Double.MAX_VALUE, Double.MIN_VALUE}, res, 0);
+  }
+
+  @Test
+  public void testSubAndMul() {
+    double[] row = new double[]{2.0, 5.0, 6.0};
+    double[] p = new double[]{1.0, 4.0, -1.0};
+    double[] n = new double[]{-0.25, 0, 0.25};
+    double res = subAndMul(row, p, n);
+
+    assertEquals("Result is not correct", 1.5, res, 1e-3);
+
+    double[] sub = ArrayUtils.subtract(row, p);
+    double res2 = ArrayUtils.innerProduct(sub, n);
+
+    assertEquals("Result is not correct", res, res2, 1e-3);
   }
   
   @Test
@@ -431,5 +520,12 @@ public class ArrayUtilsTest {
   public void rangeTest() {
     int[] range = ArrayUtils.range(0, 5);
     assertArrayEquals("It is not a valid range", new int[]{0, 1, 2, 3, 4, 5}, range);
+  }
+
+  @Test
+  public void testUniformDistFromArray() {
+    double[][] array = new double[][]{{1.0, 2.0, 3.0},{-1.0, -2.0, -3.0}};
+    double[] dist = uniformDistFromArray(array, 0xDECAF);
+    assertArrayEquals("Not expected array of size", new double[]{2.763, -2.958}, dist, 10e-3);
   }
 }
