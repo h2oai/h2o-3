@@ -9,6 +9,8 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.VecUtils;
 
+import java.util.UUID;
+
 import static org.junit.Assert.*;
 
 public class TestFrameBuilderTest extends TestUtil {
@@ -288,4 +290,25 @@ public class TestFrameBuilderTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testUUID(){
+    Scope.enter();
+    try {
+      UUID expectedUUID = UUID.randomUUID();
+      Frame f = new TestFrameBuilder()
+              .withVecTypes(Vec.T_UUID)
+              .withDataForCol(0, ar(expectedUUID.toString(), null))
+              .build();
+      assertEquals(2, f.numRows());
+      assertArrayEquals(new byte[]{Vec.T_UUID}, f.types());
+      assertEquals(expectedUUID.getLeastSignificantBits(), f.vec(0).at16l(0));
+      assertEquals(expectedUUID.getMostSignificantBits(), f.vec(0).at16h(0));
+      assertTrue(f.vec(0).isNA(1));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }
