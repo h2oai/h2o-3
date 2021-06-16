@@ -1619,7 +1619,6 @@ class ModelBase(h2o_meta(Keyed)):
             )
             return varimp
 
-
     def permutation_importance_plot(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1,
                                     num_of_features=10, server=False):
         """
