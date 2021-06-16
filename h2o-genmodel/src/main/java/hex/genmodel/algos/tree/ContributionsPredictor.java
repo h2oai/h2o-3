@@ -37,7 +37,7 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
 
   private TreeSHAPPredictor.Workspace getWorkspace() {
     TreeSHAPPredictor.Workspace workspace = _workspace.get();
-    if (workspace == null) {
+    if (workspace == null || workspace.getSize() != _workspaceSize) {
       workspace = _treeSHAPPredictor.makeWorkspace();
       assert workspace.getSize() == _workspaceSize;
       _workspace.set(workspace);
