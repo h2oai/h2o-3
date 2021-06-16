@@ -29,6 +29,7 @@ class H2OExtendedIsolationForestEstimator(H2OEstimator):
     """
 
     algo = "extendedisolationforest"
+    supervised_learning = False
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

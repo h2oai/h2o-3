@@ -1,3 +1,5 @@
+supervised_learning = False
+
 doc = dict(
     __class__="""
 Builds an Extended Isolation Forest model. Extended Isolation Forest generalizes its predecessor algorithm, 
