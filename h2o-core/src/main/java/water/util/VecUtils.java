@@ -12,7 +12,6 @@ import water.parser.BufferedString;
 import water.parser.Categorical;
 
 import java.util.*;
-import java.util.stream.IntStream;
 
 import static water.util.RandomUtils.getRNG;
 
@@ -921,7 +920,7 @@ public class VecUtils {
       Random rng = getRNG(_seed + _cs.start());
       Chunk cs = _vec.chunkForChunkIdx(_permutatedChunks[Arrays.binarySearch(_localChunks, _cs.cidx())]);
 
-      int[] permutedRows = IntStream.range(0, cs._len).toArray();
+      int[] permutedRows = ArrayUtils.seq(0, cs._len);
       permute(permutedRows, rng);
 
       for (int row : permutedRows) {
