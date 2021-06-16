@@ -1471,7 +1471,7 @@ class ModelBase(h2o_meta(Keyed)):
         Plot the variable importance for a trained model.
 
         :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
-        :param server: if true set server settings to matplotlib and show the graph
+        :param server: if true set server settings to matplotlib and do not show the graph
 
         :returns: None.
         """
