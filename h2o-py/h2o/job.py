@@ -13,15 +13,26 @@ import time
 
 import h2o
 from h2o.exceptions import H2OJobCancelled, H2OConnectionError, H2OResponseError, H2OServerError
-from h2o.utils.progressbar import ProgressBar
+from h2o.utils.progressbar import ProgressBar, PBWString, PBWBar, PBWPercentage
 from h2o.utils.shared_utils import clamp
+
+
+class _DefaultJobProgressWidgetFactory(object):
+    """
+    Factory descriptor creating the job progress rendering widgets: this method is called by default for every running job.
+    """
+    def __get__(self, job, owner=None):  # type: (H2OJob, type) -> [ProgressBarWidget]
+        if job is None:  # to be able to replace this factory
+            return self
+        return [PBWString("%s progress:" % job._job_type), PBWBar(), PBWPercentage()]
 
 
 class H2OJob(object):
     """A class representing an H2O Job."""
 
     __PROGRESS_BAR__ = True  # display & update progress bar while polling
-
+    __PROGRESS_WIDGETS__ = _DefaultJobProgressWidgetFactory()
+    
     def __init__(self, jobs, job_type):
         """Initialize new H2OJob object."""
         if "jobs" in jobs:
@@ -55,9 +66,9 @@ class H2OJob(object):
         """
         try:
             hidden = not H2OJob.__PROGRESS_BAR__
-            pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
+            pb = ProgressBar(widgets=self.__PROGRESS_WIDGETS__, hidden=hidden)
             if poll_updates:
-                pb.execute(self._refresh_job_status, print_verbose_info=ft.partial(poll_updates, self))
+                pb.execute(self._refresh_job_status, progress_monitor_fn=ft.partial(poll_updates, self))
             else:
                 pb.execute(self._refresh_job_status)
         except StopIteration as e:
