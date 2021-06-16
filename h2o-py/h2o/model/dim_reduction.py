@@ -101,7 +101,7 @@ class H2ODimReductionModel(ModelBase):
         Library ``matplotlib`` is required for this function.
 
         :param str type: either ``"barplot"`` or ``"lines"``.
-        :param bool server: if true set server settings to matplotlib and show the graph
+        :param bool server: if true set server settings to matplotlib and do not show the graph
         """
         # check for matplotlib. exit if absent.
         plt = get_matplotlib_pyplot(server)
