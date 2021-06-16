@@ -63,6 +63,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     """
 
     algo = "stackedensemble"
+    supervised_learning = True
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]

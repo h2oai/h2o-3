@@ -1,3 +1,11 @@
+options = dict(
+    model_extensions=[
+        'h2o.model.extensions.Trees',
+    ],
+)
+supervised_learning = False
+
+
 def update_param(name, param):
     if name == 'stopping_metric':
         param['values'] = ['AUTO', 'anomaly_score', 'deviance', 'logloss', 'mse', 'rmse', 'mae', 'rmsle',

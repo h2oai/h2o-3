@@ -7,4 +7,3 @@ def update_param(name, param):
         param['values'].remove('anomaly_score')
         return param
     return None  # means no change
-

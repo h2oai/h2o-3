@@ -24,6 +24,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
+    supervised_learning = True
 
     @deprecated_params({'k': 'inflection_point', 'f': 'smoothing', 'noise_level': 'noise'})
     def __init__(self,

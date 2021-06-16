@@ -17,6 +17,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
+from h2o.utils.mixin import assign, mixin
 from h2o.utils.shared_utils import quoted, stringify_dict_as_map
 from h2o.utils.typechecks import assert_is_type, is_type
 
@@ -381,17 +382,16 @@ class H2OGridSearch(h2o_meta(Keyed)):
         training_frame = algo_params.pop("training_frame")
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
-        algo = self.model._compute_algo()  # unique to grid search
-        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm" or \
-                          algo == "isolationforest" or algo == "extendedisolationforest"
         if is_auto_encoder and y is not None:
             raise ValueError("y should not be specified for autoencoder.")
-        if not is_unsupervised and y is None:
-            raise ValueError("Missing response")
-
-        if not is_unsupervised:
-            y = y if y in training_frame.names else training_frame.names[y]
-            self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
+        if self.model.supervised_learning:
+            if y is None:
+                raise ValueError("Missing response")
+            else:
+                y = y if y in training_frame.names else training_frame.names[y]
+                self.model._estimator_type = "classifier" if training_frame.types[y] == "enum" else "regressor"
+        else:
+            self.model._estimator_type = "unsupervised"
         self._model_build(x, y, training_frame, validation_frame, algo_params)
 
     def _model_build(self, x, y, tframe, vframe, kwargs):
@@ -413,7 +413,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         self._run_grid_job(kwargs, rest_ver=rest_ver)
 
     def _run_grid_job(self, params, end_point="", rest_ver=None):
-        algo = self.model._compute_algo()  # unique to grid search
+        algo = self.model.algo
         grid = H2OJob(h2o.api("POST /99/Grid/%s%s" % (algo, end_point), data=params), job_type=(algo + " Grid Build"))
         if self._future:
             self._job = grid
@@ -469,8 +469,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         # m._metrics_class = metrics_class
         m._parms = self._parms
         self.export_checkpoints_dir = m._grid_json["export_checkpoints_dir"]
-        H2OEstimator.mixin(self, model_class)
-        self.__dict__.update(m.__dict__.copy())
+        mixin(self, model_class)
+        assign(self, m)
 
 
     def __getitem__(self, item):
@@ -1566,8 +1566,8 @@ class H2OGridSearch(h2o_meta(Keyed)):
         m._grid_json = grid_json
         # m._metrics_class = metrics_class
         m._parms = grid._parms
-        H2OEstimator.mixin(grid, model_class)
-        grid.__dict__.update(m.__dict__.copy())
+        mixin(grid, model_class)
+        assign(grid, m)
         return grid
 
 

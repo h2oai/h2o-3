@@ -18,6 +18,8 @@ from .metrics_base import H2OMultinomialModelMetrics
 from .metrics_base import H2OOrdinalModelMetrics
 from .metrics_base import H2ORegressionModelMetrics
 
-__all__ = ["H2OAutoEncoderModel", "H2OBinomialModel", "H2OClusteringModel",
-           "ConfusionMatrix", "H2ODimReductionModel", "MetricsBase", "ModelBase",
-           "H2OModelFuture", "H2OSegmentModels"]
+# order here impacts order of presentation in generated documentation
+__all__ = ["ModelBase", "MetricsBase", 
+           "H2OBinomialModel", "H2OMultinomialModel", "H2ORegressionModel", "H2OOrdinalModel",
+           "H2OClusteringModel", "H2ODimReductionModel", "H2OAutoEncoderModel",
+           "ConfusionMatrix", "H2OModelFuture", "H2OSegmentModels"]

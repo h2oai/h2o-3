@@ -4,6 +4,7 @@ from h2o.utils.compatibility import *  # NOQA
 
 from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type
+from .extensions import has_extension
 from .model_base import ModelBase
 
 
@@ -47,7 +48,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('f1', thresholds, train, valid, xval)
 
-
     def F2(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the F2 for a set of thresholds.
@@ -86,7 +86,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('f2', thresholds, train, valid, xval)
 
-
     def F0point5(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the F0.5 for a set of thresholds.
@@ -123,7 +122,6 @@ class H2OBinomialModel(ModelBase):
         >>> F0point5 = gbm.F0point5(train=True,  valid=True,  xval=True)
         """
         return self.metric('f0point5', thresholds, train, valid, xval)
-
 
     def accuracy(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -163,7 +161,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('accuracy', thresholds, train, valid, xval)
 
-
     def error(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the error for a set of thresholds.
@@ -201,7 +198,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.error(train=True, valid=True, xval=True)
         """
         return self.metric('error', thresholds, train, valid, xval)
-
 
     def precision(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -241,7 +237,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('precision', thresholds, train, valid, xval)
 
-
     def tpr(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the True Positive Rate for a set of thresholds.
@@ -279,7 +274,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.tpr(train=True, valid=True, xval=True)
         """
         return self.metric('tpr', thresholds, train, valid, xval)
-
 
     def tnr(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -319,7 +313,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('tnr', thresholds, train, valid, xval)
 
-
     def fnr(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the False Negative Rates for a set of thresholds.
@@ -357,7 +350,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.fnr(train=True, valid=True, xval=True)
         """
         return self.metric('fnr', thresholds, train, valid, xval)
-
 
     def fpr(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -397,7 +389,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('fpr', thresholds, train, valid, xval)
 
-
     def recall(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the recall for a set of thresholds (aka True Positive Rate).
@@ -435,7 +426,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.recall(train=True, valid=True, xval=True)
         """
         return self.metric('recall', thresholds, train, valid, xval)
-
 
     def sensitivity(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -475,7 +465,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('sensitivity', thresholds, train, valid, xval)
 
-
     def fallout(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the fallout for a set of thresholds (aka False Positive Rate).
@@ -513,7 +502,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.fallout(train=True, valid=True, xval=True)
         """
         return self.metric('fallout', thresholds, train, valid, xval)
-
 
     def missrate(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -553,7 +541,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('missrate', thresholds, train, valid, xval)
 
-
     def specificity(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the specificity for a set of thresholds (aka True Negative Rate).
@@ -591,7 +578,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.specificity(train=True, valid=True, xval=True)
         """
         return self.metric('specificity', thresholds, train, valid, xval)
-
 
     def mcc(self, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -631,7 +617,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('mcc', thresholds, train, valid, xval)
 
-
     def max_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the max per class error for a set of thresholds.
@@ -670,7 +655,6 @@ class H2OBinomialModel(ModelBase):
         """
         return self.metric('max_per_class_error', thresholds, train, valid, xval)
 
-
     def mean_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the mean per class error for a set of thresholds.
@@ -708,7 +692,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.mean_per_class_error(train=True, valid=True, xval=True)
         """
         return self.metric('mean_per_class_error', thresholds, train, valid, xval)
-
 
     def metric(self, metric, thresholds=None, train=False, valid=False, xval=False):
         """
@@ -762,7 +745,6 @@ class H2OBinomialModel(ModelBase):
                 m[k] = v.metric(metric, thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def plot(self, timestep="AUTO", metric="AUTO", server=False, **kwargs):
         """
         Plot training set (and validation set if available) scoring history for an H2OBinomialModel.
@@ -783,16 +765,15 @@ class H2OBinomialModel(ModelBase):
         >>> model.train(x=predictors, y=response, training_frame=benign)
         >>> model.plot(timestep="AUTO", metric="objective", server=False)
         """
-        assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse", "objective", 
-                       "negative_log_likelihood")
-        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
-            # make sure metric is not those of GLM metrics for other models
-            if metric in ("negative_log_likelihood", "objective"):
-                raise H2OValueError("Metrics: negative_log_likelihood, objective are only for glm models.")
-            if metric == "AUTO":
-                metric = "logloss"
-        self._plot(timestep=timestep, metric=metric, server=server)
-
+        if not has_extension(self, 'ScoringHistory'):
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
+            
+        valid_metrics = self._allowed_metrics('binomial')
+        if valid_metrics is not None:
+            assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2OBinomialModel must be one of %s" % valid_metrics
+        if metric == "AUTO":
+            metric = self._default_metric('binomial') or 'AUTO'
+        self.scoring_history_plot(timestep=timestep, metric=metric, server=server)
 
     def roc(self, train=False, valid=False, xval=False):
         """
@@ -830,7 +811,6 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.roc(train=True, valid=True, xval=True)
         """
         return self._delegate_to_metrics('roc', train, valid, xval)
-
 
     def gains_lift(self, train=False, valid=False, xval=False):
         """
@@ -932,7 +912,6 @@ class H2OBinomialModel(ModelBase):
         return self._delegate_to_metrics('confusion_matrix', train, valid, xval,
                                          metrics=metrics, thresholds=thresholds)
 
-
     def find_threshold_by_max_metric(self, metric, train=False, valid=False, xval=False):
         """
         If all are False (default), then return the training metric value.
@@ -971,7 +950,6 @@ class H2OBinomialModel(ModelBase):
         >>> max_metric
         """
         return self._delegate_to_metrics('find_threshold_by_max_metric', train, valid, xval, metric=metric)
-
 
     def find_idx_by_threshold(self, threshold, train=False, valid=False, xval=False):
         """
@@ -1012,7 +990,6 @@ class H2OBinomialModel(ModelBase):
         >>> idx_threshold
         """
         return self._delegate_to_metrics('find_idx_by_threshold', train, valid, xval, threshold=threshold)
-
 
     def _delegate_to_metrics(self, method, train=False, valid=False, xval=False, **kwargs):
         tm = ModelBase._get_metrics(self, train, valid, xval)

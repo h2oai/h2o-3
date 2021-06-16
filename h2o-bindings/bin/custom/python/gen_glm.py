@@ -1,3 +1,10 @@
+options = dict(
+    model_extensions=[
+        'h2o.model.extensions.ScoringHistoryGLM',
+        'h2o.model.extensions.StandardCoef',
+        'h2o.model.extensions.VariableImportance',
+    ],
+)
 deprecated_params = dict(Lambda='lambda_')
 
 

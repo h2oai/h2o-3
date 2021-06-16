@@ -32,10 +32,11 @@ import sys
 
 from sklearn.base import ClassifierMixin, RegressorMixin
 
+from h2o.utils.mixin import register_module
 from .. import automl
 from .. import estimators
 from .. import transforms
-from .wrapper import estimator, params_as_h2o_frames, register_module, transformer, H2OConnectionMonitorMixin, \
+from .wrapper import estimator, params_as_h2o_frames, transformer, H2OConnectionMonitorMixin, \
     H2OEstimatorPredictProbabilitiesSupport, H2OEstimatorScoreSupport, H2OEstimatorTransformSupport
 
 module = sys.modules[__name__]

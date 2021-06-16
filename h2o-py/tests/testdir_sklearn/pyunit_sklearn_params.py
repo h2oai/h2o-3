@@ -112,39 +112,40 @@ def test_all_params_can_be_set_as_properties():
 
 def test_params_conflicting_with_sklearn_api_are_still_available():
     pca = H2OPCA()
-    assert pca.transform != 'NONE'
+    assert pca.transform != 'none'
     assert callable(pca.transform), "`transform` method from sklearn API has been replaced by a property"
     # conflicting param can be accessed normally using get_params()
-    assert pca.get_params()['transform'] == 'NONE'
+    print(pca.get_params())
+    assert pca.get_params()['transform'] == 'none'
     # property is accessible directly using a trailing underscore
-    assert pca.transform_ == 'NONE'
+    assert pca.transform_ == 'none'
 
-    pca = H2OPCA(transform='DEMEAN')
+    pca = H2OPCA(transform='demean')
     assert callable(pca.transform), "`transform` method from sklearn API has been replaced by a property"
-    assert pca.get_params()['transform'] == 'DEMEAN'
-    assert pca.transform_ == 'DEMEAN'
+    assert pca.get_params()['transform'] == 'demean'
+    assert pca.transform_ == 'demean'
 
     # conflicting param can be modified normally using set_params()
-    pca.set_params(transform='DESCALE')
-    assert pca.get_params()['transform'] == 'DESCALE'
-    assert pca.transform_ == 'DESCALE'
+    pca.set_params(transform='descale')
+    assert pca.get_params()['transform'] == 'descale'
+    assert pca.transform_ == 'descale'
 
     # conflicting property can be set directly using a trailing underscore
-    pca.transform_ = 'NORMALIZE'
-    assert pca.get_params()['transform'] == 'NORMALIZE'
-    assert pca.transform_ == 'NORMALIZE'
+    pca.transform_ = 'normalize'
+    assert pca.get_params()['transform'] == 'normalize'
+    assert pca.transform_ == 'normalize'
 
 
 def test_params_are_correctly_passed_to_underlying_transformer():
     pca = H2OPCA(seed=seed)
-    pca.set_params(transform='DEMEAN', k=3)
+    pca.set_params(transform='demean', k=3)
     pca.model_id = "dummy"
     assert pca.estimator is None
     pca._make_estimator()  # normally done when calling `fit`
     assert pca.estimator
     parms = pca.estimator._parms
     assert parms['seed'] == seed
-    assert parms['transform'] == 'DEMEAN'
+    assert parms['transform'] == 'demean'
     assert parms['k'] == 3
     assert parms['model_id'] == "dummy"
     assert parms['max_iterations'] is None

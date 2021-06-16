@@ -19,6 +19,8 @@ class H2OWord2vecEstimator(H2OEstimator):
     """
 
     algo = "word2vec"
+    supervised_learning = False
+    _options_ = {'requires_training_frame': False}
 
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -418,13 +420,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
-    def _requires_training_frame(self):
-        """
-        Determines if Word2Vec algorithm requires a training frame.
-        :return: False.
-        """
-        return False
 
     @staticmethod
     def from_external(external=H2OFrame):

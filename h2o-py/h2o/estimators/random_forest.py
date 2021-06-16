@@ -22,6 +22,11 @@ class H2ORandomForestEstimator(H2OEstimator):
     """
 
     algo = "drf"
+    supervised_learning = True
+    _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryTrees',
+                                      'h2o.model.extensions.VariableImportance',
+                                      'h2o.model.extensions.Trees'],
+                 'verbose': True}
 
     @deprecated_params({'offset_column': None})
     def __init__(self,

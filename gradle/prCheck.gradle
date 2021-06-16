@@ -53,6 +53,10 @@ def checkPull(changeId) {
     println ""
     println "Checking pull request ($changeId): $title"
     println ""
+    if (title.contains("[nocheck]")) {
+        println "PR check will be skipped due to user request"
+        return []    
+    }
     def hexdevMatcher = title =~ /.*HEXDEV-[0-9]{4,5}.*/
     def itaMatcher = title =~ /.*ITA-[0-9]{3,5}.*/
     if (hexdevMatcher.matches() || itaMatcher.matches()) {
