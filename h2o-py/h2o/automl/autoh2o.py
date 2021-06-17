@@ -567,6 +567,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             poll_updates(self._job, 1)
 
         self._fetch()
+        return self.leader
 
     #---------------------------------------------------------------------------
     # Predict with AutoML
