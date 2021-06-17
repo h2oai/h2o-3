@@ -40,16 +40,12 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
-                 max_confusion_matrix_size=20,  # type: int
                  ntrees=50,  # type: int
                  max_depth=20,  # type: int
                  min_rows=1.0,  # type: float
                  nbins=20,  # type: int
                  nbins_top_level=1024,  # type: int
                  nbins_cats=1024,  # type: int
-                 stopping_rounds=0,  # type: int
-                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
-                 stopping_tolerance=0.001,  # type: float
                  max_runtime_secs=0.0,  # type: float
                  seed=-1,  # type: int
                  mtries=-1,  # type: int
@@ -140,10 +136,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                less than 1.0). Requires balance_classes.
                Defaults to ``5.0``.
         :type max_after_balance_size: float
-        :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
-               the Logs
-               Defaults to ``20``.
-        :type max_confusion_matrix_size: int
         :param ntrees: Number of trees.
                Defaults to ``50``.
         :type ntrees: int
@@ -165,20 +157,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                best point. Higher values can lead to more overfitting.
                Defaults to ``1024``.
         :type nbins_cats: int
-        :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
-               length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
-               Defaults to ``0``.
-        :type stopping_rounds: int
-        :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
-               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
-               used in GBM and DRF with the Python client.
-               Defaults to ``"auto"``.
-        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
-               "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
-        :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
-               is not at least this much)
-               Defaults to ``0.001``.
-        :type stopping_tolerance: float
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
                Defaults to ``0.0``.
         :type max_runtime_secs: float
@@ -275,16 +253,12 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
-        self.max_confusion_matrix_size = max_confusion_matrix_size
         self.ntrees = ntrees
         self.max_depth = max_depth
         self.min_rows = min_rows
         self.nbins = nbins
         self.nbins_top_level = nbins_top_level
         self.nbins_cats = nbins_cats
-        self.stopping_rounds = stopping_rounds
-        self.stopping_metric = stopping_metric
-        self.stopping_tolerance = stopping_tolerance
         self.max_runtime_secs = max_runtime_secs
         self.seed = seed
         self.mtries = mtries
@@ -565,20 +539,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._parms["max_after_balance_size"] = max_after_balance_size
 
     @property
-    def max_confusion_matrix_size(self):
-        """
-        [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
-
-        Type: ``int``, defaults to ``20``.
-        """
-        return self._parms.get("max_confusion_matrix_size")
-
-    @max_confusion_matrix_size.setter
-    def max_confusion_matrix_size(self, max_confusion_matrix_size):
-        assert_is_type(max_confusion_matrix_size, None, int)
-        self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
-
-    @property
     def ntrees(self):
         """
         Number of trees.
@@ -663,52 +623,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def nbins_cats(self, nbins_cats):
         assert_is_type(nbins_cats, None, int)
         self._parms["nbins_cats"] = nbins_cats
-
-    @property
-    def stopping_rounds(self):
-        """
-        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
-
-        Type: ``int``, defaults to ``0``.
-        """
-        return self._parms.get("stopping_rounds")
-
-    @stopping_rounds.setter
-    def stopping_rounds(self, stopping_rounds):
-        assert_is_type(stopping_rounds, None, int)
-        self._parms["stopping_rounds"] = stopping_rounds
-
-    @property
-    def stopping_metric(self):
-        """
-        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
-        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
-        client.
-
-        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
-        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``, defaults to ``"auto"``.
-        """
-        return self._parms.get("stopping_metric")
-
-    @stopping_metric.setter
-    def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
-        self._parms["stopping_metric"] = stopping_metric
-
-    @property
-    def stopping_tolerance(self):
-        """
-        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
-
-        Type: ``float``, defaults to ``0.001``.
-        """
-        return self._parms.get("stopping_tolerance")
-
-    @stopping_tolerance.setter
-    def stopping_tolerance(self, stopping_tolerance):
-        assert_is_type(stopping_tolerance, None, numeric)
-        self._parms["stopping_tolerance"] = stopping_tolerance
 
     @property
     def max_runtime_secs(self):
