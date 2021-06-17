@@ -11,25 +11,29 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.TreeSet;
+
+import static water.util.RandomUtils.getRNG;
 
 
 /**
  * Area under uplift curve
  */
 public class AUUC extends Iced{
-    public final int _nBins;  // Max number of bins; can be less if there are fewer points
-    public final int _maxIdx;  // Threshold that maximizes the default criterion
-    public final double[] _ths; // Thresholds
-    public final long[] _treatment; // Treatments  
-    public final long[] _control; // Controls
-    public final long[] _yTreatment; // Treatment y==1
-    public final long[] _yControl; // Control y==1
-    public final long[] _frequency; // number of data in each bin
-    public final long[] _frequencyCumsum;
-    public double[] _uplift;
+    public final int _nBins;              // max number of bins; can be less if there are fewer points
+    public final int _maxIdx;             // id that maximize uplift
+    public final double[] _ths;           // threshold of predictions created based on quantile computation
+    public final long[] _treatment;       // treatments  
+    public final long[] _control;         // controls
+    public final long[] _yTreatment;      // treatment group and y==1
+    public final long[] _yControl;        // control group and y==1
+    public final long[] _frequency;       // number of data in each bin
+    public final long[] _frequencyCumsum; // cumulative sum of frequency to plot AUUC
+    public double[] _uplift;              //
     public final long _n;
 
     
@@ -39,7 +43,7 @@ public class AUUC extends Iced{
 
     public final AUUCType _auucType;
     public double _auuc;
-
+    
     public double threshold( int idx ) { return _ths[idx]; }
     public long treatment( int idx ) { return _treatment[idx]; }
     public long control( int idx ) { return _control[idx]; }
@@ -62,7 +66,6 @@ public class AUUC extends Iced{
 
     private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         // Copy result arrays into base object, shrinking to match actual bins
-        System.out.println(bldr.toDebugString());
         _auucType = auucType;
         _nBins = bldr._nBins;
         assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
@@ -201,6 +204,7 @@ public class AUUC extends Iced{
         final long[] _yControl;         // number of data from control group with prediction = 1 
         final long[] _frequency;        // frequency of data in each bin
         long _n;
+        
         public AUUCBuilder(double[] thresholds) {
             int nBins = thresholds.length;
             _nBins = nBins;
@@ -209,7 +213,7 @@ public class AUUC extends Iced{
             _control = new long[nBins];   
             _yTreatment = new long[nBins]; 
             _yControl = new long[nBins];  
-            _frequency = new long[nBins];  
+            _frequency = new long[nBins];
         }
 
         public void perRow(double pred, double w, double y, double uplift) {
