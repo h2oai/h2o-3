@@ -57,30 +57,30 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * Therefore, if some models were trained with/without cross-validation, or with different training or validation frames,
    * then we can't guarantee the fairness of the leaderboard ranking.
    *
-   * @param project_name
+   * @param projectName
    * @param eventLog
    * @param leaderboardFrame
-   * @param sort_metric
+   * @param sortMetric
    * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
    */
-  public static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
-    Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
+  public static Leaderboard getOrMake(String projectName, EventLog eventLog, Frame leaderboardFrame, String sortMetric) {
+    Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(projectName)));
     if (null != leaderboard) {
       if (leaderboardFrame != null
               && (!leaderboardFrame._key.equals(leaderboard._leaderboard_frame_key)
                           || leaderboardFrame.checksum() != leaderboard._leaderboard_frame_checksum)) {
-        throw new H2OIllegalArgumentException("Cannot use leaderboard "+project_name+" with a new leaderboard frame"
+        throw new H2OIllegalArgumentException("Cannot use leaderboard "+projectName+" with a new leaderboard frame"
                 +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key+").");
       } else {
-        eventLog.warn(Stage.Workflow, "New models will be added to existing leaderboard "+project_name
+        eventLog.warn(Stage.Workflow, "New models will be added to existing leaderboard "+projectName
                 +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
       }
-      if (sort_metric != null && !sort_metric.equals(leaderboard._sort_metric)) {
-        leaderboard._sort_metric = sort_metric.toLowerCase();
+      if (sortMetric != null && !sortMetric.equals(leaderboard._sort_metric)) {
+        leaderboard._sort_metric = sortMetric.toLowerCase();
         if (leaderboard.getLeader() != null) leaderboard.setDefaultMetrics(leaderboard.getLeader()); //reinitialize
       }
     } else {
-      leaderboard = new Leaderboard(project_name, eventLog, leaderboardFrame, sort_metric);
+      leaderboard = new Leaderboard(projectName, eventLog, leaderboardFrame, sortMetric);
     }
     DKV.put(leaderboard);
     return leaderboard;
@@ -152,18 +152,18 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
 
   /**
    * Constructs a new leaderboard (doesn't put it in DKV).
-   * @param project_name
+   * @param projectName
    * @param eventLog
    * @param leaderboardFrame
-   * @param sort_metric
+   * @param sortMetric
    */
-  public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
-    super(Key.make(idForProject(project_name)));
-    _project_name = project_name;
+  public Leaderboard(String projectName, EventLog eventLog, Frame leaderboardFrame, String sortMetric) {
+    super(Key.make(idForProject(projectName)));
+    _project_name = projectName;
     _eventlog_key = eventLog._key;
     _leaderboard_frame_key = leaderboardFrame == null ? null : leaderboardFrame._key;
     _leaderboard_frame_checksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
-    _sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
+    _sort_metric = sortMetric == null ? null : sortMetric.toLowerCase();
   }
 
   /**
