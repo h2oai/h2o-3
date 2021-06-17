@@ -31,6 +31,7 @@ public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
   public double _anomaly_score = Double.NaN;
   public double _anomaly_score_normalized = Double.NaN;
+  public double _AUUC;
 
   public ScoreKeeper() {}
 
@@ -108,6 +109,8 @@ public class ScoreKeeper extends Iced {
       _r2 = ((ModelMetricsOrdinal)m).r2();
     } else if (m instanceof ScoreKeeperAware) {
       ((ScoreKeeperAware) m).fillTo(this);
+    } else if (m instanceof ModelMetricsBinomialUplift){
+      _AUUC = ((ModelMetricsBinomialUplift)m).auuc();
     }
     if (m._custom_metric != null )
       _custom_metric =  m._custom_metric.value;
@@ -134,6 +137,7 @@ public class ScoreKeeper extends Iced {
     misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
     mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
     anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false),
+    AUUC(ConvergenceStrategy.MORE_IS_BETTER, false),
     custom(ConvergenceStrategy.LESS_IS_BETTER, false),
     custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
     ;
@@ -202,6 +206,8 @@ public class ScoreKeeper extends Iced {
         case anomaly_score:
           val = skj._anomaly_score_normalized;
           break;
+        case AUUC:
+          val = skj._AUUC;
         default:
           throw H2O.unimpl("Undefined stopping criterion.");
       }

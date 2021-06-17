@@ -77,12 +77,13 @@ public class AUUC extends Iced{
         _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
         _uplift = new double[_nBins];
 
-        // Rollup counts, so that computing the rates are easier.
+        // Rollup counts
         long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0, tmpf= 0;
         for( int i=0; i<_nBins; i++ ) {
             tmpt += _treatment[i]; _treatment[i] = tmpt;
             tmpc += _control[i]; _control[i] = tmpc;
             tmptp += _yTreatment[i]; _yTreatment[i] = tmptp;
+            tmpcp += _yControl[i]; _yControl[i] = tmpcp;
             tmpf += _frequencyCumsum[i]; _frequencyCumsum[i] = tmpf;
         }
         for( int i=0; i<_nBins; i++ ) {
@@ -118,7 +119,7 @@ public class AUUC extends Iced{
         _auucType = auuc._auucType;
     }
 
-    AUUC() {
+    public AUUC() {
         _nBins = 0;
         _n = 0;
         _ths = new double[0];
@@ -126,18 +127,6 @@ public class AUUC extends Iced{
         _auuc = Double.NaN;
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
-    }
-    
-    /**
-     * Creates a dummy AUUC instance with no metrics, meant to prevent possible NPEs
-     * @return a valid AUUC instance
-     */
-    public static AUUC emptyAUUC() {
-        return new AUUC();
-    }
-
-    private boolean isEmpty() {
-        return _nBins == 0;
     }
     
     public static double[] calculateQuantileThresholds(int groups, Vec preds) {
@@ -167,6 +156,7 @@ public class AUUC extends Iced{
             if (qm != null) qm.remove();
             if (fr != null) DKV.remove(fr._key);
         }
+        
         return quantiles;
     }
     

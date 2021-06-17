@@ -97,7 +97,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" Description: " + (_description == null ? "N/A" : _description) + "\n");
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
-    return appendToStringMetrics(sb).toString();
+    if(!this._model_category.equals(ModelCategory.BinomialUplift)) {
+      return appendToStringMetrics(sb).toString();
+    } else {
+      return sb.toString();
+    }
   }
 
   protected StringBuilder appendToStringMetrics(StringBuilder sb) {

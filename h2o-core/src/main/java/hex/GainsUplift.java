@@ -29,6 +29,9 @@ public class GainsUplift extends Iced {
     public long[] _nct0;
     public long[] _ny1ct1;
     public long[] _ny1ct0;
+    public double[] _qiniUplift;
+    public double[] _liftUplift;
+    public double[] _gainUplift;
     TwoDimTable table;
 
     public GainsUplift(Vec preds, Vec labels, Vec uplift) {
@@ -133,6 +136,20 @@ public class GainsUplift extends Iced {
             _nct0 = gt.nct0();
             _ny1ct1 = gt.ny1ct1();
             _ny1ct0 = gt.ny1ct0();
+            int n = _nct1.length;
+            _qiniUplift = new double[n];
+            _liftUplift = new double[n];
+            _gainUplift = new double[n];
+            for(int i=0; i<_nct1.length; i++){
+                _qiniUplift[i] = AUUC.AUUCType.qini.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]);
+                _liftUplift[i] = AUUC.AUUCType.lift.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]);
+                _gainUplift[i] = AUUC.AUUCType.gain.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]);
+            }
+            if(ArrayUtils.sum(_nct1) > 0) {
+                ArrayUtils.interpolateLinear(_qiniUplift);
+                ArrayUtils.interpolateLinear(_liftUplift);
+                ArrayUtils.interpolateLinear(_gainUplift);
+            }
         } finally {       // Delete adaptation vectors
             Scope.exit();
         }
@@ -148,9 +165,9 @@ public class GainsUplift extends Iced {
                 "GainsUplift Table",
                 "",
                 new String[_nct1.length],
-                new String[]{"Group", "Data Fraction", "nct1", "nct0", "ny1ct1", "ny1ct0", "relative ny1ct1", "relative ny1ct1", "uplift"},
-                new String[]{"int", "long", "long", "long", "long", "long", "double", "double", "double"},
-                new String[]{"%d", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
+                new String[]{"Group", "Data Fraction", "nct1", "nct0", "ny1ct1", "ny1ct0", "relative ny1ct1", "relative ny1ct1", "qini", "lift", "gain"},
+                new String[]{"int", "long", "long", "long", "long", "long", "double", "double", "double", "double", "double"},
+                new String[]{"%d", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
                 null);
         for (int i = 0; i < _nct1.length; ++i) {
             long nct1i = _nct1[i];
@@ -160,7 +177,6 @@ public class GainsUplift extends Iced {
             double sum = nct0i+nct1i;
             double ny1ct1iR = (double)ny1ct1i/nct1i;
             double ny1ct0iR = (double)ny1ct0i/nct0i;
-            double uplift = ny1ct1iR - ny1ct0iR;
             table.set(i,0,i+1); //group
             table.set(i,1, sum); // data fraction
             table.set(i,2, nct1i); 
@@ -169,7 +185,9 @@ public class GainsUplift extends Iced {
             table.set(i,5, ny1ct0i); 
             table.set(i,6, ny1ct1iR); 
             table.set(i,7,ny1ct0iR);
-            table.set(i,8,uplift); 
+            table.set(i,8, _qiniUplift[i]);
+            table.set(i,9, _gainUplift[i]);
+            table.set(i,10, _liftUplift[i]);
         }
         return this.table = table;
     }
@@ -192,6 +210,10 @@ public class GainsUplift extends Iced {
 
         public GainsUpliftBuilder(double[] thresh) {
             _thresh = thresh.clone();
+            _nct1 = new long[_thresh.length];
+            _nct0 = new long[_thresh.length];
+            _ny1ct1 = new long[_thresh.length];
+            _ny1ct0 = new long[_thresh.length];
         }
 
         @Override public void map( Chunk ca, Chunk cp, Chunk cu) { map(ca, cp, (Chunk)null, cu); }
@@ -222,15 +244,17 @@ public class GainsUplift extends Iced {
             //for-loop is faster than binary search for small number of thresholds
             for( int t=0; t < _thresh.length; t++ ) {
                 if (pr >= _thresh[t] && (t==0 || pr <_thresh[t-1])) {
-                    if(u == 1 && a == 1){
-                        _ny1ct1[t]++;
-                    } else if(u == 0 && a == 1) {
-                        _ny1ct0[t]++;
-                    } 
-                    if(u==1){
+                    if(u == 1) {
                         _nct1[t]++;
-                    } else {
+                        if (a == 1) {
+                            _ny1ct1[t]++;
+                        }
+                    }
+                    else {
                         _nct0[t]++;
+                        if (a == 1) {
+                            _ny1ct0[t]++;
+                        }
                     }
                     break;
                 }

@@ -93,7 +93,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
         @Override
         protected boolean doOOBScoring() {
-            return true;
+            return false;
         }
 
         @Override protected void initializeModelSpecifics() {
