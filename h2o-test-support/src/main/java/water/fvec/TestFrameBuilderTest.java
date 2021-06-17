@@ -267,7 +267,6 @@ public class TestFrameBuilderTest extends TestUtil {
               .withVecTypes(Vec.T_NUM)
               .withSequenceIntDataForCol(0, 0, 10)
               .build();
-      Scope.track(f);
       assertEquals("Unexpected number of rows", 10, f.numRows());
       assertArrayEquals("It is not a valid sequence column",
               new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
@@ -281,11 +280,10 @@ public class TestFrameBuilderTest extends TestUtil {
   public void testSequenceIntDataForColBadInput() {
     Scope.enter();
     try {
-      Frame f = new TestFrameBuilder()
+      new TestFrameBuilder()
               .withVecTypes(Vec.T_NUM)
               .withSequenceIntDataForCol(0, 0, 0)
               .build();
-      Scope.track(f);
     } finally {
       Scope.exit();
     }
