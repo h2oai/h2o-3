@@ -1,5 +1,6 @@
 package hex.generic;
 
+import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetricsBinomial;
 import hex.coxph.CoxPH;
@@ -85,6 +86,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -131,6 +134,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -223,6 +228,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -269,6 +276,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -1132,4 +1141,16 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    private void checkScoreContributions(Model.Contributions originalModel, GenericModel genericModel, Frame testFrame) {
+        testFrame = ensureDistributed(testFrame);
+
+        final Frame originalModelContributions = originalModel.scoreContributions(testFrame, Key.make());
+        Scope.track(originalModelContributions);
+        final Frame genericModelContributions = genericModel.scoreContributions(testFrame, Key.make());
+        Scope.track(genericModelContributions);
+
+        assertFrameEquals(originalModelContributions, genericModelContributions, 0.0d);
+    }
+
 }
