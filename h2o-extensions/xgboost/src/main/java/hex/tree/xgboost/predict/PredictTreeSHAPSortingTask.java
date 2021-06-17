@@ -3,6 +3,7 @@ package hex.tree.xgboost.predict;
 import hex.DataInfo;
 import hex.Model;
 import hex.genmodel.algos.tree.ContributionComposer;
+import hex.genmodel.algos.tree.TreeSHAPPredictor;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostOutput;
 import water.MemoryManager;
@@ -41,7 +42,7 @@ public class PredictTreeSHAPSortingTask extends PredictTreeSHAPTask {
     float[] output = _outputAggregated ? MemoryManager.malloc4f(chks.length) : contribs;
     int[] contribNameIds = MemoryManager.malloc4(output.length);
 
-    Object workspace = _mojo.makeContributionsWorkspace();
+    TreeSHAPPredictor.Workspace workspace = _mojo.makeContributionsWorkspace();
 
     for (int row = 0; row < chks[0]._len; row++) {
       fillInput(chks, row, input, contribs, contribNameIds);

@@ -191,7 +191,7 @@ public abstract class SharedTreeModelWithContributions<
       float[] contribs = MemoryManager.malloc4f(chks.length+1);
       int[] contribNameIds = MemoryManager.malloc4(chks.length+1);
 
-      Object workspace = _treeSHAP.makeWorkspace();
+      TreeSHAPPredictor.Workspace workspace = _treeSHAP.makeWorkspace();
 
       for (int row = 0; row < chks[0]._len; row++) {
         fillInput(chks, row, input, contribs, contribNameIds);
