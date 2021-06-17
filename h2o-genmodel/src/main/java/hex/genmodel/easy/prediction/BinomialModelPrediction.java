@@ -5,7 +5,7 @@ package hex.genmodel.easy.prediction;
  *
  * GLM logistic regression (GLM family "binomial") also falls into this category.
  */
-public class BinomialModelPrediction extends AbstractPrediction {
+public class BinomialModelPrediction extends AbstractPrediction implements ContributionsPrediction {
   /**
    * 0 or 1.
    */
@@ -58,5 +58,10 @@ public class BinomialModelPrediction extends AbstractPrediction {
    * (Optional) Available only for supported models (GBM, XGBoost). 
    */
   public float[] contributions;
+
+  @Override
+  public float[] getContributions() {
+    return contributions;
+  }
 
 }
