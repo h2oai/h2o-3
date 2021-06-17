@@ -12,7 +12,7 @@ import warnings
 import time
 
 import h2o
-from h2o.exceptions import H2OJobCancelled, H2OConnectionError, H2OResponseError, H2OServerError
+from h2o.exceptions import H2OJobCancelled, H2OConnectionError, H2OResponseError, H2OServerError, H2OValueError
 from h2o.utils.progressbar import ProgressBar
 from h2o.utils.shared_utils import clamp
 
@@ -75,6 +75,9 @@ class H2OJob(object):
         if self.status == "CANCELLED":
             raise H2OJobCancelled("Job<%s> was cancelled by the user." % self.job_key)
         if self.status == "FAILED":
+            illegal_arg_ex_prefix = 'water.exceptions.H2OIllegalArgumentException: '
+            if self.exception and self.exception.startswith(illegal_arg_ex_prefix):
+                raise H2OValueError(self.exception[len(illegal_arg_ex_prefix):])
             if (isinstance(self.job, dict)) and ("stacktrace" in list(self.job)):
                 raise EnvironmentError("Job with key {} failed with an exception: {}\nstacktrace: "
                                        "\n{}".format(self.job_key, self.exception, self.job["stacktrace"]))
