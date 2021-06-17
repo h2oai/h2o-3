@@ -10,7 +10,7 @@ import water.Key;
 import water.fvec.NewChunk;
 import water.util.SBPrintStream;
 
-public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
+public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
     public static class UpliftDRFParameters extends DRFModel.DRFParameters {
         public String algoName() { return "UpliftDRF"; }
@@ -58,16 +58,6 @@ public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFMo
         EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
     }
 
-    @Override
-    protected ScoreContributionsTask getScoreContributionsTask(SharedTreeModel model) {
-        return new ScoreContributionsTaskDRF(this);
-    }
-
-    @Override
-    protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
-        return null;
-    }
-
     @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
     
     /** Bulk scoring API for one row.  Chunks are all compatible with the model,
@@ -89,26 +79,6 @@ public class UpliftDRFModel extends SharedTreeModelWithContributions<UpliftDRFMo
         if (_parms._balance_classes)
             body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
         body.ip("preds[0] = preds[1] - preds[2];").nl();
-    }
-
-    public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
-
-        public ScoreContributionsTaskDRF(SharedTreeModel model) {
-            super(model);
-        }
-
-        @Override
-        public void addContribToNewChunk(float[] contribs, NewChunk[] nc) {
-            for (int i = 0; i < nc.length; i++) {
-                // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
-                if (_output.nclasses() == 1) { //Regression
-                    nc[i].addNum(contribs[i] /_output._ntrees);
-                } else { //Binomial
-                    float featurePlusBiasRatio = (float)1 / (_output.nfeatures() + 1); // + 1 for bias term
-                    nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
-                }
-            }
-        }
     }
 
     @Override
