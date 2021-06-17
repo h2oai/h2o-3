@@ -23,6 +23,8 @@ public class AUUCTest extends TestUtil {
         assert Arrays.equals(auuc._control, new long[]{0, 1, 2, 2, 3});
         assert Arrays.equals(auuc._yTreatment, new long[]{1, 1, 1, 1, 1});
         assert Arrays.equals(auuc._yControl, new long[]{0, 1, 2, 2, 2});
+        assert Arrays.equals(auuc._frequency, new long[]{1, 1, 1, 1, 1});
+        assert Arrays.equals(auuc._frequencyCumsum, new long[]{1, 2, 3, 4, 5});
     }
 
     @Test
