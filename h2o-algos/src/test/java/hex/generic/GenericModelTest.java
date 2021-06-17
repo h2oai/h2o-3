@@ -77,13 +77,13 @@ public class GenericModelTest extends TestUtil {
             assertTrue(genericModel._output._training_metrics instanceof ModelMetricsBinomial);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
             assertTrue(equallyScored);
 
             final Frame originalModelPredictions = model.score(testFrame);
-            Scope.track_generic(originalModelPredictions);
+            Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
