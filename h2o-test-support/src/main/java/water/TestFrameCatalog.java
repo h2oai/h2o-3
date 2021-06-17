@@ -5,6 +5,8 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import java.util.UUID;
+
 import static water.TestUtil.*;
 
 @Ignore // prepackaged small H2O Frames
@@ -31,6 +33,19 @@ public class TestFrameCatalog {
             .withDataForCol(4, ard(0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75))
             .withDataForCol(5, ard(0.1, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2))
             .withDataForCol(6, ar("A", "B,", "A", "C", "A", "B", "A"))
+            .build();
+  }
+
+  /**
+   * Creates a frame with columns that are typically not used in model building (UUID, Bad)
+   * @return a frame instance
+   */
+  public static Frame unusualTypes() {
+    return new TestFrameBuilder()
+            .withColNames("UUIDCol", "BadCol")
+            .withVecTypes(Vec.T_UUID, Vec.T_BAD)
+            .withDataForCol(0, ar(UUID.randomUUID().toString(), null))
+            .withDataForCol(1, ard(Double.NaN, Double.NaN))
             .build();
   }
   
