@@ -6,20 +6,22 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.prediction.ContributionsPrediction;
 import hex.tree.isofor.ModelMetricsAnomaly;
-import water.Futures;
-import water.H2O;
-import water.Iced;
-import water.Key;
-import water.fvec.ByteVec;
-import water.fvec.Frame;
+import water.*;
+import water.fvec.*;
 import water.util.Log;
+import water.util.RowDataUtils;
 
 import java.io.IOException;
 
-public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> {
+public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> 
+        implements Model.Contributions {
 
-    private MojoModelSource _mojoModelSource;
+    private final MojoModelSource _mojoModelSource;
 
     /**
      * Full constructor
@@ -141,7 +143,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     private static class MojoModelSource extends Iced<MojoModelSource> {
-        private Key<Frame> _mojoSource;
+        private final Key<Frame> _mojoSource;
 
         private transient MojoModel _mojoModel;
 
@@ -165,6 +167,74 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             assert _mojoModel != null;
             return _mojoModel;
         }
+    }
+
+    @Override
+    public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+        return scoreContributions(frame, destination_key, null);
+    }
+
+    @Override
+    public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> job) {
+        EasyPredictModelWrapper wrapper = makeWrapperWithContributions();
+
+        Frame adaptFrm = new Frame(frame);
+        adaptTestForTrain(adaptFrm, true, false);
+        adaptFrm = adaptFrm.subframe(wrapper.getModel().features());
+
+        String[] outputNames = wrapper.getContributionNames();
+        return new GenericScoreContributionsTask(wrapper)
+                .withPostMapAction(JobUpdatePostMap.forJob(job))
+                .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
+                .outputFrame(outputNames, null);
+    }
+
+    class GenericScoreContributionsTask extends MRTask<GenericScoreContributionsTask> {
+        private transient EasyPredictModelWrapper _wrapper;
+
+        GenericScoreContributionsTask(EasyPredictModelWrapper wrapper) {
+            _wrapper = wrapper;
+        }
+
+        @Override
+        protected void setupLocal() {
+            if (_wrapper == null) {
+                _wrapper = makeWrapperWithContributions();
+            }
+        }
+
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+            try {
+                predict(cs, ncs);
+            } catch (PredictException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void predict(Chunk[] cs, NewChunk[] ncs) throws PredictException {
+            RowData rowData = new RowData();
+            byte[] types = _fr.types();
+            for (int i = 0; i < cs[0]._len; i++) {
+                RowDataUtils.extractChunkRow(cs, _fr._names, types, i, rowData);
+                ContributionsPrediction p = (ContributionsPrediction) _wrapper.predict(rowData);
+                float[] contributions = p.getContributions();
+                NewChunk.addNums(ncs, contributions);
+            }
+        }
+    }
+
+    EasyPredictModelWrapper makeWrapperWithContributions() {
+        final EasyPredictModelWrapper.Config config;
+        try {
+            config = new EasyPredictModelWrapper.Config()
+                    .setModel(mojoModel())
+                    .setConvertUnknownCategoricalLevelsToNa(true)
+                    .setEnableContributions(true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return new EasyPredictModelWrapper(config);
     }
 
 }

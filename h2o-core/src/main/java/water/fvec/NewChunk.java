@@ -1789,4 +1789,13 @@ public class NewChunk extends Chunk {
     return _cidx;
   }
 
+  public static void addNums(NewChunk[] ncs, float[] values) {
+    if (ncs.length != values.length) {
+      throw new IllegalArgumentException("Number of inputs do not match (#chunks=" + ncs.length + ", #values=" + values.length);
+    }
+    for (int i = 0; i < values.length; i++) {
+      ncs[i].addNum(values[i]);
+    }
+  }
+
 }

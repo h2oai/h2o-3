@@ -942,6 +942,10 @@ public class EasyPredictModelWrapper implements Serializable {
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------
 
+  public GenModel getModel() {
+    return m;
+  }
+
   /**
    * Get the category (type) of model.
    * @return The category.
