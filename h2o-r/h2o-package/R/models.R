@@ -907,7 +907,7 @@ h2o.predict_contributions <- predict_contributions.H2OModel
 
 #' Retrieve the number of occurrences of each feature for given observations 
 #  on their respective paths in a tree ensemble model.
-#' Available for GBM, Random Forest and Isolation Forest models.
+#' Available for GBM, Random Forest and Isolation Forest models (and equivalent imported MOJOs)
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired

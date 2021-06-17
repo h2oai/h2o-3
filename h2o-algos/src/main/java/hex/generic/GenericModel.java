@@ -186,7 +186,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         return new GenericScoreContributionsTask(wrapper)
                 .withPostMapAction(JobUpdatePostMap.forJob(job))
                 .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
-                .outputFrame(outputNames, null);
+                .outputFrame(destination_key, outputNames, null);
     }
 
     class GenericScoreContributionsTask extends MRTask<GenericScoreContributionsTask> {
