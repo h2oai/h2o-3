@@ -101,8 +101,8 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             Frame preds = new Frame(targetClassProbs);
             // todo solve for uplift here too, meantime null uplift vector is given
             ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, preds,
-                    fr.vec("labels"), fr.vec("weights"), null); // use the Vecs from the frame (to make sure the ESPC is identical)
-            mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
+                    fr.vec("labels"), fr.vec("weights"), fr.vec("uplift")); // use the Vecs from the frame (to make sure the ESPC is identical)
+            mm._description = "Computed on user-given predictions and labels.";
             return mm;
         } finally {
             Scope.exit();
@@ -223,7 +223,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         }
 
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,
-                                              final Vec resp, final Vec weight, Vec uplift) {
+                                              final Vec resp, final Vec weight, final Vec uplift) {
             GainsUplift gul = null;
             AUUC auuc = null;
             if (_wcount > 0) {
