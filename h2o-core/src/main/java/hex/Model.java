@@ -1114,8 +1114,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Is this model a classification model? (v. a regression or clustering model) */
     public boolean isClassifier() { return isSupervised() && nclasses() > 1; }
+    /** Is this model a uplift binomial classification model? (v. a regression or clustering model) */
+    public  boolean isUpliftBinomialClassifier(){ return isSupervised() && nclasses() == 2 && getModelCategory().equals(ModelCategory.BinomialUplift);}
     /** Is this model a binomial classification model? (v. a regression or clustering model) */
-    public boolean isBinomialClassifier() { return isSupervised() && nclasses() == 2; }
+    public boolean isBinomialClassifier() { return isSupervised() && nclasses() == 2 && !isUpliftBinomialClassifier(); }
     /**Is this model a multinomial classification model (supervised and nclasses() > 2 */
     public boolean isMultinomialClassifier() { return isSupervised() && nclasses() > 2; }
     /** Number of classes in the response column if it is categorical and the model is supervised. */

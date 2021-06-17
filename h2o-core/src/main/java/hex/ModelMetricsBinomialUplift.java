@@ -37,7 +37,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
         if(_auuc != null){
-            sb.append("AUUC").append((float) _auuc._auuc).append("\n");
+            sb.append("AUUC: ").append((float) _auuc._auuc).append("\n");
         }
         if (_gainsUplift != null) sb.append(_gainsUplift);
         return sb.toString();

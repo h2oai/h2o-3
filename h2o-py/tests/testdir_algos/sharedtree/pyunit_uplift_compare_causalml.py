@@ -5,9 +5,11 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.uplift_random_forest import H2OUpliftRandomForestEstimator
 from causalml.inference.tree import UpliftRandomForestClassifier
+from causalml.dataset import make_uplift_classification
 from causalml.metrics import plot_gain, plot_qini, plot_lift
 from causalml.metrics import auuc_score
 import pandas as pd
+import numpy as np
 
 
 def uplift_simple():
@@ -26,12 +28,23 @@ def uplift_simple():
 
 
 def uplift_compare():
+    df, feature_cols = make_uplift_classification(n_samples=1000, treatment_name=["control", "treatment"])
 
-    data = h2o.import_file(path=pyunit_utils.locate("smalldata/uplift/criteo_uplift_13k.csv"))
-    feature_cols = [f'f{i}' for i in range(0, 11)]
-    uplift_column = "treatment"
+    # Rename features for easy interpretation of visualization
+    feature_cols_new = ['feature_%s'%(i) for i in range(len(feature_cols))]
+    rename_dict = {feature_cols[i]:feature_cols_new[i] for i in range(len(feature_cols))}
+    df = df.rename(columns=rename_dict)
+    feature_cols = feature_cols_new
+
+    print(df.pivot_table(values='conversion',
+                         index='treatment_group_key',
+                         aggfunc=[np.mean, np.size],
+                         margins=True))
+
+    data = h2o.H2OFrame(df)
+    treatment_column = "treatment_group_key"
     response_column = "conversion"
-    data[uplift_column] = data[uplift_column].asfactor()
+    data[treatment_column] = data[treatment_column].asfactor()
     data[response_column] = data[response_column].asfactor()
 
     split = data.split_frame(ratios=[0.75], seed=42)
@@ -39,7 +52,7 @@ def uplift_compare():
     test = split[1]
     
     ntree = 10
-    max_depth = 10
+    max_depth = 3
     
     auuc_types = ["qini", "lift", "gain"]
     h2o_drfs = [None] * len(auuc_types)
@@ -47,37 +60,36 @@ def uplift_compare():
         drf = H2OUpliftRandomForestEstimator(
             ntrees=ntree,
             max_depth=max_depth,
-            uplift_column=uplift_column,
+            uplift_column=treatment_column,
             uplift_metric="KL",
             distribution="bernoulli",
             gainslift_bins=10,
             min_rows=10,
             nbins=1000,
             seed=42,
-            auuc_type=auuc_types[i]
+            auuc_type=auuc_types[i],
+            nfolds=3
         )
         drf.train(y=response_column, x=feature_cols, training_frame=train)
         h2o_drfs[i] = drf
         perf = h2o_drfs[i].model_performance(train)
         perf.plot_auuc(metric=auuc_types[i], save_to_file="/home/mori/Documents/h2o/code/test/uplift/auuc_plot_"+auuc_types[i]+".png")
-        print(perf._metric_json['gains_lift_table'])
-        perf.plot_gainslift(save_to_file="/home/mori/Documents/h2o/code/test/uplift/gains_lift_plot.png")
+        print(perf._metric_json['gains_uplift_table'])
         
-    df = train.as_data_frame()
-    df[uplift_column] = df[uplift_column].astype(str)
+    df[treatment_column] = df[treatment_column].astype(str)
     uplift_model = UpliftRandomForestClassifier(
         n_estimators=ntree,
         max_depth=max_depth,
-        evaluationFunction='KL',
-        control_name='0',
+        evaluationFunction="KL",
+        control_name="control",
         min_samples_leaf=10,
         min_samples_treatment=10,
         normalization=False,
-        random_state=42
+        random_state=42,
     )
     uplift_model.fit(
         df[feature_cols].values,
-        treatment=df[uplift_column].values,
+        treatment=df[treatment_column].values,
         y=df[response_column].values
     )
     testing_df = train
@@ -92,7 +104,7 @@ def uplift_compare():
         preds_comp.names = ["h2o"]
         preds_comp["causal"] = h2o.H2OFrame(causal_preds)
         preds_comp["diff"] = abs(preds_comp["h2o"] - preds_comp["causal"])
-        preds_comp[uplift_column] = testing_df[uplift_column]
+        preds_comp[treatment_column] = testing_df[treatment_column]
         preds_comp[response_column] = testing_df[response_column]
         preds_comp.summary()
     
@@ -106,11 +118,13 @@ def uplift_compare():
         # assert mean_diff < 0.001, str(mean_diff)+": average difference should not be higher than 0.1%"
 
         results = preds_comp.as_data_frame()
-        results = results[["h2o", "causal", response_column, uplift_column]]
-        plot_qini(results, outcome_col=response_column, treatment_col=uplift_column)
-        plot_lift(results, outcome_col=response_column, treatment_col=uplift_column)
+        results = results[["h2o", "causal", response_column, treatment_column]]
+        mapping = {'control': 0, 'treatment': 1}
+        results = results.replace({treatment_column: mapping})
+        plot_qini(results, outcome_col=response_column, treatment_col=treatment_column)
+        plot_lift(results, outcome_col=response_column, treatment_col=treatment_column)
+        plot_gain(results, outcome_col=response_column, treatment_col=treatment_column)
         
-
     auuc_qiny = h2o_drfs[0].training_model_metrics()["AUUC"]
     auuc_lift = h2o_drfs[1].training_model_metrics()["AUUC"]
     auuc_gain = h2o_drfs[2].training_model_metrics()["AUUC"]
@@ -119,7 +133,7 @@ def uplift_compare():
     print("H2O metrics AUUC Lift: "+str(auuc_lift))
     print("H2O metrics AUUC Gain: "+str(auuc_gain))
 
-    auuc = auuc_score(results, outcome_col=response_column, treatment_col=uplift_column, normalize=False)
+    auuc = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
     print("H2O AUUC:")
     print(auuc["h2o"])
     print("CauslML AUUC:")
@@ -131,7 +145,7 @@ def uplift_compare():
     # assert auuc_gain == auuc["h2o"]
     
     perf = h2o_drfs[0].model_performance(testing_df)
-    uplift, n = perf.plot_auuc(metric="gain", plot=False)
+    n, uplift = perf.plot_auuc(metric="gain", plot=False)
     print(uplift)
     
 if __name__ == "__main__":
