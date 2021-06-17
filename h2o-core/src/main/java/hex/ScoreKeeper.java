@@ -137,7 +137,6 @@ public class ScoreKeeper extends Iced {
     misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
     mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
     anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false),
-    AUUC(ConvergenceStrategy.MORE_IS_BETTER, false),
     custom(ConvergenceStrategy.LESS_IS_BETTER, false),
     custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
     ;
@@ -206,8 +205,6 @@ public class ScoreKeeper extends Iced {
         case anomaly_score:
           val = skj._anomaly_score_normalized;
           break;
-        case AUUC:
-          val = skj._AUUC;
         default:
           throw H2O.unimpl("Undefined stopping criterion.");
       }
