@@ -1274,4 +1274,19 @@ public class FrameUtils {
     }
     return fr;
   }
+
+  public static Chunk[] extractChunks(Frame fr, int chunkId, boolean runLocal) {
+    final Vec v0 = fr.anyVec();
+    final Vec[] vecs = fr.vecs();
+    final Chunk[] chunks = new Chunk[vecs.length];
+    for (int i = 0; i < vecs.length; i++) {
+      if (vecs[i] != null) {
+        assert runLocal || vecs[i].chunkKey(chunkId).home()
+                : "Chunk=" + chunkId + " v0=" + v0 + ", k=" + v0.chunkKey(chunkId) + "   v[" + i + "]=" + vecs[i] + ", k=" + vecs[i].chunkKey(chunkId);
+        chunks[i] = vecs[i].chunkForChunkIdx(chunkId);
+      }
+    }
+    return chunks;
+  }
+
 }

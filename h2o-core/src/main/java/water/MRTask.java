@@ -4,6 +4,7 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
 import water.util.DistributedException;
+import water.util.FrameUtils;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
 import water.fvec.Vec;
@@ -788,18 +789,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         assert(_run_local || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
 
         // Make decompression chunk headers for these chunks
-        Vec vecs[] = _fr.vecs();
-        Chunk bvs[] = new Chunk[vecs.length];
-        NewChunk [] appendableChunks = null;
-        for( int i=0; i<vecs.length; i++ )
-          if( vecs[i] != null ) {
-            assert _run_local || vecs[i].chunkKey(_lo).home()
-              : "Chunk="+_lo+" v0="+v0+", k="+v0.chunkKey(_lo)+"   v["+i+"]="+vecs[i]+", k="+vecs[i].chunkKey(_lo);
-            bvs[i] = vecs[i].chunkForChunkIdx(_lo);
-          }
+        NewChunk[] appendableChunks = null;
+        Chunk[] bvs = FrameUtils.extractChunks(_fr, _lo, _run_local);
 
         if(_output_types != null) {
-          final VectorGroup vg = vecs[0].group();
+          final VectorGroup vg = v0.group();
           _appendables = new AppendableVec[_output_types.length];
           appendableChunks = new NewChunk[_output_types.length];
           for(int i = 0; i < _appendables.length; ++i) {
