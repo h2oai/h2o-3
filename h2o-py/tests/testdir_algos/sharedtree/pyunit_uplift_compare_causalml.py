@@ -67,8 +67,7 @@ def uplift_compare():
             min_rows=10,
             nbins=1000,
             seed=42,
-            auuc_type=auuc_types[i],
-            nfolds=3
+            auuc_type=auuc_types[i]
         )
         drf.train(y=response_column, x=feature_cols, training_frame=train)
         h2o_drfs[i] = drf
