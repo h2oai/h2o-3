@@ -116,11 +116,11 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     return toPreds(doubles, out, preds, _nclasses, _priorClassDistrib, _defaultThreshold);
   }
 
-  public final Object makeContributionsWorkspace() {
+  public final TreeSHAPPredictor.Workspace makeContributionsWorkspace() {
     return _treeSHAPPredictor.makeWorkspace();
   }
 
-  public final float[] calculateContributions(FVec row, float[] out_contribs, Object workspace) {
+  public final float[] calculateContributions(FVec row, float[] out_contribs, TreeSHAPPredictor.Workspace workspace) {
     _treeSHAPPredictor.calculateContributions(row, out_contribs, 0, -1, workspace);
     return out_contribs;
   }

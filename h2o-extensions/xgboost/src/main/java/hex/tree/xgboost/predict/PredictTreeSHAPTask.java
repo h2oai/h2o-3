@@ -1,6 +1,7 @@
 package hex.tree.xgboost.predict;
 
 import hex.DataInfo;
+import hex.genmodel.algos.tree.TreeSHAPPredictor;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostOutput;
@@ -56,7 +57,7 @@ public class PredictTreeSHAPTask extends MRTask<PredictTreeSHAPTask> {
     float[] contribs = MemoryManager.malloc4f(_di.fullN() + 1);
     float[] output = _outputAggregated ? MemoryManager.malloc4f(nc.length) : contribs;
 
-    Object workspace = _mojo.makeContributionsWorkspace();
+    TreeSHAPPredictor.Workspace workspace = _mojo.makeContributionsWorkspace();
 
     for (int row = 0; row < chks[0]._len; row++) {
       fillInput(chks, row, input, contribs);
