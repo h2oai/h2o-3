@@ -57,9 +57,9 @@ public class Scope {
 
   /** Pop-scope (same as exit-scope) but return all keys that are tracked (and
    *  would have been deleted). */
-  static public Key[] pop() {
+  static public boolean isActive() {
     Stack<HashSet<Key>> keys = _scope.get()._keys;
-    return keys.size() > 0 ? keys.pop().toArray(new Key[0]) : null;
+    return keys.size() > 0;
   }
 
   static void track_internal( Key k ) {

@@ -664,7 +664,7 @@ public class GBMTest extends TestUtil {
     Map<Integer, SharedTreeMojoModel.AuxInfo>[][] originalAuxInfos = visitTrees(
             gbm._output._treeKeysAux, Map.class, CompressedTree::toAuxInfos);
 
-    frame = Scope.track(ensureDistributed(frame, 16));
+    frame = ensureDistributed(frame);
     Frame fr = new Frame(frame);
     fr.add("weights", fr.anyVec().makeCon(2));
     gbm.updateAuxTreeWeights(fr, "weights");
