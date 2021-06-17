@@ -1145,11 +1145,14 @@ public class GenericModelTest extends TestUtil {
     private void checkScoreContributions(Model.Contributions originalModel, GenericModel genericModel, Frame testFrame) {
         testFrame = ensureDistributed(testFrame);
 
+        Key<Frame> dest = Key.make();
+
         final Frame originalModelContributions = originalModel.scoreContributions(testFrame, Key.make());
         Scope.track(originalModelContributions);
-        final Frame genericModelContributions = genericModel.scoreContributions(testFrame, Key.make());
+        final Frame genericModelContributions = genericModel.scoreContributions(testFrame, dest);
         Scope.track(genericModelContributions);
 
+        assertInDKV(dest, genericModelContributions);
         assertFrameEquals(originalModelContributions, genericModelContributions, 0.0d);
     }
 

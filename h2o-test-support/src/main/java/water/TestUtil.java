@@ -1800,4 +1800,11 @@ public class TestUtil extends Iced {
     return System.getProperty("user.name").equals("jenkins");
   }
 
+  public static <T extends Keyed<T>> void assertInDKV(Key<T> key, T object) {
+    assertEquals(key, object._key);
+    T dkvObject = DKV.getGet(key);
+    assertNotNull(dkvObject);
+    assertEquals(object.checksum(true), dkvObject.checksum(true));
+  }
+  
 }
