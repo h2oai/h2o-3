@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.insert(1, os.path.join("..","..",".."))
+sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.uplift_random_forest import H2OUpliftRandomForestEstimator
