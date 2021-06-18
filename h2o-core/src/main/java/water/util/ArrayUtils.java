@@ -2229,6 +2229,9 @@ public class ArrayUtils {
    */
   public static void interpolateLinear(double[] array){
     assert array.length > 0 && !Double.isNaN(array[array.length-1]);
+    if(array.length == 1){
+      return;
+    }
     List<Integer> nonNullIdx = new ArrayList<>();
     List<Integer> steps = new ArrayList<>();
     int tmpStep = 0;
