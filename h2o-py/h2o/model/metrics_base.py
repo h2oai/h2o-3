@@ -1820,7 +1820,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             plt.title('Area under Uplift curve - '+metric)
             uplift = self.uplift(metric)
             n = self.n()
-            plt.plot(n, uplift, 'b--')
+            plt.plot(n, uplift, 'b-')
             plt.axis([min(n), max(n), min(uplift), max(uplift)])
             plt.text(max(n), max(uplift),  r'AUUC={0:.4f}'.format(self._metric_json["AUUC"]))
             plt.grid(True)

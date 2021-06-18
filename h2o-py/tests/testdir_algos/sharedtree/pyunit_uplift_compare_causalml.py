@@ -28,7 +28,10 @@ def uplift_simple():
 
 
 def uplift_compare():
-    df, feature_cols = make_uplift_classification(n_samples=1000, treatment_name=["control", "treatment"])
+    df, feature_cols = make_uplift_classification(n_samples=1000, 
+                                                  treatment_name=["control", "treatment"],
+                                                  n_classification_features=10,
+                                                  n_classification_informative=10)
 
     # Rename features for easy interpretation of visualization
     feature_cols_new = ['feature_%s'%(i) for i in range(len(feature_cols))]

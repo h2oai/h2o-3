@@ -62,6 +62,6 @@ __all__ = (
     "H2OGeneralizedLinearEstimator", "H2OGeneralizedLowRankEstimator", "H2OIsolationForestEstimator",
     "H2OKMeansEstimator", "H2ONaiveBayesEstimator", "H2OPrincipalComponentAnalysisEstimator",
     "H2OSupportVectorMachineEstimator", "H2ORandomForestEstimator", "H2ORuleFitEstimator",
-    "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator", "H2OTargetEncoderEstimator", 
+    "H2OStackedEnsembleEstimator", "H2OSingularValueDecompositionEstimator", "H2OTargetEncoderEstimator",
     "H2OUpliftRandomForestEstimator", "H2OWord2vecEstimator", "H2OXGBoostEstimator"
 )
