@@ -138,7 +138,6 @@ with_no_h2o_progress <- function(expr) {
 #' @return character vector
 .shorten_model_ids <- function(model_ids) {
   shortened_model_ids <- gsub("(.*)_AutoML_[\\d_]*(_.*)?$", "\\1\\2", model_ids, perl=TRUE)
-  # shortened_model_ids <- gsub("(.*)_AutoML_[0-9_]*((?:_.*)?)$", "\\1\\2", model_ids)  # extended regexp version
   if (length(unique(shortened_model_ids)) == length(unique(model_ids))) {
     return(shortened_model_ids)
   }
