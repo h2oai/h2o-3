@@ -262,7 +262,7 @@ public class IsolationForestTest extends TestUtil {
       assertArrayEquals(new long[]{18L, 2L}, preds.vec("predict").bins());
       
       assertTrue(model.testJavaScoring(train, preds, 1e-8));
-
+      
       assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
     } finally {
       Scope.exit();

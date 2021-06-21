@@ -300,6 +300,7 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+
   public static double[] add(double[] a, double b) {
     for(int i = 0; i < a.length; i++ ) a[i] += b;
     return a;
@@ -411,6 +412,20 @@ public class ArrayUtils {
     return nums;
   }
 
+  /**
+   *
+   * @param data vector (1 x n)
+   * @param p vector (1 x n)
+   * @param n vector (1 x n)
+   * @return Result of matrix operation (data - p) * n
+   */
+  public static double subAndMul(double[] data, double[] p, double[] n) {
+    double res = 0;
+    for (int col=0; col<data.length; col++)
+      res += (data[col] - p[col]) * n[col];
+    return res;
+  }
+
   public static double[] invert(double[] ary) {
     if(ary == null) return null;
     for(int i=0;i<ary.length;i++) ary[i] = 1. / ary[i];
@@ -431,7 +446,6 @@ public class ArrayUtils {
     }
     return res;
   }
-
   public static double[] diagArray(double[][] ary) {
     if(ary == null) return null;
     int arraylen = ary.length;
@@ -756,8 +770,16 @@ public class ArrayUtils {
     return false;
   }
 
+  public static byte[] subarray(byte[] a, int off, int len) {
+    return Arrays.copyOfRange(a,off,off+len);
+  }
+  
   public static <T> T[] subarray(T[] a, int off, int len) {
     return Arrays.copyOfRange(a,off,off+len);
+  }
+
+  public static <T> T[][] subarray2DLazy(T[][] a, int columnOffset, int len) {
+    return Arrays.copyOfRange(a, columnOffset, columnOffset + len);
   }
 
   /** Returns the index of the largest value in the array.
@@ -889,6 +911,22 @@ public class ArrayUtils {
   public static double minValue(double[] from) {
     return Arrays.stream(from).min().getAsDouble();
   }
+
+  /**
+   * Find minimum and maximum in array in the same time
+   *
+   * @return Array with 2 fields. First field is minimum and second field is maximum.
+   */
+  public static double[] minMaxValue(double[] from) {
+    double min = Double.MAX_VALUE;
+    double max = Double.MIN_VALUE;
+    for (int i = 0; i < from.length; ++i) {
+      if (from[i] < min) min = from[i];
+      if (from[i] > max) max = from[i];
+    }
+    return new double[]{min, max};
+  }
+
   public static long maxValue(long[] from) {
     return Arrays.stream(from).max().getAsLong();
   }
@@ -1080,6 +1118,12 @@ public class ArrayUtils {
   }
   public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
   public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
+  /**
+   * Make a new array initialized to random Gaussian N(0,1) values with the given seed.
+   *
+   * @param n length of generated vector
+   * @return array with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
+   */
   public static double[] gaussianVector(int n, Random random) {
     if(n <= 0) return null;
     double[] result = new double[n];  // ToDo: Get rid of this new action.
@@ -1087,7 +1131,7 @@ public class ArrayUtils {
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
     return result;
-  }
+  }  
 
   /** Remove the array allocation in this one */
   public static double[] gaussianVector(long seed, double[] vseed) {
@@ -2115,6 +2159,7 @@ public class ArrayUtils {
     }
     return false;
   }
+  
 
   /**
    * Count number of occurrences of element in given array.
@@ -2154,5 +2199,24 @@ public class ArrayUtils {
       }
     }
     return true;
+  }
+
+  /**
+   *
+   * @return Array dimension of array.length with values from uniform distribution with bounds taken from array.
+   *         For example first value of the result is from Unif(First column min value, First column max value)
+   */
+  public static double[] uniformDistFromArray(double[][] array, long seed) {
+    double[] p = new double[array.length];
+    Random random = RandomUtils.getRNG(seed);
+
+    for (int col = 0; col < array.length; col++) {
+      double[] minMax = ArrayUtils.minMaxValue(array[col]);
+      double min = minMax[0];
+      double max = minMax[1];
+      p[col] = min + random.nextDouble() * (max - min);
+    }
+
+    return p;
   }
 }

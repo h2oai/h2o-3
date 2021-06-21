@@ -80,6 +80,7 @@ Collate:
          'targetencoder.R'
          'import.R'
          'isolationforest.R'
+         'extendedisolationforest.R'
          'parse.R'
          'export.R'
          'edicts.R'

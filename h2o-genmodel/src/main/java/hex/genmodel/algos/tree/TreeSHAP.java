@@ -185,8 +185,8 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
               split_index, condition, condition_feature, cold_condition_fraction);
     }
   }
-
-  public static class PathPointer {
+  
+  public static class PathPointer implements TreeSHAPPredictor.Workspace {
     PathElement[] path;
     int position;
 
@@ -216,6 +216,11 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
     void reset() {
       path[0].reset();
     }
+
+    @Override
+    public int getSize() {
+      return path.length;
+    }
   }
 
   @Override
@@ -226,7 +231,7 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
   @Override
   public float[] calculateContributions(final R feat,
                                         float[] out_contribs, int condition, int condition_feature,
-                                        Object workspace) {
+                                        TreeSHAP.Workspace workspace) {
 
     // find the expected value of the tree's predictions
     if (condition == 0) {

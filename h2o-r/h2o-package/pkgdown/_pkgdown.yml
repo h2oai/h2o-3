@@ -164,6 +164,7 @@ reference:
       - h2o.isnumeric
       - h2o.isolationForest
       - h2o.keyof
+      - h2o.extendedIsolationForest
       - h2o.kfold_column
       - h2o.killMinus3
       - h2o.kmeans

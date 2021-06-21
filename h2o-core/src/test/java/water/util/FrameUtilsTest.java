@@ -6,6 +6,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -272,6 +273,36 @@ public class FrameUtilsTest extends TestUtil {
     meanSigma[1] = Math.sqrt(scale*(weightedEleSqSum/weightSum-meanSigma[0]*meanSigma[0]));
 
     return meanSigma;
+  }
+
+  @Test
+  public void testFrameAsDoubles() {
+    try {
+      Scope.enter();
+      Frame frame = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+
+      double[][] res = FrameUtils.asDoubles(frame);
+      assertEquals("Wrong number of columns", 2, res.length);
+      assertEquals("Wrong number of rows", 500, res[0].length);
+      assertEquals("Wrong value in first row and first col", 3.3, res[0][0], 0);
+      assertEquals("Wrong value in first row and second col", 3.3, res[1][0], 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testFrameAsDoublesLarge() {
+    try {
+      Scope.enter();
+      Frame frame = Scope.track(generate_real_only(128, 65536, 0, 0xCAFFE));
+
+      double[][] res = FrameUtils.asDoubles(frame);
+      assertEquals("Wrong number of columns", 128, res.length);
+      assertEquals("Wrong number of rows", 65536, res[0].length);
+    } finally {
+      Scope.exit();
+    }
   }
 
 }

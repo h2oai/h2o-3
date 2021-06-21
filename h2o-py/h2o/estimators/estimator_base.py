@@ -118,6 +118,7 @@ class H2OEstimator(ModelBase):
                                  validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
                                  ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
         self._train(parms, verbose=verbose)
+        return self
 
     def train_segments(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
                        weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
@@ -300,7 +301,6 @@ class H2OEstimator(ModelBase):
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
             parms["model_id"] = model_id
-    
         if override_default_training_frame:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]

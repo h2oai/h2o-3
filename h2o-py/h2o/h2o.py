@@ -20,6 +20,21 @@ from .base import Keyed
 from .estimators import create_estimator
 from .estimators.generic import H2OGenericEstimator
 from .exceptions import H2OConnectionError, H2OValueError, H2OError, H2ODeprecationWarning
+from .estimators.gbm import H2OGradientBoostingEstimator
+from .estimators.glm import H2OGeneralizedLinearEstimator
+from .estimators.glrm import H2OGeneralizedLowRankEstimator
+from .estimators.kmeans import H2OKMeansEstimator
+from .estimators.naive_bayes import H2ONaiveBayesEstimator
+from .estimators.pca import H2OPrincipalComponentAnalysisEstimator
+from .estimators.random_forest import H2ORandomForestEstimator
+from .estimators.stackedensemble import H2OStackedEnsembleEstimator
+from .estimators.word2vec import H2OWord2vecEstimator
+from .estimators.isolation_forest import H2OIsolationForestEstimator
+from .transforms.decomposition import H2OSVD
+from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
+from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
+from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
