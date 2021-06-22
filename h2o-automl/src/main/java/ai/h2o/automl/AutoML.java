@@ -82,7 +82,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     };
   }
 
-  private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   /**
    * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
    *
@@ -90,49 +89,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return a new running AutoML instance.
    */
   public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
-    Date startTime = new Date();  // this is the one and only startTime for this run
-
-    synchronized (AutoML.class) {
-      // protect against two runs whose startTime is the same second
-      if (lastStartTime != null) {
-        while (Math.abs(lastStartTime.getTime() - startTime.getTime()) < 1e3 ) {
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException ignored) {}
-          startTime = new Date();
-        }
-      }
-      lastStartTime = startTime;
-    }
-
-    AutoML aml = new AutoML(startTime, buildSpec);
-    startAutoML(aml);
+    AutoML aml = new AutoML(buildSpec);
+    aml.submit();
     return aml;
-  }
-
-  /**
-   * Takes in an AutoML instance and starts running it. Progress can be tracked via its job().
-   * @param aml
-   * @deprecated Prefer {@link #startAutoML(AutoMLBuildSpec)} instead.
-   */
-  public static void startAutoML(AutoML aml) {
-    // Currently AutoML can only run one job at a time
-    if (aml._job == null || !aml._job.isRunning()) {
-      H2OJob<AutoML> j = new H2OJob<>(aml, aml._key, aml._runCountdown.remainingTime());
-      aml._job = j._job;
-      aml.eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(aml._startTime))
-              .setNamedValue("creation_epoch", aml._startTime, EventLogEntry.epochFormat.get());
-      j.start(aml._workAllocations.remainingWork());
-      DKV.put(aml);
-    }
-  }
-
-  /**
-   * @deprecated : Please use {@link #AutoML(Key, Date, AutoMLBuildSpec)} constructor instead
-   */
-  @Deprecated
-  public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
-    return new AutoML(key, startTime, buildSpec);
   }
 
   @Override
@@ -172,7 +131,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
   AtomicLong _incrementalSeed = new AtomicLong();
-  private NonBlockingHashMap<String, AtomicInteger> _instanceCounters = new NonBlockingHashMap<>();
+  private NonBlockingHashMap<String, AtomicInteger> _modelCounters = new NonBlockingHashMap<>();
+  private String _runId;
 
   private ModelingStepsRegistry _modelingStepsRegistry;
   private ModelingStepsExecutor _modelingStepsExecutor;
@@ -187,13 +147,33 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
 
+  /**
+   * DO NOT USE explicitly: for schema/reflection only.
+   */
   public AutoML() {
     super(null);
   }
 
+  public AutoML(AutoMLBuildSpec buildSpec) {
+    this(new Date(), buildSpec);
+  }
+  
+  public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
+    this(key, new Date(), buildSpec);
+  }
+
+  /**
+   * @deprecated use {@link #AutoML(AutoMLBuildSpec) instead}
+   */
+  @Deprecated
   public AutoML(Date startTime, AutoMLBuildSpec buildSpec) {
     this(null, startTime, buildSpec);
   }
+
+  /**
+   * @deprecated use {@link #AutoML(Key, AutoMLBuildSpec) instead}
+   */
+  @Deprecated
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key == null ? buildSpec.makeKey() : key);
     try {
@@ -204,6 +184,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       validateBuildSpec(buildSpec);
       _buildSpec = buildSpec;
       // now that buildSpec is validated, we can assign it: all future logic can now safely access parameters through _buildSpec.
+      _runId = _buildSpec.instanceId();
       _runCountdown = Countdown.fromSeconds(_buildSpec.build_control.stopping_criteria.max_runtime_secs());
       _incrementalSeed.set(_buildSpec.build_control.stopping_criteria.seed());
 
@@ -415,6 +396,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+  /**
+   * Creates a job for the current AutoML instance and submits it to the task runner.
+   * Calling this on an already running AutoML instance has no effect.
+   */
+  public void submit() {
+    if (_job == null || !_job.isRunning()) {
+      H2OJob<AutoML> j = new H2OJob<>(this, _key, _runCountdown.remainingTime());
+      _job = j._job;
+      eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(_startTime))
+              .setNamedValue("creation_epoch", _startTime, EventLogEntry.epochFormat.get());
+      j.start(_workAllocations.remainingWork());
+      DKV.put(this);
+    }
+  }
+
   @Override
   public void run() {
     _modelingStepsExecutor.start();
@@ -423,7 +419,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     learn();
     stop();
   }
-
+  
   @Override
   public void stop() {
     if (null == _modelingStepsExecutor) return; // already stopped
@@ -526,15 +522,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       if (splitRatios != null) {
         Key[] keys = new Key[] {
-            Key.make("automl_training_"+ _origTrainingFrame._key),
-            Key.make("automl_validation_"+ _origTrainingFrame._key),
-            Key.make("automl_leaderboard_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_training_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_validation_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_leaderboard_"+ _origTrainingFrame._key),
         };
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
-                _origTrainingFrame,
-            keys,
-            splitRatios,
-            _buildSpec.build_control.stopping_criteria.seed()
+                _origTrainingFrame, 
+                keys, 
+                splitRatios, 
+                _buildSpec.build_control.stopping_criteria.seed()
         );
         _trainingFrame = splits[0];
 
@@ -566,7 +562,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       // but cloning to keep an internal ref just in case the original ref gets deleted from client side
       // (can occur in some corner cases with Python GC for example if frame get's out of scope during an AutoML rerun)
       _trainingFrame = new Frame(_origTrainingFrame);
-      _trainingFrame._key = Key.make("automl_training_" + _origTrainingFrame._key);
+      _trainingFrame._key = Key.make(_runId+"_training_" + _origTrainingFrame._key);
       DKV.put(_trainingFrame);
     }
 
@@ -633,21 +629,21 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  private int nextInstanceCounter(String algoName, String type) {
+  private int nextModelCounter(String algoName, String type) {
     String key = algoName+"_"+type;
-    if (!_instanceCounters.containsKey(key)) {
-      synchronized (_instanceCounters) {
-        if (!_instanceCounters.containsKey(key))
-          _instanceCounters.put(key, new AtomicInteger(0));
+    if (!_modelCounters.containsKey(key)) {
+      synchronized (_modelCounters) {
+        if (!_modelCounters.containsKey(key))
+          _modelCounters.put(key, new AtomicInteger(0));
       }
     }
-    return _instanceCounters.get(key).incrementAndGet();
+    return _modelCounters.get(key).incrementAndGet();
   }
 
   public Key makeKey(String algoName, String type, boolean with_counter) {
-    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, type) : "";
+    String counterStr = with_counter ? "_" + nextModelCounter(algoName, type) : "";
     String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
-    return Key.make(prefix + counterStr + "_AutoML_" + timestampFormatForKeys.get().format(_startTime));
+    return Key.make(prefix+counterStr+"_"+ _runId);
   }
 
   public void trackKey(Key key) {

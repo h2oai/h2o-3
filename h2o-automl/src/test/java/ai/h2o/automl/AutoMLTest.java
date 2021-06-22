@@ -298,8 +298,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
 
-      aml = AutoML.makeAutoML(Key.make(), new Date(), autoMLBuildSpec);
-      AutoML.startAutoML(aml);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
       leader = aml.leader();
@@ -325,8 +324,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
 
-      aml = AutoML.makeAutoML(Key.make(), new Date(), autoMLBuildSpec);
-      AutoML.startAutoML(aml);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
       leader = aml.leader();
@@ -349,7 +347,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exploitation_ratio = 0;
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      aml = new AutoML(autoMLBuildSpec);
 
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.DeepLearning, 1*10+3*20); // models+grids
@@ -389,7 +387,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exploitation_ratio = exploitationRatio;
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      aml = new AutoML(autoMLBuildSpec);
 
       Map<Algo, Integer> explorationAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.DeepLearning, 1*10+3*20); // models+grids
@@ -595,7 +593,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      aml = new AutoML(autoMLBuildSpec);
       for (IAlgo algo : autoMLBuildSpec.build_models.exclude_algos) {
         assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
       }
@@ -619,7 +617,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      aml = new AutoML(autoMLBuildSpec);
       for (IAlgo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
           assertNotEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
@@ -649,7 +647,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       try {
-        aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+        aml = new AutoML(autoMLBuildSpec);
         fail("Should have thrown an H2OIllegalArgumentException for providing both include_algos and exclude_algos");
       } catch (H2OIllegalArgumentException e) {
         assertTrue(e.getMessage().startsWith("Parameters `exclude_algos` and `include_algos` are mutually exclusive"));

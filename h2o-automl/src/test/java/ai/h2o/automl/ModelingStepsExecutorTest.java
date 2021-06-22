@@ -32,7 +32,7 @@ public class ModelingStepsExecutorTest extends TestUtil {
         AutoMLBuildSpec buildSpec = new AutoMLBuildSpec();
         buildSpec.input_spec.training_frame = fr._key;
         buildSpec.input_spec.response_column = "CAPSULE";
-        aml = new AutoML(null, new Date(), buildSpec);
+        aml = new AutoML(buildSpec);
         DKV.put(aml);
     }
 

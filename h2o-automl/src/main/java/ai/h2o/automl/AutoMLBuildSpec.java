@@ -14,6 +14,7 @@ import water.util.PojoUtils.FieldNaming;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import java.text.DateFormat;
@@ -25,7 +26,8 @@ import java.util.Date;
  */
 public class AutoMLBuildSpec extends Iced {
 
-  private static final ThreadLocal<DateFormat> projectTimeStampFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HmmssSSS"));
+  private static final ThreadLocal<DateFormat> instanceTimeStampFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_Hmmss"));
+  private final static AtomicInteger amlInstanceCounter = new AtomicInteger();
 
   /**
    * The specification of overall build parameters for the AutoML process.
@@ -341,14 +343,23 @@ public class AutoMLBuildSpec extends Iced {
   public final AutoMLBuildControl build_control = new AutoMLBuildControl();
   public final AutoMLInput input_spec = new AutoMLInput();
   public final AutoMLBuildModels build_models = new AutoMLBuildModels();
+  
+  private String instanceId;
 
   public String project() {
     if (build_control.project_name == null) {
-      build_control.project_name = "AutoML_"+ projectTimeStampFormat.get().format(new Date());
+      build_control.project_name = instanceId();
     }
     return build_control.project_name;
   }
-
+  
+  public String instanceId() {
+    if (instanceId == null) {
+      instanceId = "AutoML_"+amlInstanceCounter.incrementAndGet()+"_"+ instanceTimeStampFormat.get().format(new Date());
+    }
+    return instanceId;
+  }
+  
   public Key<AutoML> makeKey() {
     // if user offers a different response column,
     //   the new models will be added to a new Leaderboard, without removing the previous one.
