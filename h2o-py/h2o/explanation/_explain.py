@@ -423,7 +423,7 @@ class NumpyFrame:
 
 def _shorten_model_ids(model_ids):
     import re
-    regexp = re.compile(r"(.*)_AutoML_[\d_]*((?:_.*)?)$")  # nested group needed for Py2
+    regexp = re.compile(r"(.*)_AutoML_[\d_]+((?:_.*)?)$")  # nested group needed for Py2
     shortened_model_ids = [regexp.sub(r"\1\2", model_id) for model_id in model_ids]
     if len(set(shortened_model_ids)) == len(set(model_ids)):
         return shortened_model_ids
