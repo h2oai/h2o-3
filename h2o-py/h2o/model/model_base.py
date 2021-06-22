@@ -1556,8 +1556,8 @@ class ModelBase(h2o_meta(Keyed)):
         :param n_repeats: number of repeated evaluations. Defaults to 1.
         :param features: features to include in the permutation importance. Use None to include all.
         :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
-        :param use_pandas: select true to return pandas data frame.
-        :return: H2OFrame or Pandas data frame
+        :param use_pandas: set true to return pandas data frame.
+        :return: H2OTwoDimTable or Pandas data frame
         """
         from h2o.two_dim_table import H2OTwoDimTable
         from h2o.frame import H2OFrame
@@ -1633,7 +1633,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param features: features to include in the permutation importance. Use None to include all.
         :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
         :param num_of_features: number of features to plot. Defaults to 10.
-        :param server: if true set server settings to matplotlib and show the graph
+        :param server: if true set server settings to matplotlib and do not show the plot
         :return: H2OTwoDimTable with variable importance
         """
         plt = get_matplotlib_pyplot(server)

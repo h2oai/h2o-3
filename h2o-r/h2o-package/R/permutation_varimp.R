@@ -8,7 +8,7 @@
 #' to the distance between the original prediction error and prediction error using a frame with
 #' a given feature permuted.
 #'
-#' @param object    A trained model.
+#' @param object    A trained supervised H2O model.
 #' @param newdata   Training frame of the model which is going to be permuted
 #' @param metric    Metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
 #'                  "PR_AUC".  Defaults to "AUTO".
@@ -86,7 +86,7 @@ h2o.permutation_importance <- function(object,
 #'
 #' This method plots either a bar plot or if n_repeats > 1 a box plot and returns the variable importance table.
 #'
-#' @param object    A trained model.
+#' @param object    A trained supervised H2O model.
 #' @param newdata   Training frame of the model which is going to be permuted
 #' @param metric    Metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
 #'                  "PR_AUC".  Defaults to "AUTO".
