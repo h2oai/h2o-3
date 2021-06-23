@@ -324,8 +324,8 @@ class ModelMetricsHandler extends Handler {
     @API(help="Weights Frame.", direction=API.Direction.INOUT)
     public String weights_frame;
 
-    @API(help="Uplift Frame.", direction=API.Direction.INOUT)
-    public String uplift_frame;
+    @API(help="Treatment Frame.", direction=API.Direction.INOUT)
+    public String treatment_frame;
 
     @API(help="Domain (for classification).", direction=API.Direction.INOUT)
     public String[] domain;
@@ -364,11 +364,11 @@ class ModelMetricsHandler extends Handler {
       weights = weightsFrame.anyVec();
     }
     
-    Vec uplift = null;
-    if(null != s.uplift_frame){
-      Frame upliftFrame = DKV.getGet(s.uplift_frame);
-      if (null == upliftFrame) throw new H2OKeyNotFoundArgumentException("uplift_frame", "make", s.uplift_frame);
-      uplift = upliftFrame.anyVec();
+    Vec treatment = null;
+    if(null != s.treatment_frame){
+      Frame treatmentFrame = DKV.getGet(s.treatment_frame);
+      if (null == treatmentFrame) throw new H2OKeyNotFoundArgumentException("treatment_frame", "make", s.treatment_frame);
+      treatment = treatmentFrame.anyVec();
     }
 
     if (s.domain ==null) {
@@ -381,7 +381,7 @@ class ModelMetricsHandler extends Handler {
       if (pred.numCols()!=1) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
       }
-      if(uplift != null){
+      if(treatment != null){
         ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), weights, s.domain);
         s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
       }

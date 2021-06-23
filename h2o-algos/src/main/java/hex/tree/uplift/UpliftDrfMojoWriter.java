@@ -21,7 +21,7 @@ public class UpliftDrfMojoWriter extends SharedTreeMojoWriter<UpliftDRFModel, Up
     @Override
     protected void writeModelData() throws IOException {
         super.writeModelData();
-        writekv("uplift_column", model._parms._uplift_column);
+        writekv("treatment_column", model._parms._treatment_column);
         writekv("uplift_metric", model._parms._uplift_metric);
         writekv("auuc_metric", model._parms._auuc_type);
     }

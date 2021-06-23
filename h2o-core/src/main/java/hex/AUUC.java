@@ -216,14 +216,14 @@ public class AUUC extends Iced{
             _frequency = new long[nBins];
         }
 
-        public void perRow(double pred, double w, double y, double uplift) {
+        public void perRow(double pred, double w, double y, double treatment) {
             //TODO: for-loop or binary search? 
             if (w == 0) {return;}
             for(int t=0; t < _thresholds.length; t++) {
                 if (pred >= _thresholds[t] && (t == 0 || pred <_thresholds[t-1])) {
                     _n++;
                     _frequency[t]++;
-                    if(uplift == 1){
+                    if(treatment == 1){
                         _treatment[t]++;
                         if(y == 1){ 
                             _yTreatment[t]++;

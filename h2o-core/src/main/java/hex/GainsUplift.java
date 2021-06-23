@@ -143,14 +143,9 @@ public class GainsUplift extends Iced {
             for(int i=0; i<_nct1.length; i++){
                 _qiniUplift[i] = AUUC.AUUCType.qini.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]);
                 _liftUplift[i] = AUUC.AUUCType.lift.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]);
-                _gainUplift[i] = AUUC.AUUCType.gain.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]);
+                _gainUplift[i] = AUUC.AUUCType.gain.exec(_nct1[i], _nct0[i], _ny1ct1[i], _ny1ct0[i]); 
             }
-            if(ArrayUtils.sum(_nct1) > 0) {
-                ArrayUtils.interpolateLinear(_qiniUplift);
-                ArrayUtils.interpolateLinear(_liftUplift);
-                ArrayUtils.interpolateLinear(_gainUplift);
-            }
-        } finally {       // Delete adaptation vectors
+        } finally {      
             Scope.exit();
         }
     }
@@ -230,7 +225,9 @@ public class GainsUplift extends Iced {
                 if (cp.isNA(i)) continue;
                 final double pr = cp.atd(i);
                 final double u = cu.atd(i);
-                final double w = cw!=null?cw.atd(i):1;
+                if (u != 0 && u != 1) throw new IllegalArgumentException("Invalid values in treatment column: must be binary (0 or 1).");
+                // weights column is not supported right now
+                final double w = 1;
                 perRow(pr, a, w, u);
             }
         }

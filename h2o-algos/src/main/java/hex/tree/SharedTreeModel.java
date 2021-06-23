@@ -594,8 +594,8 @@ public abstract class SharedTreeModel<
     adaptFrm.remove(_parms._fold_column);
     adaptFrm.remove(_parms._weights_column);
     adaptFrm.remove(_parms._offset_column);
-    if(_parms._uplift_column != null){
-      adaptFrm.remove(_parms._uplift_column);
+    if(_parms._treatment_column != null){
+      adaptFrm.remove(_parms._treatment_column);
     }
 
     assert adaptFrm.numCols() == _output.nfeatures();

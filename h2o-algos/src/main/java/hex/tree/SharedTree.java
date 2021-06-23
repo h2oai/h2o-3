@@ -185,14 +185,14 @@ public abstract class SharedTree<
       warn("_parallel_main_model_building",
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
-    _isUplift = _parms._uplift_column != null;
+    _isUplift = _parms._treatment_column != null;
   }
 
   @Override
   public String[] specialColNames() {
     String[] colNames = super.specialColNames();
-    if(_parms._uplift_column != null) {
-      return ArrayUtils.append(colNames, _parms._uplift_column);
+    if(_parms._treatment_column != null) {
+      return ArrayUtils.append(colNames, _parms._treatment_column);
     }
     return colNames;
   }
@@ -565,7 +565,7 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
-      int upliftIdx = fr2.find(_parms._uplift_column);
+      int upliftIdx = fr2.find(_parms._treatment_column);
       int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
       int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
@@ -614,12 +614,12 @@ public abstract class SharedTree<
     final int _predsIdx;
     final int _workIdx;
     final int _nidIdx;
-    final int _upliftIdx;
+    final int _treatmentIdx;
 
     boolean _did_split;
 
     ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
-                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int upliftIdx) {
+                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int treatmentIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -635,7 +635,7 @@ public abstract class SharedTree<
       _predsIdx = predsIdx;
       _workIdx = workIdx;
       _nidIdx = nidIdx;
-      _upliftIdx = upliftIdx;
+      _treatmentIdx = treatmentIdx;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -648,7 +648,7 @@ public abstract class SharedTree<
       // per column.
       int treeNum = ((SharedTreeModel.SharedTreeOutput) _st._model._output)._ntrees;
       new ScoreBuildHistogram2(this, treeNum, _k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family,
-              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _upliftIdx).dfork2(null,_fr2,_build_tree_one_node);
+              _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx, _treatmentIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram) caller;
@@ -689,7 +689,7 @@ public abstract class SharedTree<
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
-  protected int idx_uplift()    { return _model._output.upliftIdx(); }
+  protected int idx_treatment()    { return _model._output.treatmentIdx(); }
 
   public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
@@ -715,7 +715,7 @@ public abstract class SharedTree<
     public int work0Index;
     public int nids0Index;
     public int oobtIndex;
-    public int upliftIndex;
+    public int treatmentIndex;
 
     public FrameMap() {}  // For Externalizable interface
     public FrameMap(SharedTree t) {
@@ -726,7 +726,7 @@ public abstract class SharedTree<
       work0Index = t.idx_work(0);
       nids0Index = t.idx_nids(0);
       oobtIndex = t.idx_oobt();
-      upliftIndex = t.idx_uplift();
+      treatmentIndex = t.idx_treatment();
     }
   }
 

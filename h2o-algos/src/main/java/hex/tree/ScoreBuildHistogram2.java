@@ -371,9 +371,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double[] cs = null;
       double[] resp = null;
       double[] preds = null;
+      double[] treatment = null;
       final int maxWorkId = _allocator.getMaxId(id);
       for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
-      double[] uplift = null;
         if (cs == null) {
           cs = MemoryManager.malloc8d(_maxChunkSz);
           if (_respIdx >= 0)
@@ -382,9 +382,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             preds = MemoryManager.malloc8d(_maxChunkSz);
         }
         if(_upliftIdx >= 0){
-           uplift = MemoryManager.malloc8d(_maxChunkSz);
+           treatment = MemoryManager.malloc8d(_maxChunkSz);
         }
-        computeChunk(i, cs, _ws[i], resp, preds, uplift);
+        computeChunk(i, cs, _ws[i], resp, preds, treatment);
       }
     }
 

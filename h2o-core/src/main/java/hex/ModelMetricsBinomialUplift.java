@@ -70,7 +70,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
      * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec weights, Vec uplift, String[] domain) {
+    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec weights, Vec treatment, String[] domain) {
         Scope.enter();
         try {
             Vec labels = actualLabels.toCategoricalVec();
@@ -92,8 +92,8 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if (weights != null) {
                 fr.add("weights", weights);
             }
-            if(uplift != null){
-                fr.add("uplift", uplift);
+            if(treatment != null){
+                fr.add("treatment", treatment);
             }
             // TODO solve nbins parameter
             MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(AUUC.NBINS, targetClassProbs)).doAll(fr)._mb;
@@ -101,7 +101,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             Frame preds = new Frame(targetClassProbs);
             // todo solve for uplift here too, meantime null uplift vector is given
             ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, preds,
-                    fr.vec("labels"), fr.vec("weights"), fr.vec("uplift")); // use the Vecs from the frame (to make sure the ESPC is identical)
+                    fr.vec("labels"), fr.vec("weights"), fr.vec("treatment")); // use the Vecs from the frame (to make sure the ESPC is identical)
             mm._description = "Computed on user-given predictions and labels.";
             return mm;
         } finally {
@@ -167,7 +167,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(
                 ds, yact, Double.NaN,1, 0, m);
         }
-        @Override public double[] perRow(double ds[], float[] yact, double uplift, double weight, double offset, Model m) {
+        @Override public double[] perRow(double ds[], float[] yact, double treatment, double weight, double offset, Model m) {
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
             if(weight == 0 || Double.isNaN(weight)) return ds;
@@ -178,7 +178,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _count++;
             _wcount += weight;
             if(_auuc != null) {
-                _auuc.perRow(ds[0], weight, y, uplift);
+                _auuc.perRow(ds[0], weight, y, treatment);
             }
             return ds;
         }
@@ -214,8 +214,8 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                     if (resp != null) {
                         weight = m==null?null : frameWithExtraColumns.vec(m._parms._weights_column);
                     }
-                    if(m != null && m._parms._uplift_column != null){
-                        uplift = frameWithExtraColumns.vec(m._parms._uplift_column);
+                    if(m != null && m._parms._treatment_column != null){
+                        uplift = frameWithExtraColumns.vec(m._parms._treatment_column);
                     }
                 }
             }
@@ -260,12 +260,12 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
          * @param preds   Predictions
          * @param resp    Actual label
          * @param weights Weights
-         * @param uplift  Uplift column               
+         * @param treatment  Treatment column               
          * @return An Optional with GainsUplift instance if GainsUplift is not disabled (gainsUplift_bins = 0). Otherwise an
          * empty Optional.
          */
-        private Optional<GainsUplift> calculateGainsUplift(Model m, Frame preds, Vec resp, Vec weights, Vec uplift) {
-            final GainsUplift gl = new GainsUplift(preds.vec(0), resp, weights, uplift);
+        private Optional<GainsUplift> calculateGainsUplift(Model m, Frame preds, Vec resp, Vec weights, Vec treatment) {
+            final GainsUplift gl = new GainsUplift(preds.vec(0), resp, weights, treatment);
             if (m != null && m._parms._gainslift_bins < -1) {
                 throw new IllegalArgumentException("Number of G/L bins must be greater or equal than -1.");
             } else if (m != null && (m._parms._gainslift_bins > 0 || m._parms._gainslift_bins == -1)) {

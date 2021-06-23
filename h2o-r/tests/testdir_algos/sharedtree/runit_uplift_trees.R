@@ -49,18 +49,19 @@ test.uplift <- function() {
     trainH2o <- as.h2o(trainH2o)
 
     modelH2o <- h2o.upliftRandomForest(
-    x = c("X1", "X2", "X3", "X4", "X5", "X6"), y = "y",
-    training_frame = trainH2o,
-    uplift_column = "treat",
-    uplift_metric = "KL",
-    auuc_type = "qini",
-    distribution = "bernoulli",
-    gainslift_bins = 10,
-    ntrees = ntrees,
-    max_depth = 10,
-    min_rows = 10,
-    nbins = 100,
-    seed = 42)
+        x = c("X1", "X2", "X3", "X4", "X5", "X6"), 
+        y = "y",
+        training_frame = trainH2o,
+        treatment_column = "treat",
+        uplift_metric = "KL",
+        auuc_type = "qini",
+        distribution = "bernoulli",
+        gainslift_bins = 10,
+        ntrees = ntrees,
+        max_depth = 10,
+        min_rows = 10,
+        nbins = 100,
+        seed = 42)
 
     print(h2o.varimp(modelH2o))
     print(modelH2o)

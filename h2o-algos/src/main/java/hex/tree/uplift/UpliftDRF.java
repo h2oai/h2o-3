@@ -3,8 +3,6 @@ package hex.tree.uplift;
 import hex.ModelCategory;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel;
 import water.Job;
 import water.Key;
 import water.MRTask;
@@ -13,8 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 
 import java.util.Random;
-
-import static hex.genmodel.GenModel.getPrediction;
 
 public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
@@ -74,15 +70,19 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
             warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
         if (hasOffsetCol())
-            error("_offset_column", "Offsets are not yet supported for DRF.");
+            error("_offset_column", "Offsets are not yet supported for Uplift DRF.");
+        if (hasWeightCol())
+            error("_weight_column", "Weights are not yet supported for Uplift DRF.");
+        if (hasFoldCol() || _parms._nfolds > 0)
+            error("_fold_column", "Cross-validation is not yet supported for Uplift DRF.");
         if (_nclass == 1) {
             error("_distribution", "UpliftDRF currently support only classification problems.");
         }
         if (_nclass > 2 || _parms._distribution.equals(DistributionFamily.multinomial)) {
             error("_distribution", "UpliftDRF currently does not support multinomial distribution.");
         }
-        if(_parms._uplift_column == null){
-            error("_uplift_column", "The uplift column has to be defined.");
+        if (_parms._treatment_column == null) {
+            error("_treatment_column", "The treatment column has to be defined.");
         }
     }
     
@@ -109,9 +109,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             }
             if (!(1 <= _mtry && _mtry <= _ncols)) {
                 throw new IllegalArgumentException("Computed mtry should be in interval <1," + _ncols + "> but it is " + _mtry);
-            }
-            if (_model != null && _model.evalAutoParamsEnabled) {
-                _model.initActualParamValuesAfterOutputSetup(isClassifier());
             }
             new MRTask() {
                 @Override public void map(Chunk chks[]) {
@@ -227,7 +224,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             UpliftCollectPreds(DTree trees[], int leafs[]) { _trees=trees;}
             @Override public void map( Chunk[] chks ) {
                 final Chunk    y       = chk_resp(chks); // Response
-                final Chunk   oobt  = chk_oobt(chks); // Out-of-bag rows counter over all trees
+                final Chunk   oobt     = chk_oobt(chks); // Out-of-bag rows counter over all trees
                 final Chunk   weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len); // Out-of-bag rows counter over all trees
                 // Iterate over all rows
                 for( int row=0; row<oobt._len; row++ ) {
