@@ -251,7 +251,7 @@ public class IsolationTree {
      */
     public static double[] gaussianVector(int n, int zeroNum, long seed) {
         double[] gaussian = ArrayUtils.gaussianVector(n, seed);
-        int[] indexToMakeZero = CollectionUtils.setOfUniqueRandomNumbers(zeroNum, n, seed);
+        int[] indexToMakeZero = RandomUtils.getRNG(seed).ints(0, n).distinct().limit(zeroNum).toArray();
 
         for (int index: indexToMakeZero) {
             gaussian[index] = 0.0;
