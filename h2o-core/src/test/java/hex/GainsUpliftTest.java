@@ -29,16 +29,15 @@ public class GainsUpliftTest extends TestUtil {
         }
         Vec actual = Vec.makeVec(a, new String[]{"N","Y"}, Vec.newKey());
         Vec predict = Vec.makeVec(p, Vec.newKey());
-        Vec uplift = Vec.makeVec(u, new String[]{"0","1"}, Vec.newKey());
+        Vec treatment = Vec.makeVec(u, new String[]{"0","1"}, Vec.newKey());
 
-        GainsUplift gl = new GainsUplift(predict, actual, uplift);
+        GainsUplift gl = new GainsUplift(predict, actual, treatment);
         gl._groups = 10;
         gl.exec();
         Log.info(gl);
-        //Assert.assertTrue(gl.response_rates[0] == gl.avg_response_rate);
 
         actual.remove();
         predict.remove();
-        uplift.remove();
+        treatment.remove();
     }
 }

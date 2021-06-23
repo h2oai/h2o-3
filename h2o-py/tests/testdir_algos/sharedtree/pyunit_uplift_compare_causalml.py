@@ -15,10 +15,10 @@ import numpy as np
 def uplift_simple():
     treatment_column = "treatment"
     response_column = "response"
-    uplift_column = "uplift"
+    treatment_column = "uplift"
     data = {treatment_column: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
             response_column:  [0, 0, 0, 1, 1, 0, 0, 0, 1, 1],
-            uplift_column:    [0.1, -0.1, 0.2, 0.5, 0.55, 0.13, -0.2, 0.11, 0.3, 0.9]}
+            treatment_column:    [0.1, -0.1, 0.2, 0.5, 0.55, 0.13, -0.2, 0.11, 0.3, 0.9]}
     df = pd.DataFrame(data=data)
     plot_qini(df, outcome_col=response_column, treatment_col=treatment_column)
     plot_lift(df, outcome_col=response_column, treatment_col=treatment_column)
@@ -63,7 +63,7 @@ def uplift_compare():
         drf = H2OUpliftRandomForestEstimator(
             ntrees=ntree,
             max_depth=max_depth,
-            uplift_column=treatment_column,
+            treatment_column=treatment_column,
             uplift_metric="KL",
             distribution="bernoulli",
             gainslift_bins=10,

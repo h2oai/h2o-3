@@ -424,8 +424,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
     abstract public double[] perRow(double ds[], float yact[], Model m);
-    public double[] perRow(double ds[], float yact[], double uplift, double weight, double offset, Model m) {
-      assert(Double.isNaN(uplift) && weight == 1 && offset == 0);
+    public double[] perRow(double ds[], float yact[], double treatment, double weight, double offset, Model m) {
+      assert(Double.isNaN(treatment) && weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }
 

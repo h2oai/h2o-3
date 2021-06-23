@@ -18,7 +18,6 @@ public class ModelMetricsBinomialGeneric extends ModelMetricsBinomial {
                                      final String description) {
     super(model, frame, nobs, mse, domain, sigma, auc, logloss, null, customMetric);
     _gainsLiftTable = gainsLiftTable;
-    // TODO implement table uplift table here
     _thresholds_and_metric_scores = thresholds_and_metric_scores;
     _max_criteria_and_metric_scores = max_criteria_and_metric_scores;
     _confusion_matrix = confusion_matrix;

@@ -25,19 +25,11 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
                  validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
-                 nfolds=0,  # type: int
-                 keep_cross_validation_models=True,  # type: bool
-                 keep_cross_validation_predictions=False,  # type: bool
-                 keep_cross_validation_fold_assignment=False,  # type: bool
                  score_each_iteration=False,  # type: bool
                  score_tree_interval=0,  # type: int
-                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
-                 fold_column=None,  # type: Optional[str]
                  response_column=None,  # type: Optional[str]
                  ignored_columns=None,  # type: Optional[List[str]]
                  ignore_const_cols=True,  # type: bool
-                 offset_column=None,  # type: Optional[str]
-                 weights_column=None,  # type: Optional[str]
                  balance_classes=False,  # type: bool
                  class_sampling_factors=None,  # type: Optional[List[float]]
                  max_after_balance_size=5.0,  # type: float
@@ -52,7 +44,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  mtries=-1,  # type: int
                  sample_rate=0.632,  # type: float
                  sample_rate_per_class=None,  # type: Optional[List[float]]
-                 binomial_double_trees=False,  # type: bool
                  checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  col_sample_rate_change_per_level=1.0,  # type: float
                  col_sample_rate_per_tree=1.0,  # type: float
@@ -65,8 +56,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  export_checkpoints_dir=None,  # type: Optional[str]
                  check_constant_response=True,  # type: bool
                  gainslift_bins=-1,  # type: int
-                 uplift_column=None,  # type: Optional[str]
-                 uplift_metric=None,  # type: Optional[Literal["auto", "kl", "euclidean", "chi_squared"]]
+                 treatment_column="treatment",  # type: str
+                 uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
                  auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
                  ):
         """
@@ -79,31 +70,12 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :param validation_frame: Id of the validation data frame.
                Defaults to ``None``.
         :type validation_frame: Union[None, str, H2OFrame], optional
-        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
-               Defaults to ``0``.
-        :type nfolds: int
-        :param keep_cross_validation_models: Whether to keep the cross-validation models.
-               Defaults to ``True``.
-        :type keep_cross_validation_models: bool
-        :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
-               Defaults to ``False``.
-        :type keep_cross_validation_predictions: bool
-        :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
-               Defaults to ``False``.
-        :type keep_cross_validation_fold_assignment: bool
         :param score_each_iteration: Whether to score during each iteration of model training.
                Defaults to ``False``.
         :type score_each_iteration: bool
         :param score_tree_interval: Score the model after every so many trees. Disabled if set to 0.
                Defaults to ``0``.
         :type score_tree_interval: int
-        :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
-               'Stratified' option will stratify the folds based on the response variable, for classification problems.
-               Defaults to ``"auto"``.
-        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
-        :param fold_column: Column with cross-validation fold index assignment per observation.
-               Defaults to ``None``.
-        :type fold_column: str, optional
         :param response_column: Response variable column.
                Defaults to ``None``.
         :type response_column: str, optional
@@ -113,18 +85,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :param ignore_const_cols: Ignore constant columns.
                Defaults to ``True``.
         :type ignore_const_cols: bool
-        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
-               function.
-               Defaults to ``None``.
-        :type offset_column: str, optional
-        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
-               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
-               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
-               not increase the size of the data frame. This is typically the number of times a row is repeated, but
-               non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor.
-               Defaults to ``None``.
-        :type weights_column: str, optional
         :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
                Defaults to ``False``.
         :type balance_classes: bool
@@ -175,10 +135,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                to 1.0), for each tree
                Defaults to ``None``.
         :type sample_rate_per_class: List[float], optional
-        :param binomial_double_trees: For binary classification: Build 2x as many trees (one per class) - can lead to
-               higher accuracy.
-               Defaults to ``False``.
-        :type binomial_double_trees: bool
         :param checkpoint: Model checkpoint to resume training with.
                Defaults to ``None``.
         :type checkpoint: Union[None, str, H2OEstimator], optional
@@ -222,13 +178,13 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                binning.
                Defaults to ``-1``.
         :type gainslift_bins: int
-        :param uplift_column: Define column which will be use for computing uplift gain to select best split for a tree.
-               The column has to devide dataset into treatment (value 1) and control (value 0) group.
-               Defaults to ``None``.
-        :type uplift_column: str, optional
+        :param treatment_column: Define column which will be use for computing uplift gain to select best split for a
+               tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.
+               Defaults to ``"treatment"``.
+        :type treatment_column: str
         :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
-               Defaults to ``None``.
-        :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"], optional
+               Defaults to ``"auto"``.
+        :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"]
         :param auuc_type: AUUC metric used to calculate Area under Uplift.
                Defaults to ``"auto"``.
         :type auuc_type: Literal["auto", "qini", "lift", "gain"]
@@ -238,19 +194,11 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._id = self._parms['model_id'] = model_id
         self.training_frame = training_frame
         self.validation_frame = validation_frame
-        self.nfolds = nfolds
-        self.keep_cross_validation_models = keep_cross_validation_models
-        self.keep_cross_validation_predictions = keep_cross_validation_predictions
-        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
         self.score_each_iteration = score_each_iteration
         self.score_tree_interval = score_tree_interval
-        self.fold_assignment = fold_assignment
-        self.fold_column = fold_column
         self.response_column = response_column
         self.ignored_columns = ignored_columns
         self.ignore_const_cols = ignore_const_cols
-        self.offset_column = offset_column
-        self.weights_column = weights_column
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -265,7 +213,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.mtries = mtries
         self.sample_rate = sample_rate
         self.sample_rate_per_class = sample_rate_per_class
-        self.binomial_double_trees = binomial_double_trees
         self.checkpoint = checkpoint
         self.col_sample_rate_change_per_level = col_sample_rate_change_per_level
         self.col_sample_rate_per_tree = col_sample_rate_per_tree
@@ -278,7 +225,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.export_checkpoints_dir = export_checkpoints_dir
         self.check_constant_response = check_constant_response
         self.gainslift_bins = gainslift_bins
-        self.uplift_column = uplift_column
+        self.treatment_column = treatment_column
         self.uplift_metric = uplift_metric
         self.auuc_type = auuc_type
 
@@ -309,62 +256,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
     @property
-    def nfolds(self):
-        """
-        Number of folds for K-fold cross-validation (0 to disable or >= 2).
-
-        Type: ``int``, defaults to ``0``.
-        """
-        return self._parms.get("nfolds")
-
-    @nfolds.setter
-    def nfolds(self, nfolds):
-        assert_is_type(nfolds, None, int)
-        self._parms["nfolds"] = nfolds
-
-    @property
-    def keep_cross_validation_models(self):
-        """
-        Whether to keep the cross-validation models.
-
-        Type: ``bool``, defaults to ``True``.
-        """
-        return self._parms.get("keep_cross_validation_models")
-
-    @keep_cross_validation_models.setter
-    def keep_cross_validation_models(self, keep_cross_validation_models):
-        assert_is_type(keep_cross_validation_models, None, bool)
-        self._parms["keep_cross_validation_models"] = keep_cross_validation_models
-
-    @property
-    def keep_cross_validation_predictions(self):
-        """
-        Whether to keep the predictions of the cross-validation models.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("keep_cross_validation_predictions")
-
-    @keep_cross_validation_predictions.setter
-    def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
-        assert_is_type(keep_cross_validation_predictions, None, bool)
-        self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
-
-    @property
-    def keep_cross_validation_fold_assignment(self):
-        """
-        Whether to keep the cross-validation fold assignment.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("keep_cross_validation_fold_assignment")
-
-    @keep_cross_validation_fold_assignment.setter
-    def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
-        assert_is_type(keep_cross_validation_fold_assignment, None, bool)
-        self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
-
-    @property
     def score_each_iteration(self):
         """
         Whether to score during each iteration of model training.
@@ -391,35 +282,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def score_tree_interval(self, score_tree_interval):
         assert_is_type(score_tree_interval, None, int)
         self._parms["score_tree_interval"] = score_tree_interval
-
-    @property
-    def fold_assignment(self):
-        """
-        Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
-        the folds based on the response variable, for classification problems.
-
-        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
-        """
-        return self._parms.get("fold_assignment")
-
-    @fold_assignment.setter
-    def fold_assignment(self, fold_assignment):
-        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
-        self._parms["fold_assignment"] = fold_assignment
-
-    @property
-    def fold_column(self):
-        """
-        Column with cross-validation fold index assignment per observation.
-
-        Type: ``str``.
-        """
-        return self._parms.get("fold_column")
-
-    @fold_column.setter
-    def fold_column(self, fold_column):
-        assert_is_type(fold_column, None, str)
-        self._parms["fold_column"] = fold_column
 
     @property
     def response_column(self):
@@ -462,38 +324,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def ignore_const_cols(self, ignore_const_cols):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
-
-    @property
-    def offset_column(self):
-        """
-        Offset column. This will be added to the combination of columns before applying the link function.
-
-        Type: ``str``.
-        """
-        return self._parms.get("offset_column")
-
-    @offset_column.setter
-    def offset_column(self, offset_column):
-        assert_is_type(offset_column, None, str)
-        self._parms["offset_column"] = offset_column
-
-    @property
-    def weights_column(self):
-        """
-        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
-        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
-        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
-        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
-
-        Type: ``str``.
-        """
-        return self._parms.get("weights_column")
-
-    @weights_column.setter
-    def weights_column(self, weights_column):
-        assert_is_type(weights_column, None, str)
-        self._parms["weights_column"] = weights_column
 
     @property
     def balance_classes(self):
@@ -697,20 +527,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._parms["sample_rate_per_class"] = sample_rate_per_class
 
     @property
-    def binomial_double_trees(self):
-        """
-        For binary classification: Build 2x as many trees (one per class) - can lead to higher accuracy.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("binomial_double_trees")
-
-    @binomial_double_trees.setter
-    def binomial_double_trees(self, binomial_double_trees):
-        assert_is_type(binomial_double_trees, None, bool)
-        self._parms["binomial_double_trees"] = binomial_double_trees
-
-    @property
     def checkpoint(self):
         """
         Model checkpoint to resume training with.
@@ -884,26 +700,26 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self._parms["gainslift_bins"] = gainslift_bins
 
     @property
-    def uplift_column(self):
+    def treatment_column(self):
         """
         Define column which will be use for computing uplift gain to select best split for a tree. The column has to
         devide dataset into treatment (value 1) and control (value 0) group.
 
-        Type: ``str``.
+        Type: ``str``, defaults to ``"treatment"``.
         """
-        return self._parms.get("uplift_column")
+        return self._parms.get("treatment_column")
 
-    @uplift_column.setter
-    def uplift_column(self, uplift_column):
-        assert_is_type(uplift_column, None, str)
-        self._parms["uplift_column"] = uplift_column
+    @treatment_column.setter
+    def treatment_column(self, treatment_column):
+        assert_is_type(treatment_column, None, str)
+        self._parms["treatment_column"] = treatment_column
 
     @property
     def uplift_metric(self):
         """
         Divergence metric used to find best split when building an upplift tree.
 
-        Type: ``Literal["auto", "kl", "euclidean", "chi_squared"]``.
+        Type: ``Literal["auto", "kl", "euclidean", "chi_squared"]``, defaults to ``"auto"``.
         """
         return self._parms.get("uplift_metric")
 
