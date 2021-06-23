@@ -2,7 +2,6 @@ package water.util;
 
 import org.junit.Assert;
 import org.junit.Test;
-import sun.plugin.javascript.navig.Array;
 
 import java.util.Arrays;
 import java.util.Random;
