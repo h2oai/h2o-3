@@ -123,15 +123,16 @@ public class Score extends CMetricScoringTask<Score> {
         // for binomial the predicted class is not needed
         // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
         // (we are just building the metrics)
+        val[0] = (float)ys.atd(row);
         if(_bldr.isUplift()) {
           cdists[0] = cdists[1] - cdists[2];
+          double treatment = treatmentChunk.atd(row);
+          _mb.perRow(cdists, val, treatment,  weight, offset, m);
         } else {
           cdists[0] = -1;
+          _mb.perRow(cdists, val,  weight, offset, m);
         }
       }
-      double treatment = treatmentChunk != null ? treatmentChunk.atd(row) : Double.NaN;
-      val[0] = (float)ys.atd(row);
-      _mb.perRow(cdists, val, treatment,  weight, offset, m);
 
       if (_preds != null) {
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);

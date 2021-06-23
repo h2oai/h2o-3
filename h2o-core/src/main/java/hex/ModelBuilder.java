@@ -1157,7 +1157,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _weights = u;
         if(u.naCnt() > 0)
           error("_treatment_column","Treatment column cannot have missing values.");
-        if(u.domain().length != 2)
+        if(u.isCategorical() && u.domain().length != 2)
           error("_treatment_column","Treatment column must contains only 0 or 1");
         if(u.min() != 0)
           error("_treatment_column","Min. treatment column value must be 0");
