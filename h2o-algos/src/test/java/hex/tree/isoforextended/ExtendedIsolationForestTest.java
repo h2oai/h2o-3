@@ -7,8 +7,6 @@ import org.apache.log4j.Logger;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -17,7 +15,6 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
@@ -391,34 +388,6 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
         assertArrayEquals("Result is not correct", new double[]{-1.0}, split.getLeft()[0], 1e-3);
         assertArrayEquals("Result is not correct", new double[]{2.0, 1.0}, split.getRight()[0], 1e-3);
-    }
-
-    @Test
-    public void testSubSampleFixedSizeSmoke() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));
-            Frame subSample = SamplingUtils.sampleOfFixedSize(train, 256, 0xBEEF);
-            assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
-            assertEquals("SubSample has different number of rows", 256, subSample.numRows());
-        }
-        finally {
-            Scope.exit();
-        }
-    }
-
-    @Test
-    public void testSubSampleFixedSizeLarge() {
-        try {
-            Scope.enter();
-            Frame train = Scope.track(generateRealOnly(32, 32768, 0, 0xBEEF));
-            Frame subSample = SamplingUtils.sampleOfFixedSize(train, 256, 0xBEEF);
-            assertEquals("SubSample has different number of columns", train.numCols(), subSample.numCols());
-            assertEquals("SubSample has different number of rows", 256, subSample.numRows());
-        }
-        finally {
-            Scope.exit();
-        }
     }
 
     @Test

@@ -14,6 +14,7 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -155,8 +156,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             IsolationTree isolationTree = new IsolationTree(heightLimit, _parms._extension_level);
             for (int tid = 0; tid < _parms._ntrees; tid++) {
                 Timer timer = new Timer();
-                int randomUnit = _rand.nextInt();
-                Frame subSample = SamplingUtils.sampleOfFixedSize(_train, _parms._sample_size, _parms._seed + randomUnit);
+                Frame subSample = _train.deepSlice(_rand.longs(_parms._sample_size, 0, _train.numRows()).toArray(), null);
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
                 CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
                 if (LOG.isDebugEnabled()) {
