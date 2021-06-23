@@ -417,7 +417,6 @@ public final class DHistogram extends Iced<DHistogram> {
     assert (_vals == null || dsh._vals == null) || (_isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
       _min == dsh._min && _maxEx == dsh._maxEx);
     if( dsh._vals == null ) return;
-    // TODO reflect uplift here
     if(_vals == null) {
       init(dsh._vals, dsh._valsUplift);
     } else {

@@ -1,18 +1,16 @@
 package hex.tree.uplift;
 
-import hex.AUUC;
 import hex.ModelCategory;
 import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
 import hex.tree.drf.DRFModel;
 import hex.util.EffectiveParametersUtils;
 import water.Key;
-import water.fvec.NewChunk;
 import water.util.SBPrintStream;
 
 public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
-    public static class UpliftDRFParameters extends DRFModel.DRFParameters {
+    public static class UpliftDRFParameters extends SharedTreeModel.SharedTreeParameters {
         public String algoName() { return "UpliftDRF"; }
         public String fullName() { return "Uplift Distributed Random Forest"; }
         public String javaName() { return UpliftDRFModel.class.getName(); }
@@ -20,15 +18,21 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         
 
         public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
-        public UpliftMetricType _uplift_metric;
+        public UpliftMetricType _uplift_metric = UpliftMetricType.AUTO;
 
         public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
 
         public UpliftDRFParameters() {
             super();
-            // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
+            // Set DRF Uplift specific defaults (can differ from SharedTreeModel's defaults)
             _max_depth = 20;
             _min_rows = 1;
+            _treatment_column = "treatment";
+        }
+
+        @Override
+        public long progressUnits() {
+            return 0;
         }
     }
 
@@ -48,14 +52,9 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
     @Override
     public void initActualParamValues() {
         super.initActualParamValues();
-        EffectiveParametersUtils.initFoldAssignment(_parms);
         EffectiveParametersUtils.initHistogramType(_parms);
         EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.Enum);
         EffectiveParametersUtils.initUpliftMetric(_parms);
-    }
-
-    public void initActualParamValuesAfterOutputSetup(boolean isClassifier) {
-        EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
     }
 
     @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }

@@ -771,7 +771,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
               _parms.imputeMissing(),
               _parms.makeImputer(),
-              false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), hasUpliftCol(), _parms.interactionSpec());
+              false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), hasTreatmentCol(), _parms.interactionSpec());
       _totalBetaLen = _parms._family.equals(Family.multinomial) || _parms._family.equals(Family.ordinal)?
               _dinfo.fullN()*nclasses()+1:_dinfo.fullN()+1;
 
