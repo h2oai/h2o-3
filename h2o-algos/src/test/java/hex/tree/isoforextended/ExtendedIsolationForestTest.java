@@ -97,7 +97,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test(expected = H2OModelBuilderIllegalArgumentException.class)
-    public void testBasicTrainErrorOnlyRootsDoesNotMakeSence() {
+    public void testBasicTrainErrorOnlyRootsDoesNotMakeSense() {
         try {
             Scope.enter();
             Frame train = Scope.track(parseTestFile("smalldata/anomaly/single_blob.csv"));

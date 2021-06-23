@@ -472,7 +472,6 @@ public class ArrayUtilsTest {
   public void testMinMaxNaN() {
     double[] array = new double[]{Double.NaN, 4.0, -1.0};
     double[] res = minMaxValue(array);
-    System.out.println("res = " + Arrays.toString(res));
     assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
   }
 
