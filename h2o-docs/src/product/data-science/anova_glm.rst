@@ -130,7 +130,7 @@ ANOVA GLM uses a similar set of parameters to GLM.
 
 - **save_transformed_framekeys**: Set to True to save the keys of transformed predictors and interaction column. Defaults to False.
 
-To demonstrate what Type III SS is and how it is implemented, here is an example of regression with one to two categorical predictors: 
+To demonstrate what Type III SS is and how it is implemented, here is an example of regression with two categorical predictors: 
 
 - **note**: This algorithm will support multiple categorical/numerical columns and other families as well; we just need to replace the SS with the residual deviance for other families.
 
