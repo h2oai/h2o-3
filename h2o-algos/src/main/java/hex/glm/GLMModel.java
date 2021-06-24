@@ -1828,24 +1828,17 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       } else {  // special for ordinal.  preds contains etas for all classes
         int lastClass = _output._nclasses-1;
         body.ip("int lastClass = "+lastClass+";").nl();
-        body.ip("preds[0]=lastClass;").nl();
+        body.ip("preds[0]=0;").nl();
         body.ip("double previousCDF = 0.0;").nl();
         body.ip("for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class").nl();
         body.ip("  double eta = preds[cInd+1];").nl();
         body.ip("  double currCDF = 1.0/(1+Math.exp(-eta));").nl();
         body.ip("  preds[cInd+1] = currCDF-previousCDF;").nl();
         body.ip("  previousCDF = currCDF;").nl();
-        body.ip("  if (eta > 0) { // found the correct class").nl();
-        body.ip("    preds[0] = cInd;").nl();
-        body.ip("    break;").nl();
-        body.ip("  }").nl();
-        body.ip("}").nl();
-        body.ip("for (int cInd = (int)preds[0]+1;cInd < lastClass; cInd++) {  // continue PDF calculation").nl();
-        body.ip(" double currCDF = 1.0/(1+Math.exp(-preds[cInd+1]));").nl();
-        body.ip(" preds[cInd + 1] = currCDF - previousCDF;").nl();
-        body.ip(" previousCDF = currCDF;").nl();
         body.ip("}").nl();
         body.ip("preds[nclasses()] = 1-previousCDF;").nl();
+        body.ip("double max_p = 0;").nl();
+        body.ip("for(int c = 1; c < preds.length; ++c) if(preds[c] > max_p){ max_p = preds[c]; preds[0] = c-1;};").nl();
       }
     }
   }

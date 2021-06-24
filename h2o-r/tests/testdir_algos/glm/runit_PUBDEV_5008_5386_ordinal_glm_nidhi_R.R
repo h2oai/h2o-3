@@ -35,7 +35,7 @@ glmOrdinal <- function() {
     if (accRH2O > bestAccLH)
       bestAccLH <- accRH2O
     
-    m1 <- h2o.glm(y = Y, x = X, training_frame = D, lambda=c(reg/100), alpha=c(0.8), family = "ordinal", beta_epsilon=1e-8, 
+    m1 <- h2o.glm(y = Y, x = X, training_frame = D, lambda=c(reg/100), alpha=c(0.5), family = "ordinal", beta_epsilon=1e-8, 
                   objective_epsilon=1e-6, obj_reg=reg,max_iterations=8000, solver='GRADIENT_DESCENT_SQERR', seed=seeds)  
     predh2o = as.data.frame(h2o.predict(m1,D))
     Ddata <- as.data.frame(D)
