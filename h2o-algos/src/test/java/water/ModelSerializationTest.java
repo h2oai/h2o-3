@@ -9,6 +9,8 @@ import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import hex.tree.isoforextended.ExtendedIsolationForest;
 import hex.tree.isoforextended.ExtendedIsolationForestModel;
+import hex.tree.uplift.UpliftDRF;
+import hex.tree.uplift.UpliftDRFModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -221,6 +223,24 @@ public class ModelSerializationTest {
   }
   
   @Test
+  public void testUpliftDRFModel() throws IOException {
+    try {
+      Scope.enter();
+      Frame frame = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+      UpliftDRFModel model = prepareUpliftDRFModel(frame, ar("treatment", "conversion"), "treatment", "conversion");
+      Scope.track_generic(model);
+      UpliftDRFModel loadedModel = saveAndLoad(model);
+      Scope.track_generic(loadedModel);
+      assertModelBinaryEquals(model, loadedModel);
+      Frame uplift = Scope.track(model.score(frame));
+      Frame upliftLoaded = Scope.track(loadedModel.score(frame));
+      assertFrameEquals(uplift, upliftLoaded, 1e-3);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testGLMModel() throws IOException {
     GLMModel model, loadedModel = null;
     try {
@@ -335,7 +355,20 @@ public class ModelSerializationTest {
       eifParams._score_each_iteration = true;
 
       return new ExtendedIsolationForest(eifParams).trainModel().get();
-  }  
+  }
+
+  private UpliftDRFModel prepareUpliftDRFModel(Frame frame, String[] ignoredColumns, String treatmentCol, String responseCol) {
+    frame.toCategoricalCol(treatmentCol);
+    frame.toCategoricalCol(responseCol);
+    UpliftDRFModel.UpliftDRFParameters upliftParams = new UpliftDRFModel.UpliftDRFParameters();
+    upliftParams._train = frame._key;
+    upliftParams._ignored_columns = ignoredColumns;
+    upliftParams._treatment_column = treatmentCol;
+    upliftParams._response_column = responseCol;
+    upliftParams._seed = 0xDECAF;
+
+    return new UpliftDRF(upliftParams).trainModel().get();
+  }
 
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
     Frame f = parseTestFile(dataset);
