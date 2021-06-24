@@ -186,3 +186,24 @@ h2o.prcomp <- function(training_frame,
   segment_models <- .h2o.segmentModelsJob('pca', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+.h2o.fill_pca <- function(model, parameters, allparams) {
+    model$variable_importances <- model$importance
+    return(model)
+}
+
+#' Scree Plot
+#' @param model  A PCA model
+#' @param type  Type of the plot. Either "barplot" or "lines".
+#' @export
+h2o.screeplot <- function(model, type=c("barplot", "lines")) {
+    type <- match.arg(type)
+    if (type == "barplot") {
+        graphics::barplot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot")
+    } else {
+        graphics::plot(t(model@model$importance)[,1], xlab = "Components", ylab = "Variances", main = "Scree Plot",
+               type = "l", lty = "dashed", col = "blue", lwd = 2)
+    }
+}
+
