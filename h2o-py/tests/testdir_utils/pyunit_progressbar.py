@@ -4,9 +4,9 @@
 from __future__ import absolute_import, division, print_function
 
 try:
-    from io import StringIO   # py3
+    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without unicode support)
 except:
-    from StringIO import StringIO  # py2
+    from io import StringIO   # py3
     
 import math
 import random
@@ -117,7 +117,7 @@ class MyPWBar(PBWBar):
         self._bar_symbols = ">"
 
 
-class MyWidgetFactory:
+class MyWidgetFactory(object):
 
     def __get__(self, progress_bar, owner=None):
         return [PBWString("my widget -> "), MyPWBar(), MyWidget()]
