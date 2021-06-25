@@ -117,21 +117,20 @@ public class Score extends CMetricScoringTask<Score> {
         for( int i=0; i< tmp.length; i++ )
           tmp[i] = chks[i].atd(row);
 
-      if (nclass > 2) { // Fill in prediction for multinomial
-        cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
-      } else if (nclass == 2) {
-        // for binomial the predicted class is not needed
-        // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
-        // (we are just building the metrics)
-        val[0] = (float)ys.atd(row);
-        if(_bldr.isUplift()) {
-          cdists[0] = cdists[1] - cdists[2];
-          double treatment = treatmentChunk.atd(row);
-          _mb.perRow(cdists, val, treatment,  weight, offset, m);
-        } else {
+      if (_bldr.isUplift()){
+        cdists[0] = cdists[1] - cdists[2];
+        double treatment = treatmentChunk.atd(row);
+        _mb.perRow(cdists, val, treatment,  weight, offset, m);
+      } else {
+        if (nclass > 2) { // Fill in prediction for multinomial
+          cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
+        } else if (nclass == 2) {
+          // for binomial the predicted class is not needed
+          // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
+          // (we are just building the metrics)
           cdists[0] = -1;
-          _mb.perRow(cdists, val,  weight, offset, m);
         }
+        _mb.perRow(cdists, val,  weight, offset, m);
       }
 
       if (_preds != null) {
