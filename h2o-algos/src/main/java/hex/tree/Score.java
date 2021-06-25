@@ -113,6 +113,7 @@ public class Score extends CMetricScoringTask<Score> {
         m.score0(chks, offset, row, tmp, cdists);
 
       // fill tmp with training data for null model - to have proper tie breaking
+      val[0] = (float)ys.atd(row);
       if (_is_train && _bldr._ntrees == 0)
         for( int i=0; i< tmp.length; i++ )
           tmp[i] = chks[i].atd(row);
@@ -130,7 +131,7 @@ public class Score extends CMetricScoringTask<Score> {
           // (we are just building the metrics)
           cdists[0] = -1;
         }
-        _mb.perRow(cdists, val,  weight, offset, m);
+        _mb.perRow(cdists, val, weight, offset, m);
       }
 
       if (_preds != null) {
