@@ -77,27 +77,16 @@ public class GLMScore extends MRTask<GLMScore> {
     int lastClass = _nclasses-1;
     if(_m._parms._family == GLMModel.GLMParameters.Family.ordinal) {  // todo: change this to take various link func
       final double[][] bm = _beta_multinomial;
-      Arrays.fill(preds,0); // initialize to small number
-      preds[0] = lastClass;  // initialize to last class by default here
+      Arrays.fill(preds,0);
       double previousCDF = 0.0;
-      for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
+      for (int cInd = 0; cInd < lastClass; cInd++) {
         double eta = r.innerProduct(bm[cInd]) + o;
         double currCDF = 1.0 / (1 + Math.exp(-eta));
         preds[cInd + 1] = currCDF - previousCDF;
         previousCDF = currCDF;
-
-        if (eta > 0) { // found the correct class
-          preds[0] = cInd;
-          break;
-        }
-      }
-      for (int cInd = (int) preds[0] + 1; cInd < lastClass; cInd++) {  // continue PDF calculation
-        double currCDF = 1.0 / (1 + Math.exp(-r.innerProduct(bm[cInd]) + o));
-        preds[cInd + 1] = currCDF - previousCDF;
-        previousCDF = currCDF;
-
       }
       preds[_nclasses] = 1-previousCDF;
+      preds[0] = ArrayUtils.maxIndex(preds)-1;
     } else if (_m._parms._family == GLMModel.GLMParameters.Family.multinomial) {
       double[] eta = _eta;
       final double[][] bm = _beta_multinomial;

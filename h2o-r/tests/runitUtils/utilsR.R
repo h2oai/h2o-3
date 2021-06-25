@@ -989,6 +989,7 @@ compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=
         }
     }
   }
+  print("frame compare success!")
 }
 
 assertCorrectSkipColumns <-

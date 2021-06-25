@@ -8,7 +8,6 @@ test.ordinalGlm.mojo <-
     #----------------------------------------------------------------------
     # Run the test
     #----------------------------------------------------------------------
-    e <- tryCatch({
       numTest = 1000 # set test dataset to contain 1000 rows
       params_prob_data <- setParmsData(numTest) # generate model parameters, random dataset
       modelAndDir<-buildModelSaveMojoGLM(params_prob_data$params) # build the model and save mojo
@@ -18,9 +17,6 @@ test.ordinalGlm.mojo <-
       h2o.downloadCSV(twoFrames$h2oPredict, sprintf("%s/h2oPred.csv", modelAndDir$dirName))
       h2o.downloadCSV(twoFrames$mojoPredict, sprintf("%s/mojoOut.csv", modelAndDir$dirname))
       compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-4)
-    }, error = function(x) x)
-    if (!is.null(e)&& (!all(sapply("wget", grepl, e[[1]]))))
-      FAIL(e)   # throw error unless it is the stupid wget error.
   }
 
 setParmsData <- function(numTest=1000) {
