@@ -69,6 +69,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         // a set of rules and coefficients
 
         public double[] _intercept;
+        
+        String[] _linear_names;
 
         public TwoDimTable _rule_importance = null;
 
@@ -119,6 +121,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             }
             if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
                 linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
+            } else {
+                linearTest.add(RuleFitUtils.getLinearNames(1, new String[] {this._parms._response_column})[0], adaptFrm.vec(this._parms._response_column));
             }
 
             Frame scored = glmModel.score(linearTest, destination_key, null, true);

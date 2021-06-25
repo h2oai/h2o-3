@@ -259,15 +259,17 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 long endGLMTime = System.nanoTime() - startGLMTime;
                 LOG.info("GLM trained in " + ((double)endGLMTime) / 1E9 + "s.");
                 DKV.put(glmModel);
-
-                DKV.remove(linearTrain._key);
-                if (linearValid != null) DKV.remove(linearValid._key);
-                DKV.remove(trainAdapted._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
                 
                 model._output.glmModelKey = glmModel._key;
 
+                model._output._linear_names = linearTrain.names();
+
+                DKV.remove(linearTrain._key);
+                if (linearValid != null) DKV.remove(linearValid._key);
+                DKV.remove(trainAdapted._key);
+                
                 // 3. Step 3 (optional): Feature importance
                 model._output._intercept = getIntercept(glmModel);
 

@@ -12,6 +12,8 @@ public class RuleFitMojoModel extends MojoModel {
   int ntrees;
   int model_type; // 0 = LINEAR, 1 = RULES_AND_LINEAR, 2 = RULES
   String[] dataFromRulesCodes;
+ // String weights_column;
+  String[] linear_names;
   
   RuleFitMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -45,8 +47,8 @@ public class RuleFitMojoModel extends MojoModel {
   double[] map(double[] test) {
     double[] newtest = test.clone();
     List list = Arrays.asList(_linearModel._names);
-    for (int i = 0; i < dataFromRulesCodes.length; i++) {
-      int id = list.indexOf(dataFromRulesCodes[i]);
+    for (int i = 0; i < test.length; i++) {
+      int id = list.indexOf(linear_names[i]);
       newtest[id] = test[i];
     }
     return newtest;

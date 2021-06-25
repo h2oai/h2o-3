@@ -22,7 +22,12 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
     for (int i = 0; i < len; i++) {
       _model.dataFromRulesCodes[i] = readkv("data_from_rules_codes_" + i);
     }
-   
+ //  _model.weights_column =  readkv("weights_column");
+    len = readkv("linear_names_len");
+    _model.linear_names = new String[len];
+    for (int i = 0; i < len; i++) {
+      _model.linear_names[i] = readkv("linear_names_" + i);
+    }
 
   }
 

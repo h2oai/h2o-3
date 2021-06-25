@@ -52,6 +52,14 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
             writekv("data_from_rules_codes_" + i, model.dataFromRulesCodes[i]);
         }
         
+//        if (model._parms._weights_column != null) {
+//            writekv("weights_column", model._parms._weights_column);
+//        }
+
+        writekv("linear_names_len", model._output._linear_names.length);
+        for (int i = 0; i < model._output._linear_names.length; i++) {
+            writekv("linear_names_" + i, model._output._linear_names[i]);
+        }
     }
 
     void writeRuleEnsemble(RuleEnsemble ruleEnsemble) throws IOException {
