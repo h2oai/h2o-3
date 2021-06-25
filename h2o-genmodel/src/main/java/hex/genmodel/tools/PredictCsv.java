@@ -36,7 +36,7 @@ public class PredictCsv {
   boolean returnGLRMReconstruct = false; // for GLRM, return x factor by default unless set this to true
   public int glrmIterNumber = -1;  // for GLRM, default to 100.
   // Model instance
-  private EasyPredictModelWrapper model;
+  private EasyPredictModelWrapper modelWrapper;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -60,7 +60,7 @@ public class PredictCsv {
     predictor.parseArgs(args);
     if (model != null) {
       try {
-        predictor.setModel(model);
+        predictor.setModelWrapper(model);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -98,12 +98,12 @@ public class PredictCsv {
   }
 
   private void writeTreePathNames(BufferedWriter output) throws Exception {
-    String[] columnNames = ((SharedTreeMojoModel) model.m).getDecisionPathNames();
+    String[] columnNames = ((SharedTreeMojoModel) modelWrapper.getModel()).getDecisionPathNames();
     writeColumnNames(output, columnNames);
   }
 
   private void writeContributionNames(BufferedWriter output) throws Exception {
-    writeColumnNames(output, model.getContributionNames());
+    writeColumnNames(output, modelWrapper.getContributionNames());
   }
 
   private void writeColumnNames(BufferedWriter output, String[] columnNames) throws Exception {
@@ -116,7 +116,7 @@ public class PredictCsv {
   }
 
   public void run() throws Exception {
-    ModelCategory category = model.getModelCategory();
+    ModelCategory category = modelWrapper.getModelCategory();
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
     int lastCommaAutoEn = -1; // for deeplearning model in autoencoder mode
@@ -131,16 +131,16 @@ public class PredictCsv {
         } else if (predictContributions) {
           writeContributionNames(output);
         } else
-          writeHeader(model.m.getOutputNames(), output);
+          writeHeader(modelWrapper.getModel().getOutputNames(), output);
         break;
 
       case DimReduction:  // will write factor or the predicted value depending on what the user wants
         if (returnGLRMReconstruct) {
           int datawidth;
           String head;
-          String[] colnames = this.model.m.getNames();
+          String[] colnames = this.modelWrapper.getModel().getNames();
 
-          datawidth = ((GlrmMojoModel) model.m)._permutation.length;
+          datawidth = ((GlrmMojoModel) modelWrapper.getModel())._permutation.length;
           head = "reconstr_";
           int lastData = datawidth - 1;
           for (int index = 0; index < datawidth; index++) {  // add the numerical column names
@@ -151,11 +151,11 @@ public class PredictCsv {
               output.write(',');
           }
         } else
-          writeHeader(model.m.getOutputNames(), output);
+          writeHeader(modelWrapper.getModel().getOutputNames(), output);
         break;
 
       default:
-        writeHeader(model.m.getOutputNames(), output);
+        writeHeader(modelWrapper.getModel().getOutputNames(), output);
     }
     output.write("\n");
 
@@ -184,7 +184,7 @@ public class PredictCsv {
         // Emit the result to the output file.
         switch (category) {
           case AutoEncoder: { // write the expanded predictions out
-            AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
+            AutoEncoderModelPrediction p = modelWrapper.predictAutoEncoder(row);
             for (int i=0; i < p.reconstructed.length; i++) {
               output.write(myDoubleToString(p.reconstructed[i]));
 
@@ -194,7 +194,7 @@ public class PredictCsv {
             break;
           }
           case Binomial: {
-            BinomialModelPrediction p = model.predictBinomial(row);
+            BinomialModelPrediction p = modelWrapper.predictBinomial(row);
             if (getTreePath) {
               writeTreePaths(p.leafNodeAssignments, output);
             } else if (predictContributions) {
@@ -212,7 +212,7 @@ public class PredictCsv {
             break;
           }
           case Multinomial: {
-            MultinomialModelPrediction p = model.predictMultinomial(row);
+            MultinomialModelPrediction p = modelWrapper.predictMultinomial(row);
             if (getTreePath) {
               writeTreePaths(p.leafNodeAssignments, output);
             } else {
@@ -228,7 +228,7 @@ public class PredictCsv {
             break;
           }
           case Ordinal: {
-            OrdinalModelPrediction p = model.predictOrdinal(row);
+            OrdinalModelPrediction p = modelWrapper.predictOrdinal(row);
             output.write(p.label);
             output.write(",");
             for (int i = 0; i < p.classProbabilities.length; i++) {
@@ -240,13 +240,13 @@ public class PredictCsv {
             break;
           }
           case Clustering: {
-            ClusteringModelPrediction p = model.predictClustering(row);
+            ClusteringModelPrediction p = modelWrapper.predictClustering(row);
             output.write(myDoubleToString(p.cluster));
             break;
           }
 
           case Regression: {
-              RegressionModelPrediction p = model.predictRegression(row);
+              RegressionModelPrediction p = modelWrapper.predictRegression(row);
               if (getTreePath) {
                 writeTreePaths(p.leafNodeAssignments, output);
               } else if (predictContributions) {
@@ -258,14 +258,14 @@ public class PredictCsv {
           }
           
           case CoxPH: {
-              CoxPHModelPrediction p = model.predictCoxPH(row);
+              CoxPHModelPrediction p = modelWrapper.predictCoxPH(row);
               output.write(myDoubleToString(p.value));
 
             break;
           }
 
           case DimReduction: {
-            DimReductionModelPrediction p = model.predictDimReduction(row);
+            DimReductionModelPrediction p = modelWrapper.predictDimReduction(row);
             double[] out;
 
             if (returnGLRMReconstruct) {
@@ -285,7 +285,7 @@ public class PredictCsv {
           }
 
           case AnomalyDetection: {
-            AnomalyDetectionPrediction p = model.predictAnomalyDetection(row);
+            AnomalyDetectionPrediction p = modelWrapper.predictAnomalyDetection(row);
             double[] rawPreds = p.toPreds();
             for (int i = 0; i < rawPreds.length - 1; i++) {
               output.write(myDoubleToString(rawPreds[i]));
@@ -347,7 +347,7 @@ public class PredictCsv {
     }
   }
 
-  private void setModel(GenModel genModel) throws IOException {
+  private void setModelWrapper(GenModel genModel) throws IOException {
     EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
             .setModel(genModel)
             .setConvertUnknownCategoricalLevelsToNa(true)
@@ -362,12 +362,12 @@ public class PredictCsv {
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
 
-    model = new EasyPredictModelWrapper(config);
+    modelWrapper = new EasyPredictModelWrapper(config);
   } 
 
   private void loadPojo(String className) throws Exception {
     GenModel genModel = (GenModel) Class.forName(className).newInstance();
-    setModel(genModel);
+    setModelWrapper(genModel);
   }
 
   private void loadMojo(String modelName) throws IOException {
@@ -386,7 +386,7 @@ public class PredictCsv {
     if (glrmIterNumber > 0)   // set GLRM Mojo iteration number
       config.setGLRMIterNumber(glrmIterNumber);
     
-    model = new EasyPredictModelWrapper(config);
+    modelWrapper = new EasyPredictModelWrapper(config);
   }
 
   private static void usage() {
@@ -413,7 +413,7 @@ public class PredictCsv {
   }
 
   private void checkMissingColumns(final String[] parsedColumnNamesArr) {
-    final String[] modelColumnNames = model.m._names;
+    final String[] modelColumnNames = modelWrapper.getModel()._names;
     final Set<String> parsedColumnNames = new HashSet<>(parsedColumnNamesArr.length);
     for (int i = 0; i < parsedColumnNamesArr.length; i++) {
       parsedColumnNames.add(parsedColumnNamesArr[i]);
@@ -422,7 +422,7 @@ public class PredictCsv {
     List<String> missingColumns = new ArrayList<>();
     for (String columnName : modelColumnNames) {
 
-      if (!parsedColumnNames.contains(columnName) && !columnName.equals(model.m._responseColumn)) {
+      if (!parsedColumnNames.contains(columnName) && !columnName.equals(modelWrapper.getModel()._responseColumn)) {
         missingColumns.add(columnName);
       } else {
         parsedColumnNames.remove(columnName);
