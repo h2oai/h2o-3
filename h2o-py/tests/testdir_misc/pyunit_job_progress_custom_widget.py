@@ -31,7 +31,7 @@ class MyPWBar(PBWBar):
         self._bar_symbols = ">"
 
 
-class MyWidgetFactory:
+class MyWidgetFactory(object):
 
     def __get__(self, job, owner=None):
         return [PBWString("my widget for %s -> " % job._job_type), MyPWBar(), MyWidget()]

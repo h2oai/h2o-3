@@ -25,10 +25,10 @@ import threading
 import urllib.request, urllib.error, urllib.parse
 import uuid # call uuid.uuid4() to generate unique uuid numbers
 
-try:  
-    from io import StringIO  # py3
+try:
+    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
 except:
-    from StringIO import StringIO  # py2
+    from io import StringIO  # py3
     
 
 try:
@@ -4461,4 +4461,3 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
 
 def assert_equals(expected, actual, message=""):
     assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
-
