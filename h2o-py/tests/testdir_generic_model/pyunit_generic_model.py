@@ -39,6 +39,10 @@ def generic_blank_constructor():
     mojo_contributions = mojo_model.predict_contributions(airlines_test).as_data_frame(use_pandas=True)
     assert_frame_equal(contributions, mojo_contributions)
 
+    # Test predict contributions is available on the model
+    mojo_contributions = mojo_model.predict_contributions(airlines_test, top_n=2).as_data_frame(use_pandas=True)
+    print(mojo_contributions)
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(generic_blank_constructor)

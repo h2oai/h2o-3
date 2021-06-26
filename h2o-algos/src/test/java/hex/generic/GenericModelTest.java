@@ -88,6 +88,7 @@ public class GenericModelTest extends TestUtil {
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
 
             checkScoreContributions(model, genericModel, testFrame);
+            checkScoreContributionSorted(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -1152,6 +1153,23 @@ public class GenericModelTest extends TestUtil {
         final Frame genericModelContributions = genericModel.scoreContributions(testFrame, dest);
         Scope.track(genericModelContributions);
 
+        assertInDKV(dest, genericModelContributions);
+        assertFrameEquals(originalModelContributions, genericModelContributions, 0.0d);
+    }
+    
+    private void checkScoreContributionSorted(Model.Contributions originalModel, GenericModel genericModel, Frame testFrame) {
+        testFrame = ensureDistributed(testFrame);
+        
+        Key<Frame> dest = Key.make();
+        Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
+        options.setTopN(1);
+        options.setBottomN(1);
+    
+        final Frame originalModelContributions = originalModel.scoreContributions(testFrame, Key.make(), null, options);
+        Scope.track(originalModelContributions);
+        final Frame genericModelContributions = genericModel.scoreContributions(testFrame, dest, null, options);
+        Scope.track(genericModelContributions);
+        
         assertInDKV(dest, genericModelContributions);
         assertFrameEquals(originalModelContributions, genericModelContributions, 0.0d);
     }

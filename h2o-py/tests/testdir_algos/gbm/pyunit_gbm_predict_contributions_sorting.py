@@ -5,8 +5,9 @@ import sys
 
 sys.path.insert(1, "../../../")
 import h2o
+import tempfile
 from tests import pyunit_utils, assert_equals
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 import operator
 
 
@@ -16,6 +17,16 @@ def gbm_predict_contributions_sorting():
 
     m = H2OGradientBoostingEstimator(ntrees=10, seed=1234)
     m.train(x=list(range(2, fr.ncol)), y=1, training_frame=fr)
+
+    #Save the previously created model into a temporary file
+    original_model_filename = tempfile.mkdtemp()
+    original_model_filename = m.download_mojo(original_model_filename)
+
+    # Load the model from the temporary using an empty constructor
+    m = H2OGenericEstimator()
+    m.path = original_model_filename
+    m.train()
+    assert isinstance(m, H2OGenericEstimator)
 
     contributions = m.predict_contributions(fr, top_n=0, bottom_n=0, compare_abs=False)
     assert_equals(8, contributions.shape[1], "Wrong number of columns")

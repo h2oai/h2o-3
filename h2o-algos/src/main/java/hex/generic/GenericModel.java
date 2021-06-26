@@ -1,11 +1,9 @@
 package hex.generic;
 
 import hex.*;
-import hex.genmodel.ModelMojoReader;
-import hex.genmodel.MojoModel;
-import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.*;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
+import hex.genmodel.algos.tree.ContributionComposer;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -17,6 +15,7 @@ import water.util.Log;
 import water.util.RowDataUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> 
         implements Model.Contributions {
@@ -188,9 +187,42 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
                 .outputFrame(destination_key, outputNames, null);
     }
+    
+    @Override
+    public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
+        EasyPredictModelWrapper wrapper = makeWrapperWithContributions();
+        if (options._outputFormat == ContributionsOutputFormat.Compact) {
+            throw new UnsupportedOperationException(
+                    "Only output_format \"Original\" is supported for this model.");
+        }
+        if (!options.isSortingRequired()) {
+            return scoreContributions(frame, destination_key, j);
+        }
+    
+        Frame adaptFrm = new Frame(frame);
+        adaptTestForTrain(adaptFrm, true, false);
+        adaptFrm = adaptFrm.subframe(wrapper.getModel().features());
+        String[] contribNames = wrapper.getContributionNames();
+    
+        final ContributionComposer contributionComposer = new ContributionComposer();
+        int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, adaptFrm.names().length);
+        int bottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, adaptFrm.names().length);
+    
+        int outputSize = Math.min((topNAdjusted+bottomNAdjusted)*2, adaptFrm.names().length*2);
+        String[] names = new String[outputSize+1];
+        byte[] types = new byte[outputSize+1];
+        String[][] domains = new String[outputSize+1][contribNames.length];
+    
+        composeScoreContributionTaskMetadata(names, types, domains, adaptFrm.names(), options);
+    
+        return new GenericScoreContributionsSortingTask(options)
+                .withPostMapAction(JobUpdatePostMap.forJob(j))
+                .doAll(types, adaptFrm)
+                .outputFrame(destination_key, names, domains);
+    }
 
-    class GenericScoreContributionsTask extends MRTask<GenericScoreContributionsTask> {
-        private transient EasyPredictModelWrapper _wrapper;
+    private class GenericScoreContributionsTask extends MRTask<GenericScoreContributionsTask> {
+        protected transient EasyPredictModelWrapper _wrapper;
 
         GenericScoreContributionsTask(EasyPredictModelWrapper wrapper) {
             _wrapper = wrapper;
@@ -212,7 +244,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             }
         }
 
-        private void predict(Chunk[] cs, NewChunk[] ncs) throws PredictException {
+        protected void predict(Chunk[] cs, NewChunk[] ncs) throws PredictException {
             RowData rowData = new RowData();
             byte[] types = _fr.types();
             for (int i = 0; i < cs[0]._len; i++) {
@@ -224,6 +256,63 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         }
     }
 
+    private class GenericScoreContributionsSortingTask extends MRTask<GenericScoreContributionsSortingTask> {
+        private final int _topN;
+        private final int _bottomN;
+        private final boolean _compareAbs;
+        private transient PredictContributions predictContributions;
+        
+        GenericScoreContributionsSortingTask(ContributionsOptions options) {
+            _topN = options._topN;
+            _bottomN = options._bottomN;
+            _compareAbs = options._compareAbs;
+        }
+    
+        @Override
+        protected void setupLocal() {
+            if (predictContributions == null) {
+                predictContributions = ((PredictContributionsFactory) mojoModel()).makeContributionsPredictor();
+            }
+        }
+    
+        protected void fillInput(Chunk chks[], int row, double[] input, float[] contribs) {
+            for (int i = 0; i < chks.length; i++) {
+                input[i] = chks[i].atd(row);
+            }
+            Arrays.fill(contribs, 0);
+        }
+    
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+            try {
+                predict(cs, ncs);
+            } catch (PredictException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        
+        protected void predict(Chunk[] cs, NewChunk[] ncs) throws PredictException {
+            double[] input = MemoryManager.malloc8d(cs.length);
+            float[] contribs = MemoryManager.malloc4f(cs.length+1);
+            int[] contribNameIds = MemoryManager.malloc4(cs.length+1);
+            for (int i = 0; i < contribNameIds.length; i++) {
+                contribNameIds[i] = i;
+            }
+            ContributionComposer contributionComposer = new ContributionComposer();
+            for (int i = 0; i < cs[0]._len; i++) {
+                fillInput(cs, i, input, contribs);
+                float[] contributions = predictContributions.calculateContributions(input);
+                int[] contribNameIdsSorted = contributionComposer.composeContributions(
+                        contribNameIds, contributions, _topN, _bottomN, _compareAbs);
+                for (int j = 0, inputPointer = 0; j < ncs.length-1; j+=2, inputPointer++) {
+                    ncs[j].addNum(contribNameIdsSorted[inputPointer]);
+                    ncs[j+1].addNum(contributions[contribNameIdsSorted[inputPointer]]);
+                }
+                ncs[ncs.length-1].addNum(contributions[contributions.length-1]); // bias
+            }
+        }
+    }
+    
     EasyPredictModelWrapper makeWrapperWithContributions() {
         final EasyPredictModelWrapper.Config config;
         try {
