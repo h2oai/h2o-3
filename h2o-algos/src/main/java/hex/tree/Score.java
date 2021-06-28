@@ -113,25 +113,28 @@ public class Score extends CMetricScoringTask<Score> {
         m.score0(chks, offset, row, tmp, cdists);
 
       // fill tmp with training data for null model - to have proper tie breaking
-      val[0] = (float)ys.atd(row);
       if (_is_train && _bldr._ntrees == 0)
         for( int i=0; i< tmp.length; i++ )
           tmp[i] = chks[i].atd(row);
 
-      if (_bldr.isUplift()){
-        cdists[0] = cdists[1] - cdists[2];
-        double treatment = treatmentChunk.atd(row);
-        _mb.perRow(cdists, val, treatment,  weight, offset, m);
-      } else {
-        if (nclass > 2) { // Fill in prediction for multinomial
-          cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
-        } else if (nclass == 2) {
-          // for binomial the predicted class is not needed
-          // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
-          // (we are just building the metrics)
+      if (nclass > 2) { // Fill in prediction for multinomial
+        cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
+      } else if (nclass == 2) {
+        // for binomial the predicted class is not needed
+        // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
+        // (we are just building the metrics)
+        if(_bldr.isUplift()) {
+          cdists[0] = cdists[1] - cdists[2];
+        } else {
           cdists[0] = -1;
         }
+      }
+      val[0] = (float)ys.atd(row);
+      if(!_bldr.isUplift()) {
         _mb.perRow(cdists, val, weight, offset, m);
+      } else {
+        double treatment = treatmentChunk.atd(row);
+        _mb.perRow(cdists, val, treatment, weight, offset, m);
       }
 
       if (_preds != null) {
