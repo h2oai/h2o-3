@@ -2087,12 +2087,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
       Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
       Chunk responseChunk = null;
-      Chunk treatmentChunk = _output.hasTreatment() ? chks[_output.treatmentIdx()] : null;
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
-      if(_output.hasTreatment()){
-        ((ModelMetricsBinomialUplift.MetricBuilderBinomialUplift) _mb).resetThresholds(null);
-      }
       if (_computeMetrics) {
         if (_output.hasResponse()) {
           actual = new float[1];

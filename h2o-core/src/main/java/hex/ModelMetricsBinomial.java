@@ -127,7 +127,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       MetricBuilderBinomial mb = new BinomialMetrics(labels.domain()).doAll(fr)._mb;
       labels.remove();
       Frame preds = new Frame(targetClassProbs);
-      // todo solve for uplift here too, meantime null uplift vector is given
       ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds, 
               fr.vec("labels"), fr.vec("weights")); // use the Vecs from the frame (to make sure the ESPC is identical)
       mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
