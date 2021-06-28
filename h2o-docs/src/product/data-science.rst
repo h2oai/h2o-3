@@ -72,3 +72,4 @@ Miscellaneous
    data-science/target-encoding
    data-science/tf-idf
    data-science/word2vec
+   data-science/permutation-variable-importance

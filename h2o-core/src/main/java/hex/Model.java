@@ -26,6 +26,7 @@ import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
+import water.rapids.PermutationVarImp;
 import water.udf.CFuncRef;
 import water.util.*;
 

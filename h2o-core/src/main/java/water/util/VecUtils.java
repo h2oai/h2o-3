@@ -14,6 +14,8 @@ import water.parser.Categorical;
 
 import java.util.*;
 
+import static water.util.RandomUtils.getRNG;
+
 public class VecUtils {
   /**
    * Create a new {@link Vec} of categorical values from an existing {@link Vec}.
@@ -880,4 +882,93 @@ public class VecUtils {
       result += mrt.result;
     }
   }
+
+  /**
+   * Randomly shuffle a Vec using Fisher Yates shuffle 
+   * https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+   */
+  public static class ShuffleVecTask extends MRTask<ShuffleVecTask> {
+    private final long _seed;
+    private final Vec _vec;
+    private transient int[] _localChunks;
+    private transient int[] _permutatedChunks;
+
+    public ShuffleVecTask(final Vec vec, final long seed) {
+      super();
+      _seed = seed;
+      _vec = vec;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _localChunks = VecUtils.getLocalChunkIds(_vec);
+      _permutatedChunks = _localChunks.clone();
+      permute(_permutatedChunks, null);
+    }
+
+    private void permute(int[] arr, Random rng) {
+      if (null == rng) rng = getRNG(_seed);
+      for (int i = arr.length - 1; i > 0; i--) {
+        int j = rng.nextInt(i + 1);
+        final int old = arr[i];
+        arr[i] = arr[j];
+        arr[j] = old;
+      }
+    }
+
+    @Override
+    public void map(Chunk _cs, NewChunk nc) {
+      Random rng = getRNG(_seed + _cs.start());
+      Chunk cs = _vec.chunkForChunkIdx(_permutatedChunks[Arrays.binarySearch(_localChunks, _cs.cidx())]);
+
+      int[] permutedRows = ArrayUtils.seq(0, cs._len);
+      permute(permutedRows, rng);
+
+      for (int row : permutedRows) {
+        if (cs.isNA(row)) {
+          nc.addNA();
+        } else {
+          switch (_cs.vec().get_type()) {
+            case Vec.T_BAD:
+              break;
+            case Vec.T_UUID:
+              nc.addUUID(cs, row);
+              break;
+            case Vec.T_STR:
+              nc.addStr(cs, row);
+              break;
+            case Vec.T_NUM:
+              nc.addNum(cs.atd(row));
+              break;
+            case Vec.T_CAT:
+              nc.addCategorical((int) cs.at8(row));
+              break;
+            case Vec.T_TIME:
+              nc.addNum(cs.at8(row), 0);
+              break;
+            default:
+              throw new IllegalArgumentException("Unsupported vector type: " + cs.vec().get_type());
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Randomly shuffle a Vec. 
+   * @param origVec original Vec
+   * @param seed seed for random generator
+   * @return shuffled Vec
+   */
+  public static Vec shuffleVec(final Vec origVec, final long seed) {
+    Vec v =  new ShuffleVecTask(origVec, seed).doAll( origVec.get_type(), origVec).outputFrame().anyVec();
+    if (origVec.isCategorical())
+      v.setDomain(origVec.domain());
+
+    return v;
+  }
+
+
+
+
 }
