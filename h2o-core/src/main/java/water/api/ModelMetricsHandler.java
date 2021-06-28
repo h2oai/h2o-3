@@ -382,7 +382,7 @@ class ModelMetricsHandler extends Handler {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
       }
       if(treatment != null){
-        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), weights, s.domain);
+        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain);
         s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
       }
       ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);

@@ -1751,7 +1751,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   private static boolean hasCategoricalPredictors(final Frame frame, final String responseName,
                                            final String wieghtsName, final String offsetName,
-                                           final String foldName, final String upliftName, final String[] names,
+                                           final String foldName, final String treatmentName, final String[] names,
                                            final String[][] domains) {
 
     boolean haveCategoricalPredictors = false;
@@ -1766,7 +1766,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (frame.names()[i].equals(wieghtsName)) continue;
       if (frame.names()[i].equals(offsetName)) continue;
       if (frame.names()[i].equals(foldName)) continue;
-      if (frame.names()[i].equals(upliftName)) continue;
+      if (frame.names()[i].equals(treatmentName)) continue;
       // either the column of the test set is categorical (could be a numeric col that's already turned into a factor)
       if (frame.vec(i).get_type() == Vec.T_CAT) {
         haveCategoricalPredictors = true;

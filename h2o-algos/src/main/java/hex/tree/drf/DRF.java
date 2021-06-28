@@ -75,7 +75,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   }
 
   // ----------------------
-  public class DRFDriver extends Driver {
+  private class DRFDriver extends Driver {
     @Override protected boolean doOOBScoring() { return true; }
 
     // --- Private data handled only on master node

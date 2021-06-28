@@ -149,7 +149,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       float[] acts = new float[1];
       for (int i=0;i<chks[0]._len;++i) {
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
-        ds[1] = chks[1].atd(i); //class 0 probs
+        ds[1] = 1-ds[2]; //class 0 probs
         ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
         acts[0] = (float) actuals.atd(i);
         double weight = weights != null ? weights.atd(i) : 1;
