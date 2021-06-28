@@ -172,8 +172,8 @@ public class DataInfo extends Keyed<DataInfo> {
     this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, false, interactions);
   }
 
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean uplift,  Model.InteractionSpec interactions) {
-    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, uplift, interactions);
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean treatment, Model.InteractionSpec interactions) {
+    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, treatment, interactions);
   }
 
   /**
@@ -196,7 +196,7 @@ public class DataInfo extends Keyed<DataInfo> {
    *    A. As a list of pairs of column indices.
    *    B. As a list of pairs of column indices with limited enums.
    */
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean uplift, Model.InteractionSpec interactions) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean treatment, Model.InteractionSpec interactions) {
     super(Key.<DataInfo>make());
     assert predictor_transform != null;
     assert response_transform != null;
@@ -204,7 +204,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _offset = offset;
     _weights = weight;
     _fold = fold;
-    _treatment = uplift;
+    _treatment = treatment;
     assert !(skipMissing && imputeMissing) : "skipMissing and imputeMissing cannot both be true";
     _skipMissing = skipMissing;
     _imputeMissing = imputeMissing;
@@ -234,7 +234,7 @@ public class DataInfo extends Keyed<DataInfo> {
     final Vec[] tvecs = train.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0) - (uplift?1:0);
+    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0) - (treatment?1:0);
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
@@ -329,7 +329,7 @@ public class DataInfo extends Keyed<DataInfo> {
         numIdx++;
       }
     }
-    for(int i = names.length - nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0) - (uplift?1:0); i < names.length; ++i) {
+    for(int i = names.length - nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0) - (treatment?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }

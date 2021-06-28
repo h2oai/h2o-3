@@ -532,9 +532,9 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param rows rows sorted by leaf assignemnt
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
-   * @param uplift            
+   * @param treatment treatment column data           
    */
-  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] uplift){
+  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
     
@@ -574,13 +574,13 @@ public final class DHistogram extends Iced<DHistogram> {
       }
       if(_useUplift) {
         // Note: Only for binomial, response should be (0, 1)
-        double u = uplift[k];
+        double t = treatment[k];
         double rs = resp[k];
         int binDimStartUplift = _valsDimUplift * b;
-        _valsUplift[binDimStartUplift] += u;                 // treatment number
-        _valsUplift[binDimStartUplift + 1] += u * rs;        // treatment number with response == 1 
-        _valsUplift[binDimStartUplift + 2] += (1 - u);       // control number
-        _valsUplift[binDimStartUplift + 3] += (1 - u) * rs;  // control number with response == 1
+        _valsUplift[binDimStartUplift] += t;                 // treatment number
+        _valsUplift[binDimStartUplift + 1] += t * rs;        // treatment number with response == 1 
+        _valsUplift[binDimStartUplift + 2] += (1 - t);       // control number
+        _valsUplift[binDimStartUplift + 3] += (1 - t) * rs;  // control number with response == 1
       } 
     }
   }

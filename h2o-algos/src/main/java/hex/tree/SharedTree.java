@@ -558,7 +558,7 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
-      int upliftIdx = fr2.find(_parms._treatment_column);
+      int treatmentIdx = fr2.find(_parms._treatment_column);
       int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
       int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
@@ -567,7 +567,7 @@ public abstract class SharedTree<
       // step 1: build histograms
       // step 2: split nodes
       H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
-              respIdx, weightIdx, predsIdx, workIdx, nidIdx, upliftIdx));
+              respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
     }
     // Block for all K trees to complete.
     boolean did_split=false;

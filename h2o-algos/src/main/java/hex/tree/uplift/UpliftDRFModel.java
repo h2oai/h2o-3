@@ -79,10 +79,6 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
             body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
         body.ip("preds[0] = preds[1] - preds[2];").nl();
     }
-
-    @Override
-    public UpliftDrfMojoWriter getMojo() {
-        return new UpliftDrfMojoWriter(this);
-    }
+    
 
 }
