@@ -4003,7 +4003,7 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 }
 
 #' @export
-plot.H2OBinomialMetrics <- function(x, type = "roc", metric="qini", main, ...) {
+plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
   if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
   if(type == "roc") {
