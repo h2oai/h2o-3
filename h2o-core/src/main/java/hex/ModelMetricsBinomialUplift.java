@@ -160,13 +160,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                 _auuc = new AUUC.AUUCBuilder(thresholds);
             }
         }
-
-
-        // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
-        // distribution;
-        @Override public double[] perRow(double ds[], float[] yact, Model m) {return perRow(
-                ds, yact, Double.NaN,1, 0, m);
+        
+        @Override public double[] perRow(double ds[], float[] yact, Model m) {
+            return perRow(ds, yact, Double.NaN,1, 0, m);
         }
+        
         @Override public double[] perRow(double ds[], float[] yact, double treatment, double weight, double offset, Model m) {
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
