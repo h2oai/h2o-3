@@ -24,13 +24,13 @@ def extended_isolation_forest():
     print(eif_model)
 
     assert 0.36 < anomaly.mean() < 0.40, \
-        "Not expected output: Mean anomaly score is suspiciously different." + str(anomaly.mean())
+        "Not expected output: Mean anomaly score is suspiciously different. " + str(anomaly.mean())
 
     # The output of the EIF algorithm is based on randomly generated values. 
     # If the randomization is changed, then the output can be slightly different and it is fine to update them.
     # The link to source paper: https://arxiv.org/pdf/1811.02141.pdf
     assert anomaly[0] >= 0.70, \
-        "Not expected output: Anomaly point should have higher score" + str(anomaly[0])
+        "Not expected output: Anomaly point should have higher score " + str(anomaly[0])
     assert anomaly[5] <= 0.55, \
         "Not expected output: Anomaly point should have higher score about 0.5 " + str(anomaly[5])
     assert anomaly[33] <= 0.55, \

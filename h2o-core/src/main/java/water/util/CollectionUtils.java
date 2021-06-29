@@ -32,41 +32,4 @@ public class CollectionUtils {
   public static String[][] unboxStringArrays(Collection<String[]> coll) {
     return coll.toArray(new String[coll.size()][]);
   }
-
-  /**
-   *  See {@link #setOfUniqueRandomNumbers(int, long, Random)}
-   */
-  public static long[] setOfUniqueRandomNumbers(int sizeOfSet, long upperBound, long seed) {
-    return setOfUniqueRandomNumbers(sizeOfSet, upperBound, RandomUtils.getRNG(seed));
-  }
-
-  /**
-   * @return Set of unique random numbers from range [0, upperBound]
-   */
-  public static long[] setOfUniqueRandomNumbers(int sizeOfSet, long upperBound, Random random) {
-    Set<Long> uniqueRandomNumber = new TreeSet<>();
-    while (uniqueRandomNumber.size() < sizeOfSet) {
-      long generatedLong = (long) (random.nextFloat() * (upperBound));
-      uniqueRandomNumber.add(generatedLong);
-    }
-    return uniqueRandomNumber.stream().mapToLong(Long::longValue).toArray();
-  }
-
-  /**
-   *  See {@link #setOfUniqueRandomNumbers(int, int, Random)}
-   */
-  public static int[] setOfUniqueRandomNumbers(int sizeOfSet, int upperBound, long seed) {
-    return setOfUniqueRandomNumbers(sizeOfSet, upperBound, RandomUtils.getRNG(seed));
-  }
-
-  /**
-   * @return array of unique random numbers from range [0, upperBound]
-   */
-  public static int[] setOfUniqueRandomNumbers(int sizeOfSet, int upperBound, Random random) {
-    HashSet<Integer> uniqueRandomNumber = new HashSet<>(sizeOfSet);
-    while (uniqueRandomNumber.size() < sizeOfSet) {
-      uniqueRandomNumber.add(random.nextInt(upperBound));
-    }
-    return uniqueRandomNumber.stream().mapToInt(Integer::intValue).toArray();
-  }
 }
