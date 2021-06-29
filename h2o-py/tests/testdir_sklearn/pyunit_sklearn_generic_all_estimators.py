@@ -193,8 +193,9 @@ failing = [
     'H2OCoxProportionalHazardsEstimator',  # NPE at water.fvec.Frame.<init>(Frame.java:168) .... at hex.coxph.CoxPH$CollectTimes.collect(CoxPH.java:805)
     'H2OGenericEstimator',  # maybe should be removed from sklearn API
     'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
-    "H2OTargetEncoderEstimator", # needs dataset with categoricals to work + API polishing (use x, y with defaults)
+    "H2OTargetEncoderEstimator",  # needs dataset with categoricals to work + API polishing (use x, y with defaults)
     'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
+    'H2OUpliftRandomForestEstimator'  # generic part is not implemented yet
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]
