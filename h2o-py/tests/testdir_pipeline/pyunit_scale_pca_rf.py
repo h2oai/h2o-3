@@ -18,7 +18,7 @@ def scale_pca_rf_pipe():
                    ("pca", H2OPCA(k=2)),
                    ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
   pipe.fit(iris[:4],iris[4])
-  pca = pipe['pca']
+  pca = pipe.named_steps['pca']
   assert pca.model_id == pca._delegate.model_id
   assert pca._model_json == pca._delegate._model_json
   pca.download_pojo()
