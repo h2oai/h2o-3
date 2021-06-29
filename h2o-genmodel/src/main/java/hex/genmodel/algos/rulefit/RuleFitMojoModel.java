@@ -12,7 +12,7 @@ public class RuleFitMojoModel extends MojoModel {
   int ntrees;
   int model_type; // 0 = LINEAR, 1 = RULES_AND_LINEAR, 2 = RULES
   String[] dataFromRulesCodes;
- // String weights_column;
+  String weights_column;
   String[] linear_names;
   
   RuleFitMojoModel(String[] columns, String[][] domains, String responseColumn) {
@@ -40,17 +40,34 @@ public class RuleFitMojoModel extends MojoModel {
     if (model_type == 0) {
       test = row;
     }
-    _linearModel.score0(map(test), preds);
+    double[] linearModelInput = map(test);
+    
+    _linearModel.score0(linearModelInput, preds);
+    
+    // if current weight is zero, zero the prediction
+    if (weights_column != null) {
+      int weightsId = Arrays.asList(linear_names).indexOf("linear." + weights_column);
+      double currWeight = test[weightsId];
+      if (currWeight == 0.0) {
+        for (int i = 0; i < preds.length; i++)
+          preds[i] *= currWeight;
+      }
+    }
+    
     return preds;
   }
   
   double[] map(double[] test) {
-    double[] newtest = test.clone();
+    double[] newtest = new double[_linearModel.nfeatures()];
     List list = Arrays.asList(_linearModel._names);
-    for (int i = 0; i < test.length; i++) {
+    for (int i = 0; i < _linearModel.nfeatures(); i++) {
       int id = list.indexOf(linear_names[i]);
       newtest[id] = test[i];
     }
     return newtest;
   }
+
+    @Override public int nfeatures() {
+      return _names.length;
+    }
 }
