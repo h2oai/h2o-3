@@ -696,7 +696,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.Skip,
                 _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.MeanImputation 
                         || _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.PlugValues,
-                _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), hasTreatmentCol(),
+                _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(),
                 _parms.interactionSpec());
         DKV.put(dinfo._key, dinfo);
         model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo));

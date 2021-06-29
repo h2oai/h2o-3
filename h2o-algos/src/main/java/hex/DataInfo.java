@@ -176,6 +176,10 @@ public class DataInfo extends Keyed<DataInfo> {
     this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, treatment, interactions);
   }
 
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
+    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, imputer, missingBucket, weight, offset, fold, false, interactions);
+  }
+
   /**
    *
    * The train/valid Frame instances are sorted by categorical (themselves sorted by
@@ -356,7 +360,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo validDinfo(Frame valid) {
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold, _treatment);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold, _intercept);
     res._interactions = _interactions;
     res._interactionSpec = _interactionSpec;
     if (_interactionSpec != null) {
