@@ -65,6 +65,7 @@ Suggests: ggplot2 (>= 3.3.0),
           plotly,
           repr
 Collate:
+         'admissible.R'
          'aggregator.R'
          'astfun.R'
          'automl.R'
