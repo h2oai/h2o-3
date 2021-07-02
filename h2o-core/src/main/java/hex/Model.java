@@ -1948,6 +1948,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                       Frame adaptFrm, boolean computeMetrics,
                                       boolean makePrediction, Job j,
                                       CFuncRef customMetricFunc) {
+    
     return new BigScore(domains[0],
                         names != null ? names.length : 0,
                         adaptFrm.means(),

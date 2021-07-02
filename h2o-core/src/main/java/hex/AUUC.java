@@ -11,13 +11,9 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Random;
 import java.util.TreeSet;
-
-import static water.util.RandomUtils.getRNG;
 
 
 /**
@@ -33,13 +29,11 @@ public class AUUC extends Iced{
     public final long[] _yControl;        // control group and y==1
     public final long[] _frequency;       // number of data in each bin
     public final long[] _frequencyCumsum; // cumulative sum of frequency to plot AUUC
-    public double[] _uplift;              //
-    public final long _n;
+    public double[] _uplift;              // output uplift values
+    public final long _n;                 // number of data
 
     
-    // Default bins, good answers on a highly unbalanced sorted (and reverse
-    // sorted) datasets
-    public static final int NBINS = 3500;
+    public static final int NBINS = 1000;
 
     public final AUUCType _auucType;
     public double _auuc;
@@ -65,7 +59,6 @@ public class AUUC extends Iced{
     }
 
     private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
-        // Copy result arrays into base object, shrinking to match actual bins
         _auucType = auucType;
         _nBins = bldr._nBins;
         assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
@@ -100,26 +93,10 @@ public class AUUC extends Iced{
         }
         if (trueProbabilities) {
             _auuc = computeAuuc();
-            _maxIdx = 0;
+            _maxIdx = _auucType.maxCriterionIdx(this);
         } else {
             _maxIdx = 0;
         }
-    }
-
-    private AUUC(AUUC auuc, int idx) {
-        _nBins = 1;
-        _n = auuc._n;
-        _ths = new double[]{auuc._ths[idx]};
-        _treatment = new long[]{auuc._treatment[idx]};
-        _control = new long[]{auuc._control[idx]};
-        _yTreatment = new long[]{auuc._yTreatment[idx]};
-        _yControl = new long[]{auuc._yControl[idx]};
-        _frequency = new long[]{auuc._frequency[idx]};
-        _frequencyCumsum = new long[]{auuc._frequencyCumsum[idx]};
-        _uplift = new double[]{auuc._uplift[idx]};
-        _auuc = auuc._auuc;
-        _maxIdx = auuc._maxIdx >= 0 ? 0 : -1;
-        _auucType = auuc._auucType;
     }
 
     public AUUC() {
@@ -247,15 +224,17 @@ public class AUUC extends Iced{
             ArrayUtils.add(_yControl, bldr._yControl);
             ArrayUtils.add(_frequency, bldr._frequency);
         }
+        
+        
 
         private String toDebugString() {
             return  "n =" +_n +
                     "; nBins = " + _nBins +
                     "; ths = " + Arrays.toString(_thresholds) +
-                    "; treatCumsum = " + Arrays.toString(_treatment) +
-                    "; contrCumsum = " + Arrays.toString(_control) +
-                    "; yTreatCumsum = " + Arrays.toString(_yTreatment) +
-                    "; yContCumsum = " + Arrays.toString(_yControl) +
+                    "; treatment = " + Arrays.toString(_treatment) +
+                    "; contribution = " + Arrays.toString(_control) +
+                    "; yTreatment = " + Arrays.toString(_yTreatment) +
+                    "; yContribution = " + Arrays.toString(_yControl) +
                     "; frequency = " + Arrays.toString(_frequency);
         }
     }
@@ -297,6 +276,24 @@ public class AUUC extends Iced{
                 }
             }
             return null;
+        }
+
+        public double maxCriterion(AUUC auuc ) { return exec(auuc, maxCriterionIdx(auuc)); }
+
+        /** Convert a criterion into a threshold index that maximizes the criterion
+         *  @return Threshold index that maximizes the criterion
+         */
+        public int maxCriterionIdx(AUUC auuc ) {
+            double md = -Double.MAX_VALUE;
+            int mx = -1;
+            for( int i=0; i<auuc._nBins; i++ ) {
+                double d = exec(auuc,i);
+                if( d > md ) {
+                    md = d;
+                    mx = i;
+                }
+            }
+            return mx;
         }
     }
 }
