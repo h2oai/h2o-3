@@ -51,7 +51,7 @@ public class Score extends CMetricScoringTask<Score> {
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
     assert _kresp != null || !_bldr.isSupervised();
     assert (! _is_train) || (_sii == null);
-    // TODO: fix preds and nbins from parameters
+    // TODO: fix nbins from parameters
     if(bldr.isUplift()) {
       _thresholds = AUUC.calculateQuantileThresholds(AUUC.NBINS, preds.vec(0));
     } else {
