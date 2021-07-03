@@ -643,7 +643,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     if(_response != null) {
       if(!isClassifier() && _response.isCategorical())
         error("_response", H2O.technote(2, "Regression requires numeric response, got categorical."));
-      if ((Solver.GRADIENT_DESCENT_LH.equals(_parms._solver) || Solver.GRADIENT_DESCENT_LH.equals(_parms._solver)) 
+      if ((Solver.GRADIENT_DESCENT_LH.equals(_parms._solver) || Solver.GRADIENT_DESCENT_SQERR.equals(_parms._solver))
               && !ordinal.equals(_parms._family))
         error("_solver", "Solvers GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR are only " +
                 "supported for ordinal regression.  Do not choose them unless you specify your family to be ordinal");
