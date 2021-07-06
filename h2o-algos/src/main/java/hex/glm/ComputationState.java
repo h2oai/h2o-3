@@ -20,6 +20,7 @@ import water.util.MathUtils;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.stream.IntStream;
 
 import static hex.glm.GLMUtils.calSmoothNess;
 import static hex.glm.GLMUtils.copyGInfo;
@@ -62,6 +63,7 @@ public final class ComputationState {
   double[][][] _penaltyMatrix;
   int[][] _gamBetaIndices;
   int _totalBetaLength; // actual coefficient length without taking into account active columns only
+  int _betaLengthPerClass;
 
   /**
    *
@@ -79,6 +81,7 @@ public final class ComputationState {
             ((Family.multinomial == parms._family || Family.ordinal == parms._family) ? nclasses : 1);
     _alpha = _parms._alpha[0];
     _totalBetaLength = (dinfo.fullN()+1)*_nclasses;
+    _betaLengthPerClass = dinfo.fullN()+1;
     if (_parms._HGLM) {
       _sumEtaSquareConvergence = new double[2];
       if (_parms._calc_like)
@@ -381,6 +384,16 @@ public final class ComputationState {
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
+  /**
+   * This method will return a double array that is extracted from src (which includes active and non-active columns)
+   * to only include active columns stated in ids.
+   * 
+   * @param N
+   * @param c
+   * @param ids
+   * @param src
+   * @return
+   */
   public static double [] extractSubRange(int N, int c, int [] ids, double [] src) {
     if(ids == null) return Arrays.copyOfRange(src,c*N,c*N+N);
     double [] res = MemoryManager.malloc8d(ids.length);
@@ -391,7 +404,17 @@ public final class ComputationState {
     return res;
   }
 
-  private static void fillSubRange(int N, int c, int [] ids, double [] src, double [] dst) {
+  /**
+   * This method will extract coefficients from multinomial.  The extracted coefficients are only from one class
+   * and it contains the active and non-active columns.
+   * 
+   * @param N
+   * @param c
+   * @param ids
+   * @param src
+   * @param dst
+   */
+   static void fillSubRange(int N, int c, int [] ids, double [] src, double [] dst) {
     if(ids == null) {
       System.arraycopy(src,0,dst,c*N,N);
     } else {
@@ -404,7 +427,31 @@ public final class ComputationState {
 
   public double [] betaMultinomial(){return _beta;}
 
-  public double [] betaMultinomial(int c, double [] beta) {return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta);}
+  public double [] betaMultinomial(int c, double [] beta) {
+     return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta);
+   }
+   
+   public double[] shrinkFullArray(double[] fullArray) {
+     if (_activeData.activeCols() == null)
+       return fullArray;
+     int[] activeColsAllClass = genActiveColsAllClass(_activeData.activeCols().length*_nclasses, 
+             _betaLengthPerClass);
+     return ArrayUtils.select(fullArray, activeColsAllClass);
+   }
+   
+   public int[] genActiveColsAllClass(int activeColsLen, int numBetaPerClass) {
+     int[] activeCols = new int[activeColsLen];
+     int offset = 0;
+     int[] activeColsOneClass = _activeData._activeCols;
+     for (int classIndex=0; classIndex < _nclasses; classIndex++) {
+       int finalOffset = numBetaPerClass*classIndex;
+       int[] activeCols1Class = IntStream.of(activeColsOneClass).map(i->i+finalOffset).toArray();
+       int num2Copy = activeColsOneClass.length;
+       System.arraycopy(activeCols1Class, 0, activeCols, offset, num2Copy);
+       offset += num2Copy;
+     }
+     return activeCols;
+   }
 
   public GLMSubsetGinfo ginfoMultinomial(int c) {
     return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
@@ -436,6 +483,10 @@ public final class ComputationState {
     }
   }
 
+  /***
+   * This method will grab a subset of the gradient for each multinomial class.  However, if remove_collinear_columns is
+   * on, fullInfo will only contains the gradient of active columns.
+   */
   public static class GLMSubsetGinfo extends GLMGradientInfo {
     public final GLMGradientInfo _fullInfo;
     public GLMSubsetGinfo(GLMGradientInfo fullInfo, int N, int c, int [] ids) {
@@ -446,11 +497,20 @@ public final class ComputationState {
   public GradientSolver gslvrMultinomial(final int c) {
     final double [] fullbeta = _beta.clone();
     return new GradientSolver() {
+      // beta is full coeff Per class.  Need to return gradient with full columns
       @Override
       public GradientInfo getGradient(double[] beta) {
+        // fill fullbeta with new values of beta for class c
         fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta);
-        GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);
-        return new GLMSubsetGinfo(fullGinfo,_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols());
+        GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);  // may contain only active columns
+        if (fullbeta.length > fullGinfo._gradient.length) {  // fullGinfo only contains gradient for active columns here
+          double[] fullGinfoGradient = new double[fullbeta.length];
+          for (int cInd = 0; cInd < _nclasses; cInd++)
+            fillSubRange(beta.length, cInd, _activeData.activeCols(), fullGinfo._gradient, fullGinfoGradient);
+          fullGinfo._gradient = fullGinfoGradient;
+        }
+        return new GLMSubsetGinfo(fullGinfo,beta.length,c,_activeData.activeCols());
+          //return new GLMSubsetGinfo(fullGinfo,_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols());
       }
       @Override
       public GradientInfo getObjective(double[] beta) {return getGradient(beta);}

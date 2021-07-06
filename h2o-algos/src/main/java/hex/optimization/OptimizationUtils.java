@@ -360,7 +360,7 @@ public class OptimizationUtils {
 
         for (int i = 0; i < beta.length; ++i)
           beta[i] = _beta[i] + step * direction[i];
-        GradientInfo newGinfo = _gslvr.getGradient(beta);
+        GradientInfo newGinfo = _gslvr.getGradient(beta); // return gradient for one class only, active + non-active cols
         if(newGinfo._objVal < maxObj && (_betGradient == null || (newGinfo._objVal - maxFval) < _bestPsiVal)){
           _bestPsiVal = (newGinfo._objVal - maxFval);
           _betGradient = newGinfo;
