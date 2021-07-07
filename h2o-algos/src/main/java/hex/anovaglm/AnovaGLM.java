@@ -181,7 +181,7 @@ public class AnovaGLM extends ModelBuilder<AnovaGLMModel, AnovaGLMModel.AnovaGLM
             keepFrameKeys(keep, _transformedColsKey);
           else
             DKV.remove(_transformedColsKey);
-          Scope.exit(keep.toArray(new Key[keep.size()]));
+          Scope.untrack(keep.toArray(new Key[keep.size()]));
           model.update(_job);
           model.unlock(_job);
         }

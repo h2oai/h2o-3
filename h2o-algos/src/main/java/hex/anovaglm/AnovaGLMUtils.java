@@ -79,7 +79,7 @@ public class AnovaGLMUtils {
     }
   }
   
-  public static int find(String[][] totArray, String ele) {
+  private static int find(String[][] totArray, String ele) {
     int arrLen = totArray.length;
     for (int locInd = 0; locInd < arrLen; locInd++)
       if (totArray[locInd][0].equals(ele))
