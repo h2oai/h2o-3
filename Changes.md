@@ -2,6 +2,37 @@
 
 ## H2O
 
+### Zipf (3.32.1.4) - 7/8/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
+
+### Bug
+
+[PUBDEV-8224](https://h2oai.atlassian.net/browse/PUBDEV-8224) Fixed GLM `GRADIENT_DESCENT_SQERR` Solver validation.
+
+[PUBDEV-8219](https://h2oai.atlassian.net/browse/PUBDEV-8219) Upgraded to latest version of Javassist (3.28).
+
+[PUBDEV-8207](https://h2oai.atlassian.net/browse/PUBDEV-8207) Fixed H statistic gpu assertion error.
+
+[PUBDEV-8195](https://h2oai.atlassian.net/browse/PUBDEV-8195) Fixed predict contributions failure in multi-MOJO environments.
+
+[PUBDEV-8194](https://h2oai.atlassian.net/browse/PUBDEV-8194) Fixed bug in ordinal GLM class predictions.
+
+[PUBDEV-8188](https://h2oai.atlassian.net/browse/PUBDEV-8188) Fixed Partial Dependent Plot not working with Flow.
+
+[PUBDEV-8181](https://h2oai.atlassian.net/browse/PUBDEV-8181) Updated to current Python syntax.
+
+[PUBDEV-8167](https://h2oai.atlassian.net/browse/PUBDEV-8167) Fixed bug in ordinal GLM class predictions.
+
+
+### New Feature
+
+[PUBDEV-8109](https://h2oai.atlassian.net/browse/PUBDEV-8109) Obtained Friedman’s H statistic for XGBoost and GBM.
+
+### Task
+
+[PUBDEV-8150](https://h2oai.atlassian.net/browse/PUBDEV-8150) Added support for refreshing HDFS delegation tokens for standalone H2O.
+
 ### Zipf (3.32.1.3) - 5/19/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html</a>
