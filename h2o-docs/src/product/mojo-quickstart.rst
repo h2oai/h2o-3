@@ -764,6 +764,10 @@ FAQ
 
   Yes, all of H2O-3 MOJOs are thread safe.
 
+-  **Does H2O-3 MOJO have a C++ runtime?**
+  
+  Currently, only GBM has a C++ runtime with C# wrapper for .NET. However, this is not part of the open source offerings and requires a support contract.
+
 -  **How can I use an XGBoost MOJO with Maven?**
 
   If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:

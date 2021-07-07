@@ -1099,18 +1099,8 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-ea")) {
         enableExceptions = true;
       }
-      else if (s.equals("-verbose:gc") && !JAVA_VERSION.useUnifiedLogging()) {
-        if (!JAVA_VERSION.useUnifiedLogging()) {
-          enableVerboseGC = true;
-        } else {
-          error("Parameter -verbose:gc is unusable, running on JVM with deprecated GC debugging flags.");
-        }
-      } else if (s.equals("-Xlog:gc=info")) {
-        if (JAVA_VERSION.useUnifiedLogging()) {
-          enableVerboseGC = true;
-        } else {
-          error("Parameter -verbose:gc is unusable, running on JVM without unified JVM logging.");
-        }
+      else if (s.equals("-verbose:gc") || s.equals("-Xlog:gc=info")) {
+        enableVerboseGC = true;
       }
       else if (s.equals("-verbose:class")) {
         enableVerboseClass = true;
@@ -1717,8 +1707,7 @@ public class h2odriver extends Configured implements Tool {
               .append(" -Xmx").append(mapperXmx)
               .append(((mapperPermSize != null) && (mapperPermSize.length() > 0)) ? (" -XX:PermSize=" + mapperPermSize) : "")
               .append((enableExceptions ? " -ea" : ""))
-              .append((enableVerboseGC && !JAVA_VERSION.useUnifiedLogging() ? " -verbose:gc" : ""))
-              .append(enableVerboseGC && JAVA_VERSION.useUnifiedLogging() ? "-Xlog:gc=info" : "")
+              .append((enableVerboseGC ? " " + JAVA_VERSION.getVerboseGCFlag() : ""))
               .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
               .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
               .append((enableVerboseClass ? " -verbose:class" : ""))
