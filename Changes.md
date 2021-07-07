@@ -8,6 +8,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.h
 
 #### Bug
 
+[PUBDEV-8226](https://h2oai.atlassian.net/browse/PUBDEV-8226) Fixed h2odriver invalid argument error on Java 11.
+
 [PUBDEV-8224](https://h2oai.atlassian.net/browse/PUBDEV-8224) Fixed GLM `GRADIENT_DESCENT_SQERR` Solver validation.
 
 [PUBDEV-8219](https://h2oai.atlassian.net/browse/PUBDEV-8219) Upgraded to latest version of Javassist (3.28).
@@ -38,6 +40,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.h
 [PUBDEV-8150](https://h2oai.atlassian.net/browse/PUBDEV-8150) Added a warning message when using `alpha` as a hyperparameter for GLM
 
 #### Docs
+
+[PUBDEV-8158](https://h2oai.atlassian.net/browse/PUBDEV-8158) Added section on how to delete objects in Flow.
 
 [PUBDEV-8151](https://h2oai.atlassian.net/browse/PUBDEV-8151) Added a note to the productionizing docs that C++ is only available with additional support.
 
