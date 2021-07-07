@@ -24,6 +24,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.h
 
 [PUBDEV-8167](https://h2oai.atlassian.net/browse/PUBDEV-8167) Fixed bug in ordinal GLM class predictions.
 
+### Improvement
+
+[PUBDEV-8141](https://h2oai.atlassian.net/browse/PUBDEV-8141) Added support for refreshing HDFS delegation tokens for standalone H2O.
+
 
 ### New Feature
 
@@ -31,7 +35,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.h
 
 ### Task
 
-[PUBDEV-8150](https://h2oai.atlassian.net/browse/PUBDEV-8150) Added support for refreshing HDFS delegation tokens for standalone H2O.
+[PUBDEV-8150](https://h2oai.atlassian.net/browse/PUBDEV-8150) Added a warning message when using `alpha` as a hyperparameter for GLM
 
 ### Zipf (3.32.1.3) - 5/19/2021
 
