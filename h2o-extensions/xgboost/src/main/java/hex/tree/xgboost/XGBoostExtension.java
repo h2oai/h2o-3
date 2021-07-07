@@ -80,10 +80,11 @@ public class XGBoostExtension extends AbstractH2OExtension {
   public void onLocalNodeStarted() {
     if (!isEnabled())
       return;
+    final double ratio = H2O.ARGS.off_heap_memory_ratio;
     if (H2O.ARGS.off_heap_memory_ratio > 0) {
-      MemoryCheck.Report report = MemoryCheck.runCheck(H2O.ARGS.off_heap_memory_ratio);
+      MemoryCheck.Report report = MemoryCheck.runCheck(ratio);
       if (!report.isOffHeapRequirementMet()) {
-        LOG.warn("There doesn't seem to be enough memory available for XGBoost model training, " +
+        LOG.warn("There doesn't seem to be enough memory available for XGBoost model training (off_heap_memory_ratio=" + ratio + "), " +
                 "training XGBoost models is not advised. Details: " + report);
       }
     }
