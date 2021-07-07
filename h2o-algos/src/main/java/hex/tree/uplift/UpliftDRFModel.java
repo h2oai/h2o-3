@@ -32,7 +32,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
 
         @Override
         public long progressUnits() {
-            return 0;
+            return _ntrees*2;
         }
     }
 
