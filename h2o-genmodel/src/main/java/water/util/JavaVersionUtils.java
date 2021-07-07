@@ -4,15 +4,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public enum JavaVersionUtils {
-    JAVA_VERSION;
+    JAVA_VERSION, // current version
+    JAVA_8(8), // mostly for tests to check differences in behaviors
+    JAVA_9(9);
 
     public static final int UNKNOWN = -1;
 
-    private int majorVersion;
+    private final int majorVersion;
 
     JavaVersionUtils() {
-        String javaVersion = System.getProperty("java.version");
-        majorVersion = parseMajor(javaVersion);
+        this(System.getProperty("java.version"));
+    }
+
+    JavaVersionUtils(String javaVersion) {
+        this(parseMajor(javaVersion));
+    }
+
+    JavaVersionUtils(int majorVersion) {
+        this.majorVersion = majorVersion;
     }
 
     public int getMajor() {
@@ -23,7 +32,7 @@ public enum JavaVersionUtils {
         return majorVersion!=UNKNOWN;
     }
 
-    public int parseMajor(String version) {
+    static int parseMajor(String version) {
         if(version!=null) {
             final Pattern pattern = Pattern.compile("1\\.([0-9]*).*|([0-9][0-9]*).*");
             final Matcher matcher = pattern.matcher(version);
@@ -42,4 +51,9 @@ public enum JavaVersionUtils {
         // Unified logging enabled since version 9, enforced in version 10.
         return isKnown() && getMajor() >= 9;
     }
+
+    public String getVerboseGCFlag() {
+        return useUnifiedLogging() ? "-Xlog:gc=info" : "-verbose:gc";
+    }
+
 }
