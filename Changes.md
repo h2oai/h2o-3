@@ -6,7 +6,7 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
 
-### Bug
+#### Bug
 
 [PUBDEV-8224](https://h2oai.atlassian.net/browse/PUBDEV-8224) Fixed GLM `GRADIENT_DESCENT_SQERR` Solver validation.
 
@@ -24,18 +24,23 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.h
 
 [PUBDEV-8167](https://h2oai.atlassian.net/browse/PUBDEV-8167) Fixed bug in ordinal GLM class predictions.
 
-### Improvement
+#### Improvement
 
 [PUBDEV-8141](https://h2oai.atlassian.net/browse/PUBDEV-8141) Added support for refreshing HDFS delegation tokens for standalone H2O.
 
 
-### New Feature
+#### New Feature
 
 [PUBDEV-8109](https://h2oai.atlassian.net/browse/PUBDEV-8109) Obtained Friedman’s H statistic for XGBoost and GBM.
 
-### Task
+#### Task
 
 [PUBDEV-8150](https://h2oai.atlassian.net/browse/PUBDEV-8150) Added a warning message when using `alpha` as a hyperparameter for GLM
+
+#### Docs
+
+[PUBDEV-8151](https://h2oai.atlassian.net/browse/PUBDEV-8151) Added a note to the productionizing docs that C++ is only available with additional support.
+
 
 ### Zipf (3.32.1.3) - 5/19/2021
 
