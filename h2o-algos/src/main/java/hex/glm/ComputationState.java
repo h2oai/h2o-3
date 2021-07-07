@@ -426,10 +426,14 @@ public final class ComputationState {
   }
 
   public double [] betaMultinomial(){return _beta;}
-
+  
   public double [] betaMultinomial(int c, double [] beta) {
      return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta);
    }
+
+  public double [] betaMultinomialFull(int c, double [] beta) {
+    return extractSubRange(_betaLengthPerClass,c,_activeDataMultinomial[c].activeCols(),beta);
+  }
    
    public double[] shrinkFullArray(double[] fullArray) {
      if (_activeData.activeCols() == null)
@@ -438,6 +442,16 @@ public final class ComputationState {
              _betaLengthPerClass);
      return ArrayUtils.select(fullArray, activeColsAllClass);
    }
+
+  public double[] expandToFullArray(double[] shortenArr) {
+    if (_activeData.activeCols() == null)
+      return shortenArr;
+    int[] activeColsAllClass = genActiveColsAllClass(_activeData.activeCols().length*_nclasses,
+            _betaLengthPerClass);
+    double[] fullArray = new double[_totalBetaLength];
+    fillSubRange(_totalBetaLength, 0, activeColsAllClass, shortenArr, fullArray);
+    return fullArray;
+  }
    
    public int[] genActiveColsAllClass(int activeColsLen, int numBetaPerClass) {
      int[] activeCols = new int[activeColsLen];
@@ -495,7 +509,14 @@ public final class ComputationState {
     }
   }
   public GradientSolver gslvrMultinomial(final int c) {
-    final double [] fullbeta = _beta.clone();
+    double[] betaCopy = new double[_totalBetaLength]; // make sure fullbeta is full length
+    if (_beta.length < _totalBetaLength) {
+      int[] activeCols = genActiveColsAllClass(_activeData.activeCols().length, _betaLengthPerClass);
+      fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
+    } else {
+      System.arraycopy(_beta, 0, betaCopy, 0, _totalBetaLength);
+    }
+    final double [] fullbeta = betaCopy; // beta for previous class only contains active columns
     return new GradientSolver() {
       // beta is full coeff Per class.  Need to return gradient with full columns
       @Override
@@ -504,12 +525,10 @@ public final class ComputationState {
         fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta);
         GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);  // may contain only active columns
         if (fullbeta.length > fullGinfo._gradient.length) {  // fullGinfo only contains gradient for active columns here
-          double[] fullGinfoGradient = new double[fullbeta.length];
-          for (int cInd = 0; cInd < _nclasses; cInd++)
-            fillSubRange(beta.length, cInd, _activeData.activeCols(), fullGinfo._gradient, fullGinfoGradient);
-          fullGinfo._gradient = fullGinfoGradient;
+          double[] fullGinfoGradient = expandToFullArray(fullGinfo._gradient);
+          fullGinfo._gradient = fullGinfoGradient;  // make sure fullGinfo contains full gradient
         }
-        return new GLMSubsetGinfo(fullGinfo,beta.length,c,_activeData.activeCols());
+        return new GLMSubsetGinfo(fullGinfo,beta.length,c,_activeData.activeCols());// fullGinfo has full gradient
           //return new GLMSubsetGinfo(fullGinfo,_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols());
       }
       @Override
@@ -703,14 +722,28 @@ public final class ComputationState {
     }
     return true;
   }
-  public int []  removeCols(int [] cols) {
-    int [] activeCols = ArrayUtils.removeIds(_activeData.activeCols(),cols);
-    if(_beta != null)
-      _beta = ArrayUtils.removeIds(_beta,cols);
+  public void addOffset2Cols(int[] cols) {
+    int offset = _activeClass*_activeData.activeCols().length;
+    int colsLen = cols.length;
+    for (int index = 0; index < colsLen; index++)
+      cols[index] = cols[index]+offset;
+  }
+  public int []  removeCols(int [] cols) { // cols is per class, not overall
+    int[] activeCols;
+    int[] colsWOffset = cols.clone();
+    if (_nclasses > 2) {
+      activeCols = ArrayUtils.removeIds(_activeDataMultinomial[_activeClass].activeCols(), cols);
+      addOffset2Cols(colsWOffset);
+    } else {
+      activeCols = ArrayUtils.removeIds(_activeData.activeCols(), cols);
+    }
+      if (_beta != null)
+        _beta = ArrayUtils.removeIds(_beta, colsWOffset);
+      
     if(_u != null)
-      _u = ArrayUtils.removeIds(_u,cols);
+      _u = ArrayUtils.removeIds(_u,colsWOffset);
     if(_ginfo != null && _ginfo._gradient != null)
-      _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,cols);
+      _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,colsWOffset);
     _activeData = _dinfo.filterExpandedColumns(activeCols);
     _activeBC = _bc.filterExpandedColumns(activeCols);
     _gslvr = _penaltyMatrix == null ? new GLMGradientSolver(_job, _parms, _activeData,

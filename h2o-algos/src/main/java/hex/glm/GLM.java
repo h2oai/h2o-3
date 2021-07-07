@@ -1586,7 +1586,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _state.setActiveClass(c);
             // _state.gslvrMultinomial(c) get beta, _state info, _state.betaMultinomial(c, beta) get coef per class
             // _state.ginfoMultinomial(c) get gradient for one class
-            LineSearchSolver ls = (_state.l1pen() == 0)
+            LineSearchSolver ls;
+            if (_parms._remove_collinear_columns)
+              ls = (_state.l1pen() == 0)
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
+            else
+              ls = (_state.l1pen() == 0)
                     ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
                     : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
 
@@ -1604,7 +1610,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             long t2 = System.currentTimeMillis();
             ComputationState.GramXY gram = _state.computeGram(ls.getX(), s);
             long t3 = System.currentTimeMillis();
-            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // inactive columns can be removed here if enabled
+            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // inactive columns removed with rcc on for _state._beta
 
             long t4 = System.currentTimeMillis();
             if (_parms._remove_collinear_columns) { // betaCnd contains only active columns but ls.getX() could be full length
@@ -1615,7 +1621,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                 betaCnd = wideBetaCnd;
               }
             }
-            if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+            if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {// betaCnd full size
               Log.info(LogMsg("Ls failed " + ls));
               continue;
             }
