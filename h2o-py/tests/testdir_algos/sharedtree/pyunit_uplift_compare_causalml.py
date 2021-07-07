@@ -47,7 +47,8 @@ def uplift_compare():
             min_rows=10,
             nbins=1000,
             seed=42,
-            auuc_type=auuc_types[i]
+            auuc_type=auuc_types[i],
+            sample_rate=0.5
         )
         drf.train(y=response_column, x=feature_cols, training_frame=train)
         h2o_drfs[i] = drf
@@ -88,31 +89,12 @@ def uplift_compare():
         mean_diff = preds_comp["diff"].mean(return_frame=False)[0]
         
         print("Average difference: %f" % mean_diff)
-        assert mean_diff < 0.2, str(mean_diff)+": Average difference should not be higher than 20%"
+        assert mean_diff < 0.2, str(mean_diff)+": Average difference should not be higher than 20 %"
 
-        results = preds_comp.as_data_frame()
-        results = results[["h2o", "causal", response_column, treatment_column]]
-        mapping = {'control': 0, 'treatment': 1}
-        results = results.replace({treatment_column: mapping})
-        
-    auuc_qiny_train = h2o_drfs[0].training_model_metrics()["AUUC"]
-    auuc_lift_train = h2o_drfs[1].training_model_metrics()["AUUC"]
-    auuc_gain_train = h2o_drfs[2].training_model_metrics()["AUUC"]
-    
-    auuc_qiny_perf_train = h2o_drfs[0].model_performance(train).auuc()
-    auuc_lift_perf_train = h2o_drfs[1].model_performance(train).auuc()
-    auuc_gain_perf_train = h2o_drfs[2].model_performance(train).auuc()
-
-    print("H2O metrics AUUC from model training metrics:")
-    print("Qini: %f Lift: %f Gain: %f" % (auuc_qiny_train, auuc_lift_train, auuc_gain_train))
-
-    print("H2O metrics AUUC from model performance:")
-    print("Qini: %f Lift: %f Gain: %f" % (auuc_qiny_perf_train, auuc_lift_perf_train, auuc_gain_perf_train))
-    
-    # TODO inspect why it is not same
-    # assert auuc_qiny_train == auuc_qiny_perf_train
-    # assert auuc_lift_train == auuc_lift_perf_train
-    # assert auuc_gain_train == auuc_gain_perf_train
+    results = preds_comp.as_data_frame()
+    results = results[["h2o", "causal", response_column, treatment_column]]
+    mapping = {'control': 0, 'treatment': 1}
+    results = results.replace({treatment_column: mapping})
 
     # calculate auuc using CausalML package
     auuc = auuc_score(results, outcome_col=response_column, treatment_col=treatment_column, normalize=False)
@@ -124,6 +106,7 @@ def uplift_compare():
     diff = abs(auuc["h2o"] - h2o_auuc_qain_test)
     assert diff < 1e-5, \
         "Absolute difference between causalML package and H2O AUUC calculation is higher than is expected: %f" % diff
+    assert h2o_auuc_qain_test >= auuc["causal"], "H2O AUUC should be >= than CausalML AUUC"
     
     # test plot_auuc
     perf = h2o_drfs[0].model_performance(testing_df)
