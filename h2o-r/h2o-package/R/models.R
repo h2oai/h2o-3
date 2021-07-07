@@ -1061,10 +1061,11 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
-h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, auc_type="NONE") {
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL, treatment=NULL, auc_type="NONE") {
   predicted <- .validate.H2OFrame(predicted, required=TRUE)
   actuals <- .validate.H2OFrame(actuals, required=TRUE)
   weights <- .validate.H2OFrame(weights, required=FALSE)
+  treatment <- .validate.H2OFrame(treatment, required=FALSE)
   if (!is.character(auc_type)) stop("auc_type argument must be of type character")
   if (!(auc_type %in% c("MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "NONE", "AUTO"))) {
     stop("auc_type argument must be MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, NONE, AUTO")
@@ -1074,6 +1075,9 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
   params$actuals_frame <- h2o.getId(actuals)
   if (!is.null(weights)) {
     params$weights_frame <- h2o.getId(weights)
+  }
+  if (!is.null(treatment)) {
+    params$treatment_frame <- h2o.getId(treatment)
   }
   params$domain <- domain
   params$distribution <- distribution
@@ -1185,8 +1189,14 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#'
-#' h2o.auuc(perf)
+#' train <- h2o.importFile(locate("smalldata/uplift/criteo_uplift_13k.csv"))
+#' train$treatment <- as.factor(train$treatment)
+#' train$conversion <- as.factor(train$conversion)
+#' 
+#' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
+#' perf <- h2o.performance(model, train) 
+#  h2o.auuc(perf)
 #' }
 #' @export
 h2o.auuc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
