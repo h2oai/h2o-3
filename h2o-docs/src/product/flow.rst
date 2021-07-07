@@ -1552,7 +1552,7 @@ There are several ways to delete objects in Flow:
 
 .. figure:: images/delete_frames.png
   :scale: 75%
-  :alt: Flow - Deleting Frames 
+  :alt: Flow - Deleting Frames
 
 2. List the Models, check off the model you want to delete, and click **Delete selected**.
 
