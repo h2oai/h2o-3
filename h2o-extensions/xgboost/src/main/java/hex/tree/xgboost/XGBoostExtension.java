@@ -6,6 +6,7 @@ import hex.tree.xgboost.util.NativeLibrary;
 import hex.tree.xgboost.util.NativeLibraryLoaderChain;
 import org.apache.log4j.Logger;
 import water.AbstractH2OExtension;
+import water.H2O;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -73,6 +74,20 @@ public class XGBoostExtension extends AbstractH2OExtension {
       return null;
     }
     return(NativeLibraryLoaderChain) loader;
+  }
+
+  @Override
+  public void onLocalNodeStarted() {
+    if (!isEnabled())
+      return;
+    final double ratio = H2O.ARGS.off_heap_memory_ratio;
+    if (H2O.ARGS.off_heap_memory_ratio > 0) {
+      MemoryCheck.Report report = MemoryCheck.runCheck(ratio);
+      if (!report.isOffHeapRequirementMet()) {
+        LOG.warn("There doesn't seem to be enough memory available for XGBoost model training (off_heap_memory_ratio=" + ratio + "), " +
+                "training XGBoost models is not advised. Details: " + report);
+      }
+    }
   }
 
   private boolean initXgboost() {
