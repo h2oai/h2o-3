@@ -38,6 +38,16 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
     }
 
     @Override
+    public boolean haveMojo() {
+        return false;
+    }
+
+    @Override
+    public boolean havePojo() {
+        return false;
+    }
+
+    @Override
     public ModelCategory[] can_build() {
         return new ModelCategory[]{
                 ModelCategory.BinomialUplift
@@ -67,8 +77,8 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             if( _parms._mtries != -1 && _parms._mtries != -2 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
                 error("_mtries","Computed mtries should be -1 or -2 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
         }
-        if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
-            warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
+        if (_parms._sample_rate == 1f && _valid == null)
+            warn("_sample_rate", "Sample rate is 100% and no validation dataset. There are no out-of-bag data to compute error estimates on the training data!");
         if (hasOffsetCol())
             error("_offset_column", "Offsets are not yet supported for Uplift DRF.");
         if (hasWeightCol())
@@ -285,9 +295,11 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
     }
 
-    // Read the 'tree' columns, do model-specific math and put the results in the
-    // fs[] array, and return the sum.  Dividing any fs[] element by the sum
-    // turns the results into a probability distribution.
+    /**
+     * Read the 'tree' columns, do model-specific math and put the results in the
+     * fs[] array, and return the sum.  Dividing any fs[] element by the sum
+     * turns the results into a probability distribution.
+     */
     @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
         double sum = 0;
         fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
