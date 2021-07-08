@@ -32,4 +32,4 @@ boto3>=1.7.50
 lifelines>=0.19.5
 xlsxwriter==1.3.7
 cython>=0.29; python_version > '3.5'
-causalml>=0.9; python_version > '3.5'
+causalml>=0.10; python_version > '3.5'
