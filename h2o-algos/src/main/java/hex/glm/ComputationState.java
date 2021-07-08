@@ -10,7 +10,6 @@ import hex.gram.Gram;
 import hex.optimization.ADMM;
 import hex.optimization.OptimizationUtils.GradientInfo;
 import hex.optimization.OptimizationUtils.GradientSolver;
-import water.H2O;
 import water.Job;
 import water.MemoryManager;
 import water.fvec.Frame;
@@ -453,6 +452,25 @@ public final class ComputationState {
     return fullArray;
   }
    
+  public int[] genActiveColsIndClass(int activeColsLen, int numBetaPerClass) {
+    int[] activeCols = new int[activeColsLen];// total length
+    int offset = 0;
+    int[] activeColsOneClass = _activeData._activeCols;
+    for (int classIndex = 0; classIndex < _activeClass; classIndex++) {
+      int finalOffset = numBetaPerClass*classIndex;
+      int num2Copy = activeColsOneClass.length;
+      int[] activeCols1Class = IntStream.of(activeColsOneClass).map(i->i+finalOffset).toArray();
+      System.arraycopy(activeCols1Class, 0, activeCols, offset, num2Copy);
+      offset += num2Copy;
+    }
+    for (int classInd = _activeClass; classInd < _nclasses; classInd++) {
+      int finalOffset = numBetaPerClass*classInd;
+      int[] activeCols1Class = IntStream.range(0, numBetaPerClass).map(i->i+finalOffset).toArray();
+      System.arraycopy(activeCols1Class, 0, activeCols, offset, numBetaPerClass);
+      offset += numBetaPerClass;
+    }
+    return activeCols;
+  }
    public int[] genActiveColsAllClass(int activeColsLen, int numBetaPerClass) {
      int[] activeCols = new int[activeColsLen];
      int offset = 0;
@@ -511,24 +529,29 @@ public final class ComputationState {
   public GradientSolver gslvrMultinomial(final int c) {
     double[] betaCopy = new double[_totalBetaLength]; // make sure fullbeta is full length
     if (_beta.length < _totalBetaLength) {
-      int[] activeCols = genActiveColsAllClass(_activeData.activeCols().length, _betaLengthPerClass);
-      fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
+      if (_beta.length == _activeData.activeCols().length*_nclasses) {  // all classes converted
+        int[] activeCols = genActiveColsAllClass(_beta.length, _betaLengthPerClass);
+        fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
+      } else {
+        int[] activeCols = genActiveColsIndClass(_beta.length, _betaLengthPerClass);
+        fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
+      }
     } else {
       System.arraycopy(_beta, 0, betaCopy, 0, _totalBetaLength);
     }
-    final double [] fullbeta = betaCopy; // beta for previous class only contains active columns
+    final double [] fullbeta = betaCopy; // make sure fullbeta contains everything
     return new GradientSolver() {
       // beta is full coeff Per class.  Need to return gradient with full columns
       @Override
       public GradientInfo getGradient(double[] beta) {
         // fill fullbeta with new values of beta for class c
-        fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta);
-        GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);  // may contain only active columns
+        fillSubRange(_dinfo.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta); // fullbeta contains everything
+        GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);  // beta contains all columns
         if (fullbeta.length > fullGinfo._gradient.length) {  // fullGinfo only contains gradient for active columns here
           double[] fullGinfoGradient = expandToFullArray(fullGinfo._gradient);
           fullGinfo._gradient = fullGinfoGradient;  // make sure fullGinfo contains full gradient
         }
-        return new GLMSubsetGinfo(fullGinfo,beta.length,c,_activeData.activeCols());// fullGinfo has full gradient
+        return new GLMSubsetGinfo(fullGinfo,_betaLengthPerClass,c,_activeData.activeCols());// fullGinfo has full gradient
           //return new GLMSubsetGinfo(fullGinfo,_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols());
       }
       @Override
@@ -538,7 +561,7 @@ public final class ComputationState {
 
   public void setBetaMultinomial(int c, double [] beta, double [] bc) {
     if(_u != null) Arrays.fill(_u,0);
-    fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),bc,beta);
+    fillSubRange(_betaLengthPerClass,c,_activeDataMultinomial[c].activeCols(),bc,beta);
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -648,8 +671,9 @@ public final class ComputationState {
   }
 
   protected boolean checkKKTsMultinomial(){
-    if(_activeData._activeCols == null) return true;
-    throw H2O.unimpl();
+    return true;
+    //if(_activeData._activeCols == null) return true;
+   // throw H2O.unimpl();
   }
 
   protected boolean checkKKTs() {
@@ -744,7 +768,7 @@ public final class ComputationState {
       _u = ArrayUtils.removeIds(_u,colsWOffset);
     if(_ginfo != null && _ginfo._gradient != null)
       _ginfo._gradient = ArrayUtils.removeIds(_ginfo._gradient,colsWOffset);
-    _activeData = _dinfo.filterExpandedColumns(activeCols);
+    _activeData = _dinfo.filterExpandedColumns(activeCols);  // changed _adaptedFrame to excluded inactive columns
     _activeBC = _bc.filterExpandedColumns(activeCols);
     _gslvr = _penaltyMatrix == null ? new GLMGradientSolver(_job, _parms, _activeData,
             (1 - _alpha) * _lambda, _activeBC) : new GLMGradientSolver(_job, _parms, _activeData,
@@ -814,10 +838,17 @@ public final class ComputationState {
   }
 
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
-    _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
+    if (_beta != null && beta.length > _beta.length) { // beta is full while _beta only contains active columns
+      double[] shortBeta = shrinkFullArray(beta);
+      _betaDiff = ArrayUtils.linfnorm(_beta == null ? beta : ArrayUtils.subtract(_beta, shortBeta), false);
+      if(_beta == null)_beta = shortBeta.clone();
+      else System.arraycopy(shortBeta,0,_beta,0,shortBeta.length);
+    } else {
+      _betaDiff = ArrayUtils.linfnorm(_beta == null ? beta : ArrayUtils.subtract(_beta, beta), false);
+      if(_beta == null)_beta = beta.clone();
+      else System.arraycopy(beta,0,_beta,0,beta.length);
+    }
     double objOld = objective();
-    if(_beta == null)_beta = beta.clone();
-    else System.arraycopy(beta,0,_beta,0,beta.length);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
     return (_relImprovement = (objOld - objective())/Math.abs(objOld));
@@ -863,7 +894,10 @@ public final class ComputationState {
     int fullCoefLen = (_dinfo.fullN() + 1) * _nclasses;
     if(_activeData._activeCols == null || beta.length == fullCoefLen)
       return beta;
-    return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
+    if (_nclasses <= 2)
+      return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
+    else 
+      return expandToFullArray(beta);
   }
 
   /**
@@ -985,7 +1019,7 @@ public final class ComputationState {
     double obj_reg = _parms._obj_reg;
     boolean weighted = _parms._family != Family.gaussian || _parms._link != GLMParameters.Link.identity;
     if(_parms._family == Family.multinomial) // no caching
-      return computeNewGram(activeDataMultinomial(_activeClass),beta,s);
+      return computeNewGram(activeDataMultinomial(_activeClass),beta,s); // activeDataMultinomial(_activeClass) returns all predictors
     if(s != GLMParameters.Solver.COORDINATE_DESCENT)
       // only cache for solver==COD
       //    caching only makes difference when running with lambda search

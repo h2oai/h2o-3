@@ -30,9 +30,10 @@ def remove_collinear_columns_multinomial():
 
     mdl2 = H2OGeneralizedLinearEstimator(solver='IRLSM', family='multinomial', link='family_default', seed=76,
                                         lambda_=[0], max_iterations=100000, beta_epsilon=1e-7, early_stopping=False,
-                                        standardize=True, remove_collinear_columns=True, max_runtime_secs=30)
+                                        standardize=True, remove_collinear_columns=False, max_runtime_secs=30)
     mdl2.start(x=train.col_names[1:], y=train.col_names[0], training_frame=train)
     mdl2.join()
+    print("done")
     
 if __name__ == "__main__":
   pyunit_utils.standalone_test(remove_collinear_columns_multinomial)

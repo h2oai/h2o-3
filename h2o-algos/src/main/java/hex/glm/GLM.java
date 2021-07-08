@@ -1610,7 +1610,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             long t2 = System.currentTimeMillis();
             ComputationState.GramXY gram = _state.computeGram(ls.getX(), s);
             long t3 = System.currentTimeMillis();
-            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // inactive columns removed with rcc on for _state._beta
+            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // rcc=true, remove inactive col from _state beta, ginfo
 
             long t4 = System.currentTimeMillis();
             if (_parms._remove_collinear_columns) { // betaCnd contains only active columns but ls.getX() could be full length
@@ -3329,7 +3329,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (_betaMultinomial == null) {
           int nclasses = _totalBetaLen/_betaLenPerClass;
 //          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
-          _betaMultinomial = new double[nclasses][];
+          _betaMultinomial = new double[nclasses][]; // contains only active columns if rcc=true
           for (int i = 0; i < nclasses; ++i)
             _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);  // only active columns here
         }
