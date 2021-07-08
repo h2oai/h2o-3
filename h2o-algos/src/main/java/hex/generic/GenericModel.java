@@ -1,18 +1,15 @@
 package hex.generic;
 
 import hex.*;
-import hex.genmodel.ModelMojoReader;
-import hex.genmodel.MojoModel;
-import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.*;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
-import hex.genmodel.easy.prediction.ContributionsPrediction;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.*;
 import water.fvec.*;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RowDataUtils;
 
@@ -178,9 +175,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> job) {
         EasyPredictModelWrapper wrapper = makeWrapperWithContributions();
 
+        // keep only columns that the model actually needs
         Frame adaptFrm = new Frame(frame);
-        adaptTestForTrain(adaptFrm, true, false);
-        adaptFrm = adaptFrm.subframe(wrapper.getModel().features());
+        GenModel model = wrapper.getModel();
+        String[] columnNames = model.getOrigNames() != null ? model.getOrigNames() : model.getNames();
+        adaptFrm.remove(ArrayUtils.difference(frame._names, columnNames));
 
         String[] outputNames = wrapper.getContributionNames();
         return new GenericScoreContributionsTask(wrapper)
@@ -189,7 +188,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 .outputFrame(destination_key, outputNames, null);
     }
 
-    class GenericScoreContributionsTask extends MRTask<GenericScoreContributionsTask> {
+    private class GenericScoreContributionsTask extends MRTask<GenericScoreContributionsTask> {
         private transient EasyPredictModelWrapper _wrapper;
 
         GenericScoreContributionsTask(EasyPredictModelWrapper wrapper) {
@@ -217,8 +216,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             byte[] types = _fr.types();
             for (int i = 0; i < cs[0]._len; i++) {
                 RowDataUtils.extractChunkRow(cs, _fr._names, types, i, rowData);
-                ContributionsPrediction p = (ContributionsPrediction) _wrapper.predict(rowData);
-                float[] contributions = p.getContributions();
+                float[] contributions = _wrapper.predictContributions(rowData);
                 NewChunk.addNums(ncs, contributions);
             }
         }

@@ -1,4 +1,3 @@
-source("/Users/mkurka/git/h2o/h2o-3/h2o-r/tests/testdir_algos/generic/generic_model_test_common.R")
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 

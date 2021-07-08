@@ -834,7 +834,7 @@ staged_predict_proba.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
-#' Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM and XGBoost models).
+#' Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM, XGBoost models and equivalent imported MOJOs).
 #'
 #' Default implemntation return H2OFrame shape (#rows, #features + 1) - there is a feature contribution column for each input
 #' feature, the last column is the model bias (same value for each row). The sum of the feature contributions
@@ -907,7 +907,7 @@ h2o.predict_contributions <- predict_contributions.H2OModel
 
 #' Retrieve the number of occurrences of each feature for given observations 
 #  on their respective paths in a tree ensemble model.
-#' Available for GBM, Random Forest and Isolation Forest models (and equivalent imported MOJOs)
+#' Available for GBM, Random Forest and Isolation Forest models.
 #'
 #' @param object a fitted \linkS4class{H2OModel} object for which prediction is
 #'        desired
