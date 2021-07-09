@@ -431,39 +431,58 @@ public final class ComputationState {
    }
 
   public double [] betaMultinomialFull(int c, double [] beta) {
-    return extractSubRange(_betaLengthPerClass,c,_activeDataMultinomial[c].activeCols(),beta);
+     if (_parms._remove_collinear_columns)
+      return extractSubRange(_betaLengthPerClass,c,_activeDataMultinomial[c].activeCols(),beta);
+     else
+       return extractSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta);
   }
    
    public double[] shrinkFullArray(double[] fullArray) {
      if (_activeData.activeCols() == null)
        return fullArray;
      int[] activeColsAllClass = genActiveColsAllClass(_activeData.activeCols().length*_nclasses, 
-             _betaLengthPerClass);
+             _betaLengthPerClass, _activeData.activeCols(), _nclasses);
      return ArrayUtils.select(fullArray, activeColsAllClass);
    }
 
-  public double[] expandToFullArray(double[] shortenArr) {
-    if (_activeData.activeCols() == null)
+  public static double[] expandToFullArray(double[] shortenArr, int[] activeCols, int _totalBetaLength, int nclasses, 
+                                           int betaLengthPerClass) {
+    if (activeCols == null)
       return shortenArr;
-    int[] activeColsAllClass = genActiveColsAllClass(_activeData.activeCols().length*_nclasses,
-            _betaLengthPerClass);
+    int[] activeColsAllClass = genActiveColsAllClass(activeCols.length*nclasses,
+            betaLengthPerClass, activeCols, nclasses);
     double[] fullArray = new double[_totalBetaLength];
     fillSubRange(_totalBetaLength, 0, activeColsAllClass, shortenArr, fullArray);
     return fullArray;
   }
-   
-  public int[] genActiveColsIndClass(int activeColsLen, int numBetaPerClass) {
+
+  public static int[] genActiveColsAllClass(int activeColsLen, int numBetaPerClass, int[] activeColsOrig, int nclasses) {
+    int[] activeCols = new int[activeColsLen];
+    int offset = 0;
+    int[] activeColsOneClass = activeColsOrig;
+    for (int classIndex=0; classIndex < nclasses; classIndex++) {
+      int finalOffset = numBetaPerClass*classIndex;
+      int[] activeCols1Class = IntStream.of(activeColsOneClass).map(i->i+finalOffset).toArray();
+      int num2Copy = activeColsOneClass.length;
+      System.arraycopy(activeCols1Class, 0, activeCols, offset, num2Copy);
+      offset += num2Copy;
+    }
+    return activeCols;
+  }
+  
+  public int[] genActiveColsIndClass(int activeColsLen, int numBetaPerClass, int[] activeColsOrig, int activeClass,
+                                     int nclasses) {
     int[] activeCols = new int[activeColsLen];// total length
     int offset = 0;
-    int[] activeColsOneClass = _activeData._activeCols;
-    for (int classIndex = 0; classIndex < _activeClass; classIndex++) {
+    int[] activeColsOneClass = activeColsOrig;
+    for (int classIndex = 0; classIndex < activeClass; classIndex++) {
       int finalOffset = numBetaPerClass*classIndex;
       int num2Copy = activeColsOneClass.length;
       int[] activeCols1Class = IntStream.of(activeColsOneClass).map(i->i+finalOffset).toArray();
       System.arraycopy(activeCols1Class, 0, activeCols, offset, num2Copy);
       offset += num2Copy;
     }
-    for (int classInd = _activeClass; classInd < _nclasses; classInd++) {
+    for (int classInd = activeClass; classInd < nclasses; classInd++) {
       int finalOffset = numBetaPerClass*classInd;
       int[] activeCols1Class = IntStream.range(0, numBetaPerClass).map(i->i+finalOffset).toArray();
       System.arraycopy(activeCols1Class, 0, activeCols, offset, numBetaPerClass);
@@ -471,19 +490,6 @@ public final class ComputationState {
     }
     return activeCols;
   }
-   public int[] genActiveColsAllClass(int activeColsLen, int numBetaPerClass) {
-     int[] activeCols = new int[activeColsLen];
-     int offset = 0;
-     int[] activeColsOneClass = _activeData._activeCols;
-     for (int classIndex=0; classIndex < _nclasses; classIndex++) {
-       int finalOffset = numBetaPerClass*classIndex;
-       int[] activeCols1Class = IntStream.of(activeColsOneClass).map(i->i+finalOffset).toArray();
-       int num2Copy = activeColsOneClass.length;
-       System.arraycopy(activeCols1Class, 0, activeCols, offset, num2Copy);
-       offset += num2Copy;
-     }
-     return activeCols;
-   }
 
   public GLMSubsetGinfo ginfoMultinomial(int c) {
     return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
@@ -530,10 +536,10 @@ public final class ComputationState {
     double[] betaCopy = new double[_totalBetaLength]; // make sure fullbeta is full length
     if (_beta.length < _totalBetaLength) {
       if (_beta.length == _activeData.activeCols().length*_nclasses) {  // all classes converted
-        int[] activeCols = genActiveColsAllClass(_beta.length, _betaLengthPerClass);
+        int[] activeCols = genActiveColsAllClass(_beta.length, _betaLengthPerClass, _activeData.activeCols(), c);
         fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
       } else {
-        int[] activeCols = genActiveColsIndClass(_beta.length, _betaLengthPerClass);
+        int[] activeCols = genActiveColsIndClass(_beta.length, _betaLengthPerClass, _activeData.activeCols(), c, _nclasses);
         fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
       }
     } else {
@@ -548,7 +554,8 @@ public final class ComputationState {
         fillSubRange(_dinfo.fullN()+1,c,_activeDataMultinomial[c].activeCols(),beta,fullbeta); // fullbeta contains everything
         GLMGradientInfo fullGinfo =  _gslvr.getGradient(fullbeta);  // beta contains all columns
         if (fullbeta.length > fullGinfo._gradient.length) {  // fullGinfo only contains gradient for active columns here
-          double[] fullGinfoGradient = expandToFullArray(fullGinfo._gradient);
+          double[] fullGinfoGradient = expandToFullArray(fullGinfo._gradient, _activeData.activeCols(), 
+                  _totalBetaLength, _nclasses, _betaLengthPerClass);
           fullGinfo._gradient = fullGinfoGradient;  // make sure fullGinfo contains full gradient
         }
         return new GLMSubsetGinfo(fullGinfo,_betaLengthPerClass,c,_activeData.activeCols());// fullGinfo has full gradient
@@ -561,7 +568,10 @@ public final class ComputationState {
 
   public void setBetaMultinomial(int c, double [] beta, double [] bc) {
     if(_u != null) Arrays.fill(_u,0);
-    fillSubRange(_betaLengthPerClass,c,_activeDataMultinomial[c].activeCols(),bc,beta);
+    if (_parms._remove_collinear_columns)
+      fillSubRange(_betaLengthPerClass,c,_activeDataMultinomial[c].activeCols(),bc,beta);
+    else
+      fillSubRange(_activeData.fullN()+1,c,_activeDataMultinomial[c].activeCols(),bc,beta);
   }
   /**
    * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
@@ -755,7 +765,7 @@ public final class ComputationState {
   public int []  removeCols(int [] cols) { // cols is per class, not overall
     int[] activeCols;
     int[] colsWOffset = cols.clone();
-    if (_nclasses > 2) {
+    if (_nclasses > 2 && _parms._remove_collinear_columns) {
       activeCols = ArrayUtils.removeIds(_activeDataMultinomial[_activeClass].activeCols(), cols);
       addOffset2Cols(colsWOffset);
     } else {
@@ -894,10 +904,10 @@ public final class ComputationState {
     int fullCoefLen = (_dinfo.fullN() + 1) * _nclasses;
     if(_activeData._activeCols == null || beta.length == fullCoefLen)
       return beta;
-    if (_nclasses <= 2)
+    if (_nclasses <= 2 || !_parms._remove_collinear_columns)
       return ArrayUtils.expandAndScatter(beta, (_dinfo.fullN() + 1) * _nclasses,_activeData._activeCols);
     else 
-      return expandToFullArray(beta);
+      return expandToFullArray(beta, _activeData.activeCols(), _totalBetaLength, _nclasses, _betaLengthPerClass);
   }
 
   /**

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 
 import static hex.genmodel.utils.ArrayUtils.flat;
+import static hex.glm.ComputationState.expandToFullArray;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static hex.schemas.GLMModelV3.calculateVarimpBase;
 
@@ -34,6 +35,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   final static public double _EPS = 1e-6;
   final static public double _OneOEPS = 1e6;
+  public static int _totalBetaLength;
+
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     _ymu = ymu;
@@ -224,14 +227,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public void update(double [] beta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     _output._submodels[id] = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,
-            iter,devianceTrain,devianceTest);
+            iter,devianceTrain,devianceTest, _totalBetaLength);
     _output.setSubmodelIdx(id);
   }
 
   public void update(double [] beta, double[] ubeta, double devianceTrain, double devianceTest,int iter){
     int id = _output._submodels.length-1;
     Submodel sm = new Submodel(_output._submodels[id].lambda_value,_output._submodels[id].alpha_value,beta,iter,
-            devianceTrain,devianceTest);
+            devianceTrain,devianceTest, _totalBetaLength);
     sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
     _output._submodels[id] = sm;
     _output.setSubmodelIdx(id);
@@ -1100,7 +1103,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
     
-    public Submodel(double lambda , double alpha, double [] beta, int iteration, double devTrain, double devValid){
+    public Submodel(double lambda , double alpha, double [] beta, int iteration, double devTrain, double devValid, int totBetaLen){
       this.lambda_value = lambda;
       this.alpha_value = alpha;
       this.iteration = iteration;
@@ -1108,18 +1111,20 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       this.devianceValid = devValid;
       int r = 0;
       if(beta != null){
-        // grab the indeces of non-zero coefficients
-        for(int i = 0; i < beta.length; ++i)if(beta[i] != 0)++r;
-        if(r < beta.length) {
-          idxs = MemoryManager.malloc4(r);
-          int j = 0;
-          for (int i = 0; i < beta.length; ++i)
-            if (beta[i] != 0) idxs[j++] = i;
-          this.beta = ArrayUtils.select(beta,idxs);
-        } else {
-          this.beta = beta.clone();
-          idxs = null;
-        }
+        
+          // grab the indices of non-zero coefficients
+          for (int i = 0; i < beta.length; ++i) if (beta[i] != 0) ++r;
+          if (r < beta.length && beta.length == totBetaLen) { // not been shorten before for multinomial
+            idxs = MemoryManager.malloc4(r);
+            int j = 0;
+            for (int i = 0; i < beta.length; ++i)
+              if (beta[i] != 0) idxs[j++] = i;
+            this.beta = ArrayUtils.select(beta, idxs);
+          } else {
+            this.beta = beta.clone();
+            idxs = null;
+          }
+          
       } else {
         this.beta = null;
         idxs = null;
@@ -1186,6 +1191,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
+    public int[] _activeColsPerClass;
     public boolean hasPValues(){return _zvalues != null;}
     public double [] stdErr(){
       double [] res = _zvalues.clone();
@@ -1289,7 +1295,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         _global_beta_multinomial=ArrayUtils.convertTo2DMatrix(beta, coefficient_names.length);
       else
         _global_beta=beta;
-      _submodels = new Submodel[]{new Submodel(0, 0,beta,-1,Double.NaN,Double.NaN)};
+      _submodels = new Submodel[]{new Submodel(0, 0,beta,-1,Double.NaN,Double.NaN, _totalBetaLength)};
     }
     
     public GLMOutput() {_isSupervised = true; _nclasses = -1;}
@@ -1396,8 +1402,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       Submodel sm = _submodels[idx];
       int N = _dinfo.fullN()+1;
       double [] beta = sm.beta;
-      if(sm.idxs != null)
-        beta = ArrayUtils.expandAndScatter(beta,nclasses()*(_dinfo.fullN()+1),sm.idxs);
+      if(sm.idxs != null) {
+        beta = ArrayUtils.expandAndScatter(beta, nclasses() * (_dinfo.fullN() + 1), sm.idxs);
+      } else if (beta.length < _totalBetaLength && sm.idxs == null) { // need to expand beta to full length
+        beta = expandToFullArray(beta, _activeColsPerClass, _totalBetaLength, nclasses(),
+                _totalBetaLength/nclasses());
+      }
+        
       for(int i = 0; i < res.length; ++i)
         res[i] = Arrays.copyOfRange(beta,i*N,(i+1)*N);
       return res;
@@ -1412,6 +1423,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       double [] beta = sm.beta;
       if(sm.idxs != null)
         beta = ArrayUtils.expandAndScatter(beta,nclasses()*(_dinfo.fullN()+1),sm.idxs);
+      else if (beta.length < _totalBetaLength) // sm.idxs is null but beta too short
+        beta = expandToFullArray(beta, _activeColsPerClass, _totalBetaLength, nclasses(),
+                _totalBetaLength/nclasses());
       for(int i = 0; i < res.length; ++i)
         if(standardized) {
           res[i] = Arrays.copyOfRange(beta, i * N, (i + 1) * N);

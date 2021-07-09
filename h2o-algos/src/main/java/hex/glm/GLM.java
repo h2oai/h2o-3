@@ -1631,6 +1631,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           }
           _state.setActiveClass(-1);
+          _model._output._activeColsPerClass = _state.activeDataMultinomial().activeCols();
         } while (progress(beta, _state.gslvr().getGradient(beta)));
       }
     }
@@ -2425,12 +2426,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
         else
-          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, nullDevValid));
+          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, 
+                  nullDevValid, _totalBetaLen));
       } else {  // this is also the path for HGLM model
         if (continueFromPreviousSubmodel) {
           sm = _model._output._submodels[i];
         } else {
-          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1);// restart from last run
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1, _totalBetaLen);// restart from last run
           if (_parms._HGLM) // add random coefficients for random effects/columns
             sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.addSubmodel(sm);
@@ -2469,7 +2471,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } while (!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if (_parms._HGLM) {
-          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid);
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid,
+                  _totalBetaLen);
           sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.updateSubmodel(sm);
         } else {
@@ -2490,7 +2493,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
                     _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
           _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
-                  trainDev, validDev));
+                  trainDev, validDev, _totalBetaLen));
         }
       }
       return sm;
@@ -2530,6 +2533,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
+      _model._totalBetaLength = _totalBetaLen;
       if (_parms._lambda_search) {
         if (ordinal.equals(_parms._family))
           nullDevTrain = new GLMResDevTaskOrdinal(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();

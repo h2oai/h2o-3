@@ -33,7 +33,10 @@ def remove_collinear_columns_multinomial():
                                         standardize=True, remove_collinear_columns=False, max_runtime_secs=30)
     mdl2.start(x=train.col_names[1:], y=train.col_names[0], training_frame=train)
     mdl2.join()
-    print("done")
+    coefTrue = mdl.coef()
+    coefFalse = mdl2.coef()
+    assert not(coefTrue['coefs_class_0']['Intercept']==coefFalse['coefs_class_0']['Intercept']), \
+        "coefficients should be different but are the same."
     
 if __name__ == "__main__":
   pyunit_utils.standalone_test(remove_collinear_columns_multinomial)
