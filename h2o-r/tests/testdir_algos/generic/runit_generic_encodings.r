@@ -31,9 +31,13 @@ make.model.generic.predict.test.suite <- function() {
     test.model.generic.predict.1hot <- function() {
        test.model.generic.predict.with.encoding("OneHotExplicit")
     }
+    test.model.generic.predict.label <- function() {
+       test.model.generic.predict.with.encoding("Label")
+    }    
     makeSuite(
         test.model.generic.predict.binary,
-        test.model.generic.predict.1hot
+        test.model.generic.predict.1hot,
+        test.model.generic.predict.label
     )
 }
 
