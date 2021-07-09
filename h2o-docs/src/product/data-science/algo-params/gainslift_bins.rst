@@ -1,7 +1,7 @@
 ``gainslift_bins``
 ------------------
 
-- Available in: GBM, DRF, Naïve-Bayes, XGBoost
+- Available in: GBM, DRF, Naïve-Bayes, XGBoost, Uplift DRF
 - Hyperparameter: no
 
 Description

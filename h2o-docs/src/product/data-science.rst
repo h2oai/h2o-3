@@ -44,6 +44,7 @@ H2O supports the following supervised algorithms:
    data-science/rulefit
    data-science/stacked-ensembles
    data-science/svm
+   data-science/upliftdrf
    data-science/xgboost
 
 Unsupervised
