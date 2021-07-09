@@ -13,8 +13,8 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param treatment_column Define column which will be use for computing uplift gain to select best split for a tree. The column has to
-#'        devide dataset into treatment (value 1) and control (value 0) group. Defaults to treatment.
+#' @param treatment_column Define the column which will be used for computing uplift gain to select best split for a tree. The column has
+#'        to devide the dataset into treatment (value 1) and control (value 0) groups. Defaults to treatment.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
