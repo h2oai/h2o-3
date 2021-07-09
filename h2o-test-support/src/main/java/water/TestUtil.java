@@ -512,9 +512,25 @@ public class TestUtil extends Iced {
   }
 
   /**
-   * Make sure the given frame is distributed at least to given minimum number of chunks
+   * Make sure the given frame is distributed in a way that MRTask reduce operation is called
    * and spans at least 2 nodes of the cluster (if running on multinode).
    * 
+   * If a new frame is created - it is automatically tracked in Scope if it is currently active. 
+   *
+   * @param frame input frame
+   * @return possibly new Frame rebalanced to a minimum number of chunks
+   */
+  public static Frame ensureDistributed(Frame frame) {
+    int minChunks = H2O.getCloudSize() * 4; // at least one node will have 4 chunks (MR tree will have at least 2 levels)
+    return ensureDistributed(frame, minChunks);
+  }
+  
+  /**
+   * Make sure the given frame is distributed at least to given minimum number of chunks
+   * and spans at least 2 nodes of the cluster (if running on multinode).
+   *
+   * If a new frame is created - it is automatically tracked in Scope if it is currently active. 
+   *
    * @param frame input frame
    * @param minChunks minimum required number of chunks
    * @return possibly new Frame rebalanced to a minimum number of chunks
@@ -524,7 +540,7 @@ public class TestUtil extends Iced {
       // rebalance first
       Key<Frame> k = Key.make();
       H2O.submitTask(new RebalanceDataSet(frame, k, minChunks)).join();
-      frame = k.get();
+      frame = trackIfScopeActive(k.get());
     }
     // check frame spans 2+ nodes
     if (H2O.CLOUD.size() > 1) {
@@ -543,7 +559,15 @@ public class TestUtil extends Iced {
     }
     return frame;
   }
-    
+
+  static Frame trackIfScopeActive(Frame frame) {
+    if (Scope.isActive()) {
+      // this function can only be called in tests - it is thus safe to auto-track the frame if the test created a Scope
+      Scope.track(frame);
+    }
+    return frame;
+  }
+
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
       if (runWithoutLocalFiles()) {
@@ -1776,4 +1800,11 @@ public class TestUtil extends Iced {
     return System.getProperty("user.name").equals("jenkins");
   }
 
+  public static <T extends Keyed<T>> void assertInDKV(Key<T> key, T object) {
+    assertEquals(key, object._key);
+    T dkvObject = DKV.getGet(key);
+    assertNotNull(dkvObject);
+    assertEquals(object.checksum(true), dkvObject.checksum(true));
+  }
+  
 }

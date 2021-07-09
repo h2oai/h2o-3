@@ -651,9 +651,7 @@ public class EasyPredictModelWrapper implements Serializable {
         p.stageProbabilities = ((SharedTreeMojoModel) m).scoreStagedPredictions(rawData, preds.length);
     }
     if (enableContributions) {
-      double[] rawData = nanArray(m.nfeatures());
-      rawData = fillRawData(data, rawData);
-      p.contributions = predictContributions.calculateContributions(rawData);
+      p.contributions = predictContributions(data);
     }
     return p;
   }
@@ -893,6 +891,12 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
+  public float[] predictContributions(RowData data) throws PredictException {
+    double[] rawData = nanArray(m.nfeatures());
+    rawData = fillRawData(data, rawData);
+    return predictContributions.calculateContributions(rawData);
+  }
+
   /**
    * Calculate and sort shapley values.
    *
@@ -941,6 +945,10 @@ public class EasyPredictModelWrapper implements Serializable {
   //----------------------------------------------------------------------
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------
+
+  public GenModel getModel() {
+    return m;
+  }
 
   /**
    * Get the category (type) of model.

@@ -1,5 +1,6 @@
 package hex.generic;
 
+import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetricsBinomial;
 import hex.coxph.CoxPH;
@@ -77,14 +78,16 @@ public class GenericModelTest extends TestUtil {
             assertTrue(genericModel._output._training_metrics instanceof ModelMetricsBinomial);
 
             final Frame genericModelPredictions = genericModel.score(testFrame);
-            Scope.track_generic(genericModelPredictions);
+            Scope.track(genericModelPredictions);
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, genericModelPredictions, 0);
             assertTrue(equallyScored);
 
             final Frame originalModelPredictions = model.score(testFrame);
-            Scope.track_generic(originalModelPredictions);
+            Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -131,6 +134,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -223,6 +228,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -269,6 +276,8 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+
+            checkScoreContributions(model, genericModel, testFrame);
         } finally {
             Scope.exit();
         }
@@ -1132,4 +1141,19 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    private void checkScoreContributions(Model.Contributions originalModel, GenericModel genericModel, Frame testFrame) {
+        testFrame = ensureDistributed(testFrame);
+
+        Key<Frame> dest = Key.make();
+
+        final Frame originalModelContributions = originalModel.scoreContributions(testFrame, Key.make());
+        Scope.track(originalModelContributions);
+        final Frame genericModelContributions = genericModel.scoreContributions(testFrame, dest);
+        Scope.track(genericModelContributions);
+
+        assertInDKV(dest, genericModelContributions);
+        assertFrameEquals(originalModelContributions, genericModelContributions, 0.0d);
+    }
+
 }
