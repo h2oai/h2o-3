@@ -3130,6 +3130,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String uuid() { return String.valueOf(Model.this.checksum()); }
       @Override
       public String timestamp() { return new DateTime().toString(); }
+      @Override
+      public String[] getOrigNames() { return _output._origNames; }
+      @Override
+      public String[][] getOrigDomains() { return _output._origDomains; }
     };
   }
 
