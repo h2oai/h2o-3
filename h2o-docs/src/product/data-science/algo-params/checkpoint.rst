@@ -1,7 +1,7 @@
 ``checkpoint``
 --------------
 
-- Available in: GBM, DRF, XGBoost, Deep Learning, GLM
+- Available in: GBM, DRF, XGBoost, Deep Learning, GLM, Uplift DRF
 - Hyperparameter: no
 
 Description

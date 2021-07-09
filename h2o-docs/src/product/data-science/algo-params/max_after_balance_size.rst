@@ -1,7 +1,7 @@
 ``max_after_balance_size``
 --------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, AutoML
+- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, AutoML, Uplift DRF
 - Hyperparameter: yes
 
 Description

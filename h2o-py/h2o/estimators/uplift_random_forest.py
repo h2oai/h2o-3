@@ -687,8 +687,8 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def treatment_column(self):
         """
-        Define column which will be use for computing uplift gain to select best split for a tree. The column has to
-        devide dataset into treatment (value 1) and control (value 0) group.
+        Define the column which will be used for computing uplift gain to select best split for a tree. The column has
+        to devide the dataset into treatment (value 1) and control (value 0) groups.
 
         Type: ``str``, defaults to ``"treatment"``.
         """

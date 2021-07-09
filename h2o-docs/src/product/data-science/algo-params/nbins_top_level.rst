@@ -1,7 +1,7 @@
 ``nbins_top_level``
 -------------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF, Uplift DRF
 - Hyperparameter: yes
 
 Description

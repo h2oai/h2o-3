@@ -1,7 +1,7 @@
 ``min_rows``
 ------------
 
-- Available in: GBM, DRF, XGBoost, Isolation Forest 
+- Available in: GBM, DRF, XGBoost, Isolation Forest, Uplift DRF
 - Hyperparameter: yes
 
 Description
