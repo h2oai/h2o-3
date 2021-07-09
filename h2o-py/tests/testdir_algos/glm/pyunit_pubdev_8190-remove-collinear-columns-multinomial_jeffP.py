@@ -7,6 +7,7 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 import numpy as np
+from random import randint
 
 # I copied this test from Jeff Plourde.  Thank you.
 # This test just needs to run to completion without receiving any error.  There is no assert statement needed here.
@@ -22,22 +23,14 @@ def generate_data(class_centers, sz, seed = 23):
 
 def remove_collinear_columns_multinomial():
     train = generate_data([0,5,10], 100)
+   # train = h2o.import_file("/Users/wendycwong/temp/multinomial_rcc.csv")
     mdl = H2OGeneralizedLinearEstimator(solver='IRLSM', family='multinomial', link='family_default', seed=76,
                                         lambda_=[0], max_iterations=100000, beta_epsilon=1e-7, early_stopping=False,
-                                        standardize=True, remove_collinear_columns=True, max_runtime_secs=30)
+                                        standardize=True, remove_collinear_columns=True)
     mdl.start(x=train.col_names[1:], y=train.col_names[0], training_frame=train)
     mdl.join()
+    print("test completed.")
 
-    mdl2 = H2OGeneralizedLinearEstimator(solver='IRLSM', family='multinomial', link='family_default', seed=76,
-                                        lambda_=[0], max_iterations=100000, beta_epsilon=1e-7, early_stopping=False,
-                                        standardize=True, remove_collinear_columns=False, max_runtime_secs=30)
-    mdl2.start(x=train.col_names[1:], y=train.col_names[0], training_frame=train)
-    mdl2.join()
-    coefTrue = mdl.coef()
-    coefFalse = mdl2.coef()
-    assert not(coefTrue['coefs_class_0']['Intercept']==coefFalse['coefs_class_0']['Intercept']), \
-        "coefficients should be different but are the same."
-    
 if __name__ == "__main__":
   pyunit_utils.standalone_test(remove_collinear_columns_multinomial)
 else:

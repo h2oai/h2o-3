@@ -536,7 +536,7 @@ public final class ComputationState {
     double[] betaCopy = new double[_totalBetaLength]; // make sure fullbeta is full length
     if (_beta.length < _totalBetaLength) {
       if (_beta.length == _activeData.activeCols().length*_nclasses) {  // all classes converted
-        int[] activeCols = genActiveColsAllClass(_beta.length, _betaLengthPerClass, _activeData.activeCols(), c);
+        int[] activeCols = genActiveColsAllClass(_beta.length, _betaLengthPerClass, _activeData.activeCols(), _nclasses);
         fillSubRange(_totalBetaLength, 0, activeCols, _beta, betaCopy);
       } else {
         int[] activeCols = genActiveColsIndClass(_beta.length, _betaLengthPerClass, _activeData.activeCols(), c, _nclasses);
