@@ -55,7 +55,7 @@ public class RowDataUtilsTest {
             }};
             RowData[] rows = new RowData[]{row0, row1, rowNAs}; 
             
-            Chunk[] cs = FrameUtils.extractChunks(fr, 0, false);
+            Chunk[] cs = FrameUtils.extractChunks(fr, 0, true);
             RowData rowData = new RowData(); // create once and keep mutating in the loop
             for (int i = 0; i < rows.length; i++) {
                 RowDataUtils.extractChunkRow(cs, fr.names(), fr.types(), i, rowData);
