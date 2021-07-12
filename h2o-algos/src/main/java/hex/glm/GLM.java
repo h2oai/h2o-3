@@ -1587,9 +1587,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // _state.gslvrMultinomial(c) get beta, _state info, _state.betaMultinomial(c, beta) get coef per class
             // _state.ginfoMultinomial(c) get gradient for one class
             LineSearchSolver ls;
-            if (_parms._remove_collinear_columns)
-              ls = (_state.l1pen() == 0)
+            if (_parms._remove_collinear_columns && _state._iter < 1)
+              ls = (_state.l1pen() == 0)  // after first iteration over all classes, state._beta, ginfo.gradient are all smaller size
                       ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
+            else if (_parms._remove_collinear_columns && _state._iter > 0)
+              ls = (_state.l1pen() == 0)  // after first iteration over all classes, state._beta, ginfo.gradient are all smaller size
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomialRCC(c))
                       : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
             else
               ls = (_state.l1pen() == 0)
@@ -1608,10 +1612,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       c).doAll(_state.activeDataMultinomial()._adaptedFrame);
             }
             long t2 = System.currentTimeMillis();
-            ComputationState.GramXY gram = _state.computeGram(ls.getX(), s);
-            long t3 = System.currentTimeMillis();
-            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // rcc=true, remove inactive col from _state beta, ginfo
+            ComputationState.GramXY gram;
+            if (_parms._remove_collinear_columns && _state._iter > 0)
+              gram = _state.computeGramRCC(ls.getX(), s);
+            else
+              gram = _state.computeGram(ls.getX(), s);
 
+            long t3 = System.currentTimeMillis();
+            double[] betaCnd;
+            if (_parms._remove_collinear_columns && _state._iter > 0)
+              betaCnd = ADMM_solve(gram.gram, gram.xy);
+            else 
+              betaCnd = ADMM_solve(gram.gram, gram.xy);  // rcc=true, remove inactive col from _state beta, ginfo
             long t4 = System.currentTimeMillis();
             if (_parms._remove_collinear_columns) { // betaCnd contains only active columns but ls.getX() could be full length
               int lsLength = ls.getX().length;

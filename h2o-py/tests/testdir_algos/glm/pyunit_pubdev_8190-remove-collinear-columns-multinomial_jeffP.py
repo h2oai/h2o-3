@@ -23,7 +23,6 @@ def generate_data(class_centers, sz, seed = 23):
 
 def remove_collinear_columns_multinomial():
     train = generate_data([0,5,10], 100)
-   # train = h2o.import_file("/Users/wendycwong/temp/multinomial_rcc.csv")
     mdl = H2OGeneralizedLinearEstimator(solver='IRLSM', family='multinomial', link='family_default', seed=76,
                                         lambda_=[0], max_iterations=100000, beta_epsilon=1e-7, early_stopping=False,
                                         standardize=True, remove_collinear_columns=True)

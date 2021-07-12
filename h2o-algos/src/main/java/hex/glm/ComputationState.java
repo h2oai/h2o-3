@@ -495,6 +495,14 @@ public final class ComputationState {
     return new GLMSubsetGinfo(_ginfo,(_activeData.fullN()+1),c,_activeDataMultinomial[c].activeCols());
   }
 
+  public GLMSubsetGinfo ginfoMultinomialRCC(int c) {
+    if (_activeData.fullN() + 1 == _activeData.activeCols().length)
+      return new GLMSubsetGinfo(_ginfo, (_activeData.fullN() + 1), c, IntStream.range(0, 
+              _activeData.activeCols().length).toArray());
+    else
+      return new GLMSubsetGinfo(_ginfo, (_activeData.fullN() + 1), c, _activeData.activeCols());
+  }
+
   public void setBC(BetaConstraint bc) {
     _bc = bc;
     _activeBC = _bc;
@@ -529,7 +537,7 @@ public final class ComputationState {
     public final GLMGradientInfo _fullInfo;
     public GLMSubsetGinfo(GLMGradientInfo fullInfo, int N, int c, int [] ids) {
       super(fullInfo._likelihood, fullInfo._objVal, extractSubRange(N,c,ids,fullInfo._gradient));
-      _fullInfo = fullInfo;
+      _fullInfo = fullInfo; // fullInfo._gradient may not be full
     }
   }
   public GradientSolver gslvrMultinomial(final int c) {
@@ -1023,6 +1031,9 @@ public final class ComputationState {
   GramXY _currGram;
   GLMModel.GLMWeightsFun _glmw;
 
+  public GramXY computeGramRCC(double[] beta, GLMParameters.Solver s) {
+      return computeNewGram(_activeData, ArrayUtils.select(beta, _activeData.activeCols()), s);
+  }
 
   // get cached gram or incrementally update or compute new one
   public GramXY computeGram(double [] beta, GLMParameters.Solver s){
