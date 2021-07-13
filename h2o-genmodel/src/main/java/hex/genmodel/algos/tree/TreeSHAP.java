@@ -18,6 +18,11 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
   private final S[] stats;
   private final float expectedTreeValue;
 
+  @SuppressWarnings("unchecked")
+  public TreeSHAP(N[] nodes) {
+    this(nodes, (S[]) nodes, 0);
+  }
+
   public TreeSHAP(N[] nodes, S[] stats, int rootNodeId) {
     this.rootNodeId = rootNodeId;
     this.nodes = nodes;

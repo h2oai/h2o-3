@@ -218,12 +218,12 @@ public class DRFPredictContribsTest extends TestUtil {
         @Override
         protected void setupLocal() {
             SharedTreeSubgraph tree = _model.getSharedTreeSubgraph(_tree, 0);
-            _nodes = tree.nodesArray.toArray(new SharedTreeNode[0]);
+            _nodes = tree.getNodes();
         }
 
         @Override
         public void map(Chunk[] cs) {
-            final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes, _nodes, 0);
+            final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes);
             final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0);
 
             final double[] row = MemoryManager.malloc8d(cs.length);
