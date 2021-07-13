@@ -3347,7 +3347,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         int off = 0;
         for (int i = 0; i < _betaMultinomial.length; ++i) { // fill _betaMultinomial class by coeffPerClass
-          if (_dinfo._activeCols == null || _dinfo._activeCols.length == _betaLenPerClass)
+          if (!_parms._remove_collinear_columns || _dinfo._activeCols == null || _dinfo._activeCols.length == _betaLenPerClass)
             System.arraycopy(beta, off, _betaMultinomial[i], 0, _betaMultinomial[i].length);
           else  // _betaMultinomial only contains active columns
             _betaMultinomial[i] = extractSubRange(_betaLenPerClass, i, _dinfo._activeCols, beta);
