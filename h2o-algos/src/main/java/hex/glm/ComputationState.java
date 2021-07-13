@@ -1031,6 +1031,14 @@ public final class ComputationState {
   GramXY _currGram;
   GLMModel.GLMWeightsFun _glmw;
 
+  /***
+   * This method is used only for multinomial family.  It differs from computeGram because it calls on _activeData
+   * which only contains only active columns in its _adaptedFrame.  Note activeDataMultinomial(_activeClass) will
+   * always contains all predictors in its _adaptedFrame.
+   * @param beta
+   * @param s
+   * @return
+   */
   public GramXY computeGramRCC(double[] beta, GLMParameters.Solver s) {
       return computeNewGram(_activeData, ArrayUtils.select(beta, _activeData.activeCols()), s);
   }

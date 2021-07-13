@@ -1614,16 +1614,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             long t2 = System.currentTimeMillis();
             ComputationState.GramXY gram;
             if (_parms._remove_collinear_columns && _state._iter > 0)
-              gram = _state.computeGramRCC(ls.getX(), s);
+              gram = _state.computeGramRCC(ls.getX(), s); // only use beta for the active columns only
             else
               gram = _state.computeGram(ls.getX(), s);
 
             long t3 = System.currentTimeMillis();
-            double[] betaCnd;
-            if (_parms._remove_collinear_columns && _state._iter > 0)
-              betaCnd = ADMM_solve(gram.gram, gram.xy);
-            else 
-              betaCnd = ADMM_solve(gram.gram, gram.xy);  // rcc=true, remove inactive col from _state beta, ginfo
+            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // remove collinear columns here from ginfo._gradient, betaCnd
             long t4 = System.currentTimeMillis();
             if (_parms._remove_collinear_columns) { // betaCnd contains only active columns but ls.getX() could be full length
               int lsLength = ls.getX().length;
