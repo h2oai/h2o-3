@@ -1588,7 +1588,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // _state.ginfoMultinomial(c) get gradient for one class
             LineSearchSolver ls;
             if (_parms._remove_collinear_columns && _state._iter < 1)
-              ls = (_state.l1pen() == 0)  // after first iteration over all classes, state._beta, ginfo.gradient are all smaller size
+              ls = (_state.l1pen() == 0)  // at first iteration, state._beta, ginfo.gradient have not shrunk here
                       ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomial(c))
                       : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
             else if (_parms._remove_collinear_columns && _state._iter > 0)
@@ -1596,7 +1596,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomialRCC(c))
                       : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
             else
-              ls = (_state.l1pen() == 0)
+              ls = (_state.l1pen() == 0)  // normal case with rcc = false, nothing changes
                     ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
                     : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
 
