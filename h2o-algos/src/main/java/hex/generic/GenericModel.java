@@ -120,7 +120,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             }
             @Override
             public String getResponseColumn() {
-                return mojoModel.getResponseName();
+                return mojoModel.isSupervised() ? mojoModel.getResponseName() : null; 
             }
             @Override
             public double missingColumnsType() {

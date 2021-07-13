@@ -32,7 +32,7 @@ make.model.generic.predict.test.suite <- function() {
        test.model.generic.predict.with.encoding("OneHotExplicit")
     }
     test.model.generic.predict.label <- function() {
-       test.model.generic.predict.with.encoding("Label")
+       test.model.generic.predict.with.encoding("LabelEncoder")
     }    
     makeSuite(
         test.model.generic.predict.binary,
