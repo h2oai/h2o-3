@@ -150,8 +150,10 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
       final int hot_index = node.next(feat);
       final int cold_index = hot_index == node.getLeftChildIndex() ? node.getRightChildIndex() : node.getLeftChildIndex();
       final float w = nodeStat.getWeight();
-      final float hot_zero_fraction = w != 0 ? stats[hot_index].getWeight() / w : 0;
-      final float cold_zero_fraction = w != 0 ? stats[cold_index].getWeight() / w : 0;
+      // if w == 0 then weights in child nodes are 0 as well (are identical) -> that is why we split hot and cold evenly (0.5 fraction)
+      final float zero_weight_fraction = 0.5f;
+      final float hot_zero_fraction = w != 0 ? stats[hot_index].getWeight() / w : zero_weight_fraction;
+      final float cold_zero_fraction = w != 0 ? stats[cold_index].getWeight() / w : zero_weight_fraction;
       float incoming_zero_fraction = 1;
       float incoming_one_fraction = 1;
 
