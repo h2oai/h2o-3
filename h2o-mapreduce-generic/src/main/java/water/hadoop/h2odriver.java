@@ -93,8 +93,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
   static boolean enableVerboseGC = true;
-  static boolean enablePrintGCDetails = true;
-  static boolean enablePrintGCTimeStamps = true;
+  static boolean enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+  static boolean enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -1147,8 +1147,8 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-gc")) {
         enableVerboseGC = true;
-        enablePrintGCDetails = true;
-        enablePrintGCTimeStamps = true;
+        enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+        enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
       }
       else if (s.equals("-nogc")) {
         enableVerboseGC = false;
