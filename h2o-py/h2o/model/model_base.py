@@ -974,13 +974,14 @@ class ModelBase(h2o_meta(Keyed)):
         path = path.rstrip("/")
         return h2o.download_pojo(self, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
 
-    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
+    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name="", filename=None):
         """
         Download the model in MOJO format.
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :param genmodel_name: Custom name of genmodel jar
+        :param filename: a filename for the saved model (file type is always .zip)
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
@@ -994,7 +995,12 @@ class ModelBase(h2o_meta(Keyed)):
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
             else:
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
-        return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
+
+        if filename is None:
+            filename = self.model_id + ".zip"
+        else:
+            assert_is_type(filename, str)
+        return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=os.path.join(path, filename))
 
     def save_mojo(self, path="", force=False, filename=None):
         """
