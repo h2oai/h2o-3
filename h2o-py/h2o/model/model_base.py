@@ -996,13 +996,13 @@ class ModelBase(h2o_meta(Keyed)):
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
 
-    def save_mojo(self, path="", filename=None, force=False):
+    def save_mojo(self, path="", force=False, filename=None):
         """
         Save an H2O Model as MOJO (Model Object, Optimized) to disk.
 
         :param path: a path to save the model at (hdfs, s3, local)
-        :param filename: a filename for the saved model at (hdfs, s3, local)
         :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+        :param filename: a filename for the saved model (file type is always .zip)
 
         :returns str: the path of the saved model
         """
@@ -1014,7 +1014,7 @@ class ModelBase(h2o_meta(Keyed)):
             filename = self.model_id
         else:
             assert_is_type(filename, str)
-        path = os.path.join(os.getcwd() if path == "" else path, filename + ".zip")
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
         return h2o.api("GET /99/Models.mojo/%s" % self.model_id, data={"dir": path, "force": force})["dir"]
 
     def save_model_details(self, path="", force=False):

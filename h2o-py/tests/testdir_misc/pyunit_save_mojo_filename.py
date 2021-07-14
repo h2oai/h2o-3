@@ -18,18 +18,18 @@ def save_mojo_filename():
     # Default filename is model_id
     tmpdir = tempfile.mkdtemp()
     mojo_path = model.save_mojo(tmpdir)
-    assert model.model_id in mojo_path
+    assert (model.model_id + ".zip") in mojo_path
     mojo_model = h2o.import_mojo(mojo_path)
     assert isinstance(mojo_model, H2OGenericEstimator)
 
     # Custom filename with custom path
-    mojo_path = model.save_mojo(tmpdir, filename="gbm_prostate")
+    mojo_path = model.save_mojo(tmpdir, filename="gbm_prostate.zip")
     assert "gbm_prostate.zip" in mojo_path
     mojo_model = h2o.import_mojo(mojo_path)
     assert isinstance(mojo_model, H2OGenericEstimator)
 
     # Custom filename with default path
-    mojo_path = model.save_mojo(filename="gbm_prostate2")
+    mojo_path = model.save_mojo(filename="gbm_prostate2.zip")
     assert "gbm_prostate2.zip" in mojo_path
     mojo_model = h2o.import_mojo(mojo_path)
     assert isinstance(mojo_model, H2OGenericEstimator)
