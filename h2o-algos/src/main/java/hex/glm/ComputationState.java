@@ -856,17 +856,20 @@ public final class ComputationState {
   }
 
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
+    double objOld;
     if (_beta != null && beta.length > _beta.length) { // beta is full while _beta only contains active columns
       double[] shortBeta = shrinkFullArray(beta);
       _betaDiff = ArrayUtils.linfnorm(_beta == null ? beta : ArrayUtils.subtract(_beta, shortBeta), false);
+      objOld = objective();
       if(_beta == null)_beta = shortBeta.clone();
       else System.arraycopy(shortBeta,0,_beta,0,shortBeta.length);
     } else {
       _betaDiff = ArrayUtils.linfnorm(_beta == null ? beta : ArrayUtils.subtract(_beta, beta), false);
+      objOld = objective();
       if(_beta == null)_beta = beta.clone();
       else System.arraycopy(beta,0,_beta,0,beta.length);
     }
-    double objOld = objective();
+
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
     return (_relImprovement = (objOld - objective())/Math.abs(objOld));
