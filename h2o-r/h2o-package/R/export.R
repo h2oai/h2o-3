@@ -299,12 +299,12 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' # h2o.save_mojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.save_mojo <- function(object, path="", force=FALSE, filename=paste(object@model_id,".zip", fsep="")) {
+h2o.save_mojo <- function(object, path="", force=FALSE, filename=paste0(object@model_id,".zip")) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  path <- file.path(path, "/" , filename, fsep = "")
+  path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models.mojo/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }
