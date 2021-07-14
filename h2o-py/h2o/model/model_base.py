@@ -1011,7 +1011,7 @@ class ModelBase(h2o_meta(Keyed)):
         if not self.have_mojo:
             raise H2OValueError("Export to MOJO not supported")
         if filename is None:
-            filename = self.model_id
+            filename = self.model_id + ".zip"
         else:
             assert_is_type(filename, str)
         path = os.path.join(os.getcwd() if path == "" else path, filename)
