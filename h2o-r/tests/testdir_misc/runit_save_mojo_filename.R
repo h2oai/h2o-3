@@ -15,7 +15,7 @@ test.save_mojo_filename <- function() {
   expect_true(!is.null(mojo_path))
 
   # Specify filename
-  mojo_path_specified <- h2o.save_mojo(model, path = tempdir(), filename = "gbm_iris")
+  mojo_path_specified <- h2o.save_mojo(model, path = tempdir(), filename = "gbm_iris.zip")
   expect_true(grepl("gbm_iris.zip", mojo_path_specified, fixed = TRUE))
   mojo_model_specified <- h2o.import_mojo(mojo_path_specified)
   expect_true(!is.null(mojo_model_specified)) # mojo should be importable back into H2O
