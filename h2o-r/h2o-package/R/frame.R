@@ -1692,7 +1692,7 @@ NULL
 #' @export
 `[.H2OFrame` <- function(data,row,col,drop=TRUE) {
   chk.H2OFrame(data)
-
+  types <- attr(data, "types")
   # This function is called with a huge variety of argument styles
   # Here's the breakdown:
   #   Style          Type  #args  Description
@@ -1775,8 +1775,10 @@ NULL
     data <- .newExpr("rows",data,row) # Row selector
   }
 
-  if( is1by1 ) .fetch.data(data,1L)[[1]]
-  else data
+  data <- if( is1by1 ) .fetch.data(data,1L)[[1]]
+            else data
+  attr(data, "types") <- types[col]
+  return(data)
 }
 
 #' @rdname H2OFrame-Extract

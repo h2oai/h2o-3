@@ -486,6 +486,7 @@ with_no_h2o_progress <- function(expr) {
                        leaderboard)
   leaderboard <- leaderboard[order(leaderboard[[2]]),]
   names(leaderboard) <- tolower(names(leaderboard))
+  row.names(leaderboard) <- seq_len(nrow(leaderboard))
   return(head(leaderboard, n = min(top_n, nrow(leaderboard))))
 }
 
@@ -648,6 +649,14 @@ with_no_h2o_progress <- function(expr) {
   res <- stats::ecdf(col)(col)
   res[is.na(res)] <- 0
   return(res)
+}
+
+.is_continuous <- function(column) {
+  if (!is.null(ncol(column)) && ncol(column) > 1) {
+    stop("Only one column should be provided!")
+  }
+  is.numeric(column) || "POSIXct" %in% class(column) ||
+    (!is.null(attr(column, "types")) && attr(column, "types") == "time")
 }
 
 .render_df_to_html <- function(df) {
@@ -1852,14 +1861,25 @@ h2o.pd_plot <- function(object,
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, require_single_model = TRUE)
+
+  col_name <- make.names(column)
+  row_val <- if (row_index > -1) as.data.frame(newdata[row_index, column])[1, 1]
+
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
     factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
-    newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
-                                newdata[[column]])
-    message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
+    if (!is.null(row_val) && row_val %in% factors_to_merge) {
+      # Keep the factor that is in the instance that we do ICE for
+      factors_to_merge <- factors_to_merge[factors_to_merge != row_val]
+    }
+    newdata <- newdata[!newdata[[column]] %in% factors_to_merge, ]
+
+    message(length(factors_to_merge), " least common factor levels were omitted from \"",
             column, "\" feature.")
   }
+  rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
+  rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
+
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
@@ -1893,29 +1913,36 @@ h2o.pd_plot <- function(object,
       pdp <- do.call(rbind, lapply(pdps, as.data.frame))
     }
     names(pdp) <- make.names(names(pdp))
+    if (is.factor(newdata[[column]])){
+      pdp[[col_name]] <- factor(pdp[[col_name]], levels = levels(rug_data[[col_name]]))
+      pdp <- pdp[pdp[[col_name]] %in% levels(rug_data[[col_name]]), ]
+    }
+
+    y_range <- c(min(pdp$mean_response - pdp$stddev_response), max(pdp$mean_response + pdp$stddev_response))
+
+    # Type information get's lost during the PD computation
+    if (attr(newdata, "types")[column == names(newdata)] == "time") {
+      pdp[[col_name]] <- pdp[[col_name]] / 1000
+      class(pdp[[col_name]]) <- "POSIXct"
+    }
 
     pdp[["text"]] <- paste0(
-      "Feature Value: ", pdp[[make.names(column)]], "\n",
+      "Feature Value: ", format(pdp[[make.names(column)]]), "\n",
       "Mean Response: ", pdp[["mean_response"]], "\n",
       "Target: ", pdp[["target"]]
     )
 
-    col_name <- make.names(column)
-    rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-    rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
-    y_range <- c(min(pdp$mean_response - pdp$stddev_response), max(pdp$mean_response + pdp$stddev_response))
-
     p <- ggplot2::ggplot(ggplot2::aes(
-      x = .data[[make.names(column)]],
+      x = .data[[col_name]],
       y = .data$mean_response,
       color = .data$target, fill = .data$target, text = .data$text
     ), data = pdp) +
-      stat_count_or_bin(!is.numeric(newdata[[column]]),
+      stat_count_or_bin(!.is_continuous(newdata[[column]]),
                         ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
-      geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
+                        inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+      geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$target)) +
+      geom_pointrange_or_ribbon(!.is_continuous(newdata[[column]]), ggplot2::aes(
         ymin = .data$mean_response - .data$stddev_response,
         ymax = .data$mean_response + .data$stddev_response,
         group = .data$target
@@ -1925,7 +1952,9 @@ h2o.pd_plot <- function(object,
                         data = rug_data
       )
     if (row_index > -1) {
-      p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+      if ("POSIXct" %in% class(row_val))
+        row_val <- as.numeric(row_val)
+      p <- p + ggplot2::geom_vline(xintercept = row_val, linetype = "dashed")
     }
     p <- p +
       ggplot2::labs(
@@ -1949,8 +1978,11 @@ h2o.pd_plot <- function(object,
       ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
       ggplot2::scale_fill_brewer(type = "qual", palette = "Dark2") +
       # make the histogram closer to the axis. (0.05 is the default value)
-      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
-      ggplot2::theme_bw() +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
+      if ("POSIXct" %in% class(pdp[[col_name]])) {
+        p <- p + ggplot2::scale_x_datetime()
+      }
+      p <- p + ggplot2::theme_bw() +
       ggplot2::theme(
         legend.title = ggplot2::element_blank(),
         axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[column]])) 45 else 0, hjust = 1),
@@ -2024,115 +2056,35 @@ h2o.pd_multi_plot <- function(object,
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
+  if (length(models_info$model_ids) == 1)
+    return(h2o.pd_plot(
+      object = object,
+      newdata = newdata,
+      column = column,
+      target = target,
+      row_index = row_index,
+      max_levels = max_levels))
+
+  col_name <- make.names(column)
+  row_val <- if (row_index > -1) as.data.frame(newdata[row_index, column])[1, 1]
+
   if (h2o.nlevels(newdata[[column]]) > max_levels) {
     factor_frequencies <- .get_feature_count(newdata[[column]])
     factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
-    newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
-                                newdata[[column]])
-    message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
+    if (!is.null(row_val) && row_val %in% factors_to_merge) {
+      # Keep the factor that is in the instance that we do ICE for
+      factors_to_merge <- factors_to_merge[factors_to_merge != row_val]
+    }
+    newdata <- newdata[!newdata[[column]] %in% factors_to_merge, ]
+
+    message(length(factors_to_merge), " least common factor levels were omitted from \"",
             column, "\" feature.")
   }
+  rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
+  rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5)
   if (h2o.isfactor(newdata[[column]]))
     margin <- ggplot2::margin(5.5, 5.5, 5.5, max(5.5, max(nchar(h2o.levels(newdata[[column]])))))
-
-  if (length(models_info$model_ids) == 1) {
-    targets <- NULL
-    if (models_info$is_multinomial_classification) {
-      targets <- h2o.levels(newdata[[models_info$y]])
-    }
-    with_no_h2o_progress({
-      pdps <-
-        h2o.partialPlot(models_info$get_model(models_info$model_ids[[1]]), newdata, column,
-                        plot = FALSE, targets = targets,
-                        nbins = if (is.factor(newdata[[column]])) {
-                          h2o.nlevels(newdata[[column]]) + 1
-                        } else {
-                          20
-                        },
-                        row_index = row_index
-        )
-
-      if (!is.null(targets)) {
-        for (idx in seq_along(pdps)) {
-          pdps[[idx]][["target"]] <- targets[[idx]]
-        }
-      } else {
-        pdps[["target"]] <- "Partial Depencence"
-      }
-      if (is(pdps, "H2OTable")) {
-        pdp <- as.data.frame(pdps)
-      } else {
-        pdp <- do.call(rbind, lapply(pdps, as.data.frame))
-      }
-      names(pdp) <- make.names(names(pdp))
-
-      pdp[["text"]] <- paste0(
-        "Feature Value: ", pdp[[make.names(column)]], "\n",
-        "Mean Response: ", pdp[["mean_response"]], "\n",
-        "Target: ", pdp[["target"]]
-      )
-
-      col_name <- make.names(column)
-      rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-      rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
-      y_range <- c(min(pdp$mean_response - pdp$stddev_response), max(pdp$mean_response + pdp$stddev_response))
-
-      p <- ggplot2::ggplot(ggplot2::aes(
-        x = .data[[make.names(column)]],
-        y = .data$mean_response,
-        color = .data$target, fill = .data$target, text = .data$text
-      ), data = pdp) +
-        stat_count_or_bin(!is.numeric(newdata[[column]]),
-                          ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
-                          position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                          inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-        geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$target)) +
-        geom_pointrange_or_ribbon(!is.numeric(newdata[[column]]), ggplot2::aes(
-          ymin = .data$mean_response - .data$stddev_response,
-          ymax = .data$mean_response + .data$stddev_response,
-          group = .data$target
-        )) +
-        ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, fill = NULL),
-                          sides = "b", alpha = 0.1, color = "black",
-                          data = rug_data
-        )
-      if (row_index > -1) {
-        p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
-      }
-      p <- p +
-        ggplot2::labs(
-          title = sprintf(
-            "%s on \"%s\"%s",
-            if (row_index == -1) {
-              "Partial Dependence"
-            } else {
-              sprintf("Individual Conditional Expectation on row %d", row_index)
-            },
-            column,
-            if (!is.null(target)) {
-              sprintf(" with target = \"%s\"", target)
-            } else {
-              ""
-            }
-          ),
-          x = column,
-          y = "Mean Response"
-        ) +
-        ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
-        ggplot2::scale_fill_brewer(type = "qual", palette = "Dark2") +
-        # make the histogram closer to the axis. (0.05 is the default value)
-        ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
-        ggplot2::theme_bw() +
-        ggplot2::theme(
-          legend.title = ggplot2::element_blank(),
-          axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[column]])) 45 else 0, hjust = 1),
-          plot.margin = margin,
-          plot.title = ggplot2::element_text(hjust = 0.5)
-        )
-      return(p)
-    })
-  }
 
   with_no_h2o_progress({
     results <- NULL
@@ -2151,10 +2103,19 @@ h2o.pd_multi_plot <- function(object,
                         row_index = row_index
         )
       if (is.null(results)) {
+        # Type information get's lost during the PD computation
+        if (attr(newdata, "types")[column == names(newdata)] == "time") {
+          pdp[[column]] <- pdp[[column]] / 1000
+          class(pdp[[column]]) <- "POSIXct"
+        }
         results <- pdp[column]
         names(results) <- make.names(names(results))
       }
       results[[model]] <- pdp$mean_response
+    }
+    if (is.factor(newdata[[column]])){
+      results[[col_name]] <- factor(results[[col_name]], levels = levels(rug_data[[col_name]]))
+      results <- results[results[[col_name]] %in% levels(rug_data[[col_name]]), ]
     }
 
     data <- stats::reshape(results,
@@ -2165,16 +2126,11 @@ h2o.pd_multi_plot <- function(object,
                            timevar = "model_id"
     )
 
-    col_name <- make.names(column)
-
     data[["text"]] <- paste0(
       "Model Id: ", data[["model_id"]], "\n",
-      "Feature Value: ", data[[col_name]], "\n",
+      "Feature Value: ", format(data[[col_name]]), "\n",
       "Mean Response: ", data[["values"]], "\n"
     )
-
-    rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
-    rug_data[["text"]] <- paste0("Feature Value: ", rug_data[[col_name]])
     y_range <- range(data$values)
 
     p <- ggplot2::ggplot(ggplot2::aes(
@@ -2184,17 +2140,19 @@ h2o.pd_multi_plot <- function(object,
       text = .data$text),
                          data = data
     ) +
-      stat_count_or_bin(!is.numeric(newdata[[column]]),
+      stat_count_or_bin(!.is_continuous(newdata[[column]]),
                         ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
+                        inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+      geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .shorten_model_ids(.data$model_id))) +
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL),
                         sides = "b", alpha = 0.1, color = "black",
                         data = rug_data
       )
     if (row_index > -1) {
-      p <- p + ggplot2::geom_vline(xintercept = newdata[row_index, column], linetype = "dashed")
+      if ("POSIXct" %in% class(row_val))
+        row_val <- as.numeric(row_val)
+      p <- p + ggplot2::geom_vline(xintercept = row_val, linetype = "dashed")
     }
     p <- p +
       ggplot2::labs(y = "Mean Response", title = sprintf(
@@ -2213,8 +2171,11 @@ h2o.pd_multi_plot <- function(object,
       )) +
       ggplot2::scale_color_brewer(type = "qual", palette = "Dark2") +
       # make the histogram closer to the axis. (0.05 is the default value)
-      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
-      ggplot2::theme_bw() +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
+    if ("POSIXct" %in% class(data[[col_name]])) {
+      p <- p + ggplot2::scale_x_datetime()
+    }
+    p <- p + ggplot2::theme_bw() +
       ggplot2::theme(
         axis.text.x = ggplot2::element_text(
           angle = if (h2o.isfactor(newdata[[column]])) 45 else 0,
@@ -2285,14 +2246,20 @@ h2o.ice_plot <- function(model,
 
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
 
+  col_name <- make.names(column)
+
   with_no_h2o_progress({
     if (h2o.nlevels(newdata[[column]]) > max_levels) {
       factor_frequencies <- .get_feature_count(newdata[[column]])
       factors_to_merge <- tail(names(factor_frequencies), n = -max_levels)
-      newdata[[column]] <- ifelse(newdata[[column]] %in% factors_to_merge, NA_character_,
-                                  newdata[[column]])
+      newdata <- newdata[!newdata[[column]] %in% factors_to_merge, ]
+
       message(length(factor_frequencies) - max_levels, " least common factor levels were omitted from \"",
-              column, "\" feature.") }
+              column, "\" feature.")
+    }
+
+    rug_data <- stats::setNames(as.data.frame(newdata[[column]]), col_name)
+    rug_data[["text"]] <- paste0("Feature Value: ", format(rug_data[[col_name]]))
 
     margin <- ggplot2::margin(16.5, 5.5, 5.5, 5.5)
     if (h2o.isfactor(newdata[[column]]))
@@ -2341,21 +2308,28 @@ h2o.ice_plot <- function(model,
     pdp[["name"]] <- "mean response"
     names(pdp) <- make.names(names(pdp))
 
-    col_name <- make.names(column)
-
     if (is.character(results[[col_name]]) || is.character(pdp[[col_name]])) {
-      pdp[[col_name]] <- as.factor(pdp[[col_name]])
-      results[[col_name]] <- as.factor(results[[col_name]])
+      pdp[[col_name]] <- factor(pdp[[col_name]], levels = levels(rug_data[[col_name]]))
+      pdp <- pdp[pdp[[col_name]] %in% levels(rug_data[[col_name]]), ]
+      results[[col_name]] <- factor(results[[col_name]], levels = levels(rug_data[[col_name]]))
+      results <- results[results[[col_name]] %in% levels(rug_data[[col_name]]), ]
+    }
+    # Type information get's lost during the PD computation
+    if (attr(newdata, "types")[column == names(newdata)] == "time") {
+      pdp[[column]] <- pdp[[column]] / 1000
+      class(pdp[[column]]) <- "POSIXct"
+      results[[column]] <- results[[column]] / 1000
+      class(results[[column]]) <- "POSIXct"
     }
 
     results[["text"]] <- paste0(
       "Percentile: ", results[["name"]], "\n",
-      "Feature Value: ", results[[col_name]], "\n",
+      "Feature Value: ", format(results[[col_name]]), "\n",
       "Mean Response: ", results[["mean_response"]], "\n"
     )
     pdp[["text"]] <- paste0(
       "Partial Depencence \n",
-      "Feature Value: ", pdp[[col_name]], "\n",
+      "Feature Value: ", format(pdp[[col_name]]), "\n",
       "Mean Response: ", pdp[["mean_response"]], "\n"
     )
     y_range <- range(results$mean_response)
@@ -2365,12 +2339,12 @@ h2o.ice_plot <- function(model,
                                       color = .data$name,
                                       text = .data$text),
                          data = results) +
-      stat_count_or_bin(!is.numeric(newdata[[column]]),
+      stat_count_or_bin(!.is_continuous(newdata[[column]]),
                         ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
                         position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-                        inherit.aes = FALSE, data = as.data.frame(newdata[[column]])) +
-      geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name)) +
-      geom_point_or_line(!is.numeric(newdata[[column]]),
+                        inherit.aes = FALSE, data = rug_data[, col_name, drop=FALSE]) +
+      geom_point_or_line(!.is_continuous(newdata[[column]]), ggplot2::aes(group = .data$name)) +
+      geom_point_or_line(!.is_continuous(newdata[[column]]),
                          if (is.factor(pdp[[col_name]])) {
                            ggplot2::aes(shape = "Partial Dependence", group = "Partial Dependence")
                          } else {
@@ -2380,7 +2354,7 @@ h2o.ice_plot <- function(model,
       ) +
       ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, text = NULL),
                         sides = "b", alpha = 0.1, color = "black",
-                        data = stats::setNames(as.data.frame(newdata[[column]]), col_name)
+                        data = rug_data
       ) +
       ggplot2::labs(y = "Response", title = sprintf(
         "Individual Conditional Expectations on \"%s\"%s\nfor Model: \"%s\"", col_name,
@@ -2394,8 +2368,11 @@ h2o.ice_plot <- function(model,
       ggplot2::scale_color_viridis_d(option = "plasma") +
       ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed")) +
       # make the histogram closer to the axis. (0.05 is the default value)
-      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05))) +
-      ggplot2::theme_bw() +
+      ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
+    if ("POSIXct" %in% class(pdp[[col_name]])) {
+      p <- p + ggplot2::scale_x_datetime()
+    }
+    p <- p + ggplot2::theme_bw() +
       ggplot2::theme(
         legend.title = ggplot2::element_blank(),
         axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[col_name]])) 45 else 0, hjust = 1),

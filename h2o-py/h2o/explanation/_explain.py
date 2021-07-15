@@ -186,7 +186,7 @@ class NumpyFrame:
                     levels = set(row[col] for row in df)
                     self._factors[self._columns[col]] = list(levels)
 
-            self._data = np.empty((len(df), len(self._columns)))
+            self._data = np.empty((len(df), len(self._columns)), dtype=np.float64)
             df = [self._columns] + df
         elif isinstance(h2o_frame, h2o.H2OFrame):
             _is_factor = np.array(h2o_frame.isfactor(), dtype=np.bool) | np.array(
@@ -207,17 +207,22 @@ class NumpyFrame:
                 self._data[:, idx] = np.array(
                     [float(convertor.get(
                         row[idx] if not (len(row) == 0 or row[idx] == "") else "nan", "nan"))
-                        for row in df[1:]], dtype=np.float32)
+                        for row in df[1:]], dtype=np.float64)
             elif _is_numeric[idx]:
                 self._data[:, idx] = np.array(
                     [float(row[idx] if not (len(row) == 0 or row[idx] == "") else "nan") for row in
                      df[1:]],
-                    dtype=np.float32)
+                    dtype=np.float64)
             else:
                 try:
-                    self._data[:, idx] = np.array([row[idx] if not (len(row) == 0 or row[idx] == "")
-                                                   else "nan" for row in df[1:]],
-                                                  dtype=np.datetime64)
+                    self._data[:, idx] = np.array([row[idx]
+                                                   if not (
+                            len(row) == 0 or
+                            row[idx] == "" or
+                            row[idx].lower() == "nan"
+                    ) else "nan" for row in df[1:]], dtype=np.float64)
+                    if h2o_frame.type(self._columns[idx]) == "time":
+                        self._data[:, idx] /= 1000 * 3600 * 24  # convert to fractions of days for matplotlib (doesn't like ms)
                 except Exception:
                     raise RuntimeError("Unexpected type of column {}!".format(col))
 
@@ -305,6 +310,20 @@ class NumpyFrame:
                 return np.asarray(self._data[row, self.columns.index(column)] == factor,
                                   dtype=np.float32)
         return self._data[row, self.columns.index(column)]
+
+    def __setitem__(self, key, value):
+        # type: ("NumpyFrame", str, np.ndarray) -> None
+        """
+        Rudimentary implementation of setitem. Setting a factor column is not supported.
+        Use with caution.
+        :param key: column name
+        :param value: ndarray representing one whole column
+        """
+        if key not in self.columns:
+            raise KeyError("Column {} is not present amongst {}".format(key, self.columns))
+        if self.isfactor(key):
+            raise NotImplementedError("Setting a factor column is not supported!")
+        self._data[:, self.columns.index(key)] = value
 
     def get(self, column, as_factor=True):
         # type: ("NumpyFrame", str, bool) -> np.ndarray
@@ -811,10 +830,9 @@ def shap_explain_row_plot(
         plt.axvline(prediction, label="Prediction")
         plt.axvline(bias, linestyle="dotted", color="gray", label="Bias")
         plt.vlines(contributions["cummulative_value"][1:],
-                   ymin=[y - 0.4 for y in range(contributions["value"].shape[0] - 1)],
-                   ymax=[y + 1.4 for y in range(contributions["value"].shape[0] - 1)],
-                   color="k")
-
+                   ymin=[y - 0.4 for y in range(contributions["value"].shape[0]-1)],
+                   ymax=[y + 1.4 for y in range(contributions["value"].shape[0]-1)],
+                   color="black")
         plt.legend()
         plt.grid(True)
         xlim = plt.xlim()
@@ -872,14 +890,12 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     ylims = plt.ylim()
     nf = NumpyFrame(frame[column])
-
     if nf.isfactor(column) and levels_order is not None:
         new_mapping = dict(zip(levels_order, range(len(levels_order))))
         mapping = _factor_mapper({k: new_mapping[v] for k, v in nf.from_num_to_factor(column).items()})
     else:
         def mapping(x):
             return x
-
     if add_rug:
         plt.plot(mapping(nf[column]),
                  [ylims[0] for _ in range(frame.nrow)],
@@ -888,13 +904,15 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
         if nf.isfactor(column):
             cnt = Counter(nf[column][np.isfinite(nf[column])])
             hist_x = np.array(list(cnt.keys()), dtype=float)
+            tick_x = hist_x
             hist_y = np.array(list(cnt.values()), dtype=float)
             width = 1
         else:
             hist_y, hist_x = np.histogram(
                 mapping(nf[column][np.isfinite(nf[column])]),
                 bins=20)
-            hist_x = hist_x[:-1].astype(float)
+            tick_x = hist_x.astype(float)
+            hist_x = tick_x[:-1]
             hist_y = hist_y.astype(float)
             width = hist_x[1] - hist_x[0]
         plt.bar(mapping(hist_x),
@@ -904,6 +922,18 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
                 width=width, color="gray", alpha=0.2)
     if nf.isfactor(column):
         plt.xticks(mapping(range(nf.nlevels(column))), nf.levels(column))
+    elif frame.type(column) == "time":
+        import matplotlib.dates as mdates
+        offset = (tick_x.max() - tick_x.min()) / 50
+        # hardcoding the limits to prevent calculating negative date
+        # happens sometimes when the matplotlib decides to show the origin in the plot
+        # and gives hard to decode errors
+        plt.xlim(max(0, tick_x.min() - offset), tick_x.max() + offset)
+        locator = mdates.AutoDateLocator()
+        formatter = mdates.AutoDateFormatter(locator)
+        plt.gca().xaxis.set_major_locator(locator)
+        plt.gca().xaxis.set_major_formatter(formatter)
+        plt.gcf().autofmt_xdate()
     plt.ylim(ylims)
 
 
@@ -984,6 +1014,8 @@ def pd_plot(
                                row_index=row_index, targets=target,
                                nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
         encoded_col = tmp.columns[0]
+        if frame.type(column) == "time":
+            tmp[encoded_col] /= 1000 * 3600 * 24  # convert to fractions of days for matplotlib
         if is_factor:
             plt.errorbar(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                          yerr=tmp["stddev_response"], fmt='o', color=color,
@@ -1125,6 +1157,8 @@ def pd_multi_plot(
                                    row_index=row_index, targets=target,
                                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0])[0])
             encoded_col = tmp.columns[0]
+            if frame.type(column) == "time":
+                tmp[encoded_col] /= 1000 * 3600 * 24  # convert to fractions of days for matplotlib
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]], label=model_ids[i],
@@ -1253,6 +1287,8 @@ def ice_plot(
                 )[0]
             )
             encoded_col = tmp.columns[0]
+            if frame.type(column) == "time":
+                tmp[encoded_col] /= 1000 * 3600 * 24  # convert to fractions of days for matplotlib
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
                             color=[colors[i]],

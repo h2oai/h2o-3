@@ -521,6 +521,46 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
 }
 
 
+explanation_test_timeseries <- function() {
+  train <- h2o.uploadFile(locate("smalldata/timeSeries/CreditCard-ts_train.csv"))
+  x <- c("MONTH", "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_STATUS", "PAY_AMT", "BILL_AMT")
+  y <- "DEFAULT_PAYMENT_NEXT_MONTH"
+
+
+  col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
+  col_types <- col_types[names(col_types) %in% x]
+  cols_to_test <- names(col_types[!duplicated(col_types)])
+
+  gbm <- h2o.gbm(y = y,
+                 training_frame = train,
+                 seed = 1234)
+
+  # test shap summary
+  expect_ggplot(h2o.shap_summary_plot(gbm, train))
+
+  # test shap explain row
+  expect_ggplot(h2o.shap_explain_row_plot(gbm, train, 1))
+
+  # test residual analysis
+  expect_ggplot(h2o.residual_analysis_plot(gbm, train))
+
+  # test partial dependences
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.pd_plot(gbm, train, col))
+  }
+
+  # test ice plot
+  for (col in cols_to_test) {
+    expect_ggplot(h2o.ice_plot(gbm, train, col))
+  }
+
+  # test explanation
+  expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train)))
+
+  # test explanation
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
+}
+
 doSuite("Explanation Tests", makeSuite(
   explanation_test_single_model_regression
   , explanation_test_automl_regression
@@ -532,4 +572,5 @@ doSuite("Explanation Tests", makeSuite(
   , explanation_test_automl_multinomial_classification
   , explanation_test_list_of_models_multinomial_classification
   , learning_curve_plot_test_of_models_not_included_in_automl
+  , explanation_test_timeseries
 ))
