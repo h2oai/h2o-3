@@ -13,7 +13,8 @@ def h2oinit():
     """
     Python API test: h2o.init(url=None, ip=None, port=None, name = None, https=None, insecure=None,
     username=None, password=None, ookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None,
-    enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, **kwargs)
+    enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
+    context_path=None, **kwargs)
     """
     start_h2o = False
     strict_version_check = False
@@ -121,7 +122,25 @@ def h2oinit_fail_invalid_log_level():
         h2o.cluster().shutdown()
 
 
+def h2oinit_context_path():
+    # support context path both with and without a leading '/'.
+    context_path_1 = "/path"  # start with '/'
+    context_path_2 = "path"  # start without '/'
+    try:
+        h2o.init(strict_version_check=False, context_path=context_path_1)
+        h2o.cluster().shutdown()
+    except Exception:  # some errors are okay like version mismatch
+        assert False, "Should start an h2o instance with a context_path."
+
+    try:
+        h2o.init(strict_version_check=False, context_path=context_path_2)
+        h2o.cluster().shutdown()
+    except Exception:  # some errors are okay like version mismatch
+        assert False, "Should start an h2o instance with a context_path."
+
+
 # None of the tests below need a pre initialized instance
+h2oinit_context_path()
 h2oinit_default_log_dir()
 h2oinit_custom_log_dir()
 h2oinit_fail_invalid_log_level()

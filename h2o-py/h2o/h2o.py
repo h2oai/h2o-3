@@ -56,7 +56,7 @@ h2oconn = None  # type: H2OConnection
 
 def connect(server=None, url=None, ip=None, port=None,
             https=None, verify_ssl_certificates=None, cacert=None,
-            auth=None, proxy=None, cookies=None, verbose=True, config=None):
+            auth=None, proxy=None, cookies=None, verbose=True, config=None, context_path=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -76,6 +76,7 @@ def connect(server=None, url=None, ip=None, port=None,
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
     :param connection_conf: Connection configuration object encapsulating connection parameters.
+    :param context_path: The last part of connection URL: http://<ip>:<port>/<context_path>
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -99,7 +100,7 @@ def connect(server=None, url=None, ip=None, port=None,
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      proxy=proxy, cookies=cookies,
-                                     verbose=verbose)
+                                     verbose=verbose, context_path=context_path)
         if verbose:
             h2oconn.cluster.show_status()
     return h2oconn
@@ -171,7 +172,8 @@ def version_check():
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          max_log_file_size=None, enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, 
-         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
+         ignore_config=False, extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, 
+         context_path=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -205,7 +207,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
     :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
-
+    :param context_path: The last part of connection URL: http://<ip>:<port>/<context_path>
 
     :examples:
 
@@ -239,6 +241,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     assert_is_type(bind_to_localhost, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool, "as_port": bool})
+    assert_is_type(context_path, str, None)
 
     def get_mem_size(mmint, mmgb):
         if not mmint:  # treat 0 and "" as if they were None
@@ -299,7 +302,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True,
+                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True, 
+                                     context_path=context_path,
                                      _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -317,7 +321,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
                                   max_log_file_size=max_log_file_size, port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
-                                  bind_to_localhost=bind_to_localhost)
+                                  bind_to_localhost=bind_to_localhost, context_path=context_path)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
                                      cacert=cacert, auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
