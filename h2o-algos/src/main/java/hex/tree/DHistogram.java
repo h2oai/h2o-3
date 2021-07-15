@@ -514,12 +514,12 @@ public final class DHistogram extends Iced {
   }
 
   /**
-   * Cast bin values *except for sums of weights and Na-bucket counters to floats to drop least significant bits.
+   * Cast bin values (except for sums of weights) to floats to drop least significant bits.
    * Improves reproducibility (drop bits most affected by floating point error).
    */
   public void reducePrecision(){
     if(_vals == null) return;
-    for(int i = 0; i < _vals.length -_vals_dim /* do not reduce precision of NAs */; i+=_vals_dim) {
+    for(int i = 0; i < _vals.length; i+=_vals_dim) {
       _vals[i+1] = (float)_vals[i+1];
       _vals[i+2] = (float)_vals[i+2];
     }
