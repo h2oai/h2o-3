@@ -4023,14 +4023,17 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 is.h2o <- function(x) inherits(x, "H2OFrame")
 
 h2o.class.map <- function() {
-  c("integer64"="numeric",
+  c(
+    "integer64"="numeric",
     "integer"="numeric",
     "double"="numeric",
     "complex"="numeric",
     "logical"="enum",
     "factor"="enum",
     "character"="string",
-    "Date"="Time")
+    "Date"="Time",
+    "POSIXct"="Time"
+  )
 }
 
 destination_frame.guess <- function(x) {
@@ -4171,7 +4174,10 @@ as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) 
   verbose <- getOption("h2o.verbose", FALSE)
   if (verbose) pt <- proc.time()[[3]]
   if (use_datatable && getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
-    data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
+    data.table::fwrite(
+      x, tmpf,
+      na = "NA_h2o", row.names = FALSE, showProgress = FALSE, dateTimeAs = "write.csv"
+    )
     fun <- "fwrite"
   } else {
     write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
