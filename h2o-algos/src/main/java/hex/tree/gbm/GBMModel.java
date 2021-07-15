@@ -42,6 +42,11 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       _pred_noise_bandwidth =0;
     }
 
+    @Override
+    public boolean useColSampling() {
+      return super.useColSampling() || _col_sample_rate != 1.0;
+    }
+
     public String algoName() { return "GBM"; }
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }

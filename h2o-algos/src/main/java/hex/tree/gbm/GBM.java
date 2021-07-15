@@ -14,10 +14,7 @@ import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
-import water.util.ArrayUtils;
-import water.util.MathUtils;
-import water.util.RandomUtils;
-import water.util.VecUtils;
+import water.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -244,8 +241,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override protected void initializeModelSpecifics() {
       frameMap = new FrameMap(GBM.this);
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
+      assert _parms.useColSampling() || _mtry_per_tree == _ncols;
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
       _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split
+      assert _parms.useColSampling() || _mtry == _ncols;
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
@@ -547,6 +546,25 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
+      // If there is no row/col-sampling and trees are just roots with 0 prediction (==no change) we can stop building
+      if (!_parms.isStochastic()) {
+        boolean converged = true;
+        for (DTree tree : ktrees) {
+          if (tree == null)
+            continue;
+          DTree.Node root = tree.root();
+          converged = root instanceof LeafNode && ((LeafNode) root)._pred == 0.0f;
+          if (! converged) {
+            break;
+          }
+        }
+        if (converged) {
+          LOG.warn("Model cannot be further improved by building more trees, " +
+                  "stopping with ntrees=" + _model._output._ntrees + ".");
+          return true;
+        }
+      }
+      
       boolean converged = effective_learning_rate() < 1e-6;
       if (converged) {
         LOG.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
@@ -588,7 +606,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
-      if (_parms._sample_rate < 1 || _parms._sample_rate_per_class != null) {
+      if (_parms.useRowSampling()) {
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)

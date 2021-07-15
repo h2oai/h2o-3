@@ -303,7 +303,7 @@ public class DTree extends Iced {
         final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 || 
                 _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
 
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs);
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
