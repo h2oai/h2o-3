@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
 
-  "Description": "AWS CloudFormation H2O Template: Create an Amazon Cluster of EC2 instance running the Linux H2O-AMI and H2O cloud. The AMI is chosen based on the region in which the stack is run. ",
+  "Description": "AWS CloudFormation H2O Template: Create an Amazon Cluster of EC2 instance running the Linux H2O-AMI and H2O cloud. The AMI is chosen based on the region in which the stack is run.",
 
   "Parameters": {
     "KeyName": {
@@ -14,7 +14,7 @@
       "Description": "EC2 instance type",
       "Type": "String",
       "Default": "m4.xlarge",
-      "AllowedValues": [ "t2.small", "t2.medium", "t2.large", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "r4.large", "r4.xlarge", "r4.2xlarge", "r4.4xlarge", "r4.8xlarge", "r4.16xlarge", "i2.xlarge", "i3.2xlarge", "i3.4xlarge", "i3.8xlarge", "i3.xlarge", "i3.2xlarge", "i3.4xlarge", "i3.8xlarge", "i3.16xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge", "hi1.4xlarge", "hs1.8xlarge", "cr1.8xlarge", "cc2.8xlarge", "cg1.4xlarge", "x1.16xlarge", "x1.32xlarge" ],
+      "AllowedValues": [ "t2.medium", "t2.large", "t2xlarge", "t2.2xlarge", "m3.medium", "m3.large", "m3.xlarge", "m3.2xlarge", "m4.large", "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m4.10xlarge", "m4.16xlarge", "cc2.8xlarge", "c3.large", "c3.xlarge", "c3.2xlarge", "c3.4xlarge", "c3.8xlarge", "c4.large", "c4.xlarge", "c4.2xlarge", "c4.4xlarge", "c4.8xlarge", "cr1.8xlarge", "r3.large", "r3.xlarge", "r3.2xlarge", "r3.4xlarge", "r3.8xlarge", "r4.large", "r4.xlarge", "r4.2xlarge", "r4.4xlarge", "r4.8xlarge", "r4.16xlarge", "x1.16xlarge", "x1.32xlarge", "i2.xlarge", "i2.2xlarge", "i2.4xlarge", "i2.x8large", "i3.large", "i3.xlarge", "i3.2xlarge", "i3.4xlarge", "i3.8xlarge", "i3.16xlarge", "hi1.4xlarge", "hs1.8xlarge", "d2.xlarge", "d2.2xlarge", "d2.4xlarge", "d2.8xlarge" ],
       "ConstraintDescription": "must be a valid EC2 instance type."
     },
 
@@ -24,15 +24,36 @@
       "Default": "1"
     },
 
-
     "SSHLocation": {
       "Description": "The IP address range that can be used to SSH to the EC2 instances",
       "Type": "String",
       "MinLength": "9",
-      "MaxLength": "18",      
+      "MaxLength": "18",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
-    }
+    },
+    
+    "DatasetS3BucketName": {
+      "Description": "S3 bucket which has the data. The bucket name can include numbers, lowercase letters, uppercase letters, and hyphens, but should not start or end with a hyphen.",
+      "Type": "String", 
+      "AllowedPattern": "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$",
+      "ConstraintDescription": "Dataset bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
+      }
+  },
+
+  "Metadata" : {
+  "AWS::CloudFormation::Interface" : {
+    "ParameterGroups" : [
+      {
+        "Label" : { "default":"Amazon EC2 Configuration" },
+        "Parameters" : [ "KeyName", "InstanceType", "vmCount", "SSHLocation" ]
+      },
+      {
+        "Label" : { "default" : "Data Source" },
+        "Parameters" : [ "DatasetS3BucketName" ]
+      }
+    ]
+  }
   },
 
   "Mappings": {
@@ -115,49 +136,46 @@
 
     "AWSRegionArch2AMI": {
       "us-east-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-874f72fc"
       },
       "us-west-2": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-de1af7a6"
       },
       "us-west-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-41e8c221"
       },
       "eu-west-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-258f725c"
       },
       "eu-west-2": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-93a7b6f7"
       },
       "eu-central-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-a3a800cc"
       },
       "ap-northeast-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-8a6190ec"
       },
       "ap-northeast-2": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-b3bd65dd"
       },
       "ap-southeast-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-30016553"
       },
       "ap-southeast-2": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-42aab221"
       },
       "ap-south-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-add1abc2"
       },
       "us-east-2": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-67735002"
       },
       "ca-central-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-46a71922"
       },
       "sa-east-1": {
-        "HVM64": "ami-bdf4c7c6"
-      },
-      "cn-north-1": {
-        "HVM64": "ami-bdf4c7c6"
+        "HVM64": "ami-b485f4d8"
       }
     }
 
@@ -495,14 +513,17 @@
                     "",
                     [
                       "#!/bin/bash -xe\n",
-                      "#Create Flatfile\n",
+                      "#Create Flatfile and login \n",
                       "touch /opt/h2oai/flatfile.txt\n",
+                      "touch /opt/h2oai/realm.properties \n",
                       "flatfile=\"/opt/h2oai/flatfile.txt\" \n ",
+                      "keyfile=\"/opt/h2oai/realm.properties\" \n ",
 
                       "wget http://s3.amazonaws.com/ec2metadata/ec2-metadata \n",
                       "sudo chmod u+x ec2-metadata \n",
 
                       "INSTANCE_ID=$(./ec2-metadata | grep instance-id | awk 'NR==1{print $2}') \n",
+                      "echo \"h2o:$INSTANCE_ID\" >> \"$keyfile\" \n ",
                       "AG_NAME=$(aws autoscaling describe-auto-scaling-instances --instance-ids ${INSTANCE_ID}",
                       " --region ",
                       { "Ref": "AWS::Region" },
@@ -558,9 +579,6 @@
               [
                 "#cloud-boothook",
                 "#!/bin/bash -xe\n",
-                "apt-get -y install python-setuptools\n",
-                "easy_install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz \n",
-                "pip install --upgrade awscli \n",
 
                 "# Install the sample application\n",
                 "cfn-init -v ",
@@ -585,7 +603,7 @@
                 "memTotalMb=$(($memTotalKb / 1024)) \n ",
                 "tmp=$(($memTotalMb * 90))  \n",
                 "xmxMb=$(($tmp / 100))  \n",
-                "sudo nohup java -Xmx${xmxMb}m -jar /opt/h2oai/h2o.jar -flatfile /opt/h2oai/flatfile.txt 1> /dev/null 2> /opt/h2oai/h2o.err & \n",
+                "sudo nohup java -Xmx${xmxMb}m -jar /opt/h2oai/h2o.jar -hash_login -login_conf /opt/h2oai/realm.properties -flatfile /opt/h2oai/flatfile.txt 1> /dev/null 2> /opt/h2oai/h2o.err & \n",
 
                 "# Signal copletion\n",
                 "cfn-signal -e $? ",
@@ -657,6 +675,14 @@
                   "Effect": "Allow",
                   "Action": [ "autoscaling:Describe*", "ec2:DescribeInstances" ],
                   "Resource": "*"
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [ "s3:*" ],
+                    "Resource": [ 
+                    	{   "Fn::Sub": "arn:aws:s3:::${DatasetS3BucketName}" },
+                    	{   "Fn::Sub": "arn:aws:s3:::${DatasetS3BucketName}/*" }
+                    ]
                 }
               ]
             }
