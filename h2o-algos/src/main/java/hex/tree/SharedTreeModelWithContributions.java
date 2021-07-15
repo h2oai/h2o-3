@@ -115,7 +115,6 @@ public abstract class SharedTreeModelWithContributions<
       assert _model != null;
       _output = (SharedTreeOutput) _model._output; // Need to cast to SharedTreeModel to access ntrees, treeKeys, & init_f params
       assert _output != null;
-      final SharedTreeNode[] empty = new SharedTreeNode[0];
       List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(_output._ntrees);
       for (int treeIdx = 0; treeIdx < _output._ntrees; treeIdx++) {
         for (int treeClass = 0; treeClass < _output._treeKeys[treeIdx].length; treeClass++) {
@@ -123,8 +122,8 @@ public abstract class SharedTreeModelWithContributions<
             continue;
           }
           SharedTreeSubgraph tree = _model.getSharedTreeSubgraph(treeIdx, treeClass);
-          SharedTreeNode[] nodes = tree.nodesArray.toArray(empty);
-          treeSHAPs.add(new TreeSHAP<>(nodes, nodes, 0));
+          SharedTreeNode[] nodes = tree.getNodes();
+          treeSHAPs.add(new TreeSHAP<>(nodes));
         }
       }
       assert treeSHAPs.size() == _output._ntrees; // for now only regression and binomial to keep the output sane

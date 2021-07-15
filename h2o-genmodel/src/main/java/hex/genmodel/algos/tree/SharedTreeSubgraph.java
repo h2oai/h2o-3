@@ -203,6 +203,10 @@ public class SharedTreeSubgraph {
     return json;
   }
 
+  public SharedTreeNode[] getNodes() {
+    return this.nodesArray.toArray(new SharedTreeNode[0]);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
