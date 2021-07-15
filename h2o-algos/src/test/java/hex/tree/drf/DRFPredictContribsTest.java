@@ -203,6 +203,60 @@ public class DRFPredictContribsTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testScoreContributionsBinomialDoubleTrees() throws IOException, PredictException {
+        try {
+            Scope.enter();
+            Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
+            int ci = fr.find("survived"); // Change survived to categorical
+            fr.toCategoricalCol(ci);
+
+            DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+
+            parms._train = fr._key;
+            parms._distribution = bernoulli;
+            parms._response_column = "survived";
+            parms._ntrees = 5;
+            parms._max_depth = 4;
+            parms._min_rows = 1;
+            parms._nbins = 50;
+            parms._score_each_iteration = true;
+            parms._binomial_double_trees = true;
+            parms._seed = 42;
+
+            DRF job = new DRF(parms);
+            DRFModel drf = job.trainModel().get();
+            Scope.track_generic(drf);
+    
+            Frame contributions = drf.scoreContributions(fr, Key.<Frame>make("contributions_binomial_titanic"));
+            Scope.track(contributions);
+    
+//            Frame predsFromContribs = new DRFPredictContribsTest.BinomAggregateTask()
+//                    .doAll(new byte[]{Vec.T_CAT, Vec.T_NUM, Vec.T_NUM}, contributions)
+//                    .outputFrame(null, new String[]{"predict", "p0", "p1"}, new String[][]{new String[]{"0", "1"}, null, null});
+//            Scope.track(predsFromContribs);
+//
+//            assertTrue(drf.testJavaScoring(fr, predsFromContribs, 1e-5, 1e-7));
+    
+            // Now test MOJO scoring
+            EasyPredictModelWrapper.Config cfg = new EasyPredictModelWrapper.Config()
+                    .setModel(drf.toMojo())
+                    .setEnableContributions(true);
+            EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
+    
+            for (long row = 0; row < fr.numRows(); row++) {
+                RowData rd = toRowData(fr, drf._output._names, row);
+                BinomialModelPrediction pr = wrapper.predictBinomial(rd);
+                for (int c = 0; c < contributions.numCols(); c++) {
+                    assertArrayEquals("Contributions should match, row=" + row,
+                            toNumericRow(contributions, row), ArrayUtils.toDouble(pr.contributions), 0);
+                }
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
 
     private static class CheckTreeSHAPTask extends MRTask<DRFPredictContribsTest.CheckTreeSHAPTask> {
         final DRFModel _model;
