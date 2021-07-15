@@ -284,12 +284,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public static CategoricalEncodingScheme fromGenModel(CategoricalEncoding encoding) {
         if (encoding == null)
           return null;
-        final String name = encoding.name();
-        for (CategoricalEncodingScheme scheme : CategoricalEncodingScheme.values()) {
-          if (name.equals(scheme.name())) 
-            return scheme;
+        try {
+            return Enum.valueOf(CategoricalEncodingScheme.class, encoding.name());
+        } catch (IllegalArgumentException iae) {
+            throw new UnsupportedOperationException("Unknown encoding " + encoding);
         }
-        throw new UnsupportedOperationException("Unknown encoding " + encoding);
       }
     }
     
