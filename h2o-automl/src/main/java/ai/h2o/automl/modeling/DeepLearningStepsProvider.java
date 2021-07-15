@@ -3,6 +3,7 @@ package ai.h2o.automl.modeling;
 import ai.h2o.automl.*;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.TargetEncoding;
+import hex.Model;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.grid.Grid;
@@ -46,6 +47,8 @@ public class DeepLearningStepsProvider
                 dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
                 dlParameters._adaptive_rate = true;
                 dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+                dlParameters._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
+                dlParameters._max_categorical_levels = 300;
 
                 return dlParameters;
             }
@@ -76,6 +79,9 @@ public class DeepLearningStepsProvider
                     protected Job<DeepLearningModel> startJob() {
                         DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
                         dlParameters._hidden = new int[]{ 10, 10, 10 };
+                        dlParameters._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
+                        dlParameters._max_categorical_levels = 300;
+
                         return trainModel(dlParameters);
                     }
                 },
