@@ -974,13 +974,14 @@ class ModelBase(h2o_meta(Keyed)):
         path = path.rstrip("/")
         return h2o.download_pojo(self, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
 
-    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
+    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name="", filename=None):
         """
         Download the model in MOJO format.
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :param genmodel_name: Custom name of genmodel jar
+        :param filename: a filename for the saved model (file type is always .zip)
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
@@ -994,15 +995,20 @@ class ModelBase(h2o_meta(Keyed)):
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
             else:
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
-        return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
 
-    def save_mojo(self, path="", force=False):
+        if filename is None:
+            filename = self.model_id + ".zip"
+        else:
+            assert_is_type(filename, str)
+        return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=os.path.join(path, filename))
+
+    def save_mojo(self, path="", force=False, filename=None):
         """
         Save an H2O Model as MOJO (Model Object, Optimized) to disk.
 
-        :param model: The model object to save.
         :param path: a path to save the model at (hdfs, s3, local)
         :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+        :param filename: a filename for the saved model (file type is always .zip)
 
         :returns str: the path of the saved model
         """
@@ -1010,7 +1016,11 @@ class ModelBase(h2o_meta(Keyed)):
         assert_is_type(force, bool)
         if not self.have_mojo:
             raise H2OValueError("Export to MOJO not supported")
-        path = os.path.join(os.getcwd() if path == "" else path, self.model_id + ".zip")
+        if filename is None:
+            filename = self.model_id + ".zip"
+        else:
+            assert_is_type(filename, str)
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
         return h2o.api("GET /99/Models.mojo/%s" % self.model_id, data={"dir": path, "force": force})["dir"]
 
     def save_model_details(self, path="", force=False):
