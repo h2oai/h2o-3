@@ -1,5 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^.*\.tar\.gz$
+render-h2o.sh
 ^docs/
 ^images/
 ^internal/
