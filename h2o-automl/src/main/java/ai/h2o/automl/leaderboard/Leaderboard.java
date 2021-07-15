@@ -593,7 +593,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     if (m._output.isBinomialClassifier()) { //binomial
       return new String[] {"auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"};
     } else if (m._output.isMultinomialClassifier()) { // multinomial
-      return new String[] {"mean_per_class_error", "logloss", "rmse", "mse", "auc", "aucpr"};
+      return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) { // regression
       return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
     }
