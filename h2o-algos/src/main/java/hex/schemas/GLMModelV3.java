@@ -144,9 +144,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       coeffs_table.name = newName;
       boolean bothCoeffStd = colNames.length==(2*nclass);
       for (int tableIndex = 1; tableIndex <= nclass;  tableIndex++) {
-        coeffs_table.columns[tableIndex].name = new String(colNames[tableIndex-1]);
+        coeffs_table.columns[tableIndex].name = colNames[tableIndex-1];
         if (bothCoeffStd)
-          coeffs_table.columns[tableIndex+nclass].name = new String(colNames[tableIndex-1+nclass]);
+          coeffs_table.columns[tableIndex+nclass].name = colNames[tableIndex-1+nclass];
       }
     }
     

@@ -349,6 +349,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
     elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
     elif algo == "pca": model = H2OPrincipalComponentAnalysisEstimator(**kwargs)
+    elif algo == "infogram": model = H2OINFOGRAMEstimator(**kwargs)
     else: raise ValueError
     if algo == "kmeans" or algo == "pca": model.train(x=x, training_frame=train)
     else: model.train(x=x, y=y, training_frame=train)

@@ -1,17 +1,17 @@
 package water.automl.api;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.leaderboard.Leaderboard;
-import water.*;
+import water.DKV;
+import water.Key;
+import water.KeySnapshot;
+import water.Value;
 import water.api.Handler;
 import water.automl.api.schemas3.AutoMLV99;
-import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2OKeyWrongTypeArgumentException;
 
 import java.util.stream.Stream;
 
-public class AutoMLHandler extends Handler {
+public class AutoMLHandler extends Handler{
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
   /** Return an AutoML object by ID. */
