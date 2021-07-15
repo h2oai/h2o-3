@@ -767,6 +767,12 @@ h2o.computeGram <- function(X,weights="", use_all_factor_levels=FALSE,standardiz
   h2o.getFrame(res$destination_frame$name)
 }
 
+#' S3 method to support \code{coef(model)} vis-a-vis other linear models in R
+#' @export
+coef.H2ORegressionModel <- function(h2o_model) {
+  h2o.coef(h2o_model)
+}
+
 ##' Start an H2O Generalized Linear Model Job
 ##'
 ##' Creates a background H2O GLM job.
