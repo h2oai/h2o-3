@@ -344,6 +344,7 @@ class H2OCloudNode(object):
 
         cmd = [java,
                # "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
+               "-XX:OnOutOfMemoryError=kill -9 %p",
                "-Xmx" + self.xmx,
                "-ea"]
         if self.jvm_opts is not None:
