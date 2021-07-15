@@ -440,8 +440,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       }
       if (get_params()._variable_importances) {
         if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
-        final float[] vi = model_info().computeVariableImportances();
-        scoringInfo.variable_importances = new VarImp(vi, Arrays.copyOfRange(model_info().data_info().coefNames(), 0, vi.length));
+        scoringInfo.variable_importances = model_info().computeVariableImportances();
       }
 
       _timeLastScoreEnd = System.currentTimeMillis();
@@ -1064,6 +1063,10 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }
     });
+    JCodeGen.toStaticVar(sb, "CATEGORY_MAPPING", model_info.categoryMapping,
+            "Array that maps categories to their hashed location on input layer");
+    JCodeGen.toStaticVar(sb, "MAX_CATEGORICAL_FEATURES",
+            model_info.get_params()._max_categorical_features, "Maximum number of categorical features");
 
     return sb;
   }
@@ -1146,15 +1149,28 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       bodySb.i(0).p("}").nl();
     }
     bodySb.i().p("java.util.Arrays.fill(ACTIVATION[0],0);").nl();
-    if (cats > 0) {
-      bodySb.i().p("for (i=0; i<ncats; ++i) {").nl();
-      bodySb.i(1).p("if(CATS[i] >= 0) ACTIVATION[0][CATS[i]] = 1;").nl();
-      bodySb.i(0).p("}").nl();
-    }
-    if (nums > 0) {
-      bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();
-      bodySb.i(1).p("ACTIVATION[0][CATOFFSETS[CATOFFSETS.length-1] + i] = Double.isNaN(NUMS[i]) ? 0 : NUMS[i];").nl();
-      bodySb.i().p("}").nl();
+    if (model_info.categoryMapping == null) {
+      if (cats > 0) {
+        bodySb.i().p("for (i=0; i<ncats; ++i) {").nl();
+        bodySb.i(1).p("if(CATS[i] >= 0) ACTIVATION[0][CATS[i]] = 1;").nl();
+        bodySb.i(0).p("}").nl();
+      }
+      if (nums > 0) {
+        bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();
+        bodySb.i(1).p("ACTIVATION[0][CATOFFSETS[CATOFFSETS.length-1] + i] = Double.isNaN(NUMS[i]) ? 0 : NUMS[i];").nl();
+        bodySb.i().p("}").nl();
+      }
+    } else {
+      if (cats > 0) {
+        bodySb.i().p("for (i=0; i<ncats; ++i) {").nl();
+        bodySb.i(1).p("if(CATS[i] >= 0) ACTIVATION[0][CATEGORY_MAPPING[CATS[i]]] = 1;").nl();
+        bodySb.i(0).p("}").nl();
+      }
+      if (nums > 0) {
+        bodySb.i().p("for (i=0; i<NUMS.length; ++i) {").nl();
+        bodySb.i(1).p("ACTIVATION[0][MAX_CATEGORICAL_FEATURES + i] = Double.isNaN(NUMS[i]) ? 0 : NUMS[i];").nl();
+        bodySb.i().p("}").nl();
+      }
     }
 
     boolean tanh=(p._activation == DeepLearningParameters.Activation.Tanh || p._activation == DeepLearningParameters.Activation.TanhWithDropout);

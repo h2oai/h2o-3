@@ -36,7 +36,7 @@ public class GenModelTest {
     double[] to = new double[16];
     double[] numsInput = new double[1];
     int[] catsInput = new int[3];
-    GenModel.setInput(row, to, numsInput, catsInput, numsInput.length, catsInput.length, catOffsets, null, null, false, false);
+    GenModel.setInput(row, to, numsInput, catsInput, numsInput.length, catsInput.length, catOffsets, null, null, false, false, null);
     assertArrayEquals(new double[]{0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 42}, to, 0);
   }
 

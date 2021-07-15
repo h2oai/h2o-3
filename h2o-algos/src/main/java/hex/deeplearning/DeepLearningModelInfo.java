@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
+import hex.VarImp;
 import hex.genmodel.utils.DistributionFamily;
 import static java.lang.Double.isNaN;
 
@@ -10,6 +11,7 @@ import water.*;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -145,6 +147,9 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
   final Frame _train;         // Prepared training frame
   final Frame _valid;         // Prepared validation frame
 
+  // Used iff max_categorical_features < # one-hot encoded cat features
+  // Maps category index to input neuron index
+  public int[] categoryMapping;
   /**
    * Dummy constructor, only to be used for deserialization from autobuffer
    */
@@ -243,6 +248,36 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     rms_bias = new double[units.length-1];
     mean_weight = new double[units.length-1];
     rms_weight = new double[units.length-1];
+
+    if (params._max_categorical_features < dinfo.fullN() - dinfo._nums) {
+      assert data_info()._catOffsets[data_info()._cats] == dinfo.fullN() - dinfo._nums;
+      final int catNumber = data_info()._catOffsets[data_info()._cats];
+      categoryMapping = new int[catNumber];
+      MurmurHash murmur = MurmurHash.getInstance();
+      ByteBuffer buf = ByteBuffer.allocate(4);
+
+      String[] variableNames = new String[units[0]];
+      // Calculate the mapping and new coef names
+      for (int i = 0; i < catNumber; ++i) {
+        int hashval = murmur.hash(buf.putInt(0, i).array(), 4, (int) params._seed); // turn horizontalized categorical integer into another integer, based on seed
+        categoryMapping[i] = Math.abs(hashval % params._max_categorical_features); // restrict to limited range
+        final int inputIdx = categoryMapping[i];
+        final String coefName = data_info().coefNames()[i];
+
+        if (variableNames[inputIdx] == null) {
+          variableNames[inputIdx] = coefName;
+        } else {
+          // Concatenate category names and join them with ","
+          variableNames[inputIdx] += "," + coefName;
+        }
+      }
+
+      // Assign coef names to numerical features
+      System.arraycopy(data_info().coefNames(), data_info()._catOffsets[data_info()._cats],
+              variableNames, params._max_categorical_features,units[0] - params._max_categorical_features);
+      dinfo._coefNames = variableNames;
+
+    }
   }
 
   /**
@@ -584,7 +619,7 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
    *
    * @return variable importances for input features
    */
-  public float[] computeVariableImportances() {
+  public VarImp computeVariableImportances() {
     float[] vi = new float[units[0]];
     Arrays.fill(vi, 0f);
 
@@ -642,14 +677,47 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     //normalize importances such that max(vi) = 1
     ArrayUtils.div(vi, ArrayUtils.maxValue(vi));
 
-    // zero out missing categorical variables if they were never seen
-    if (_saw_missing_cats != null) {
-      for (int i = 0; i < _saw_missing_cats.length; ++i) {
-        assert (data_info._catMissing[i]); //have a missing bucket for each categorical
-        if (!_saw_missing_cats[i]) vi[data_info._catOffsets[i + 1] - 1] = 0;
+    // When max_categorical_features is lower than number of categorical features, the encoded categorical features
+    // are hashed and binned so the input neurons don't correspond to a single categories anymore and their
+    // order is also changed.
+    if (get_params()._max_categorical_features >= data_info().fullN() - data_info()._nums) {
+      // zero out missing categorical variables if they were never seen
+      if (_saw_missing_cats != null) {
+        for (int i = 0; i < _saw_missing_cats.length; ++i) {
+          assert (data_info._catMissing[i]); //have a missing bucket for each categorical
+          if (!_saw_missing_cats[i]) vi[data_info._catOffsets[i + 1] - 1] = 0;
+        }
       }
+      return new VarImp(vi, Arrays.copyOfRange(data_info().coefNames(), 0, vi.length));
+    } else { // Categories are hashed and one input neuron can take value from multiple categories
+      assert categoryMapping != null;
+      // Encode the categories
+      final int maxCategoricalFeatures = get_params()._max_categorical_features;
+      int[] numberOfEntries = new int[maxCategoricalFeatures];
+
+      // Assign coef names to categorical features
+      for (int i = 0; i < data_info()._catOffsets[data_info()._cats]; ++i) {
+        numberOfEntries[categoryMapping[i]] += 1;
+      }
+
+      // Correct varimps that are not mapped to any input
+      for (int i = 0; i < maxCategoricalFeatures; ++i) {
+        if (null == data_info().coefNames()[i]) {
+          // No category got mapped to this input neuron
+          vi[i] = 0;
+        }
+      }
+
+      // Fix varimp of missing category if it wasn't present during training and there isn't any other category mapped
+      // into the same bin
+      for (int i = 0; i < _saw_missing_cats.length; ++i) {
+        assert (data_info._catMissing[i]); // have a missing bucket for each categorical
+        int missingIdx = categoryMapping[data_info._catOffsets[i + 1] - 1];
+        if (numberOfEntries[missingIdx] == 1 && !_saw_missing_cats[i])
+          vi[missingIdx] = 0;
+      }
+      return new VarImp(vi, data_info().coefNames());
     }
-    return vi;
   }
 
   /**

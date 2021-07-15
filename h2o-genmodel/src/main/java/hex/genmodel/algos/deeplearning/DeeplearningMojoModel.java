@@ -30,6 +30,7 @@ public class DeeplearningMojoModel extends MojoModel {
   protected String[] _orig_names;
   protected String[][] _orig_domain_values;
   protected double[] _orig_projection_array;
+  protected int[] _category_mapping;
 
   /***
    * Should set up the neuron network frame work here
@@ -67,7 +68,8 @@ public class DeeplearningMojoModel extends MojoModel {
     int[] _catsA = new int[_cats];
 
     // transform inputs: NAs in categoricals are always set to new extra level.
-    setInput(dataRow, neuronsInput, _numsA, _catsA, _nums, _cats, _catoffsets, _normmul, _normsub, _use_all_factor_levels, true);
+    setInput(dataRow, neuronsInput, _numsA, _catsA, _nums, _cats, _catoffsets, _normmul, _normsub,
+            _use_all_factor_levels, true, _category_mapping);
 
     // proprogate inputs through neural network
     for (int layer=0; layer < _numLayers; layer++) {
