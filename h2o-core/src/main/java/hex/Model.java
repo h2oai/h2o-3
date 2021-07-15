@@ -2555,7 +2555,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
-    return testJavaScoring(data, model_predictions, rel_epsilon, 1e-15, 0.1);
+    return testJavaScoring(data, model_predictions, rel_epsilon, 1e-15, 1);
   }
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon) {
     return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
