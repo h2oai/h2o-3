@@ -103,9 +103,7 @@ Why is H2O not launching from the command line?
     at java.lang.Class.initializeClass(libgcj.so.10)
     ...4 more
 
-The only prerequisite for running H2O is a compatible version of Java.
-We recommend Oracle's `Java
-1.7 <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`__.
+The only prerequisite for running H2O is a compatible version of `Java <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__.
 
 --------------
 
