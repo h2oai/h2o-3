@@ -740,7 +740,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
             validKeys.addIfAbsent(newValidFrame._key);   // save valid frame keys from folds to remove later
             model._validKeys = validKeys;  // move valid keys here to model._validKeys to be removed later
           }
-          Scope.exit(keep.toArray(new Key[keep.size()]));
+          Scope.untrack(keep.toArray(new Key[keep.size()]));
         } finally {
           // Make sure Model is unlocked, as if an exception is thrown, the `ModelBuilder` expects the underlying model to be unlocked.
           model.update(_job);

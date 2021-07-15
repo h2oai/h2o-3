@@ -19,14 +19,14 @@ import numpy as np
 # then load your synthetic dataset specifying the column type as
 # train = h2o.import_file("mydata.csv", col_types=types_dict)
 def test_define_dataset():
-    family = 'multinomial' # can be any valid GLM families
+    family = 'gaussian' # can be any valid GLM families
     nrow = 10000
-    ncol = 10
-    realFrac = 0.4
-    intFrac = 0.3
-    enumFrac = 0.3
+    ncol = 8
+    realFrac = 0.3
+    intFrac = 0
+    enumFrac = 0.7
     missing_fraction = 0
-    factorRange= 50
+    factorRange= 5
     numericRange = 10
     targetFactor = 4
     glmDataSet = generate_dataset(family, nrow, ncol, realFrac, intFrac, enumFrac, missing_fraction, factorRange, 
@@ -42,19 +42,20 @@ def generate_dataset(family, nrow, ncol, realFrac, intFrac, enumFrac, missingFra
                      targetFactor):
     if family=="binomial":
         responseFactor = 2
-    elif family == 'gaussian':
-        responseFactor = 1;
-    else :
+    elif family == 'multinomial' or family == 'ordinal':
         responseFactor = targetFactor
+    else :
+        responseFactor = 1
         
     trainData = random_dataset(nrow, ncol, realFrac=realFrac, intFrac=intFrac, enumFrac=enumFrac, factorR=factorRange, 
                                integerR=numericRange, responseFactor=responseFactor, misFrac=missingFrac)
-   
+    if family=='poisson':
+        trainData['response'] = trainData['response']+numericRange
     myX = trainData.names
     myY = 'response'
     myX.remove(myY)
 
-    m = glm(family=family, max_iterations=1)
+    m = glm(family=family, max_iterations=1, interactions=["C1", "C2"], tweedie_link_power = 2, tweedie_variance_power=0.4, )
     m.train(training_frame=trainData,x=myX,y= myY)
     r = glm.getGLMRegularizationPath(m)
     coeffDict = r['coefficients'][0]
@@ -86,8 +87,8 @@ def random_dataset(nrow, ncol, realFrac = 0.4, intFrac = 0.3, enumFrac = 0.3, fa
     fractions["binary_fraction"] = 0
 
     df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=True, 
-                          response_factors = responseFactor, integer_range=integerR,
-                          seed=randSeed, **fractions)
+                          response_factors=responseFactor, factors = factorR, integer_range=integerR, 
+                          real_range=integerR, seed=randSeed, **fractions)
     print(df.types)
     return df
 

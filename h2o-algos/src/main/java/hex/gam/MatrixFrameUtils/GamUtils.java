@@ -128,10 +128,14 @@ public class GamUtils {
 
   public static GLMParameters copyGAMParams2GLMParams(GAMParameters parms, Frame trainData, Frame valid) {
     GLMParameters glmParam = new GLMParameters();
+    List<String> gamOnlyList = Arrays.asList(
+            "_num_knots", "_gam_columns", "_bs", "_scale", "_train",
+            "_saveZMatrix", "_saveGamCols", "_savePenaltyMat"
+    );
     Field[] field1 = GAMParameters.class.getDeclaredFields();
-    setParamField(parms, glmParam, false, field1);
+    setParamField(parms, glmParam, false, field1, gamOnlyList);
     Field[] field2 = Model.Parameters.class.getDeclaredFields();
-    setParamField(parms, glmParam, true, field2);
+    setParamField(parms, glmParam, true, field2, gamOnlyList);
     glmParam._train = trainData._key;
     glmParam._valid = valid==null?null:valid._key;
     glmParam._nfolds = 0; // always set nfolds to 0 to disable cv in GLM.  It is done in GAM
@@ -143,16 +147,14 @@ public class GamUtils {
     return glmParam;
   }
 
-  public static void setParamField(GAMParameters parms, GLMParameters glmParam, boolean superClassParams, Field[] gamFields) {
+  public static void setParamField(Model.Parameters parms, GLMParameters glmParam, boolean superClassParams,
+                                   Field[] gamFields, List<String> excludeList) {
     // assign relevant GAMParameter fields to GLMParameter fields
-    List<String> gamOnlyList = Arrays.asList(
-            "_num_knots", "_gam_columns", "_bs", "_scale", "_train", 
-        "_saveZMatrix", "_saveGamCols", "_savePenaltyMat"
-    );
     Field glmField;
+    boolean emptyExcludeList = excludeList.size() == 0;
     for (Field oneField : gamFields) {
       try {
-        if (!gamOnlyList.contains(oneField.getName())) {
+        if (emptyExcludeList || !excludeList.contains(oneField.getName())) {
           if (superClassParams)
             glmField = glmParam.getClass().getSuperclass().getDeclaredField(oneField.getName());
           else

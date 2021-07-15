@@ -71,39 +71,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     EffectiveParametersUtils.initFoldAssignment(_parms);
   }
 
-  public TwoDimTable copyTwoDimTable(TwoDimTable table) {
-    String[] rowHeaders = table.getRowHeaders();
-    String[] colTypes = table.getColTypes();
-    int tableSize = rowHeaders.length;
-    int colSize = colTypes.length;
-    TwoDimTable tableCopy = new TwoDimTable("glm scoring history", "",
-            rowHeaders, table.getColHeaders(), colTypes, table.getColFormats(),
-            "names");
-    for (int rowIndex = 0; rowIndex < tableSize; rowIndex++)  {
-      for (int colIndex = 0; colIndex < colSize; colIndex++) {
-        tableCopy.set(rowIndex, colIndex,table.get(rowIndex, colIndex));
-      }
-    }
-    return tableCopy;
-  }
-  
-  public TwoDimTable genCoefficientTable(String[] colHeaders, double[] coefficients, double[] coefficientsStand,
-                                         String[] coefficientNames, String tableHeader) {
-    String[] colTypes = new String[]{ "double", "double"};
-    String[] colFormat = new String[]{"%5f", "%5f"};
-    int nCoeff = coefficients.length;
-    String[] coeffNames = new String[nCoeff];
-    System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
-    
-    Log.info("genCoefficientMagTableMultinomial", String.format("coemffNames length: %d.  coefficients " +
-            "length: %d, coeffSigns length: %d", coeffNames.length, coefficients.length, coefficientsStand.length));
-    
-    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
-            "names");
-    fillUpCoeffs(coefficients, coefficientsStand, table, 0);
-    return table;
-  }
-
   public TwoDimTable genCoefficientMagTableMultinomial(String[] colHeaders, double[][] coefficients,
                                                        String[] coefficientNames, String tableHeader) {
     String[] colTypes = new String[]{ "double", "string"};
@@ -187,38 +154,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     for (int i=rowStart; i<arrLength; i++) {
       tdt.set(i, 0, coeffMags[arrCounter]);
       tdt.set(i, 1, coeffSigns[arrCounter]);
-      arrCounter++;
-    }
-  }
-  
-  public TwoDimTable genCoefficientTableMultinomial(String[] colHeaders, double[][] coefficients, double[][] coefficients_stand,
-                                                    String[] coefficientNames, String tableHeader) {
-    String[] colTypes = new String[]{"double", "double"};
-    String[] colFormat = new String[]{"%5f", "%5f"};
-    int nCoeff = coefficients[0].length;
-    int nclass = coefficients.length;
-    int totCoeff = nCoeff*nclass;
-    String[] coeffNames = new String[totCoeff];
-
-    int coeffCounter=0;
-    for (int classInd=0; classInd < nclass; classInd++){
-      for (int ind=0; ind < nCoeff; ind++) {
-        coeffNames[coeffCounter++] = coefficientNames[ind]+"_class_"+classInd;
-      }
-    }
-    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
-            "names");
-    for (int classInd=0; classInd<nclass; classInd++)
-      fillUpCoeffs(coefficients[classInd], coefficients_stand[classInd], table, classInd*nCoeff);
-    return table;
-  }
-
-  private void fillUpCoeffs(double[] coeffValues, double[] coeffValuesStand, TwoDimTable tdt, int rowStart) {
-    int arrLength = coeffValues.length+rowStart;
-    int arrCounter=0;
-    for (int i=rowStart; i<arrLength; i++) {
-      tdt.set(i, 0, coeffValues[arrCounter]);
-      tdt.set(i, 1, coeffValuesStand[arrCounter]);
       arrCounter++;
     }
   }
