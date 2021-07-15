@@ -1,10 +1,10 @@
 dependencies {
     compile project(":h2o-webserver-iface")
-    compile 'org.eclipse.jetty:jetty-server:9.4.39.v20210325'
-    compile "org.eclipse.jetty:jetty-servlets:9.4.39.v20210325"
-    compile 'org.eclipse.jetty:jetty-jaas:9.4.39.v20210325'
-    compile 'org.eclipse.jetty:jetty-proxy:9.4.39.v20210325'
-    compile 'org.eclipse.jetty:jetty-servlet:9.4.39.v20210325'
+    compile 'org.eclipse.jetty:jetty-server:9.4.43.v20210629'
+    compile "org.eclipse.jetty:jetty-servlets:9.4.43.v20210629"
+    compile 'org.eclipse.jetty:jetty-jaas:9.4.43.v20210629'
+    compile 'org.eclipse.jetty:jetty-proxy:9.4.43.v20210629'
+    compile 'org.eclipse.jetty:jetty-servlet:9.4.43.v20210629'
     testCompile group: "junit", name: "junit", version: "4.12"
     testCompile "org.mockito:mockito-core:2.23.0"
 }
