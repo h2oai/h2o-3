@@ -25,14 +25,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   private ModelCategory _model_category;
   private long _model_checksum;
   // Frame specific information
-  private Key _frameKey;
+  private Key<Frame> _frameKey;
   private long _frame_checksum;  // when constant column is dropped, frame checksum changed.  Need re-assign for GLRM.
   public final long _scoring_time;
   public final CustomMetric _custom_metric;
-
-  // Cached fields - cached them when needed
-  private transient Model _model;
-  private transient Frame _frame;
 
   public final double _MSE;     // Mean Squared Error (Every model is assumed to have this, otherwise leave at NaN)
   public final long _nobs;
@@ -70,11 +66,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return this;
   }
 
-  public ModelMetrics withDescription(String desc) {
-    _description = desc;
-    return this;
-  }
-
   /**
    * Utility used by code which creates metrics on a different frame and model than
    * the ones that we want the metrics object to be accessible for.  An example is
@@ -106,8 +97,15 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     return sb;
   }
 
-  public final Model model() { return _model==null ? (_model=DKV.getGet(_modelKey)) : _model; }
-  public final Frame frame() { return _frame==null ? (_frame=DKV.getGet(_frameKey)) : _frame; }
+  public final Model model() { return DKV.getGet(_modelKey); }
+  
+  public final Key<Frame> frameKey() { 
+    return _frameKey;
+  }
+
+  public final long frameChecksum() {
+    return _frame_checksum;
+  }
 
   public double mse() { return _MSE; }
   public double rmse() { return Math.sqrt(_MSE);}

@@ -3,6 +3,7 @@ package water.api.schemas3;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import water.Key;
 import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.KeyV3.ModelKeyV3;
@@ -71,11 +72,10 @@ public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBa
       this.model_checksum = m.checksum();
     }
 
-    // If we're copying in a Frame we need a Frame Schema of the right class to fill into.
-    Frame f = modelMetrics.frame();
-    if (null != f) { //true == f.getClass().getSuperclass().getGenericSuperclass() instanceof ParameterizedType
-      this.frame = new FrameKeyV3(f._key);
-      this.frame_checksum = f.checksum();
+    Key<Frame> fKey = modelMetrics.frameKey();
+    if (fKey != null) {
+      this.frame = new FrameKeyV3(fKey);
+      this.frame_checksum = modelMetrics.frameChecksum();
     }
 
     PojoUtils.copyProperties(this, modelMetrics, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES,
