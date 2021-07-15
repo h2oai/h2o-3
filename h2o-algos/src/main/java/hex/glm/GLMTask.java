@@ -1095,6 +1095,12 @@ public abstract class GLMTask  {
         updateGradGamMultinomial(_gradient, _penaltyMat, _gamBetaIndices, _beta); // beta is coeff index by class
     }
 
+    /** This method changes the _gradient that is coeffPerClss by number of classes back to number of classes by
+     *  coeffPerClass.  Also, if only active columns are included, that is what is returned.  If both active and
+     *  non-active columns are included, both will be returned.
+     *  
+     * @return
+     */
     public double [] gradient(){
       double [] res = MemoryManager.malloc8d(_gradient.length*_gradient[0].length);
       int P = _gradient.length;
