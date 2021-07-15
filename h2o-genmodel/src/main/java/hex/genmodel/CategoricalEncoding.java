@@ -5,7 +5,7 @@ import hex.genmodel.easy.*;
 import java.util.Map;
 
 public enum CategoricalEncoding {
-  AUTO {
+  AUTO(false) {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
       return new EnumEncoderColumnMapper(m).create();
@@ -16,7 +16,7 @@ public enum CategoricalEncoding {
       return new EnumEncoderDomainMapConstructor(m, columnMapping).create();
     }
   },
-  OneHotExplicit {
+  OneHotExplicit(false) {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
       return new OneHotEncoderColumnMapper(m).create();
@@ -27,7 +27,7 @@ public enum CategoricalEncoding {
       return new OneHotEncoderDomainMapConstructor(m, columnMapping).create();
     }
   },
-  Binary {
+  Binary(false) {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
       return new BinaryColumnMapper(m).create();
@@ -38,7 +38,7 @@ public enum CategoricalEncoding {
       return new BinaryDomainMapConstructor(m, columnMapping).create();
     }
   },
-  EnumLimited {
+  EnumLimited(true) {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
       return new EnumLimitedEncoderColumnMapper(m).create();
@@ -49,7 +49,7 @@ public enum CategoricalEncoding {
       return new EnumLimitedEncoderDomainMapConstructor(m, columnMapping).create();
     }
   },
-  Eigen {
+  Eigen(true) {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
       return new EigenEncoderColumnMapper(m).create();
@@ -60,7 +60,7 @@ public enum CategoricalEncoding {
       return new EigenEncoderDomainMapConstructor(m, columnMapping).create();
     }
   },
-  LabelEncoder {
+  LabelEncoder(false) {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
       return new EnumEncoderColumnMapper(m).create();
@@ -72,8 +72,24 @@ public enum CategoricalEncoding {
     }
   };
 
+  private final boolean _parametrized;
+
+  CategoricalEncoding(boolean parametrized) {
+    _parametrized = parametrized;
+  }
+
   public abstract Map<String, Integer> createColumnMapping(GenModel m);
 
   public abstract Map<Integer, CategoricalEncoder> createCategoricalEncoders(GenModel m, Map<String, Integer> columnMapping);
-  
+
+  /**
+   * Does the categorical encoding have any parameters that are needed to correctly interpret it?
+   * Eg.: number of classes for EnumLimited
+   * 
+   * @return Is this encoding parametrized?
+   */
+  public boolean isParametrized() {
+    return _parametrized;
+  }
+
 }
