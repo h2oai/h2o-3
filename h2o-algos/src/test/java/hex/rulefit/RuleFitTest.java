@@ -717,6 +717,8 @@ public class RuleFitTest extends TestUtil {
             final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
             final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
+       //     final Vec weightsVector = Vec.makeOne(fr.numRows());
+            weightsVector.set(1, 0.5);
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
             DKV.put(fr);
@@ -730,6 +732,7 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 200;
             params._max_rule_length = 5;
             params._min_rule_length = 1;
+            params._rule_generation_ntrees = 3;
 
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
@@ -740,7 +743,7 @@ public class RuleFitTest extends TestUtil {
 
             final Frame fr2 = Scope.track(rfModel.score(fr));
 
-            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4, 1e-4, 1));
 
             // GLM to compare:
 
@@ -751,7 +754,10 @@ public class RuleFitTest extends TestUtil {
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
-            Scope.track(glmModel.score(fr));
+            final Frame fr3 = Scope.track(glmModel.score(fr));
+
+            // this will fail
+            // Assert.assertTrue(glmModel.testJavaScoring(fr,fr3,1e-4, 1e-4, 1));
 
             ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
@@ -762,6 +768,42 @@ public class RuleFitTest extends TestUtil {
             System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
 
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testDiabetesWithWeightsShowWhatGlmIsDoingSeparately() { 
+        try {
+            Scope.enter();
+            final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
+            Scope.track(fr);
+            final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
+            // works with non-zero weights, but if I create zero ( weightsVector.set(1, 0.5); -> weightsVector.set(1, 0.0); ) it will fail again
+            // final Vec weightsVector = Vec.makeOne(fr.numRows());
+            weightsVector.set(1, 0.5);
+            
+            final String weightsColumnName = "weights";
+            fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
+            
+            GLMModel.GLMParameters glmParameters = new GLMModel.GLMParameters();
+            glmParameters._seed = 12345;
+            glmParameters._train = fr._key;
+            glmParameters._response_column = "diabetesMed";
+            glmParameters._weights_column = "weights";
+            
+            
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+
+            final Frame fr3 = Scope.track(glmModel.score(fr));
+
+            // this fails
+            Assert.assertTrue(glmModel.testJavaScoring(fr,fr3,1e-4, 1e-4, 1));
+            
+            
         } finally {
             Scope.exit();
         }
