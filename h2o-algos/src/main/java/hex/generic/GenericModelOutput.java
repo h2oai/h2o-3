@@ -24,13 +24,14 @@ public class GenericModelOutput extends Model.Output {
     public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, final Table[] reproducibilityInformation) {
         _isSupervised = modelDescriptor.isSupervised();
         _domains = modelDescriptor.scoringDomains();
-        _origDomains = modelDescriptor.scoringDomains();
+        _origDomains = modelDescriptor.getOrigDomains();
         _hasOffset = modelDescriptor.offsetColumn() != null;
         _hasWeights = modelDescriptor.weightsColumn() != null;
         _hasFold = modelDescriptor.foldColumn() != null;
         _distribution = modelDescriptor.modelClassDist();
         _priorClassDist = modelDescriptor.priorClassDist();
         _names = modelDescriptor.columnNames();
+        _origNames = modelDescriptor.getOrigNames();
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
         _defaultThreshold = modelDescriptor.defaultThreshold();

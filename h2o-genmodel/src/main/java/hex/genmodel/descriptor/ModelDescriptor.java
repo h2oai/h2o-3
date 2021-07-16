@@ -96,5 +96,9 @@ public interface ModelDescriptor {
   String uuid();
 
   String timestamp();
-  
+
+  String[] getOrigNames();
+
+  String[][] getOrigDomains();
+
 }

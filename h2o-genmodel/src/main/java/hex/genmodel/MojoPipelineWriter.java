@@ -204,6 +204,16 @@ public class MojoPipelineWriter extends AbstractMojoWriter {
     public String timestamp() {
       return String.valueOf(new Date().getTime());
     }
+
+    @Override
+    public String[] getOrigNames() {
+      return null;
+    }
+
+    @Override
+    public String[][] getOrigDomains() {
+      return null;
+    }
   }
 
 }

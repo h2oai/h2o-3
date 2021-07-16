@@ -295,7 +295,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
-  public abstract static class Parameters extends Iced<Parameters> {
+  public abstract static class Parameters extends Iced<Parameters> implements AdaptFrameParameters {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
 
@@ -356,6 +356,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       CategoricalEncodingScheme(boolean needResponse) { _needResponse = needResponse; }
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
+      public static CategoricalEncodingScheme fromGenModel(CategoricalEncoding encoding) {
+        if (encoding == null)
+          return null;
+        try {
+            return Enum.valueOf(CategoricalEncodingScheme.class, encoding.name());
+        } catch (IllegalArgumentException iae) {
+            throw new UnsupportedOperationException("Unknown encoding " + encoding);
+        }
+      }
     }
     
     public Key<ModelPreprocessor>[] _preprocessors;
@@ -492,12 +501,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
 
-    public String[] getNonPredictors() {
-        return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
-                .filter(Objects::nonNull)
-                .toArray(String[]::new);
-    }
-
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
       @SuppressWarnings("unchecked")
@@ -533,6 +536,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  Overload this method for models that have sparse data handling - a zero
      *  will preserve the sparseness.  Otherwise, NaN is used.
      *  @return real-valued number (can be NaN)  */
+    @Override
     public double missingColumnsType() { return Double.NaN; }
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
@@ -682,6 +686,36 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       return values;
+    }
+
+    @Override
+    public final CategoricalEncodingScheme getCategoricalEncoding() {
+      return _categorical_encoding;
+    }
+
+    @Override
+    public final String getWeightsColumn() {
+      return _weights_column;
+    }
+
+    @Override
+    public final String getOffsetColumn() {
+      return _offset_column;
+    }
+
+    @Override
+    public final String getFoldColumn() {
+      return _fold_column;
+    }
+
+    @Override
+    public final String getResponseColumn() {
+      return _response_column;
+    }
+
+    @Override
+    public final int getMaxCategoricalLevels() {
+      return _max_categorical_levels;
     }
   }
 
@@ -1482,7 +1516,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms,
+            makeAdaptFrameParameters(),
             expensive,
             computeMetrics,
             _output.interactionBuilder(),
@@ -1490,6 +1524,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _toDelete,
             catEncoded
     );
+  }
+
+  protected AdaptFrameParameters makeAdaptFrameParameters() {
+    return _parms;
+  }
+
+  public interface AdaptFrameParameters {
+    Parameters.CategoricalEncodingScheme getCategoricalEncoding();
+    String getWeightsColumn();
+    String getOffsetColumn();
+    String getFoldColumn();
+    String getResponseColumn();
+    double missingColumnsType();
+    int getMaxCategoricalLevels();
+    default String[] getNonPredictors() {
+      return Arrays.stream(new String[]{getWeightsColumn(), getOffsetColumn(), getFoldColumn(), getResponseColumn()})
+              .filter(Objects::nonNull)
+              .toArray(String[]::new);
+    }
   }
 
   /**
@@ -1505,7 +1558,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
   public static String[] adaptTestForTrain(final Frame test, final String[] origNames, final String[][] origDomains,
-                                           String[] names, String[][] domains, final Parameters parms,
+                                           String[] names, String[][] domains, final AdaptFrameParameters parms,
                                            final boolean expensive, final boolean computeMetrics,
                                            final InteractionBuilder interactionBldr, final ToEigenVec tev,
                                            final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
@@ -1522,10 +1575,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[] backupNames = names;
     String[][] backupDomains = domains;
 
-    final String weights = parms._weights_column;
-    final String offset = parms._offset_column;
-    final String fold = parms._fold_column;
-    final String response = parms._response_column;
+    final String weights = parms.getWeightsColumn();
+    final String offset = parms.getOffsetColumn();
+    final String fold = parms.getFoldColumn();
+    final String response = parms.getResponseColumn();
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
     // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
@@ -1535,7 +1588,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             Parameters.CategoricalEncodingScheme.Eigen,
             Parameters.CategoricalEncodingScheme.EnumLimited,
             Parameters.CategoricalEncodingScheme.OneHotExplicit
-    ).indexOf(parms._categorical_encoding) >= 0;
+    ).indexOf(parms.getCategoricalEncoding()) >= 0;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
     if (checkCategoricals && origNames != null) {
@@ -1650,7 +1703,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
-        Frame updated = categoricalEncoder(test, parms.getNonPredictors(), parms._categorical_encoding, tev, parms._max_categorical_levels);
+        Frame updated = categoricalEncoder(test, parms.getNonPredictors(), parms.getCategoricalEncoding(), tev, parms.getMaxCategoricalLevels());
         toDelete.put(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
         String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
@@ -3205,6 +3258,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       public String uuid() { return String.valueOf(Model.this.checksum()); }
       @Override
       public String timestamp() { return new DateTime().toString(); }
+      @Override
+      public String[] getOrigNames() { return _output._origNames; }
+      @Override
+      public String[][] getOrigDomains() { return _output._origDomains; }
     };
   }
 
