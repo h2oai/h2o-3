@@ -4,8 +4,6 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.genmodel.utils.LinkFunctionType;
 import hex.glm.GLMModel;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -187,9 +185,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     final String seKey = this._key.toString();
     final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_" + seKey + fr._key);
     Frame levelOneFrame = transform == null ?
-            new Frame(levelOneFrameKey)  // no tranform -> this will be the final frame 
+            new Frame(levelOneFrameKey)  // no transform -> this will be the final frame
             :
-            new Frame();        // tranform -> this is only an intermediate result
+            new Frame();        // transform -> this is only an intermediate result
 
     Model[] usefulBaseModels = Stream.of(_parms._base_models)
             .filter(this::isUsefulBaseModel)
@@ -335,8 +333,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // the metalearner was trained on cv preds, not training preds.  So, rather than clone the metalearner
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
-    this._output._training_metrics = doScoreTrainingMetrics(this._parms.train(), job);
-    
+    //
+    // Job set to null since `stop_requested()` due to timeout would invalidate the whole SE at this point
+    // which would be unfortunate since this is the last step of SE training and it also should be relatively fast.
+    this._output._training_metrics = doScoreTrainingMetrics(this._parms.train(), null);
+
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;

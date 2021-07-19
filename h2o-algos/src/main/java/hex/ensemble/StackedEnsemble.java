@@ -316,7 +316,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       List<Frame> baseModelPredictions = new ArrayList<>();
 
       for (Key<Model> k : baseModelKeys) {
-        if (stop_requested())
+        // if training we can stop prematurely due to a timeout but computing validation scores should be allowed to finish
+        if (stop_requested() && isTraining)
           throw new Job.JobCancelledException();
 
         if (_model._output._metalearner == null || _model.isUsefulBaseModel(k)) {
