@@ -76,6 +76,8 @@ public abstract class SharedTree<
   protected transient Frame _trainPredsCache;
   protected transient Frame _validPredsCache;
 
+  private transient SharedTreeDebugParams _debugParms;
+
   public boolean isSupervised(){return true;}
 
   @Override public boolean haveMojo() { return true; }
@@ -549,7 +551,7 @@ public abstract class SharedTree<
     return did_split ? hcs : null;
   }
 
-  private static class ScoreBuildOneTree extends H2OCountedCompleter {
+  static class ScoreBuildOneTree extends H2OCountedCompleter {
     final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Numerical columns: Number of histogram bins
@@ -1149,5 +1151,31 @@ public abstract class SharedTree<
 
     return true;
   }
-  
+
+  SharedTreeDebugParams getDebugParams() {
+    if (_debugParms == null) {
+      _debugParms = new SharedTreeDebugParams();
+    }
+    return _debugParms;
+  }
+
+  /**
+   * Modify algorithm inner workings - only meant for development
+   * 
+   * @param debugParms instance of SharedTreeDebugParams
+   */
+  public void setDebugParams(SharedTreeDebugParams debugParms) {
+    _debugParms = debugParms;
+  }
+
+  public static class SharedTreeDebugParams extends Iced<SharedTreeDebugParams> {
+    public boolean _reproducible_histos;
+    public boolean _keep_orig_histo_precision;
+
+    public SharedTreeDebugParams() {
+      _reproducible_histos = H2O.getSysBoolProperty("tree.SharedTree.reproducibleHistos", false);
+      _keep_orig_histo_precision = H2O.getSysBoolProperty("tree.SharedTree.keepOrigHistoPrecision", false);;
+    }
+  }
+
 }
