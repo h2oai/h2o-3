@@ -18,6 +18,7 @@ import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.CompressedTree;
 import hex.tree.Constraints;
+import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
 import org.hamcrest.number.OrderingComparison;
 import org.junit.*;
@@ -4578,8 +4579,23 @@ public class GBMTest extends TestUtil {
     Assume.assumeTrue(H2O.CLOUD.size() == 1); // don't run on multinode (too long)
     checkReproducibility(1.0 + Double.MIN_VALUE, Double.NaN);
   }
-  
+
+  @Test
+  public void testStrictReproducibility() {
+    Assume.assumeTrue(H2O.CLOUD.size() == 1); // don't run on multinode (too long)
+
+    SharedTree.SharedTreeDebugParams debugParms = new SharedTree.SharedTreeDebugParams();
+    debugParms._reproducible_histos = true; // use fully reproducible (deterministic) histograms
+    debugParms._keep_orig_histo_precision = true; // do not reduce precision of histograms in the final step
+    
+    checkReproducibility(0.9, Double.NaN, debugParms);
+  }
+
   private void checkReproducibility(double thresholdNA, double NA) {
+    checkReproducibility(thresholdNA, NA, null);
+  }
+  
+  private void checkReproducibility(double thresholdNA, double NA, SharedTree.SharedTreeDebugParams debugParms) {
     GBMModel model = null;
     Scope.enter();
     try {
@@ -4599,7 +4615,10 @@ public class GBMTest extends TestUtil {
 
       String pojo = null;
       for (int i = 0; i < 10; i++) {
-        model = new GBM(parms).trainModel().get();
+        GBM gbm = new GBM(parms);
+        if (debugParms != null)
+          gbm.setDebugParams(debugParms);
+        model = gbm.trainModel().get();
 
         String modelId = model._key.toString();
         String newPojo = model

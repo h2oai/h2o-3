@@ -7,6 +7,7 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.IcedBitSet;
 import water.util.VecUtils;
+import static hex.tree.SharedTree.ScoreBuildOneTree;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,11 +70,13 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final IcedBitSet _activeCols;
   final int _respIdx;
   final int _predsIdx;
-  final transient boolean _reproducibleHistos;
+  // for debugging purposes
+  final boolean _reproducibleHistos;
+  final boolean _reduceHistoPrecision;
 
-  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
+  public ScoreBuildHistogram2(ScoreBuildOneTree sb, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
                               int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
-    super(cc, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
+    super(sb, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
     _numLeafs = _hcs.length;
     _respIdx = respIdx;
     _predsIdx = predsIdx;
@@ -92,7 +95,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
     _activeCols = activeCols;
     _hcs = ArrayUtils.transpose(_hcs);
-    _reproducibleHistos = H2O.getSysBoolProperty("tree.ScoreBuildHistogram2.reproducibleHistos", false);
+    // initialize debugging parameters
+    SharedTree.SharedTreeDebugParams dp = sb._st.getDebugParams();
+    _reproducibleHistos = dp._reproducible_histos;
+    _reduceHistoPrecision = !dp._keep_orig_histo_precision;
   }
 
   @Override
@@ -413,8 +419,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     _hcs = ArrayUtils.transpose(_hcs);
     for(DHistogram [] ary:_hcs)
       for(DHistogram dh:ary) {
-        if(dh == null) continue;
-        dh.reducePrecision();
+        if (dh == null)
+          continue;
+        if (_reduceHistoPrecision) 
+          dh.reducePrecision();
       }
   }
 }
