@@ -319,6 +319,7 @@ h2o.save_mojo <- function(object, path="", force=FALSE, filename=paste0(object@m
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model details will be written to.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @param filename string indicating the file name. (Type of file is always .json)
 #' @examples
 #' \dontrun{
 #' # library(h2o)
@@ -329,11 +330,12 @@ h2o.save_mojo <- function(object, path="", force=FALSE, filename=paste0(object@m
 #' # h2o.saveModelDetails(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModelDetails <- function(object, path="", force=FALSE) {
+h2o.saveModelDetails <- function(object, path="", force=FALSE, filename=paste0(object@model_id,".json")) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  path <- file.path(path, "/" ,object@model_id, ".json", fsep = "")
+  path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models/",object@model_id,"/json"),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }
