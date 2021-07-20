@@ -946,17 +946,17 @@ class ModelBase(h2o_meta(Keyed)):
     def pr_auc(self, train=False, valid=False, xval=False):
         pass
 
-    def download_model(self, path=""):
+    def download_model(self, path="", filename=None):
         """
         Download an H2O Model object to disk.
     
-        :param model: The model object to download.
         :param path: a path to the directory where the model should be saved.
+        :param filename: a filename for the saved model
     
         :returns: the path of the downloaded model
         """
         assert_is_type(path, str)
-        return h2o.download_model(self, path)
+        return h2o.download_model(self, path, filename=filename)
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
