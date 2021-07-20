@@ -1587,7 +1587,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             // _state.gslvrMultinomial(c) get beta, _state info, _state.betaMultinomial(c, beta) get coef per class
             // _state.ginfoMultinomial(c) get gradient for one class
             LineSearchSolver ls;
-            if (_parms._remove_collinear_columns && _state._iter < 1)
+            if (_parms._remove_collinear_columns)
+              ls = (_state.l1pen() == 0)  // at first iteration, state._beta, ginfo.gradient have not shrunk here
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), 
+                      _state._iter==0?_state.ginfoMultinomial(c):_state.ginfoMultinomialRCC(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
+            else
+              ls = (_state.l1pen() == 0)  // normal case with rcc = false, nothing changes
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
+            
+/*            if (_parms._remove_collinear_columns && _state._iter < 1)
               ls = (_state.l1pen() == 0)  // at first iteration, state._beta, ginfo.gradient have not shrunk here
                       ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomial(c))
                       : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
@@ -1597,8 +1607,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
             else
               ls = (_state.l1pen() == 0)  // normal case with rcc = false, nothing changes
-                    ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
-                    : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());*/
 
             long t1 = System.currentTimeMillis();
             // GLMMultinomialUpdate needs to take beta that contains active columns described in _state.activeDataMultinomial()
