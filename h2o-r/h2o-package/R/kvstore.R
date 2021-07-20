@@ -546,6 +546,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
 #' @param export_cross_validation_predictions A boolean flag indicating whether the download model should be
 #'      saved with CV Holdout Frame predictions. Default is not to export the predictions. 
+#' @param filename string indicating the file name.
 #'
 #' @examples
 #' \dontrun{
@@ -556,7 +557,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' h2o.download_model(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE) {
+h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE, filename=model@model_id) {
 
     if(!is.null(path) && !(is.character(path))){
       stop("The 'path' variable should be of type character")
@@ -570,20 +571,16 @@ h2o.download_model <- function(model, path=NULL, export_cross_validation_predict
     if(!is.logical(export_cross_validation_predictions)){
       stop("The 'export_cross_validation_predictions' variable should be of type logical")
     }
-    
-    #Get model id
-    model_id <- model@model_id
-    
+
     #prepare suffix to get the right endpoint
-    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model_id)
-    modelname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
+    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model@model_id)
     
     #Path to save model, if `path` is provided
-    file_path <- file.path(path, paste0(modelname))
+    file_path <- file.path(path, filename)
     parms <- list(export_cross_validation_predictions=export_cross_validation_predictions)
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE)
     
-    return(paste0(file_path))
+    return(file_path)
 }
 
 #'
