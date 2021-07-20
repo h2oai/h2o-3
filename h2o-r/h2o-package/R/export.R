@@ -224,6 +224,7 @@ h2o.save_frame <- function(x, dir, force = TRUE) {
 #'
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
+#' @param filename string indicating the file name.
 #' @param force logical, indicates how to deal with files that already exist.
 #' @param export_cross_validation_predictions logical, indicates whether the exported model 
 #'        artifacts should also include CV Holdout Frame predictions.  Default is not to export 
@@ -240,12 +241,13 @@ h2o.save_frame <- function(x, dir, force = TRUE) {
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE) {
+h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE, filename=object@model_id) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
   if(!is.logical(export_cross_validation_predictions) || length(export_cross_validation_predictions) != 1L || is.na(export_cross_validation_predictions)) stop("`export_cross_validation_predictions` must be TRUE or FALSE")
-  path <- file.path(path, object@model_id)
+  path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
                            force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
   res$dir
