@@ -1017,19 +1017,23 @@ class ModelBase(h2o_meta(Keyed)):
         path = os.path.join(os.getcwd() if path == "" else path, filename)
         return h2o.api("GET /99/Models.mojo/%s" % self.model_id, data={"dir": path, "force": force})["dir"]
 
-    def save_model_details(self, path="", force=False):
+    def save_model_details(self, path="", force=False, filename=None):
         """
         Save Model Details of an H2O Model in JSON Format to disk.
 
-        :param model: The model object to save.
         :param path: a path to save the model details at (hdfs, s3, local)
         :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+        :param filename: a filename for the saved model (file type is always .json)
 
         :returns str: the path of the saved model details
         """
         assert_is_type(path, str)
         assert_is_type(force, bool)
-        path = os.path.join(os.getcwd() if path == "" else path, self.model_id + ".json")
+        if filename is None:
+            filename = self.model_id + ".json"
+        else:
+            assert_is_type(filename, str)
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
         return h2o.api("GET /99/Models/%s/json" % self.model_id, data={"dir": path, "force": force})["dir"]
 
     @staticmethod
