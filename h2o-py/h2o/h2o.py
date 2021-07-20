@@ -122,7 +122,6 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
     return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
 
 
-
 def connection():
     """Return the current :class:`H2OConnection` handler.
 
@@ -299,7 +298,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True,
+                                     auth=auth, proxy=proxy, cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -848,14 +847,14 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         j["destination_frame"] = destination_frame
 
     parse_column_len = len(j["column_types"]) if skipped_columns is None else (len(j["column_types"])-len(skipped_columns))
-    tempColumnNames = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
-    useType = [True]*len(tempColumnNames)
+    temp_column_names = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
+    use_type = [True]*len(temp_column_names)
     if skipped_columns is not None:
-        useType = [True]*len(tempColumnNames)
+        use_type = [True]*len(temp_column_names)
 
-        for ind in range(len(tempColumnNames)):
+        for ind in range(len(temp_column_names)):
             if ind in skipped_columns:
-                useType[ind]=False
+                use_type[ind]=False
 
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
@@ -870,12 +869,12 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
                 % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
         counter = 0
-        for ind in range(len(tempColumnNames)):
-            if useType[ind]:
-                tempColumnNames[ind]=column_names[counter]
-                counter=counter+1
+        for ind in range(len(temp_column_names)):
+            if use_type[ind]:
+                temp_column_names[ind]=column_names[counter]
+                counter = counter+1
 
-    if (column_types is not None): # keep the column types to include all columns
+    if column_types is not None: # keep the column types to include all columns
         if isinstance(column_types, dict):
             # overwrite dictionary to ordered list of column types. if user didn't specify column type for all names,
             # use type provided by backend
@@ -886,7 +885,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             idx = 0
             column_types_list = []
 
-            for name in tempColumnNames: # column_names may have already been changed
+            for name in temp_column_names: # column_names may have already been changed
                 if name in column_types:
                     column_types_list.append(column_types[name])
                 else:
@@ -902,7 +901,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             column_types_list = j["column_types"]
             counter = 0
             for ind in range(len(j["column_types"])):
-                if useType[ind] and (column_types[counter]!=None):
+                if use_type[ind] and column_types[counter] is not None:
                     column_types_list[ind]=column_types[counter]
                     counter=counter+1
 
@@ -938,7 +937,6 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             for colidx in skipped_columns:
                 if (colidx < 0): raise ValueError("skipped column index cannot be negative")
                 j["skipped_columns"].append(colidx)
-
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
@@ -1546,6 +1544,7 @@ def upload_model(path):
     res = api("POST /99/Models.upload.bin/%s" % "", data={"dir": frame_key})
     return get_model(res["models"][0]["model_id"]["name"])
 
+
 def load_model(path):
     """
     Load a saved H2O model from disk. (Note that ensemble binary models can now be loaded using this method.)
@@ -1658,7 +1657,6 @@ def cluster():
     >>> h2o.cluster()
     """
     return h2oconn.cluster if h2oconn else None
-
 
 
 def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
@@ -2272,7 +2270,7 @@ def import_mojo(mojo_path):
     >>> original_model_filename = model.download_mojo(original_model_filename)
     >>> mojo_model = h2o.import_mojo(original_model_filename)
     """
-    if mojo_path == None:
+    if mojo_path is None:
         raise TypeError("MOJO path may not be None")
     mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
     print(mojo_estimator)
@@ -2366,7 +2364,8 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     else:
         raise H2OError("Unable to print MOJO: %s" % output)
 
-def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0, time_cols = 0, uuid_cols = 0):
+
+def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, time_cols=0, uuid_cols=0):
     """
     Computes an estimate for cluster memory usage in GB.
     
@@ -2394,38 +2393,38 @@ def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols =
     >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
     >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
     
-    """    
+    """
     import math
-    
-    if (ncols < 0):
+
+    if ncols < 0:
         raise ValueError("ncols can't be a negative number")
-    
-    if (nrows < 0):
+
+    if nrows < 0:
         raise ValueError("nrows can't be a negative number")
-    
-    if (num_cols < 0):
+
+    if num_cols < 0:
         raise ValueError("num_cols can't be a negative number")
-    
-    if (string_cols < 0):
+
+    if string_cols < 0:
         raise ValueError("string_cols can't be a negative number")
-    
-    if (cat_cols < 0):
+
+    if cat_cols < 0:
         raise ValueError("cat_cols can't be a negative number")
-    
-    if (time_cols < 0):
+
+    if time_cols < 0:
         raise ValueError("time_cols can't be a negative number")
-    
-    if (uuid_cols < 0):
+
+    if uuid_cols < 0:
         raise ValueError("uuid_cols can't be a negative number")
-    
-    BASE_MEM_REQUIREMENT_MB = 32
-    SAFETY_FACTOR = 4
-    BYTES_IN_MB = 1024 * 1024
-    BYTES_IN_GB = 1024 * BYTES_IN_MB
+
+    base_mem_requirement_mb = 32
+    safety_factor = 4
+    bytes_in_mb = 1024 * 1024
+    bytes_in_gb = 1024 * bytes_in_mb
 
     known_cols = num_cols + string_cols + uuid_cols + cat_cols + time_cols
-    
-    if (known_cols > ncols):
+
+    if known_cols > ncols:
         raise ValueError("There can not be more specific columns then columns in total")
 
     unknown_cols = ncols - known_cols
@@ -2442,16 +2441,18 @@ def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols =
     time_size = 8
     time_requirement = time_size * time_cols * nrows
     data_requirement = unknown_requirement + num_requirement + string_requirement + uuid_requirement + cat_requirement + time_requirement
-    mem_req = (BASE_MEM_REQUIREMENT_MB * BYTES_IN_MB + data_requirement) * SAFETY_FACTOR / BYTES_IN_GB
+    mem_req = (base_mem_requirement_mb * bytes_in_mb + data_requirement) * safety_factor / bytes_in_gb
     return math.ceil(mem_req)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
 # Private
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def _check_connection():
     if not h2oconn or not h2oconn.cluster:
         raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
+
 
 def _connect_with_conf(conn_conf):
     conf = conn_conf
@@ -2461,9 +2462,10 @@ def _connect_with_conf(conn_conf):
     return connect(url=conf.url, verify_ssl_certificates=conf.verify_ssl_certificates, cacert=conf.cacert,
                    auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose)
 
-#-----------------------------------------------------------------------------------------------------------------------
-#  ALL DEPRECATED METHODS BELOW
-#-----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Deprecated functions
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Deprecated since 2015-10-08
 @deprecated_fn(replaced_by=import_file)

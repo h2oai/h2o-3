@@ -6,153 +6,51 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 
+from functools import partial
+from h2o.schemas import _ignored_schema_keys
+
 
 class H2OErrorV3(object):
-    """
-    """
-    def __init__(self, keyvals):
+    
+    def __init__(self):
         self._props = {}
-        self._endpoint = None
-        self._payload = None
+        self.endpoint = None
+        self.payload = None
+        
+    @classmethod
+    def make(cls, keyvals):
+        err = cls()
         for k, v in keyvals:
-            if k == "__meta" or k == "_exclude_fields" or k == "__schema": continue
-            if k in _h2oerror_v3_valid_keys:
-                if k.endswith("msg"): v = v.replace("ERROR MESSAGE:", "").strip()
-                self._props[k] = v
-            else:
-                raise AttributeError("Attribute %s cannot be set on H2OErrorV3 (= %r)" % (k, v))
+            if k in _ignored_schema_keys: continue
+            if not hasattr(cls, k):
+                # we can add properties dynamically here as they are defined statically on the backend
+                # as properties of water.api.schemas3.H2OErrorV3 (or subclasses)
+                setattr(cls, k, property(partial(cls.__getitem__, name=k)))
+            if k.endswith("msg"):
+                v = v.replace("ERROR MESSAGE:", "").strip()
+            err._props[k] = v
 
-    @property
-    def stacktrace(self):
-        return self._props["stacktrace"]
+    def __getitem__(self, name):
+        return self._props.get(name)
 
-    @property
-    def timestamp(self):
-        return self._props["timestamp"]
-
-    @property
-    def error_url(self):
-        return self._props["error_url"]
-
-    @property
-    def exception_type(self):
-        return self._props["exception_type"]
-
-    @property
-    def exception_msg(self):
-        return self._props["exception_msg"]
-
-    @property
-    def dev_msg(self):
-        return self._props["dev_msg"]
-
-    @property
-    def http_status(self):
-        return self._props["http_status"]
-
-    @property
-    def msg(self):
-        return self._props["msg"]
-
-    @property
-    def values(self):
-        return self._props["values"]
-
-
-    @property
-    def endpoint(self):
-        return self._endpoint
-
-    @endpoint.setter
-    def endpoint(self, value):
-        self._endpoint = value
-
-    @property
-    def payload(self):
-        return self._payload
-
-    @payload.setter
-    def payload(self, value):
-        self._payload = value
-
-    def __repr__(self):
+    def __str__(self):
         res = "Server error %s:\n" % self.exception_type
         res += "  Error: %s\n" % self.msg
         res += "  Request: %s\n" % self.endpoint
-        if self._payload:
-            if self._payload[0]: res += "    data: %r\n" % self._payload[0]
-            if self._payload[1]: res += "    json: %r\n" % self._payload[1]
-            if self._payload[2]: res += "    file: %r\n" % self._payload[2]
-            if self._payload[3]: res += "    params: %r\n" % self._payload[3]
+        if self.payload:
+            if self.payload[0]: res += "    data: %r\n" % self.payload[0]
+            if self.payload[1]: res += "    json: %r\n" % self.payload[1]
+            if self.payload[2]: res += "    file: %r\n" % self.payload[2]
+            if self.payload[3]: res += "    params: %r\n" % self.payload[3]
         return res
 
 
-class H2OModelBuilderErrorV3(object):
-    def __init__(self, keyvals):
-        self._props = {}
-        self._endpoint = None
-        self._payload = None
-        for k, v in keyvals:
-            if k == "__meta" or k == "_exclude_fields" or k == "__schema": continue
-            if k in _h2omberror_v3_valid_keys:
-                if k.endswith("msg"): v = v.replace("ERROR MESSAGE:", "").strip()
-                self._props[k] = v
-            else:
-                raise AttributeError("Attribute %s cannot be set on H2OModelBuilderErrorV3 (= %r)" % (k, v))
-
-    def __getitem__(self, key):
-        if key in self._props:
-            return self._props[key]
-
-    @property
-    def stacktrace(self):
-        return self._props["stacktrace"]
-
-    @property
-    def timestamp(self):
-        return self._props["timestamp"]
-
-    @property
-    def error_url(self):
-        return self._props["error_url"]
-
-    @property
-    def exception_type(self):
-        return self._props["exception_type"]
-
-    @property
-    def exception_msg(self):
-        return self._props["exception_msg"]
-
-    @property
-    def dev_msg(self):
-        return self._props["dev_msg"]
-
-    @property
-    def http_status(self):
-        return self._props["http_status"]
-
-    @property
-    def msg(self):
-        return self._props["msg"]
-
-    @property
-    def values(self):
-        return self._props["values"]
-
-    @property
-    def messages(self):
-        return self._props["messages"]
-
-    @property
-    def error_count(self):
-        return self._props["error_count"]
-
-    @property
-    def parameters(self):
-        return self._props["parameters"]
-
-    def __repr__(self):
+class H2OModelBuilderErrorV3(H2OErrorV3):
+    
+    def __init__(self):
+        super(H2OModelBuilderErrorV3, self).__init__(self)
+       
+    def __str__(self):
         res = "ModelBuilderErrorV3  (%s):\n" % self.exception_type
         for k, v in self._props.items():
             if k in {"exception_type"}: continue
@@ -163,12 +61,3 @@ class H2OModelBuilderErrorV3(object):
             else:
                 res += "    %s = %r\n" % (k, v)
         return res
-
-
-
-
-_h2oerror_v3_valid_keys = {"stacktrace", "timestamp", "error_url", "exception_type", "exception_msg", "dev_msg",
-                           "http_status", "msg", "values"}
-
-_h2omberror_v3_valid_keys = {"stacktrace", "timestamp", "error_url", "exception_type", "exception_msg", "dev_msg",
-                             "http_status", "msg", "values", "messages", "error_count", "parameters"}

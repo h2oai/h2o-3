@@ -490,16 +490,15 @@ class H2OConnection(h2o_meta()):
             raise H2OConnectionError("Timeout after %.3fs" % elapsed_time)
         except H2OResponseError as e:
             err = e.args[0]
-            err.endpoint = endpoint
-            err.payload = (data, json, files, params)
+            if isinstance(err, H2OErrorV3):
+                err.endpoint = endpoint
+                err.payload = (data, json, files, params)
             raise
-
 
     @staticmethod
     def save_to_detect(resp):
         disposition = resp.headers['Content-Disposition']
         return disposition.split("filename=")[1].strip()
-
 
     def close(self):
         """
@@ -520,7 +519,6 @@ class H2OConnection(h2o_meta()):
                 self._log_end_exception(e)
             self._session_id = None
         self._stage = -1
-
 
     @property
     def connected(self):
@@ -564,7 +562,6 @@ class H2OConnection(h2o_meta()):
         """Handler to the H2OLocalServer instance (if connected to one)."""
         return self._local_server
 
-
     @property
     def requests_count(self):
         """Total number of request requests made since the connection was opened (used for debug purposes)."""
@@ -579,7 +576,6 @@ class H2OConnection(h2o_meta()):
     def timeout_interval(self, v):
         assert_is_type(v, numeric, None)
         self._timeout = v
-
 
     def start_logging(self, dest=None):
         """
@@ -601,11 +597,10 @@ class H2OConnection(h2o_meta()):
             self._print("Logging stopped.")
             self._is_logging = False
 
-
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # PRIVATE
-    #-------------------------------------------------------------------------------------------------------------------
-
+    # ------------------------------------------------------------------------------------------------------------------
+ 
     def __init__(self):
         """[Private] Please use H2OConnection.connect() to create H2OConnection objects."""
         globals()["__H2OCONN__"] = self  # for backward-compatibility: __H2OCONN__ is the latest instantiated object
@@ -627,7 +622,6 @@ class H2OConnection(h2o_meta()):
         self._logging_dest = None   # where the log messages will be written, either filename or open file handle
         self._local_server = None   # H2OLocalServer instance to which we are connected (if known)
         # self.start_logging(sys.stdout)
-
 
     def _test_connection(self, max_retries=5, messages=None):
         """
@@ -683,7 +677,6 @@ class H2OConnection(h2o_meta()):
             raise H2OConnectionError("Could not establish link to the H2O cloud %s after %d retries\n%s"
                                      % (self._base_url, max_retries, "\n".join(errors)))
 
-
     @staticmethod
     def _prepare_data_payload(data):
         """
@@ -708,7 +701,6 @@ class H2OConnection(h2o_meta()):
             res[key] = value
         return res
 
-
     @staticmethod
     def _prepare_file_payload(filename):
         """
@@ -722,7 +714,6 @@ class H2OConnection(h2o_meta()):
         if not os.path.exists(absfilename):
             raise H2OValueError("File %s does not exist" % filename, skip_frames=1)
         return {os.path.basename(absfilename): open(absfilename, "rb")}
-
 
     def _log_start_transaction(self, endpoint, data, json, files, params):
         """Log the beginning of an API request."""
@@ -740,7 +731,6 @@ class H2OConnection(h2o_meta()):
         if files is not None:  msg += "     file: %s\n" % ", ".join(f.name for f in viewvalues(files))
         self._log_message(msg + "\n")
 
-
     def _log_end_transaction(self, start_time, response):
         """Log response from an API request."""
         if not self._is_logging: return
@@ -751,12 +741,10 @@ class H2OConnection(h2o_meta()):
         msg += response.text
         self._log_message(msg + "\n\n")
 
-
     def _log_end_exception(self, exception):
         """Log API request that resulted in an exception."""
         if not self._is_logging: return
         self._log_message(">>> %s\n\n" % str(exception))
-
 
     def _log_message(self, msg):
         """
@@ -771,7 +759,6 @@ class H2OConnection(h2o_meta()):
                 f.write(msg)
         else:
             self._logging_dest.write(msg)
-
 
     @staticmethod
     def _process_response(response, save_to):
@@ -820,7 +807,7 @@ class H2OConnection(h2o_meta()):
             return data
 
         # Client errors (400 = "Bad Request", 404 = "Not Found", 412 = "Precondition Failed")
-        if status_code in {400, 404, 412} and isinstance(data, (H2OErrorV3, H2OModelBuilderErrorV3)):
+        if status_code in {400, 404, 412} and isinstance(data, H2OErrorV3):
             raise H2OResponseError(data)
 
         # Server errors (notably 500 = "Server Error")
@@ -828,19 +815,16 @@ class H2OConnection(h2o_meta()):
         # did not provide the correct status code.
         raise H2OServerError("HTTP %d %s:\n%r" % (status_code, response.reason, data))
 
-
     @staticmethod
     def _find_file_name(response):
         cd = response.headers.get("Content-Disposition", "")
         mm = re.search(r'filename="(.*)"$', cd)
         return mm.group(1) if mm else "unknown"
 
-
     def _print(self, msg, flush=False, end="\n"):
         """Helper function to print connection status messages when in verbose mode."""
         if self._verbose:
             print2(msg, end=end, flush=flush)
-
 
     def __repr__(self):
         if self._stage == 0:
@@ -862,7 +846,6 @@ class H2OConnection(h2o_meta()):
         return False  # ensure that any exception will be re-raised
 
 
-
 class H2OResponse(dict):
     """Temporary..."""
 
@@ -878,9 +861,9 @@ class H2OResponse(dict):
             if k == "__schema" and is_type(v, str):
                 schema = v
                 break
-        if schema == "CloudV3": return H2OCluster.from_kvs(keyvals)
-        if schema == "H2OErrorV3": return H2OErrorV3(keyvals)
-        if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3(keyvals)
+        if schema == "CloudV3": return H2OCluster.make(keyvals)
+        if schema == "H2OErrorV3": return H2OErrorV3.make(keyvals)
+        if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3.make(keyvals)
         if schema == "TwoDimTableV3": return H2OTwoDimTable.make(keyvals)
         if schema == "ModelMetricsRegressionV3": return H2ORegressionModelMetrics.make(keyvals)
         if schema == "ModelMetricsClusteringV3": return H2OClusteringModelMetrics.make(keyvals)
@@ -907,10 +890,9 @@ except Exception as exc:
     JSONDecodeError = type(exc)
     del _r
 
-
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Deprecated method implementations
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 __H2OCONN__ = H2OConnection()  # Latest instantiated H2OConnection object. Do not use in any new code!
 __H2O_REST_API_VERSION__ = 3   # Has no actual meaning

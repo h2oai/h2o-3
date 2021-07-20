@@ -15,13 +15,14 @@ __all__ = ("H2OStartupError", "H2OConnectionError", "H2OServerError", "H2ORespon
 class H2OError(Exception):
     """Base class for all H2O exceptions."""
 
+
 class H2OSoftError(H2OError):
     """Base class for exceptions that trigger "soft" exception handling hook."""
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # H2OValueError
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 class H2OValueError(H2OSoftError, ValueError):
     """Error indicating that wrong parameter value was passed to a function."""
@@ -31,12 +32,11 @@ class H2OValueError(H2OSoftError, ValueError):
         super(H2OValueError, self).__init__(message)
         self.var_name = var_name
         self.skip_frames = skip_frames
+        
 
-
-
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # H2OTypeError
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 class H2OTypeError(H2OSoftError, TypeError):
     """
@@ -94,10 +94,9 @@ class H2OTypeError(H2OSoftError, TypeError):
         return self._skip_frames
 
 
-
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Backend exceptions
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 class H2OStartupError(H2OSoftError):
     """Raised by H2OLocalServer when the class fails to launch a server."""
@@ -115,7 +114,10 @@ class H2OConnectionError(H2OSoftError):
 # This should have been extending from Exception as well; however in old code version all exceptions were
 # EnvironmentError's, so for old code to work we extend H2OResponseError from EnvironmentError.
 class H2OResponseError(H2OError, EnvironmentError):
-    """Raised when the server encounters a user error and sends back an H2OErrorV3 response."""
+    """
+    Raised when the server encounters a user error and sends back an H2OErrorV3 response.
+    H2OResponseError should always be constructed with 
+    """
 
 
 class H2OServerError(H2OError):
@@ -138,9 +140,9 @@ class H2OServerError(H2OError):
         self.stacktrace = stacktrace
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # H2OJobCancelled
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 class H2OJobCancelled(H2OError):
     """
@@ -151,9 +153,9 @@ class H2OJobCancelled(H2OError):
     """
 
 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Warnings 
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 class H2ODeprecationWarning(DeprecationWarning):
     """
