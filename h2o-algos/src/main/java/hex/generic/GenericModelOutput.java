@@ -92,7 +92,7 @@ public class GenericModelOutput extends Model.Output {
                     return new ModelMetricsBinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], glmBinomial._sigma,
                             auc, binomial._logloss, convertTable(binomial._gains_lift_table),
-                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
+                            customMetric(mojoMetrics), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                             convertTable(binomial._confusion_matrix), glmBinomial._nullDegressOfFreedom, glmBinomial._residualDegressOfFreedom,
                             glmBinomial._resDev, glmBinomial._nullDev, glmBinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
@@ -101,7 +101,7 @@ public class GenericModelOutput extends Model.Output {
                     return new ModelMetricsBinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], binomial._sigma,
                             auc, binomial._logloss, convertTable(binomial._gains_lift_table),
-                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), binomial._mean_per_class_error,
+                            customMetric(mojoMetrics), binomial._mean_per_class_error,
                             convertTable(binomial._thresholds_and_metric_scores), convertTable(binomial._max_criteria_and_metric_scores),
                             convertTable(binomial._confusion_matrix), binomial._r2, binomial._description);
                 }
@@ -116,7 +116,7 @@ public class GenericModelOutput extends Model.Output {
                     return new ModelMetricsMultinomialGLMGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], glmMultinomial._sigma,
                             convertTable(glmMultinomial._confusion_matrix), convertTable(glmMultinomial._hit_ratios),
-                            glmMultinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                            glmMultinomial._logloss, customMetric(mojoMetrics),
                             glmMultinomial._mean_per_class_error, glmMultinomial._nullDegressOfFreedom, glmMultinomial._residualDegressOfFreedom,
                             glmMultinomial._resDev, glmMultinomial._nullDev, glmMultinomial._AIC, convertTable(modelAttributesGLM._coefficients_table),
                             glmMultinomial._r2, convertTable(glmMultinomial._multinomial_auc), convertTable(glmMultinomial._multinomial_aucpr),
@@ -126,7 +126,7 @@ public class GenericModelOutput extends Model.Output {
                     return new ModelMetricsMultinomialGeneric(null, null, mojoMetrics._nobs, mojoMetrics._MSE,
                             _domains[_domains.length - 1], multinomial._sigma,
                             convertTable(multinomial._confusion_matrix), convertTable(multinomial._hit_ratios),
-                            multinomial._logloss, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                            multinomial._logloss, customMetric(mojoMetrics),
                             multinomial._mean_per_class_error, multinomial._r2, convertTable(multinomial._multinomial_auc), convertTable(multinomial._multinomial_aucpr),
                             MultinomialAucType.valueOf((String)modelAttributes.getParameterValueByName("auc_type")), multinomial._description);
                 }
@@ -139,7 +139,7 @@ public class GenericModelOutput extends Model.Output {
                     final MojoModelMetricsRegressionGLM regressionGLM = (MojoModelMetricsRegressionGLM) mojoMetrics;
                     return new ModelMetricsRegressionGLMGeneric(null, null, regressionGLM._nobs, regressionGLM._MSE,
                             regressionGLM._sigma, regressionGLM._mae, regressionGLM._root_mean_squared_log_error, regressionGLM._mean_residual_deviance,
-                            new CustomMetric(regressionGLM._custom_metric_name, regressionGLM._custom_metric_value), regressionGLM._r2,
+                            customMetric(regressionGLM), regressionGLM._r2,
                             regressionGLM._nullDegressOfFreedom, regressionGLM._residualDegressOfFreedom, regressionGLM._resDev,
                             regressionGLM._nullDev, regressionGLM._AIC, convertTable(modelAttributesGLM._coefficients_table));
                 } else {
@@ -147,14 +147,14 @@ public class GenericModelOutput extends Model.Output {
 
                     return new ModelMetricsRegressionGeneric(null, null, metricsRegression._nobs, metricsRegression._MSE,
                             metricsRegression._sigma, metricsRegression._mae, metricsRegression._root_mean_squared_log_error, metricsRegression._mean_residual_deviance,
-                            new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value), mojoMetrics._description);
+                            customMetric(mojoMetrics), mojoMetrics._description);
                 }
             case AnomalyDetection:
                 assert mojoMetrics instanceof MojoModelMetricsAnomaly;
                 // There is no need to introduce new Generic alternatives to the original metric objects at the moment.
                 // The total values can be simply calculated. The extra calculation time is negligible.
                 MojoModelMetricsAnomaly metricsAnomaly = (MojoModelMetricsAnomaly) mojoMetrics;
-                return new ModelMetricsAnomaly(null, null, new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value),
+                return new ModelMetricsAnomaly(null, null, customMetric(mojoMetrics),
                         mojoMetrics._nobs, metricsAnomaly._mean_score * metricsAnomaly._nobs, metricsAnomaly._mean_normalized_score * metricsAnomaly._nobs,
                         metricsAnomaly._description);
             case Ordinal:
@@ -166,7 +166,7 @@ public class GenericModelOutput extends Model.Output {
                     MojoModelMetricsOrdinalGLM ordinalMetrics = (MojoModelMetricsOrdinalGLM) mojoMetrics;
                     return new ModelMetricsOrdinalGLMGeneric(null, null, ordinalMetrics._nobs, ordinalMetrics._MSE,
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
-                            ordinalMetrics._logloss, new CustomMetric(ordinalMetrics._custom_metric_name, ordinalMetrics._custom_metric_value),
+                            ordinalMetrics._logloss, customMetric(ordinalMetrics),
                             ordinalMetrics._r2, ordinalMetrics._nullDegressOfFreedom, ordinalMetrics._residualDegressOfFreedom, ordinalMetrics._resDev,
                             ordinalMetrics._nullDev, ordinalMetrics._AIC, convertTable(modelAttributesGLM._coefficients_table),
                             convertTable(ordinalMetrics._hit_ratio_table), ordinalMetrics._mean_per_class_error, ordinalMetrics._description);
@@ -174,7 +174,7 @@ public class GenericModelOutput extends Model.Output {
                     MojoModelMetricsOrdinal ordinalMetrics = (MojoModelMetricsOrdinal) mojoMetrics;
                     return new ModelMetricsOrdinalGeneric(null, null, ordinalMetrics._nobs, ordinalMetrics._MSE,
                             ordinalMetrics._domain, ordinalMetrics._sigma, convertTable(ordinalMetrics._cm), ordinalMetrics._hit_ratios,
-                            ordinalMetrics._logloss, new CustomMetric(ordinalMetrics._custom_metric_name, ordinalMetrics._custom_metric_value),
+                            ordinalMetrics._logloss, customMetric(ordinalMetrics),
                             convertTable(ordinalMetrics._hit_ratio_table), ordinalMetrics._mean_per_class_error, ordinalMetrics._description);
                 }
             case Unknown:
@@ -185,10 +185,16 @@ public class GenericModelOutput extends Model.Output {
             case CoxPH:
             default:
                 return new ModelMetrics(null, null, mojoMetrics._nobs, mojoMetrics._MSE, mojoMetrics._description,
-                        new CustomMetric(mojoMetrics._custom_metric_name, mojoMetrics._custom_metric_value));
+                        customMetric(mojoMetrics));
         }
     }
 
+    private static CustomMetric customMetric(MojoModelMetrics mojoModelMetrics) {
+        if (mojoModelMetrics._custom_metric_name == null)
+            return null;
+        return new CustomMetric(mojoModelMetrics._custom_metric_name, mojoModelMetrics._custom_metric_value);
+    }
+    
     @Override
     public double defaultThreshold() {
         return _defaultThreshold;
