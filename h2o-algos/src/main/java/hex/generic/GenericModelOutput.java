@@ -177,12 +177,18 @@ public class GenericModelOutput extends Model.Output {
                             ordinalMetrics._logloss, customMetric(ordinalMetrics),
                             convertTable(ordinalMetrics._hit_ratio_table), ordinalMetrics._mean_per_class_error, ordinalMetrics._description);
                 }
+            case CoxPH:
+                assert mojoMetrics instanceof MojoModelMetricsRegressionCoxPH;
+                MojoModelMetricsRegressionCoxPH metricsCoxPH = (MojoModelMetricsRegressionCoxPH) mojoMetrics;
+                return new ModelMetricsRegressionCoxPH(null, null, metricsCoxPH._nobs, metricsCoxPH._MSE,
+                        metricsCoxPH._sigma, metricsCoxPH._mae, metricsCoxPH._root_mean_squared_log_error, metricsCoxPH._mean_residual_deviance,
+                        customMetric(mojoMetrics),
+                        metricsCoxPH._concordance, metricsCoxPH._concordant, metricsCoxPH._discordant, metricsCoxPH._tied_y);
             case Unknown:
             case Clustering:
             case AutoEncoder:
             case DimReduction:
             case WordEmbedding:
-            case CoxPH:
             default:
                 return new ModelMetrics(null, null, mojoMetrics._nobs, mojoMetrics._MSE, mojoMetrics._description,
                         customMetric(mojoMetrics));
