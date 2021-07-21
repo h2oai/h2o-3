@@ -304,20 +304,6 @@ def test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0():
     assert amodel._model_json["output"]["cross_validation_fold_assignment_frame_id"] == None
 
 
-def test_stacked_ensembles_are_trained_after_timeout():
-    print("Check that Stacked Ensembles are still trained after timeout")
-    max_runtime_secs = 10
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['XGBoost', 'DeepLearning'])
-    start = time.time()
-    aml.train(y=ds['target'], training_frame=ds['train'])
-    end = time.time()
-    assert end-start - max_runtime_secs > 0
-
-    _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) > 0, "StackedEnsemble should still be trained after timeout"  # we don't need to test if all SEs are built, there may be only one if just one model type was built.
-
-
 def test_automl_stops_after_max_models():
     print("Check that automl gets interrupted after `max_models`")
     ds = import_dataset()
@@ -449,7 +435,6 @@ pu.run_tests([
     test_nfolds_default_and_fold_assignements_skipped_by_default,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
-    test_stacked_ensembles_are_trained_after_timeout,
     test_automl_stops_after_max_models,
     test_stacked_ensembles_are_trained_after_max_models,
     test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
