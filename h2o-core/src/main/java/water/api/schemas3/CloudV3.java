@@ -110,9 +110,6 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
   @API(help="leader_idx", direction=API.Direction.OUTPUT)
   public int leader_idx = -1;
 
-  @API(help="fou le jour, bar de nuit", direction=API.Direction.OUTPUT)
-  public boolean foobar;
-  
   // Output fields one-per-JVM
   public static class NodeV3 extends SchemaV3<Iced, NodeV3> {
     public NodeV3() {}

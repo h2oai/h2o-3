@@ -19,21 +19,10 @@ from .backend import H2OLocalServer
 from .base import Keyed
 from .estimators import create_estimator
 from .estimators.generic import H2OGenericEstimator
-from .exceptions import H2OConnectionError, H2OValueError, H2OError, H2ODeprecationWarning
+from .exceptions import H2OError, H2ODeprecationWarning
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
-from .estimators.glrm import H2OGeneralizedLowRankEstimator
-from .estimators.kmeans import H2OKMeansEstimator
-from .estimators.naive_bayes import H2ONaiveBayesEstimator
-from .estimators.pca import H2OPrincipalComponentAnalysisEstimator
-from .estimators.random_forest import H2ORandomForestEstimator
-from .estimators.stackedensemble import H2OStackedEnsembleEstimator
-from .estimators.word2vec import H2OWord2vecEstimator
-from .estimators.isolation_forest import H2OIsolationForestEstimator
-from .transforms.decomposition import H2OSVD
 from .estimators.xgboost import H2OXGBoostEstimator
-from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
-from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
 from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
@@ -56,7 +45,7 @@ h2oconn = None  # type: H2OConnection
 
 def connect(server=None, url=None, ip=None, port=None,
             https=None, verify_ssl_certificates=None, cacert=None,
-            auth=None, proxy=None, cookies=None, verbose=True, config=None):
+            auth=None, proxy=None, cookies=None, verbose=True, config=None, strict_version_check=False):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -75,7 +64,8 @@ def connect(server=None, url=None, ip=None, port=None,
     :param proxy: Proxy server address.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
-    :param connection_conf: Connection configuration object encapsulating connection parameters.
+    :param config: Connection configuration object encapsulating connection parameters.
+    :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -90,16 +80,17 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
+    svc = _strict_version_check(strict_version_check, config=config)
     if config:
         if "connect_params" in config:
-            h2oconn = _connect_with_conf(config["connect_params"])
+            h2oconn = _connect_with_conf(config["connect_params"], strict_version_check=svc)
         else:
-            h2oconn = _connect_with_conf(config)
+            h2oconn = _connect_with_conf(config, strict_version_check=svc)
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      proxy=proxy, cookies=cookies,
-                                     verbose=verbose)
+                                     verbose=verbose, strict_version_check=svc)
         if verbose:
             h2oconn.cluster.show_status()
     return h2oconn
@@ -131,40 +122,6 @@ def connection():
     >>> temp
     """
     return h2oconn
-
-
-def version_check():
-    """Used to verify that h2o-python module and the H2O server are compatible with each other."""
-    from .__init__ import __version__ as ver_pkg
-    ci = h2oconn.cluster
-    if not ci:
-        raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
-    ver_h2o = ci.version
-    if ver_pkg == "SUBST_PROJECT_VERSION": ver_pkg = "UNKNOWN"
-    if str(ver_h2o) != str(ver_pkg):
-        branch_name_h2o = ci.branch_name
-        build_number_h2o = ci.build_number
-        if build_number_h2o is None or build_number_h2o == "unknown":
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "Upgrade H2O and h2o-Python to latest stable version - "
-                "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
-                "".format(ver_h2o, ver_pkg))
-        elif build_number_h2o == "99999":
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "This is a developer build, please contact your developer."
-                "".format(ver_h2o, ver_pkg))
-        else:
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "Install the matching h2o-Python version from - "
-                "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
-                "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
-    # Check age of the install
-    if ci.build_too_old:
-        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
-              "version from http://h2o.ai/download/".format(ci.build_age))
 
 
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
@@ -263,7 +220,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
-    check_version = True
+    svc = _strict_version_check(strict_version_check)
     verify_ssl_certificates = not insecure
 
     # Apply the config file if ignore_config=False
@@ -277,13 +234,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
             cookies = config["init.cookies"].split(";")
         if auth is None and "init.username" in config and "init.password" in config:
             auth = (config["init.username"], config["init.password"])
-        if strict_version_check is None:
-            if "init.check_version" in config:
-                check_version = config["init.check_version"].lower() != "false"
-            elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
-                check_version = False
-        else:
-            check_version = strict_version_check
+        svc = _strict_version_check(strict_version_check, config=config)
         # Note: `verify_ssl_certificates` is never None at this point => use `insecure` to check for None/default input)
         if insecure is None and "init.verify_ssl_certificates" in config:
             verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
@@ -299,8 +250,9 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      auth=auth, proxy=proxy, cookies=cookies, verbose=True,
-                                     _msgs=("Checking whether there is an H2O instance running at {url} ",
-                                            "connected.", "not found."))
+                                     msgs=("Checking whether there is an H2O instance running at {url} ",
+                                           "connected.", "not found."),
+                                     strict_version_check=svc)
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
         if port and not str(port).endswith("+") and not kwargs.get("as_port", False):
@@ -318,9 +270,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
-                                     cacert=cacert, auth=auth, proxy=proxy,cookies=cookies, verbose=True)
-    if check_version:
-        version_check()
+                                     cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     strict_version_check=svc)
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
 
@@ -2452,15 +2403,24 @@ def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, ti
 def _check_connection():
     if not h2oconn or not h2oconn.cluster:
         raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
+    
+    
+def _strict_version_check(force_version_check=None, config=None):
+    if force_version_check is None:
+        if config is not None and "init.check_version" in config:
+            return config["init.check_version"].lower() != "false"
+        else:
+            return os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK", "false").lower() == "false"
+    return force_version_check
 
 
-def _connect_with_conf(conn_conf):
+def _connect_with_conf(conn_conf, **kwargs):
     conf = conn_conf
     if isinstance(conn_conf, dict):
         conf = H2OConnectionConf(config=conn_conf)
     assert_is_type(conf, H2OConnectionConf)
     return connect(url=conf.url, verify_ssl_certificates=conf.verify_ssl_certificates, cacert=conf.cacert,
-                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose)
+                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose, **kwargs)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -2526,3 +2486,10 @@ def list_timezones():
     """Deprecated."""
     _check_connection()
     return cluster().list_timezones()
+
+# Deprecated since 2021-07
+@deprecated_fn("Deprecated, use ``h2o.cluster().check_version()`` instead.")
+def version_check():
+    _check_connection()
+    cluster().check_version(strict=True)
+

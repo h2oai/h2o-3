@@ -227,6 +227,40 @@ class H2OCluster(object):
         """Return the list of all known timezones."""
         from h2o.expr import ExprNode
         return h2o.H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
+    
+    def check_version(self, strict=False):
+        """
+        Verifies that h2o-python module and the H2O server are compatible with each other.
+        :param strict: if True, an error is raised on version mismatch, otherwise, a warning is simply printed.
+        """
+        ver_h2o = self.version
+        ver_pkg = "UNKNOWN" if h2o.__version__ == "SUBST_PROJECT_VERSION" else h2o.__version__
+        if str(ver_h2o) != str(ver_pkg):
+            branch_name_h2o = self.branch_name
+            build_number_h2o = self.build_number
+            if build_number_h2o is None or build_number_h2o == "unknown":
+                message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                           "Upgrade H2O and h2o-Python to latest stable version - "
+                           "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
+                           ).format(ver_h2o, ver_pkg)
+            elif build_number_h2o == "99999":
+                message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                           "This is a developer build, please contact your developer."
+                           ).format(ver_h2o, ver_pkg)
+            else:
+                message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                           "Install the matching h2o-Python version from - "
+                           "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
+                           ).format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o)
+            if strict:
+                raise H2OConnectionError(message)
+            else:
+                print("Warning:", message)
+        # Check age of the install
+        if self.build_too_old:
+            print(("Warning: Your H2O cluster version is too old ({})!"
+                   "Please download and install the latest version from http://h2o.ai/download/"
+                   ).format(self.build_age))
 
     # ------------------------------------------------------------------------------------------------------------------
     # Private

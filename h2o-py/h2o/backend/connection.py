@@ -56,7 +56,7 @@ class H2OConnectionConf(object):
     the following way: ``schema://ip:port/context_path``
     """
 
-    def __init__(self, config = None):
+    def __init__(self, config=None):
         self._ip = None
         self._port = None
         self._https = None
@@ -259,7 +259,7 @@ class H2OConnection(h2o_meta()):
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, name=None, https=None, auth=None,
              verify_ssl_certificates=True, cacert=None,
-             proxy=None, cookies=None, verbose=True, _msgs=None):
+             proxy=None, cookies=None, verbose=True, msgs=None, strict_version_check=True):
         r"""
         Establish connection to an existing H2O server.
 
@@ -297,7 +297,8 @@ class H2OConnection(h2o_meta()):
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
         :param cookies: Cookie (or list of) to add to requests
         :param verbose: if True, then connection progress info will be printed to the stdout.
-        :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
+        :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
+        :param msgs: custom messages to display during connection. This is a tuple (initial message, success message,
             failure message).
 
         :returns: A new :class:`H2OConnection` instance.
@@ -346,7 +347,7 @@ class H2OConnection(h2o_meta()):
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
         assert_is_type(cookies, str, [str], None)
-        assert_is_type(_msgs, None, (str, str, str))
+        assert_is_type(msgs, None, (str, str, str))
 
         conn = H2OConnection()
         conn._verbose = bool(verbose)
@@ -368,7 +369,7 @@ class H2OConnection(h2o_meta()):
                     warn("Proxy is defined in the environment: %s. "
                          "This may interfere with your H2O Connection." % name)
                     
-            if ("localhost" in conn.ip() or "127.0.0.1" in conn.ip()):
+            if "localhost" in conn.ip() or "127.0.0.1" in conn.ip():
                 # Empty list will cause requests library to respect the default behavior.
                 # Thus a non-existing proxy is inserted.
 
@@ -381,7 +382,7 @@ class H2OConnection(h2o_meta()):
             retries = 20 if server else 5
             conn._stage = 1
             conn._timeout = 3.0
-            conn._cluster = conn._test_connection(retries, messages=_msgs)
+            conn._cluster = conn._test_connection(retries, messages=msgs)
             # If a server is unable to respond within 1s, it should be considered a bug. However we disable this
             # setting for now, for no good reason other than to ignore all those bugs :(
             conn._timeout = None
@@ -401,6 +402,8 @@ class H2OConnection(h2o_meta()):
             # Reset _session_id so that we know the connection was not initialized properly.
             conn._stage = 0
             raise
+        
+        conn._cluster.check_version(strict=strict_version_check)
         return conn
 
     def request(self, endpoint, data=None, json=None, filename=None, save_to=None):
