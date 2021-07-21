@@ -12,11 +12,6 @@ from h2o.schemas import _ignored_schema_keys
 
 class H2OErrorV3(object):
     
-    def __init__(self):
-        self._props = {}
-        self.endpoint = None
-        self.payload = None
-        
     @classmethod
     def make(cls, keyvals):
         err = cls()
@@ -29,6 +24,12 @@ class H2OErrorV3(object):
             if k.endswith("msg"):
                 v = v.replace("ERROR MESSAGE:", "").strip()
             err._props[k] = v
+        return err
+
+    def __init__(self):
+        self._props = {}
+        self.endpoint = None
+        self.payload = None
 
     def __getitem__(self, name):
         return self._props.get(name)
@@ -47,9 +48,6 @@ class H2OErrorV3(object):
 
 class H2OModelBuilderErrorV3(H2OErrorV3):
     
-    def __init__(self):
-        super(H2OModelBuilderErrorV3, self).__init__(self)
-       
     def __str__(self):
         res = "ModelBuilderErrorV3  (%s):\n" % self.exception_type
         for k, v in self._props.items():
