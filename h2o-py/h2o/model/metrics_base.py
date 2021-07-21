@@ -196,8 +196,8 @@ class MetricsBase(h2o_meta()):
             
         if metric_type in types_w_cox:
             print("Concordance score: " + str(self.concordance()))
-            print("Concordant count: " + str(self.concordance()))
-            print("Tied cout: " + str(self.concordance()))
+            print("Concordant count: " + str(self.concordant()))
+            print("Tied cout: " + str(self.tied_y()))
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
