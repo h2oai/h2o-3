@@ -5,7 +5,7 @@ package water;
  */
 public class ListenerService {
 
-  private static ListenerService service = new ListenerService();
+  private static final ListenerService service = new ListenerService();
   private ListenerService(){
   }
 

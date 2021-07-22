@@ -246,6 +246,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         computeImpl();
         computeParameters();
         saveModelCheckpointIfConfigured();
+        notifyModelListeners();
       } finally {
         _parms.read_unlock_frames(_job);
         if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
@@ -307,6 +308,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new H2OIllegalArgumentException("export_checkpoints_dir", "saveModelIfConfigured", e);
       }
     }
+  }
+
+  private void notifyModelListeners() {
+    Model<?, ?, ?> model = _result.get();
+    ListenerService.getInstance().report("model_completed", model, _parms);
   }
 
   /**
