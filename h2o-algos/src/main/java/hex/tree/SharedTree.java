@@ -76,6 +76,8 @@ public abstract class SharedTree<
   protected transient Frame _trainPredsCache;
   protected transient Frame _validPredsCache;
 
+  private transient SharedTreeDebugParams _debugParms;
+
   public boolean isSupervised(){return true;}
 
   @Override public boolean haveMojo() { return true; }
@@ -356,6 +358,11 @@ public abstract class SharedTree<
         _improvPerVar = new float[_ncols];
         _rand = RandomUtils.getRNG(_parms._seed);
 
+        SharedTreeDebugParams debugParms = getDebugParams();
+        if (! debugParms.isDefault()) {
+          LOG.warn("Model will be trained with debug parameters enabled: " + debugParms.toJsonString());
+        }
+
         initializeModelSpecifics();
         resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
@@ -572,7 +579,7 @@ public abstract class SharedTree<
     return did_split ? hcs : null;
   }
 
-  private static class ScoreBuildOneTree extends H2OCountedCompleter {
+  static class ScoreBuildOneTree extends H2OCountedCompleter {
     final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Numerical columns: Number of histogram bins
@@ -1169,5 +1176,61 @@ public abstract class SharedTree<
 
     return true;
   }
-  
+
+  SharedTreeDebugParams getDebugParams() {
+    if (_debugParms == null) {
+      _debugParms = new SharedTreeDebugParams();
+    }
+    return _debugParms;
+  }
+
+  /**
+   * Modify algorithm inner workings - only meant for development
+   * 
+   * @param debugParms instance of SharedTreeDebugParams
+   */
+  public void setDebugParams(SharedTreeDebugParams debugParms) {
+    _debugParms = debugParms;
+  }
+
+  public static class SharedTreeDebugParams extends Iced<SharedTreeDebugParams> {
+    static SharedTreeDebugParams DEFAULT = new SharedTreeDebugParams(false);
+
+    public boolean _reproducible_histos;
+    public boolean _keep_orig_histo_precision;
+
+    public SharedTreeDebugParams(boolean initFromSysProps) {
+      if (initFromSysProps) {
+        _reproducible_histos = H2O.getSysBoolProperty("tree.SharedTree.reproducibleHistos", DEFAULT._reproducible_histos);
+        _keep_orig_histo_precision = H2O.getSysBoolProperty("tree.SharedTree.keepOrigHistoPrecision", DEFAULT._keep_orig_histo_precision);
+      }
+    }
+    
+    public SharedTreeDebugParams() {
+      this(true);
+    }
+
+    boolean isDefault() {
+      return this.equals(DEFAULT);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      SharedTreeDebugParams that = (SharedTreeDebugParams) o;
+
+      if (_reproducible_histos != that._reproducible_histos) return false;
+      return _keep_orig_histo_precision == that._keep_orig_histo_precision;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = (_reproducible_histos ? 1 : 0);
+      result = 31 * result + (_keep_orig_histo_precision ? 1 : 0);
+      return result;
+    }
+  }
+
 }
