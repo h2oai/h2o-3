@@ -10,6 +10,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.tools.PredictCsv;
+import hex.tree.DHistogram;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
@@ -1950,6 +1951,108 @@ public class DRFTest extends TestUtil {
     }
   }
 
+  @Test // observations at scoring time traverse the tree differently than at training time 
+  public void showRoundingErrorsCanMisclassifyObservations() {
+    checkRoundingErrorSplits(1);
+  }
+
+  @Test // tree has a larger total weight than it theoretically could be
+  public void showRoundingErrorsCanMakeTreeBuildingRegisterObservationsTwice() {
+    checkRoundingErrorSplits(2);
+  }
+
+  private void checkRoundingErrorSplits(int maxDepth) {
+    Scope.enter();
+    try {
+      int nbins = 2;
+
+      // column will have these 3 values
+      double min = 0;
+      double max = 40 + 1e-6;
+      double splitAt = 20 + 1e-7;
+
+      // validate assumptions of this setup
+      double maxEx = DHistogram.find_maxEx(max, 0);
+      double step = nbins / (maxEx - min);
+      // 'splitAt' point will be classified into the first bin
+      assertEquals(0, (int) (step * (splitAt - min)));
+      // but if we decide to split between the 2 bins, it would actually go RIGHT (direction of bin 2) -> issue
+      assertTrue(splitAt >= (float) ((min + max) / 2));
+
+      Frame f = new TestFrameBuilder()
+              .withColNames("C0", "response", "weight")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, new double[]{min, splitAt, max})
+              .withDataForCol(1, new double[]{1, 0, 0.1})
+              .withDataForCol(2, new double[]{1, 1, 1})
+              .build();
+
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._response_column = "response";
+      parms._train = f._key;
+      parms._ntrees = 1;
+      parms._seed = 1234L;
+      parms._max_depth = maxDepth;
+      parms._sample_rate = 1.0;
+      parms._weights_column = "weight";
+      parms._mtries = f.numCols() - 2;
+      parms._nbins_top_level = nbins;
+      parms._nbins = nbins;
+
+      DRFModel model = new DRF(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      TreeWeightInfo twi = calculateNodeWeights(model, f, "weight");
+
+      SharedTreeSubgraph tree0 = model.getSharedTreeSubgraph(0, 0);
+      float actualWeight = tree0.nodesArray.stream()
+              .filter(SharedTreeNode::isLeaf)
+              .map(SharedTreeNode::getWeight)
+              .reduce(Float::sum)
+              .get();
+      assertEquals(twi._treeWeight, actualWeight, 0);
+
+      for (SharedTreeNode n : tree0.nodesArray) {
+          if (n.isLeaf()) {
+              double expectedNodeWeight = n.getWeight();
+              assertEquals("Weight in node #" + n.getNodeNumber() + " should match",
+                      expectedNodeWeight, twi._nodeWeights.get(n.getNodeNumber()), 0);
+          }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static TreeWeightInfo calculateNodeWeights(DRFModel model, Frame f, String weightColumn) {
+      Map<Integer, Double> nodeWeights = new HashMap<>();
+      Frame nodeIds = model.scoreLeafNodeAssignment(
+              f, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, Key.make());
+      nodeIds.add(f);
+      Scope.track(nodeIds);
+      double treeWeight = 0;
+      for (int i = 0; i < nodeIds.numRows(); i++) {
+          int nodeId = (int) nodeIds.vec(0).at(i);
+          double weight = nodeIds.vec(weightColumn).at(i);
+          treeWeight += weight;
+          if (!nodeWeights.containsKey(nodeId)) {
+              nodeWeights.put(nodeId, 0.0);
+          }
+          nodeWeights.put(nodeId, nodeWeights.get(nodeId) + weight);
+      }
+      return new TreeWeightInfo(nodeWeights, treeWeight);
+  }
+
+  private static class TreeWeightInfo {
+      Map<Integer, Double> _nodeWeights;
+      double _treeWeight;
+
+      TreeWeightInfo(Map<Integer, Double> nodeWeights, double treeWeight) {
+          _nodeWeights = nodeWeights;
+          _treeWeight = treeWeight;
+      }
+  }
+  
   @Test
   public void testCategoricalSplitNAvsREST() {
     Scope.enter();
