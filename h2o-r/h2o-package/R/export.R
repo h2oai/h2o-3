@@ -241,12 +241,14 @@ h2o.save_frame <- function(x, dir, force = TRUE) {
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE, filename=object@model_id) {
+h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE, filename="") {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
   if(!is.logical(export_cross_validation_predictions) || length(export_cross_validation_predictions) != 1L || is.na(export_cross_validation_predictions)) stop("`export_cross_validation_predictions` must be TRUE or FALSE")
+  if(filename == "")
+    filename <- object@model_id
   path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
                            force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
@@ -301,11 +303,13 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' # h2o.save_mojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.save_mojo <- function(object, path="", force=FALSE, filename=paste0(object@model_id,".zip")) {
+h2o.save_mojo <- function(object, path="", force=FALSE, filename="") {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
+  if(filename == "")
+    filename <- paste0(object@model_id, ".zip")
   path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models.mojo/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
@@ -332,11 +336,13 @@ h2o.save_mojo <- function(object, path="", force=FALSE, filename=paste0(object@m
 #' # h2o.saveModelDetails(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModelDetails <- function(object, path="", force=FALSE, filename=paste0(object@model_id,".json")) {
+h2o.saveModelDetails <- function(object, path="", force=FALSE, filename="") {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
+  if(filename == "")
+    filename <- paste0(object@model_id, ".json")
   path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models/",object@model_id,"/json"),dir=path,force=force,h2oRestApiVersion=99)
   res$dir

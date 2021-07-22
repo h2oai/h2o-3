@@ -487,10 +487,14 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="", filename=paste0(model@model_id,".zip")) {
+h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="", filename="") {
   
   if (class(model) == "H2OAutoML") {
     model <- model@leader
+  }
+
+  if(!is(model, "H2OModel")) {
+    stop("`model` must be an H2OModel object")
   }
   
   if (!(model@have_mojo)){
@@ -513,6 +517,10 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 
   if(!(file.exists(genmodel_path))){
     stop(paste0("'genmodel_path',",genmodel_path,", to save the genmodel.jar file cannot be found."))
+  }
+
+  if(filename == "") {
+    filename <- paste0(model@model_id, ".zip")
   }
 
   #Build URL for MOJO
@@ -557,7 +565,11 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' h2o.download_model(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE, filename=model@model_id) {
+h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE, filename="") {
+
+    if(!is(model, "H2OModel")) {
+      stop("`model` must be an H2OModel object")
+    }
 
     if(!is.null(path) && !(is.character(path))){
       stop("The 'path' variable should be of type character")
@@ -570,6 +582,10 @@ h2o.download_model <- function(model, path=NULL, export_cross_validation_predict
     }
     if(!is.logical(export_cross_validation_predictions)){
       stop("The 'export_cross_validation_predictions' variable should be of type logical")
+    }
+
+    if(filename == "") {
+      filename <- model@model_id
     }
 
     #prepare suffix to get the right endpoint

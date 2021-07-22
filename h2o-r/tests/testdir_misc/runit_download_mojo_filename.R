@@ -25,6 +25,12 @@ test.download_mojo_filename <- function() {
   expect_true("gbm_iris" == mojo_path)
   mojo_path <- h2o.import_mojo(file.path(tempdir(), "gbm_iris"))
   expect_true(!is.null(mojo_path))
+
+  # Wrong input
+  error <- try(h2o.download_model(data, path = tempdir()))
+  expect_true(class(error) == "try-error")
+  error_type <- attr(error,"condition")
+  expect_true(error_type$message == "`model` must be an H2OModel object")
 }
 
 doTest("Test download_mojo with given filename", test.download_mojo_filename)

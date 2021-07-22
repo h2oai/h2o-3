@@ -25,6 +25,12 @@ test.download_model_filename <- function() {
   expect_true(endsWith(model_path, "gbm_iris"))
   model_path <- h2o.loadModel(model_path)
   expect_true(!is.null(model_path))
+
+  # Wrong input
+  error <- try(h2o.download_model(data, path = tempdir()))
+  expect_true(class(error) == "try-error")
+  error_type <- attr(error,"condition")
+  expect_true(error_type$message == "`model` must be an H2OModel object")
 }
 
 doTest("Test download_model with given filename", test.download_model_filename)

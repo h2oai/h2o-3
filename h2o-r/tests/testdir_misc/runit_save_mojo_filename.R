@@ -25,6 +25,12 @@ test.save_mojo_filename <- function() {
   expect_true(endsWith(mojo_path, "gbm_iris"))
   mojo_path <- h2o.import_mojo(mojo_path)
   expect_true(!is.null(mojo_path))
+
+  # Wrong input
+  error <- try(h2o.save_mojo(data, path = tempdir()))
+  expect_true(class(error) == "try-error")
+  error_type <- attr(error,"condition")
+  expect_true(error_type$message == "`object` must be an H2OModel object")
 }
 
 doTest("Test save_mojo with given filename", test.save_mojo_filename)

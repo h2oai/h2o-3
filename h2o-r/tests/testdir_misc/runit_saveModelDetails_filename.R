@@ -22,6 +22,12 @@ test.saveModelDetails_filename <- function() {
   model_details_path <- h2o.saveModelDetails(model, path = tempdir(), filename = "gbm_iris")
   expect_true(endsWith(model_details_path, "gbm_iris"))
   expect_true(file.exists(model_details_path))
+
+  # Wrong input
+  error <- try(h2o.saveModelDetails(data, path = tempdir()))
+  expect_true(class(error) == "try-error")
+  error_type <- attr(error,"condition")
+  expect_true(error_type$message == "`object` must be an H2OModel object")
 }
 
 doTest("Test saveModelDetails with given filename", test.saveModelDetails_filename)
