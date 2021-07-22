@@ -79,7 +79,7 @@ public class LeaderboardTest extends water.TestUtil {
       lb = Leaderboard.getOrMake("dummy_rank_tsv", eventLog, null, "mae");
       lb.addModel(model._key);
       Log.info(lb.rankTsv());
-      assertEquals("Error\n[0.3448260574357465, 0.19959320678410908, 0.44675855535636816, 0.19959320678410908, 0.31468498072970547]\n", lb.rankTsv());
+      assertEquals("Error\n[0.34668900558070354, 0.19770824592482875, 0.4446439541080355, 0.19770824592482875, 0.3127606634039119]\n", lb.rankTsv());
     } finally {
       if (lb != null){
         lb.remove();

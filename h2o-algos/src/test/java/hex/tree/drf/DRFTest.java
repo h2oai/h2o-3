@@ -283,7 +283,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-        46.88452885668735
+            46.90342217100751
     );
 
   }
@@ -321,7 +321,7 @@ public class DRFTest extends TestUtil {
             20, //bins
             10, //min_rows
             5, //max_depth
-            0.25040633586487);
+            0.25040513069517);
   }
 
   @Test public void testProstate() throws Throwable {
@@ -1653,7 +1653,7 @@ public class DRFTest extends TestUtil {
         parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 10;
-        parms._seed = 12345;
+        parms._seed = 123456;
         parms._nbins = 20;
         parms._nbins_top_level = 20;
 

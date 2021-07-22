@@ -38,7 +38,7 @@ public class DHistogramTest extends TestUtil {
       Scope.track_generic(hq);
 
       DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null);
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false);
       histo.init();
 
       // check that -0.0 was converted to 0.0 by the init method
@@ -60,7 +60,7 @@ public class DHistogramTest extends TestUtil {
       Scope.track_generic(hq);
 
       DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null);
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false);
       histo.init();
 
       // check that negative zero can be found
@@ -87,7 +87,7 @@ public class DHistogramTest extends TestUtil {
       values[values.length - 1] = maxEx - 1e-8;
 
       DHistogram histoRand = new DHistogram("rand", 20, 1024, (byte) 0, min, maxEx, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.Random, 42L, null, null);
+              SharedTreeModel.SharedTreeParameters.HistogramType.Random, 42L, null, null, false);
       histoRand.init();
 
       // project the random split points into regular space (original values of the column)
@@ -100,7 +100,7 @@ public class DHistogramTest extends TestUtil {
       DKV.put(hq);
       Scope.track_generic(hq);
       DHistogram histoQuant = new DHistogram("quant", 20, 1024, (byte) 0, min, maxEx, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null);
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false);
       histoQuant.init();
 
       int[] bins_rand = new int[values.length];
