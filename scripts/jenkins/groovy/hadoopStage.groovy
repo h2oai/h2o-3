@@ -24,7 +24,7 @@ def call(final pipelineContext, final stageConfig) {
               export PATH=\$JAVA_HOME/bin:\$PATH
               echo "Patching hadoop conf to use Java 11"
               cp -r /etc/hadoop/conf.pseudo/ .
-              export HADOOP_CONF=\$(cd conf.pseudo && pwd)
+              export HADOOP_CONF_DIR=\$(cd conf.pseudo && pwd)
               echo JAVA_HOME="\$JAVA_HOME" >> \$HADOOP_CONF/hadoop-env.sh
               hadoop envvars 
             fi
