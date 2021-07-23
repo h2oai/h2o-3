@@ -16,19 +16,22 @@ def call(final pipelineContext, final stageConfig) {
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
             fi
 
-            . /usr/sbin/hive_version_check.sh
-
-            echo "Activating Python ${stageConfig.pythonVersion}"
-            . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
-
             if [ "11" = "${stageConfig.javaVersion}" ]; then
               echo "Installing Java 11 (OpenJDK)"
               curl -j -k -L https://download.java.net/java/GA/jdk11/13/GPL/openjdk-11.0.1_linux-x64_bin.tar.gz > jdk-linux-x64.tar.gz
               tar xfz jdk-linux-x64.tar.gz
               export JAVA_HOME=\$(cd jdk* && pwd)
-              export PATH=\$PATH:\$JAVA_HOME
+              export PATH=\$JAVA_HOME/bin:\$PATH
             fi
+
+            echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"
             java -version
+
+            . /usr/sbin/hive_version_check.sh
+
+            echo "Activating Python ${stageConfig.pythonVersion}"
+            . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
+
 
             echo 'Initializing Hadoop environment...'
             sudo -E /usr/sbin/startup.sh
