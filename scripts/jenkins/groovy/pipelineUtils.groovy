@@ -93,7 +93,7 @@ class PipelineUtils {
         for (distSpec in buildinfo.hadoop_distributions) {
             def distributionStr = distSpec.distribution.toLowerCase()
             for (dockerizedDist in DOCKERIZED_DISTRIBUTIONS) {
-                if (distributionStr.startsWith("cdh6.3")) {
+                if (distributionStr.startsWith(dockerizedDist)) {
                     def distributionName = dockerizedDist
                     def distributionVersion = distributionStr.replaceFirst(dockerizedDist, '')
                     distributionsToBuild += [
