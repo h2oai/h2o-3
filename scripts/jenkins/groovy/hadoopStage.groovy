@@ -22,6 +22,11 @@ def call(final pipelineContext, final stageConfig) {
               tar xfz jdk-linux-x64.tar.gz
               export JAVA_HOME=\$(cd jdk* && pwd)
               export PATH=\$JAVA_HOME/bin:\$PATH
+              echo "Patching hadoop conf to use Java 11"
+              cp -r /etc/hadoop/conf.pseudo/ .
+              export HADOOP_CONF=\$(cd conf.pseudo && pwd)
+              echo JAVA_HOME="\$JAVA_HOME" >> \$HADOOP_CONF/hadoop-env.sh
+              hadoop envvars 
             fi
 
             echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"
