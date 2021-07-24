@@ -26,7 +26,12 @@ def call(final pipelineContext, final stageConfig) {
               cp -r /etc/hadoop/conf.pseudo/ .
               export HADOOP_CONF_DIR=\$(cd conf.pseudo && pwd)
               echo JAVA_HOME="\$JAVA_HOME" >> \$HADOOP_CONF_DIR/hadoop-env.sh
-              hadoop envvars 
+              hadoop envvars
+              echo "Creating symlinks (substituting Java 8 for Java 11)
+              rm /usr/lib/jvm/java-8-oracle
+              rm /usr/lib/jvm/java-current-oracle
+              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-oracle
+              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-current
             fi
 
             echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"
