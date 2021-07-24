@@ -55,12 +55,14 @@ def test_reset_threshold():
     assert reset_threshold != old_threshold
 
     # compare predictions
+    preds_local = preds.as_data_frame()
+    preds_reset_local = preds_reset.as_data_frame()
     print("old threshold:", old_threshold, "new_threshold:", new_threshold)
     for i in range(airlines.nrow):
-        if preds[i, 2] >= old_threshold and preds[i, 2] < new_threshold:
-            assert preds[i, 0] != preds_reset[i, 0]
+        if old_threshold <= preds_local.iloc[i, 2] < new_threshold:
+            assert preds_local.iloc[i, 0] != preds_reset_local.iloc[i, 0]
         else:
-            assert preds[i, 0] == preds_reset[i, 0]
+            assert preds_local.iloc[i, 0] == preds_reset_local.iloc[i, 0]
 
 
 if __name__ == "__main__":
