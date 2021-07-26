@@ -625,7 +625,8 @@ public abstract class SharedTree<
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family, 
+      int treeNum = ((SharedTreeModel.SharedTreeOutput) _st._model._output)._ntrees;
+      new ScoreBuildHistogram2(this, treeNum, _k, _st._ncols, _nbins, _tree, _leafOffsets[_k], _hcs[_k], _family,
               _respIdx, _weightIdx, _predsIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {

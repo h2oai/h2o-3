@@ -79,9 +79,9 @@ public class GBMTest extends TestUtil {
     if ("EmulateConstraints".equals(test_type)) {
       return new GBMModel.GBMParameters() {
         @Override
-        Constraints emptyConstraints(Frame f) {
+        Constraints emptyConstraints(int numCols) {
           if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli || _distribution == DistributionFamily.tweedie) {
-            return new Constraints(new int[f.numCols()], DistributionFactory.getDistribution(this), true);
+            return new Constraints(new int[numCols], DistributionFactory.getDistribution(this), true);
           } else 
             return null;
         }
@@ -4559,6 +4559,17 @@ public class GBMTest extends TestUtil {
       if (model != null) model.delete();
       if (fr  != null) fr.remove();
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMonotoneConstraintsTriggerStrictlyReproducibleHistograms() {
+    GBMModel.GBMParameters p = makeGBMParameters();
+    p._distribution = gaussian;
+    if (test_type.equals("EmulateConstraints")) {
+      assertTrue(p.forceStrictlyReproducibleHistograms());
+    } else {
+      assertFalse(p.forceStrictlyReproducibleHistograms());
     }
   }
 
