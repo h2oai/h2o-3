@@ -46,9 +46,26 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
 
+    @Override
+    public boolean forceStrictlyReproducibleHistograms() {
+      // if monotone constraints are enabled -> use strictly reproducible histograms (we calculate values that
+      // are not subject to reduce precision logic in DHistogram (the "float trick" cannot be applied)
+      return usesMonotoneConstraints();
+    }
+
+    private boolean usesMonotoneConstraints() {
+      if (areMonotoneConstraintsEmpty())
+        return emptyConstraints(0) != null;
+      return true;
+    }
+
+    private boolean areMonotoneConstraintsEmpty() {
+      return _monotone_constraints == null || _monotone_constraints.length == 0;
+    }
+
     public Constraints constraints(Frame f) {
-      if (_monotone_constraints == null || _monotone_constraints.length == 0) {
-        return emptyConstraints(f);
+      if (areMonotoneConstraintsEmpty()) {
+        return emptyConstraints(f.numCols());
       }
       int[] cs = new int[f.numCols()];
       for (KeyValue spec : _monotone_constraints) {
@@ -70,10 +87,9 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     }
 
     // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
-    Constraints emptyConstraints(Frame f) {
+    Constraints emptyConstraints(int nCols) {
       return null;
     }
-    
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {

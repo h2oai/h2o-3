@@ -63,6 +63,11 @@ public class SharedTreeTest extends TestUtil  {
   }
 
   @Test
+  public void testStrictHistogramReproducibilityIsDisabledByDefault() {
+    assertFalse(_parms.forceStrictlyReproducibleHistograms());
+  }
+
+  @Test
   public void testNAPredictor_cat() {
     checkNAPredictor(twoVecFrameBuilder()
             .withVecTypes(Vec.T_CAT, Vec.T_CAT)

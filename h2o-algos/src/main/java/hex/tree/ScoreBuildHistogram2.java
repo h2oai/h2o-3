@@ -6,6 +6,7 @@ import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.IcedBitSet;
+import water.util.Log;
 import water.util.VecUtils;
 import static hex.tree.SharedTree.ScoreBuildOneTree;
 
@@ -70,11 +71,12 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final IcedBitSet _activeCols;
   final int _respIdx;
   final int _predsIdx;
-  // for debugging purposes
   final boolean _reproducibleHistos;
-  final boolean _reduceHistoPrecision;
+  // only for debugging purposes
+  final boolean _reduceHistoPrecision; // if enabled allows to test that histograms are 100% reproducible when reproducibleHistos are enabled
 
-  public ScoreBuildHistogram2(ScoreBuildOneTree sb, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
+  public ScoreBuildHistogram2(ScoreBuildOneTree sb, int treeNum, int k, int ncols, int nbins, DTree tree, int leaf,
+                              DHistogram[][] hcs, DistributionFamily family,
                               int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
     super(sb, k, ncols, nbins, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
     _numLeafs = _hcs.length;
@@ -95,10 +97,13 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
     _activeCols = activeCols;
     _hcs = ArrayUtils.transpose(_hcs);
-    // initialize debugging parameters
+    // override defaults using debugging parameters where applicable
     SharedTree.SharedTreeDebugParams dp = sb._st.getDebugParams();
-    _reproducibleHistos = dp._reproducible_histos;
+    _reproducibleHistos = tree._parms.forceStrictlyReproducibleHistograms() || dp._reproducible_histos;
     _reduceHistoPrecision = !dp._keep_orig_histo_precision;
+    if (_reproducibleHistos && treeNum == 0 && k == 0 && leaf == 0) {
+      Log.info("Using a deterministic way of building histograms");
+    }
   }
 
   @Override
