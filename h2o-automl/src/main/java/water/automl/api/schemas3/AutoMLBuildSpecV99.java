@@ -139,7 +139,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public int max_models;
 
-    @API(help = "This argument specifies the maximum time that the AutoML process will run for, prior to training the final Stacked Ensemble models. If neither max_runtime_secs nor max_models are specified by the user, then max_runtime_secs defaults to 3600 seconds (1 hour).",
+    @API(help = "This argument specifies the maximum time that the AutoML process will run for. If neither max_runtime_secs nor max_models are specified by the user, then max_runtime_secs defaults to 3600 seconds (1 hour).",
             level = API.Level.secondary)
     public double max_runtime_secs;
 

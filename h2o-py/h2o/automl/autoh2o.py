@@ -152,7 +152,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
             Requires ``balance_classes``.
             Defaults to ``5.0``.
-        :param int max_runtime_secs: Specify the maximum time that the AutoML process will run for, prior to training the final Stacked Ensemble models.
+        :param int max_runtime_secs: Specify the maximum time that the AutoML process will run for.
             If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs``.
             Defaults to 3600 seconds (1 hour).
         :param int max_runtime_secs_per_model: Controls the max time the AutoML run will dedicate to each individual model.
