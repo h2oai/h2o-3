@@ -488,12 +488,12 @@ def call(final pipelineContext) {
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
 
-    if (distribution.name == 'cdh' && distribution.version.startsWith('6.')) {
+    if (distribution.name == 'cdh' && distribution.version.startsWith('6.3')) {
       def onHadoopStageJava11 = evaluate(stageTemplate.inspect())
-      onHadoopStageJava11.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP - Java 11"
+      onHadoopStageJava11.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP - Java 11 (Hash Login)"
       onHadoopStageJava11.customData.mode = 'ON_HADOOP'
       onHadoopStageJava11.javaVersion = '11'
-      onHadoopStageJava11.customData.customAuth = '/tmp/hash.login'
+      onHadoopStageJava11.customData.customAuth = '-hash_login -login_conf /tmp/hash.login'
       HADOOP_STAGES += [ onHadoopStageJava11 ]
     }
 
