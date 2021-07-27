@@ -93,8 +93,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
   static boolean enableVerboseGC = true;
-  static boolean enablePrintGCDetails = true;
-  static boolean enablePrintGCTimeStamps = true;
+  static boolean enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+  static boolean enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -917,9 +917,9 @@ public class h2odriver extends Configured implements Tool {
                     "             The file contains one line with the IP and port of the embedded\n" +
                     "             web server for one of the H2O nodes in the cluster.  e.g.\n" +
                     "                 192.168.1.100:54321\n" +
-                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]" +
-                    "             are deperacated in Java 9 and removed in Java 10." +
-                    "             The option [-Xlog:gc=info] replaces these flags since Java 9." +
+                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]\n" +
+                    "             are deperacated in Java 9 and removed in Java 10.\n" +
+                    "             The option [-Xlog:gc=info] replaces these flags since Java 9.\n" +
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
@@ -1147,8 +1147,8 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-gc")) {
         enableVerboseGC = true;
-        enablePrintGCDetails = true;
-        enablePrintGCTimeStamps = true;
+        enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+        enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
       }
       else if (s.equals("-nogc")) {
         enableVerboseGC = false;
