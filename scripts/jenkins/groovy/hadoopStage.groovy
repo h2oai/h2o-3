@@ -22,11 +22,6 @@ def call(final pipelineContext, final stageConfig) {
               tar xfz jdk-linux-x64.tar.gz
               export JAVA_HOME=\$(cd jdk* && pwd)
               export PATH=\$JAVA_HOME/bin:\$PATH
-              echo "Patching hadoop conf to use Java 11"
-              cp -r /etc/hadoop/conf.pseudo/ .
-              export HADOOP_CONF_DIR=\$(cd conf.pseudo && pwd)
-              echo JAVA_HOME="\$JAVA_HOME" >> \$HADOOP_CONF_DIR/hadoop-env.sh
-              hadoop envvars
               echo "Creating symlinks (substituting Java 8 for Java 11)"
               rm /usr/lib/jvm/java-8-oracle
               rm /usr/lib/jvm/java-current-oracle
@@ -42,7 +37,6 @@ def call(final pipelineContext, final stageConfig) {
 
             echo "Activating Python ${stageConfig.pythonVersion}"
             . /envs/h2o_env_python${stageConfig.pythonVersion}/bin/activate
-
 
             echo 'Initializing Hadoop environment...'
             sudo -E /usr/sbin/startup.sh
