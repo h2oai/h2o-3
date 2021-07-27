@@ -32,6 +32,7 @@ def call(final pipelineContext, final stageConfig) {
               rm /usr/lib/jvm/java-current-oracle
               ln -s \$JAVA_HOME /usr/lib/jvm/java-8-oracle
               ln -s \$JAVA_HOME /usr/lib/jvm/java-8-current
+              echo "\$LDAP_USERNAME: \$LDAP_PASSWORD" > /tmp/hash.login
             fi
 
             echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"

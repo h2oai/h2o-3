@@ -493,6 +493,7 @@ def call(final pipelineContext) {
       onHadoopStageJava11.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP - Java 11"
       onHadoopStageJava11.customData.mode = 'ON_HADOOP'
       onHadoopStageJava11.javaVersion = '11'
+      onHadoopStageJava11.customData.customAuth = '/tmp/hash.login'
       HADOOP_STAGES += [ onHadoopStageJava11 ]
     }
 
