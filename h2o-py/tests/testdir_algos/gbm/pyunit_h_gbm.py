@@ -15,7 +15,7 @@ def bernoulli_gbm():
                                          distribution="bernoulli")
   gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
   h = gbm_h2o.h(prostate_train, ['DPROS','DCAPS'])
-  assert abs(h - 0.17301172318867106) < 1e-5
+  assert abs(h - 0.17328) < 1e-5
 
 
 if __name__ == "__main__":

@@ -2098,7 +2098,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 23.05805) < 1e-4);
+      Assert.assertEquals(22.61011, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance, 1e-4);
 
     } finally {
       parms._train.remove();
@@ -2136,7 +2136,7 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertEquals( 10.89264, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-1);
+      Assert.assertEquals( 10.72988, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance,1e-1);
 
     } finally {
       parms._train.remove();
@@ -2319,7 +2319,7 @@ public class GBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      assertTrue(4 == idx);
+      assertEquals(SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin, histoType[idx]);
     } finally {
       if (tfr!=null) tfr.delete();
       if (ksplits[0]!=null) ksplits[0].remove();
@@ -2901,8 +2901,8 @@ public class GBMTest extends TestUtil {
 
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
-      Assert.assertEquals( 1485, ((ModelMetricsRegression)gbm._output._training_metrics)._MSE,50);
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 256.88) < 1);
+      Assert.assertEquals( 1485, gbm._output._training_metrics._MSE, 50);
+      Assert.assertEquals(268.53, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance, 1);
 
     } finally {
       parms._train.remove();
@@ -2954,14 +2954,14 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       if ("Default".equals(test_type)) {
-        Assert.assertEquals(2.9423857564, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
-        Assert.assertEquals(2.9423857564, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
+        Assert.assertEquals(2.8828707795, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
+        Assert.assertEquals(2.8828707795, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
       } else if ("EmulateConstraints".equals(test_type)) {
         // This demonstrates the artificially constrained models are slightly different
         // This is because we directly re-use the split predictions instead using values in Gamma Pass
         // also see Split#splat
-        Assert.assertEquals(2.9422145249, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
-        Assert.assertEquals(2.9422145249, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
+        Assert.assertEquals(2.8828708179, ((ModelMetricsRegression) gbm._output._training_metrics)._MSE, 1e-5);
+        Assert.assertEquals(2.8828708179, ((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance, 1e-5);
       } else {
         fail();
       }
@@ -2989,9 +2989,9 @@ public class GBMTest extends TestUtil {
 
       gbm = new GBM(parms).trainModel().get();
 
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._MSE,1e-2);
+      Assert.assertEquals(2.8872623159, gbm._output._training_metrics._MSE,1e-2);
       // huber loss with delta -> max(error) goes to MSE
-      Assert.assertEquals(2.9423857564,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-2);
+      Assert.assertEquals(2.8872630861,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-2);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -3014,7 +3014,7 @@ public class GBMTest extends TestUtil {
       parms._distribution = huber;
       parms._huber_alpha = 1e-2; //everything is an outlier and we should get laplace loss
       gbm = new GBM(parms).trainModel().get();
-      Assert.assertEquals(8.05716257,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,0.3);
+      Assert.assertEquals(7.08824877, gbm._output._training_metrics._MSE,0.3);
 
       // Huber loss can be derived from MAE since no obs weights
       double delta = 0.0047234; //hardcoded from output
