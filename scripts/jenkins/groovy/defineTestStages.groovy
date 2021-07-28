@@ -474,7 +474,8 @@ def call(final pipelineContext) {
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
         ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt'
-      ], pythonVersion: '2.7',
+      ], 
+      pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
       image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, false)
@@ -486,6 +487,15 @@ def call(final pipelineContext) {
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
+
+    if (distribution.name == 'cdh' && distribution.version.startsWith('6.3')) {
+      def onHadoopStageJava11 = evaluate(stageTemplate.inspect())
+      onHadoopStageJava11.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP - Java 11 (Hash Login)"
+      onHadoopStageJava11.customData.mode = 'ON_HADOOP'
+      onHadoopStageJava11.javaVersion = '11'
+      onHadoopStageJava11.customData.customAuth = '-hash_login -login_conf /tmp/hash.login'
+      HADOOP_STAGES += [ onHadoopStageJava11 ]
+    }
 
     HADOOP_STAGES += [ standaloneStage, onHadoopStage ]
   }

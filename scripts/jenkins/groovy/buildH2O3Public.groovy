@@ -28,7 +28,7 @@ def call(final pipelineContext) {
                             activatePythonEnv = true
                         }
                     } finally {
-                        archiveArtifacts "**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/status.*"
+                        archiveArtifacts "**/*.log, **/*_log, **/out.*, **/*py.out.txt, **/java*out.txt, **/status.*"
                     }
                 }
             }

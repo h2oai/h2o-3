@@ -19,6 +19,7 @@ def call(final stageConfig, final boolean getMakeTarget = false) {
 }
 
 private GString getCommandHadoop(final stageConfig) {
+    def authConf = stageConfig.customData.customAuth ?: "-login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login"
     return """
             rm -fv h2o_one_node h2odriver.log
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
@@ -31,7 +32,7 @@ private GString getCommandHadoop(final stageConfig) {
                 -JJ -Daws.accessKeyId=\$AWS_ACCESS_KEY_ID -JJ -Daws.secretKey=\$AWS_SECRET_ACCESS_KEY \\
                 -ea -proxy \\
                 -jks mykeystore.jks \\
-                -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\
+                ${authConf} \\
                 > h2odriver.log 2>&1 &
             for i in \$(seq 20); do
               if [ -f 'h2o_one_node' ]; then
