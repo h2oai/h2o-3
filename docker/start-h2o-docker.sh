@@ -21,7 +21,7 @@ xmxMb=$[ $tmp / 100 ]
 java -version
 
 # Check that we can at least run H2O with the given java.
-java -jar /opt/h2o.jar -version
+# java -jar /opt/h2o.jar -version ### -version currently has a bug
 
 # HDFS credentials.
 hdfs_config_option=""
