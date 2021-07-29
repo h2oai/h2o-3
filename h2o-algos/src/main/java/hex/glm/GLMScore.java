@@ -121,8 +121,8 @@ public class GLMScore extends MRTask<GLMScore> {
     if(_dinfo._responses != 0)res[0] = (float) r.response[0];
     if (r.predictors_bad) {
       Arrays.fill(ps,Double.NaN);
-    } else if(r.weight == 0) {
-      Arrays.fill(ps,0);
+/*    } else if(r.weight == 0) {
+      Arrays.fill(ps,0);*/
     } else {
       scoreRow(r, r.offset, ps);
       if (_computeMetrics && !r.response_bad)

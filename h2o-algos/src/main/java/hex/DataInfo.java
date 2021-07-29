@@ -1213,7 +1213,7 @@ public class DataInfo extends Keyed<DataInfo> {
     row.cid = rid;
     if(_weights)
       row.weight = chunks[weightChunkId()].atd(rid);
-    if(row.weight == 0) return row;
+   // if(row.weight == 0) return row;
     if (_skipMissing) {
       int N = _cats + _nums;
       for (int i = 0; i < N; ++i)
