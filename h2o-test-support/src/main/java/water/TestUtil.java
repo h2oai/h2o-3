@@ -350,6 +350,9 @@ public class TestUtil extends Iced {
     @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
   }
 
+  // current running test - assumes no test parallelism just like the rest of this class
+  public static Description CURRENT_TEST_DESCRIPTION;
+
   /** Execute this rule before each test to print test name and test class */
   @Rule transient public TestRule logRule = new TestRule() {
 
@@ -358,6 +361,7 @@ public class TestUtil extends Iced {
       Log.info("  * Test class name:  " + description.getClassName());
       Log.info("  * Test method name: " + description.getMethodName());
       Log.info("###########################################################");
+      CURRENT_TEST_DESCRIPTION = description;
       return base;
     }
   };
