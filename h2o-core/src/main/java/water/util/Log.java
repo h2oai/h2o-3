@@ -7,6 +7,7 @@ import water.persist.PersistManager;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import static water.util.StringUtils.fixedLength;
@@ -151,12 +152,30 @@ abstract public class Log {
     }
   }
 
-  public static void flushBufferedMessages() {
+  private static List<BufferedMsg> consumeBufferedMessages() {
+    List<BufferedMsg> buff = null;
     if (INIT_MSGS != null) {
-      ArrayList<BufferedMsg> buff = INIT_MSGS;
+      buff = INIT_MSGS;
       INIT_MSGS = null;
-      if (buff != null) for (BufferedMsg m : buff) write0(m.lvl, m.msg, m.t);
     }
+    return buff;
+  }
+
+  public static void flushBufferedMessages() {
+    List<BufferedMsg> buff = consumeBufferedMessages();
+    if (buff != null) 
+      for (BufferedMsg m : buff)
+        write0(m.lvl, m.msg, m.t);
+  }
+
+  public static void flushBufferedMessagesToStdout() {
+    List<BufferedMsg> buff = consumeBufferedMessages();
+    if (buff != null)
+      for (BufferedMsg m : buff) {
+        System.out.println(m.msg);
+        if (m.t != null)
+          m.t.printStackTrace();
+      }
   }
 
   public static int getLogLevel(){
