@@ -2358,6 +2358,38 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
-  
-  
+
+  // test from zuzana.  Thank you.
+  @Test
+  public void testDiabetesWithWeightsShowWhatGlmIsDoingSeparately() {
+    try {
+      Scope.enter();
+      final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
+      Scope.track(fr);
+      final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
+      // works with non-zero weights, but if I create zero ( weightsVector.set(1, 0.5); -> weightsVector.set(1, 0.0); ) it will fail again
+      // final Vec weightsVector = Vec.makeOne(fr.numRows());
+      weightsVector.set(1, 0.5);
+
+      final String weightsColumnName = "weights";
+      fr.add(weightsColumnName, weightsVector);
+      DKV.put(fr);
+
+      GLMModel.GLMParameters glmParameters = new GLMModel.GLMParameters();
+      glmParameters._seed = 12345;
+      glmParameters._train = fr._key;
+      glmParameters._response_column = "diabetesMed";
+      glmParameters._weights_column = "weights";
+
+      final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+      Scope.track_generic(glmModel);
+
+      final Frame fr3 = Scope.track(glmModel.score(fr));
+
+      // this fails
+      Assert.assertTrue(glmModel.testJavaScoring(fr, fr3, 1e-4, 1e-4, 1));
+    } finally {
+      Scope.exit();
+    }
+  }
 }
