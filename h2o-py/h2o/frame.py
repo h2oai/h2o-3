@@ -2730,7 +2730,7 @@ class H2OFrame(Keyed):
                     bothNumericTypes = (frame.types[eachKey] in validTypes) and (self.types[eachKey] in validTypes)
                     if not(sametypes) and not(bothNumericTypes):
                         raise H2OValueError("Column types must match for rbind() to work.  First column type {0}.  "
-                                            "Second column type {1})".format(self.types[eachKey], frame.types[eachKey]))
+                                            "Second column type {1}.".format(self.types[eachKey], frame.types[eachKey]))
         fr = H2OFrame._expr(expr=ExprNode("rbind", self, *frames), cache=self._ex._cache)
         fr._ex._cache.nrows = self.nrow + sum(frame.nrow for frame in frames)
         return fr
