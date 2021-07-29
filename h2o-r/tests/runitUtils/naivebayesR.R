@@ -43,8 +43,5 @@ checkNaiveBayesPrediction <- function(predH2O, predR, type = "class", tolerance 
 
 checkNumMatrixVals <- function(object, predicted, tolerance = 1e-6) {
   expect_equal(dim(object), dim(predicted))
-  for(i in 1:nrow(predicted)) {
-    for(j in 1:ncol(predicted))
-      expect_equal(as.numeric(object[i,j]), as.numeric(predicted[i,j]), tolerance = tolerance)
-  }
+  expect_equal(as.numeric(object), as.numeric(predicted), tolerance = tolerance, check.names = FALSE)
 }
