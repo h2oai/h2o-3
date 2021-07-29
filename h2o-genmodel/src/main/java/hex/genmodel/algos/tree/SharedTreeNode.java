@@ -621,4 +621,8 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     public void setGain(float gain) {
         this.gain = gain;
     }
+
+  public String getDebugId() {
+    return "#" + getNodeNumber() + "[internalId=" + internalId + "]"; 
+  }
 }
