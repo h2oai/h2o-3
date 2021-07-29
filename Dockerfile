@@ -56,7 +56,7 @@ RUN \
 
 # Define the working directory
 WORKDIR \
-  /home/jenkins
+  /home/h2o
 
 EXPOSE 54321
 EXPOSE 54322
