@@ -131,6 +131,8 @@ public final class DHistogram extends Iced {
   public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
   transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
   transient int _zeroSplitPntPos;
+  public final boolean _checkFloatSplits;
+  transient float[] _splitPtsFloat;
   public final long _seed;
   public transient boolean _hasQuantiles;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
@@ -189,9 +191,9 @@ public final class DHistogram extends Iced {
       super("column=" + name + " leads to invalid histogram(check numeric range) -> [max=" + maxEx + ", min = " + min + "], step= " + step + ", xbin= " + xbins);
     }
   }
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean initNA,
-                    double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-                    Constraints cs) {
+  DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean initNA,
+             double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
+             Constraints cs, boolean checkFloatSplits) {
     assert nbins >= 1;
     assert nbins_cats >= 1;
     assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
@@ -247,7 +249,7 @@ public final class DHistogram extends Iced {
     _nbin = (char) xbins;
     assert(_nbin>0);
     assert(_vals == null);
-
+    _checkFloatSplits = checkFloatSplits;
     if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
@@ -263,7 +265,6 @@ public final class DHistogram extends Iced {
     // out of range of any bin - however this binning call only happens during
     // model-building.
     int idx1;
-
     double pos = _hasQuantiles ? col_data : ((col_data - _min) * _step);
     if (_splitPts != null) {
       idx1 = pos == 0.0 ? _zeroSplitPntPos : Arrays.binarySearch(_splitPts, pos);
@@ -271,10 +272,26 @@ public final class DHistogram extends Iced {
     } else {
       idx1 = (int) pos;
     }
-    if (idx1 == _nbin) idx1--; // Roundoff error allows idx1 to hit upper bound, so truncate
+    if (_splitPtsFloat != null) {
+      if (idx1 + 1 < _splitPtsFloat.length) {
+        float splitAt = _splitPtsFloat[idx1 + 1];
+        if (col_data >= splitAt) {
+          idx1++;
+        }
+        if (idx1 > 0) {
+          if (!(col_data >= _splitPtsFloat[idx1])) {
+            idx1--;
+          }
+        }
+      }
+    }
+    if (idx1 == _nbin) 
+      idx1--; // Round-off error allows idx1 to hit upper bound, so truncate
     assert 0 <= idx1 && idx1 < _nbin : idx1 + " " + _nbin;
     return idx1;
   }
+  
+  
   public double binAt( int b ) {
     if (_hasQuantiles) return _splitPts[b];
     return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
@@ -348,6 +365,12 @@ public final class DHistogram extends Iced {
     _vals = vals == null ? MemoryManager.malloc8d(_vals_dim * _nbin + _vals_dim) : vals;
     // this always holds: _vals != null
     assert _nbin > 0;
+    if (_checkFloatSplits) {
+      _splitPtsFloat = new float[_nbin];
+      for (int i = 0; i < _nbin; i++) {
+        _splitPtsFloat[i] = (float) binAt(i);
+      }
+    }
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -396,7 +419,8 @@ public final class DHistogram extends Iced {
   }
 
   // The initial histogram bins are setup from the Vec rollups.
-  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey, Constraints cs) {
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey, 
+                                         Constraints cs, boolean checkFloatSplits) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
       Vec v = vecs[c];
@@ -408,7 +432,7 @@ public final class DHistogram extends Iced {
       try {
         byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
         hs[c] = nacnt == vlen || v.isConst(true) ?
-            null : make(fr._names[c], nbins, type, minIn, maxEx, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
+            null : make(fr._names[c], nbins, type, minIn, maxEx, nacnt > 0, seed, parms, globalQuantilesKey[c], cs, checkFloatSplits);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
         LOG.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -419,9 +443,10 @@ public final class DHistogram extends Iced {
   }
   
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean hasNAs, 
-                                long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
+                                long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, 
+                                Constraints cs, boolean checkFloatSplits) {
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, hasNAs, 
-            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs);
+            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits);
   }
 
   // Pretty-print a histogram
