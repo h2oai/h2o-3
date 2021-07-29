@@ -85,7 +85,7 @@ def calculate_chunk_size(file_path, num_cols, cores, cloud_size):
             chunk_count = cores * 4 * num_cols
             if chunk_count > per_node_chunk_count_limit:
                 # this times too many chunks globally on the cluster
-                ratio = 1 << max(2, int(math.log2(int(chunk_count / per_node_chunk_count_limit))))  
+                ratio = 1 << max(2, int(math.log(int(chunk_count / per_node_chunk_count_limit), 2)))  
                 chunk_size = chunk_size * ratio  # need to bite off larger chunks
             chunk_size = min(max_parse_chunk_size, chunk_size)  # hard upper limit
             # if we can read at least min_number_rows and we don't create too large Chunk POJOs, we're done

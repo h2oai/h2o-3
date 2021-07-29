@@ -16,6 +16,23 @@ def call(final pipelineContext, final stageConfig) {
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
             fi
 
+            if [ "11" = "${stageConfig.javaVersion}" ]; then
+              echo "Installing Java 11 (OpenJDK)"
+              curl -j -k -L https://download.java.net/java/GA/jdk11/13/GPL/openjdk-11.0.1_linux-x64_bin.tar.gz > jdk-linux-x64.tar.gz
+              tar xfz jdk-linux-x64.tar.gz
+              export JAVA_HOME=\$(cd jdk* && pwd)
+              export PATH=\$JAVA_HOME/bin:\$PATH
+              echo "Creating symlinks (substituting Java 8 for Java 11)"
+              rm /usr/lib/jvm/java-8-oracle
+              rm /usr/lib/jvm/java-current-oracle
+              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-oracle
+              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-current
+              echo "\$LDAP_USERNAME: \$LDAP_PASSWORD" > /tmp/hash.login
+            fi
+
+            echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"
+            java -version
+
             . /usr/sbin/hive_version_check.sh
 
             echo "Activating Python ${stageConfig.pythonVersion}"

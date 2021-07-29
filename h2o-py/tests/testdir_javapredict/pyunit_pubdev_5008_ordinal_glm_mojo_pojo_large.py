@@ -10,7 +10,7 @@ def glm_ordinal_mojo_pojo():
     params = set_params()   # set deeplearning model parameters
     NTESTROWS = 200    # number of test dataset rows
     PROBLEM="multinomial"
-    df = pyunit_utils.random_dataset(PROBLEM, NTESTROWS)       # generate random dataset
+    df = pyunit_utils.random_dataset(PROBLEM, NTESTROWS, seed=12345)       # generate random dataset
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
     x = list(set(df.names) - {"response"})

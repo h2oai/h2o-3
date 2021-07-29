@@ -30,7 +30,7 @@ def call(final pipelineContext) {
   def METADATA_VALIDATION_STAGES = [
     [
       stageName: 'Check Pull Request Metadata', target: 'check-pull-request', javaVersion: 8, timeoutValue: 10,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
+      component: pipelineContext.getBuildConfig().COMPONENT_ANY
     ]
   ]
 
@@ -229,14 +229,6 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'gam'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
-      healthCheckSuppressed: true
-    ],
-    [
-      stageName: 'GBM Benchmark Client', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
-      timeoutValue: 120, target: 'benchmark-gbm-client-mode', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
-      customData: [algorithm: 'gbm-client'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
@@ -482,7 +474,8 @@ def call(final pipelineContext) {
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
         ldapConfigPath: ldapConfigPath,
         ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-9.txt'
-      ], pythonVersion: '2.7',
+      ], 
+      pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
       image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, false)
@@ -494,6 +487,15 @@ def call(final pipelineContext) {
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
+
+    if (distribution.name == 'cdh' && distribution.version.startsWith('6.3')) {
+      def onHadoopStageJava11 = evaluate(stageTemplate.inspect())
+      onHadoopStageJava11.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP - Java 11 (Hash Login)"
+      onHadoopStageJava11.customData.mode = 'ON_HADOOP'
+      onHadoopStageJava11.javaVersion = '11'
+      onHadoopStageJava11.customData.customAuth = '-hash_login -login_conf /tmp/hash.login'
+      HADOOP_STAGES += [ onHadoopStageJava11 ]
+    }
 
     HADOOP_STAGES += [ standaloneStage, onHadoopStage ]
   }

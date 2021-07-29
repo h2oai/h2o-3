@@ -8,10 +8,14 @@ public interface TreeSHAPPredictor<R> extends Serializable  {
 
   float[] calculateContributions(final R feat,
                                  float[] out_contribs, int condition, int condition_feature,
-                                 Object workspace);
+                                 Workspace workspace);
 
-  Object makeWorkspace();
+  Workspace makeWorkspace();
 
   int getWorkspaceSize();
 
+  interface Workspace {
+    int getSize();
+  }
+  
 }

@@ -34,7 +34,9 @@ public class ModelDescriptorBuilder {
         private final double[] _modelClassDistrib;
         private final String _offsetColumn;
         private final String[][] _domains;
+        private final String[][] _origDomains;
         private final String[] _names;
+        private final String[] _origNames;
         private final String _algoName;
         private final String _fullAlgoName;
 
@@ -51,7 +53,9 @@ public class ModelDescriptorBuilder {
             _h2oVersion = mojoModel._h2oVersion;
             _offsetColumn = mojoModel._offsetColumn;
             _domains = mojoModel._domains;
+            _origDomains = mojoModel.getOrigDomainValues();
             _names = mojoModel._names;
+            _origNames = mojoModel.getOrigNames();
             _algoName = mojoModel._algoName;
             _fullAlgoName = fullAlgorithmName;
         }
@@ -149,6 +153,16 @@ public class ModelDescriptorBuilder {
         @Override
         public String timestamp() {
             return null;
+        }
+
+        @Override
+        public String[] getOrigNames() {
+            return _origNames;
+        }
+
+        @Override
+        public String[][] getOrigDomains() {
+            return _origDomains;
         }
     }
 

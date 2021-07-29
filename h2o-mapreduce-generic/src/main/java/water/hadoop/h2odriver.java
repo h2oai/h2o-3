@@ -93,8 +93,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
   static boolean enableVerboseGC = true;
-  static boolean enablePrintGCDetails = true;
-  static boolean enablePrintGCTimeStamps = true;
+  static boolean enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+  static boolean enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -917,9 +917,9 @@ public class h2odriver extends Configured implements Tool {
                     "             The file contains one line with the IP and port of the embedded\n" +
                     "             web server for one of the H2O nodes in the cluster.  e.g.\n" +
                     "                 192.168.1.100:54321\n" +
-                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]" +
-                    "             are deperacated in Java 9 and removed in Java 10." +
-                    "             The option [-Xlog:gc=info] replaces these flags since Java 9." +
+                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]\n" +
+                    "             are deperacated in Java 9 and removed in Java 10.\n" +
+                    "             The option [-Xlog:gc=info] replaces these flags since Java 9.\n" +
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
@@ -1099,18 +1099,8 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-ea")) {
         enableExceptions = true;
       }
-      else if (s.equals("-verbose:gc") && !JAVA_VERSION.useUnifiedLogging()) {
-        if (!JAVA_VERSION.useUnifiedLogging()) {
-          enableVerboseGC = true;
-        } else {
-          error("Parameter -verbose:gc is unusable, running on JVM with deprecated GC debugging flags.");
-        }
-      } else if (s.equals("-Xlog:gc=info")) {
-        if (JAVA_VERSION.useUnifiedLogging()) {
-          enableVerboseGC = true;
-        } else {
-          error("Parameter -verbose:gc is unusable, running on JVM without unified JVM logging.");
-        }
+      else if (s.equals("-verbose:gc") || s.equals("-Xlog:gc=info")) {
+        enableVerboseGC = true;
       }
       else if (s.equals("-verbose:class")) {
         enableVerboseClass = true;
@@ -1157,8 +1147,8 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-gc")) {
         enableVerboseGC = true;
-        enablePrintGCDetails = true;
-        enablePrintGCTimeStamps = true;
+        enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+        enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
       }
       else if (s.equals("-nogc")) {
         enableVerboseGC = false;
@@ -1241,7 +1231,7 @@ public class h2odriver extends Configured implements Tool {
         swExtBackend = true;
       }
       else if (s.equals("-configure_s3_using_s3a")) {
-        configureS3UsingS3A = false;
+        configureS3UsingS3A = true;
       }
       else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
@@ -1717,8 +1707,7 @@ public class h2odriver extends Configured implements Tool {
               .append(" -Xmx").append(mapperXmx)
               .append(((mapperPermSize != null) && (mapperPermSize.length() > 0)) ? (" -XX:PermSize=" + mapperPermSize) : "")
               .append((enableExceptions ? " -ea" : ""))
-              .append((enableVerboseGC && !JAVA_VERSION.useUnifiedLogging() ? " -verbose:gc" : ""))
-              .append(enableVerboseGC && JAVA_VERSION.useUnifiedLogging() ? "-Xlog:gc=info" : "")
+              .append((enableVerboseGC ? " " + JAVA_VERSION.getVerboseGCFlag() : ""))
               .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
               .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
               .append((enableVerboseClass ? " -verbose:class" : ""))

@@ -2444,5 +2444,29 @@ public class XGBoostTest extends TestUtil {
     }
     return relEpsilon;
   }
+
+  @Test
+  public void testHStatistic() {
+    XGBoostModel model = null;
+    Scope.enter();
+    try {
+      Frame irisFrame = parseTestFile("smalldata/iris/iris_wheader.csv");
+      Scope.track(irisFrame);
+      
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = "class";
+      parms._train = irisFrame._key;
+      parms._ntrees = 3;
+      parms._seed = 1234L;
+      
+      model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      double h = model.getFriedmanPopescusH(irisFrame, new String[] {"sepal_len","sepal_wid"});
+      assertTrue(Double.isNaN(h) || (h >= 0.0 && h <= 1.0));
+    } finally {
+      Scope.exit();
+      if (model != null) model.delete();
+    }
+  }
   
 }

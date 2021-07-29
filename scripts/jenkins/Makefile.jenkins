@@ -206,6 +206,20 @@ test-info:
 		exit 1; \
 	fi
 
+test-package-gradle:
+	zip -q -r test-package-java \
+		tests/leakCheckKeywords \
+		$(JENKINS_MAKEFILE_PATH) \
+		gradlew \
+		gradle.properties \
+		gradle/ \
+		buildSrc/ \
+		multiNodeUtils.sh
+	find . -name "*.gradle" | zip -q -r test-package-java \
+	    -x h2o-web/* \
+	    -x h2o-bindings/* \
+	    -@
+
 test-package-java:
 	zip -q -r test-package-java \
 		tests/leakCheckKeywords \

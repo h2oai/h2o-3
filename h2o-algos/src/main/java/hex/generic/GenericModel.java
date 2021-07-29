@@ -1,11 +1,9 @@
 package hex.generic;
 
 import hex.*;
-import hex.genmodel.ModelMojoReader;
-import hex.genmodel.MojoModel;
-import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.*;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
+import hex.genmodel.descriptor.ModelDescriptor;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.Futures;
 import water.H2O;
@@ -91,6 +89,48 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     @Override
     protected double[] score0(double[] data, double[] preds) {
         return mojoModel().score0(data,preds);
+    }
+
+    @Override
+    protected AdaptFrameParameters makeAdaptFrameParameters() {
+        final MojoModel mojoModel = mojoModel();
+        CategoricalEncoding encoding = mojoModel.getCategoricalEncoding();
+        if (encoding.isParametrized()) {
+            throw new UnsupportedOperationException(
+                    "Models with categorical encoding '" + encoding + "' are not currently supported for predicting and/or calculating metrics.");
+        }
+        final Parameters.CategoricalEncodingScheme encodingScheme = Parameters.CategoricalEncodingScheme.fromGenModel(encoding);
+        final ModelDescriptor descriptor = mojoModel._modelDescriptor;
+        return new AdaptFrameParameters() {
+            @Override
+            public Parameters.CategoricalEncodingScheme getCategoricalEncoding() {
+                return encodingScheme;
+            }
+            @Override
+            public String getWeightsColumn() {
+                return descriptor.weightsColumn();
+            }
+            @Override
+            public String getOffsetColumn() {
+                return descriptor.offsetColumn();
+            }
+            @Override
+            public String getFoldColumn() {
+                return descriptor.foldColumn();
+            }
+            @Override
+            public String getResponseColumn() {
+                return mojoModel.isSupervised() ? mojoModel.getResponseName() : null; 
+            }
+            @Override
+            public double missingColumnsType() {
+                return Double.NaN;
+            }
+            @Override
+            public int getMaxCategoricalLevels() {
+                return -1; // returned but won't be used
+            }
+        };
     }
 
     @Override

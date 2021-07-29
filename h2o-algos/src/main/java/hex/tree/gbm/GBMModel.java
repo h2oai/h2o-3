@@ -19,7 +19,7 @@ import water.util.TwoDimTable;
 import java.util.*;
 
 public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
-        implements Model.StagedPredictions, FeatureInteractionsCollector {
+        implements Model.StagedPredictions, FeatureInteractionsCollector, FriedmanPopescusHCollector {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -294,6 +294,19 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   @Override
   public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
     return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
+  }
+
+  @Override
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
+    SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        sharedTreeSubgraphs[i][j] = this.getSharedTreeSubgraph(i, j);
+      }
+    }
+    
+    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
   }
 
 }

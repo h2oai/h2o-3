@@ -2,29 +2,62 @@
 
 ## H2O
 
+### Zipf (3.32.1.4) - 7/8/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8226]](https://h2oai.atlassian.net/browse/PUBDEV-8226) - Fixed h2odriver invalid argument error on Java 11.
+- [[PUBDEV-8224]](https://h2oai.atlassian.net/browse/PUBDEV-8224) - Fixed GLM `GRADIENT_DESCENT_SQERR` Solver validation.
+- [[PUBDEV-8219]](https://h2oai.atlassian.net/browse/PUBDEV-8219) - Upgraded to latest version of Javassist (3.28).
+- [[PUBDEV-8207]](https://h2oai.atlassian.net/browse/PUBDEV-8207) - Fixed H statistic gpu assertion error.
+- [[PUBDEV-8195]](https://h2oai.atlassian.net/browse/PUBDEV-8195) - Fixed predict contributions failure in multi-MOJO environments.
+- [[PUBDEV-8194]](https://h2oai.atlassian.net/browse/PUBDEV-8194) - Fixed bug in ordinal GLM class predictions.
+- [[PUBDEV-8188]](https://h2oai.atlassian.net/browse/PUBDEV-8188) - Fixed Partial Dependent Plot not working with Flow.
+- [[PUBDEV-8181]](https://h2oai.atlassian.net/browse/PUBDEV-8181) - Updated to current Python syntax.
+- [[PUBDEV-8167]](https://h2oai.atlassian.net/browse/PUBDEV-8167) - Fixed bug in ordinal GLM class predictions.
+
+#### Improvement
+
+- [[PUBDEV-8141]](https://h2oai.atlassian.net/browse/PUBDEV-8141) - Added support for refreshing HDFS delegation tokens for standalone H2O.
+
+
+#### New Feature
+
+- [[PUBDEV-8109]](https://h2oai.atlassian.net/browse/PUBDEV-8109) - Obtained Friedman’s H statistic for XGBoost and GBM.
+
+#### Task
+
+- [[PUBDEV-8150]](https://h2oai.atlassian.net/browse/PUBDEV-8150) - Added a warning message when using `alpha` as a hyperparameter for GLM
+
+#### Docs
+
+- [[PUBDEV-8158]](https://h2oai.atlassian.net/browse/PUBDEV-8158) - Added section on how to delete objects in Flow.
+- [[PUBDEV-8151]](https://h2oai.atlassian.net/browse/PUBDEV-8151) - Added a note to the productionizing docs that C++ is only available with additional support.
+
+
 ### Zipf (3.32.1.3) - 5/19/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/3/index.html</a>
 
 #### Bug
 
-- [PUBDEV-8136](https://h2oai.atlassian.net/browse/PUBDEV-8136) Fixed the printing for `auc_pr` and `pr_auc` in cross-validation summaries.
+- [[PUBDEV-8136]](https://h2oai.atlassian.net/browse/PUBDEV-8136) - Fixed the printing for `auc_pr` and `pr_auc` in cross-validation summaries.
 
 #### New Feature
 
-- [PUBDEV-8131](https://h2oai.atlassian.net/browse/PUBDEV-8131) Added parameter `auc_type` to performance method to compute multiclass AUC.
+- [[PUBDEV-8131]](https://h2oai.atlassian.net/browse/PUBDEV-8131) - Added parameter `auc_type` to performance method to compute multiclass AUC.
 
 #### Task
 
-- [PUBDEV-8147](https://h2oai.atlassian.net/browse/PUBDEV-8147) Upgraded XGBoost predictor to 0.3.18.
-
-- [PUBDEV-8145](https://h2oai.atlassian.net/browse/PUBDEV-8145) Increased the timeout duration on the R package jar download.
+- [[PUBDEV-8147]](https://h2oai.atlassian.net/browse/PUBDEV-8147) - Upgraded XGBoost predictor to 0.3.18.
+- [[PUBDEV-8145]](https://h2oai.atlassian.net/browse/PUBDEV-8145) - Increased the timeout duration on the R package jar download.
 
 #### Docs
 
-- [PUBDEV-8119](https://h2oai.atlassian.net/browse/PUBDEV-8119) Fixed formatting errors for local builds.
-
-- [PUBDEV-8091](https://h2oai.atlassian.net/browse/PUBDEV-8091) Updated docs examples for baseline hazard, baseline survival, and concordance.
+- [[PUBDEV-8119]](https://h2oai.atlassian.net/browse/PUBDEV-8119) - Fixed formatting errors for local builds.
+- [[PUBDEV-8091]](https://h2oai.atlassian.net/browse/PUBDEV-8091) - Updated docs examples for baseline hazard, baseline survival, and concordance.
 
 ### Zipf (3.32.1.2) - 4/29/2021
 
