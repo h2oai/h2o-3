@@ -28,7 +28,7 @@ def test(x, ties, stratify_by, use_all_factor_levels):
     coxph.train(x=x, y="event", training_frame=heart)
     coxph.show()
 
-    mojo_path = tempfile.mkdtemp()
+    mojo_path = pyunit_utils.locate("results")
     mojo_path = coxph.download_mojo(mojo_path)
 
     from h2o.estimators import H2OGenericEstimator
