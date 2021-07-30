@@ -487,8 +487,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   boolean inferDistributionOrFamily(Model aModel) {
     if (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm) { //use family
-      // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
-      // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
       if (((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != GLMModel.GLMParameters.Family.AUTO) {
         return false; // User specified family - no need to infer one; Link will be also used properly if it is specified
       }
