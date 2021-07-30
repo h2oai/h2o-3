@@ -33,6 +33,7 @@ from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
 from ..model.anomaly_detection import H2OAnomalyDetectionModel
 from ..model.coxph import H2OCoxPHModel
+from ..model.coxph import H2OCoxPHMojoModel
 from ..model.segment_models import H2OSegmentModels
 
 
@@ -501,7 +502,7 @@ class H2OEstimator(ModelBase):
             model_class = H2OAnomalyDetectionModel
         elif model_type == "CoxPH":
             metrics_class = H2OModelMetricsRegressionCoxPH
-            model_class = H2OCoxPHModel
+            model_class = H2OCoxPHModel if model_json["algo"] != "generic" else H2OCoxPHMojoModel
         elif model_type == "TargetEncoder":
             metrics_class = H2OTargetEncoderMetrics
             model_class = None

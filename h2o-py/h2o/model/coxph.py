@@ -28,3 +28,6 @@ class H2OCoxPHModel(ModelBase):
         print("Concordance=%f" % (output["loglik_test"]))
         print("n=%d, number of events=%d" % (output["n"], output["total_event"]))
 
+
+class H2OCoxPHMojoModel(ModelBase):
+    pass
