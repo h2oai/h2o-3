@@ -2281,7 +2281,7 @@ final public class H2O {
     long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
     if( ARGS.version ) {
-      Log.flushBufferedMessages();
+      Log.flushBufferedMessagesToStdout();
       exit(0);
     }
 
