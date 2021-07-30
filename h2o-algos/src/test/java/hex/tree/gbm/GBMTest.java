@@ -2732,43 +2732,49 @@ public class GBMTest extends TestUtil {
 
   // PUBDEV-2822
   @Test public void testUnseenNACategorical() {
-    String xy = "B,-5\nA,0\nB,0\nA,0\nD,0\nA,3";
-    Key tr = Key.make("train");
-    Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
+    try {
+      Scope.enter();
+      String trainData = "B,-5\nA,0\nB,0\nA,0\nD,0\nA,3";
+      Frame train = ParseDataset.parse(Key.make("train"), makeByteVec(Key.make("trainBytes"), trainData));
+      Scope.track(train);
 
-    String test = ",5\n,0\nB,0\n,0\nE,0\n,3";
-    Key te = Key.make("test");
-    Frame df2 = ParseDataset.parse(te, makeByteVec(Key.make("te"), test));
+      String testData = ",5\n,0\nB,0\n,0\nE,0\n,3";
+      Frame test = ParseDataset.parse(Key.make("test"), makeByteVec(Key.make("testBytes"), testData));
+      Scope.track(test);
 
-    GBMModel.GBMParameters parms = makeGBMParameters();
-    parms._train = tr;
-    parms._response_column = "C2";
-    parms._min_rows = 1;
-    parms._learn_rate = 1;
-    parms._ntrees = 1;
-    GBM job = new GBM(parms);
-    GBMModel gbm = job.trainModel().get();
-    Scope.enter(); //AdaptTestTrain leaks when it does inplace Vec adaptation, need a Scope to catch that stuff
-    Frame preds = gbm.score(df);
-    Frame preds2 = gbm.score(df2);
-    Log.info(df);
-    Log.info(preds);
-    Log.info(df2);
-    Log.info(preds2);
-    Assert.assertTrue(gbm.testJavaScoring(df, preds, 1e-15));
-    Assert.assertTrue(gbm.testJavaScoring(df2, preds2, 1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - -2.5) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 1) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - -2.5) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 1) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 1) < 1e-6);
-    preds.remove();
-    preds2.remove();
-    gbm.remove();
-    df.remove();
-    df2.remove();
-    Scope.exit();
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "C2";
+      parms._min_rows = 1;
+      parms._learn_rate = 1;
+      parms._ntrees = 1;
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+      Scope.track_generic(gbm);
+
+      Frame trainPreds = gbm.score(train);
+      Scope.track(trainPreds);
+      Log.info(train);
+      Log.info(trainPreds);
+
+      Frame testPreds = gbm.score(test);
+      Scope.track(testPreds);
+      Log.info(test);
+      Log.info(testPreds);
+
+      Assert.assertTrue(gbm.testJavaScoring(train, trainPreds, 1e-15));
+      Model.JavaScoringOptions options = new Model.JavaScoringOptions();
+      options._disable_pojo = !Boolean.getBoolean("reproduce.PUBDEV-8263"); // FIXME - doesn't work unless POJO is disabled
+      Assert.assertTrue(gbm.testJavaScoring(test, testPreds, 1e-15, options));
+      Assert.assertTrue(Math.abs(trainPreds.vec(0).at(0) - -2.5) < 1e-6);
+      Assert.assertTrue(Math.abs(trainPreds.vec(0).at(1) - 1) < 1e-6);
+      Assert.assertTrue(Math.abs(trainPreds.vec(0).at(2) - -2.5) < 1e-6);
+      Assert.assertTrue(Math.abs(trainPreds.vec(0).at(3) - 1) < 1e-6);
+      Assert.assertTrue(Math.abs(trainPreds.vec(0).at(4) - 0) < 1e-6);
+      Assert.assertTrue(Math.abs(trainPreds.vec(0).at(5) - 1) < 1e-6);
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test public void unseenMissing() {
