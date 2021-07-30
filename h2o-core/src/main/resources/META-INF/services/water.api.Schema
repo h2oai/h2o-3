@@ -86,6 +86,7 @@ water.api.schemas3.ModelMetricsOrdinalGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionGLMV3
 water.api.schemas3.ModelMetricsRegressionGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionCoxPHV3
+water.api.schemas3.ModelMetricsRegressionCoxPHGenericV3
 water.api.schemas3.ModelMetricsRegressionV3
 water.api.schemas3.ModelMetricsRegressionGenericV3
 water.api.schemas3.ModelOutputSchemaV3

@@ -1,8 +1,6 @@
 package hex;
 
-import water.IcedWrapper;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 

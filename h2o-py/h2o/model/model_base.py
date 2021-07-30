@@ -357,7 +357,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         
         if test_data is None:
-            if auc_type is not None:
+            if auc_type is not None and auc_type != "none":
                 print("WARNING: The `auc_type` parameter is set but it is not used because the `test_data` parameter is None.")
             if train: 
                 return self._model_json["output"]["training_metrics"]
