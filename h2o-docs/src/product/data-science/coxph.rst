@@ -258,10 +258,10 @@ Below is a simple example showing how to build a CoxPH model.
     pred = heart_coxph.predict(test)
 
     # Get baseline hazard:
-    hazard = h2o.baseline_hazard_frame
+    hazard = heart_coxph.baseline_hazard_frame
 
     # Get baseline survival:
-    survival = h2o.baseline_survival_frame
+    survival = heart_coxph.baseline_survival_frame
 
     # Get model concordance:
     heart_coxph.model_performance().concordance()
