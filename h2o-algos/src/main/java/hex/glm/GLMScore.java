@@ -31,8 +31,7 @@ public class GLMScore extends MRTask<GLMScore> {
   private final double []_beta;
   private final double [][] _beta_multinomial;
   private final double _defaultThreshold;
-
-
+  boolean _notKeepCVPred = true;
 
   public GLMScore(Job j, GLMModel m, DataInfo dinfo, String[] domain, boolean computeMetrics, boolean generatePredictions) {
     _j = j;
@@ -121,8 +120,8 @@ public class GLMScore extends MRTask<GLMScore> {
     if(_dinfo._responses != 0)res[0] = (float) r.response[0];
     if (r.predictors_bad) {
       Arrays.fill(ps,Double.NaN);
-/*    } else if(r.weight == 0) {
-      Arrays.fill(ps,0);*/
+    } else if(r.weight == 0) {
+      Arrays.fill(ps,0);
     } else {
       scoreRow(r, r.offset, ps);
       if (_computeMetrics && !r.response_bad)
@@ -158,13 +157,24 @@ public class GLMScore extends MRTask<GLMScore> {
     final int ncols = nc == 1 ? 1 : nc + 1; // Regression has 1 predict col; classification also has class distribution
     // compute
     if (_sparse) {
-      for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
-        processRow(r,res,ps,preds,ncols);
+      for (DataInfo.Row r : _dinfo.extractSparseRows(chks)) {
+        boolean resetWeight = _notKeepCVPred && r.weight == 0;
+        if (resetWeight)
+          r.weight = 1.0;
+        processRow(r, res, ps, preds, ncols);
+        if (resetWeight)
+          r.weight = 0.0;
+      }
     } else {
       DataInfo.Row r = _dinfo.newDenseRow();
       for (int rid = 0; rid < chks[0]._len; ++rid) {
+        boolean resetWeight = _notKeepCVPred && r.weight == 0;
+        if (resetWeight)
+          r.weight = 1.0;
         _dinfo.extractDenseRow(chks, rid, r);
         processRow(r,res,ps,preds,ncols);
+        if (resetWeight)
+          r.weight = 0.0;
       }
     }
     if (_j != null) _j.update(1);

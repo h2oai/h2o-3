@@ -1861,7 +1861,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final boolean detectedComputeMetrics = computeMetrics && (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad());
     String [] domain = _output.nclasses()<=1 ? null : !detectedComputeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    return new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain,detectedComputeMetrics, generatePredictions);
+    GLMScore scoreObj = new GLMScore(j, this, _output._dinfo.scoringInfo(_output._names,adaptFrm),domain, 
+            detectedComputeMetrics, generatePredictions);
+    if (_parms._keep_cross_validation_predictions)
+      scoreObj._notKeepCVPred = false;
+    return scoreObj;
   }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is
