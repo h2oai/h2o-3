@@ -44,6 +44,8 @@ import java.text.NumberFormat;
 import java.util.*;
 
 import static hex.ModelMetrics.calcVarImp;
+import static hex.glm.ComputationState.extractSubRange;
+import static hex.glm.ComputationState.fillSubRange;
 import static hex.glm.GLMModel.GLMParameters;
 import static hex.glm.GLMModel.GLMParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
@@ -69,8 +71,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public String[][] _gamColnames = null;
   public int[][] _gamColIndices = null; // corresponding column indices in dataInfo
   public static int _totalBetaLen;
+  public static int _betaLenPerClass;
   private boolean _earlyStopEnabled = false;
   private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
+
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -773,7 +777,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
       _totalBetaLen = multinomial.equals(_parms._family) || ordinal.equals(_parms._family)?
-              _dinfo.fullN()*nclasses()+1:_dinfo.fullN()+1;
+              (_dinfo.fullN()+1)*nclasses():_dinfo.fullN()+1;
+      _betaLenPerClass = multinomial.equals(_parms._family) || ordinal.equals(_parms._family)?
+              _totalBetaLen/nclasses():_totalBetaLen;
 
       if (gam.equals(_parms._glmType))
          _gamColIndices = extractAdaptedFrameIndices(_dinfo._adaptedFrame, _gamColnames, _dinfo._numOffsets[0]-_dinfo._cats);
@@ -1572,25 +1578,68 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (Solver.COORDINATE_DESCENT.equals(s)) {
         fitCOD_multinomial(s);
       } else {
-        double[] beta = _state.betaMultinomial();
+        double[] beta = _state.betaMultinomial(); // full with active/inactive columns
         do {
           beta = beta.clone();
           for (int c = 0; c < _nclass; ++c) {
             boolean onlyIcpt = _state.activeDataMultinomial(c).fullN() == 0;
             _state.setActiveClass(c);
-            LineSearchSolver ls = (_state.l1pen() == 0)
-                    ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
-                    : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
+            // _state.gslvrMultinomial(c) get beta, _state info, _state.betaMultinomial(c, beta) get coef per class
+            // _state.ginfoMultinomial(c) get gradient for one class
+            LineSearchSolver ls;
+            if (_parms._remove_collinear_columns)
+              ls = (_state.l1pen() == 0)  // at first iteration, state._beta, ginfo.gradient have not shrunk here
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), 
+                      _state._iter==0?_state.ginfoMultinomial(c):_state.ginfoMultinomialRCC(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
+            else
+              ls = (_state.l1pen() == 0)  // normal case with rcc = false, nothing changes
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());
+            
+/*            if (_parms._remove_collinear_columns && _state._iter < 1)
+              ls = (_state.l1pen() == 0)  // at first iteration, state._beta, ginfo.gradient have not shrunk here
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
+            else if (_parms._remove_collinear_columns && _state._iter > 0)
+              ls = (_state.l1pen() == 0)  // after first iteration over all classes, state._beta, ginfo.gradient are all smaller size
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.ginfoMultinomialRCC(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomialFull(c, beta), _state.l1pen());
+            else
+              ls = (_state.l1pen() == 0)  // normal case with rcc = false, nothing changes
+                      ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.ginfoMultinomial(c))
+                      : new SimpleBacktrackingLS(_state.gslvrMultinomial(c), _state.betaMultinomial(c, beta), _state.l1pen());*/
 
             long t1 = System.currentTimeMillis();
-            new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta, c).doAll(_state.activeDataMultinomial()._adaptedFrame);
+            // GLMMultinomialUpdate needs to take beta that contains active columns described in _state.activeDataMultinomial()
+            if (_parms._remove_collinear_columns && _state.activeDataMultinomial()._activeCols != null && 
+            _betaLenPerClass != _state.activeDataMultinomial().activeCols().length) { // beta full length, need short beta
+              double[] shortBeta = _state.shrinkFullArray(beta);
+              new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, shortBeta,
+                              c).doAll(_state.activeDataMultinomial()._adaptedFrame);        
+            } else {
+              new GLMMultinomialUpdate(_state.activeDataMultinomial(), _job._key, beta,
+                      c).doAll(_state.activeDataMultinomial()._adaptedFrame);
+            }
             long t2 = System.currentTimeMillis();
-            ComputationState.GramXY gram = _state.computeGram(ls.getX(), s);
-            long t3 = System.currentTimeMillis();
-            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);
+            ComputationState.GramXY gram;
+            if (_parms._remove_collinear_columns && _state._iter > 0)
+              gram = _state.computeGramRCC(ls.getX(), s); // only use beta for the active columns only
+            else
+              gram = _state.computeGram(ls.getX(), s);
 
+            long t3 = System.currentTimeMillis();
+            double[] betaCnd = ADMM_solve(gram.gram, gram.xy);  // remove collinear columns here from ginfo._gradient, betaCnd
             long t4 = System.currentTimeMillis();
-            if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+            if (_parms._remove_collinear_columns) { // betaCnd contains only active columns but ls.getX() could be full length
+              int lsLength = ls.getX().length;
+              if (lsLength != betaCnd.length) {
+                double[] wideBetaCnd = new double[lsLength];
+                fillSubRange(lsLength, 0, _state.activeDataMultinomial()._activeCols, betaCnd, wideBetaCnd);
+                betaCnd = wideBetaCnd;
+              }
+            }
+            if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {// betaCnd full size
               Log.info(LogMsg("Ls failed " + ls));
               continue;
             }
@@ -1600,6 +1649,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "+" + (t5 - t4) + "=" + (t5 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
           }
           _state.setActiveClass(-1);
+          _model._output._activeColsPerClass = _state.activeDataMultinomial().activeCols();
         } while (progress(beta, _state.gslvr().getGradient(beta)));
       }
     }
@@ -1715,7 +1765,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                       : new SimpleBacktrackingLS(_state.gslvr(), _state.beta().clone(), _state.l1pen(), _state.ginfo());
             double[] oldBetaCnd = ls.getX();
             if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
-              betaCnd = _state.extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+              betaCnd = extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
             }
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
               Log.info(LogMsg("Ls failed " + ls));
@@ -2394,12 +2444,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (continueFromPreviousSubmodel)
           sm = _model._output._submodels[i];
         else
-          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, nullDevValid));
+          _model.addSubmodel(sm = new Submodel(lambda, _state.alpha(), getNullBeta(), _state._iter, nullDevTrain, 
+                  nullDevValid, _totalBetaLen));
       } else {  // this is also the path for HGLM model
         if (continueFromPreviousSubmodel) {
           sm = _model._output._submodels[i];
         } else {
-          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1);// restart from last run
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, -1, -1, _totalBetaLen);// restart from last run
           if (_parms._HGLM) // add random coefficients for random effects/columns
             sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.addSubmodel(sm);
@@ -2438,7 +2489,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         } while (!_state.checkKKTs());
         Log.info(LogMsg("solution has " + ArrayUtils.countNonzeros(_state.beta()) + " nonzeros"));
         if (_parms._HGLM) {
-          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid);
+          sm = new Submodel(lambda, _state.alpha(), _state.beta(), _state._iter, nullDevTrain, nullDevValid,
+                  _totalBetaLen);
           sm.ubeta = Arrays.copyOf(_state.ubeta(), _state.ubeta().length);
           _model.updateSubmodel(sm);
         } else {
@@ -2459,7 +2511,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _lambdaSearchScoringHistory.addLambdaScore(_state._iter, ArrayUtils.countNonzeros(_state.beta()), 
                     _state.lambda(), trainDev, validDev, xvalDev, xvalDevSE, _state.alpha()); // add to scoring history
           _model.updateSubmodel(sm = new Submodel(_state.lambda(), _state.alpha(), _state.beta(), _state._iter,
-                  trainDev, validDev));
+                  trainDev, validDev, _totalBetaLen));
         }
       }
       return sm;
@@ -2499,6 +2551,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
       _model._output._start_time = System.currentTimeMillis(); //quickfix to align output duration with other models
+      _model._totalBetaLength = _totalBetaLen;
       if (_parms._lambda_search) {
         if (ordinal.equals(_parms._family))
           nullDevTrain = new GLMResDevTaskOrdinal(_job._key, _state._dinfo, getNullBeta(), _nclass).doAll(_state._dinfo._adaptedFrame).avgDev();
@@ -3294,16 +3347,20 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public GLMGradientInfo getGradient(double[] beta) {
       if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family)) {
+        // beta could contain active cols only for some classes and full predictors for other classes at this point
         if (_betaMultinomial == null) {
-          int nclasses = beta.length / (_dinfo.fullN() + 1);
-          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
-          _betaMultinomial = new double[nclasses][];
+          int nclasses = _totalBetaLen/_betaLenPerClass;
+//          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
+          _betaMultinomial = new double[nclasses][]; // contains only active columns if rcc=true
           for (int i = 0; i < nclasses; ++i)
-            _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);
+            _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);  // only active columns here
         }
         int off = 0;
-        for (int i = 0; i < _betaMultinomial.length; ++i) {
-          System.arraycopy(beta, off, _betaMultinomial[i], 0, _betaMultinomial[i].length);
+        for (int i = 0; i < _betaMultinomial.length; ++i) { // fill _betaMultinomial class by coeffPerClass
+          if (!_parms._remove_collinear_columns || _dinfo._activeCols == null || _dinfo._activeCols.length == _betaLenPerClass)
+            System.arraycopy(beta, off, _betaMultinomial[i], 0, _betaMultinomial[i].length);
+          else  // _betaMultinomial only contains active columns
+            _betaMultinomial[i] = extractSubRange(_betaLenPerClass, i, _dinfo._activeCols, beta);
           off += _betaMultinomial[i].length;
         }
         GLMMultinomialGradientBaseTask gt = new GLMMultinomialGradientTask(_job, _dinfo, _l2pen, _betaMultinomial,
@@ -3316,7 +3373,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             break;  // only one beta for all classes, l2pen needs to count beta for one class only
         }
 
-        double[] grad = gt.gradient();
+        double[] grad = gt.gradient();  // gradient is nclass by coefByClass
         if (!_parms._intercept) {
           for (int i = _dinfo.fullN(); i < beta.length; i += _dinfo.fullN() + 1)
             grad[i] = 0;
