@@ -6,7 +6,9 @@ import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.IcedBitSet;
+import water.util.Log;
 import water.util.VecUtils;
+import static hex.tree.SharedTree.ScoreBuildOneTree;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,10 +71,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final IcedBitSet _activeCols;
   final int _respIdx;
   final int _predsIdx;
+  final boolean _reproducibleHistos;
+  // only for debugging purposes
+  final boolean _reduceHistoPrecision; // if enabled allows to test that histograms are 100% reproducible when reproducibleHistos are enabled
 
-  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, 
+  public ScoreBuildHistogram2(ScoreBuildOneTree sb, int treeNum, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf,
+                              DHistogram[][] hcs, DistributionFamily family,
                               int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdxs) {
-    super(cc, k, ncols, nbins, nbins_cats, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
+    super(sb, k, ncols, nbins, nbins_cats, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
     _numLeafs = _hcs.length;
     _respIdx = respIdx;
     _predsIdx = predsIdx;
@@ -91,6 +97,13 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
     _activeCols = activeCols;
     _hcs = ArrayUtils.transpose(_hcs);
+    // override defaults using debugging parameters where applicable
+    SharedTree.SharedTreeDebugParams dp = sb._st.getDebugParams();
+    _reproducibleHistos = tree._parms.forceStrictlyReproducibleHistograms() || dp._reproducible_histos;
+    _reduceHistoPrecision = !dp._keep_orig_histo_precision;
+    if (_reproducibleHistos && treeNum == 0 && k == 0 && leaf == 0) {
+      Log.info("Using a deterministic way of building histograms");
+    }
   }
 
   @Override
@@ -238,9 +251,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       public void onCompletion(CountedCompleter cc){
         final int ncols = _ncols;
         final int [] active_cols = _activeCols == null?null:new int[Math.max(1,_activeCols.cardinality())];
-        int nactive_cols = active_cols == null?ncols:active_cols.length;
-        final int numWrks = _hcs.length*nactive_cols < 16*1024?H2O.NUMCPUS:Math.min(H2O.NUMCPUS,Math.max(4*H2O.NUMCPUS/nactive_cols,1));
-        final int rem = H2O.NUMCPUS-numWrks*ncols;
+        final int nactive_cols = active_cols == null?ncols:active_cols.length;
         ScoreBuildHistogram2.this.addToPendingCount(1+nactive_cols);
         if(active_cols != null) {
           int j = 0;
@@ -257,11 +268,17 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         //       Other threads start stealing work from the bottom.
         //    2) forks the leaf task and (because its polling from the top) executes the LocalMr for the column 0.
         // This way we should have columns as equally distributed as possible without resorting to shared priority queue
+        final int numWrks = _hcs.length * nactive_cols < 16 * 1024 ? H2O.NUMCPUS : Math.min(H2O.NUMCPUS, Math.max(4 * H2O.NUMCPUS / nactive_cols, 1));
+        final int rem = H2O.NUMCPUS - numWrks * ncols;
         new LocalMR(new MrFun() {
           @Override
           protected void map(int c) {
-            c = active_cols == null?c:active_cols[c];
-            new LocalMR(new ComputeHistoThread(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,new AtomicInteger()),numWrks + (c < rem?1:0),ScoreBuildHistogram2.this).fork();
+            c = active_cols == null ? c : active_cols[c];
+            final int nthreads = numWrks + (c < rem ? 1 : 0);
+            WorkAllocator workAllocator = _reproducibleHistos ? new RangeWorkAllocator(_cids.length, nthreads) : new SharedPoolWorkAllocator(_cids.length); 
+            ComputeHistoThread computeHistoThread = new ComputeHistoThread(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,workAllocator);
+            LocalMR mr = new LocalMR(computeHistoThread, nthreads, ScoreBuildHistogram2.this);
+            (_reproducibleHistos ? mr.withNoPrevTaskReuse() : mr).fork();
           }
         },nactive_cols,ScoreBuildHistogram2.this).fork();
       }
@@ -278,24 +295,73 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
   }
 
+  interface WorkAllocator {
+    int getMaxId(int subsetId);
+    int allocateWork(int subsetId);
+  }
+
+  static class SharedPoolWorkAllocator implements WorkAllocator {
+    final int _workAmount;
+    final AtomicInteger _id;
+
+    SharedPoolWorkAllocator(int workAmount) {
+      _workAmount = workAmount;
+      _id = new AtomicInteger();
+    }
+
+    @Override
+    public int getMaxId(int subsetId) {
+      return _workAmount;
+    }
+
+    @Override
+    public int allocateWork(int subsetId) {
+      return _id.getAndIncrement();
+    }
+  }
+
+  static class RangeWorkAllocator implements WorkAllocator {
+    final int _workAmount;
+    final int[] _rangePositions;
+    final int _rangeLength;
+
+    RangeWorkAllocator(int workAmount, int nWorkers) {
+      _workAmount = workAmount;
+      _rangePositions = new int[nWorkers];
+      _rangeLength = (int) Math.ceil(workAmount / (double) nWorkers);
+      int p = 0;
+      for (int i = 0; i < _rangePositions.length; i++) {
+        _rangePositions[i] = p;
+        p += _rangeLength;
+      }
+    }
+
+    @Override
+    public int getMaxId(int subsetId) {
+      return Math.min((subsetId + 1) * _rangeLength, _workAmount);
+    }
+
+    @Override
+    public int allocateWork(int subsetId) {
+      return _rangePositions[subsetId]++;
+    }
+  }
+
   private class ComputeHistoThread extends MrFun<ComputeHistoThread> {
     final int _maxChunkSz;
     final int _col;
     final DHistogram [] _lh;
 
-    AtomicInteger _cidx;
-    private boolean _done;
+    WorkAllocator _allocator;
 
-    public boolean isDone(){return _done || (_done = _cidx.get() >= _cids.length);}
-
-    ComputeHistoThread(DHistogram [] hcs, int col, int maxChunkSz,AtomicInteger cidx){
+    ComputeHistoThread(DHistogram [] hcs, int col, int maxChunkSz, WorkAllocator allocator){
       _lh = hcs; _col = col; _maxChunkSz = maxChunkSz;
-      _cidx = cidx;
+      _allocator = allocator;
     }
 
     @Override
     public ComputeHistoThread makeCopy() {
-      return new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
+      return new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_allocator);
     }
 
     @Override
@@ -303,7 +369,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double[] cs = null;
       double[] resp = null;
       double[] preds = null;
-      for(int i = _cidx.getAndIncrement(); i < _cids.length; i = _cidx.getAndIncrement()) {
+      final int maxWorkId = _allocator.getMaxId(id);
+      for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
         if (cs == null) {
           cs = MemoryManager.malloc8d(_maxChunkSz);
           if (_respIdx >= 0)
@@ -357,8 +424,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     _hcs = ArrayUtils.transpose(_hcs);
     for(DHistogram [] ary:_hcs)
       for(DHistogram dh:ary) {
-        if(dh == null) continue;
-        dh.reducePrecision();
+        if (dh == null)
+          continue;
+        if (_reduceHistoPrecision) 
+          dh.reducePrecision();
       }
   }
 }

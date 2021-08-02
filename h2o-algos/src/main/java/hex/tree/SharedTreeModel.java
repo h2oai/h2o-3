@@ -114,6 +114,17 @@ public abstract class SharedTreeModel<
       return this;
     }
 
+    /**
+     * Do we need to enable strictly deterministic way of building histograms?
+     *
+     * Used eg. when monotonicity constraints in GBM are enabled, by default disabled
+     *
+     * @return true if histograms should be built in deterministic way
+     */
+    public boolean forceStrictlyReproducibleHistograms() {
+      return false;
+    }
+
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {

@@ -1,24 +1,29 @@
-package hex.tree.gbm;
+package hex.tree;
 
 import hex.ModelBuilder;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import water.Scope;
 import water.TestUtil;
+import water.Weaver;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.PojoUtils;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class SharedTreeTest extends TestUtil  {
@@ -41,6 +46,26 @@ public class SharedTreeTest extends TestUtil  {
 
   @Parameterized.Parameter
   public SharedTreeModel.SharedTreeParameters _parms;
+
+  @Test
+  public void testDebuggingParams() {
+    // first make sure the tests is aware of all declared fields 
+    Field[] fields = Weaver.getWovenFields(SharedTree.SharedTreeDebugParams.class);
+    List<String> fieldNames = Stream.of(fields).map(Field::getName).collect(Collectors.toList());
+    assertEquals(Arrays.asList(
+            "_reproducible_histos", "_keep_orig_histo_precision"
+    ), fieldNames);
+    // next verify the fields have the expected default value
+    SharedTree<?, ?, ?> st = ModelBuilder.make(_parms);
+    SharedTree.SharedTreeDebugParams dp = st.getDebugParams();
+    assertFalse(dp._reproducible_histos);
+    assertFalse(dp._keep_orig_histo_precision);
+  }
+
+  @Test
+  public void testStrictHistogramReproducibilityIsDisabledByDefault() {
+    assertFalse(_parms.forceStrictlyReproducibleHistograms());
+  }
 
   @Test
   public void testNAPredictor_cat() {
