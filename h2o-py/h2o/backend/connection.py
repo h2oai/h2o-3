@@ -813,7 +813,7 @@ class H2OConnection(h2o_meta()):
             except (JSONDecodeError, requests.exceptions.ContentDecodingError) as e:
                 raise H2OServerError("Malformed JSON from server (%s):\n%s" % (str(e), response.text))
         else:
-            data = response.text
+            data = response.content.decode('utf-8')
 
         # Success (200 = "Ok", 201 = "Created", 202 = "Accepted", 204 = "No Content")
         if status_code in {200, 201, 202, 204}:
