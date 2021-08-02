@@ -9,7 +9,10 @@ Description
 
 This option specifies the column in a training frame to be used when determining weights. Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are also supported. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
-For scoring, all computed metrics will take the observation weights into account (for Gains/Lift, AUC, confusion matrices, logloss, etc.), so it’s important to also provide the weights column for validation or test sets if you want to up/down-weight certain observations (ideally consistently between training and testing). Note that if you omit the weights, then all observations will have equal weights (set to 1) for the computation of the metrics. For example, a weight of 2 is identical to duplicating a row. 
+For scoring, all computed metrics will take the observation weights into account (for Gains/Lift, AUC, confusion matrices, logloss, etc.), so it’s important to also provide the weights column for validation or test sets if you want to up/down-weight certain observations (ideally consistently between training and testing). Note that if you omit the weights, then all observations will have equal weights (set to 1) for the computation of the metrics. For example, a weight of 2 is identical to duplicating a row.
+
+.. warning::
+    To avoid unexpected results in the model prediction frame, ensure that a value of zero is not specified for the weight column.
 
 **Notes**: 
 
