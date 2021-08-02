@@ -32,6 +32,8 @@ public class DatasetServlet extends HttpServlet {
           .setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
       InputStream is = dataset.toCSV(parms);
       response.setContentType("application/octet-stream");
+      // todo: get this somehow from dataset
+      response.setCharacterEncoding("UTF-8");
       // Clean up the file name
       int x = f_name.length() - 1;
       boolean dot = false;

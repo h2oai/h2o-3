@@ -805,6 +805,11 @@ class H2OConnection(h2o_meta()):
         content_type = response.headers.get("Content-Type", "")
         if ";" in content_type:  # Remove a ";charset=..." part
             content_type = content_type[:content_type.index(";")]
+            
+        # this is needed so that response.text() works correctly  
+        character_encoding = response.headers.get("Character-Encoding", "")
+        if character_encoding != "":
+            response.encoding = character_encoding
 
         # Auto-detect response type by its content-type. Decode JSON, all other responses pass as-is.
         if content_type == "application/json":
@@ -813,7 +818,7 @@ class H2OConnection(h2o_meta()):
             except (JSONDecodeError, requests.exceptions.ContentDecodingError) as e:
                 raise H2OServerError("Malformed JSON from server (%s):\n%s" % (str(e), response.text))
         else:
-            data = response.content.decode('utf-8')
+            data = response.text
 
         # Success (200 = "Ok", 201 = "Created", 202 = "Accepted", 204 = "No Content")
         if status_code in {200, 201, 202, 204}:
