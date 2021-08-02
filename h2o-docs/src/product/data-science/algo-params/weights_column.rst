@@ -12,7 +12,7 @@ This option specifies the column in a training frame to be used when determining
 For scoring, all computed metrics will take the observation weights into account (for Gains/Lift, AUC, confusion matrices, logloss, etc.), so it’s important to also provide the weights column for validation or test sets if you want to up/down-weight certain observations (ideally consistently between training and testing). Note that if you omit the weights, then all observations will have equal weights (set to 1) for the computation of the metrics. For example, a weight of 2 is identical to duplicating a row.
 
 .. warning::
-    To avoid unexpected results in the model prediction frame, ensure that a value of zero is not specified for the weight column.
+    If weight is set equal to zero, the returned prediction frame at that row is zero. To get an accurate prediction, ensure that a value of zero is not specified for the weight column.
 
 **Notes**: 
 
