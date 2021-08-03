@@ -130,7 +130,7 @@ def test_leaderboard_for_multinomial():
                     exclude_algos=exclude_algos)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["mean_per_class_error", "logloss", "rmse", "mse", "auc", "aucpr"], "mean_per_class_error")
+    check_leaderboard(aml, exclude_algos, ["mean_per_class_error", "logloss", "rmse", "mse"], "mean_per_class_error")
 
 
 def test_leaderboard_for_regression():
@@ -154,7 +154,7 @@ def test_leaderboard_with_all_algos():
                     max_models=12)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, [], ["mean_per_class_error", "logloss", "rmse", "mse", "auc", "aucpr"], "mean_per_class_error")
+    check_leaderboard(aml, [], ["mean_per_class_error", "logloss", "rmse", "mse"], "mean_per_class_error")
 
 
 def test_leaderboard_with_no_algos():
@@ -197,7 +197,7 @@ def test_leaderboard_for_multinomial_with_custom_sorting():
                     sort_metric="logloss")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["logloss", "mean_per_class_error", "rmse", "mse", "auc", "aucpr"], "logloss")
+    check_leaderboard(aml, exclude_algos, ["logloss", "mean_per_class_error", "rmse", "mse"], "logloss")
 
 
 def test_leaderboard_for_regression_with_custom_sorting():
