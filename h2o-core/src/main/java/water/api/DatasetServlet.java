@@ -36,8 +36,6 @@ public class DatasetServlet extends HttpServlet {
       } else {
         response.setContentType("application/octet-stream");
       }
-      // todo: get this somehow from dataset
-      response.setCharacterEncoding("UTF-8");
       // Clean up the file name
       int x = f_name.length() - 1;
       boolean dot = false;
