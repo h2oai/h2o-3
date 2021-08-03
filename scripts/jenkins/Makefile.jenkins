@@ -481,6 +481,9 @@ coverage-junit-algos:
 	$(call sed_test_scripts)
 	./gradlew h2o-algos:test $$ADDITIONAL_GRADLE_OPTS
 	./gradlew jacocoMergeExecs $$ADDITIONAL_GRADLE_OPTS
+	
+test-h2o-core-microbenchmarks:
+    ./gradlew -PddoUBench=true :h2o-core:ubench	
 
 test-mojo-compatibility:
 ifeq ($(wildcard ../mojoland),)

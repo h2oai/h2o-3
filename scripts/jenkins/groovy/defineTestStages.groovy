@@ -289,6 +289,12 @@ def call(final pipelineContext) {
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
       healthCheckSuppressed: true
     ],
+    [
+      stageName: 'H2O CORE MICROBENCHMARKS', target: 'test-h2o-core-microbenchmarks', pythonVersion: '2.7', javaVersion: 8,
+      timeoutValue: 20, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-8"
+    ],      
   ]
 
   // Stages executed in addition to PR_STAGES after merge to master.
