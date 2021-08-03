@@ -647,7 +647,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
 setClass("H2OBinomialUpliftMetrics",    contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
-setMethod("show", "H2OBinomiaUpliftlMetrics", function(object) {
+setMethod("show", "H2OBinomialUpliftMetrics", function(object) {
     callNextMethod(object)  # call to the super
     cat("AUUC:  ", object@metrics$AUUC, "\n", sep="")
 })
