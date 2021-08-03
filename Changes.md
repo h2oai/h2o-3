@@ -2,6 +2,28 @@
 
 ## H2O
 
+### Zipf (3.32.1.5) - 8/5/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8254]](https://h2oai.atlassian.net/browse/PUBDEV-8254) - Modified legacy Dockerfile to add a non-root user.
+- [[PUBDEV-8253]](https://h2oai.atlassian.net/browse/PUBDEV-8253) - Fixed an issue where running `java -jar h2o.jar -version` failed.
+- [[PUBDEV-8250]](https://h2oai.atlassian.net/browse/PUBDEV-8250) - Fixed an issue where monotone constraints in GBM caused issues when reproducing the model.
+- [[PUBDEV-8244]](https://h2oai.atlassian.net/browse/PUBDEV-8244) - Fixed an issue that caused CoxPH MOJO import to fail.
+- [[PUBDEV-8242]](https://h2oai.atlassian.net/browse/PUBDEV-8242) - Fixed an issue where categorical splits NAvsREST were not represented correctly.
+- [[PUBDEV-8240]](https://h2oai.atlassian.net/browse/PUBDEV-8240) - Fixed GBM reproducibility for correlated columns with NAs.
+- [[PUBDEV-8237]](https://h2oai.atlassian.net/browse/PUBDEV-8237) - Fixed h2odriver so that it no longer uses invalid GC options.
+- [[PUBDEV-8230]](https://h2oai.atlassian.net/browse/PUBDEV-8230) - Fixed GenericModel predictions for non-AUTO categorical encodings.
+- [[PUBDEV-8218]](https://h2oai.atlassian.net/browse/PUBDEV-8218) - Fixed H2O interaction outcomes.
+- [[PUBDEV-8190]](https://h2oai.atlassian.net/browse/PUBDEV-8190) - When `remove_collinear_columns=True`, fixed an issue where the dimension of gradient and coefficients changed when predictors were removed.
+
+#### Docs
+
+- [[PUBDEV-8259]](https://h2oai.atlassian.net/browse/PUBDEV-8259) - Added a warning about specifying a value of zero for the weight column.
+- [[PUBDEV-8238]](https://h2oai.atlassian.net/browse/PUBDEV-8238) - Updated changelog format.
+
 ### Zipf (3.32.1.4) - 7/8/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
