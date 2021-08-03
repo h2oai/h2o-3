@@ -129,7 +129,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * Metrics reported in leaderboard
    * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
    * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
-   * Multinomial metrics: logloss, mean_per_class_error, rmse, mse, auc, aucpr
+   * Multinomial metrics: logloss, mean_per_class_error, rmse, mse
    */
   private String[] _metrics;
 
