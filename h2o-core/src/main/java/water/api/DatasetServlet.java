@@ -27,9 +27,9 @@ public class DatasetServlet extends HttpServlet {
         throw new RuntimeException("Cannot find value for parameter 'frame_id'");
       }
       Frame dataset = DKV.getGet(f_name);
-      Frame.CSVStreamParams parms = new Frame.CSVStreamParams()
-          .setHexString(Boolean.parseBoolean(hex_string))
-          .setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
+      Frame.CSVStreamParams parms = new Frame.CSVStreamParams();
+      if (hex_string != null) parms.setHexString(Boolean.parseBoolean(hex_string));
+      if (escape_quotes_string != null) parms.setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
       InputStream is = dataset.toCSV(parms);
       if (request.getServletPath().equals("/3/DownloadDataset")) {
         response.setContentType("text/csv");
