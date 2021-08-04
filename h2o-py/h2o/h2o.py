@@ -1459,7 +1459,7 @@ def download_all_logs(dirname=".", filename=None, container=None):
     return api("GET /3/Logs/download%s" % type, save_to=save_to)
 
 
-def save_model(model, path="", force=False, export_cross_validation_predictions=False):
+def save_model(model, path="", force=False, export_cross_validation_predictions=False, filename=None):
     """
     Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
     The owner of the file saved is the user by which H2O cluster was executed.
@@ -1469,6 +1469,7 @@ def save_model(model, path="", force=False, export_cross_validation_predictions=
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
     :param export_cross_validation_predictions: logical, indicates whether the exported model
         artifact should also include CV Holdout Frame predictions.  Default is not to export the predictions.
+    :param filename: a filename for the saved model
 
     :returns: the path of the saved model
 
@@ -1486,12 +1487,16 @@ def save_model(model, path="", force=False, export_cross_validation_predictions=
     assert_is_type(path, str)
     assert_is_type(force, bool)
     assert_is_type(export_cross_validation_predictions, bool)
-    path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
+    if filename is None:
+        filename = model.model_id
+    else:
+        assert_is_type(filename, str)
+    path = os.path.join(os.getcwd() if path == "" else path, filename)
     data = {"dir": path, "force": force, "export_cross_validation_predictions": export_cross_validation_predictions}
     return api("GET /99/Models.bin/%s" % model.model_id, data=data)["dir"]
 
 
-def download_model(model, path="", export_cross_validation_predictions=False):
+def download_model(model, path="", export_cross_validation_predictions=False, filename=None):
     """
     Download an H2O Model object to the machine this python session is currently connected to.
     The owner of the file saved is the user by which python session was executed.
@@ -1500,6 +1505,7 @@ def download_model(model, path="", export_cross_validation_predictions=False):
     :param path: a path to the directory where the model should be saved.
     :param export_cross_validation_predictions: logical, indicates whether the exported model
         artifact should also include CV Holdout Frame predictions.  Default is not to include the predictions.
+    :param filename: a filename for the saved model
 
     :returns: the path of the downloaded model
 
@@ -1516,7 +1522,11 @@ def download_model(model, path="", export_cross_validation_predictions=False):
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(export_cross_validation_predictions, bool)
-    path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
+    if filename is None:
+        filename = model.model_id
+    else:
+        assert_is_type(filename, str)
+    path = os.path.join(os.getcwd() if path == "" else path, filename)
     return api("GET /3/Models.fetch.bin/%s" % model.model_id,
                data={"export_cross_validation_predictions": export_cross_validation_predictions}, 
                save_to=path)

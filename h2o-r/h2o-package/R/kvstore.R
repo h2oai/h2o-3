@@ -471,10 +471,11 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @param model An H2OModel
 #' @param path The path where MOJO file should be saved. Saved to current directory by default.
 #' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in either in the same folder
-#         as the MOJO or in ``genmodel_path`` if specified.
+#'         as the MOJO or in ``genmodel_path`` if specified.
 #' @param genmodel_name Custom name of genmodel jar.
 #' @param genmodel_path Path to store h2o-genmodel.jar. If left blank and ``get_genmodel_jar`` is TRUE, then the h2o-genmodel.jar
-#         is saved to ``path``.
+#'         is saved to ``path``.
+#' @param filename string indicating the file name. (Type of file is always .zip)
 #' @return Name of the MOJO file written to the path.
 #'
 #' @examples
@@ -486,10 +487,14 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="") {
+h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="", filename="") {
   
   if (class(model) == "H2OAutoML") {
     model <- model@leader
+  }
+
+  if(!is(model, "H2OModel")) {
+    stop("`model` must be an H2OModel object")
   }
   
   if (!(model@have_mojo)){
@@ -514,15 +519,16 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     stop(paste0("'genmodel_path',",genmodel_path,", to save the genmodel.jar file cannot be found."))
   }
 
-  #Get model id
-  model_id <- model@model_id
+  if(filename == "") {
+    filename <- paste0(model@model_id, ".zip")
+  }
 
   #Build URL for MOJO
-  urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model_id),"/mojo")
+  urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model@model_id),"/mojo")
 
   #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
   #HTTP GET request to an H2O cluster with MOJO URL
-  mojo.path <- file.path(path, paste0(model_id,".zip"))
+  mojo.path <- file.path(path, filename)
   writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), mojo.path, useBytes = TRUE)
 
   if (get_genmodel_jar) {
@@ -537,7 +543,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     #and write to jar.path.
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
   }
-  return(paste0(model_id,".zip"))
+  return(filename)
 }
 
 #'
@@ -548,6 +554,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
 #' @param export_cross_validation_predictions A boolean flag indicating whether the download model should be
 #'      saved with CV Holdout Frame predictions. Default is not to export the predictions. 
+#' @param filename string indicating the file name.
 #'
 #' @examples
 #' \dontrun{
@@ -558,7 +565,11 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' h2o.download_model(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE) {
+h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE, filename="") {
+
+    if(!is(model, "H2OModel")) {
+      stop("`model` must be an H2OModel object")
+    }
 
     if(!is.null(path) && !(is.character(path))){
       stop("The 'path' variable should be of type character")
@@ -572,20 +583,20 @@ h2o.download_model <- function(model, path=NULL, export_cross_validation_predict
     if(!is.logical(export_cross_validation_predictions)){
       stop("The 'export_cross_validation_predictions' variable should be of type logical")
     }
-    
-    #Get model id
-    model_id <- model@model_id
-    
+
+    if(filename == "") {
+      filename <- model@model_id
+    }
+
     #prepare suffix to get the right endpoint
-    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model_id)
-    modelname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
+    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model@model_id)
     
     #Path to save model, if `path` is provided
-    file_path <- file.path(path, paste0(modelname))
+    file_path <- file.path(path, filename)
     parms <- list(export_cross_validation_predictions=export_cross_validation_predictions)
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE)
     
-    return(paste0(file_path))
+    return(file_path)
 }
 
 #'
