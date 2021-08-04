@@ -593,7 +593,7 @@ h2o.get_leaderboard <- function(object, extra_columns=NULL) {
 #' \itemize{
 #' \item{Regression metrics: deviance, RMSE, MSE, MAE, RMSLE}
 #' \item{Binomial metrics: AUC, logloss, AUCPR, mean_per_class_error, RMSE, MSE}
-#' \item{Multinomial metrics: mean_per_class_error, logloss, RMSE, MSE, AUC, AUCPR}
+#' \item{Multinomial metrics: mean_per_class_error, logloss, RMSE, MSE}
 #' }
 #' The following additional leaderboard information can be also used as a criterion:
 #' \itemize{
