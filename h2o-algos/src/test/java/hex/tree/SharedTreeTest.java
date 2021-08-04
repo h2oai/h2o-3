@@ -5,6 +5,7 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,8 +46,15 @@ public class SharedTreeTest extends TestUtil  {
   }
 
   @Parameterized.Parameter
-  public SharedTreeModel.SharedTreeParameters _parms;
+  public SharedTreeModel.SharedTreeParameters _parms_proto;
 
+  private SharedTreeModel.SharedTreeParameters _parms;
+
+  @Before
+  public void cloneParms() {
+    _parms = (SharedTreeModel.SharedTreeParameters) _parms_proto.clone();
+  }
+  
   @Test
   public void testDebuggingParams() {
     // first make sure the tests is aware of all declared fields 
@@ -85,37 +93,30 @@ public class SharedTreeTest extends TestUtil  {
 
   @Test
   public void testNAPredictor_PUBDEV7517() {
-    SharedTreeModel.SharedTreeParameters parms = (SharedTreeModel.SharedTreeParameters) _parms.clone();
-    parms._col_sample_rate_per_tree = 0.5; // this will trigger a code path that actually evaluates the initial histograms
+    _parms._col_sample_rate_per_tree = 0.5; // this will trigger a code path that actually evaluates the initial histograms
     checkNAPredictor(new TestFrameBuilder()
             .withColNames("F1", "F2", "Response")
             .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
             .withDataForCol(0, ard(Double.NaN, 0, Double.NaN, 0, Double.NaN, 0)) 
             .withDataForCol(1, ard(Double.NaN, 0, Double.NaN, 0, Double.NaN, 0)) // copy of the first one
-            .withDataForCol(2, ar("A", "B", "A", "B", "A", "B")),
-            parms
+            .withDataForCol(2, ar("A", "B", "A", "B", "A", "B"))
     );
   }
 
   private void checkNAPredictor(TestFrameBuilder fb) {
-    checkNAPredictor(fb, (SharedTreeModel.SharedTreeParameters) _parms.clone());
-  }
-  
-  private void checkNAPredictor(TestFrameBuilder fb, SharedTreeModel.SharedTreeParameters parms) {
     Scope.enter();
     try {
       Frame frame = fb.build();
 
-      assertNotSame(parms, _parms); // make sure we are mutating a clone
-      parms._train = frame._key;
-      parms._valid = frame._key; // we don't do sampling in DRF, metrics will be NA 
-      parms._response_column = "Response";
-      parms._ntrees = 1;
-      parms._ignore_const_cols = true; // default but to make sure and illustrate the point
-      parms._min_rows = 1;
-      parms._seed = 42;
+      _parms._train = frame._key;
+      _parms._valid = frame._key; // we don't do sampling in DRF, metrics will be NA 
+      _parms._response_column = "Response";
+      _parms._ntrees = 1;
+      _parms._ignore_const_cols = true; // default but to make sure and illustrate the point
+      _parms._min_rows = 1;
+      _parms._seed = 42;
 
-      SharedTreeModel model = (SharedTreeModel) ModelBuilder.make(parms).trainModel().get();
+      SharedTreeModel model = (SharedTreeModel) ModelBuilder.make(_parms).trainModel().get();
       Scope.track_generic(model);
 
       // We should have a perfect model
