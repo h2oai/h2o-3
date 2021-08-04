@@ -22,7 +22,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.h
 
 #### Docs
 
-- [[PUBDEV-8259]](https://h2oai.atlassian.net/browse/PUBDEV-8259) - Added a warning about specifying a value of zero for the weight column.
 - [[PUBDEV-8238]](https://h2oai.atlassian.net/browse/PUBDEV-8238) - Updated changelog format.
 
 ### Zipf (3.32.1.4) - 7/8/2021
