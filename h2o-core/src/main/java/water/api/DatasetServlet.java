@@ -31,7 +31,7 @@ public class DatasetServlet extends HttpServlet {
           .setHexString(Boolean.parseBoolean(hex_string))
           .setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
       InputStream is = dataset.toCSV(parms);
-      if (uri.equals("/3/DownloadDataset")) {
+      if (request.getServletPath().equals("/3/DownloadDataset")) {
         response.setContentType("text/csv");
       } else {
         response.setContentType("application/octet-stream");
