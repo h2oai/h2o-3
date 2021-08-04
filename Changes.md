@@ -4,7 +4,7 @@
 
 ### Zipf (3.32.1.5) - 8/4/2021
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/5/index.html</a>
 
 #### Bug
 
