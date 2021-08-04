@@ -138,7 +138,7 @@ class H2OAutoMLBaseMixin:
                           Avaliable criteria:
                             - Regression metrics: deviance, rmse, mse, mae, rmsle
                             - Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
-                            - Multinomial metrics: mean_per_class_error, logloss, rmse, mse, auc, aucpr
+                            - Multinomial metrics: mean_per_class_error, logloss, rmse, mse
                           The following additional leaderboard information can be also used as a criterion:
                             - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
                             - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
