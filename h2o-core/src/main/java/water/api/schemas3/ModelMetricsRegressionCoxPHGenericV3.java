@@ -7,15 +7,15 @@ public class ModelMetricsRegressionCoxPHGenericV3
         extends ModelMetricsRegressionV3<ModelMetricsRegressionCoxPHGeneric, ModelMetricsRegressionCoxPHGenericV3> {
 
     @API(help="Concordance metric (c-index)", direction=API.Direction.OUTPUT)
-    public double _concordance;
+    public double concordance;
 
     @API(help="Number of concordant pairs", direction=API.Direction.OUTPUT)
-    public long _concordant;
+    public long concordant;
 
     @API(help="Number of discordant pairs.", direction=API.Direction.OUTPUT)
-    public long _discordant;
+    public long discordant;
 
     @API(help="Number of tied pairs", direction=API.Direction.OUTPUT)
-    public long _tied_y;
+    public long tied_y;
 
 }
