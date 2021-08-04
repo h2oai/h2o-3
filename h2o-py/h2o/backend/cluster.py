@@ -46,11 +46,6 @@ class H2OCluster(object):
                 # as properties of water.api.schemas3.CloudV3
                 setattr(cls, k, property(partial(cls.__getitem__, name=k)))
             obj._props[k] = v
-            # else:
-            #     backend_version = next((v for k, v in keyvals if k == 'version'), 'unknown')
-            #     raise H2OResponseError(("Version mismatch between client ({client}), and server ({server}): "
-            #                             "the cluster attribute `{attr} = {value}` is not supported by this client.")
-            #                            .format(client=h2o.__version__, server=backend_version, attr=k, value=v))
         return obj
 
     def __getitem__(self, name):
