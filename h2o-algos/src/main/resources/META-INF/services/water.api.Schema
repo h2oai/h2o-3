@@ -102,3 +102,7 @@ hex.schemas.ANOVAGLMModelV3
 hex.schemas.ANOVAGLMModelV3$ANOVAGLMModelOutputV3
 hex.schemas.ANOVAGLMV3$ANOVAGLMParametersV3
 hex.schemas.ANOVAGLMV3
+hex.schemas.MaxRGLMModelV3
+hex.schemas.MaxRGLMModelV3$MaxRGLMModelOutputV3
+hex.schemas.MaxRGLMV3
+hex.schemas.MaxRGLMV3$MaxRGLMParametersV3

@@ -271,6 +271,7 @@ def algo_to_modelname(algo):
     if algo == "anovaglm": return "ANOVA GLM"
     if algo == "targetencoder": return "Target Encoder"
     if algo == "gam": return "Generalized Additive Model"
+    if algo == "maxrglm": return "Maximum R GLM"
     return algo
 
 
