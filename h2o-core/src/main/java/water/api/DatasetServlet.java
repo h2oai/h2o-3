@@ -1,5 +1,7 @@
 package water.api;
 
+import com.ibm.icu.text.CharsetDetector;
+import com.ibm.icu.text.CharsetMatch;
 import water.DKV;
 import water.fvec.Frame;
 import water.server.ServletUtils;
@@ -9,6 +11,8 @@ import water.util.Log;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -30,12 +34,10 @@ public class DatasetServlet extends HttpServlet {
       Frame.CSVStreamParams parms = new Frame.CSVStreamParams();
       if (hex_string != null) parms.setHexString(Boolean.parseBoolean(hex_string));
       if (escape_quotes_string != null) parms.setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
-      InputStream is = dataset.toCSV(parms);
-      if (request.getServletPath().equals("/3/DownloadDataset")) {
-        response.setContentType("text/csv");
-      } else {
-        response.setContentType("application/octet-stream");
-      }
+      InputStream is = new BufferedInputStream(dataset.toCSV(parms));
+      response.setContentType("application/octet-stream");
+      String encoding = detectEncoding(is);
+      response.setCharacterEncoding(encoding);
       // Clean up the file name
       int x = f_name.length() - 1;
       boolean dot = false;
@@ -70,4 +72,21 @@ public class DatasetServlet extends HttpServlet {
     }
   }
 
+  String detectEncoding(InputStream is) throws IOException {
+    String charset = null;
+    if (is.markSupported()) {
+      CharsetDetector cd = new CharsetDetector();
+      is.mark(0);
+      cd.setText(is);
+      CharsetMatch cm = cd.detect();
+      if (cm != null) {
+         charset = cm.getName();
+      }
+    }
+    if (charset == null || !is.markSupported()) {
+      charset = "UTF-8";
+    }
+    is.reset();
+    return charset;
+  }
 }

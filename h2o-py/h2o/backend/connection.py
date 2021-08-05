@@ -805,6 +805,11 @@ class H2OConnection(h2o_meta()):
         content_type = response.headers.get("Content-Type", "")
         if ";" in content_type:  # Remove a ";charset=..." part
             content_type = content_type[:content_type.index(";")]
+            
+        # this is needed so that response.text() works correctly
+        character_encoding = response.headers.get("Character-Encoding", "")
+        if character_encoding != "":
+            response.encoding = character_encoding
 
         # Auto-detect response type by its content-type. Decode JSON, all other responses pass as-is.
         if content_type == "application/json":
