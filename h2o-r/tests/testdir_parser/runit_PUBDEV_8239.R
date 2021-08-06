@@ -10,6 +10,9 @@ test.parseSkippedColumnsgzip<- function() {
   df <- as.data.frame(data)
     
   expect_equal(nrow(data), nrow(df))
+  expect_equal(ncol(data), ncol(df)) 
+  rndIndex <- sample(1:nrow(df), 1)  
+  expect_equal(data[rndIndex,1], df[rndIndex,1])
 }
 
 doTest("Test Zip Parse with skipped columns", test.parseSkippedColumnsgzip)
