@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 /**
  */
@@ -27,11 +28,12 @@ public class DatasetServlet extends HttpServlet {
         throw new RuntimeException("Cannot find value for parameter 'frame_id'");
       }
       Frame dataset = DKV.getGet(f_name);
-      Frame.CSVStreamParams parms = new Frame.CSVStreamParams()
-          .setHexString(Boolean.parseBoolean(hex_string))
-          .setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
+      Frame.CSVStreamParams parms = new Frame.CSVStreamParams();
+      if (hex_string != null) parms.setHexString(Boolean.parseBoolean(hex_string));
+      if (escape_quotes_string != null) parms.setEscapeQuotes(Boolean.parseBoolean(escape_quotes_string));
       InputStream is = dataset.toCSV(parms);
       response.setContentType("application/octet-stream");
+      response.setCharacterEncoding(Charset.defaultCharset().name());
       // Clean up the file name
       int x = f_name.length() - 1;
       boolean dot = false;
@@ -65,5 +67,4 @@ public class DatasetServlet extends HttpServlet {
       ServletUtils.logRequest("GET", request, response);
     }
   }
-
 }
