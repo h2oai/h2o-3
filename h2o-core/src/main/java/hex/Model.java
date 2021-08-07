@@ -2609,20 +2609,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
-    return testJavaScoring(data, model_predictions, rel_epsilon, 1e-15, 0.1);
+    return testJavaScoring(data, model_predictions, rel_epsilon, 
+            JavaScoringOptions.DEFAULT._abs_epsilon, JavaScoringOptions.DEFAULT._fraction);
   }
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon) {
-    return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
+    return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 
+            JavaScoringOptions.DEFAULT._fraction);
   }
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon, double fraction) {
     return testJavaScoring(data, model_predictions, new EasyPredictModelWrapper.Config(), rel_epsilon, abs_epsilon, fraction);
   }
   public boolean testJavaScoring(Frame data, Frame model_predictions, EasyPredictModelWrapper.Config config,
                                  double rel_epsilon, double abs_epsilon, double fraction) {
-    ModelBuilder mb = ModelBuilder.make(_parms.algoName().toLowerCase(), null, null);
+    JavaScoringOptions options = new JavaScoringOptions();
+    options._abs_epsilon = abs_epsilon;
+    options._fraction = fraction;
+    options._config = config;
+    return testJavaScoring(data, model_predictions, rel_epsilon, options);
+  }
+  public static class JavaScoringOptions {
+    private static final JavaScoringOptions DEFAULT = new JavaScoringOptions();
+    public double _abs_epsilon = 1e-15;
+    public double _fraction = 1;
+    public boolean _disable_pojo = false;
+    public boolean _disable_mojo = false;
+    EasyPredictModelWrapper.Config _config = new EasyPredictModelWrapper.Config();
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, JavaScoringOptions options) {
+    ModelBuilder<?, P, ?> mb = ModelBuilder.make(_parms.algoName().toLowerCase(), null, null);
     mb._parms = _parms;
-    boolean havePojo = mb.havePojo();
-    boolean haveMojo = mb.haveMojo();
+    boolean havePojo = mb.havePojo() && !options._disable_pojo;
+    boolean haveMojo = mb.haveMojo() && !options._disable_mojo;
 
     Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
@@ -2681,7 +2698,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         // Compare predictions, counting mis-predicts
         for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
-          if (rnd.nextDouble() >= fraction) continue;
+          if (rnd.nextDouble() >= options._fraction) continue;
           num_total++;
 
           // Native Java API
@@ -2691,7 +2708,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           for (int col = _output.isClassifier() ? 1 : 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
-            if (!MathUtils.compare(predictions[col], d, abs_epsilon, rel_epsilon)) {
+            if (!MathUtils.compare(predictions[col], d, options._abs_epsilon, rel_epsilon)) {
               if (num_errors++ < 10)
                 System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
               break;
@@ -2738,7 +2755,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         
         if (genmodel instanceof GlrmMojoModel) {
           try {
-            config.setModel(genmodel).setEnableGLRMReconstrut(true);
+            options._config.setModel(genmodel).setEnableGLRMReconstrut(true);
           } catch (IOException e) {
             e.printStackTrace();
           }
@@ -2755,19 +2772,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         EasyPredictModelWrapper epmw;
         try {
-          config.setModel(genmodel)
+          options._config.setModel(genmodel)
                   .setConvertUnknownCategoricalLevelsToNa(true)
                   .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
                   .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
                   .setUseExternalEncoding(true); // input Frame is already adapted!
-          epmw = new EasyPredictModelWrapper(config);
+          epmw = new EasyPredictModelWrapper(options._config);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
         for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
-          if (rnd.nextDouble() >= fraction) continue;
+          if (rnd.nextDouble() >= options._fraction) continue;
 
           if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibility
             ((GlrmMojoModel) genmodel)._rcnt = row;
@@ -2895,7 +2912,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Verify the correctness of the prediction
           num_total++;
           for (int col = genmodel.isClassifier() ? 1 : 0; col < pvecs.length; col++) {
-            if (!MathUtils.compare(actual_preds[col], expected_preds[col], abs_epsilon, rel_epsilon)) {
+            if (!MathUtils.compare(actual_preds[col], expected_preds[col], options._abs_epsilon, rel_epsilon)) {
               num_errors++;
               if (num_errors < 20) {
                 System.err.println( (i == 0 ? "POJO" : "MOJO") + " EasyPredict Predictions mismatch for row " + row + ":" + rowData);
