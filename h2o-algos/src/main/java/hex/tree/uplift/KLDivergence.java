@@ -6,6 +6,7 @@ public class KLDivergence extends Divergence {
     
     @Override
     public double metric(double prCT1, double prCT0) {
+        prCT0 = prCT0 == 0 ? ZERO_TO_DIVIDE : prCT0;
         return prCT1 * log2(prCT1 / prCT0);
     }
     
