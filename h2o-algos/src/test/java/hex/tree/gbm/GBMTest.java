@@ -2729,7 +2729,50 @@ public class GBMTest extends TestUtil {
       GBMModel gbm = job.trainModel().get();
       Scope.track_generic(gbm);
 
-      assertFalse(gbm.getSharedTreeSubgraph(0, 0).rootNode.isNaVsRest());
+      assertTrue(gbm.getSharedTreeSubgraph(0, 0).rootNode.isBitset());
+
+      Frame scoredTrain = gbm.score(train);
+      Scope.track(scoredTrain);
+      assertTrue(gbm.testJavaScoring(train, scoredTrain, 1e-8));
+
+      Frame scoredTest = gbm.score(test);
+      Scope.track(scoredTest);
+      assertTrue(gbm.testJavaScoring(test, scoredTest, 1e-8));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUnseenCategoricalSplitLeftward() {
+    try {
+      Scope.enter();
+      Frame train = new TestFrameBuilder()
+              .withColNames("CatFeature", "Response")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, new String[]{"A", "B", null})
+              .withDataForCol(1, new double[]{0.0, 1.0, 0.0})
+              .build();
+
+      Frame test = new TestFrameBuilder()
+              .withColNames("CatFeature")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, new String[]{null, "B"})
+              .build();
+
+      GBMModel.GBMParameters parms = makeGBMParameters();
+      parms._train = train._key;
+      parms._response_column = "Response";
+      parms._min_rows = 1;
+      parms._learn_rate = 1;
+      parms._ntrees = 1;
+
+      GBM job = new GBM(parms);
+      GBMModel gbm = job.trainModel().get();
+      Scope.track_generic(gbm);
+
+      assertTrue(gbm.getSharedTreeSubgraph(0, 0).rootNode.isBitset());
+      assertTrue(gbm.getSharedTreeSubgraph(0, 0).rootNode.isLeftward());
 
       Frame scoredTrain = gbm.score(train);
       Scope.track(scoredTrain);
