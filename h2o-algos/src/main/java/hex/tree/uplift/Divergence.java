@@ -9,6 +9,8 @@ import water.Iced;
  * 
  */
 public abstract class Divergence extends Iced<Divergence> {
+    
+    public static double ZERO_TO_DIVIDE = 1e-6;
 
     /**
      * Calculate distance divergence metric between two probabilities.
