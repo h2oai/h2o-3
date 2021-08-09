@@ -122,39 +122,31 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
       if (naSplitDirInt != DhnasdNaVsRest) {
         _sb.p("data[").p(col);
         _sb.p(colName);
-        _sb.p("] ").p(equal == 1 ? "!= " : "<").pj(fcmp); // then left and then right (left is !=)
+        _sb.p("] < ").pj(fcmp);
         _constantPoolSize += 2; // * bytes for generated float which is represented as double because of cast (Double occupies 2 slots in constant pool)
       }
     } else {
-      boolean naVsRest = naSplitDirInt == DhnasdNaVsRest;
+      assert naSplitDirInt != DhnasdNaVsRest : "NAvsREST splits are expected to be represented with equal==0";
       boolean leftward = naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft;
-      if (naVsRest) {
-        _sb.p("!Double.isNaN(data[").p(col).p(colName).p("]) && "); //no need to store group split, all we need to know is NA or not (and in range)
-        if (limit != Integer.MAX_VALUE) {
-          _sb.p("(data[").p(col).p("] < " + limit + ") && ");
-        }
-      }
-      else {
-        if (leftward) {
-          _sb.p("Double.isNaN(data[").p(col).p(colName).p("]) || !"); //NAs (or out of range) go left
-          gcmp.toJavaRangeCheck(_sb, col);
-          if (limit != Integer.MAX_VALUE) {
-            _sb.p(" || (data[").p(col).p("] >= " + limit + ")");
-          }
-          _sb.p(" || ");
-        } else {
-          _sb.p("!Double.isNaN(data[").p(col).p(colName).p("]) && ");
-        }
-        _sb.p("(");
+      if (leftward) {
+        _sb.p("Double.isNaN(data[").p(col).p(colName).p("]) || !"); //NAs (or out of range) go left
         gcmp.toJavaRangeCheck(_sb, col);
-        _sb.p(" && ");
         if (limit != Integer.MAX_VALUE) {
-          _sb.p("(data[").p(col).p("] < " + limit + ")");
+          _sb.p(" || (data[").p(col).p("] >= " + limit + ")");
         }
-        _sb.p(" && ");
-        gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col);
-        _sb.p(")");
+        _sb.p(" || ");
+      } else {
+        _sb.p("!Double.isNaN(data[").p(col).p(colName).p("]) && ");
       }
+      _sb.p("(");
+      gcmp.toJavaRangeCheck(_sb, col);
+      _sb.p(" && ");
+      if (limit != Integer.MAX_VALUE) {
+        _sb.p("(data[").p(col).p("] < " + limit + ")");
+      }
+      _sb.p(" && ");
+      gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col);
+      _sb.p(")");
       _grpCnt++;
     }
     _sb.p(" ? ").ii(2).nl();
