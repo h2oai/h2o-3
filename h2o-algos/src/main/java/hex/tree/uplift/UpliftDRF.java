@@ -83,17 +83,24 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             error("_offset_column", "Offsets are not yet supported for Uplift DRF.");
         if (hasWeightCol())
             error("_weight_column", "Weights are not yet supported for Uplift DRF.");
-        if (hasFoldCol() || _parms._nfolds > 0)
+        if (hasFoldCol())
             error("_fold_column", "Cross-validation is not yet supported for Uplift DRF.");
-        if (_nclass == 1) {
-            error("_distribution", "UpliftDRF currently support only classification problems.");
-        }
-        if (_nclass > 2 || _parms._distribution.equals(DistributionFamily.multinomial)) {
+        if (_parms._nfolds > 0)
+            error("_nfolds", "Cross-validation is not yet supported for Uplift DRF.");
+        if (_nclass == 1)
+            error("_distribution", "UpliftDRF currently support binomial classification problems only.");
+        if (_nclass > 2 || _parms._distribution.equals(DistributionFamily.multinomial)) 
             error("_distribution", "UpliftDRF currently does not support multinomial distribution.");
-        }
-        if (_parms._treatment_column == null) {
+        if (_parms._treatment_column == null) 
             error("_treatment_column", "The treatment column has to be defined.");
-        }
+        if (_parms._custom_distribution_func != null)
+            error("_custom_distribution_func", "The custom distribution is not yet supported for Uplift DRF.");
+        if (_parms._custom_metric_func != null)
+            error("_custom_metric_func", "The custom metric is not yet supported for Uplift DRF.");
+        if (_parms._stopping_metric != null)
+            error("_stopping_metric", "The early stopping is not yet supported for Uplift DRF.");
+        if (_parms._stopping_rounds != 0)
+            error("_stopping_rounds", "The early stopping is not yet supported for Uplift DRF.");
     }
     
     
@@ -170,7 +177,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             for (int k = 0; k < _nclass; k++) {
                 if (_model._output._distribution[k] != 0) { // Ignore missing classes
                     ktrees[k] = new DTree(_train, _ncols, _mtry, _mtry_per_tree, rseed, _parms);
-                    new DTree.UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null), null); // The "root" node
+                    new DTree.UndecidedNode(ktrees[k], -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[k][0], rseed, _parms, getGlobalQuantilesKeys(), null, false), null); // The "root" node
                 }
             }
 
