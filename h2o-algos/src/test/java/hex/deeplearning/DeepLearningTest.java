@@ -2091,7 +2091,7 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(0.86556613, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-4);
 
       int auc_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "auc");
-      Assert.assertEquals(0.86556613, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(auc_row,0)), 1e-2);
+      Assert.assertEquals(0.86556613, (Float)dl._output._cross_validation_metrics_summary.get(auc_row,0), 1e-2);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2177,7 +2177,7 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(0.9115080346106303, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-4);
 
       int auc_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "auc");
-      Assert.assertEquals(0.913637, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(auc_row,0)), 1e-4);
+      Assert.assertEquals(0.913637, (Float)dl._output._cross_validation_metrics_summary.get(auc_row,0), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2218,7 +2218,7 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(117.8014, ((ModelMetricsRegression)dl._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
 
       int mean_residual_deviance_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "mean_residual_deviance");
-      Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(mean_residual_deviance_row,0)), 1);
+      Assert.assertEquals(117.8014, (Float)dl._output._cross_validation_metrics_summary.get(mean_residual_deviance_row,0), 1);
 
       // the same for distribution = AUTO representing Huber:
       DeepLearningParameters parms2 = new DeepLearningParameters();

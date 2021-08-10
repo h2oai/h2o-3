@@ -1931,9 +1931,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     int N = cvmodels.length;
     int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
     String[] colTypes = new String[N+extra_length];
-    Arrays.fill(colTypes, "string");
+    Arrays.fill(colTypes, "float");
     String[] colFormats = new String[N+extra_length];
-    Arrays.fill(colFormats, "%s");
+    Arrays.fill(colFormats, "%f");
     String[] colNames = new String[N+extra_length];
     colNames[0] = "mean";
     colNames[1] = "sd";
