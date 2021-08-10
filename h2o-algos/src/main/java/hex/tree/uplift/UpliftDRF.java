@@ -1,6 +1,7 @@
 package hex.tree.uplift;
 
 import hex.ModelCategory;
+import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import water.Job;
@@ -97,7 +98,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             error("_custom_distribution_func", "The custom distribution is not yet supported for Uplift DRF.");
         if (_parms._custom_metric_func != null)
             error("_custom_metric_func", "The custom metric is not yet supported for Uplift DRF.");
-        if (_parms._stopping_metric != null)
+        if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO)
             error("_stopping_metric", "The early stopping is not yet supported for Uplift DRF.");
         if (_parms._stopping_rounds != 0)
             error("_stopping_rounds", "The early stopping is not yet supported for Uplift DRF.");
