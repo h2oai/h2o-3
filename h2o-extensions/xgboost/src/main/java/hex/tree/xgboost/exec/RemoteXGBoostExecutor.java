@@ -4,12 +4,17 @@ import hex.DataInfo;
 import hex.schemas.XGBoostExecRespV3;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
+import hex.tree.xgboost.remote.RemoteXGBoostHandler;
 import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
+import water.TypeMap;
 import water.fvec.Frame;
+import water.util.Log;
+
+import java.util.Arrays;
 
 import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.RequestType.checkpoint;
 
@@ -28,16 +33,23 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
         req.num_nodes = trainFrameNodes.getNumNodes();
         DataInfo dataInfo = model.model_info().dataInfo();
-        req.parms = XGBoostModel.createParamsMap(model._parms, model._output.nclasses(), dataInfo.coefNames());
+        req.setParms(XGBoostModel.createParamsMap(model._parms, model._output.nclasses(), dataInfo.coefNames()));
         model._output._native_parameters = BoosterParms.fromMap(req.parms).toTwoDimTable();
         req.save_matrix_path = model._parms._save_matrix_directory;
         req.nodes = collectNodes(trainFrameNodes);
         LOG.info("Initializing remote executor.");
         XGBoostExecRespV3 resp = http.postJson(modelKey, "init", req);
-        String[] remoteNodes = resp.readData();
+        RemoteXGBoostHandler.RemoteExecutors executors = resp.readData();
+        if (! Arrays.equals(executors._typeMap, TypeMap.bootstrapClasses())) {
+            LOG.error("TypeMap differs: " +
+                    "H2O=" + Arrays.toString(TypeMap.bootstrapClasses()) + ";" + 
+                    "XGB=" + Arrays.toString(executors._typeMap)
+            );
+            throw new IllegalStateException("H2O Cluster and XGBoost external cluster do not have identical TypeMap.");
+        }
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
-        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, remoteUri, userName, password);
+        uploadMatrices(model, train, trainFrameNodes, executors._nodes, https, remoteUri, userName, password);
         LOG.info("Remote executor init complete.");
     }
 

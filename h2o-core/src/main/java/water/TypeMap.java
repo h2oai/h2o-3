@@ -5,6 +5,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
 import java.util.Arrays;
+import java.util.ServiceLoader;
 
 /** Internal H2O class used to build and maintain the cloud-wide type mapping.
  *  Only public to expose a few constants to subpackages.  No exposed user
@@ -13,7 +14,7 @@ public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
 
   // This list contains all classes that are needed at cloud initialization time.
-  static final String[] BOOTSTRAP_CLASSES = {
+  private static final String[] BUILTIN_BOOTSTRAP_CLASSES = {
     " BAD",
     "[B",                               // 1 -
     water.Iced.class.getName(),         // 2 - Base serialization class
@@ -76,14 +77,18 @@ public class TypeMap {
   static private Icer[] GOLD;
   // Unique IDs
   static private int IDS;
+  // Number of bootstrap classes
+  static final int BOOTSTRAP_SIZE;
   // JUnit helper flag
   static public volatile boolean _check_no_locking; // ONLY TOUCH IN AAA_PreCloudLock!
   static {
-    CLAZZES = BOOTSTRAP_CLASSES;
-    GOLD = new Icer[BOOTSTRAP_CLASSES.length];
+    CLAZZES = findAllBootstrapClasses();
+    BOOTSTRAP_SIZE = CLAZZES.length;
+    GOLD = new Icer[BOOTSTRAP_SIZE];
     int id=0;                   // The initial set of Type IDs to boot with
     for( String s : CLAZZES ) MAP.put(s,id++);
     IDS = id;
+    assert IDS == BOOTSTRAP_SIZE;
     // Some statically known names, to make life easier during e.g. bootup & parse
     NULL         = (short) -1;
     PRIM_B       = (short)onIce("[B");
@@ -93,6 +98,20 @@ public class TypeMap {
     FRAME        = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
+  }
+
+  static synchronized String[] findAllBootstrapClasses() {
+    String[] additionalBootstrapClasses = new String[0];
+    ServiceLoader<TypeMapExtension> extensionsLoader = ServiceLoader.load(TypeMapExtension.class);
+    for (TypeMapExtension ext : extensionsLoader) {
+      additionalBootstrapClasses = ArrayUtils.append(additionalBootstrapClasses, ext.getBoostrapClasses());
+    }
+    Arrays.sort(additionalBootstrapClasses);
+    return ArrayUtils.append(BUILTIN_BOOTSTRAP_CLASSES, additionalBootstrapClasses);
+  }
+
+  public static String[] bootstrapClasses() {
+    return Arrays.copyOf(CLAZZES, BOOTSTRAP_SIZE);
   }
 
   // The major complexity of this code is that the are FOUR major data forms
@@ -211,6 +230,7 @@ public class TypeMap {
       // Now install under the TypeMap class lock, so the GOLD array is not
       // resized out from under the installation.
       synchronized( TypeMap.class ) {
+        assert id < BOOTSTRAP_SIZE || !(f.theFreezable() instanceof BootstrapFreezable) : "Class " + ice_clz + " is not BootstrapFreezable";
         return GOLD[id]=f;
       }
     }

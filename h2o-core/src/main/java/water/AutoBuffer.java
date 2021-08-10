@@ -254,6 +254,10 @@ public final class AutoBuffer implements AutoCloseable {
   /** Read from a persistent Stream (including all TypeMap info) into same
    *  exact rev of H2O). */
   public AutoBuffer( InputStream is ) {
+    this(is, null);
+  }
+  
+  public AutoBuffer(InputStream is, String[] typeMap) {
     _chan = null;
     _h2o = null;
     _firstPage = true;
@@ -264,14 +268,21 @@ public final class AutoBuffer implements AutoCloseable {
     _bb.flip();
     _is = is;
     int b = get1U();
-    if( b==0 ) return;          // No persistence info
-    int magic = get1U();
-    if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
-    checkVersion(getStr());
-    String[] typeMap = getAStr();
+
+    if (typeMap == null) {
+      if (b == 0)
+        return;          // No persistence info
+      int magic = get1U();
+      if (b != 0x1C || magic != 0xED) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
+      checkVersion(getStr());
+      typeMap = getAStr();
+      assert typeMap != null;
+    } else {
+      assert b == 0;
+    }
     _typeMap = new short[typeMap.length];
-    for( int i=0; i<typeMap.length; i++ )
-      _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
+    for (int i = 0; i < _typeMap.length; i++)
+      _typeMap[i] = (short) (typeMap[i] == null ? 0 : TypeMap.onIce(typeMap[i]));
   }
 
   private void checkVersion(String version) {
@@ -1508,7 +1519,28 @@ public final class AutoBuffer implements AutoCloseable {
     channel.write(ab._bb);
     ab.clearForWriting(H2O.MAX_PRIORITY);
   }
-  
+
+  public static byte[] serializeBootstrapFreezable(BootstrapFreezable<?> o) {
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+         AutoBuffer ab = new AutoBuffer(bos, false)) {
+      ab.put(o);
+      ab.close();
+      bos.close();
+      return bos.toByteArray();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
+  public static BootstrapFreezable<?> deserializeBootstrapFreezable(byte[] bytes) {
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+         AutoBuffer ab = new AutoBuffer(bais, TypeMap.bootstrapClasses())) {
+      return ab.get();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
   public static byte[] javaSerializeWritePojo(Object o) {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = null;

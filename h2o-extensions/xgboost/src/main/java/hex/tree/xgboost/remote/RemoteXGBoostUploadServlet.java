@@ -6,8 +6,7 @@ import hex.tree.xgboost.matrix.RemoteMatrixLoader;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;
 import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
 import org.apache.log4j.Logger;
-import water.H2O;
-import water.Key;
+import water.*;
 import water.server.ServletUtils;
 
 import javax.servlet.http.HttpServlet;
@@ -63,8 +62,11 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
         }
     }
 
-    private void handleMatrixRequest(String model_key, RequestType type, HttpServletRequest request) throws IOException, ClassNotFoundException {
-        Object requestData = new ObjectInputStream(request.getInputStream()).readObject();
+    private void handleMatrixRequest(String model_key, RequestType type, HttpServletRequest request) throws IOException {
+        BootstrapFreezable<?> requestData;
+        try (AutoBuffer ab = new AutoBuffer(request.getInputStream(), TypeMap.bootstrapClasses())) {
+            requestData = ab.get();
+        }
         switch (type) {
             case sparseMatrixDimensions:
                 RemoteMatrixLoader.initSparse(model_key, (SparseMatrixDimensions) requestData);

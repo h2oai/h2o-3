@@ -1,10 +1,13 @@
 package hex.tree.xgboost.exec;
 
-import java.io.Serializable;
+import water.BootstrapFreezable;
+import water.Iced;
+import water.util.IcedHashMapGeneric;
+
 import java.util.Arrays;
 import java.util.Map;
 
-public class XGBoostExecReq implements Serializable {
+public class XGBoostExecReq extends Iced<XGBoostExecReq> implements BootstrapFreezable<XGBoostExecReq> {
 
     @Override
     public String toString() {
@@ -13,10 +16,15 @@ public class XGBoostExecReq implements Serializable {
 
     public static class Init extends XGBoostExecReq {
         public int num_nodes;
-        public Map<String, Object> parms;
+        public IcedHashMapGeneric.IcedHashMapStringObject parms;
         public String save_matrix_path;
         public String[] nodes;
         public boolean has_checkpoint;
+
+        public void setParms(Map<String, Object> parms) {
+            this.parms = new IcedHashMapGeneric.IcedHashMapStringObject();
+            this.parms.putAll(parms);
+        }
 
         @Override
         public String toString() {
