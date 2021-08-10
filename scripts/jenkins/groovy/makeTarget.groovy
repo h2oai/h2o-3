@@ -43,6 +43,14 @@ def call(final pipelineContext, final Closure body) {
       if [ "${config.activatePythonEnv}" = 'true' ]; then
         echo "Activating Python ${env.PYTHON_VERSION}"
         . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
+        if [ \$PYTHON_VERSION != '2.7' ]; then 
+          # this will also update numpy 
+          python -m pip freeze
+          python -m pip install --upgrade pip
+          python -m pip install causalml==0.11.1
+          python -m pip install shap==0.29.1          
+          python -m pip freeze
+        fi
       fi
       
       echo '########################'
