@@ -8,8 +8,8 @@ test.uplift.vs.h2oUplit <- function() {
   mtries <- 6
   seed <- 42
   # split_method == uplift_metric, the naming is specific for each implementation
-  split_methods <- c( "KL", "Chisq")
-  uplift_metrics <- c("KL", "ChiSquared")
+  split_methods <- c( "KL", "Chisq", "ED")
+  uplift_metrics <- c("KL", "ChiSquared", "Euclidean")
   set.seed(seed)
 
   # Test data preparation for each implementation
@@ -78,8 +78,10 @@ test.uplift.vs.h2oUplit <- function() {
     h2oPerf <- performance(res$p_y1_ct1, res$p_y1_ct0, test$y, test$treat, direction = 1)
     h2oQini <- qini(h2oPerf)
 
-    print(abs(h2oQini$Qini - upliftQini$Qini))
-    expect_true(abs(h2oQini$Qini - upliftQini$Qini) < 10e-1)
+    print(paste("H2O:", h2oQini, "upliftRF:", upliftQini$Qini)) 
+    diff = abs(h2oQini$Qini - upliftQini$Qini)
+    print(paste("Diff:", diff))
+    expect_true(diff < 10e-1)
   }
 }
 

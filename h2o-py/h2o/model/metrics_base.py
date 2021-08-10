@@ -1953,7 +1953,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             uplift = self.uplift(metric)
             n = self.n()
             plt.plot(n, uplift, 'b-')
-            plt.axis([min(n), max(n), min(uplift), max(uplift)])
+            plt.axis([min(n) - 0.02 * min(n), max(n) + 0.02 * max(n), 
+                      min(uplift) - 0.02 * min(uplift), max(uplift) + 0.02 * max(uplift)])
             plt.grid(True)
             plt.tight_layout()
             if not server:
