@@ -146,6 +146,7 @@ If the user sets ``nfolds == 0``, then cross-validation metrics will not be avai
 
 ``H2OAutoML`` can interact with the ``h2o.sklearn`` module. The ``h2o.sklearn`` module exposes 2 wrappers for ``H2OAutoML`` (``H2OAutoMLClassifier`` and ``H2OAutoMLRegressor``), which expose the standard API familiar to ``sklearn`` users: ``fit``, ``predict``, ``fit_predict``, ``score``, ``get_params``, and ``set_params``. It accepts various formats as input data (H2OFrame, ``numpy`` array, ``pandas`` Dataframe) which allows them to be combined with pure ``sklearn`` components in pipelines. For an example using ``H2OAutoML`` with the ``h2o.sklearn`` module, click `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/sklearn-integration/H2OAutoML_as_sklearn_estimator.ipynb>`__.
 
+XGBoost requires its own memory outside the H2O (Java) cluster. When running AutoML with XGBoost, be sure you allow H2O-3 no more than 2/3 of the total available RAM.
 
 Explainability
 --------------
