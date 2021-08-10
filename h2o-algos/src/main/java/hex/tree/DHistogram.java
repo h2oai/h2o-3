@@ -492,12 +492,12 @@ public final class DHistogram extends Iced<DHistogram> {
   // Inclusive min & max
   public double findMin() { return _min2 ; }
   
-  public double findMaxIn() { return _maxIn; }
+  public double find_maxIn() { return _maxIn; }
   
   // Exclusive max
-  public double findMaxEx() { return findMaxEx(_maxIn,_isInt); }
+  public double find_maxEx() { return find_maxEx(_maxIn,_isInt); }
   
-  public static double findMaxEx(double maxIn, int isInt ) {
+  public static double find_maxEx(double maxIn, int isInt ) {
     double ulp = Math.ulp(maxIn);
     if( isInt > 0 && 1 > ulp ) ulp = 1;
     double res = maxIn+ulp;
@@ -525,7 +525,7 @@ public final class DHistogram extends Iced<DHistogram> {
       Vec v = vecs[c];
       final double minIn = v.isCategorical() ? 0 : Math.max(v.min(),-Double.MAX_VALUE); // inclusive vector min
       final double maxIn = v.isCategorical() ? v.domain().length-1 : Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
-      final double maxEx = v.isCategorical() ? v.domain().length : findMaxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
+      final double maxEx = v.isCategorical() ? v.domain().length : find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
       final long nacnt = v.naCnt();
       try {
