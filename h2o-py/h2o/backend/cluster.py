@@ -3,13 +3,12 @@
 from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
-from functools import partial
 import json
 import sys
 import time
 
 import h2o
-from h2o.exceptions import H2OConnectionError, H2OResponseError, H2OServerError
+from h2o.exceptions import H2OConnectionError, H2OServerError
 from h2o.display import H2ODisplay
 from h2o.schemas import H2OSchema
 from h2o.utils.typechecks import assert_is_type
