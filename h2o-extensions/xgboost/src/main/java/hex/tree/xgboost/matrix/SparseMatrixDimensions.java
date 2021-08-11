@@ -1,13 +1,13 @@
 package hex.tree.xgboost.matrix;
 
+import water.BootstrapFreezable;
+import water.Iced;
 import water.util.ArrayUtils;
-
-import java.io.Serializable;
 
 /**
  * Dimensions of a Sparse Matrix
  */
-public final class SparseMatrixDimensions implements Serializable {
+public final class SparseMatrixDimensions extends Iced<SparseMatrixDimensions> implements BootstrapFreezable<SparseMatrixDimensions> {
 
     public final int[] _precedingRowCounts;
     public final long[] _precedingNonZeroElementsCounts;

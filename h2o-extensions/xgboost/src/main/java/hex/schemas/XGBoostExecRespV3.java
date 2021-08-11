@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import water.BootstrapFreezable;
 import org.apache.commons.codec.binary.Base64;
 import water.AutoBuffer;
 import water.Iced;
@@ -23,11 +24,10 @@ public class XGBoostExecRespV3 extends Schema<Iced, XGBoostExecRespV3> {
         this.data = "";
     }
 
-    public XGBoostExecRespV3(Key key, Object data) {
+    public XGBoostExecRespV3(Key key, BootstrapFreezable<?> data) {
         this.key = KeyV3.make(key);
-        this.data = Base64.encodeBase64String(AutoBuffer.javaSerializeWritePojo(data));
+        this.data = Base64.encodeBase64String(AutoBuffer.serializeBootstrapFreezable(data));
     }
-
 
     @Override
     public String toString() {
@@ -38,7 +38,7 @@ public class XGBoostExecRespV3 extends Schema<Iced, XGBoostExecRespV3> {
 
     public <T> T readData() {
         if (data.length() > 0) {
-            return (T) AutoBuffer.javaSerializeReadPojo(Base64.decodeBase64(data));
+            return (T) AutoBuffer.deserializeBootstrapFreezable(Base64.decodeBase64(data));
         } else {
             return null;
         }
