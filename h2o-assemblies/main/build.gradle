@@ -79,6 +79,9 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
+  exclude 'org/apache/log4j/net/*'
+  exclude 'org/apache/log4j/jdbc/*'
+  exclude 'org/apache/log4j/nt/*'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
   }
