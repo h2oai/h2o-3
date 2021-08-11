@@ -26,7 +26,7 @@ class H2OErrorV3(H2OSchema):
         if key in self._schema_attrs_:
             if key.endswith("msg"):
                 value = value.replace("ERROR MESSAGE:", "").strip()
-            self[key] = value
+            self._props[key] = value
         
     def __str__(self):
         res = "Server error %s:\n" % self.exception_type
