@@ -278,7 +278,8 @@ public final class AutoBuffer implements AutoCloseable {
       typeMap = getAStr();
       assert typeMap != null;
     } else {
-      assert b == 0;
+      if (b != 0)
+        throw new IllegalStateException("Corrupted communication stream: zero byte expected at the beginning.");
     }
     _typeMap = new short[typeMap.length];
     for (int i = 0; i < _typeMap.length; i++)
@@ -783,16 +784,28 @@ public final class AutoBuffer implements AutoCloseable {
   public <T extends Freezable> T get() {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) id = _typeMap[id];
+    if( _is!=null ) {
+      id = remapFrozenId(id);
+    }
     return (T)TypeMap.newFreezable(id).read(this);
   }
   public <T extends Freezable> T get(Class<T> tc) {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) id = _typeMap[id];
+    if( _is!=null ) {
+      id = remapFrozenId(id);
+    }
     assert tc.isInstance(TypeMap.theFreezable(id)):tc.getName() + " != " + TypeMap.theFreezable(id).getClass().getName() + ", id = " + id;
     return (T)TypeMap.newFreezable(id).read(this);
   }
+
+  private int remapFrozenId(int id) {
+    assert _typeMap != null;
+    if (id >= _typeMap.length)
+      throw new IllegalStateException("Class with frozenType=" + id + 
+              " cannot be deserialized because it is not part of the TypeMap.");
+    return _typeMap[id];
+  } 
 
   // Write Key's target IFF the Key is not null; target can be null.
   public AutoBuffer putKey(Key k) {
@@ -1520,16 +1533,22 @@ public final class AutoBuffer implements AutoCloseable {
     ab.clearForWriting(H2O.MAX_PRIORITY);
   }
 
+  /**
+   * Serializes a BootstrapFreezable into a byte array. Because BootstrapFreezables
+   * have known ids - there is no need to also serialize the TypeMap.
+   * @param o a BootstrapFreezable to serialize
+   * @return byte array representing the object
+   */
   public static byte[] serializeBootstrapFreezable(BootstrapFreezable<?> o) {
-    try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-         AutoBuffer ab = new AutoBuffer(bos, false)) {
+    ByteArrayOutputStream result;
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         AutoBuffer ab = new AutoBuffer(baos, false)) {
       ab.put(o);
-      ab.close();
-      bos.close();
-      return bos.toByteArray();
+      result = baos;
     } catch (IOException e) {
       throw Log.throwErr(e);
     }
+    return result.toByteArray();
   }
 
   public static BootstrapFreezable<?> deserializeBootstrapFreezable(byte[] bytes) {

@@ -100,6 +100,10 @@ public class TypeMap {
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
   }
 
+  /**
+   * Collect built-in bootstrap classes and bootstrap classes from all extensions. 
+   * @return array of class names, built-in classes are listed first followed by sorted list of classes from extensions
+   */
   static synchronized String[] findAllBootstrapClasses() {
     String[] additionalBootstrapClasses = new String[0];
     ServiceLoader<TypeMapExtension> extensionsLoader = ServiceLoader.load(TypeMapExtension.class);
@@ -110,6 +114,10 @@ public class TypeMap {
     return ArrayUtils.append(BUILTIN_BOOTSTRAP_CLASSES, additionalBootstrapClasses);
   }
 
+  /**
+   * Retrieves the collection of bootstrap classes.
+   * @return array of class names
+   */
   public static String[] bootstrapClasses() {
     return Arrays.copyOf(CLAZZES, BOOTSTRAP_SIZE);
   }
