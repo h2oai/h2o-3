@@ -30,7 +30,7 @@ from requests.auth import AuthBase
 
 from h2o.backend import H2OCluster, H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
-from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
+from h2o.schemas import H2OMetadataV3, H2OErrorV3, H2OModelBuilderErrorV3, define_classes_from_schema
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_meta
 from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
@@ -645,6 +645,7 @@ class H2OConnection(h2o_meta()):
             if self._local_server and not self._local_server.is_running():
                 raise H2OServerError("Local server was unable to start")
             try:
+                define_classes_from_schema(_classes_defined_from_schema_, self)
                 cld = self.request("GET /3/Cloud")
 
                 if self.name and cld.cloud_name != self.name:
@@ -864,6 +865,7 @@ class H2OResponse(dict):
             if k == "__schema" and is_type(v, str):
                 schema = v
                 break
+        if schema == "MetadataV3": return H2OMetadataV3.make(keyvals)
         if schema == "CloudV3": return H2OCluster.make(keyvals)
         if schema == "H2OErrorV3": return H2OErrorV3.make(keyvals)
         if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3.make(keyvals)
@@ -881,6 +883,9 @@ class H2OResponse(dict):
     #     if key in self:
     #         return self[key]
     #     return None
+
+
+_classes_defined_from_schema_ = [H2OCluster, H2OErrorV3, H2OModelBuilderErrorV3]
 
 
 # Find the exception that occurs on invalid JSON input

@@ -6,34 +6,28 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 
-from functools import partial
-from h2o.schemas import _ignored_schema_keys
+from .schema import H2OSchema
 
 
-class H2OErrorV3(object):
+class H2OErrorV3(H2OSchema):
+
+    _schema_endpoint_ = "/3/Metadata/schemas/H2OErrorV3"
     
     @classmethod
     def make(cls, keyvals):
-        err = cls()
-        for k, v in keyvals:
-            if k in _ignored_schema_keys: continue
-            if not hasattr(cls, k):
-                # we can add properties dynamically here as they are defined statically on the backend
-                # as properties of water.api.schemas3.H2OErrorV3 (or subclasses)
-                setattr(cls, k, property(partial(cls.__getitem__, name=k)))
-            if k.endswith("msg"):
-                v = v.replace("ERROR MESSAGE:", "").strip()
-            err._props[k] = v
-        return err
+        return cls.instantiate_from_json(keyvals)
 
     def __init__(self):
-        self._props = {}
+        super(H2OErrorV3, self).__init__()
         self.endpoint = None
         self.payload = None
 
-    def __getitem__(self, name):
-        return self._props.get(name)
-
+    def __setitem__(self, key, value):
+        if key in self._schema_attrs_:
+            if key.endswith("msg"):
+                value = value.replace("ERROR MESSAGE:", "").strip()
+            self[key] = value
+        
     def __str__(self):
         res = "Server error %s:\n" % self.exception_type
         res += "  Error: %s\n" % self.msg
@@ -47,6 +41,8 @@ class H2OErrorV3(object):
 
 
 class H2OModelBuilderErrorV3(H2OErrorV3):
+
+    _schema_endpoint_ = "/3/Metadata/schemas/H2OModelBuilderErrorV3"
     
     def __str__(self):
         res = "ModelBuilderErrorV3  (%s):\n" % self.exception_type

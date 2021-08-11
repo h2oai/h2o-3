@@ -2401,8 +2401,8 @@ def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, ti
 # ----------------------------------------------------------------------------------------------------------------------
 
 def _check_connection():
-    if not h2oconn or not h2oconn.cluster:
-        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
+    if not cluster():
+        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.init()` or `h2o.connect()`?")
     
     
 def _strict_version_check(force_version_check=None, config=None):

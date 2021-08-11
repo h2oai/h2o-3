@@ -11,13 +11,13 @@ import time
 import h2o
 from h2o.exceptions import H2OConnectionError, H2OResponseError, H2OServerError
 from h2o.display import H2ODisplay
-from h2o.schemas import _ignored_schema_keys
+from h2o.schemas import H2OSchema
 from h2o.utils.typechecks import assert_is_type
 from h2o.utils.shared_utils import get_human_readable_bytes, get_human_readable_time
 from h2o.two_dim_table import H2OTwoDimTable
 
 
-class H2OCluster(object):
+class H2OCluster(H2OSchema):
     """
     Information about the backend H2O cluster.
 
@@ -27,10 +27,15 @@ class H2OCluster(object):
 
     # If information is this many seconds old, it will be refreshed next time you call :meth:`status`.
     REFRESH_INTERVAL = 1.0
+    _default_attrs_values_ = dict(
+        build_age='PREHISTORIC',
+        build_too_old=True
+    )
+    _schema_endpoint_ = "/3/Metadata/schemas/CloudV3"
 
     def __init__(self):
         """Initialize new H2OCluster instance."""
-        self._props = {}
+        super(H2OCluster, self).__init__()
         self._retrieved_at = time.time()
 
     @classmethod
@@ -38,29 +43,7 @@ class H2OCluster(object):
         """
         Create H2OCluster object from a list of key-value pairs.
         """
-        obj = cls()
-        for k, v in keyvals:
-            if k in _ignored_schema_keys: continue
-            if not hasattr(cls, k):
-                # we can add properties dynamically here as they are defined statically on the backend
-                # as properties of water.api.schemas3.CloudV3
-                setattr(cls, k, property(partial(cls.__getitem__, name=k)))
-            obj._props[k] = v
-        return obj
-
-    def __getitem__(self, name):
-        return self._props.get(name)
-
-    @property
-    def build_age(self):
-        # If the build age is unknown, then the cluster is so old it comes from "prehistoric" times when no
-        # build number reporting was done...
-        return self._props.get("build_age", "PREHISTORIC")
-
-    @property
-    def build_too_old(self):
-        # If the prop "build_too_old" wasn't reported by the server, then it's definitely too old :)
-        return self._props.get("build_too_old", True)
+        return cls.instantiate_from_json(keyvals)
 
     def node(self, node_idx):
         """
