@@ -5,6 +5,8 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
+import hex.tree.drf.DRF;
+import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
@@ -58,7 +60,7 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
             assertNotNull(treeProperties);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._descriptions.length);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._thresholds.length);
@@ -132,7 +134,7 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
             assertNotNull(treeProperties);
 
             final String[] nodeDescriptions = treeProperties._descriptions;
@@ -304,6 +306,7 @@ public class TreeHandlerTest extends TestUtil {
             model = new GBM(parms).trainModel().get();
             args.model = new KeyV3.ModelKeyV3(model._key);
             args.tree_class = "YES";
+            args.plain_language_rules = false;
 
             // If the tree class name is specified, it must be the tree class built exactly
             final TreeHandler treeHandler = new TreeHandler();
@@ -351,7 +354,7 @@ public class TreeHandlerTest extends TestUtil {
             // Test incorrect tree request
             model = new GBM(parms).trainModel().get();
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
             assertNotNull(treeProperties);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
@@ -402,7 +405,7 @@ public class TreeHandlerTest extends TestUtil {
 
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
             assertNotNull(sharedTreeSubgraph);
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
             assertNotNull(treeProperties);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;

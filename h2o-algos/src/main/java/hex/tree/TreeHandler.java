@@ -53,7 +53,7 @@ public class TreeHandler extends Handler {
         }
 
 
-        final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
+        final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph, args.plain_language_rules);
 
         args.left_children = treeProperties._leftChildren;
         args.right_children = treeProperties._rightChildren;
@@ -177,7 +177,7 @@ public class TreeHandler extends Handler {
      * @param sharedTreeSubgraph An instance of {@link SharedTreeSubgraph} to convert
      * @return An instance of {@link TreeProperties} with some attributes possibly empty if suitable. Never null.
      */
-    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph) {
+    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph, boolean plainLanguageRules) {
         Objects.requireNonNull(sharedTreeSubgraph);
 
         final TreeProperties treeprops = new TreeProperties();
@@ -201,10 +201,12 @@ public class TreeHandler extends Handler {
         treeprops._features[0] = sharedTreeSubgraph.rootNode.getColName();
         treeprops._nas[0] = getNaDirection(sharedTreeSubgraph.rootNode);
         treeprops.levels = new int[sharedTreeSubgraph.nodesArray.size()][];
-        treeprops._treeDecisionPath = getLanguageRepresentation(sharedTreeSubgraph);
-        treeprops._decisionPaths[0] = "Predicted value: " + sharedTreeSubgraph.rootNode.getPredValue();
-        treeprops._leftChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
-        treeprops._rightChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
+        if (plainLanguageRules) { 
+            treeprops._treeDecisionPath = getLanguageRepresentation(sharedTreeSubgraph);
+            treeprops._decisionPaths[0] = "Predicted value: " + sharedTreeSubgraph.rootNode.getPredValue();
+            treeprops._leftChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
+            treeprops._rightChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
+        }
         treeprops._domainValues = new String[sharedTreeSubgraph.nodesArray.size()][];
         treeprops._domainValues[0] = sharedTreeSubgraph.rootNode.getDomainValues();
 
@@ -213,7 +215,7 @@ public class TreeHandler extends Handler {
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
                 treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false, treeprops._domainValues);
-        fillLanguagePathRepresentation(treeprops);
+        if (plainLanguageRules) fillLanguagePathRepresentation(treeprops);
 
         return treeprops;
     }
@@ -294,21 +296,21 @@ public class TreeHandler extends Handler {
         List<Integer> nodeIds = extractInternalIds(properties);
         nodeIds.forEach((listPathId) -> {
                     int index = nodeIds.indexOf(listPathId);
-                    properties._decisionPaths[index] = fillNodePath(listPathId, nodeIds, false, properties);
+                    properties._decisionPaths[index] = fillNodePath(listPathId, nodeIds, false, properties).toString();
                 });
     }
 
-    private static String fillNodePath(int nodeId, List<Integer> nodeIds, boolean valuePrinted, TreeProperties properties) {
+    private static StringBuilder fillNodePath(int nodeId, List<Integer> nodeIds, boolean valuePrinted, TreeProperties properties) {
         int parentIndex = -1;
         int parentId = -1;
-        String condition = "";
-        String nodePathr = "";
+        StringBuilder condition = new StringBuilder();
+        StringBuilder nodePathr = new StringBuilder();
         int currentNodeIndex = nodeIds.indexOf(nodeId);
         if (!valuePrinted) {
             // print prediction value
-            nodePathr += "Predicted value: " + properties._predictions[currentNodeIndex] + "\n";
+            nodePathr.append("Predicted value: ").append(properties._predictions[currentNodeIndex]).append("\n");
             valuePrinted = true;
-            nodePathr += fillNodePath(nodeId, nodeIds, valuePrinted, properties);
+            nodePathr.append(fillNodePath(nodeId, nodeIds, valuePrinted, properties));
         } else {
             // print conditions leading to prediction value
             int[] leftChildren = properties._leftChildrenNormalized;
@@ -318,22 +320,22 @@ public class TreeHandler extends Handler {
                 // parent from right
                 parentIndex = IntStream.range(0, leftChildren.length).filter(i -> leftChildren[i] == currentNodeIndex).findAny().getAsInt();
                 parentId = nodeIds.get(parentIndex);
-                condition = getConditionByIndex(parentIndex, "R", properties);
+                condition.append(getConditionByIndex(parentIndex, "R", properties));
             }
 
             if (IntStream.of(rightChildren).anyMatch(i -> i == currentNodeIndex)) {
                 parentIndex = IntStream.range(0, rightChildren.length).filter(i -> rightChildren[i] == currentNodeIndex).findAny().getAsInt();
                 parentId = nodeIds.get(parentIndex);
-                condition = getConditionByIndex(parentIndex, "L", properties);
+                condition.append(getConditionByIndex(parentIndex, "L", properties));
             }
             
             if (parentIndex != -1) {
-                nodePathr += "^\n";
-                nodePathr += "|\n";
-                nodePathr += "|\n";
-                nodePathr += "|\n";
-                nodePathr += condition;
-                nodePathr += fillNodePath(parentId, nodeIds, valuePrinted, properties);
+                nodePathr.append("^\n");
+                nodePathr.append("|\n");
+                nodePathr.append("|\n");
+                nodePathr.append("|\n");
+                nodePathr.append(condition);
+                nodePathr.append(fillNodePath(parentId, nodeIds, valuePrinted, properties));
             }
         }
         return nodePathr;

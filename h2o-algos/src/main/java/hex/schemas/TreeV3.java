@@ -15,6 +15,9 @@ public class TreeV3 extends SchemaV3<Iced, TreeV3> {
     @API(direction = API.Direction.INOUT, help = "Name of the class of the tree. Ignored for regression and binomial.", level = API.Level.critical)
     public String tree_class;
 
+    @API(direction = API.Direction.INPUT, help = "Whether to generate plain language rules.", level = API.Level.critical)
+    public boolean plain_language_rules;
+
     @API(direction = API.Direction.OUTPUT, help = "Left child nodes in the tree")
     public int[] left_children;
 

@@ -25,7 +25,7 @@ def decision_tree_language_rules_printing():
                  y="CAPSULE",
                  training_frame=train,
                  validation_frame=train)
-    first_tree = H2OTree(model = my_gbm, tree_number = 0, tree_class = None)
+    first_tree = H2OTree(model = my_gbm, tree_number = 0, tree_class = None, plain_language_rules = True)
 
     print(" -- Tree predictions: -- ")
     print(first_tree.predictions)
@@ -48,7 +48,7 @@ def decision_tree_language_rules_printing():
     airlines_data = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
     model = H2OGradientBoostingEstimator(ntrees = 3, max_depth = 2, seed = 12345)
     model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines_data)
-    tree = H2OTree(model = model, tree_number = 0, tree_class = "NO")
+    tree = H2OTree(model = model, tree_number = 0, tree_class = "NO", plain_language_rules = True)
 
     print(" -- Tree predictions: -- ")
     print(tree.predictions)
@@ -71,7 +71,7 @@ def decision_tree_language_rules_printing():
     airlines_data = h2o.import_file(path=pyunit_utils.locate("./smalldata/testng/airlines_train.csv"))
     model = H2OGradientBoostingEstimator(ntrees=10, seed = 65261, max_depth = 10)
     model.train(y = "IsDepDelayed", training_frame=airlines_data)
-    tree = H2OTree(model = model, tree_number = 1)
+    tree = H2OTree(model = model, tree_number = 1, plain_language_rules = True)
 
     print(" -- Tree predictions: -- ")
     print(tree.predictions)
