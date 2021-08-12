@@ -46,6 +46,9 @@ try {
                 scheduleString = 'H 0,6 * * *'
               } else if (env.BRANCH_NAME.startsWith('rel-')) {
                 scheduleString = 'H 21 * * *'
+              } else if (env.BRANCH_NAME == 'maurever_PUBDEV-4940_uplift_trees_poc') {
+                // Execute at 03:XX
+                scheduleString = 'H 3 * * *'
               }
               if (scheduleString) {
                 pipelineContext.getBuildConfig().setJobProperties(this, pipelineTriggers([cron(scheduleString)]))
