@@ -6,12 +6,14 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import water.DKV;
 import water.Key;
+import water.ScopeTracker;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -19,11 +21,12 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
-import static water.TestUtil.parseTestFile;
-import static water.TestUtil.stall_till_cloudsize;
 
 @RunWith(MockitoJUnitRunner.class)
-public class FriedmanPopescusHTest {
+public class FriedmanPopescusHTest extends TestUtil {
+
+    @Rule
+    public ScopeTracker scope = new ScopeTracker();
 
     @BeforeClass
     public static void stall() { stall_till_cloudsize(1); }
@@ -1197,6 +1200,7 @@ public class FriedmanPopescusHTest {
     @Test
     public void testPartialDependenceTree() {
         Frame frame = parseTestFile( "smalldata/h_test_input.csv");
+        scope.track(frame);
 
         double res[] = new double[] {-2.188878791803408608e-02, -6.741245150466763925e-02, 4.768910591425746387e-03, 3.297972219392273502e-02, -2.188878791803408608e-02,
                 3.297972219392273502e-02, -2.188878791803408608e-02, 4.768910591425746387e-03, -6.741245150466763925e-02, -6.741245150466763925e-02, -2.188878791803408608e-02,
@@ -1218,6 +1222,7 @@ public class FriedmanPopescusHTest {
         SharedTreeGraph tree = createSharedTreeGraphForTest();
 
         Vec result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1,2}, 0.1, frame);
+        scope.track(result);
         assertEquals(result.length(), res.length);
         for (int i = 0; i < res.length; i++) {
             assertEquals(res[i], result.at(i), 1e-8);
@@ -1243,6 +1248,7 @@ public class FriedmanPopescusHTest {
         Frame frame1 = new Frame();
         frame1.add(new String[] {"feature0", "feature2"}, new Vec[] {frame.vec(0), frame.vec(2)});
         result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,2}, 0.1, frame1);
+        scope.track(result);
         assertEquals(result.length(), res.length);
         for (int i = 0; i < res.length; i++) {
             assertEquals(res[i], result.at(i), 1e-8);
@@ -1267,6 +1273,7 @@ public class FriedmanPopescusHTest {
         Frame frame2 = new Frame();
         frame2.add(new String[] {"feature0", "feature1"}, new Vec[] {frame.vec(0), frame.vec(1)});
         result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1}, 0.1, frame2);
+        scope.track(result);
         assertEquals(result.length(), res.length);
         for (int i = 0; i < res.length; i++) {
             assertEquals(res[i], result.at(i), 1e-8);
@@ -1290,11 +1297,10 @@ public class FriedmanPopescusHTest {
                 .withDataForCol(3, nums1)
                 .withChunkLayout(1, 1, 2, 1)
                 .build();
-        DKV.put(frame);
 
         Frame result = FriedmanPopescusH.uniqueRowsWithCounts(frame);
+        scope.track(result);
         assertEquals(result.numRows(), frame.numRows() - 1);
-        DKV.remove(frame._key);
     }
     
     /*
@@ -1349,8 +1355,7 @@ public class FriedmanPopescusHTest {
     @Test
     public void testRegression() {
         Frame frame = parseTestFile( "smalldata/h_test_input.csv");
-
-        DKV.put(frame);
+        scope.track(frame);
 
         SharedTreeGraph tree = createSharedTreeGraphForTest();
 
@@ -1449,12 +1454,11 @@ public class FriedmanPopescusHTest {
         assertEquals(h, 0.16954296014353273, 1e-8);
          h = FriedmanPopescusH.h(frame, new String[] {"feature2","feature1"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.2508738347652033, 1e-8);
-        
-        DKV.remove(frame._key);
     }
     
     void checkFValues(Integer[] modelIds, Frame filteredFrame, String[] cols, int expectedNumCols, SharedTreeSubgraph[][] sharedTreeSubgraphs, double learn_rate, double[] result) {
         Frame res = FriedmanPopescusH.computeFValues(modelIds, filteredFrame, cols, learn_rate, sharedTreeSubgraphs);
+        scope.track(res);
         assertEquals(res.numCols(),expectedNumCols);
         assertEquals(res.numRows(), result.length);
         for (int i = 0; i < res.numRows(); i++) {
@@ -1480,10 +1484,11 @@ public class FriedmanPopescusHTest {
     @Test
     public void testClassification() {
         Frame frame = parseTestFile( "smalldata/iris/iris_wheader.csv");
-        DKV.put(frame);
+        scope.track(frame);
         SharedTreeGraph tree = createSharedTreeGraphForTestMLT();
         
         Frame filtered = FriedmanPopescusH.filterFrame(frame, new String[] {"sepal_len"});
+        scope.track(filtered);
         filtered._key = Key.make();
         
         when(mockModel.getSharedTreeSubgraph(0,0)).thenReturn(tree.subgraphArray.get(0));
@@ -1643,8 +1648,6 @@ public class FriedmanPopescusHTest {
         assertEquals(1.6283638520340696e-05, h , 1e-4);
         h = FriedmanPopescusH.h(frame, new String[] {"petal_len","sepal_wid"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(1.62836385203624e-05, h , 1e-4);
-        
-        DKV.remove(frame._key);
     }
     
     @Test

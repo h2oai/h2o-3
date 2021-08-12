@@ -1,8 +1,9 @@
 package hex.tree.xgboost.util;
 
-import java.io.Serializable;
+import water.BootstrapFreezable;
+import water.Iced;
 
-public class FeatureScore implements Serializable {
+public class FeatureScore extends Iced<FeatureScore> implements BootstrapFreezable<FeatureScore> {
     
     public static final String GAIN_KEY = "gain";
     public static final String COVER_KEY = "cover";

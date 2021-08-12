@@ -416,7 +416,11 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Extract feature interactions:
     feature_interactions = titanic_xgb.feature_interaction()
-  
+
+Note
+''''
+
+XGBoost requires its own memory outside the H2O (Java) cluster. When running XGBoost, be sure you allow H2O-3 no more than 2/3 of the total available RAM.
 
 FAQs
 ~~~~

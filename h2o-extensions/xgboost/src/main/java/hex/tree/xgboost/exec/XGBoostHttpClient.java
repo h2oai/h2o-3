@@ -3,6 +3,7 @@ package hex.tree.xgboost.exec;
 import hex.genmodel.utils.IOUtils;
 import hex.schemas.XGBoostExecReqV3;
 import hex.schemas.XGBoostExecRespV3;
+import water.BootstrapFreezable;
 import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
@@ -26,6 +27,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
+import water.AutoBuffer;
 import water.Key;
 
 import javax.net.ssl.SSLContext;
@@ -140,18 +142,19 @@ public class XGBoostHttpClient {
     
     private static class ObjectEntity extends AbstractHttpEntity {
         
-        private final Object object;
+        private final BootstrapFreezable<?> object;
 
-        private ObjectEntity(Object object) {
+        private ObjectEntity(BootstrapFreezable<?> object) {
             this.object = object;
         }
 
         @Override
         public void writeTo(OutputStream out) throws IOException {
             LOG.debug("Sending " + object);
-            ObjectOutputStream os = new ObjectOutputStream(out);
-            os.writeObject(object);
-            os.flush();
+            try (AutoBuffer ab = new AutoBuffer(out, false)) {
+                ab.put(object);
+            }
+            out.flush();
         }
 
         @Override
@@ -175,7 +178,7 @@ public class XGBoostHttpClient {
         }
     }
 
-    public void uploadObject(Key key, RemoteXGBoostUploadServlet.RequestType dataType, Object data) {
+    public void uploadObject(Key key, RemoteXGBoostUploadServlet.RequestType dataType, BootstrapFreezable<?> data) {
         LOG.info("Request upload " + key + " " + dataType + " " + data.getClass().getSimpleName());
         HttpPost httpReq = makeUploadRequest(key, dataType);
         httpReq.setEntity(new ObjectEntity(data));
