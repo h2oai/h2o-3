@@ -99,6 +99,9 @@ def hadoopShadowJarExcludes = ['META-INF/*.DSA',
                             'test.properties',
                             'cockpitlite.properties',
                             'devpay_products.properties',
+                            'org/apache/log4j/net/*',
+                            'org/apache/log4j/jdbc/*',
+                            'org/apache/log4j/nt/*',
                             // the license files are excluded for OS X compatibility (this is mainly for development)
                             // OS X is unable to unpack these files from the jar on filesystem that is not case sensitive
                             'LICENSE', 'license', 'LICENSE/*', 'license/*', 'META-INF/license', 'META-INF/LICENSE'
