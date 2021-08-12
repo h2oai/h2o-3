@@ -23,10 +23,10 @@ public class GBMStepsProvider
     public static class GBMSteps extends ModelingSteps {
 
         static GBMParameters prepareModelParameters() {
-            GBMParameters gbmParameters = new GBMParameters();
-            gbmParameters._score_tree_interval = 5;
-            gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
-            return gbmParameters;
+            GBMParameters params = new GBMParameters();
+            params._score_tree_interval = 5;
+            params._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
+            return params;
         }
 
         static abstract class GBMModelStep extends ModelingStep.ModelStep<GBMModel> {
@@ -36,12 +36,12 @@ public class GBMStepsProvider
             }
 
             GBMParameters prepareModelParameters() {
-                GBMParameters gbmParameters = GBMSteps.prepareModelParameters();
-                gbmParameters._ntrees = 10000;
-                gbmParameters._sample_rate = 0.8;
-                gbmParameters._col_sample_rate = 0.8;
-                gbmParameters._col_sample_rate_per_tree = 0.8;
-                return gbmParameters;
+                GBMParameters params = GBMSteps.prepareModelParameters();
+                params._ntrees = 10000;
+                params._sample_rate = 0.8;
+                params._col_sample_rate = 0.8;
+                params._col_sample_rate_per_tree = 0.8;
+                return params;
             }
         }
 
@@ -51,9 +51,9 @@ public class GBMStepsProvider
             }
 
             GBMParameters prepareModelParameters() {
-                GBMParameters gbmParameters = GBMSteps.prepareModelParameters();
-                gbmParameters._ntrees = 10000;
-                return gbmParameters;
+                GBMParameters params = GBMSteps.prepareModelParameters();
+                params._ntrees = 10000;
+                return params;
             }
         }
 
@@ -83,51 +83,51 @@ public class GBMStepsProvider
                 new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
-                        GBMParameters gbmParameters = prepareModelParameters();
-                        gbmParameters._max_depth = 6;
-                        gbmParameters._min_rows = 1;
+                        GBMParameters params = prepareModelParameters();
+                        params._max_depth = 6;
+                        params._min_rows = 1;
 
-                        return trainModel(gbmParameters);
+                        return trainModel(params);
                     }
                 },
                 new GBMModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
-                        GBMParameters gbmParameters = prepareModelParameters();
-                        gbmParameters._max_depth = 7;
-                        gbmParameters._min_rows = 10;
+                        GBMParameters params = prepareModelParameters();
+                        params._max_depth = 7;
+                        params._min_rows = 10;
 
-                        return trainModel(gbmParameters);
+                        return trainModel(params);
                     }
                 },
                 new GBMModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT,aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
-                        GBMParameters gbmParameters = prepareModelParameters();
-                        gbmParameters._max_depth = 8;
-                        gbmParameters._min_rows = 10;
+                        GBMParameters params = prepareModelParameters();
+                        params._max_depth = 8;
+                        params._min_rows = 10;
 
-                        return trainModel(gbmParameters);
+                        return trainModel(params);
                     }
                 },
                 new GBMModelStep("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
-                        GBMParameters gbmParameters = prepareModelParameters();
-                        gbmParameters._max_depth = 10;
-                        gbmParameters._min_rows = 10;
+                        GBMParameters params = prepareModelParameters();
+                        params._max_depth = 10;
+                        params._min_rows = 10;
 
-                        return trainModel(gbmParameters);
+                        return trainModel(params);
                     }
                 },
                 new GBMModelStep("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
-                        GBMParameters gbmParameters = prepareModelParameters();
-                        gbmParameters._max_depth = 15;
-                        gbmParameters._min_rows = 100;
+                        GBMParameters params = prepareModelParameters();
+                        params._max_depth = 15;
+                        params._min_rows = 100;
 
-                        return trainModel(gbmParameters);
+                        return trainModel(params);
                     }
                 },
         };
@@ -136,7 +136,7 @@ public class GBMStepsProvider
                 new GBMGridStep("grid_1", 3* DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<Grid> startJob() {
-                        GBMParameters gbmParameters = prepareModelParameters();
+                        GBMParameters params = prepareModelParameters();
 
                         Map<String, Object[]> searchParams = new HashMap<>();
                         searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
@@ -147,7 +147,7 @@ public class GBMStepsProvider
                         searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
                         searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
-                        return hyperparameterSearch(gbmParameters, searchParams);
+                        return hyperparameterSearch(params, searchParams);
                     }
                 },
         };
@@ -162,13 +162,13 @@ public class GBMStepsProvider
                         resultKey = result;
                         GBMModel bestGBM = getBestGBM();
                         aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best GBM with learning rate annealing: "+bestGBM._key);
-                        GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
-                        gbmParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
-                        gbmParameters._max_runtime_secs = 0; // reset max runtime
-                        gbmParameters._learn_rate_annealing = 0.99;
-                        initTimeConstraints(gbmParameters, maxRuntimeSecs);
-                        setStoppingCriteria(gbmParameters, new GBMParameters());
-                        return asModelsJob(startModel(Key.make(result+"_model"), gbmParameters), result);
+                        GBMParameters params = (GBMParameters) bestGBM._parms.clone();
+                        params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                        params._max_runtime_secs = 0; // reset max runtime
+                        params._learn_rate_annealing = 0.99;
+                        initTimeConstraints(params, maxRuntimeSecs);
+                        setStoppingCriteria(params, new GBMParameters());
+                        return asModelsJob(startModel(Key.make(result+"_model"), params), result);
                     }
 
                     @Override

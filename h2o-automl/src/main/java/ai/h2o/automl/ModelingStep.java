@@ -384,6 +384,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     public static abstract class GridStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 20;
+        protected static final int GRID_STOPPING_ROUND_FACTOR = 2;
 
         public GridStep(IAlgo algo, String id, int cost, AutoML autoML) {
             super(algo, id, cost, autoML);
@@ -431,6 +432,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCommonModelBuilderParams(baseParms);
             // grid seed is provided later through the searchCriteria
             setStoppingCriteria(baseParms, defaults);
+            baseParms._stopping_rounds *= GRID_STOPPING_ROUND_FACTOR;
             setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();

@@ -41,13 +41,13 @@ public class DeepLearningStepsProvider
             }
 
             DeepLearningParameters prepareModelParameters() {
-                DeepLearningParameters dlParameters = new DeepLearningParameters();
+                DeepLearningParameters params = new DeepLearningParameters();
 
-                dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
-                dlParameters._adaptive_rate = true;
-                dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+                params._epochs = 10000; // early stopping takes care of epochs - no need to tune!
+                params._adaptive_rate = true;
+                params._activation = DeepLearningParameters.Activation.RectifierWithDropout;
 
-                return dlParameters;
+                return params;
             }
             
             @Override
@@ -74,9 +74,9 @@ public class DeepLearningStepsProvider
                 new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<DeepLearningModel> startJob() {
-                        DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
-                        dlParameters._hidden = new int[]{ 10, 10, 10 };
-                        return trainModel(dlParameters);
+                        DeepLearningParameters params = new DeepLearningParameters();  // don't use common params for default DL
+                        params._hidden = new int[]{ 10, 10, 10 };
+                        return trainModel(params);
                     }
                 },
         };
@@ -85,7 +85,7 @@ public class DeepLearningStepsProvider
                 new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
+                        DeepLearningParameters params = prepareModelParameters();
 
                         Map<String, Object[]> searchParams = prepareSearchParams();
                         searchParams.put("_hidden", new Integer[][] {
@@ -102,13 +102,13 @@ public class DeepLearningStepsProvider
                                 { 0.5 }
                         });
 
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return hyperparameterSearch(params, searchParams);
                     }
                 },
                 new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
+                        DeepLearningParameters params = prepareModelParameters();
 
                         Map<String, Object[]> searchParams = prepareSearchParams();
                         searchParams.put("_hidden", new Integer[][] {
@@ -124,13 +124,13 @@ public class DeepLearningStepsProvider
                                 { 0.4, 0.4 },
                                 { 0.5, 0.5 }
                         });
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return hyperparameterSearch(params, searchParams);
                     }
                 },
                 new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
+                        DeepLearningParameters params = prepareModelParameters();
 
                         Map<String, Object[]> searchParams = prepareSearchParams();
                         searchParams.put("_hidden", new Integer[][] {
@@ -147,7 +147,7 @@ public class DeepLearningStepsProvider
                                 { 0.5, 0.5, 0.5 }
                         });
 
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return hyperparameterSearch(params, searchParams);
                     }
                 },
         };

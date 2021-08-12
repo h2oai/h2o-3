@@ -22,9 +22,9 @@ public class DRFStepsProvider
             }
 
             DRFParameters prepareModelParameters() {
-                DRFParameters drfParameters = new DRFParameters();
-                drfParameters._score_tree_interval = 5;
-                return drfParameters;
+                DRFParameters params = new DRFParameters();
+                params._score_tree_interval = 5;
+                return params;
             }
         }
 
@@ -33,8 +33,8 @@ public class DRFStepsProvider
                 new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<DRFModel> startJob() {
-                        DRFParameters drfParameters = prepareModelParameters();
-                        return trainModel(drfParameters);
+                        DRFParameters params = prepareModelParameters();
+                        return trainModel(params);
                     }
                 },
                 new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
@@ -42,11 +42,11 @@ public class DRFStepsProvider
 
                     @Override
                     protected Job<DRFModel> startJob() {
-                        DRFParameters drfParameters = prepareModelParameters();
-                        drfParameters._histogram_type = HistogramType.Random;
+                        DRFParameters params = prepareModelParameters();
+                        params._histogram_type = HistogramType.Random;
 
                         Key<DRFModel> key = makeKey("XRT", true);
-                        return trainModel(key, drfParameters);
+                        return trainModel(key, params);
                     }
                 },
         };

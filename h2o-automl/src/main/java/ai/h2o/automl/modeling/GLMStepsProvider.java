@@ -30,13 +30,13 @@ public class GLMStepsProvider
             }
 
             GLMParameters prepareModelParameters() {
-                GLMParameters glmParameters = new GLMParameters();
-                glmParameters._lambda_search = true;
-                glmParameters._family =
+                GLMParameters params = new GLMParameters();
+                params._lambda_search = true;
+                params._family =
                         aml().getResponseColumn().isBinary() && !(aml().getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
                                 : aml().getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
                                 : GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
-                return glmParameters;
+                return params;
             }
             
             @Override
@@ -54,34 +54,13 @@ public class GLMStepsProvider
                 new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GLMModel> startJob() {
-                        GLMParameters glmParameters = prepareModelParameters();
-                        glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
-                        glmParameters._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
+                        GLMParameters params = prepareModelParameters();
+                        params._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
+                        params._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
 
-                        return trainModel(glmParameters);
+                        return trainModel(params);
                     }
                 },
-        };
-
-        private ModelingStep[] grids = new ModelingStep[] {
-                /*
-                new GLMGridStep("grid_1", BASE_GRID_WEIGHT, aml()) {
-                    @Override
-                    protected Job<Grid> makeJob() {
-                        GLMParameters glmParameters = prepareModelParameters();
-                        glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
-
-                        Map<String, Object[]> searchParams = new HashMap<>();
-                        // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
-                        searchParams.put("_missing_values_handling", new GLMParameters.MissingValuesHandling[] {
-                                GLMParameters.MissingValuesHandling.MeanImputation,
-    //                            GLMParameters.MissingValuesHandling.Skip
-                        });
-
-                        return hyperparameterSearch(glmParameters, searchParams);
-                    }
-                },
-                 */
         };
 
         public GLMSteps(AutoML autoML) {
@@ -93,10 +72,6 @@ public class GLMStepsProvider
             return defaults;
         }
 
-        @Override
-        protected ModelingStep[] getGrids() {
-            return grids;
-        }
     }
 
     @Override

@@ -96,36 +96,36 @@ public class StackedEnsembleStepsProvider
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {
-                StackedEnsembleParameters stackedEnsembleParameters = getStackedEnsembleParameters(baseModels, isLast);
+                StackedEnsembleParameters params = getStackedEnsembleParameters(baseModels, isLast);
                 Key<StackedEnsembleModel> modelKey = makeKey(modelName, false);
-                return trainModel(modelKey, stackedEnsembleParameters);
+                return trainModel(modelKey, params);
             }
 
             protected StackedEnsembleParameters getStackedEnsembleParameters(Key<Model>[] baseModels, boolean isLast) {
                 AutoMLBuildSpec buildSpec = aml().getBuildSpec();
                 // Set up Stacked Ensemble
-                StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
-                stackedEnsembleParameters._base_models = baseModels;
-                stackedEnsembleParameters._valid = (aml().getValidationFrame() == null ? null : aml().getValidationFrame()._key);
-                stackedEnsembleParameters._blending = (aml().getBlendingFrame() == null ? null : aml().getBlendingFrame()._key);
-                stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
-                stackedEnsembleParameters._keep_base_model_predictions = !isLast; //avoids recomputing some base predictions for each SE
+                StackedEnsembleParameters params = new StackedEnsembleParameters();
+                params._base_models = baseModels;
+                params._valid = (aml().getValidationFrame() == null ? null : aml().getValidationFrame()._key);
+                params._blending = (aml().getBlendingFrame() == null ? null : aml().getBlendingFrame()._key);
+                params._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
+                params._keep_base_model_predictions = !isLast; //avoids recomputing some base predictions for each SE
                 // Add cross-validation args
-                stackedEnsembleParameters._metalearner_fold_column = buildSpec.input_spec.fold_column;
-                stackedEnsembleParameters._metalearner_nfolds = buildSpec.build_control.nfolds;
-                stackedEnsembleParameters.initMetalearnerParams();
-                stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
-                stackedEnsembleParameters._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
+                params._metalearner_fold_column = buildSpec.input_spec.fold_column;
+                params._metalearner_nfolds = buildSpec.build_control.nfolds;
+                params.initMetalearnerParams();
+                params._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
+                params._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
                 // add custom alpha in GLM metalearner
-                GLMModel.GLMParameters metalearner_params = (GLMModel.GLMParameters)stackedEnsembleParameters._metalearner_parameters;
+                GLMModel.GLMParameters metalearner_params = (GLMModel.GLMParameters)params._metalearner_parameters;
                 metalearner_params._alpha = new double[]{0.5, 1.0};
 
                 if (aml().getResponseColumn().isCategorical()) {
                     // Add logit transform
-                    stackedEnsembleParameters._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
+                    params._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
                 }
 
-                return stackedEnsembleParameters;
+                return params;
             }
 
         }

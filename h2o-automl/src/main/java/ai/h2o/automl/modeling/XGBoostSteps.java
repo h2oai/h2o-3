@@ -23,23 +23,23 @@ import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT
 public class XGBoostSteps extends ModelingSteps {
 
     static XGBoostParameters prepareModelParameters(AutoML aml, boolean emulateLightGBM) {
-        XGBoostParameters xgBoostParameters = new XGBoostParameters();
+        XGBoostParameters params = new XGBoostParameters();
 
         if (emulateLightGBM) {
-            xgBoostParameters._tree_method = XGBoostParameters.TreeMethod.hist;
-            xgBoostParameters._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
+            params._tree_method = XGBoostParameters.TreeMethod.hist;
+            params._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
         }
 
         // setDistribution: no way to identify gaussian, poisson, laplace? using descriptive statistics?
-        xgBoostParameters._distribution = aml.getResponseColumn().isBinary() && !(aml.getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
+        params._distribution = aml.getResponseColumn().isBinary() && !(aml.getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
                 : aml.getResponseColumn().isCategorical() ? DistributionFamily.multinomial
                 : DistributionFamily.AUTO;
 
-        xgBoostParameters._score_tree_interval = 5;
-        xgBoostParameters._ntrees = 10000;
-//        xgBoostParameters._min_split_improvement = 0.01f;
+        params._score_tree_interval = 5;
+        params._ntrees = 10000;
+//        params._min_split_improvement = 0.01f;
 
-        return xgBoostParameters;
+        return params;
     }
 
     static abstract class XGBoostModelStep extends ModelingStep.ModelStep<XGBoostModel> {
@@ -103,57 +103,57 @@ public class XGBoostSteps extends ModelingSteps {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 1 (medium depth)
-                    XGBoostParameters xgBoostParameters = prepareModelParameters();
-                    xgBoostParameters._max_depth = 10;
-                    xgBoostParameters._min_rows = 5;
-                    xgBoostParameters._sample_rate = 0.6;
-                    xgBoostParameters._col_sample_rate = 0.8;
-                    xgBoostParameters._col_sample_rate_per_tree = 0.8;
+                    XGBoostParameters params = prepareModelParameters();
+                    params._max_depth = 10;
+                    params._min_rows = 5;
+                    params._sample_rate = 0.6;
+                    params._col_sample_rate = 0.8;
+                    params._col_sample_rate_per_tree = 0.8;
 
                     if (_emulateLightGBM) {
-                        xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-                        xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
+                        params._max_leaves = 1 << params._max_depth;
+                        params._max_depth = params._max_depth * 2;
                     }
 
-                    return trainModel(xgBoostParameters);
+                    return trainModel(params);
                 }
             },
             new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 2 (deep)
-                    XGBoostParameters xgBoostParameters = prepareModelParameters();
-                    xgBoostParameters._max_depth = 20;
-                    xgBoostParameters._min_rows = 10;
-                    xgBoostParameters._sample_rate = 0.6;
-                    xgBoostParameters._col_sample_rate = 0.8;
-                    xgBoostParameters._col_sample_rate_per_tree = 0.8;
+                    XGBoostParameters params = prepareModelParameters();
+                    params._max_depth = 20;
+                    params._min_rows = 10;
+                    params._sample_rate = 0.6;
+                    params._col_sample_rate = 0.8;
+                    params._col_sample_rate_per_tree = 0.8;
 
                     if (_emulateLightGBM) {
-                        xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-                        xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
+                        params._max_leaves = 1 << params._max_depth;
+                        params._max_depth = params._max_depth * 2;
                     }
 
-                    return trainModel(xgBoostParameters);
+                    return trainModel(params);
                 }
             },
             new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 3 (shallow)
-                    XGBoostParameters xgBoostParameters = prepareModelParameters();
-                    xgBoostParameters._max_depth = 5;
-                    xgBoostParameters._min_rows = 3;
-                    xgBoostParameters._sample_rate = 0.8;
-                    xgBoostParameters._col_sample_rate = 0.8;
-                    xgBoostParameters._col_sample_rate_per_tree = 0.8;
+                    XGBoostParameters params = prepareModelParameters();
+                    params._max_depth = 5;
+                    params._min_rows = 3;
+                    params._sample_rate = 0.8;
+                    params._col_sample_rate = 0.8;
+                    params._col_sample_rate_per_tree = 0.8;
 
                     if (_emulateLightGBM) {
-                        xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
-                        xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
+                        params._max_leaves = 1 << params._max_depth;
+                        params._max_depth = params._max_depth * 2;
                     }
 
-                    return trainModel(xgBoostParameters);
+                    return trainModel(params);
                 }
             },
     };
@@ -162,7 +162,7 @@ public class XGBoostSteps extends ModelingSteps {
             new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
                 @Override
                 protected Job<Grid> startJob() {
-                    XGBoostParameters xgBoostParameters = prepareModelParameters();
+                    XGBoostParameters params = prepareModelParameters();
                     Map<String, Object[]> searchParams = new HashMap<>();
 //                    searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators
 
@@ -191,7 +191,7 @@ public class XGBoostSteps extends ModelingSteps {
                     searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
                     searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
-                    return hyperparameterSearch(xgBoostParameters, searchParams);
+                    return hyperparameterSearch(params, searchParams);
                 }
             },
     };
@@ -206,13 +206,13 @@ public class XGBoostSteps extends ModelingSteps {
                     resultKey = result;
                     XGBoostModel bestXGB = getBestXGB();
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
-                    XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
-                    xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
-                    xgBoostParameters._max_runtime_secs = 0; // reset max runtime
-                    xgBoostParameters._learn_rate_annealing = 0.99;
-                    initTimeConstraints(xgBoostParameters, maxRuntimeSecs);
-                    setStoppingCriteria(xgBoostParameters, new XGBoostParameters());
-                    return asModelsJob(startModel(Key.make(result+"_model"), xgBoostParameters), result);
+                    XGBoostParameters params = (XGBoostParameters) bestXGB._parms.clone();
+                    params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    params._max_runtime_secs = 0; // reset max runtime
+                    params._learn_rate_annealing = 0.99;
+                    initTimeConstraints(params, maxRuntimeSecs);
+                    setStoppingCriteria(params, new XGBoostParameters());
+                    return asModelsJob(startModel(Key.make(result+"_model"), params), result);
                 }
 
                 @Override
@@ -239,18 +239,18 @@ public class XGBoostSteps extends ModelingSteps {
                     resultKey = result;
                     XGBoostModel bestXGB = getBestXGBs(1).get(0);
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Applying learning rate search on best XGBoost: "+bestXGB._key);
-                    XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
+                    XGBoostParameters params = (XGBoostParameters) bestXGB._parms.clone();
                     XGBoostParameters defaults = new XGBoostParameters();
-                    xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
-                    xgBoostParameters._max_runtime_secs = 0; // reset max runtime
-                    initTimeConstraints(xgBoostParameters, 0); // ensure we have a max runtime per model in the grid
-                    setStoppingCriteria(xgBoostParameters, defaults); // keep the same seed as the bestXGB
+                    params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    params._max_runtime_secs = 0; // reset max runtime
+                    initTimeConstraints(params, 0); // ensure we have a max runtime per model in the grid
+                    setStoppingCriteria(params, defaults); // keep the same seed as the bestXGB
                     // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
-                    xgBoostParameters._eta = defaults._eta;
-//                    xgBoostParameters._learn_rate = defaults._learn_rate;
+                    params._eta = defaults._eta;
+//                    params._learn_rate = defaults._learn_rate;
 
                     // keep stopping_rounds fixed, but increases score_tree_interval when lowering learn rate
-                    int sti = xgBoostParameters._score_tree_interval;
+                    int sti = params._score_tree_interval;
 
                     Object[][] hyperParams = new Object[][] {
                             new Object[] {"_learn_rate", "_score_tree_interval"},
@@ -260,10 +260,10 @@ public class XGBoostSteps extends ModelingSteps {
                             new Object[] {       0.05  ,                 4*sti },
                             new Object[] {       0.02  ,                 5*sti },
                             new Object[] {       0.01  ,                 6*sti },
-//                            new Object[] {       0.005 ,                 7*sti },
-//                            new Object[] {       0.002 ,                 8*sti },
-//                            new Object[] {       0.001 ,                 9*sti },
-//                            new Object[] {       0.0005,                10*sti },
+                            new Object[] {       0.005 ,                 7*sti },
+                            new Object[] {       0.002 ,                 8*sti },
+                            new Object[] {       0.001 ,                 9*sti },
+                            new Object[] {       0.0005,                10*sti },
                     };
 
 /*
@@ -287,14 +287,14 @@ public class XGBoostSteps extends ModelingSteps {
                     return asModelsJob(GridSearch.startGridSearch(
                             Key.make(result+"_grid"),
                             new SequentialWalker<>(
-                                    xgBoostParameters,
+                                    params,
                                     hyperParams,
                                     new GridSearch.SimpleParametersBuilderFactory<>(),
                                     new SequentialSearchCriteria(StoppingCriteria.create()
                                             .maxRuntimeSecs((int)maxRuntimeSecs)
-                                            .stoppingMetric(xgBoostParameters._stopping_metric)
+                                            .stoppingMetric(params._stopping_metric)
                                             .stoppingRounds(2) // enforcing this as we define the sequence and it is quite small.
-                                            .stoppingTolerance(xgBoostParameters._stopping_tolerance)
+                                            .stoppingTolerance(params._stopping_tolerance)
                                             .build())
                             ),
                             GridSearch.SEQUENTIAL_MODEL_BUILDING
