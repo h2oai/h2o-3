@@ -132,7 +132,7 @@ public class HyperSpaceSearchCriteria extends Iced {
      * <pre>1/Math.sqrt((1 - frame.naFraction()) * frame.numRows())</pre>
      */
     public static double default_stopping_tolerance_for_frame(Frame frame) {
-      return Math.min(0.05, Math.max(0.001, 1/Math.sqrt((1 - frame.naFraction()) * frame.numRows())));
+      return Math.min(0.01, Math.max(0.001, 1/Math.sqrt((1 - frame.naFraction()) * frame.numRows())));
     }
 
     public void set_default_stopping_tolerance_for_frame(Frame frame) {
