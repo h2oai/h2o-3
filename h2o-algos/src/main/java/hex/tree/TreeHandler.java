@@ -215,7 +215,7 @@ public class TreeHandler extends Handler {
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
                 treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false, treeprops._domainValues);
-        if (plainLanguageRules) fillLanguagePathRepresentation(treeprops);
+        if (plainLanguageRules) fillLanguagePathRepresentationOptimized(treeprops, sharedTreeSubgraph.rootNode);
 
         return treeprops;
     }
@@ -298,6 +298,102 @@ public class TreeHandler extends Handler {
                     int index = nodeIds.indexOf(listPathId);
                     properties._decisionPaths[index] = fillNodePath(listPathId, nodeIds, false, properties).toString();
                 });
+    }
+    
+    static String getCondition(SharedTreeNode node, String from) {
+        StringBuilder sb = new StringBuilder();
+        if (node.getDomainValues() != null) {
+            sb.append("If ( ");
+            sb.append(node.getColName());
+            sb.append(" is in [");
+            BitSet inclusiveLevels;
+            if (from.equals("R")) {
+                inclusiveLevels = node.getLeftChild().getInclusiveLevels();
+            } else {
+                inclusiveLevels = node.getRightChild().getInclusiveLevels();
+            }
+            String stringToParseInclusiveLevelsFrom = inclusiveLevels.toString();
+            int inclusiveLevelsLength = stringToParseInclusiveLevelsFrom.length();
+            if (inclusiveLevelsLength  > 2) {
+                stringToParseInclusiveLevelsFrom = stringToParseInclusiveLevelsFrom.substring(1, inclusiveLevelsLength - 1);
+                String[] inclusiveLevelsStr = stringToParseInclusiveLevelsFrom.split(",");
+                sb.append(Arrays.toString(inclusiveLevelsStr));
+            } else {
+                sb.append(" ");
+            }
+            sb.append("]) {");
+        } else {
+            if (Float.compare(node.getSplitValue(), Float.NaN) == 0) {
+                String sign;
+                if ("R".equals(from)) {
+                    sign = " is not ";
+                } else {
+                    sign = " is ";
+                }
+                sb.append("If ( ").append(node.getColName()).append(sign).append("NaN )");
+            } else {
+                String sign;
+                boolean useNan = false;
+                String nanString = " or " + node.getColName() + " is NaN";
+                if ("R".equals(from)) {
+                    sign = " < ";
+                    if (node.getLeftChild().isInclusiveNa()) {
+                        useNan = true;
+                    }
+                } else {
+                    sign = " >= ";
+                    if (node.getRightChild().isInclusiveNa()) {
+                        useNan = true;
+                    }
+                }
+                sb.append("If ( " ).append(node.getColName()).append(sign).append(node.getSplitValue());
+                if (useNan) {
+                    sb.append(nanString);
+                  
+                }
+                sb.append(" ) -> ");
+            }
+        }
+        return sb.toString();
+    }
+
+    private static List<PathResult> findPaths(SharedTreeNode node) {
+        if (node == null)
+            return new ArrayList<>();
+        
+        List<PathResult> result = new ArrayList<>();
+
+        List<PathResult> left_subtree = findPaths(node.getLeftChild());
+        List<PathResult> right_subtree = findPaths(node.getRightChild());
+
+        for (int i = 0; i < left_subtree.size(); i++){
+            PathResult left_result = left_subtree.get(i);
+            PathResult new_result = left_result;
+            new_result.path.insert(0, getCondition(node, "R"));
+            result.add(new_result);
+        }
+
+        for (int i = 0; i < right_subtree.size(); i++){
+            PathResult right_result = right_subtree.get(i);
+            PathResult new_result = right_result;
+            new_result.path.insert(0, getCondition(node, "L"));
+            result.add(new_result);
+        }
+
+        if (result.size() == 0) {
+            result.add(new PathResult(node.getNodeNumber()));
+            result.get(0).path.append("Prediction: ").append(node.getPredValue());
+        }
+
+        return result;
+    }
+
+    private static void fillLanguagePathRepresentationOptimized(TreeProperties properties, SharedTreeNode root) {
+        List<Integer> nodeIds = extractInternalIds(properties);
+        List<PathResult> paths = findPaths(root);
+        for (PathResult path : paths) {
+            properties._decisionPaths[nodeIds.indexOf(path.nodeId)] = path.path.toString();
+        }
     }
 
     private static StringBuilder fillNodePath(int nodeId, List<Integer> nodeIds, boolean valuePrinted, TreeProperties properties) {
@@ -547,5 +643,14 @@ public class TreeHandler extends Handler {
         private int[] _rightChildrenNormalized;
         private String[][] _domainValues;
 
+    }
+}
+class PathResult {
+    StringBuilder path;
+    int nodeId;
+
+    PathResult(int nodeId) {
+        path = new StringBuilder();
+        this.nodeId = nodeId;
     }
 }
