@@ -23,7 +23,7 @@ class H2OErrorV3(H2OSchema):
         self.payload = None
 
     def __setitem__(self, key, value):
-        if key in self._schema_attrs_:
+        if key in self._schema_attrs_.keys():
             if key.endswith("msg"):
                 value = value.replace("ERROR MESSAGE:", "").strip()
             self._props[key] = value

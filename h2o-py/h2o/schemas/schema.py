@@ -20,23 +20,27 @@ def define_classes_from_schema(classes, connection):
 class H2OSchema(object):
 
     _ignored_schema_keys_ = {"__meta", "_exclude_fields", "__schema"}
-    _schema_attrs_ = []
+    _schema_attrs_ = {}
     _default_attrs_values_ = {}
     _schema_endpoint_ = None
 
     @classmethod
     def define_from_schema(cls, connection):
         meta = connection.request("GET %s" % cls._schema_endpoint_)
-        for attr in cls._schema_attrs_:
-            if attr in vars(cls):  # to not delete attributes defined in parent classes
+        cls_vars = vars(cls).keys()
+        for attr, dyn in cls._schema_attrs_.items():
+            if dyn and attr in cls_vars:  # to not delete attributes that were not dynamically added in the current class
                 delattr(cls, attr)
-        cls._schema_attrs_ = []
+        cls._schema_attrs_ = {}
 
         for f in meta.fields:
             name = f.name
-            if not hasattr(cls, name):
-                cls._schema_attrs_.append(name)
-                setattr(cls, name, property(partial(cls.__getitem__, name=name), doc=f.help))
+            if name not in cls._ignored_schema_keys_:
+                if hasattr(cls, name):
+                    cls._schema_attrs_[name] = False 
+                else:
+                    cls._schema_attrs_[name] = True
+                    setattr(cls, name, property(partial(cls.__getitem__, name=name), doc=f.help))
 
     @classmethod
     def instantiate_from_json(cls, json_kv_pairs):
@@ -53,7 +57,7 @@ class H2OSchema(object):
         return self._props.get(name, self._default_attrs_values_.get(name))
 
     def __setitem__(self, key, value):
-        if key in self._schema_attrs_:
+        if key in self._schema_attrs_.keys():
             self._props[key] = value
 
     def __getattr__(self, item):
