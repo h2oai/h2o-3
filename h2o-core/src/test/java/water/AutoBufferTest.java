@@ -136,8 +136,8 @@ public class AutoBufferTest extends TestUtil {
     byte[] bytes = ArrayUtils.append(
             new byte[]{
                     0, // marker
-                    (byte) (typeId + 1),           // +1 because of compressed integer coding, see AutoBuffer#put1
-                    (byte) (payload.length() + 1)  // ditto
+                    (byte) (typeId + 1),         // +1 because of compressed integer coding, see AutoBuffer#put1
+                    (byte) (payload.length + 1)  // ditto
             },
             payload
     );
