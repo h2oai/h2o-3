@@ -81,12 +81,13 @@ def decision_tree_language_rules_printing():
     print(tree.tree_decision_path)
     
     assert read_fixture("pyunit_4007_language_tree_representation_numerical_categorical_case.txt") == tree.tree_decision_path
-
-    print(" -- Language path representation - node ", tree.predictions.index(tree.predictions[393]), " (with pv = ", tree.predictions[393], "): -- ")
-    assert tree.decision_paths[tree.predictions.index(tree.predictions[393])] is not None
-    print(tree.decision_paths[tree.predictions.index(tree.predictions[393])])
     
-    assert read_fixture("pyunit_4007_language_path_representation_numerical_categorical_case.txt") == tree.decision_paths[tree.predictions.index(tree.predictions[393])]
+    # calculating only paths from root to leaf (not from root to 'not leaf')
+    print(" -- Language path representation - node ", tree.predictions.index(tree.predictions[207]), " (with pv = ", tree.predictions[207], "): -- ")
+    assert tree.decision_paths[tree.predictions.index(tree.predictions[207])] is not None
+    print(tree.decision_paths[tree.predictions.index(tree.predictions[207])])
+    
+    assert read_fixture("pyunit_4007_language_path_representation_numerical_categorical_case.txt") == tree.decision_paths[tree.predictions.index(tree.predictions[207])]
 
 
 def read_fixture(path):
