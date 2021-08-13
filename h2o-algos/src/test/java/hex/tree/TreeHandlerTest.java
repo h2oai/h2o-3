@@ -466,36 +466,4 @@ public class TreeHandlerTest extends TestUtil {
 
         return naSplits;
     }
-
-    @Test
-    public void testEmptyInheritedCategoricalLevels() {
-        try {
-            Scope.enter();
-            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
-            Scope.track_generic(trainingFrame);
-            IsolationForestModel.IsolationForestParameters parms = new IsolationForestModel.IsolationForestParameters();
-            parms._train = trainingFrame._key;
-            parms._distribution = AUTO;
-            parms._response_column = "IsDepDelayed";
-            parms._ntrees = 10;
-            parms._max_depth = 10;
-            parms._seed = 0XFEED;
-
-            IsolationForest job = new IsolationForest(parms);
-            IsolationForestModel model = job.trainModel().get();
-            Scope.track_generic(model);
-
-            final TreeHandler treeHandler = new TreeHandler();
-            final TreeV3 arguments = new TreeV3();
-            arguments.model = new KeyV3.ModelKeyV3(model._key);
-            for (int i = 0; i < parms._ntrees; i++) {
-                arguments.tree_number = i;
-                final TreeV3 tree = treeHandler.getTree(3, arguments);
-                assertNotNull(tree);
-            }
-        } finally {
-            Scope.exit();
-        }
-    }
-
 }
