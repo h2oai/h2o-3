@@ -17,11 +17,15 @@ configurations {
     compile.exclude module: 'servlet-api'
     compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
     compile.exclude group: 'org.openjdk.jmh'
+    compile.exclude group: 'log4j'
 }
 
 // Dependencies
 dependencies {
-    compile project(":h2o-app")
+    compile(project(":h2o-app")) {
+        exclude module: ":h2o-logging-logback"
+    }
+    compile project(":h2o-logging-logback-log4j2")
     runtime project(":${defaultWebserverModule}")
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")
@@ -36,7 +40,6 @@ dependencies {
     }
     compile project(":h2o-parquet-parser")
     compile project(":h2o-k8s")
-    compile "org.slf4j:slf4j-log4j12:1.7.10"
 }
 
 jar {
@@ -80,9 +83,6 @@ shadowJar {
   exclude 'test.properties'
   exclude 'cockpitlite.properties'
   exclude 'devpay_products.properties'
-  exclude 'org/apache/log4j/net/*'
-  exclude 'org/apache/log4j/jdbc/*'
-  exclude 'org/apache/log4j/nt/*'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
   }
@@ -90,6 +90,7 @@ shadowJar {
     file = file("${buildDir}/reports/license/dependency-license.xml")
     resource = "META-INF/license/h2o-depenencies-licenses.xml"
   }
+  transform(com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer)
 }
 
 artifacts {

@@ -46,6 +46,7 @@ include 'h2o-k8s'
 include 'h2o-genmodel-ext-deepwater'
 include 'h2o-clustering'
 include 'h2o-logging-logback'
+include 'h2o-logging-logback-log4j2'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
