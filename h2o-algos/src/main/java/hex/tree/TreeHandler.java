@@ -303,7 +303,7 @@ public class TreeHandler extends Handler {
     static String getCondition(SharedTreeNode node, String from) {
         StringBuilder sb = new StringBuilder();
         if (node.getDomainValues() != null) {
-            sb.append("If ( ");
+            sb.append("If (");
             sb.append(node.getColName());
             sb.append(" is in [");
             BitSet inclusiveLevels;
@@ -314,14 +314,16 @@ public class TreeHandler extends Handler {
             }
             String stringToParseInclusiveLevelsFrom = inclusiveLevels.toString();
             int inclusiveLevelsLength = stringToParseInclusiveLevelsFrom.length();
-            if (inclusiveLevelsLength  > 2) {
+            if (inclusiveLevels != null) {
                 stringToParseInclusiveLevelsFrom = stringToParseInclusiveLevelsFrom.substring(1, inclusiveLevelsLength - 1);
                 String[] inclusiveLevelsStr = stringToParseInclusiveLevelsFrom.split(",");
-                sb.append(Arrays.toString(inclusiveLevelsStr));
+                for (String level : inclusiveLevelsStr) {
+                    sb.append(node.getDomainValues()[Integer.parseInt(level.replaceAll("\\s", ""))]).append(" ");
+                }
             } else {
                 sb.append(" ");
             }
-            sb.append("]) {");
+            sb.append("]) -> ");
         } else {
             if (Float.compare(node.getSplitValue(), Float.NaN) == 0) {
                 String sign;
