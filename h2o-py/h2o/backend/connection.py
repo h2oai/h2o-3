@@ -817,7 +817,7 @@ class H2OConnection(h2o_meta()):
         # Server errors (notably 500 = "Server Error")
         # Note that it is possible to receive valid H2OErrorV3 object in this case, however it merely means the server
         # did not provide the correct status code.
-        raise H2OServerError("HTTP %d %s:\n%r" % (status_code, response.reason, data))
+        raise H2OServerError("HTTP %d %s:\n%s" % (status_code, response.reason, data))
 
     @staticmethod
     def _find_file_name(response):
