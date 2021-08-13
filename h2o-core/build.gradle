@@ -8,7 +8,8 @@ description = "H2O Core"
 dependencies {
   // Dependency on shared model support
   compile project(":h2o-logger")
-  compile project (':h2o-genmodel')
+  compile project(':h2o-logging-logback')
+  compile project(':h2o-genmodel')
   compile project(":h2o-webserver-iface")
   // Required for h2o-core
   compile "joda-time:joda-time:2.9.9"
@@ -19,14 +20,6 @@ dependencies {
   compileOnly "javax.servlet:javax.servlet-api:3.1.0"
   compile("com.github.wendykierp:JTransforms:3.1") { exclude module: "junit" }
   compile project(":h2o-jaas-pam")
-
-  compile("log4j:log4j:1.2.17") {
-    exclude module: "activation" 
-    exclude module: "jms" 
-    exclude module: "jmxri" 
-    exclude module: "jmxtools" 
-    exclude module: "mail" 
-  }
 
   compile "com.google.code.gson:gson:2.6.2"
   compile 'commons-lang:commons-lang:2.6'
