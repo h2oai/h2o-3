@@ -259,7 +259,7 @@ class H2OConnection(h2o_meta()):
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, name=None, https=None, auth=None,
              verify_ssl_certificates=True, cacert=None,
-             proxy=None, cookies=None, verbose=True, _msgs=None):
+             proxy=None, cookies=None, verbose=True, context_path=None, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -272,7 +272,7 @@ class H2OConnection(h2o_meta()):
 
             * pass a ``server`` option,
             * pass the full ``url`` for the connection,
-            * provide a triple of parameters ``ip``, ``port``, ``https``.
+            * provide a quadruplet of parameters ``ip``, ``port``, ``https``, ``context_path``.
 
         :param H2OLocalServer server: connect to the specified local server instance. There is a slight difference
             between connecting to a local server by specifying its ip and address, and connecting through
@@ -297,6 +297,7 @@ class H2OConnection(h2o_meta()):
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
         :param cookies: Cookie (or list of) to add to requests
         :param verbose: if True, then connection progress info will be printed to the stdout.
+        :param context_path: The last part of connection URL: http://<ip>:<port>/<context_path>
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
             failure message).
 
@@ -308,17 +309,22 @@ class H2OConnection(h2o_meta()):
         if server is not None:
             assert_is_type(server, H2OLocalServer)
             assert_is_type(ip, None, "`ip` should be None when `server` parameter is supplied")
+            assert_is_type(port, None, "`port` should be None when `server` parameter is supplied")
             assert_is_type(url, None, "`url` should be None when `server` parameter is supplied")
             assert_is_type(name, None, "`name` should be None when `server` parameter is supplied")
+            assert_is_type(context_path, None, "`context_path` should be None when `server` parameter is supplied")
+            
             if not server.is_running():
                 raise H2OConnectionError("Unable to connect to server because it is not running")
             ip = server.ip
             port = server.port
             scheme = server.scheme
-            context_path = ''
+            context_path = server.context_path
         elif url is not None:
             assert_is_type(url, str)
             assert_is_type(ip, None, "`ip` should be None when `url` parameter is supplied")
+            assert_is_type(port, None, "`port` should be None when `url` parameter is supplied")
+            assert_is_type(context_path, None, "`context_path` should be an empty string when `url` parameter is supplied")
             assert_is_type(name, str, None)
             # We don't allow any Unicode characters in the URL. Maybe some day we will...
             match = assert_matches(url, H2OConnection.url_pattern)
@@ -331,14 +337,16 @@ class H2OConnection(h2o_meta()):
             if port is None: port = 54321
             if https is None: https = False
             if is_type(port, str) and port.isdigit(): port = int(port)
+            if context_path is None: context_path = ''
+            if context_path: context_path = context_path.strip('/')
             assert_is_type(ip, str)
             assert_is_type(port, int)
+            assert_is_type(context_path, str)
             assert_is_type(name, str, None)
             assert_is_type(https, bool)
             assert_matches(ip, r"(?:[\w-]+\.)*[\w-]+")
             assert_satisfies(port, 1 <= port <= 65535)
             scheme = "https" if https else "http"
-            context_path = ''
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert_is_type(verify_ssl_certificates, bool)
@@ -351,7 +359,10 @@ class H2OConnection(h2o_meta()):
         conn = H2OConnection()
         conn._verbose = bool(verbose)
         conn._local_server = server
-        conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
+        if context_path:
+            conn._base_url = "%s://%s:%d/%s" % (scheme, ip, port, context_path)
+        else:
+            conn._base_url = "%s://%s:%d" % (scheme, ip, port)
         conn._name = server.name if server else name
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._cacert = cacert
@@ -611,7 +622,7 @@ class H2OConnection(h2o_meta()):
         globals()["__H2OCONN__"] = self  # for backward-compatibility: __H2OCONN__ is the latest instantiated object
         self._stage = 0             # 0 = not connected, 1 = connected, -1 = disconnected
         self._session_id = None     # Rapids session id; issued upon request only
-        self._base_url = None       # "{scheme}://{ip}:{port}"
+        self._base_url = None       # "{scheme}://{ip}:{port}/{context_path}"
         self._name = None
         self._verify_ssl_cert = None
         self._cacert = None
