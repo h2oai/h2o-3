@@ -97,7 +97,8 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
           " Negative weights are not allowed. Note: Weights are per-row observation weights and do not increase the" +
           " size of the data frame. This is typically the number of times a row is repeated, but non-integer values are" +
           " supported as well. During training, rows with higher weights matter more, due to the larger loss function" +
-          " pre-factor.")
+          " pre-factor. If you set weight = 0 for a row, the returned prediction frame at that row is zero and this" +
+          " is incorrect. To get an accurate prediction, remove all rows with weight == 0.")
   public FrameV3.ColSpecifierV3 weights_column;
 
   @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
