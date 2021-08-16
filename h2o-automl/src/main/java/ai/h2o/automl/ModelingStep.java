@@ -432,7 +432,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCommonModelBuilderParams(baseParms);
             // grid seed is provided later through the searchCriteria
             setStoppingCriteria(baseParms, defaults);
-            baseParms._stopping_rounds *= GRID_STOPPING_ROUND_FACTOR;
             setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
@@ -456,6 +455,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             searchCriteria.set_max_models(searchCriteria.max_models() == 0
                     ? maxAssignedModels
                     : Math.min(searchCriteria.max_models(), maxAssignedModels));
+            
+            searchCriteria.set_stopping_rounds(baseParms._stopping_rounds * GRID_STOPPING_ROUND_FACTOR);
 
             if (null == key) key = makeKey(_algo.name(), true);
             aml().trackKey(key);
