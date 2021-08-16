@@ -83,6 +83,12 @@ Some examples of response distributions are provided below.
 Equations
 ~~~~~~~~~
 
+Where:
+
+- :math:`y` is a true response
+- :math:`f` is a predicted response
+- :math:`w` is weight
+
 +-------------------+-------------------------------------------------------------------------------------------+
 | Distribution Type | Equation                                                                                  |
 +===================+===========================================================================================+
@@ -118,11 +124,42 @@ Equations
 |                   | - :math:`yf>1` : :math:`0`                                                                |
 |                   | - else: :math:`w*(yf)^2`                                                                  |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{_tweediePower}<2`:                 |
+| Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
 |                   | :math:`2w*y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})*(2-\text{Tweedie_Power})) |
 |                   | -y*\text{exp}(f*(1-\text{Tweedie_Power}))/(1-\text{Tweedie_Power})                        |
 |                   | +\text{exp}(f*(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})}`                        |
 +-------------------+-------------------------------------------------------------------------------------------+
+
++-------------------+---------------------------------------------------------------------------+
+| Link/Inverse Link | Equation                                                                  |
+| Functions         |                                                                           |
++===================+===========================================================================+
+| Identity: Gaussian| - :math:`link(f)=f`                                                       |
+| Huber, Laplace,   | - :math:`linkInversion(f)=f`                                              |
+| Quantile          |                                                                           |
++-------------------+---------------------------------------------------------------------------+
+| Log: Multinomial, | - :math:`link(f)=log(f)`                                                  |
+| Poisson, Gamma,   | - :math:`linkInversion(f)=exp(f)`                                         |
+| Tweedie           |                                                                           |
++-------------------+---------------------------------------------------------------------------+
+| Logit: Bernoulli, | - :math:`link(f)=(f/(f-1))`                                               |
+| Quasibinomial,    | - :math:`linkInversion(f)=1/(1+exp(-f))`                                  |
+| Modified_Huber    |                                                                           |
++-------------------+---------------------------------------------------------------------------+
+| Inversion         | - :math:`link(f) = 1/f (where f = f < 0 ? min(-1e-5, f) : max(-1e-5, f))` |
+|                   | - :math:`linkInversion(f)=link(f)`                                        |
++-------------------+---------------------------------------------------------------------------+
+| Ologit            | - :math:`link(f)=log(f/(1-f))`                                            |
+|                   | - :math:`linkInversion(f)=1/(1+exp(-f))`                                  |
++-------------------+---------------------------------------------------------------------------+
+| Ologlog           | - :math:`link(f)=log(-1*log(1-f))`                                        |
+|                   | - :math:`linkInversion(f)=1-exp(-1*exp(f))`                               |
++-------------------+---------------------------------------------------------------------------+
+| Oprobit           | - :math:`link(f)=normalDistribution.inverseCumulativeProbability(f)`      |
+|                   | - :math:`linkInversion(f)=normalDistribution.cumulativeProbability(f)`    |
++-------------------+---------------------------------------------------------------------------+
+
+**Note**: Inversion, Ologit, Ologlog, and Oprobit are not associated with concrete distributions but can be used with a custom distribution.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
