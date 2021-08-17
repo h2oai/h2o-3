@@ -359,21 +359,21 @@ public class TreeHandler extends Handler {
         
         List<PathResult> result = new ArrayList<>();
 
-        List<PathResult> left_subtree = findPaths(node.getLeftChild());
-        List<PathResult> right_subtree = findPaths(node.getRightChild());
+        List<PathResult> leftSubtree = findPaths(node.getLeftChild());
+        List<PathResult> rightSubtree = findPaths(node.getRightChild());
 
-        for (int i = 0; i < left_subtree.size(); i++){
-            PathResult left_result = left_subtree.get(i);
-            PathResult new_result = left_result;
-            new_result.path.insert(0, getCondition(node, "R"));
-            result.add(new_result);
+        for (int i = 0; i < leftSubtree.size(); i++){
+            PathResult leftResult = leftSubtree.get(i);
+            PathResult newResult = leftResult;
+            newResult.path.insert(0, getCondition(node, "R"));
+            result.add(newResult);
         }
 
-        for (int i = 0; i < right_subtree.size(); i++){
-            PathResult right_result = right_subtree.get(i);
-            PathResult new_result = right_result;
-            new_result.path.insert(0, getCondition(node, "L"));
-            result.add(new_result);
+        for (int i = 0; i < rightSubtree.size(); i++){
+            PathResult rightResult = rightSubtree.get(i);
+            PathResult newResult = rightResult;
+            newResult.path.insert(0, getCondition(node, "L"));
+            result.add(newResult);
         }
 
         if (result.size() == 0) {
