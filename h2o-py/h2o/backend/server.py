@@ -30,7 +30,6 @@ from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, I, 
 __all__ = ("H2OLocalServer", )
 
 
-
 class H2OLocalServer(object):
     """
     Handle to an H2O server launched locally.
@@ -56,7 +55,7 @@ class H2OLocalServer(object):
             # do something with the server -- probably connect to it
     """
 
-    ## (Avkash) Changing the maximum time to wait as 60 seconds to match with the same time in to R API. ##
+    # (Avkash) Changing the maximum time to wait as 60 seconds to match with the same time in to R API. ##
     _TIME_TO_START = 60  # Maximum time we wait for the server to start up (in seconds)
     _TIME_TO_KILL = 3    # Maximum time we wait for the server to shut down until we kill it (in seconds)
 
@@ -145,11 +144,9 @@ class H2OLocalServer(object):
         atexit.register(lambda: hs.shutdown())
         return hs
 
-
     def is_running(self):
         """Return True if the server process is still running, False otherwise."""
         return self._process is not None and self._process.poll() is None
-
 
     def shutdown(self):
         """
@@ -173,7 +170,6 @@ class H2OLocalServer(object):
             pass
         self._process = None
 
-
     @property
     def scheme(self):
         """Connection scheme, 'http' or 'https'."""
@@ -194,9 +190,9 @@ class H2OLocalServer(object):
         """H2O cluster name."""
         return self._name
 
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Private
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self):
         """[Internal] please use H2OLocalServer.start() to launch a new server."""
@@ -212,7 +208,6 @@ class H2OLocalServer(object):
         self._stdout = None
         self._stderr = None
         self._tempdir = None
-
 
     def _find_jar(self, path0=None):
         """
@@ -240,7 +235,8 @@ class H2OLocalServer(object):
         own_jar = os.getenv("H2O_JAR_PATH", "")
         if own_jar != "":
             if not os.path.isfile(own_jar):
-                raise H2OStartupError("Environment variable H2O_JAR_PATH is set to '%d' but file does not exists, unset environment variable or provide valid path to h2o.jar file." % own_jar)
+                raise H2OStartupError("Environment variable H2O_JAR_PATH is set to '%d' but file does not exists, "
+                                      "unset environment variable or provide valid path to h2o.jar file." % own_jar)
             yield own_jar
 
         # Check if running from an h2o-3 src folder (or any subfolder), in which case use the freshly-built h2o.jar
@@ -267,8 +263,8 @@ class H2OLocalServer(object):
         yield os.path.join(get_config_var("userbase"), "h2o_jar", "h2o.jar")
         yield os.path.join(prefix2, "h2o_jar", "h2o.jar")
 
-
-    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, log_dir=None, log_level=None, max_log_file_size=None):
+    def _launch_server(self, port, baseport, mmax, mmin, ea, nthreads, jvm_custom_args, bind_to_localhost, 
+                       log_dir=None, log_level=None, max_log_file_size=None):
         """Actually start the h2o.jar executable (helper method for `.start()`)."""
         self._ip = "127.0.0.1"
 
@@ -407,7 +403,9 @@ class H2OLocalServer(object):
         if h2o_java:
             full_path = os.path.join(h2o_java, "bin", java)
             if not os.path.exists(full_path):
-                raise H2OStartupError("Environment variable H2O_JAVA_HOME is set to '%d' but this location doesn't appear to be a valid Java Home directory, unset environment variable or provide valid path to Java Home." % h2o_java)
+                raise H2OStartupError("Environment variable H2O_JAVA_HOME is set to '%d' "
+                                      "but this location doesn't appear to be a valid Java Home directory, "
+                                      "unset environment variable or provide valid path to Java Home." % h2o_java)
             return full_path
 
         # is java callable directly (doesn't work on windows it seems)?
@@ -441,7 +439,6 @@ class H2OLocalServer(object):
         raise H2OStartupError("Cannot find Java. Please install the latest JRE from\n"
                               "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 
-
     def _tmp_file(self, kind):
         """
         Generate names for temporary files (helper method for `._launch_server()`).
@@ -465,7 +462,6 @@ class H2OLocalServer(object):
                 self._tempdir = tempfile.mkdtemp()
             return os.path.join(self._tempdir, "h2o_%s_started_from_python.%s" % (usr, kind[3:]))
 
-
     def _get_server_info_from_logs(self):
         """
         Check server's output log, and determine its scheme / IP / port (helper method for `._launch_server()`).
@@ -487,7 +483,6 @@ class H2OLocalServer(object):
                         "Unexpected URL: %s" % url
                     return parts[0], parts[1][2:], int(parts[2])
         return None
-
 
     def __enter__(self):
         return self

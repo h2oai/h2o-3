@@ -19,21 +19,10 @@ from .backend import H2OLocalServer
 from .base import Keyed
 from .estimators import create_estimator
 from .estimators.generic import H2OGenericEstimator
-from .exceptions import H2OConnectionError, H2OValueError, H2OError, H2ODeprecationWarning
+from .exceptions import H2OError, H2ODeprecationWarning
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
-from .estimators.glrm import H2OGeneralizedLowRankEstimator
-from .estimators.kmeans import H2OKMeansEstimator
-from .estimators.naive_bayes import H2ONaiveBayesEstimator
-from .estimators.pca import H2OPrincipalComponentAnalysisEstimator
-from .estimators.random_forest import H2ORandomForestEstimator
-from .estimators.stackedensemble import H2OStackedEnsembleEstimator
-from .estimators.word2vec import H2OWord2vecEstimator
-from .estimators.isolation_forest import H2OIsolationForestEstimator
-from .transforms.decomposition import H2OSVD
 from .estimators.xgboost import H2OXGBoostEstimator
-from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
-from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
 from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
@@ -56,7 +45,7 @@ h2oconn = None  # type: H2OConnection
 
 def connect(server=None, url=None, ip=None, port=None,
             https=None, verify_ssl_certificates=None, cacert=None,
-            auth=None, proxy=None, cookies=None, verbose=True, config=None):
+            auth=None, proxy=None, cookies=None, verbose=True, config=None, strict_version_check=False):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -75,7 +64,8 @@ def connect(server=None, url=None, ip=None, port=None,
     :param proxy: Proxy server address.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
-    :param connection_conf: Connection configuration object encapsulating connection parameters.
+    :param config: Connection configuration object encapsulating connection parameters.
+    :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -90,16 +80,17 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
+    svc = _strict_version_check(strict_version_check, config=config)
     if config:
         if "connect_params" in config:
-            h2oconn = _connect_with_conf(config["connect_params"])
+            h2oconn = _connect_with_conf(config["connect_params"], strict_version_check=svc)
         else:
-            h2oconn = _connect_with_conf(config)
+            h2oconn = _connect_with_conf(config, strict_version_check=svc)
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      proxy=proxy, cookies=cookies,
-                                     verbose=verbose)
+                                     verbose=verbose, strict_version_check=svc)
         if verbose:
             h2oconn.cluster.show_status()
     return h2oconn
@@ -122,7 +113,6 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
     return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
 
 
-
 def connection():
     """Return the current :class:`H2OConnection` handler.
 
@@ -132,40 +122,6 @@ def connection():
     >>> temp
     """
     return h2oconn
-
-
-def version_check():
-    """Used to verify that h2o-python module and the H2O server are compatible with each other."""
-    from .__init__ import __version__ as ver_pkg
-    ci = h2oconn.cluster
-    if not ci:
-        raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
-    ver_h2o = ci.version
-    if ver_pkg == "SUBST_PROJECT_VERSION": ver_pkg = "UNKNOWN"
-    if str(ver_h2o) != str(ver_pkg):
-        branch_name_h2o = ci.branch_name
-        build_number_h2o = ci.build_number
-        if build_number_h2o is None or build_number_h2o == "unknown":
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "Upgrade H2O and h2o-Python to latest stable version - "
-                "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
-                "".format(ver_h2o, ver_pkg))
-        elif build_number_h2o == "99999":
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "This is a developer build, please contact your developer."
-                "".format(ver_h2o, ver_pkg))
-        else:
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "Install the matching h2o-Python version from - "
-                "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
-                "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
-    # Check age of the install
-    if ci.build_too_old:
-        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
-              "version from http://h2o.ai/download/".format(ci.build_age))
 
 
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
@@ -264,7 +220,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
-    check_version = True
+    svc = _strict_version_check(strict_version_check)
     verify_ssl_certificates = not insecure
 
     # Apply the config file if ignore_config=False
@@ -278,13 +234,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
             cookies = config["init.cookies"].split(";")
         if auth is None and "init.username" in config and "init.password" in config:
             auth = (config["init.username"], config["init.password"])
-        if strict_version_check is None:
-            if "init.check_version" in config:
-                check_version = config["init.check_version"].lower() != "false"
-            elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
-                check_version = False
-        else:
-            check_version = strict_version_check
+        svc = _strict_version_check(strict_version_check, config=config)
         # Note: `verify_ssl_certificates` is never None at this point => use `insecure` to check for None/default input)
         if insecure is None and "init.verify_ssl_certificates" in config:
             verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
@@ -299,9 +249,10 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True,
-                                     _msgs=("Checking whether there is an H2O instance running at {url} ",
-                                            "connected.", "not found."))
+                                     auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     msgs=("Checking whether there is an H2O instance running at {url} ",
+                                           "connected.", "not found."),
+                                     strict_version_check=svc)
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
         if port and not str(port).endswith("+") and not kwargs.get("as_port", False):
@@ -319,9 +270,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
-                                     cacert=cacert, auth=auth, proxy=proxy,cookies=cookies, verbose=True)
-    if check_version:
-        version_check()
+                                     cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     strict_version_check=svc)
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
 
@@ -848,14 +798,14 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         j["destination_frame"] = destination_frame
 
     parse_column_len = len(j["column_types"]) if skipped_columns is None else (len(j["column_types"])-len(skipped_columns))
-    tempColumnNames = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
-    useType = [True]*len(tempColumnNames)
+    temp_column_names = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
+    use_type = [True]*len(temp_column_names)
     if skipped_columns is not None:
-        useType = [True]*len(tempColumnNames)
+        use_type = [True]*len(temp_column_names)
 
-        for ind in range(len(tempColumnNames)):
+        for ind in range(len(temp_column_names)):
             if ind in skipped_columns:
-                useType[ind]=False
+                use_type[ind]=False
 
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
@@ -870,12 +820,12 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
                 % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
         counter = 0
-        for ind in range(len(tempColumnNames)):
-            if useType[ind]:
-                tempColumnNames[ind]=column_names[counter]
-                counter=counter+1
+        for ind in range(len(temp_column_names)):
+            if use_type[ind]:
+                temp_column_names[ind]=column_names[counter]
+                counter = counter+1
 
-    if (column_types is not None): # keep the column types to include all columns
+    if column_types is not None: # keep the column types to include all columns
         if isinstance(column_types, dict):
             # overwrite dictionary to ordered list of column types. if user didn't specify column type for all names,
             # use type provided by backend
@@ -886,7 +836,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             idx = 0
             column_types_list = []
 
-            for name in tempColumnNames: # column_names may have already been changed
+            for name in temp_column_names: # column_names may have already been changed
                 if name in column_types:
                     column_types_list.append(column_types[name])
                 else:
@@ -902,7 +852,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             column_types_list = j["column_types"]
             counter = 0
             for ind in range(len(j["column_types"])):
-                if useType[ind] and (column_types[counter]!=None):
+                if use_type[ind] and column_types[counter] is not None:
                     column_types_list[ind]=column_types[counter]
                     counter=counter+1
 
@@ -938,7 +888,6 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             for colidx in skipped_columns:
                 if (colidx < 0): raise ValueError("skipped column index cannot be negative")
                 j["skipped_columns"].append(colidx)
-
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
@@ -1546,6 +1495,7 @@ def upload_model(path):
     res = api("POST /99/Models.upload.bin/%s" % "", data={"dir": frame_key})
     return get_model(res["models"][0]["model_id"]["name"])
 
+
 def load_model(path):
     """
     Load a saved H2O model from disk. (Note that ensemble binary models can now be loaded using this method.)
@@ -1658,7 +1608,6 @@ def cluster():
     >>> h2o.cluster()
     """
     return h2oconn.cluster if h2oconn else None
-
 
 
 def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
@@ -2272,7 +2221,7 @@ def import_mojo(mojo_path):
     >>> original_model_filename = model.download_mojo(original_model_filename)
     >>> mojo_model = h2o.import_mojo(original_model_filename)
     """
-    if mojo_path == None:
+    if mojo_path is None:
         raise TypeError("MOJO path may not be None")
     mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
     print(mojo_estimator)
@@ -2366,7 +2315,8 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     else:
         raise H2OError("Unable to print MOJO: %s" % output)
 
-def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols = 0, time_cols = 0, uuid_cols = 0):
+
+def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, time_cols=0, uuid_cols=0):
     """
     Computes an estimate for cluster memory usage in GB.
     
@@ -2394,38 +2344,38 @@ def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols =
     >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
     >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
     
-    """    
+    """
     import math
-    
-    if (ncols < 0):
+
+    if ncols < 0:
         raise ValueError("ncols can't be a negative number")
-    
-    if (nrows < 0):
+
+    if nrows < 0:
         raise ValueError("nrows can't be a negative number")
-    
-    if (num_cols < 0):
+
+    if num_cols < 0:
         raise ValueError("num_cols can't be a negative number")
-    
-    if (string_cols < 0):
+
+    if string_cols < 0:
         raise ValueError("string_cols can't be a negative number")
-    
-    if (cat_cols < 0):
+
+    if cat_cols < 0:
         raise ValueError("cat_cols can't be a negative number")
-    
-    if (time_cols < 0):
+
+    if time_cols < 0:
         raise ValueError("time_cols can't be a negative number")
-    
-    if (uuid_cols < 0):
+
+    if uuid_cols < 0:
         raise ValueError("uuid_cols can't be a negative number")
-    
-    BASE_MEM_REQUIREMENT_MB = 32
-    SAFETY_FACTOR = 4
-    BYTES_IN_MB = 1024 * 1024
-    BYTES_IN_GB = 1024 * BYTES_IN_MB
+
+    base_mem_requirement_mb = 32
+    safety_factor = 4
+    bytes_in_mb = 1024 * 1024
+    bytes_in_gb = 1024 * bytes_in_mb
 
     known_cols = num_cols + string_cols + uuid_cols + cat_cols + time_cols
-    
-    if (known_cols > ncols):
+
+    if known_cols > ncols:
         raise ValueError("There can not be more specific columns then columns in total")
 
     unknown_cols = ncols - known_cols
@@ -2442,28 +2392,40 @@ def estimate_cluster_mem(ncols, nrows, num_cols = 0, string_cols = 0, cat_cols =
     time_size = 8
     time_requirement = time_size * time_cols * nrows
     data_requirement = unknown_requirement + num_requirement + string_requirement + uuid_requirement + cat_requirement + time_requirement
-    mem_req = (BASE_MEM_REQUIREMENT_MB * BYTES_IN_MB + data_requirement) * SAFETY_FACTOR / BYTES_IN_GB
+    mem_req = (base_mem_requirement_mb * bytes_in_mb + data_requirement) * safety_factor / bytes_in_gb
     return math.ceil(mem_req)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
 # Private
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def _check_connection():
-    if not h2oconn or not h2oconn.cluster:
-        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
+    if not cluster():
+        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.init()` or `h2o.connect()`?")
+    
+    
+def _strict_version_check(force_version_check=None, config=None):
+    if force_version_check is None:
+        if config is not None and "init.check_version" in config:
+            return config["init.check_version"].lower() != "false"
+        else:
+            return os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK", "false").lower() == "false"
+    return force_version_check
 
-def _connect_with_conf(conn_conf):
+
+def _connect_with_conf(conn_conf, **kwargs):
     conf = conn_conf
     if isinstance(conn_conf, dict):
         conf = H2OConnectionConf(config=conn_conf)
     assert_is_type(conf, H2OConnectionConf)
     return connect(url=conf.url, verify_ssl_certificates=conf.verify_ssl_certificates, cacert=conf.cacert,
-                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose)
+                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose, **kwargs)
 
-#-----------------------------------------------------------------------------------------------------------------------
-#  ALL DEPRECATED METHODS BELOW
-#-----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Deprecated functions
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Deprecated since 2015-10-08
 @deprecated_fn(replaced_by=import_file)
@@ -2524,3 +2486,10 @@ def list_timezones():
     """Deprecated."""
     _check_connection()
     return cluster().list_timezones()
+
+# Deprecated since 2021-07
+@deprecated_fn("Deprecated, use ``h2o.cluster().check_version()`` instead.")
+def version_check():
+    _check_connection()
+    cluster().check_version(strict=True)
+

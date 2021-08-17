@@ -3,19 +3,20 @@
 from __future__ import division, print_function, absolute_import, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
+import json
 import sys
 import time
-import json
 
 import h2o
 from h2o.exceptions import H2OConnectionError, H2OServerError
 from h2o.display import H2ODisplay
+from h2o.schemas import H2OSchema
 from h2o.utils.typechecks import assert_is_type
 from h2o.utils.shared_utils import get_human_readable_bytes, get_human_readable_time
 from h2o.two_dim_table import H2OTwoDimTable
 
 
-class H2OCluster(object):
+class H2OCluster(H2OSchema):
     """
     Information about the backend H2O cluster.
 
@@ -25,112 +26,25 @@ class H2OCluster(object):
 
     # If information is this many seconds old, it will be refreshed next time you call :meth:`status`.
     REFRESH_INTERVAL = 1.0
+    _default_attrs_values_ = dict(
+        build_age='PREHISTORIC',
+        build_too_old=True
+    )
+    _schema_endpoint_ = "/3/Metadata/schemas/CloudV3"
 
     def __init__(self):
         """Initialize new H2OCluster instance."""
-        self._props = {}
-        self._retrieved_at = None
+        super(H2OCluster, self).__init__()
+        self._retrieved_at = time.time()
 
-    @staticmethod
-    def from_kvs(keyvals):
+    @classmethod
+    def make(cls, keyvals):
         """
         Create H2OCluster object from a list of key-value pairs.
-
-        TODO: This method should be moved into the base H2OResponse class.
         """
-        obj = H2OCluster()
-        obj._retrieved_at = time.time()
-        for k, v in keyvals:
-            if k in {"__meta", "_exclude_fields", "__schema"}: continue
-            if k in _cloud_v3_valid_keys:
-                obj._props[k] = v
-            else:
-                raise AttributeError("Attribute %s cannot be set on H2OCluster (= %r)" % (k, v))
-        return obj
+        return cls.instantiate_from_json(keyvals)
 
-
-
-    @property
-    def skip_ticks(self):
-        return self._props.get("skip_ticks", None)
-
-    @property
-    def bad_nodes(self):
-        return self._props["bad_nodes"]
-
-    @property
-    def branch_name(self):
-        return self._props["branch_name"]
-
-    @property
-    def build_number(self):
-        return self._props["build_number"]
-
-    @property
-    def build_age(self):
-        # If the build age is unknown, then the cluster is so old it comes from "prehistoric" times when no
-        # build number reporting was done...
-        return self._props.get("build_age", "PREHISTORIC")
-
-    @property
-    def build_too_old(self):
-        # If the prop "build_too_old" wasn't reported by the server, then it's definitely too old :)
-        return self._props.get("build_too_old", True)
-
-    @property
-    def cloud_healthy(self):
-        return self._props["cloud_healthy"]
-
-    @property
-    def cloud_name(self):
-        return self._props["cloud_name"]
-
-    @property
-    def cloud_size(self):
-        return self._props["cloud_size"]
-
-    @property
-    def cloud_uptime_millis(self):
-        return self._props["cloud_uptime_millis"]
-
-    @property
-    def cloud_internal_timezone(self):
-        return self._props["cloud_internal_timezone"]
-
-    @property
-    def datafile_parser_timezone(self):
-        return self._props["datafile_parser_timezone"]
-
-    @property
-    def consensus(self):
-        return self._props["consensus"]
-
-    @property
-    def is_client(self):
-        return self._props["is_client"]
-
-    @property
-    def locked(self):
-        return self._props["locked"]
-
-    @property
-    def node_idx(self):
-        return self._props["node_idx"]
-
-    @property
-    def nodes(self):
-        return self._props["nodes"]
-
-    @property
-    def version(self):
-        return self._props["version"]
-
-    @property
-    def internal_security_enabled(self):
-        return self._props["internal_security_enabled"]
-
-
-    def node(self,node_idx):
+    def node(self, node_idx):
         """
         Get information about a particular node in an H2O cluster (node index is 0 based)
 
@@ -194,7 +108,6 @@ class H2OCluster(object):
             h2o.api("POST /3/Shutdown")
             h2o.connection().close()
 
-
     def is_running(self):
         """
         Determine if the H2O cluster is running or not.
@@ -207,7 +120,6 @@ class H2OCluster(object):
             return True
         except (H2OConnectionError, H2OServerError):
             return False
-
 
     def show_status(self, detailed=False):
         """
@@ -270,11 +182,9 @@ class H2OCluster(object):
         """List all available extensions on the h2o backend"""
         return self._list_extensions("Capabilities")
 
-
     def list_core_extensions(self):
         """List available core extensions on the h2o backend"""
         return self._list_extensions("Capabilities/Core")
-
 
     def list_api_extensions(self):
         """List available API extensions on the h2o backend"""
@@ -290,16 +200,48 @@ class H2OCluster(object):
         assert_is_type(tz, str)
         h2o.rapids('(setTimeZone "%s")' % tz)
 
-
     def list_timezones(self):
         """Return the list of all known timezones."""
         from h2o.expr import ExprNode
         return h2o.H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
+    
+    def check_version(self, strict=False):
+        """
+        Verifies that h2o-python module and the H2O server are compatible with each other.
+        :param strict: if True, an error is raised on version mismatch, otherwise, a warning is simply printed.
+        """
+        ver_h2o = self.version
+        ver_pkg = "UNKNOWN" if h2o.__version__ == "SUBST_PROJECT_VERSION" else h2o.__version__
+        if str(ver_h2o) != str(ver_pkg):
+            branch_name_h2o = self.branch_name
+            build_number_h2o = self.build_number
+            if build_number_h2o is None or build_number_h2o == "unknown":
+                message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                           "Upgrade H2O and h2o-Python to latest stable version - "
+                           "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
+                           ).format(ver_h2o, ver_pkg)
+            elif build_number_h2o == "99999":
+                message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                           "This is a developer build, please contact your developer."
+                           ).format(ver_h2o, ver_pkg)
+            else:
+                message = ("Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
+                           "Install the matching h2o-Python version from - "
+                           "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
+                           ).format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o)
+            if strict:
+                raise H2OConnectionError(message)
+            else:
+                print("Warning:", message)
+        # Check age of the install
+        if self.build_too_old:
+            print(("Warning: Your H2O cluster version is too old ({})!"
+                   "Please download and install the latest version from http://h2o.ai/download/"
+                   ).format(self.build_age))
 
-
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Private
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _fill_from_h2ocluster(self, other):
         """
@@ -332,8 +274,6 @@ class H2OCluster(object):
             return type_mapping[type]
         else:
             return 'Unknown'
-
-   
 
     def _get_cluster_status_info_values(self):
         if self._retrieved_at + self.REFRESH_INTERVAL < time.time():
@@ -377,8 +317,3 @@ _cluster_status_info_keys = ["H2O_cluster_uptime", "H2O_cluster_timezone", "H2O_
 _cluster_status_detailed_info_keys = ["h2o", "healthy", "last_ping", "num_cpus", "sys_load", "mem_value_size",
                                       "free_mem", "pojo_mem", "swap_mem", "free_disk", "max_disk", "pid", "num_keys",
                                       "tcps_active", "open_fds", "rpcs_active"]
-
-_cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
-                        "version", "last_commit_hash", "describe", "compiled_by", "compiled_on", "cloud_uptime_millis",
-                        "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
-                        "nodes", "build_age", "build_too_old", "internal_security_enabled", "leader_idx"}
