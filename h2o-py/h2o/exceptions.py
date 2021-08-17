@@ -117,7 +117,6 @@ class H2OConnectionError(H2OSoftError):
 class H2OResponseError(H2OError, EnvironmentError):
     """
     Raised when the server encounters a user error and sends back an H2OErrorV3 response.
-    H2OResponseError should always be constructed with 
     """
 
 
