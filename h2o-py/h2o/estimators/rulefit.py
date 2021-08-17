@@ -80,7 +80,8 @@ class H2ORuleFitEstimator(H2OEstimator):
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
                not increase the size of the data frame. This is typically the number of times a row is repeated, but
                non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor.
+               the larger loss function pre-factor. If you set weight = 0 for a row, the returned prediction frame at
+               that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
         :param distribution: Distribution function
