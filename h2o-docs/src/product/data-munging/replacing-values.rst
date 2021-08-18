@@ -17,7 +17,7 @@ This example shows how to replace numeric values in a frame of data. Note that i
         # so in the example below, the value in the 14th row and 2nd column will be set to 2.0.
         df[14, 2] <- 2.0
 
-        # Replace a whole column. The example below multiplies all values in the second column by 3. 
+        # Replace a whole column. The example below multiplies all values in the first column by 3. 
         df[, 1] <- 3 * df[, 1]
 
         # Replace by row mask. The example below searches for value less than 4.4 in the 
