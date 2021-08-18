@@ -122,36 +122,38 @@ Anomaly Score
 
 The output of Isolation Forest's algorithm depends on the ``contamination`` parameter.
 
-**With usage of the contamination parameter:**
+With ``contamination`` parameter:
+'''''''''''''''''''''''''''''''''
 
--  **predict**:
+**Predict**:
 
     - ``1`` = Anomaly
     - ``0`` = Normal point
 
-Point is marked as an anomaly if the score is great or equal to (1-``contamination``)% quantile of the score.
+A point is marked as an anomaly if the score is greater or equal to (1-``contamination``)% quantile of the score.
 
 .. math::
     predict = score >= Q_{score}(1-contamination)
 
--  **score**: Normalized mean_length
+**Score**: the normalized **mean_length**.
 
 .. math::
     score(mean\_length) = \frac{(maxPathLength - mean\_length)}{(maxPathLength - minPathLength)}
 
 
-Where ``minPathLength`` and ``maxPathLength`` are assigned in training. It can happen that anomalous point has value > 1. Higher value mean “more anomalous“ point. The score is not normalized by the average path of unsuccessful search in a BST.
+Where ``minPathLength`` and ``maxPathLength`` are assigned in training. It can happen that an anomalous point has a value > 1. A higher value means a “more anomalous“ point. The score is not normalized by the average path of an unsuccessful search in a BST.
 
--  **mean_length**:
+**Mean_Length**: mean path length of the point in a forest. 
 
-Mean path length of the point in the forest.  We are not using the formula from `Isolation Forest <https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf>`__ paper (Equation (2)) nor the estimation of average path length of unsuccessful search  (Equation (2)).
+We are not using the formula (Equation (2)) from the `Isolation Forest <https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf>`__ paper nor the estimation of the average path length of an unsuccessful search (Equation (2)).
 
 .. math::
     mean\_length = \frac{pathLength}{ntrees}
 
-**Without contamination parameter:**
+Without ``contamination`` parameter:
+''''''''''''''''''''''''''''''''''''
 
-The **predict** column contains values from **score** column and **mean_length** column is not changed.
+The **predict** column contains values from the **score** column, and the **mean_length** column is not changed.
 
 Examples
 ~~~~~~~~
