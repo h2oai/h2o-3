@@ -2494,7 +2494,9 @@ public class XGBoostTest extends TestUtil {
       parmsScaled._scale_pos_weight = (float) ((response.length() - response.nzCnt()) / (double) response.nzCnt());
 
       XGBoostModel modelDefault = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(modelDefault);
       XGBoostModel modelScaled = new hex.tree.xgboost.XGBoost(parmsScaled).trainModel().get();
+      Scope.track_generic(modelScaled);
     
       // expect at least 10% improvement in MPCE with positive observations upweighted
       assertThat("MPCE", modelDefault.mean_per_class_error() * 0.9, greaterThan(modelScaled.mean_per_class_error()));
