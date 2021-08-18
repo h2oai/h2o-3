@@ -193,7 +193,7 @@ Defining an XGBoost Model
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
 
--  **scale_pos_weight**: Specify the multiplier that will be used for gradient calculation for observations with positive weights. This is useful for imbalanced problems, a good starting value is sum(weight of negative observations) / sum(weight of positive observations). This default to 1.
+-  **scale_pos_weight**: Specify the multiplier that will be used for gradient calculation for observations with positive weights. This is useful for imbalanced problems, a good starting value is sum(weight of negative observations) / sum(weight of positive observations). This defaults to 1.
 
 -  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: "auto", "dense", and "sparse". Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally. This value defaults to "auto".
 
