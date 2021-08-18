@@ -34,7 +34,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "build_tree_one_node", "calibrate_model", "calibration_frame", "max_bins", "max_leaves",
                    "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy",
                    "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id", "gainslift_bins",
-                   "auc_type"}
+                   "auc_type", "scale_pos_weight"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -2145,6 +2145,22 @@ class H2OXGBoostEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+
+    @property
+    def scale_pos_weight(self):
+        """
+        Controls the effect of observations with positive labels in relation to the observations with negative labels on
+        gradient calculation. Useful for imbalanced problems.
+
+        Type: ``float``  (default: ``1``).
+        """
+        return self._parms.get("scale_pos_weight")
+
+    @scale_pos_weight.setter
+    def scale_pos_weight(self, scale_pos_weight):
+        assert_is_type(scale_pos_weight, None, float)
+        self._parms["scale_pos_weight"] = scale_pos_weight
 
 
     @staticmethod

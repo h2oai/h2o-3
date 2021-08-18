@@ -13,12 +13,14 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.api.StreamingSchema;
 import water.fvec.*;
+import water.init.NetworkInit;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.*;
 import water.util.Timer;
+import water.util.fp.Function;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -1745,6 +1747,50 @@ public class TestUtil extends Iced {
 
   public static boolean isCI() {
     return System.getProperty("user.name").equals("jenkins");
+  }
+
+  public static Vec transformVec(Vec vec, Function<Double, Double> transform) {
+    new MRTask() {
+      @Override
+      public void map(Chunk c) {
+        for (int i = 0; i < c._len; i++) {
+          if (c.isNA(i))
+            continue;
+          c.set(i, transform.apply(c.atd(i)));
+        }
+      }
+    }.doAll(vec);
+    return vec;
+  }
+
+  /**
+   * Debugging-only function that lets the developer open Flow (or R/Py) during execution of a junit test
+   * and inspect the model.
+   */
+  @SuppressWarnings("unused")
+  @Deprecated // just to make it noticeable in IDE
+  public static void browser() {
+    if (isCI()) {
+      throw new IllegalStateException("Never leave browser() calls in committed source code - only for debugging");
+    }
+    File root = new File(".");
+    while (! new File(root, "h2o-core").isDirectory()) {
+      root = new File(root, "..");
+    }
+    H2O.registerResourceRoot(new File(root, "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(root, "h2o-core/src/main/resources/www"));
+
+    String message = "Open H2O Flow in your web browser: ";
+    System.err.println(message + H2O.getURL(NetworkInit.h2oHttpView.getScheme()));
+
+    while (! H2O.getShutdownRequested()) {
+      try {
+        Thread.sleep(60 * 1000);
+        System.err.println("Still waiting for H2O to shutdown");
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
 }
