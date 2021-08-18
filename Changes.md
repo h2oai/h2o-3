@@ -12,6 +12,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.h
 - [[PUBDEV-8260]](https://h2oai.atlassian.net/browse/PUBDEV-8260) - Simplified duplicated XGBoost parameters in Flow.
 - [[PUBDEV-8239]](https://h2oai.atlassian.net/browse/PUBDEV-8239) - Fixed broken data frame conversion behavior.
 
+#### Improvement
+
+- Added security updates.
+
 #### Docs
 
 - [[PUBDEV-8096]](https://h2oai.atlassian.net/browse/PUBDEV-8096) - Added a note on memory usage when using XGBoost to User Guide.
