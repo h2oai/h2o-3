@@ -145,41 +145,44 @@ public class ModelingStepTest {
 
     private static class DummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public DummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, 42, autoML);
+            super(algo, id, cost, 1, autoML);
         }
 
         @Override
-        protected Job<DummyModel> startJob() {
-            Model.Parameters params = new DummyModel.DummyModelParameters();
-            return trainModel(params);
+        protected Model.Parameters prepareModelParameters() {
+            return new DummyModel.DummyModelParameters();
         }
     }
 
     private static class FailingDummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public FailingDummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, 42,autoML);
+            super(algo, id, cost, 1, autoML);
         }
 
         @Override
-        protected Job<DummyModel> startJob() {
+        protected Model.Parameters prepareModelParameters() {
             DummyModel.DummyModelParameters params = new DummyModel.DummyModelParameters();
             params._fail_on_init = true;
-            return trainModel(params);
+            return params;
         }
     }
 
     private static class DummyGridStep extends ModelingStep.GridStep<DummyModel> {
 
         public DummyGridStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, 42, autoML);
+            super(algo, id, cost, 1, autoML);
         }
 
         @Override
-        protected Job<Grid> startJob() {
-            Model.Parameters params = new DummyModel.DummyModelParameters();
+        protected Model.Parameters prepareModelParameters() {
+            return new DummyModel.DummyModelParameters();
+        }
+
+        @Override
+        protected Map<String, Object[]> prepareSearchParameters() {
             Map<String, Object[]> searchParams = new HashMap<>();
             searchParams.put("_tag", new String[] {"one", "two", "three"});
-            return hyperparameterSearch(params, searchParams);
+            return searchParams;
         }
     }
 
@@ -187,7 +190,7 @@ public class ModelingStepTest {
         boolean _useSearch;
 
         public DummySelectionStep(IAlgo algo, String id, int weight, AutoML autoML, boolean useSearch) {
-            super(algo, id, weight, autoML);
+            super(algo, id, weight, 1, autoML);
             _useSearch = useSearch;
         }
 

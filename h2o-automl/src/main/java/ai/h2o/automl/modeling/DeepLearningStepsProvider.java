@@ -40,14 +40,12 @@ public class DeepLearningStepsProvider
                 super(Algo.DeepLearning, id, weight, priorityGroup, autoML);
             }
 
-            DeepLearningParameters prepareModelParameters() {
-                DeepLearningParameters dlParameters = new DeepLearningParameters();
-
-                dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
-                dlParameters._adaptive_rate = true;
-                dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-
-                return dlParameters;
+            protected DeepLearningParameters prepareModelParameters() {
+                DeepLearningParameters params = new DeepLearningParameters();
+                params._epochs = 10000; // early stopping takes care of epochs - no need to tune!
+                params._adaptive_rate = true;
+                params._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+                return params;
             }
             
             @Override
@@ -58,36 +56,32 @@ public class DeepLearningStepsProvider
                 return config;
             }
 
-            Map<String, Object[]> prepareSearchParams() {
+            protected Map<String, Object[]> prepareSearchParameters() {
                 Map<String, Object[]> searchParams = new HashMap<>();
-
                 searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
                 searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
                 searchParams.put("_input_dropout_ratio", new Double[] { 0.0, 0.05, 0.1, 0.15, 0.2 });
-
                 return searchParams;
             }
         }
 
 
-        private ModelingStep[] defaults = new DeepLearningModelStep[] {
+        private final ModelingStep[] defaults = new DeepLearningModelStep[] {
                 new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     @Override
-                    protected Job<DeepLearningModel> startJob() {
-                        DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
-                        dlParameters._hidden = new int[]{ 10, 10, 10 };
-                        return trainModel(dlParameters);
+                    protected DeepLearningParameters prepareModelParameters() {
+                        DeepLearningParameters params = new DeepLearningParameters();  // don't use common params for default DL
+                        params._hidden = new int[]{ 10, 10, 10 };
+                        return params;
                     }
                 },
         };
 
-        private ModelingStep[] grids = new DeepLearningGridStep[] {
-                new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 10,  aml()) {
+        private final  ModelingStep[] grids = new DeepLearningGridStep[] {
+                new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
-
-                        Map<String, Object[]> searchParams = prepareSearchParams();
+                    protected Map<String, Object[]> prepareSearchParameters() {
+                        Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
                                 {  20 },
                                 {  50 },
@@ -101,16 +95,13 @@ public class DeepLearningStepsProvider
                                 { 0.4 },
                                 { 0.5 }
                         });
-
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return searchParams;
                     }
                 },
-                new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 10,aml()) {
+                new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 5, aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
-
-                        Map<String, Object[]> searchParams = prepareSearchParams();
+                    protected Map<String, Object[]> prepareSearchParameters() {
+                        Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
                                 {  20,  20 },
                                 {  50,  50 },
@@ -124,15 +115,13 @@ public class DeepLearningStepsProvider
                                 { 0.4, 0.4 },
                                 { 0.5, 0.5 }
                         });
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return searchParams;
                     }
                 },
-                new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 10,aml()) {
+                new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 5, aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
-
-                        Map<String, Object[]> searchParams = prepareSearchParams();
+                    protected Map<String, Object[]> prepareSearchParameters() {
+                        Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
                                 {  20,  20,  20 },
                                 {  50,  50,  50 },
@@ -146,8 +135,7 @@ public class DeepLearningStepsProvider
                                 { 0.4, 0.4, 0.4 },
                                 { 0.5, 0.5, 0.5 }
                         });
-
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return searchParams;
                     }
                 },
         };

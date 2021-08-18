@@ -8,10 +8,7 @@ import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,7 +82,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
         if (modelingPlan == AutoML.defaultModelingPlan)
             return orderedSteps
                     .stream()
-                    .sorted((step1, step2) -> step1._priorityGroup - step2._priorityGroup)
+                    .sorted(Comparator.comparingInt(step -> step._priorityGroup))
                     .toArray(ModelingStep[]::new);
         return orderedSteps.toArray(new ModelingStep[0]);
     }

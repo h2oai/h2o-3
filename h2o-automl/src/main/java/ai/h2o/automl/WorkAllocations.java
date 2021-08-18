@@ -53,7 +53,9 @@ public class WorkAllocations extends Iced<WorkAllocations> {
               .append(_id).append(", ")
               .append(_algo).append(", ")
               .append(_type).append(", ")
-              .append(_weight).append('}');
+              .append("weight=").append(_weight).append(", ")
+              .append("priority_group=").append(_priorityGroup)
+              .append('}');
       return sb.toString();
     }
   }

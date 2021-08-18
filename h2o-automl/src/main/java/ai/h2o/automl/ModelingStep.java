@@ -11,7 +11,6 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
-import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -47,8 +46,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         /** The seed is incremented for each model, starting from the global seed if there is one. */
         Incremental
     }
-
-    Integer _priorityGroup = 100;
 
     static Predicate<Work> isDefaultModel = w -> w._type == JobType.ModelBuild;
     static Predicate<Work> isExplorationWork = w -> w._type == JobType.ModelBuild || w._type == JobType.HyperparamSearch;
@@ -99,11 +96,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected final IAlgo _algo;
     protected final String _id;
     protected int _weight;
+    protected int _priorityGroup;
     protected AutoML.Constraint[] _ignoredConstraints = new AutoML.Constraint[0];  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
     private final transient List<Consumer<Job>> _onDone = new ArrayList<>();
 
     StepDefinition _fromDef;
+    transient final Predicate<Work> _isSamePriorityGroup = w -> w._priorityGroup == _priorityGroup;
 
     protected ModelingStep(IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
         assert priorityGroup >= 0;
@@ -149,6 +148,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     protected Key<Model>[] getTrainedModelsKeys() {
         return aml().leaderboard().getModelKeys();
+    }
+    
+    protected Map<String, Key> getResumableResultKeys() {
+        return aml()._resumableResultKeys;
     }
 
     protected boolean isCVEnabled() {
@@ -322,8 +325,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             super(algo, id, cost, priorityGroup, autoML);
         }
 
+        protected abstract Model.Parameters prepareModelParameters();
+        
         @Override
-        protected abstract Job<M> startJob();
+        protected Job<M> startJob() {
+            return trainModel(prepareModelParameters());
+        }
 
         @Override
         protected Work makeWork() {
@@ -370,7 +377,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
-                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, w -> w._priorityGroup == _priorityGroup) / 1e3; // Models from a priority group + SEs
+                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3; // Models from a priority group + SEs
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
@@ -388,14 +395,21 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      */
     public static abstract class GridStep<M extends Model> extends ModelingStep<M> {
 
-        public static final int DEFAULT_GRID_TRAINING_WEIGHT = 20;
+        public static final int DEFAULT_GRID_TRAINING_WEIGHT = 30;
+        protected static final int GRID_STOPPING_ROUND_FACTOR = 2;
 
         public GridStep(IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
             super(algo, id, cost, priorityGroup,autoML);
         }
 
+        protected abstract Model.Parameters prepareModelParameters();
+        
+        protected abstract Map<String, Object[]> prepareSearchParameters();
+
         @Override
-        protected abstract Job<Grid> startJob();
+        protected Job<Grid> startJob() {
+            return hyperparameterSearch(prepareModelParameters(), prepareSearchParameters());
+        }
 
         @Override
         protected Work makeWork() {
@@ -440,12 +454,29 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
+            setSearchCriteria(searchCriteria, baseParms);
 
+            if (null == key) key = makeKey(_algo.name(), true);
+            aml().trackKeys(key);
+
+            Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
+            aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
+                    ? "No time limitation for "+key
+                    : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
+            return startSearch(
+                    key,
+                    baseParms,
+                    searchParms,
+                    searchCriteria
+            );
+        }
+        
+        protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
             Work work = getAllocatedWork();
             // for time limit, this is allocated in proportion of the entire work budget.
             double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
                     ? 0
-                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3;
             // SE predicate can be removed if/when we decide to include SEs in the max_models limit
             // for models limit, this is not assigned in the same proportion as for time,
             // as the exploitation phase is not supposed to "add" models but just to replace some by better ones,
@@ -460,26 +491,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     ? maxAssignedModels
                     : Math.min(searchCriteria.max_models(), maxAssignedModels));
 
-            if (null == key) key = makeKey(_algo.name(), true);
-            aml().trackKey(key);
-
-            Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
-            aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
-                    ? "No time limitation for "+key
-                    : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
-            return startSearch(
-                    key,
-                    baseParms,
-                    searchParms,
-                    searchCriteria
-            );
+            searchCriteria.set_stopping_rounds(baseParms._stopping_rounds * GRID_STOPPING_ROUND_FACTOR);
         }
     }
 
     public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
 
-        public SelectionStep(IAlgo algo, String id, int weight, AutoML autoML) {
-            super(algo, id, weight, 100, autoML);
+        public SelectionStep(IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+            super(algo, id, weight, priorityGroup, autoML);
             _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
         }
 
@@ -534,7 +553,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected Job<Models> startJob() {
             Key<Model>[] trainedModelKeys = getTrainedModelsKeys();
             Key<Models> key = makeKey(_algo+"_"+_id, false);
-            aml().trackKey(key);
+            aml().trackKeys(key);
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
 
@@ -570,7 +589,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
                     Leaderboard lb = aml().leaderboard();
                     Log.debug("Selection result for job " + key, ToStringBuilder.reflectionToString(selection));
-                    lb.removeModels(selection._remove, true);
+                    lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
+                    aml().trackKeys(selection._remove);
                     lb.addModels(selection._add);
 
                     result.unlock(job);

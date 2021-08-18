@@ -35,6 +35,9 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
                 if (step._weight != Step.DEFAULT_WEIGHT) {
                     tStep._weight = step._weight;  // override default weight
                 }
+                if (step._priorityGroup != Step.DEFAULT_PRIORITY_GROUP) {
+                    tStep._priorityGroup = step._priorityGroup; // override default priority
+                }
                 tSteps.add(tStep);
             });
         }

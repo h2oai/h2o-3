@@ -130,6 +130,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   WorkAllocations _workAllocations;
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
+  IcedHashMap<String, Key> _resumableResultKeys = new IcedHashMap<>();
   AtomicLong _incrementalSeed = new AtomicLong();
   private NonBlockingHashMap<String, AtomicInteger> _modelCounters = new NonBlockingHashMap<>();
   private String _runId;
@@ -382,6 +383,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
+    if (_buildSpec.build_models.exploitation_ratio == 0) return;
     int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
     int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
     double explorationRatio = 1 - _buildSpec.build_models.exploitation_ratio;
@@ -646,8 +648,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return Key.make(prefix+counterStr+"_"+ _runId);
   }
 
-  public void trackKey(Key key) {
-    _trackedKeys.put(key, Arrays.toString(Thread.currentThread().getStackTrace()));
+  public void trackKeys(Key... keys) {
+    String whereFrom = Arrays.toString(Thread.currentThread().getStackTrace());
+    for (Key key : keys) _trackedKeys.put(key, whereFrom);
   }
 
   private boolean exceededSearchLimits(ModelingStep step) {

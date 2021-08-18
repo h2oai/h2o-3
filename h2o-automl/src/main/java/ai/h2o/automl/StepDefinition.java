@@ -14,7 +14,8 @@ public class StepDefinition extends Iced<StepDefinition> {
     public enum Alias { all, defaults, grids, exploitation }
 
     public static class Step extends Iced<Step> {
-        public static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the ModelingStep
+        public static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the ModelingStep.
+        public static final int DEFAULT_PRIORITY_GROUP = -1; //step will use the default priority group as defined by the ModelingStep.
 
         /**
          * The id of the step (must be unique per step provider).
@@ -26,6 +27,7 @@ public class StepDefinition extends Iced<StepDefinition> {
          * For hyperparameter search, the weight may also impact the number of models trained in a count-model-constrained context.
          */
         int _weight = DEFAULT_WEIGHT;  // share of time dedicated
+        int _priorityGroup = DEFAULT_PRIORITY_GROUP;
 
         public Step() { /* for autofill from schema */ }
 
@@ -50,12 +52,13 @@ public class StepDefinition extends Iced<StepDefinition> {
             if (o == null || getClass() != o.getClass()) return false;
             Step step = (Step) o;
             return _id.equals(step._id)
-                    && _weight == step._weight;
+                    && _weight == step._weight
+                    && _priorityGroup == step._priorityGroup;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(_id, _weight);
+            return Objects.hash(_id, _weight, _priorityGroup);
         }
     }
 

@@ -21,37 +21,35 @@ public class DRFStepsProvider
                 super(Algo.DRF, id, weight, priorityGroup, autoML);
             }
 
-            DRFParameters prepareModelParameters() {
-                DRFParameters drfParameters = new DRFParameters();
-                drfParameters._score_tree_interval = 5;
-                return drfParameters;
+            protected DRFParameters prepareModelParameters() {
+                DRFParameters params = new DRFParameters();
+                params._score_tree_interval = 5;
+                return params;
             }
         }
 
 
-        private ModelingStep[] defaults = new DRFModelStep[] {
-                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2,aml()) {
-                    @Override
-                    protected Job<DRFModel> startJob() {
-                        DRFParameters drfParameters = prepareModelParameters();
-                        return trainModel(drfParameters);
-                    }
-                },
+        private final ModelingStep[] defaults = new DRFModelStep[] {
+                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {},
                 new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     { _description = _description+" (Extremely Randomized Trees)"; }
 
                     @Override
-                    protected Job<DRFModel> startJob() {
-                        DRFParameters drfParameters = prepareModelParameters();
-                        drfParameters._histogram_type = HistogramType.Random;
+                    protected DRFParameters prepareModelParameters() {
+                        DRFParameters params = super.prepareModelParameters();
+                        params._histogram_type = HistogramType.Random;
+                        return params;
+                    }
 
+                    @Override
+                    protected Job<DRFModel> startJob() {
                         Key<DRFModel> key = makeKey("XRT", true);
-                        return trainModel(key, drfParameters);
+                        return trainModel(key, prepareModelParameters());
                     }
                 },
         };
 
-        private ModelingStep[] grids = new ModelingStep[0];
+        private final ModelingStep[] grids = new ModelingStep[0];
 
         public DRFSteps(AutoML autoML) {
             super(autoML);
