@@ -22,7 +22,7 @@ This example shows how to replace numeric values in a frame of data. Note that i
 
         # Replace by row mask. The example below searches for value less than 4.4 in the 
         # sepal_len column and replaces those values with 4.6. 
-        df[df[, "sepal_len"] <- 4.4, "sepal_len"] <- 4.6
+        df[df[, "sepal_len"] < 4.4, "sepal_len"] <- 4.6
 
         # Replace using ifelse. Similar to the previous example, 
         # this replaces values less than 4.6 with 4.6. 
