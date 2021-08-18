@@ -143,7 +143,7 @@ def get_pod_ips_by_label(pod_label: str, namespace: str) -> [str]:
     :param namespace: Kubernetes namespace the pods have been deployed to.
     :return: A list of pod IPs (IPv4), each IP in a separate string.
     """
-    v1_core_pi = client.CoreV1Api();
+    v1_core_pi = client.CoreV1Api()
     pods = v1_core_pi.list_namespaced_pod(watch=False, namespace=namespace, label_selector="app={}".format(pod_label),
                                           _request_timeout=360)
     pod_ips = list()

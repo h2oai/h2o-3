@@ -1,10 +1,10 @@
-#! /bin/bash -x
+#! /bin/bash -xv
 
 clouded=false
 while [ "$clouded" != true ]
 do
 	sleep 1
-	cloud_size=$( curl 'http://localhost:8080/3/Cloud' | jq '.cloud_size' )
+	cloud_size=$( curl "http://localhost:8080/3/Cloud" | jq '.cloud_size' )
   if [ "$cloud_size" == 2 ]
   then
 	  echo "H2O Cluster size is ${cloud_size}"

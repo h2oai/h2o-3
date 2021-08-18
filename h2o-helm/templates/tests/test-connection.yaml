@@ -29,9 +29,18 @@ spec:
         - '-c'
         - |
           /bin/bash <<'EOF'
-      
+          set -xv
           clouded=false
           cloud_size=0
+          get_node_address() {
+            node_address=""
+            while test -z $node_address; do
+              node_address=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' | jq ".nodes[$1].ip_port" | cut -d '"' -f 2 )
+              sleep 1
+            done
+            echo $node_address
+          }
+
           while [ "$clouded" != true ]
           do
               sleep 1
@@ -43,8 +52,13 @@ spec:
             fi
           done
           forbidden_codes=0
+          # Make sure we have address for all nodes to prevent race conditions
           for (( node = 0; node < cloud_size; node++ )); do
-              node_address=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' | jq ".nodes[${node}].ip_port" | cut -d '"' -f 2 )
+              node_address=$(get_node_address $node)
+          done
+          # Now that all nodes have address, ping them
+          for (( node = 0; node < cloud_size; node++ )); do
+              node_address=$(get_node_address $node)
               echo "http://${node_address}/3/Cloud"
               response_code=$( curl -w "%{http_code}" -o /dev/null "http://${node_address}/3/Cloud" )
               echo "$response_code"
