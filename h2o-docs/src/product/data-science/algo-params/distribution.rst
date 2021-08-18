@@ -92,42 +92,42 @@ Where:
 +-------------------+-------------------------------------------------------------------------------------------+
 | Distribution Type | Equation                                                                                  |
 +===================+===========================================================================================+
-| Bernoulli         | :math:`-2w(y*log(f))+(1-y)*log(1-f))`                                                     |
+| Bernoulli         | :math:`-2w(y\times\log(f))+(1-y)\times\log(1-f))`                                         |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Quasibinomial     | - :math:`y==f:0`                                                                          |
-|                   | - :math:`f>1: -2w*y*log(f)`                                                               |
-|                   | - :math:`f<0: -2w*(1-y)*log(1-f) \text{ else}`                                            |
-|                   | - :math:`-2w*(y*log(f)+(1-y)*log(1-f))`                                                   |
+|                   | - :math:`f>1: -2w\times y\times\log(f)`                                                   |
+|                   | - :math:`f<0: -2w\times (1-y) \times\log(1-f)`                                            |
+|                   | - else :math:`-2w\times (y \times\log(f)+(1-y)\times\log(1-f))`                           |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Gaussian          | - Equivalent to wMSE (weighted mean squared error):                                       |
-|                   | - :math:`w*(y-f)^2`                                                                       |
+|                   | - :math:`w \times(y-f)^2`                                                                 |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Poisson           | - With :math:`f=link(f)`                                                                  |
-|                   | - :math:`-2w*(y*f-exp(f))`                                                                |
+| Poisson           | - With :math:`\text{f_link}=link(f)`                                                      |
+|                   | - :math:`-2w\times(y\times f-exp(f))`                                                     |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Gamma             | - With :math:`f=link(f)`                                                                  |
-|                   | - :math:`2w*(y*exp(-f)+f)`                                                                |
+| Gamma             | - With :math:`\text{f_link}=link(f)`                                                      |
+|                   | - :math:`2w\times (y\times exp(-f)+f)`                                                    |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Laplace           | :math:`w*\mid{y-f}\mid`                                                                   |
+| Laplace           | :math:`w\times\mid{y-f}\mid`                                                              |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Quantile          | - :math:`y>f: w*QuantileAlpha*(y-f)`                                                      |
-|                   | - :math:`y<=f: w*1-QuantileAlpha*(f-y)`                                                   |
+| Quantile          | - :math:`y>f: w\times QuantileAlpha \times(y-f)`                                          |
+|                   | - :math:`y \leq f: w\times(1-QuantileAlpha)\times(f-y)`                                   |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Huber             | - :math:`\mid{y-f}\mid <= \text{Huber_Delta}`:                                            |
+| Huber             | - :math:`\mid{y-f}\mid \leq HuberDelta`:                                                  |
 |                   | - :math:`w*(y-f)^2` (Equivalent to wMSE)                                                  |
-|                   | - :math:`y<=f`:                                                                           |
-|                   | - :math:`2w*(\mid{y-f}\mid - \text{Huber_Delta})*\text{Huber_Delta}` (Equivalent to wMAE) |
+|                   | - :math:`y \leq f`:                                                                       |
+|                   | - :math:`2w\times(\mid{y-f}\mid - HuberDelta)\times HuberDelta` (Equivalent to wMAE)      |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Modified_Huber    | - with :math:`yf=(2y-1)*f`                                                                |
-|                   | - :math:`yf<-1`:                                                                          |
-|                   | - :math:`-4w*(yf)`                                                                        |
-|                   | - :math:`yf>1` : :math:`0`                                                                |
-|                   | - else: :math:`w*(yf)^2`                                                                  |
+| Modified_Huber    | - with :math:`z=(2y-1)\times f`                                                           |
+|                   | - :math:`z<-1`:                                                                           |
+|                   | - :math:`-4w\times(z)`                                                                    |
+|                   | - :math:`z>1` : :math:`0`                                                                 |
+|                   | - else: :math:`w\times(z)^2`                                                              |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
-|                   | :math:`2w*y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})*(2-\text{Tweedie_Power})) |
-|                   | -y*\text{exp}(f*(1-\text{Tweedie_Power}))/(1-\text{Tweedie_Power})                        |
-|                   | +\text{exp}(f*(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})}`                        |
+|                   | :math:`2w\times y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})\times(2-            |
+|                   | \text{Tweedie_Power}))}-y\times\text{exp}(f\times(1-\text{Tweedie_Power}))/ (1-\text      |
+|                   | {Tweedie_Power})+\text{exp}(f\times(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})`    |
 +-------------------+-------------------------------------------------------------------------------------------+
 
 +-------------------+---------------------------------------------------------------------------+
@@ -138,7 +138,7 @@ Where:
 | Huber, Laplace,   | - :math:`linkInversion(f)=f`                                              |
 | Quantile          |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
-| Log: Multinomial, | - :math:`link(f)=log(f)`                                                  |
+| Log: Multinomial, | - :math:`link(f)=\log(f)`                                                 |
 | Poisson, Gamma,   | - :math:`linkInversion(f)=exp(f)`                                         |
 | Tweedie           |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
@@ -146,14 +146,14 @@ Where:
 | Quasibinomial,    | - :math:`linkInversion(f)=1/(1+exp(-f))`                                  |
 | Modified_Huber    |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
-| Inversion         | - :math:`link(f) = 1/f (where f = f < 0 ? min(-1e-5, f) : max(-1e-5, f))` |
-|                   | - :math:`linkInversion(f)=link(f)`                                        |
+| Inversion         | :math:`f= \begin{cases}min(-1e-5, f) & \text{for }f<0 \\                  |
+|                   | max(-1e-5, f)& \text{for }f>0 \\\end{cases}`                              |
 +-------------------+---------------------------------------------------------------------------+
-| Ologit            | - :math:`link(f)=log(f/(1-f))`                                            |
+| Ologit            | - :math:`link(f)=\log(f/(1-f))`                                           |
 |                   | - :math:`linkInversion(f)=1/(1+exp(-f))`                                  |
 +-------------------+---------------------------------------------------------------------------+
-| Ologlog           | - :math:`link(f)=log(-1*log(1-f))`                                        |
-|                   | - :math:`linkInversion(f)=1-exp(-1*exp(f))`                               |
+| Ologlog           | - :math:`link(f)=\log(-1\times\log(1-f))`                                 |
+|                   | - :math:`linkInversion(f)=1-exp(-1\times exp(f))`                         |
 +-------------------+---------------------------------------------------------------------------+
 | Oprobit           | - :math:`link(f)=normalDistribution.inverseCumulativeProbability(f)`      |
 |                   | - :math:`linkInversion(f)=normalDistribution.cumulativeProbability(f)`    |
