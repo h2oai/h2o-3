@@ -13,6 +13,7 @@ import org.junit.runners.Parameterized;
 import water.Scope;
 import water.TestUtil;
 import water.Weaver;
+import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -140,6 +141,31 @@ public class SharedTreeTest extends TestUtil  {
     return new TestFrameBuilder()
           .withColNames("F", "Response")
           .withDataForCol(1, ar("A", "B", "A", "B", "A", "B"));
+  }
+
+  /**
+   * PUBDEV-8276 - 
+   */
+  @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+  public void testWeightColumnIsMissing(){
+    SharedTreeModel model = null;
+    Frame frame = new TestFrameBuilder()
+            .withColNames("F1", "Response")
+            .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+            .withDataForCol(0, ard(Double.NaN, 0, Double.NaN, 0, Double.NaN, 0))
+            .withDataForCol(1, ar("A", "B", "A", "B", "A", "B")).build();
+    try {
+      _parms._train = frame._key;
+      _parms._response_column = "Response";
+      _parms._ntrees = 1;
+      _parms._seed = 42;
+      _parms._weights_column = "foo";
+
+      model = (SharedTreeModel) ModelBuilder.make(_parms).trainModel().get();
+    } finally {
+      if (frame != null) frame.remove();
+      if (model != null) model.remove();
+    }
   }
 
 }
