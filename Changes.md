@@ -8,6 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.h
 
 #### Bug
 
+- [[PUBDEV-8263]](https://h2oai.atlassian.net/browse/PUBDEV-8263) - Fixed the POJO mismatch from MOJO and in-H2O scoring for an unseen categorical value.
 - [[PUBDEV-8260]](https://h2oai.atlassian.net/browse/PUBDEV-8260) - Simplified duplicated XGBoost parameters in Flow.
 - [[PUBDEV-8239]](https://h2oai.atlassian.net/browse/PUBDEV-8239) - Fixed broken data frame conversion behavior.
 
