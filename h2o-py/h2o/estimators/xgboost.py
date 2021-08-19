@@ -98,6 +98,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  gpu_id=None,  # type: Optional[List[int]]
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 scale_pos_weight=1.0,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -326,6 +327,10 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param scale_pos_weight: Controls the effect of observations with positive labels in relation to the
+               observations with negative labels on gradient calculation. Useful for imbalanced problems.
+               Defaults to ``1.0``.
+        :type scale_pos_weight: float
         """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
@@ -397,6 +402,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.gpu_id = gpu_id
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
+        self.scale_pos_weight = scale_pos_weight
 
     @property
     def training_frame(self):
@@ -2411,6 +2417,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def scale_pos_weight(self):
+        """
+        Controls the effect of observations with positive labels in relation to the observations with negative labels on
+        gradient calculation. Useful for imbalanced problems.
+
+        Type: ``float``, defaults to ``1.0``.
+        """
+        return self._parms.get("scale_pos_weight")
+
+    @scale_pos_weight.setter
+    def scale_pos_weight(self, scale_pos_weight):
+        assert_is_type(scale_pos_weight, None, float)
+        self._parms["scale_pos_weight"] = scale_pos_weight
 
 
     @staticmethod
