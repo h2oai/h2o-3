@@ -86,7 +86,8 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "backend",
         "gpu_id",
         "gainslift_bins",
-        "auc_type"
+        "auc_type",
+        "scale_pos_weight"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -207,6 +208,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="A set of allowed column interactions.", level= API.Level.expert)
     public String[][] interaction_constraints;
+
+    @API(help="Controls the effect of observations with positive labels in relation to the observations with negative labels on gradient calculation. Useful for imbalanced problems.", level= API.Level.expert, gridable = true)
+    public float scale_pos_weight;
 
   }
 

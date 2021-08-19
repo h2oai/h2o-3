@@ -104,6 +104,8 @@
 #'        auto.
 #' @param gpu_id Which GPU(s) to use.
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
+#' @param scale_pos_weight Controls the effect of observations with positive labels in relation to the observations with negative labels
+#'        on gradient calculation. Useful for imbalanced problems. Defaults to 1.0.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -199,6 +201,7 @@ h2o.xgboost <- function(x,
                         backend = c("auto", "gpu", "cpu"),
                         gpu_id = NULL,
                         gainslift_bins = -1,
+                        scale_pos_weight = 1.0,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -355,6 +358,8 @@ h2o.xgboost <- function(x,
     parms$gpu_id <- gpu_id
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(scale_pos_weight))
+    parms$scale_pos_weight <- scale_pos_weight
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -427,6 +432,7 @@ h2o.xgboost <- function(x,
                                         backend = c("auto", "gpu", "cpu"),
                                         gpu_id = NULL,
                                         gainslift_bins = -1,
+                                        scale_pos_weight = 1.0,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -587,6 +593,8 @@ h2o.xgboost <- function(x,
     parms$gpu_id <- gpu_id
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(scale_pos_weight))
+    parms$scale_pos_weight <- scale_pos_weight
 
   # Build segment-models specific parameters
   segment_parms <- list()

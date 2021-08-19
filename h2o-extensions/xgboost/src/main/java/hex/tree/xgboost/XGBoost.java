@@ -232,6 +232,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     checkPositiveRate("colsample_bynode", _parms._colsample_bynode);
     checkPositiveRate("colsample_bytree", _parms._colsample_bytree);
 
+    if (_parms._scale_pos_weight != 1) {
+      if (_nclass != 2)
+        error("_scale_pos_weight", "scale_pos_weight can only be used for binary classification");
+      if (_parms._scale_pos_weight <= 0)
+        error("_scale_pos_weight", "scale_pos_weight must be a positive number");
+    }
+
     if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && 
         _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
