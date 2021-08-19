@@ -93,16 +93,16 @@ is the average path of the unsuccessful search in a BST for the data set of size
 The **mean_length** is the mean path length of a point in the forest:
 
 .. math::
-    mean\_length(x) = \frac{pathLength(x) + c(Node.numRows)}{ntrees}
+    mean\_length(x) = \frac{path\_length(x) + c(Node.num\_rows)}{ntrees}
 
 In case the point :math:`x` is not isolated, Formula :math:`c(i)` is
 used to estimate the tree height from the number of rows in the node. This is done especially for dense clusters of normal points.
 
 **The anomaly score is interpreted as follows**:
 
-- if instances return an :math:`anomaly\_score` very close to 1, then they are definitely anomalies,
-- if instances have an :math:`anomaly\_score` much smaller than 0.5, then they can be quite safely regarded as normal instances,
-- and if all the instances return an :math:`anomaly\_score` around 0.5, then the entire sample does not have any distinct anomalies.
+- if instances return an ``anomaly_score`` very close to 1, then they are definitely anomalies,
+- if instances have an ``anomaly_score`` much smaller than 0.5, then they can be quite safely regarded as normal instances,
+- and if all the instances return an ``anomaly_score`` around 0.5, then the entire sample does not have any distinct anomalies.
 
 Examples
 ~~~~~~~~

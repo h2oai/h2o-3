@@ -138,17 +138,17 @@ A point is marked as an anomaly if the score is greater or equal to (1-``contami
 **Score**: the normalized **mean_length**.
 
 .. math::
-    score(mean\_length) = \frac{(maxPathLength - mean\_length)}{(maxPathLength - minPathLength)}
+    score(mean\_length) = \frac{(max\_path\_length - mean\_length)}{(max\_path\_length - min\_path\_length)}
 
 
-Where ``minPathLength`` and ``maxPathLength`` are assigned in training. It can happen that an anomalous point has a value > 1. A higher value means a “more anomalous“ point. The score is not normalized by the average path of an unsuccessful search in a binary search tree (BST).
+Where :math:`min\_path\_length` and :math:`max\_path\_length` are assigned in training. It can happen that an anomalous point has a value > 1. A higher value means a “more anomalous“ point. The score is not normalized by the average path of an unsuccessful search in a binary search tree (BST).
 
 **Mean_Length**: mean path length of the point in a forest. 
 
 We are not using the formula (Equation (2)) from the `Isolation Forest <https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf>`__ paper nor the estimation of the average path length of an unsuccessful search (Equation (2)).
 
 .. math::
-    mean\_length = \frac{pathLength}{ntrees}
+    mean\_length = \frac{path\_length}{ntrees}
 
 Without ``contamination`` parameter:
 ''''''''''''''''''''''''''''''''''''
