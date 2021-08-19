@@ -2,9 +2,35 @@
 
 ## H2O
 
+### Zipf (3.32.1.6) - 8/19/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8263]](https://h2oai.atlassian.net/browse/PUBDEV-8263) - Fixed the POJO mismatch from MOJO and in-H2O scoring for an unseen categorical value.
+- [[PUBDEV-8260]](https://h2oai.atlassian.net/browse/PUBDEV-8260) - Simplified duplicated XGBoost parameters in Flow.
+- [[PUBDEV-8239]](https://h2oai.atlassian.net/browse/PUBDEV-8239) - Fixed broken data frame conversion behavior.
+
+#### Improvement
+
+- Added security updates.
+
+#### New Feature
+
+- [[PUBDEV-8284]](https://h2oai.atlassian.net/browse/PUBDEV-8284) - Exposed the ``scale_pos_weight`` parameter in XGBoost.
+
+#### Task
+
+- [[PUBDEV-8241]](https://h2oai.atlassian.net/browse/PUBDEV-8241) - Clarified the anomaly score formula used for score calculation within Isolation Forest and Extended Isolation Forest.
+
+#### Docs
+
+- [[PUBDEV-8096]](https://h2oai.atlassian.net/browse/PUBDEV-8096) - Added a note on memory usage when using XGBoost to User Guide.
+
 ### Zipf (3.32.1.5) - 8/4/2021
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/4/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/5/index.html</a>
 
 #### Bug
 
