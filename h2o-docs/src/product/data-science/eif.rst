@@ -65,6 +65,44 @@ Defining an Extended Isolation Forest Model
 
 - `extension_level <algo-params/extension_level.html>`__: The number in range :math:`[0, P-1]`; where :math:`P` is the number of features. The minimum value of the hyperparameter is 0 (default), which corresponds to Isolation Forest behavior. The maximum is :math:`P-1` and stands for a full extension. As the ``extension_level`` is increased, the bias of standard Isolation Forest is reduced.
 
+Anomaly Score
+~~~~~~~~~~~~~
+
+The output of Extended Isolation Forest's algorithm is in compliance with this `Extended Isolation Forest <http://dx.doi.org/10.1109/TKDE.2019.2947676>`__ paper.
+In short, the anomaly score is the average **mean_length** in a forest normalized by the average path of an unsuccessful search in a binary search tree (BST).
+
+The **anomaly_score**:
+
+.. math::
+    anomaly\_score(x, sample\_size)=2^{-mean\_length/c(sample\_size)}
+
+where:
+
+.. math::
+    c(i) =
+    \begin{cases}
+        2H(i-1)-\frac{2(i-1)}{i} & \text{for }i>2 \\
+        1 & \text{for }i=2 \\
+        0 & \text{otherwise}
+    \end{cases}
+
+is the average path of the unsuccessful search in a BST for the data set of size :math:`i`.
+
+:math:`H(.)` is a harmonic number estimated as: :math:`H(.) = ln(.) + 0.5772156649` (`Euler’s constant <https://en.wikipedia.org/wiki/Euler%E2%80%93Mascheroni_constant>`__)
+
+The **mean_length** is the mean path length of a point in the forest:
+
+.. math::
+    mean\_length(x) = \frac{path\_length(x) + c(Node.num\_rows)}{ntrees}
+
+In case the point :math:`x` is not isolated, Formula :math:`c(i)` is
+used to estimate the tree height from the number of rows in the node. This is done especially for dense clusters of normal points.
+
+**The anomaly score is interpreted as follows**:
+
+- if instances return an ``anomaly_score`` very close to 1, then they are definitely anomalies,
+- if instances have an ``anomaly_score`` much smaller than 0.5, then they can be quite safely regarded as normal instances,
+- and if all the instances return an ``anomaly_score`` around 0.5, then the entire sample does not have any distinct anomalies.
 
 Examples
 ~~~~~~~~

@@ -117,6 +117,44 @@ Defining an Isolation Forest Model
 
 - **contamination**: The contamination ratio is the proportion of anomalies in the input dataset. If undefined (``-1``), the predict function will not mark observations as anomalies and only anomaly score will be returned. Defaults to ``-1``.
 
+Anomaly Score
+~~~~~~~~~~~~~
+
+The output of Isolation Forest's algorithm depends on the ``contamination`` parameter.
+
+With ``contamination`` parameter:
+'''''''''''''''''''''''''''''''''
+
+**Predict**:
+
+    - ``1`` = Anomaly
+    - ``0`` = Normal point
+
+A point is marked as an anomaly if the score is greater or equal to (1-``contamination``)% quantile of the score.
+
+.. math::
+    predict = score >= Q_{score}(1-contamination)
+
+**Score**: the normalized **mean_length**.
+
+.. math::
+    score(mean\_length) = \frac{(max\_path\_length - mean\_length)}{(max\_path\_length - min\_path\_length)}
+
+
+Where :math:`min\_path\_length` and :math:`max\_path\_length` are assigned in training. It can happen that an anomalous point has a value > 1. A higher value means a “more anomalous“ point. The score is not normalized by the average path of an unsuccessful search in a binary search tree (BST).
+
+**Mean_Length**: mean path length of the point in a forest. 
+
+We are not using the formula (Equation (2)) from the `Isolation Forest <https://cs.nju.edu.cn/zhouzh/zhouzh.files/publication/icdm08b.pdf>`__ paper nor the estimation of the average path length of an unsuccessful search (Equation (2)).
+
+.. math::
+    mean\_length = \frac{path\_length}{ntrees}
+
+Without ``contamination`` parameter:
+''''''''''''''''''''''''''''''''''''
+
+The **predict** column contains values from the **score** column, and the **mean_length** column is not changed.
+
 Examples
 ~~~~~~~~
 
