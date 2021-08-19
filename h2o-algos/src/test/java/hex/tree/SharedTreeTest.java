@@ -144,9 +144,9 @@ public class SharedTreeTest extends TestUtil  {
   }
 
   /**
-   * PUBDEV-8276 - 
+   * PUBDEV-8276
    */
-  @Test(expected = H2OModelBuilderIllegalArgumentException.class)
+  @Test()
   public void testWeightColumnIsMissing(){
     SharedTreeModel model = null;
     Frame frame = new TestFrameBuilder()
@@ -160,8 +160,11 @@ public class SharedTreeTest extends TestUtil  {
       _parms._ntrees = 1;
       _parms._seed = 42;
       _parms._weights_column = "foo";
-
       model = (SharedTreeModel) ModelBuilder.make(_parms).trainModel().get();
+      assert true : "The model training should fail.";
+    } catch(H2OModelBuilderIllegalArgumentException ex)  {
+      assert ex.getMessage().contains("ERRR on field: _weights_column"): 
+              "The error message should contains info about missing _weights_column.";
     } finally {
       if (frame != null) frame.remove();
       if (model != null) model.remove();
