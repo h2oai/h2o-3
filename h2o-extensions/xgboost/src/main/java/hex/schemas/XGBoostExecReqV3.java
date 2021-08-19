@@ -13,7 +13,7 @@ public class XGBoostExecReqV3 extends Schema<Iced, XGBoostExecReqV3> {
     
     public XGBoostExecReqV3(Key key, XGBoostExecReq req) {
         this.key = KeyV3.make(key);
-        this.data = Base64.encodeBase64String(AutoBuffer.javaSerializeWritePojo(req));
+        this.data = Base64.encodeBase64String(AutoBuffer.serializeBootstrapFreezable(req));
     }
 
     public XGBoostExecReqV3() {
@@ -27,7 +27,7 @@ public class XGBoostExecReqV3 extends Schema<Iced, XGBoostExecReqV3> {
 
     @SuppressWarnings("unchecked")
     public <T> T readData() {
-        return (T) AutoBuffer.javaSerializeReadPojo(Base64.decodeBase64(data));
+        return (T) AutoBuffer.deserializeBootstrapFreezable(Base64.decodeBase64(data));
     }
 
 }

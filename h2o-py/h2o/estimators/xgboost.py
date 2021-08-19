@@ -98,6 +98,7 @@ class H2OXGBoostEstimator(H2OEstimator):
                  gpu_id=None,  # type: Optional[List[int]]
                  gainslift_bins=-1,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 scale_pos_weight=1.0,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -149,7 +150,8 @@ class H2OXGBoostEstimator(H2OEstimator):
                that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
                not increase the size of the data frame. This is typically the number of times a row is repeated, but
                non-integer values are supported as well. During training, rows with higher weights matter more, due to
-               the larger loss function pre-factor.
+               the larger loss function pre-factor. If you set weight = 0 for a row, the returned prediction frame at
+               that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
         :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
@@ -325,6 +327,10 @@ class H2OXGBoostEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param scale_pos_weight: Controls the effect of observations with positive labels in relation to the
+               observations with negative labels on gradient calculation. Useful for imbalanced problems.
+               Defaults to ``1.0``.
+        :type scale_pos_weight: float
         """
         super(H2OXGBoostEstimator, self).__init__()
         self._parms = {}
@@ -396,6 +402,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         self.gpu_id = gpu_id
         self.gainslift_bins = gainslift_bins
         self.auc_type = auc_type
+        self.scale_pos_weight = scale_pos_weight
 
     @property
     def training_frame(self):
@@ -753,7 +760,9 @@ class H2OXGBoostEstimator(H2OEstimator):
         dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
         weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
         frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
-        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor. If you set
+        weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get an
+        accurate prediction, remove all rows with weight == 0.
 
         Type: ``str``.
 
@@ -2408,6 +2417,21 @@ class H2OXGBoostEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def scale_pos_weight(self):
+        """
+        Controls the effect of observations with positive labels in relation to the observations with negative labels on
+        gradient calculation. Useful for imbalanced problems.
+
+        Type: ``float``, defaults to ``1.0``.
+        """
+        return self._parms.get("scale_pos_weight")
+
+    @scale_pos_weight.setter
+    def scale_pos_weight(self, scale_pos_weight):
+        assert_is_type(scale_pos_weight, None, float)
+        self._parms["scale_pos_weight"] = scale_pos_weight
 
 
     @staticmethod

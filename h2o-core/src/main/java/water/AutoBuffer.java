@@ -254,6 +254,10 @@ public final class AutoBuffer implements AutoCloseable {
   /** Read from a persistent Stream (including all TypeMap info) into same
    *  exact rev of H2O). */
   public AutoBuffer( InputStream is ) {
+    this(is, null);
+  }
+  
+  public AutoBuffer(InputStream is, String[] typeMap) {
     _chan = null;
     _h2o = null;
     _firstPage = true;
@@ -264,14 +268,22 @@ public final class AutoBuffer implements AutoCloseable {
     _bb.flip();
     _is = is;
     int b = get1U();
-    if( b==0 ) return;          // No persistence info
-    int magic = get1U();
-    if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
-    checkVersion(getStr());
-    String[] typeMap = getAStr();
+
+    if (typeMap == null) {
+      if (b == 0)
+        return;          // No persistence info
+      int magic = get1U();
+      if (b != 0x1C || magic != 0xED) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
+      checkVersion(getStr());
+      typeMap = getAStr();
+      assert typeMap != null;
+    } else {
+      if (b != 0)
+        throw new IllegalStateException("Corrupted communication stream: zero byte expected at the beginning.");
+    }
     _typeMap = new short[typeMap.length];
-    for( int i=0; i<typeMap.length; i++ )
-      _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
+    for (int i = 0; i < _typeMap.length; i++)
+      _typeMap[i] = (short) (typeMap[i] == null ? 0 : TypeMap.onIce(typeMap[i]));
   }
 
   private void checkVersion(String version) {
@@ -772,16 +784,28 @@ public final class AutoBuffer implements AutoCloseable {
   public <T extends Freezable> T get() {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) id = _typeMap[id];
+    if( _is!=null ) {
+      id = remapFrozenId(id);
+    }
     return (T)TypeMap.newFreezable(id).read(this);
   }
   public <T extends Freezable> T get(Class<T> tc) {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) id = _typeMap[id];
+    if( _is!=null ) {
+      id = remapFrozenId(id);
+    }
     assert tc.isInstance(TypeMap.theFreezable(id)):tc.getName() + " != " + TypeMap.theFreezable(id).getClass().getName() + ", id = " + id;
     return (T)TypeMap.newFreezable(id).read(this);
   }
+
+  private int remapFrozenId(int id) {
+    assert _typeMap != null;
+    if (id >= _typeMap.length)
+      throw new IllegalStateException("Class with frozenType=" + id + 
+              " cannot be deserialized because it is not part of the TypeMap.");
+    return _typeMap[id];
+  } 
 
   // Write Key's target IFF the Key is not null; target can be null.
   public AutoBuffer putKey(Key k) {
@@ -1508,7 +1532,34 @@ public final class AutoBuffer implements AutoCloseable {
     channel.write(ab._bb);
     ab.clearForWriting(H2O.MAX_PRIORITY);
   }
-  
+
+  /**
+   * Serializes a BootstrapFreezable into a byte array. Because BootstrapFreezables
+   * have known ids - there is no need to also serialize the TypeMap.
+   * @param o a BootstrapFreezable to serialize
+   * @return byte array representing the object
+   */
+  public static byte[] serializeBootstrapFreezable(BootstrapFreezable<?> o) {
+    ByteArrayOutputStream result;
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         AutoBuffer ab = new AutoBuffer(baos, false)) {
+      ab.put(o);
+      result = baos;
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+    return result.toByteArray();
+  }
+
+  public static BootstrapFreezable<?> deserializeBootstrapFreezable(byte[] bytes) {
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+         AutoBuffer ab = new AutoBuffer(bais, TypeMap.bootstrapClasses())) {
+      return ab.get();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
   public static byte[] javaSerializeWritePojo(Object o) {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = null;

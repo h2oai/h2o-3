@@ -30,7 +30,9 @@
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
@@ -102,6 +104,8 @@
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
+#' @param scale_pos_weight Controls the effect of observations with positive labels in relation to the observations with negative labels
+#'        on gradient calculation. Useful for imbalanced problems. Defaults to 1.0.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -197,6 +201,7 @@ h2o.xgboost <- function(x,
                         gpu_id = NULL,
                         gainslift_bins = -1,
                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                        scale_pos_weight = 1.0,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -353,6 +358,8 @@ h2o.xgboost <- function(x,
     parms$gainslift_bins <- gainslift_bins
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(scale_pos_weight))
+    parms$scale_pos_weight <- scale_pos_weight
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -425,6 +432,7 @@ h2o.xgboost <- function(x,
                                         gpu_id = NULL,
                                         gainslift_bins = -1,
                                         auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                        scale_pos_weight = 1.0,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -585,6 +593,8 @@ h2o.xgboost <- function(x,
     parms$gainslift_bins <- gainslift_bins
   if (!missing(auc_type))
     parms$auc_type <- auc_type
+  if (!missing(scale_pos_weight))
+    parms$scale_pos_weight <- scale_pos_weight
 
   # Build segment-models specific parameters
   segment_parms <- list()

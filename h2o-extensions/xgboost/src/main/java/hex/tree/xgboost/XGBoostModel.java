@@ -128,7 +128,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public DMatrixType _dmatrix_type = DMatrixType.auto;
     public float _reg_lambda = 1;
     public float _reg_alpha = 0;
-    
+    public float _scale_pos_weight = 1;
+
     // Platt scaling
     public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
@@ -421,6 +422,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     params.put("lambda", p._reg_lambda);
     params.put("alpha", p._reg_alpha);
+    if (p._scale_pos_weight != 1)
+      params.put("scale_pos_weight", p._scale_pos_weight);
 
     if (nClasses==2) {
       params.put("objective", ObjectiveType.BINARY_LOGISTIC.getId());

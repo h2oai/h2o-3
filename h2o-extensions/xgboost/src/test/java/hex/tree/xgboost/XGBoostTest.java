@@ -55,6 +55,9 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static water.util.FileUtils.getFile;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
 
@@ -2575,5 +2578,38 @@ public class XGBoostTest extends TestUtil {
       if (model != null) model.delete();
     }
   }
-  
+
+  @Test
+  public void testScalePosWeight() {
+    Scope.enter();
+    try {
+      Frame train = parseTestFile("smalldata/covtype/covtype.20k.data");
+      Scope.track(train);
+
+      transformVec(train.lastVec(), x -> x == 6.0 ? 1.0 : 0.0);
+      train.toCategoricalCol(train.lastVecName());
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._ignored_columns = new String[]{train.name(0)};
+      parms._response_column = train.lastVecName();
+      parms._train = train._key;
+      parms._ntrees = 10;
+      parms._seed = 1234L;
+
+      XGBoostModel.XGBoostParameters parmsScaled = (XGBoostModel.XGBoostParameters) parms.clone();
+      Vec response = train.lastVec();
+      parmsScaled._scale_pos_weight = (float) ((response.length() - response.nzCnt()) / (double) response.nzCnt());
+
+      XGBoostModel modelDefault = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(modelDefault);
+      XGBoostModel modelScaled = new hex.tree.xgboost.XGBoost(parmsScaled).trainModel().get();
+      Scope.track_generic(modelScaled);
+    
+      // expect at least 10% improvement in MPCE with positive observations upweighted
+      assertThat("MPCE", modelDefault.mean_per_class_error() * 0.9, greaterThan(modelScaled.mean_per_class_error()));
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

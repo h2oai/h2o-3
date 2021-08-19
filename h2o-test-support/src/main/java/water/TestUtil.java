@@ -13,12 +13,14 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.api.StreamingSchema;
 import water.fvec.*;
+import water.init.NetworkInit;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.*;
 import water.util.Timer;
+import water.util.fp.Function;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -40,14 +42,21 @@ public class TestUtil extends Iced {
   private static String[] ignoreTestsNames;
   private static String[] doonlyTestsNames;
   protected static int _initial_keycnt = 0;
-  /** Minimal cloud size to start test. */
+  /**
+   * Minimal cloud size to start test.
+   */
   protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
-  /** Default time in ms to wait for clouding */
+  /**
+   * Default time in ms to wait for clouding
+   */
   protected static int DEFAULT_TIME_FOR_CLOUDING = 60000 /* ms */;
 
-  public TestUtil() { this(1); }
+  public TestUtil() {
+    this(1);
+  }
+
   public TestUtil(int minCloudSize) {
-    MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize);
+    MINCLOUDSIZE = Math.max(MINCLOUDSIZE, minCloudSize);
     String ignoreTests = System.getProperty("ignore.tests");
     if (ignoreTests != null) {
       ignoreTestsNames = ignoreTests.split(",");
@@ -68,8 +77,8 @@ public class TestUtil extends Iced {
   // Stall test until we see at least X members of the Cloud
   protected static int getDefaultTimeForClouding() {
     return JACOCO_ENABLED
-        ? DEFAULT_TIME_FOR_CLOUDING * 10
-        : DEFAULT_TIME_FOR_CLOUDING;
+            ? DEFAULT_TIME_FOR_CLOUDING * 10
+            : DEFAULT_TIME_FOR_CLOUDING;
   }
 
   public static void stall_till_cloudsize(int x) {
@@ -78,12 +87,12 @@ public class TestUtil extends Iced {
 
   /**
    * Take a double array and return it as a single array.  It will take each row on top of each other
-   * 
+   *
    * @param arr
    * @return
    */
   public static double[] changeDouble2SingleArray(double[][] arr) {
-    double[] result = new double[arr.length*arr[0].length];
+    double[] result = new double[arr.length * arr[0].length];
     int numRows = arr.length;
     int offset = 0;
     for (int rind = 0; rind < numRows; rind++) {
@@ -93,9 +102,9 @@ public class TestUtil extends Iced {
     }
     return result;
   }
-  
+
   public static void stall_till_cloudsize(int x, int timeout) {
-    stall_till_cloudsize(new String[] {}, x, timeout);
+    stall_till_cloudsize(new String[]{}, x, timeout);
   }
 
   public static void stall_till_cloudsize(String[] args, int x) {
@@ -104,7 +113,7 @@ public class TestUtil extends Iced {
 
   public static void stall_till_cloudsize(String[] args, int x, int timeout) {
     x = Math.max(MINCLOUDSIZE, x);
-    if( !_stall_called_before ) {
+    if (!_stall_called_before) {
       H2O.main(args);
       H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-web/src/main/resources/www"));
       H2O.registerResourceRoot(new File(System.getProperty("user.dir") + File.separator + "h2o-core/src/main/resources/www"));
@@ -120,30 +129,30 @@ public class TestUtil extends Iced {
   @AfterClass
   public static void checkLeakedKeys() {
     int leaked_keys = H2O.store_size() - _initial_keycnt;
-    int cnt=0;
-    if( leaked_keys > 0 ) {
+    int cnt = 0;
+    if (leaked_keys > 0) {
       int print_max = 10;
-      for( Key k : H2O.localKeySet() ) {
+      for (Key k : H2O.localKeySet()) {
         Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
-        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
-            // Also leave around all attempted Jobs for the Jobs list
-            (value.isJob() && value.<Job>get().isStopped()) ) {
+        if (value == null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
+                // Also leave around all attempted Jobs for the Jobs list
+                (value.isJob() && value.<Job>get().isStopped())) {
           leaked_keys--;
         } else {
           System.out.println(k + " -> " + (value.type() != TypeMap.PRIM_B ? value.get() : "byte[]"));
-          if( cnt++ < print_max )
+          if (cnt++ < print_max)
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
       }
-      if( print_max < leaked_keys ) System.err.println("... and "+(leaked_keys-print_max)+" more leaked keys");
+      if (print_max < leaked_keys) System.err.println("... and " + (leaked_keys - print_max) + " more leaked keys");
     }
     assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
-  
+
   private static class KeyCleaner extends MRTask<KeyCleaner> {
     private final Class[] objectType;
 
@@ -154,10 +163,10 @@ public class TestUtil extends Iced {
     @Override
     protected void setupLocal() {
       Futures fs = new Futures();
-      for( Key k : H2O.localKeySet() ) {
+      for (Key k : H2O.localKeySet()) {
         Value value = Value.STORE_get(k);
         if (value == null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
-            value.isJob() || value.type() == TypeMap.PRIM_B
+                value.isJob() || value.type() == TypeMap.PRIM_B
         ) {
           // do nothing
         } else {
@@ -172,15 +181,15 @@ public class TestUtil extends Iced {
       fs.blockForPending();
     }
   }
-  
+
   public static void cleanupKeys(Class... objectType) {
     new KeyCleaner(objectType).doAllNodes();
   }
 
   public static void checkArrays(double[] expected, double[] actual, double threshold) {
-    for(int i = 0; i < actual.length; i++) {
+    for (int i = 0; i < actual.length; i++) {
       if (!Double.isNaN(expected[i]) && !Double.isNaN(actual[i])) // only compare when both are not NaN
-        assertEquals(expected[i], actual[i], threshold*Math.min(Math.abs(expected[i]),Math.abs(actual[i])));
+        assertEquals(expected[i], actual[i], threshold * Math.min(Math.abs(expected[i]), Math.abs(actual[i])));
     }
   }
 
@@ -188,7 +197,7 @@ public class TestUtil extends Iced {
     int len1 = expected.length;
     assertEquals(len1, actual.length);
 
-    for (int ind=0; ind < len1; ind++) {
+    for (int ind = 0; ind < len1; ind++) {
       assertEquals(expected[ind].length, actual[ind].length);
       checkArrays(expected[ind], actual[ind], threshold);
     }
@@ -196,16 +205,17 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #generateEnumOnly(int, int, int, double)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
-  @Deprecated 
+  @Deprecated
   protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac) {
     return generateEnumOnly(numCols, numRows, num_factor, missingfrac);
   }
 
   /**
    * generate random frames containing enum columns only
+   *
    * @param numCols
    * @param numRows
    * @param num_factor
@@ -213,38 +223,38 @@ public class TestUtil extends Iced {
    */
   protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac) {
     long seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + seed);
     return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
 
   /**
    * @deprecated use {@link #generateEnumOnly(int, int, int, double, long)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected static Frame generate_enum_only(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     return generateEnumOnly(numCols, numRows, num_factor, missingfrac, seed);
   }
-  
+
   protected static Frame generateEnumOnly(int numCols, int numRows, int num_factor, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
-    cf.rows= numRows;
+    cf.rows = numRows;
     cf.cols = numCols;
-    cf.factors=num_factor;
+    cf.factors = num_factor;
     cf.binary_fraction = 0;
     cf.integer_fraction = 0;
     cf.categorical_fraction = 1;
-    cf.has_response=false;
+    cf.has_response = false;
     cf.missing_fraction = missingfrac;
-    cf.seed =seed;
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    cf.seed = seed;
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
     return cf.execImpl().get();
   }
-  
+
   /**
    * @deprecated use {@link #generateRealOnly(int, int, double)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -254,13 +264,13 @@ public class TestUtil extends Iced {
 
   protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac) {
     long seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + seed);
     return generateRealOnly(numCols, numRows, missingfrac, seed);
   }
-  
+
   /**
    * @deprecated use {@link #generateRealOnly(int, int, double, long)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -270,60 +280,60 @@ public class TestUtil extends Iced {
 
   protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
-    cf.rows= numRows;
+    cf.rows = numRows;
     cf.cols = numCols;
     cf.binary_fraction = 0;
     cf.integer_fraction = 0;
     cf.categorical_fraction = 0;
     cf.time_fraction = 0;
     cf.string_fraction = 0;
-    cf.has_response=false;
+    cf.has_response = false;
     cf.missing_fraction = missingfrac;
     cf.seed = seed;
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
     return cf.execImpl().get();
   }
 
   /**
    * @deprecated use {@link #generateIntOnly(int, int, int, double)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac) {
     return generateIntOnly(numCols, numRows, integer_range, missingfrac);
   }
-  
+
   protected static Frame generateIntOnly(int numCols, int numRows, int integer_range, double missingfrac) {
     long seed = System.currentTimeMillis();
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + seed);
     return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
   }
 
   /**
    * @deprecated use {@link #generateIntOnly(int, int, int, double, long)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected static Frame generate_int_only(int numCols, int numRows, int integer_range, double missingfrac, long seed) {
     return generateIntOnly(numCols, numRows, integer_range, missingfrac, seed);
   }
-  
+
   protected static Frame generateIntOnly(int numCols, int numRows, int integerRange, double missingfrac, long seed) {
     CreateFrame cf = new CreateFrame();
-    cf.rows= numRows;
+    cf.rows = numRows;
     cf.cols = numCols;
     cf.binary_fraction = 0;
     cf.integer_fraction = 1;
     cf.categorical_fraction = 0;
     cf.time_fraction = 0;
     cf.string_fraction = 0;
-    cf.has_response=false;
+    cf.has_response = false;
     cf.missing_fraction = missingfrac;
     cf.integer_range = integerRange;
     cf.seed = seed;
-    System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
     return cf.execImpl().get();
   }
 
@@ -331,14 +341,14 @@ public class TestUtil extends Iced {
     int[] ranges = new int[numEle];
 
     for (int index = 0; index < numEle; index++) {
-      ranges[index] = index+offset;
+      ranges[index] = index + offset;
     }
     return ranges;
   }
 
   protected static int[] sortDir(int numEle, Random rand) {
     int[] sortDir = new int[numEle];
-    int[] dirs = new int[]{-1,1};
+    int[] dirs = new int[]{-1, 1};
 
     for (int index = 0; index < numEle; index++) {
       sortDir[index] = dirs[rand.nextInt(2)];
@@ -347,16 +357,24 @@ public class TestUtil extends Iced {
   }
 
   private static class DKVCleaner extends MRTask<DKVCleaner> {
-    @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+    @Override
+    public void setupLocal() {
+      H2O.raw_clear();
+      water.fvec.Vec.ESPC.clear();
+    }
   }
 
   // current running test - assumes no test parallelism just like the rest of this class
   public static Description CURRENT_TEST_DESCRIPTION;
 
-  /** Execute this rule before each test to print test name and test class */
-  @Rule transient public TestRule logRule = new TestRule() {
+  /**
+   * Execute this rule before each test to print test name and test class
+   */
+  @Rule
+  transient public TestRule logRule = new TestRule() {
 
-    @Override public Statement apply(Statement base, Description description) {
+    @Override
+    public Statement apply(Statement base, Description description) {
       Log.info("###########################################################");
       Log.info("  * Test class name:  " + description.getClassName());
       Log.info("  * Test method name: " + description.getMethodName());
@@ -367,8 +385,10 @@ public class TestUtil extends Iced {
   };
 
   /* Ignore tests specified in the ignore.tests system property */
-  @Rule transient public TestRule runRule = new TestRule() {
-    @Override public Statement apply(Statement base, Description description) {
+  @Rule
+  transient public TestRule runRule = new TestRule() {
+    @Override
+    public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
       boolean ignored = false;
       if (ignoreTestsNames != null && ignoreTestsNames.length > 0) {
@@ -393,7 +413,8 @@ public class TestUtil extends Iced {
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
           @Override
-          public void evaluate() throws Throwable {}
+          public void evaluate() throws Throwable {
+          }
         };
       } else {
         return base;
@@ -401,24 +422,33 @@ public class TestUtil extends Iced {
     }
   };
 
-  @Rule transient public TestRule timerRule = new TestRule() {
-    @Override public Statement apply(Statement base, Description description) {
-      return new TimerStatement(base, description.getClassName()+"#"+description.getMethodName());
+  @Rule
+  transient public TestRule timerRule = new TestRule() {
+    @Override
+    public Statement apply(Statement base, Description description) {
+      return new TimerStatement(base, description.getClassName() + "#" + description.getMethodName());
     }
+
     class TimerStatement extends Statement {
       private final Statement _base;
       private final String _tname;
       Throwable _ex;
-      public TimerStatement(Statement base, String tname) { _base = base; _tname = tname;}
-      @Override public void evaluate() throws Throwable {
+
+      public TimerStatement(Statement base, String tname) {
+        _base = base;
+        _tname = tname;
+      }
+
+      @Override
+      public void evaluate() throws Throwable {
         Timer t = new Timer();
         try {
           _base.evaluate();
-        } catch( Throwable ex ) {
-          _ex=ex;
+        } catch (Throwable ex) {
+          _ex = ex;
           throw _ex;
         } finally {
-          Log.info("#### TEST "+_tname+" EXECUTION TIME: " + t.toString());
+          Log.info("#### TEST " + _tname + " EXECUTION TIME: " + t.toString());
         }
       }
     }
@@ -426,11 +456,12 @@ public class TestUtil extends Iced {
 
   // ==== Data Frame Creation Utilities ====
 
-  /** 
+  /**
    * Compare 2 frames
-   *  @param fr1 Frame
-   *  @param fr2 Frame
-   *  @param epsilon Relative tolerance for floating point numbers
+   *
+   * @param fr1     Frame
+   * @param fr2     Frame
+   * @param epsilon Relative tolerance for floating point numbers
    */
   public static void assertIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon) {
     assertIdenticalUpToRelTolerance(fr1, fr2, epsilon, true, "");
@@ -453,16 +484,17 @@ public class TestUtil extends Iced {
       return;
     }
     Scope.enter();
-    if( !fr1.isCompatible(fr2) ) fr1.makeCompatible(fr2);
+    if (!fr1.isCompatible(fr2)) fr1.makeCompatible(fr2);
     Cmp1 cmp = new Cmp1(epsilon, messagePrefix).doAll(new Frame(fr1).add(fr2));
     Scope.exit();
     assertTrue(cmp._message, expected == !cmp._unequal);
   }
 
-  /** 
+  /**
    * Compare 2 frames
-   *  @param fr1 Frame
-   *  @param fr2 Frame
+   *
+   * @param fr1 Frame
+   * @param fr2 Frame
    */
   public static void assertBitIdentical(Frame fr1, Frame fr2) {
     assertIdenticalUpToRelTolerance(fr1, fr2, 0);
@@ -476,10 +508,10 @@ public class TestUtil extends Iced {
       return null;
     }
   }
-  
+
   /**
    * @deprecated use {@link #parseTestFile(String)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -489,7 +521,7 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFile(String, int[])} instead
-   * 
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -497,9 +529,12 @@ public class TestUtil extends Iced {
     return parseTestFile(fname, skipped_columns);
   }
 
-  /** Find & parse a CSV file.  NPE if file not found.
-   *  @param fname Test filename
-   *  @return      Frame or NPE */
+  /**
+   * Find & parse a CSV file.  NPE if file not found.
+   *
+   * @param fname Test filename
+   * @return Frame or NPE
+   */
   public static Frame parseTestFile(String fname) {
     return parseTestFile(Key.make(), fname);
   }
@@ -507,10 +542,13 @@ public class TestUtil extends Iced {
   public static Frame parseTestFile(String fname, int[] skipped_columns) {
     return parseTestFile(Key.make(), fname, skipped_columns);
   }
-  
-  /** Find & parse & track in {@link Scope} a CSV file.  NPE if file not found.
-   *  @param fname Test filename
-   *  @return      Frame or NPE */
+
+  /**
+   * Find & parse & track in {@link Scope} a CSV file.  NPE if file not found.
+   *
+   * @param fname Test filename
+   * @return Frame or NPE
+   */
   public static Frame parseAndTrackTestFile(String fname) {
     return Scope.track(parseTestFile(Key.make(), fname));
   }
@@ -518,8 +556,8 @@ public class TestUtil extends Iced {
   /**
    * Make sure the given frame is distributed in a way that MRTask reduce operation is called
    * and spans at least 2 nodes of the cluster (if running on multinode).
-   * 
-   * If a new frame is created - it is automatically tracked in Scope if it is currently active. 
+   * <p>
+   * If a new frame is created - it is automatically tracked in Scope if it is currently active.
    *
    * @param frame input frame
    * @return possibly new Frame rebalanced to a minimum number of chunks
@@ -528,14 +566,14 @@ public class TestUtil extends Iced {
     int minChunks = H2O.getCloudSize() * 4; // at least one node will have 4 chunks (MR tree will have at least 2 levels)
     return ensureDistributed(frame, minChunks);
   }
-  
+
   /**
    * Make sure the given frame is distributed at least to given minimum number of chunks
    * and spans at least 2 nodes of the cluster (if running on multinode).
+   * <p>
+   * If a new frame is created - it is automatically tracked in Scope if it is currently active.
    *
-   * If a new frame is created - it is automatically tracked in Scope if it is currently active. 
-   *
-   * @param frame input frame
+   * @param frame     input frame
    * @param minChunks minimum required number of chunks
    * @return possibly new Frame rebalanced to a minimum number of chunks
    */
@@ -587,75 +625,75 @@ public class TestUtil extends Iced {
   private static boolean runWithoutLocalFiles() {
     return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
-  
+
   protected static void downloadTestFileFromS3(String fname) throws IOException {
     if (fname.startsWith("./"))
       fname = fname.substring(2);
     File f = new File(fname);
-    if (! f.exists()) {
+    if (!f.exists()) {
       if (f.getParentFile() != null)
         f.getParentFile().mkdirs();
       File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
       org.apache.commons.io.FileUtils.copyURLToFile(
               new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
               tmpFile, 1000, 2000);
-      if (! tmpFile.renameTo(f)) {
+      if (!tmpFile.renameTo(f)) {
         Log.warn("Couldn't download " + fname + " from S3.");
       }
     }
   }
-  
+
   /**
    * @deprecated use {@link #parseTestFile(Key, String, boolean)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(Key outputKey, String fname, boolean guessSetup) {
     return parseTestFile(outputKey, fname, guessSetup);
   }
-  
+
   protected Frame parseTestFile(Key outputKey, String fname, boolean guessSetup) {
     return parseTestFile(outputKey, fname, guessSetup, null);
   }
 
   /**
    * @deprecated use {@link #parseTestFile(Key, String, boolean, int[])} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
     return parseTestFile(outputKey, fname, guessSetup, skippedColumns);
   }
-  
+
   protected Frame parseTestFile(Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
-    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
+    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
     if (skippedColumns != null) {
       guessParseSetup.setSkippedColumns(skippedColumns);
       guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
     }
-    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1));
   }
 
   /**
    * @deprecated use {@link #parseTestFile(Key, String)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(Key outputKey, String fname) {
     return parseTestFile(outputKey, fname);
   }
-  
+
   public static Frame parseTestFile(Key outputKey, String fname) {
     return parseTestFile(outputKey, fname, new int[]{});
   }
 
   /**
    * @deprecated use {@link #parseTestFile(Key, String, int[])} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -666,26 +704,26 @@ public class TestUtil extends Iced {
   public static Frame parseTestFile(Key outputKey, String fname, int[] skippedColumns) {
     return parseTestFile(outputKey, fname, null, skippedColumns);
   }
-  
+
   /**
    * @deprecated use {@link #parseTestFile(String, ParseSetupTransformer)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(String fname, ParseSetupTransformer transformer) {
     return parseTestFile(fname, transformer);
   }
-  
+
   public static Frame parseTestFile(String fname, ParseSetupTransformer transformer) {
     return parseTestFile(Key.make(), fname, transformer);
   }
 
   /**
    * @deprecated use {@link #parseTestFile(String, ParseSetupTransformer, int[])} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
-   */  
+   */
   @Deprecated
   protected Frame parse_test_file(String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
     return parseTestFile(fname, transformer, skippedColumns);
@@ -697,7 +735,7 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFile(Key, String, ParseSetupTransformer)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -711,7 +749,7 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -734,14 +772,14 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types) {
     return parseTestFile(fname, na_string, check_header, column_types);
   }
-  
+
   public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types) {
     return parseTestFile(fname, na_string, check_header, column_types, null, null);
   }
@@ -749,37 +787,37 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
     return parseTestFile(fname, na_string, check_header, column_types, transformer);
   }
-  
+
   public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer) {
-    return parseTestFile( fname, na_string, check_header, column_types, transformer,null);
+    return parseTestFile(fname, na_string, check_header, column_types, transformer, null);
   }
 
 
   /**
    * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     return parseTestFile(fname, na_string, check_header, column_types, transformer, skippedColumns);
   }
-  
+
   public static Frame parseTestFile(String fname, String na_string, int check_header, byte[] column_types, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
 
     Key[] res = {nfs._key};
 
     // create new parseSetup in order to store our na_string
-    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',false,
-        check_header,0,null,null,null,null,null, null, null));
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', false,
+            check_header, 0, null, null, null, null, null, null, null));
     if (skippedColumns != null) {
       p.setSkippedColumns(skippedColumns);
       p.setParseColumnIndices(p.getNumberColumns(), skippedColumns);
@@ -811,41 +849,47 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFolder(String)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_folder(String fname) {
     return parseTestFolder(fname);
   }
-  
-  /** Find & parse a folder of CSV files.  NPE if file not found.
-   *  @param fname Test filename
-   *  @return      Frame or NPE */
+
+  /**
+   * Find & parse a folder of CSV files.  NPE if file not found.
+   *
+   * @param fname Test filename
+   * @return Frame or NPE
+   */
   protected Frame parseTestFolder(String fname) {
     return parseTestFolder(fname, null);
   }
 
   /**
    * @deprecated use {@link #parseTestFolder(String, int[])} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_folder(String fname, int[] skippedColumns) {
     return parseTestFolder(fname, skippedColumns);
   }
-  
-  /** Find & parse a folder of CSV files.  NPE if file not found.
-   *  @param fname Test filename
-   *  @return      Frame or NPE */
-  protected Frame parseTestFolder(String fname, int[] skippedColumns ) {
+
+  /**
+   * Find & parse a folder of CSV files.  NPE if file not found.
+   *
+   * @param fname Test filename
+   * @return Frame or NPE
+   */
+  protected Frame parseTestFolder(String fname, int[] skippedColumns) {
     File folder = FileUtils.locateFile(fname);
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
-    for( File f : files )
-      if( f.isFile() )
+    for (File f : files)
+      if (f.isFile())
         keys.add(NFSFileVec.make(f)._key);
     Key[] res = new Key[keys.size()];
     keys.toArray(res);
@@ -855,19 +899,19 @@ public class TestUtil extends Iced {
 
   /**
    * @deprecated use {@link #parseTestFolder(String, String, int, byte[], ParseSetupTransformer)} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
   protected Frame parse_test_folder(String fname, String na_string, int check_header, byte[] column_types,
-                                  ParseSetupTransformer transformer) {
+                                    ParseSetupTransformer transformer) {
     return parseTestFolder(fname, na_string, check_header, column_types, transformer);
   }
-  
+
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
-   * @param fname name of folder
+   * @param fname     name of folder
    * @param na_string string for NA in a column
    * @return
    */
@@ -875,10 +919,10 @@ public class TestUtil extends Iced {
                                          ParseSetupTransformer transformer) {
     return parseTestFolder(fname, na_string, check_header, column_types, transformer, null);
   }
-  
+
   /**
    * @deprecated use {@link #parseTestFolder(String, String, int, byte[], ParseSetupTransformer, int[])} instead
-   *
+   * <p>
    * Will be removed at version 3.38.0.1
    */
   @Deprecated
@@ -890,7 +934,7 @@ public class TestUtil extends Iced {
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
-   * @param fname name of folder
+   * @param fname     name of folder
    * @param na_string string for NA in a column
    * @return
    */
@@ -900,16 +944,16 @@ public class TestUtil extends Iced {
     File[] files = contentsOf(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
-    for( File f : files )
-      if( f.isFile() )
+    for (File f : files)
+      if (f.isFile())
         keys.add(NFSFileVec.make(f)._key);
 
     Key[] res = new Key[keys.size()];
     keys.toArray(res);  // generated the necessary key here
 
     // create new parseSetup in order to store our na_string
-    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null, null, null));
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO, (byte) ',', true,
+            check_header, 0, null, null, null, null, null, null, null));
     if (skipped_columns != null) {
       p.setSkippedColumns(skipped_columns);
       p.setParseColumnIndices(p.getNumberColumns(), skipped_columns);
@@ -949,7 +993,7 @@ public class TestUtil extends Iced {
       this.valid = valid;
     }
   }
-  
+
   public static Frames split(Frame f) {
     return split(f, 0.9, 0d);
   }
@@ -962,9 +1006,9 @@ public class TestUtil extends Iced {
     double[] fractions;
     double trainFraction = 1d - testFraction - validFraction;
     if (validFraction > 0d) {
-      fractions = new double[] { trainFraction, testFraction, validFraction };
+      fractions = new double[]{trainFraction, testFraction, validFraction};
     } else {
-      fractions = new double[] { trainFraction, testFraction };
+      fractions = new double[]{trainFraction, testFraction};
     }
     SplitFrame sf = new SplitFrame(f, fractions, null);
     sf.exec().get();
@@ -975,38 +1019,51 @@ public class TestUtil extends Iced {
     return new Frames(trainFrame, testFrame, validFrame);
   }
 
-  /** A Numeric Vec from an array of ints
-   *  @param rows Data
-   *  @return The Vec  */
-  public static Vec vec(int...rows) { return vec(null, rows); }
-  /** A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
-   *  @param domain Categorical/Factor names, mapped by the data values
-   *  @param rows Data
-   *  @return The Vec  */
-  public static Vec vec(String[] domain, int ...rows) {
+  /**
+   * A Numeric Vec from an array of ints
+   *
+   * @param rows Data
+   * @return The Vec
+   */
+  public static Vec vec(int... rows) {
+    return vec(null, rows);
+  }
+
+  /**
+   * A Categorical/Factor Vec from an array of ints - with categorical/domain mapping
+   *
+   * @param domain Categorical/Factor names, mapped by the data values
+   * @param rows   Data
+   * @return The Vec
+   */
+  public static Vec vec(String[] domain, int... rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
+    AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
     avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
-    for( int r : rows ) chunk.addNum(r);
+    for (int r : rows) chunk.addNum(r);
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
   }
 
-  /** A numeric Vec from an array of ints */
-  public static Vec ivec(int...rows) {
+  /**
+   * A numeric Vec from an array of ints
+   */
+  public static Vec ivec(int... rows) {
     return vec(null, rows);
   }
 
-  /** A categorical Vec from an array of strings */
-  public static Vec cvec(String ...rows) {
+  /**
+   * A categorical Vec from an array of strings
+   */
+  public static Vec cvec(String... rows) {
     return cvec(null, rows);
   }
 
-  public static Vec cvec(String[] domain, String ...rows) {
+  public static Vec cvec(String[] domain, String... rows) {
     HashMap<String, Integer> domainMap = new HashMap<>(10);
     ArrayList<String> domainList = new ArrayList<>(10);
     if (domain != null) {
@@ -1028,8 +1085,10 @@ public class TestUtil extends Iced {
     return vec(domainList.toArray(new String[]{}), irows);
   }
 
-  /** A numeric Vec from an array of doubles */
-  public static Vec dvec(double...rows) {
+  /**
+   * A numeric Vec from an array of doubles
+   */
+  public static Vec dvec(double... rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
@@ -1042,8 +1101,10 @@ public class TestUtil extends Iced {
     return vec;
   }
 
-  /** A time Vec from an array of ints */
-  public static Vec tvec(int...rows) {
+  /**
+   * A time Vec from an array of ints
+   */
+  public static Vec tvec(int... rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_TIME);
@@ -1056,8 +1117,10 @@ public class TestUtil extends Iced {
     return vec;
   }
 
-  /** A string Vec from an array of strings */
-  public static Vec svec(String...rows) {
+  /**
+   * A string Vec from an array of strings
+   */
+  public static Vec svec(String... rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_STR);
@@ -1070,8 +1133,10 @@ public class TestUtil extends Iced {
     return vec;
   }
 
-  /** A string Vec from an array of strings */
-  public static Vec uvec(UUID...rows) {
+  /**
+   * A string Vec from an array of strings
+   */
+  public static Vec uvec(UUID... rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, Vec.T_UUID);
@@ -1085,24 +1150,56 @@ public class TestUtil extends Iced {
   }
 
   // Shortcuts for initializing constant arrays
-  public static String[]   ar (String ...a)   { return a; }
-  public static String[][] ar (String[] ...a) { return a; }
-  public static byte  []   ar (byte   ...a)   { return a; }
-  public static long  []   ar (long   ...a)   { return a; }
-  public static long[][]   ar (long[] ...a)   { return a; }
-  public static int   []   ari(int    ...a)   { return a; }
-  public static int [][]   ar (int[]  ...a)   { return a; }
-  public static float []   arf(float  ...a)   { return a; }
-  public static double[]   ard(double ...a)   { return a; }
-  public static double[][] ard(double[] ...a) { return a; }
-  public static double[][] ear (double ...a) {
+  public static String[] ar(String... a) {
+    return a;
+  }
+
+  public static String[][] ar(String[]... a) {
+    return a;
+  }
+
+  public static byte[] ar(byte... a) {
+    return a;
+  }
+
+  public static long[] ar(long... a) {
+    return a;
+  }
+
+  public static long[][] ar(long[]... a) {
+    return a;
+  }
+
+  public static int[] ari(int... a) {
+    return a;
+  }
+
+  public static int[][] ar(int[]... a) {
+    return a;
+  }
+
+  public static float[] arf(float... a) {
+    return a;
+  }
+
+  public static double[] ard(double... a) {
+    return a;
+  }
+
+  public static double[][] ard(double[]... a) {
+    return a;
+  }
+
+  public static double[][] ear(double... a) {
     double[][] r = new double[a.length][1];
-    for (int i=0; i<a.length;i++) r[i][0] = a[i];
+    for (int i = 0; i < a.length; i++) r[i][0] = a[i];
     return r;
   }
 
   // Java7+  @SafeVarargs
-  public static <T> T[] aro(T ...a) { return a ;}
+  public static <T> T[] aro(T... a) {
+    return a;
+  }
 
   // ==== Comparing Results ====
 
@@ -1134,14 +1231,14 @@ public class TestUtil extends Iced {
 
   public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, Double absDelta, Double relativeDelta) {
     assertEquals(expecteds.length(), actuals.length());
-    for(int i = 0; i < expecteds.length(); i++) {
+    for (int i = 0; i < expecteds.length(); i++) {
       final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       double expectedVal = expecteds.at(i);
       double actualVal = actuals.at(i);
       assertEquals(message, expectedVal, actualVal, computeAssertionDelta(expectedVal, absDelta, relativeDelta));
     }
   }
-  
+
   private static double computeAssertionDelta(double expectedVal, Double absDelta, Double relDelta) {
     if ((absDelta == null || absDelta.isNaN()) && (relDelta == null || relDelta.isNaN())) {
       throw new IllegalArgumentException("Either absolute or relative delta has to be non-null and non-NaN");
@@ -1167,7 +1264,7 @@ public class TestUtil extends Iced {
   public static void assertUUIDVecEquals(Vec expecteds, Vec actuals) {
     assertEquals(expecteds.length(), actuals.length());
     assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
-    for(int i = 0; i < expecteds.length(); i++) {
+    for (int i = 0; i < expecteds.length(); i++) {
       UUID expected = new UUID(expecteds.at16l(i), expecteds.at16h(i));
       UUID actual = new UUID(actuals.at16l(i), actuals.at16h(i));
       final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
@@ -1175,12 +1272,14 @@ public class TestUtil extends Iced {
     }
   }
 
-  private static String toStr(BufferedString bs) { return bs != null ? bs.toString() : null; }
+  private static String toStr(BufferedString bs) {
+    return bs != null ? bs.toString() : null;
+  }
 
   public static void assertStringVecEquals(Vec expecteds, Vec actuals) {
     assertEquals(expecteds.length(), actuals.length());
     assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
-    for(int i = 0; i < expecteds.length(); i++) {
+    for (int i = 0; i < expecteds.length(); i++) {
       String expected = toStr(expecteds.atStr(new BufferedString(), i));
       String actual = toStr(actuals.atStr(new BufferedString(), i));
       final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
@@ -1188,19 +1287,21 @@ public class TestUtil extends Iced {
     }
   }
 
-  private static String getFactorAsString(Vec v, long row) { return v.isNA(row) ? null : v.factor((long) v.at(row)); }
+  private static String getFactorAsString(Vec v, long row) {
+    return v.isNA(row) ? null : v.factor((long) v.at(row));
+  }
 
   public static void assertCatVecEquals(Vec expecteds, Vec actuals) {
     assertEquals(expecteds.length(), actuals.length());
     assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
-    for(int i = 0; i < expecteds.length(); i++) {
+    for (int i = 0; i < expecteds.length(); i++) {
       String expected = getFactorAsString(expecteds, i);
       String actual = getFactorAsString(actuals, i);
       final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expected, actual);
     }
   }
-  
+
   public static void assertTwoDimTableEquals(TwoDimTable expected, TwoDimTable actual) {
     assertEquals("tableHeader different", expected.getTableHeader(), actual.getTableHeader());
     assertEquals("tableDescriptionDifferent", expected.getTableDescription(), actual.getTableDescription());
@@ -1219,14 +1320,14 @@ public class TestUtil extends Iced {
   }
 
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
-    for(int i = 0; i < actual.length; i++)
+    for (int i = 0; i < actual.length; i++)
       assertEquals(expected[i], actual[i], threshold);
   }
 
   public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
-    for(int i = 0; i < actual.length; i++)
+    for (int i = 0; i < actual.length; i++)
       for (int j = 0; j < actual[0].length; j++)
-      assertEquals(expected[i][j].d, actual[i][j].d, threshold);
+        assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
@@ -1234,10 +1335,10 @@ public class TestUtil extends Iced {
     int ncomp = actual[0].length;
     boolean[] flipped = new boolean[ncomp];
 
-    for(int j = 0; j < ncomp; j++) {
+    for (int j = 0; j < ncomp; j++) {
       // flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > threshold;
       flipped[j] = Math.abs(expected[0][j] - actual[0][j]) > Math.abs(expected[0][j] + actual[0][j]);
-      for(int i = 0; i < nfeat; i++) {
+      for (int i = 0; i < nfeat; i++) {
         assertEquals(expected[i][j], flipped[j] ? -actual[i][j] : actual[i][j], threshold);
       }
     }
@@ -1249,19 +1350,19 @@ public class TestUtil extends Iced {
     int ncomp = actual.getColDim();
     boolean[] flipped = new boolean[ncomp];
 
-    for(int j = 0; j < ncomp; j++) {
-      flipped[j] = Math.abs(expected[0][j] - (double)actual.get(0,j)) > threshold;
-      for(int i = 0; i < nfeat; i++) {
-        assertEquals(expected[i][j], flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+    for (int j = 0; j < ncomp; j++) {
+      flipped[j] = Math.abs(expected[0][j] - (double) actual.get(0, j)) > threshold;
+      for (int i = 0; i < nfeat; i++) {
+        assertEquals(expected[i][j], flipped[j] ? -(double) actual.get(i, j) : (double) actual.get(i, j), threshold);
       }
     }
     return flipped;
   }
 
   public static boolean equalTwoArrays(double[] array1, double[] array2, double tol) {
-    assert array1.length==array2.length:"Arrays have different lengths";
-    for (int index=0; index < array1.length; index++) {
-      if (Math.abs(array1[index]-array2[index])>tol)
+    assert array1.length == array2.length : "Arrays have different lengths";
+    for (int index = 0; index < array1.length; index++) {
+      if (Math.abs(array1[index] - array2[index]) > tol)
         return false;
     }
     return true;
@@ -1274,40 +1375,41 @@ public class TestUtil extends Iced {
 
     public StandardizeColumns(int[] cols, double[] colMeans, double[] oneOSigma,
                               Frame transF) {
-      assert cols.length==colMeans.length;
-      assert colMeans.length==oneOSigma.length;
+      assert cols.length == colMeans.length;
+      assert colMeans.length == oneOSigma.length;
       _columns2Transform = cols;
       _colMeans = colMeans;
       _oneOStd = oneOSigma;
 
       int numCols = transF.numCols();
-      for (int cindex:cols) { // check to make sure columns are numerical
+      for (int cindex : cols) { // check to make sure columns are numerical
         assert transF.vec(cindex).isNumeric();
       }
     }
 
-    @Override public void map(Chunk[] chks) {
+    @Override
+    public void map(Chunk[] chks) {
       int chunkLen = chks[0].len();
       int colCount = 0;
-      for (int cindex:_columns2Transform) {
-        for (int rindex=0; rindex < chunkLen; rindex++) {
-          double temp = (chks[cindex].atd(rindex)-_colMeans[colCount])*_oneOStd[colCount];
+      for (int cindex : _columns2Transform) {
+        for (int rindex = 0; rindex < chunkLen; rindex++) {
+          double temp = (chks[cindex].atd(rindex) - _colMeans[colCount]) * _oneOStd[colCount];
           chks[cindex].set(rindex, temp);
         }
         colCount += 1;
       }
     }
   }
-  
+
   public static boolean equalTwoHashMaps(HashMap<String, Double> coeff1, HashMap<String, Double> coeff2, double tol) {
-    assert coeff1.size()==coeff2.size():"HashMap sizes are differenbt";
-    for (String key:coeff1.keySet()) {
-      if (Math.abs(coeff1.get(key)-coeff2.get(key)) > tol)
+    assert coeff1.size() == coeff2.size() : "HashMap sizes are differenbt";
+    for (String key : coeff1.keySet()) {
+      if (Math.abs(coeff1.get(key) - coeff2.get(key)) > tol)
         return false;
     }
     return true;
   }
-  
+
   public static boolean equalTwoDimTables(TwoDimTable tab1, TwoDimTable tab2, double tol) {
     boolean same = true;
     //compare colHeaders
@@ -1317,18 +1419,18 @@ public class TestUtil extends Iced {
     IcedWrapper[][] cellValues1 = tab1.getCellValues();
     IcedWrapper[][] cellValues2 = tab2.getCellValues();
 
-    same = same && cellValues1.length==cellValues2.length;
+    same = same && cellValues1.length == cellValues2.length;
     if (!same)
       return false;
 
     // compare cell values
     for (int cindex = 0; cindex < cellValues1.length; cindex++) {
-      same = same && cellValues1[cindex].length==cellValues2[cindex].length;
+      same = same && cellValues1[cindex].length == cellValues2[cindex].length;
       if (!same)
         return false;
-      for (int index=0; index < cellValues1[cindex].length; index++) {
+      for (int index = 0; index < cellValues1[cindex].length; index++) {
         if (colTypes[index].equals("double")) {
-          same = same && Math.abs(Double.parseDouble(cellValues1[cindex][index].toString())-Double.parseDouble(cellValues2[cindex][index].toString()))<tol;
+          same = same && Math.abs(Double.parseDouble(cellValues1[cindex][index].toString()) - Double.parseDouble(cellValues2[cindex][index].toString())) < tol;
         } else {
           same = same && cellValues1[cindex][index].toString().equals(cellValues2[cindex][index].toString());
         }
@@ -1343,18 +1445,18 @@ public class TestUtil extends Iced {
     boolean[] flipped = new boolean[ncomp];
 
     // better way to get sign
-    for (int j=0; j < ncomp; j++) {
+    for (int j = 0; j < ncomp; j++) {
       for (int i = 0; i < nfeat; i++) {
-        if (Math.abs((Double) expected.get(i,j))>0.0 && Math.abs((Double) actual.get(i,j))>0.0) { // only non zeros
-          flipped[j] = !(Math.signum((Double)expected.get(i,j))==Math.signum((Double)actual.get(i,j)));
+        if (Math.abs((Double) expected.get(i, j)) > 0.0 && Math.abs((Double) actual.get(i, j)) > 0.0) { // only non zeros
+          flipped[j] = !(Math.signum((Double) expected.get(i, j)) == Math.signum((Double) actual.get(i, j)));
           break;
         }
       }
     }
 
-    for(int j = 0; j < ncomp; j++) {
-      for(int i = 0; i < nfeat; i++) {
-        assertEquals((double) expected.get(i,j), flipped[j] ? -(double)actual.get(i,j) : (double)actual.get(i,j), threshold);
+    for (int j = 0; j < ncomp; j++) {
+      for (int i = 0; i < nfeat; i++) {
+        assertEquals((double) expected.get(i, j), flipped[j] ? -(double) actual.get(i, j) : (double) actual.get(i, j), threshold);
       }
     }
     return flipped;
@@ -1366,7 +1468,7 @@ public class TestUtil extends Iced {
     int nfeat = (int) expected.numRows();
     int ncomp = expected.numCols();
 
-    for(int j = 0; j < ncomp; j++) {
+    for (int j = 0; j < ncomp; j++) {
       Vec.Reader vexp = expected.vec(j).new Reader();
       Vec.Reader vact = actual.vec(j).new Reader();
       assertEquals(vexp.length(), vact.length());
@@ -1383,42 +1485,62 @@ public class TestUtil extends Iced {
   }
 
   // Run tests from cmd-line since testng doesn't seem to be able to it.
-  public static void main( String[] args ) {
+  public static void main(String[] args) {
     H2O.main(new String[0]);
-    for( String arg : args ) {
+    for (String arg : args) {
       try {
-        System.out.println("=== Starting "+arg);
+        System.out.println("=== Starting " + arg);
         Class<?> clz = Class.forName(arg);
         Method main = clz.getDeclaredMethod("main");
         main.invoke(null);
-      } catch( InvocationTargetException ite ) {
+      } catch (InvocationTargetException ite) {
         Throwable e = ite.getCause();
         e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } catch( Exception e ) {
+        try {
+          Thread.sleep(100);
+        } catch (Exception ignore) {
+        }
+      } catch (Exception e) {
         e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
+        try {
+          Thread.sleep(100);
+        } catch (Exception ignore) {
+        }
       } finally {
-        System.out.println("=== Stopping "+arg);
+        System.out.println("=== Stopping " + arg);
       }
     }
-    try { Thread.sleep(100); } catch( Exception ignore ) { }
-    if( args.length != 0 )
+    try {
+      Thread.sleep(100);
+    } catch (Exception ignore) {
+    }
+    if (args.length != 0)
       UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 
   protected static class Cmp1 extends MRTask<Cmp1> {
     final double _epsilon;
     final String _messagePrefix;
-    public Cmp1( double epsilon ) { _epsilon = epsilon; _messagePrefix = ""; }
-    public Cmp1( double epsilon, String msg ) { _epsilon = epsilon; _messagePrefix = msg + " "; }
+
+    public Cmp1(double epsilon) {
+      _epsilon = epsilon;
+      _messagePrefix = "";
+    }
+
+    public Cmp1(double epsilon, String msg) {
+      _epsilon = epsilon;
+      _messagePrefix = msg + " ";
+    }
+
     public boolean _unequal;
     public String _message;
-    @Override public void map( Chunk chks[] ) {
-      for( int cols=0; cols<chks.length>>1; cols++ ) {
-        Chunk c0 = chks[cols                 ];
-        Chunk c1 = chks[cols+(chks.length>>1)];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+
+    @Override
+    public void map(Chunk chks[]) {
+      for (int cols = 0; cols < chks.length >> 1; cols++) {
+        Chunk c0 = chks[cols];
+        Chunk c1 = chks[cols + (chks.length >> 1)];
+        for (int rows = 0; rows < chks[0]._len; rows++) {
           String msgBase = _messagePrefix + "At [" + rows + ", " + cols + "]: ";
           if (c0.isNA(rows) != c1.isNA(rows)) {
             _unequal = true;
@@ -1451,7 +1573,7 @@ public class TestUtil extends Iced {
               }
             } else {
               double d0 = c0.atd(rows), d1 = c1.atd(rows);
-              double cmpValue = ((d0==0.0) || (d1==0.0))?1.0:Math.abs(d0) + Math.abs(d1);
+              double cmpValue = ((d0 == 0.0) || (d1 == 0.0)) ? 1.0 : Math.abs(d0) + Math.abs(d1);
               if (!(Math.abs(d0 - d1) <= cmpValue * _epsilon)) {
                 _unequal = true;
                 _message = msgBase + " d0 " + d0 + " != d1 " + d1;
@@ -1462,7 +1584,9 @@ public class TestUtil extends Iced {
         }
       }
     }
-    @Override public void reduce( Cmp1 cmp ) {
+
+    @Override
+    public void reduce(Cmp1 cmp) {
       if (_unequal) return;
       if (cmp._unequal) {
         _unequal = true;
@@ -1499,12 +1623,19 @@ public class TestUtil extends Iced {
       return parseTestFile(file);
     }
 
-    public void done(Frame frame) {}
+    public void done(Frame frame) {
+    }
 
-    public void check(Frame frame) {}
+    public void check(Frame frame) {
+    }
 
-    public final int nrows() { return dim[1]; }
-    public final int ncols() { return dim[0]; }
+    public final int nrows() {
+      return dim[1];
+    }
+
+    public final int ncols() {
+      return dim[0];
+    }
   }
 
   public static abstract class GenFrameAssertion extends FrameAssertion {
@@ -1512,6 +1643,7 @@ public class TestUtil extends Iced {
     public GenFrameAssertion(String file, int[] dim) {
       this(file, dim, null);
     }
+
     public GenFrameAssertion(String file, int[] dim, ParseSetupTransformer psTransformer) {
       super(file, dim);
       this.psTransformer = psTransformer;
@@ -1562,7 +1694,6 @@ public class TestUtil extends Iced {
   }
 
   /**
-   *
    * @param frame
    * @param columnName column's name to be factorized
    * @return Frame with factorized column
@@ -1612,7 +1743,7 @@ public class TestUtil extends Iced {
     }
     return rd;
   }
-  
+
   protected static double[] toNumericRow(Frame fr, long row) {
     double[] result = new double[fr.numCols()];
     for (int i = 0; i < result.length; i++) {
@@ -1622,34 +1753,32 @@ public class TestUtil extends Iced {
   }
 
   /**
-   *
    * Compares two frames. Two frames are equal if and only if they contain the same number of columns, rows,
    * and values at each cell (coordinate) are the same. Column names are ignored, as well as chunks sizes and all other
    * aspects besides those explicitly mentioned.
-   * 
-   * @param f1 Frame to be compared, not null
-   * @param f2 Frame to be compared, not null
+   *
+   * @param f1    Frame to be compared, not null
+   * @param f2    Frame to be compared, not null
    * @param delta absolute tolerance
    * @return True if frames are the same up to tolerance - number of columns, rows & values at each cell.
-   * @throws AssertionError If any inequalities are found
+   * @throws AssertionError           If any inequalities are found
    * @throws IllegalArgumentException If input frames don't have the same column and row count
    */
   public static boolean compareFrames(final Frame f1, final Frame f2, double delta) {
     return compareFrames(f1, f2, delta, 0.0);
-  } 
-  
+  }
+
   /**
-   *
    * Compares two frames. Two frames are equal if and only if they contain the same number of columns, rows,
    * and values at each cell (coordinate) are the same. Column names are ignored, as well as chunks sizes and all other
    * aspects besides those explicitly mentioned.
-   * 
-   * @param f1 Frame to be compared, not null
-   * @param f2 Frame to be compared, not null
-   * @param delta absolute tolerance
+   *
+   * @param f1            Frame to be compared, not null
+   * @param f2            Frame to be compared, not null
+   * @param delta         absolute tolerance
    * @param relativeDelta relative tolerance
    * @return True if frames are the same up to tolerance - number of columns, rows & values at each cell.
-   * @throws AssertionError If any inequalities are found
+   * @throws AssertionError           If any inequalities are found
    * @throws IllegalArgumentException If input frames don't have the same column and row count
    */
   public static boolean compareFrames(final Frame f1, final Frame f2, double delta, double relativeDelta) {
@@ -1683,7 +1812,7 @@ public class TestUtil extends Iced {
   public static boolean compareFrames(final Frame f1, final Frame f2) throws IllegalStateException {
     return compareFrames(f1, f2, 0);
   }
-  
+
   /**
    * Sets a locale cluster-wide. Consider returning it back to the default value.
    *
@@ -1712,9 +1841,9 @@ public class TestUtil extends Iced {
    * Converts a H2OFrame to a csv file for debugging purposes.
    *
    * @param fileNameWithPath: String containing filename with path that will contain the H2O Frame
-   * @param h2oframe: H2O Frame to be saved as CSV file.
-   * @param header: boolean to decide if column names should be saved.  Set to false if don't care.
-   * @param hex_string: boolean to decide if the double values are written in hex.  Set to false if don't care.
+   * @param h2oframe:         H2O Frame to be saved as CSV file.
+   * @param header:           boolean to decide if column names should be saved.  Set to false if don't care.
+   * @param hex_string:       boolean to decide if the double values are written in hex.  Set to false if don't care.
    * @throws IOException
    */
   public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean header, boolean hex_string)
@@ -1725,11 +1854,11 @@ public class TestUtil extends Iced {
             .setHexString(hex_string);
     File targetFile = new File(fileNameWithPath);
 
-    byte[] buffer = new byte[1<<20];
+    byte[] buffer = new byte[1 << 20];
     int bytesRead;
     try (InputStream frameToStream = h2oframe.toCSV(params);
          OutputStream outStream = new FileOutputStream(targetFile)) {
-      while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
+      while ((bytesRead = frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
         outStream.write(buffer, 0, bytesRead);
       }
     }
@@ -1754,7 +1883,7 @@ public class TestUtil extends Iced {
    * @param len        Length of the resulting vector
    * @param randomSeed Seed for the random generator (for reproducibility)
    * @return An instance of {@link Vec} with random double values
-   */ 
+   */
   public static Vec createRandomDoubleVec(final long len, final long randomSeed) {
     final Vec vec = Vec.makeZero(len, Vec.T_NUM);
     final Random random = RandomUtils.getRNG(randomSeed);
@@ -1768,7 +1897,7 @@ public class TestUtil extends Iced {
    * @param len        Length of the resulting vector
    * @param randomSeed Seed for the random generator (for reproducibility)
    * @return An instance of {@link Vec} with random categorical values
-   */  
+   */
   public static Vec createRandomCategoricalVec(final long len, final long randomSeed) {
     String[] domain = new String[100];
     for (int i = 0; i < domain.length; i++) domain[i] = "CAT_" + i;
@@ -1810,5 +1939,49 @@ public class TestUtil extends Iced {
     assertNotNull(dkvObject);
     assertEquals(object.checksum(true), dkvObject.checksum(true));
   }
-  
+
+  public static Vec transformVec(Vec vec, Function<Double, Double> transform) {
+    new MRTask() {
+      @Override
+      public void map(Chunk c) {
+        for (int i = 0; i < c._len; i++) {
+          if (c.isNA(i))
+            continue;
+          c.set(i, transform.apply(c.atd(i)));
+        }
+      }
+    }.doAll(vec);
+    return vec;
+  }
+
+  /**
+   * Debugging-only function that lets the developer open Flow (or R/Py) during execution of a junit test
+   * and inspect the model.
+   */
+  @SuppressWarnings("unused")
+  @Deprecated // just to make it noticeable in IDE
+  public static void browser() {
+    if (isCI()) {
+      throw new IllegalStateException("Never leave browser() calls in committed source code - only for debugging");
+    }
+    File root = new File(".");
+    while (!new File(root, "h2o-core").isDirectory()) {
+      root = new File(root, "..");
+    }
+    H2O.registerResourceRoot(new File(root, "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(root, "h2o-core/src/main/resources/www"));
+
+    String message = "Open H2O Flow in your web browser: ";
+    System.err.println(message + H2O.getURL(NetworkInit.h2oHttpView.getScheme()));
+
+    while (!H2O.getShutdownRequested()) {
+      try {
+        Thread.sleep(60 * 1000);
+        System.err.println("Still waiting for H2O to shutdown");
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+  }
+
 }
