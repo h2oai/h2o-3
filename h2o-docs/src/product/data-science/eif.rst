@@ -69,7 +69,7 @@ Anomaly Score
 ~~~~~~~~~~~~~
 
 The output of Extended Isolation Forest's algorithm is in compliance with this `Extended Isolation Forest <http://dx.doi.org/10.1109/TKDE.2019.2947676>`__ paper.
-In short, the anomaly score is the average **mean_length** in a forest normalized by the average path of an unsuccessful search in a BST.
+In short, the anomaly score is the average **mean_length** in a forest normalized by the average path of an unsuccessful search in a binary search tree (BST).
 
 The **anomaly_score**:
 

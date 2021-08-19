@@ -141,7 +141,7 @@ A point is marked as an anomaly if the score is greater or equal to (1-``contami
     score(mean\_length) = \frac{(maxPathLength - mean\_length)}{(maxPathLength - minPathLength)}
 
 
-Where ``minPathLength`` and ``maxPathLength`` are assigned in training. It can happen that an anomalous point has a value > 1. A higher value means a “more anomalous“ point. The score is not normalized by the average path of an unsuccessful search in a BST.
+Where ``minPathLength`` and ``maxPathLength`` are assigned in training. It can happen that an anomalous point has a value > 1. A higher value means a “more anomalous“ point. The score is not normalized by the average path of an unsuccessful search in a binary search tree (BST).
 
 **Mean_Length**: mean path length of the point in a forest. 
 
