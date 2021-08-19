@@ -16,6 +16,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.h
 
 - Added security updates.
 
+#### New Feature
+
+- [[PUBDEV-8284]](https://h2oai.atlassian.net/browse/PUBDEV-8284) - Exposed the ``scale_pos_weight`` parameter in XGBoost.
+
+#### Task
+
+- [[PUBDEV-8241]](https://h2oai.atlassian.net/browse/PUBDEV-8241) - Clarified the anomaly score formula used for score calculation within Isolation Forest and Extended Isolation Forest.
+
 #### Docs
 
 - [[PUBDEV-8096]](https://h2oai.atlassian.net/browse/PUBDEV-8096) - Added a note on memory usage when using XGBoost to User Guide.
