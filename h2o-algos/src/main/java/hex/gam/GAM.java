@@ -150,7 +150,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         gamIndex = csInd++;
       knots[gamIndex] = new double[_parms._gam_columns[outIndex].length][];
       if (tempKey != null && (tempKey.length() > 0)) {  // read knots location from Frame given by user      
-        final Frame knotFrame = Scope.track((Frame) DKV.getGet(Key.make(tempKey)));
+        final Frame knotFrame = DKV.getGet(Key.make(tempKey));
         double[][] knotContent = new double[(int) knotFrame.numRows()][_parms._gam_columns[outIndex].length];
         final ArrayUtils.FrameToArray f2a = new ArrayUtils.FrameToArray(0,
                 _parms._gam_columns[outIndex].length - 1, knotFrame.numRows(), knotContent);
