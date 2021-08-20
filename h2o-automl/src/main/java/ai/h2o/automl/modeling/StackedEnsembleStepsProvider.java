@@ -14,12 +14,10 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
@@ -32,8 +30,8 @@ public class StackedEnsembleStepsProvider
 
         static abstract class StackedEnsembleModelStep extends ModelingStep.ModelStep<StackedEnsembleModel> {
 
-            StackedEnsembleModelStep(String id, int weight, AutoML autoML) {
-                super(Algo.StackedEnsemble, id, weight, autoML);
+            StackedEnsembleModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
+                super(Algo.StackedEnsemble, id, weight, priorityGroup,autoML);
                 _ignoredConstraints = new AutoML.Constraint[] {AutoML.Constraint.MODEL_COUNT};
             }
 
@@ -81,6 +79,21 @@ public class StackedEnsembleStepsProvider
                     aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Cross-validation is disabled by the user and no blending frame was provided; skipping StackedEnsemble '%s'.", _id));
                     return false;
                 }
+
+                Key<StackedEnsembleModel>[] seModels = Arrays
+                        .stream(getTrainedModelsKeys())
+                        .filter(k -> isStackedEnsemble(k))
+                        .toArray(Key[]::new);
+
+                for (Key<StackedEnsembleModel> seKey: seModels) {
+                    final Key[] baseModels = seKey.get()._parms._base_models;
+                    if (baseModels.length != getBaseModels().length) continue;
+                    if (Arrays.stream(getBaseModels())
+                            .filter(model -> ArrayUtils.contains(baseModels, model))
+                            .count() == baseModels.length)
+                        return false; // We already have a SE with the same base models
+                }
+
                 return true;
             }
 
@@ -95,9 +108,8 @@ public class StackedEnsembleStepsProvider
                 return key.toString().startsWith(_algo.name());
             }
 
-            Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {
+            Job<StackedEnsembleModel> stack(Key modelKey, Key<Model>[] baseModels, boolean isLast) {
                 StackedEnsembleParameters stackedEnsembleParameters = getStackedEnsembleParameters(baseModels, isLast);
-                Key<StackedEnsembleModel> modelKey = makeKey(modelName, false);
                 return trainModel(modelKey, stackedEnsembleParameters);
             }
 
@@ -132,7 +144,7 @@ public class StackedEnsembleStepsProvider
 
 
         private ModelingStep[] defaults = new StackedEnsembleModelStep[] {
-                new StackedEnsembleModelStep("best", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                new StackedEnsembleModelStep("best10", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
                     { _description = _description+" (built using top model from each algorithm type)"; }
 
                     @Override
@@ -154,10 +166,10 @@ public class StackedEnsembleStepsProvider
 
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
-                        return stack(_algo+"_BestOfFamily", getBaseModels(), false);
+                        return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("all", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                new StackedEnsembleModelStep("all10", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
                     { _description = _description+" (built using all AutoML models)"; }
 
                     @Override
@@ -169,10 +181,158 @@ public class StackedEnsembleStepsProvider
 
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
-                        return stack(_algo+"_AllModels", getBaseModels(), true);
+                        return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("monotonic", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+
+                new StackedEnsembleModelStep("best20", DEFAULT_MODEL_TRAINING_WEIGHT, 20,aml()) {
+                    { _description = _description+" (built using top model from each algorithm type)"; }
+
+                    @Override
+                    protected Key<Model>[] getBaseModels() {
+                        // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+                        // This will give another ensemble that is smaller than the original which takes all models into consideration.
+                        List<Key<Model>> bestModelsOfEachType = new ArrayList<>();
+                        Set<String> typesOfGatheredModels = new HashSet<>();
+
+                        for (Key<Model> key : getTrainedModelsKeys()) {
+                            // trained models are sorted (taken from leaderboard), so we only need to pick the first of each type (excluding other StackedEnsembles)
+                            String type = getModelType(key);
+                            if (isStackedEnsemble(key) || typesOfGatheredModels.contains(type)) continue;
+                            typesOfGatheredModels.add(type);
+                            bestModelsOfEachType.add(key);
+                        }
+                        return bestModelsOfEachType.toArray(new Key[0]);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
+                    }
+                },
+                new StackedEnsembleModelStep("all20", DEFAULT_MODEL_TRAINING_WEIGHT,20 ,aml()) {
+                    { _description = _description+" (built using all AutoML models)"; }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    protected Key<Model>[] getBaseModels() {
+                        return Stream.of(getTrainedModelsKeys())
+                                .filter(k -> !isStackedEnsemble(k)).toArray(Key[]::new);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), false);
+                    }
+                },
+
+                new StackedEnsembleModelStep("best30", DEFAULT_MODEL_TRAINING_WEIGHT, 30 ,aml()) {
+                    { _description = _description+" (built using top model from each algorithm type)"; }
+
+                    @Override
+                    protected Key<Model>[] getBaseModels() {
+                        // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+                        // This will give another ensemble that is smaller than the original which takes all models into consideration.
+                        List<Key<Model>> bestModelsOfEachType = new ArrayList<>();
+                        Set<String> typesOfGatheredModels = new HashSet<>();
+
+                        for (Key<Model> key : getTrainedModelsKeys()) {
+                            // trained models are sorted (taken from leaderboard), so we only need to pick the first of each type (excluding other StackedEnsembles)
+                            String type = getModelType(key);
+                            if (isStackedEnsemble(key) || typesOfGatheredModels.contains(type)) continue;
+                            typesOfGatheredModels.add(type);
+                            bestModelsOfEachType.add(key);
+                        }
+                        return bestModelsOfEachType.toArray(new Key[0]);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
+                    }
+                },
+                new StackedEnsembleModelStep("all30", DEFAULT_MODEL_TRAINING_WEIGHT, 30,aml()) {
+                    { _description = _description+" (built using all AutoML models)"; }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    protected Key<Model>[] getBaseModels() {
+                        return Stream.of(getTrainedModelsKeys())
+                                .filter(k -> !isStackedEnsemble(k)).toArray(Key[]::new);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), false);
+                    }
+                },
+                new StackedEnsembleModelStep("best90", DEFAULT_MODEL_TRAINING_WEIGHT, 90,aml()) {
+                    { _description = _description+" (built using top model from each algorithm type)"; }
+
+                    @Override
+                    protected Key<Model>[] getBaseModels() {
+                        // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+                        // This will give another ensemble that is smaller than the original which takes all models into consideration.
+                        List<Key<Model>> bestModelsOfEachType = new ArrayList<>();
+                        Set<String> typesOfGatheredModels = new HashSet<>();
+
+                        for (Key<Model> key : getTrainedModelsKeys()) {
+                            // trained models are sorted (taken from leaderboard), so we only need to pick the first of each type (excluding other StackedEnsembles)
+                            String type = getModelType(key);
+                            if (isStackedEnsemble(key) || typesOfGatheredModels.contains(type)) continue;
+                            typesOfGatheredModels.add(type);
+                            bestModelsOfEachType.add(key);
+                        }
+                        return bestModelsOfEachType.toArray(new Key[0]);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
+                    }
+                },
+                new StackedEnsembleModelStep("all90", DEFAULT_MODEL_TRAINING_WEIGHT, 90,aml()) {
+                    { _description = _description+" (built using all AutoML models)"; }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    protected Key<Model>[] getBaseModels() {
+                        return Stream.of(getTrainedModelsKeys())
+                                .filter(k -> !isStackedEnsemble(k)).toArray(Key[]::new);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), false);
+                    }
+                },
+                new StackedEnsembleModelStep("best100", DEFAULT_MODEL_TRAINING_WEIGHT, 100,aml()) {
+                    { _description = _description+" (built using top model from each algorithm type)"; }
+
+                    @Override
+                    protected Key<Model>[] getBaseModels() {
+                        // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
+                        // This will give another ensemble that is smaller than the original which takes all models into consideration.
+                        List<Key<Model>> bestModelsOfEachType = new ArrayList<>();
+                        Set<String> typesOfGatheredModels = new HashSet<>();
+
+                        for (Key<Model> key : getTrainedModelsKeys()) {
+                            // trained models are sorted (taken from leaderboard), so we only need to pick the first of each type (excluding other StackedEnsembles)
+                            String type = getModelType(key);
+                            if (isStackedEnsemble(key) || typesOfGatheredModels.contains(type)) continue;
+                            typesOfGatheredModels.add(type);
+                            bestModelsOfEachType.add(key);
+                        }
+                        return bestModelsOfEachType.toArray(new Key[0]);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
+                    }
+                },
+
+                new StackedEnsembleModelStep("monotonic", DEFAULT_MODEL_TRAINING_WEIGHT, Integer.MAX_VALUE,aml()) {
                     { _description = _description+" (built using monotonically constrained AutoML models)"; }
 
                     boolean hasMonotoneConstrains(Key<Model> modelKey) {
@@ -222,7 +382,23 @@ public class StackedEnsembleStepsProvider
 
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
-                        return stack(_algo + "_Monotonic", getBaseModels(), true);
+                        return stack(makeKey(_algo + "_Monotonic", false), getBaseModels(), false);
+                    }
+                },
+
+                new StackedEnsembleModelStep("all100", DEFAULT_MODEL_TRAINING_WEIGHT, 100,aml()) {
+                    { _description = _description+" (built using all AutoML models)"; }
+
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    protected Key<Model>[] getBaseModels() {
+                        return Stream.of(getTrainedModelsKeys())
+                                .filter(k -> !isStackedEnsemble(k)).toArray(Key[]::new);
+                    }
+
+                    @Override
+                    protected Job<StackedEnsembleModel> startJob() {
+                        return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), true);
                     }
                 },
         };

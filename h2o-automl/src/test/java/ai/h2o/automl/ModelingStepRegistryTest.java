@@ -65,7 +65,7 @@ public class ModelingStepRegistryTest extends TestUtil {
     @Test
     public void test_non_empty_definition() {
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
-        assertEquals(3, registry.getOrderedSteps(new StepDefinition[]{
+        assertEquals(11, registry.getOrderedSteps(new StepDefinition[]{
                 new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)
         }, aml).length);
     }
@@ -77,7 +77,7 @@ public class ModelingStepRegistryTest extends TestUtil {
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.all))
                 .collect(Collectors.toList());
         ModelingStep[] modelingSteps = registry.getOrderedSteps(allSteps.toArray(new StepDefinition[0]), aml);
-        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1 + 1/*GBM*/) + (1/*GLM*/) + (3/*SE*/) + (3 + 1 + 2/*XGB*/),
+        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1 + 1/*GBM*/) + (1/*GLM*/) + (11/*SE*/) + (3 + 1 + 2/*XGB*/),
                 modelingSteps.length);
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.GridStep.class::isInstance).count());
@@ -86,7 +86,7 @@ public class ModelingStepRegistryTest extends TestUtil {
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.GridStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.SelectionStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GLM).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.StackedEnsemble).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(11, Stream.of(modelingSteps).filter(s -> s._algo == Algo.StackedEnsemble).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.GridStep.class::isInstance).count());
         assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.SelectionStep.class::isInstance).count());
@@ -97,7 +97,7 @@ public class ModelingStepRegistryTest extends TestUtil {
                 "def_1", "XRT",
                 "def_1", "def_2", "def_3", "def_4", "def_5", "grid_1", "lr_annealing",
                 "def_1",
-                "best", "all", "monotonic",
+                "best10", "all10", "best20", "all20","best30", "all30", "best90", "all90", "best100", "monotonic", "all100",
                 "def_1", "def_2", "def_3", "grid_1", "lr_annealing", "lr_search"
         ), orderedStepIds);
 
@@ -111,7 +111,7 @@ public class ModelingStepRegistryTest extends TestUtil {
                 .toArray(StepDefinition[]::new);
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(allDefaultSteps, aml);
-        assertEquals((1/*DL*/) + (2/*DRF*/) + (5/*GBM*/) + (1/*GLM*/) + (3/*SE*/) + (3/*XGB*/),
+        assertEquals((1/*DL*/) + (2/*DRF*/) + (5/*GBM*/) + (1/*GLM*/) + (11/*SE*/) + (3/*XGB*/),
                 modelingSteps.length);
     }
 
@@ -131,12 +131,12 @@ public class ModelingStepRegistryTest extends TestUtil {
         StepDefinition[] byIdSteps = new StepDefinition[]{
                 new StepDefinition(Algo.DRF.name(), new String[]{"XRT"}),
                 new StepDefinition(Algo.XGBoost.name(), new String[]{"grid_1"}),
-                new StepDefinition(Algo.StackedEnsemble.name(), new String[]{"all", "best"})
+                new StepDefinition(Algo.StackedEnsemble.name(), new String[]{"all10", "best10"})
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(byIdSteps, aml);
         assertEquals(4, modelingSteps.length);
-        assertEquals(Arrays.asList("XRT", "grid_1", "all", "best"), Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList()));
+        assertEquals(Arrays.asList("XRT", "grid_1", "all10", "best10"), Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList()));
         assertEquals(Arrays.asList(10, 100, 10, 10), Arrays.stream(modelingSteps).map(s -> s._weight).collect(Collectors.toList()));
     }
 

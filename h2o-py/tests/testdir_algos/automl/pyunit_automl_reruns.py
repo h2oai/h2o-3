@@ -34,17 +34,18 @@ def assert_same_leaderboard(lb1, lb2, size=0):
 
 def assert_distinct_leaderboard(lb1, lb2, size=0):
     print(lb1)
-    assert len(lb1) == size
+    assert len([x for x in lb1 if "Stacked" not in x]) == size
     print(lb2)
-    assert len(lb2) == size
+    assert len([x for x in lb2 if "Stacked" not in x]) == size
     assert not any(m in lb2 for m in lb1)
 
 
 def assert_extended_leaderboard(lb1, lb2, size=0):
+    print("size: {}".format(size))
     print(lb1)
-    assert len(lb1) == size
+    assert len([x for x in lb1 if "Stacked" not in x]) == size
     print(lb2)
-    assert len(lb2) == size*2
+    assert len([x for x in lb2 if "Stacked" not in x]) == size*2
     assert all(m in lb2 for m in lb1)
 
 
@@ -58,7 +59,7 @@ def suite_reruns_with_same_instance_without_project_name():
         aml.train(y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_predictors_adds_models_to_leaderboard():
         ds = import_dataset()
@@ -68,7 +69,7 @@ def suite_reruns_with_same_instance_without_project_name():
         aml.train(x=ds.train.columns[1:], y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_training_frame_adds_models_to_leaderboard():
         ds = import_dataset()
@@ -78,7 +79,7 @@ def suite_reruns_with_same_instance_without_project_name():
         aml.train(y=ds.target, training_frame=ds.train[1:])
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_target_resets_leaderboard():
         ds = import_dataset()
@@ -88,7 +89,7 @@ def suite_reruns_with_same_instance_without_project_name():
         aml.train(y=ds.target_alt, training_frame=ds.train)
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_distinct_leaderboard(lb1, lb2, size=max_models+2)
+        assert_distinct_leaderboard(lb1, lb2, size=max_models)
 
     return [
         test_rerun_with_same_data_adds_models_to_leaderboard,
@@ -108,7 +109,7 @@ def suite_reruns_with_same_instance_with_project_name():
         aml.train(y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_predictors_adds_models_to_leaderboard():
         ds = import_dataset()
@@ -118,7 +119,7 @@ def suite_reruns_with_same_instance_with_project_name():
         aml.train(x=ds.train.columns[1:], y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_training_frame_adds_models_to_leaderboard():
         ds = import_dataset()
@@ -128,7 +129,7 @@ def suite_reruns_with_same_instance_with_project_name():
         aml.train(y=ds.target, training_frame=ds.train[1:])
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_target_resets_leaderboard():
         ds = import_dataset()
@@ -138,7 +139,7 @@ def suite_reruns_with_same_instance_with_project_name():
         aml.train(y=ds.target_alt, training_frame=ds.train)
         lb2 = model_names(aml.leaderboard)
         assert project_name == aml.project_name
-        assert_distinct_leaderboard(lb1, lb2, size=max_models+2)
+        assert_distinct_leaderboard(lb1, lb2, size=max_models)
 
     return [
         test_rerun_with_same_data_adds_models_to_leaderboard,
@@ -159,7 +160,7 @@ def suite_reruns_with_different_instance_without_project_name():
         aml2.train(y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml2.leaderboard)
         assert aml2.project_name != aml1.project_name
-        assert_distinct_leaderboard(lb1, lb2, size=max_models+2)
+        assert_distinct_leaderboard(lb1, lb2, size=max_models)
 
     return [
         test_rerun_with_same_data_generates_distinct_leaderboard,
@@ -177,7 +178,7 @@ def suite_reruns_with_different_instances_same_project_name():
         aml2.train(y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml2.leaderboard)
         assert aml1.project_name == aml2.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_predictors_adds_models_to_leaderboard():
         ds = import_dataset()
@@ -188,7 +189,7 @@ def suite_reruns_with_different_instances_same_project_name():
         aml2.train(x=ds.train.columns[1:], y=ds.target, training_frame=ds.train)
         lb2 = model_names(aml2.leaderboard)
         assert aml1.project_name == aml2.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_training_frame_adds_models_to_leaderboard():
         ds = import_dataset()
@@ -199,7 +200,7 @@ def suite_reruns_with_different_instances_same_project_name():
         aml2.train(y=ds.target, training_frame=ds.train[1:])
         lb2 = model_names(aml2.leaderboard)
         assert aml1.project_name == aml2.project_name
-        assert_extended_leaderboard(lb1, lb2, size=max_models+2)
+        assert_extended_leaderboard(lb1, lb2, size=max_models)
 
     def test_rerun_with_different_target_resets_leaderboard():
         ds = import_dataset()
@@ -210,7 +211,7 @@ def suite_reruns_with_different_instances_same_project_name():
         aml2.train(y=ds.target_alt, training_frame=ds.train)
         lb2 = model_names(aml2.leaderboard)
         assert aml1.project_name == aml2.project_name
-        assert_distinct_leaderboard(lb1, lb2, size=max_models+2)
+        assert_distinct_leaderboard(lb1, lb2, size=max_models)
 
     return [
         test_rerun_with_same_data_adds_models_to_leaderboard,

@@ -50,7 +50,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
 
-  private static StepDefinition[] defaultModelingPlan = {
+  final static StepDefinition[] defaultModelingPlan = {
           new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
           new StepDefinition(Algo.GLM.name(), Alias.defaults),
           new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),

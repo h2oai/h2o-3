@@ -13,8 +13,8 @@ def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
     train[y] = train[y].asfactor()
 
     aml_mono = H2OAutoML(project_name="test_automl_creates_interpretable_se",
-                         max_models=2,
-                         include_algos=["GBM", "XGBoost", "StackedEnsemble"],
+                         max_models=5,
+                         include_algos=["GBM", "XGBoost", "DRF", "StackedEnsemble"],
                          monotone_constraints=dict(
                              AGE=1, DPROS=1, DCAPS=1, PSA=1, VOL=1, GLEASON=1
                          ),

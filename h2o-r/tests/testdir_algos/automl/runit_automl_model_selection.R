@@ -48,7 +48,7 @@ automl.model_selection.suite <- function() {
     )
     models <- get_partitioned_models(aml)
     expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
-    expect_equal(length(models$se), 2)
+    expect_equal(length(models$se), 3)
   }
 
   test_include_algos <- function() {
@@ -175,7 +175,7 @@ automl.model_selection.suite <- function() {
       list(name='DRF', steps=list(list(id='def_1', weight=10), list(id='XRT', weight=10))),
       list(name='GLM', steps=list(list(id='def_1', weight=10))),
       list(name='GBM', steps=list(list(id='grid_1', weight=777))),
-      list(name='StackedEnsemble', steps=list(list(id='best', weight=10), list(id='all', weight=10)))
+      list(name='StackedEnsemble', steps=list(list(id='best10', weight=10), list(id='all10', weight=10)))
     ))
 
     new_aml <- h2o.automl(x=ds$x, y=ds$y.idx,

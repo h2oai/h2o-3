@@ -65,7 +65,7 @@ def test_non_train_params_are_frozen_after_first_train():
     aml.sort_metric = 'logloss'
     aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds.valid)
     print(aml.leaderboard)
-    assert aml.leaderboard.nrows == (aml.max_models+1)*2 == 6
+    assert aml.leaderboard.nrows == aml.max_models*2 + aml.leaderboard["model_id"].grep("StackedEnsemble").sum()
     assert aml.leaderboard.columns[1] == 'logloss'
     
 

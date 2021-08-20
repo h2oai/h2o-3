@@ -47,7 +47,7 @@ public class ModelingStepsExecutorTest extends TestUtil {
     }
 
     private ModelingStep makeStep(Job job, boolean withWork) {
-        return new ModelingStep(Algo.GBM,"dummy", 42, aml) {
+        return new ModelingStep(Algo.GBM,"dummy", 42, 42, aml) {
             Work work = withWork ? new Work(_id, _algo, WorkAllocations.JobType.ModelBuild, _weight) : null;
             @Override
             protected Work getAllocatedWork() {

@@ -145,7 +145,7 @@ public class ModelingStepTest {
 
     private static class DummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public DummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, autoML);
+            super(algo, id, cost, 42,autoML);
         }
 
         @Override
@@ -157,7 +157,7 @@ public class ModelingStepTest {
 
     private static class FailingDummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public FailingDummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, autoML);
+            super(algo, id, cost, 42,autoML);
         }
 
         @Override
@@ -171,7 +171,7 @@ public class ModelingStepTest {
     private static class DummyGridStep extends ModelingStep.GridStep<DummyModel> {
 
         public DummyGridStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, autoML);
+            super(algo, id, cost, 42, autoML);
         }
 
         @Override
