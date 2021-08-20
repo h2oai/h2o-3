@@ -15,7 +15,7 @@ def test_weights_column_not_in_train():
         gbm.train(y=-1, training_frame=df)
         assert False, "Model building should fail."
     except H2OResponseError as e:
-        assert "ERRR on field: _weights_column" in e, "Model building should fail with this in message."
+        assert "ERRR on field: _weights_column" in e.__str__(), "Model building should fail with this in message."
         
         
 if __name__ == "__main__":
