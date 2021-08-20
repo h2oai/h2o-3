@@ -320,12 +320,12 @@ The `variable importance <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/variable
 .. tabs::
    .. code-tab:: r R
 
-        va_plot <- h2o.varimp_plot(model, test)
+        va_plot <- h2o.varimp_plot(model)
         va_plot
 
    .. code-tab:: python
 
-        ra_plot = model.varimp_plot(test)
+        ra_plot = model.varimp_plot()
 
 
 .. figure:: images/explain_varimp_wine.png
