@@ -2271,7 +2271,7 @@ def explain(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object, H2OModel, or list of H2O models
+    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models
     :param frame: H2OFrame
     :param columns: either a list of columns or column indices to show. If specified
                     parameter top_n_features will be ignored.
@@ -2535,7 +2535,7 @@ def explain_row(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object, H2OModel, or list of H2O models
+    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
     :param columns: either a list of columns or column indices to show. If specified

@@ -36,7 +36,7 @@ The interface is designed to be simple and automatic -- all of the explanations 
 Parameters
 ~~~~~~~~~~
 
-- **object**: (R only) One of the following: an H2O model, a list of models, an H2OAutoML object, or an H2OAutoML leaderboard slice.
+- **object**: (R only) One of the following: an H2O supervised model, a list of supervised models, an H2OAutoML object, or an H2OAutoML leaderboard slice.
 
 - **newdata** (R) / **frame** (Python): An H2OFrame used in Residual Analysis, Shapley contributions and a number of other explanation functions.
 
