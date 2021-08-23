@@ -156,7 +156,7 @@ public abstract class SharedTree<
       error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be > 0" +
               " and <= 2");
     if (_train != null) {
-      double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
+      double sumWeights = _train.numRows() * (_weights != null ? _weights.mean() : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
         error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
                 + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
