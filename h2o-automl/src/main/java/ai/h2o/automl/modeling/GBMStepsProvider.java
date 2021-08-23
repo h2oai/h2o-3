@@ -80,7 +80,7 @@ public class GBMStepsProvider
 
 
         private ModelingStep[] defaults = new GBMModelStep[] {
-                new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 20,aml()) {
+                new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 30,aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
                         GBMParameters gbmParameters = prepareModelParameters();
@@ -110,7 +110,7 @@ public class GBMStepsProvider
                         return trainModel(gbmParameters);
                     }
                 },
-                new GBMModelStep("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 10, aml()) {
+                new GBMModelStep("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 20, aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
                         GBMParameters gbmParameters = prepareModelParameters();
@@ -120,7 +120,7 @@ public class GBMStepsProvider
                         return trainModel(gbmParameters);
                     }
                 },
-                new GBMModelStep("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 30,aml()) {
+                new GBMModelStep("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
                         GBMParameters gbmParameters = prepareModelParameters();
