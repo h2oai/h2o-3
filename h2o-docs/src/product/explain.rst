@@ -36,7 +36,7 @@ The interface is designed to be simple and automatic -- all of the explanations 
 Parameters
 ~~~~~~~~~~
 
-- **object**: (R only) One of the following: an H2O model, a list of models, an H2OAutoML object, or an H2OAutoML leaderboard slice.
+- **object**: (R only) One of the following: an H2O supervised model, a list of supervised models, an H2OAutoML object, or an H2OAutoML leaderboard slice.
 
 - **newdata** (R) / **frame** (Python): An H2OFrame used in Residual Analysis, Shapley contributions and a number of other explanation functions.
 
@@ -320,12 +320,12 @@ The `variable importance <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/variable
 .. tabs::
    .. code-tab:: r R
 
-        va_plot <- h2o.varimp_plot(model, test)
+        va_plot <- h2o.varimp_plot(model)
         va_plot
 
    .. code-tab:: python
 
-        ra_plot = model.varimp_plot(test)
+        ra_plot = model.varimp_plot()
 
 
 .. figure:: images/explain_varimp_wine.png
