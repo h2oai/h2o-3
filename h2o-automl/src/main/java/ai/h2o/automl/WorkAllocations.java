@@ -1,8 +1,5 @@
 package ai.h2o.automl;
 
-import org.apache.commons.lang.builder.StandardToStringStyle;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import water.Iced;
 import water.util.ArrayUtils;
 
@@ -19,6 +16,7 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     ModelBuild,
     HyperparamSearch,
     Selection,
+    Decision,
   }
 
   public static class Work extends Iced<Work> {
@@ -54,7 +52,7 @@ public class WorkAllocations extends Iced<WorkAllocations> {
               .append(_algo).append(", ")
               .append(_type).append(", ")
               .append("weight=").append(_weight).append(", ")
-              .append("priority_group=").append(_priorityGroup)
+              .append("group=").append(_priorityGroup)
               .append('}');
       return sb.toString();
     }

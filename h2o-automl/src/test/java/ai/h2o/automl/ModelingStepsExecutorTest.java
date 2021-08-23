@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import hex.Model;
 import hex.ModelMetricsRegression;
@@ -47,21 +48,21 @@ public class ModelingStepsExecutorTest extends TestUtil {
     }
 
     private ModelingStep makeStep(Job job, boolean withWork) {
-        return new ModelingStep(Algo.GBM,"dummy", 42, 42, aml) {
-            Work work = withWork ? new Work(_id, _algo, WorkAllocations.JobType.ModelBuild, _weight) : null;
+        return new ModelingStep("test", Algo.GBM,"dummy", 42, 42, aml) {
+           
+            @Override
+            protected JobType getJobType() {
+                return JobType.ModelBuild;
+            }
+
             @Override
             protected Work getAllocatedWork() {
-                return work;
+                return withWork ? makeWork() : null;
             }
 
             @Override
             protected Key makeKey(String name, boolean withCounter) {
                 return Key.make(name);
-            }
-
-            @Override
-            protected Work makeWork() {
-                return work;
             }
 
             @Override

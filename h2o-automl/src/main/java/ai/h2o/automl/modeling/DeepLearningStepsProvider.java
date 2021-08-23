@@ -5,8 +5,6 @@ import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.grid.Grid;
-import water.Job;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,9 +18,11 @@ public class DeepLearningStepsProvider
 
     public static class DeepLearningSteps extends ModelingSteps {
 
+        static final String NAME = Algo.DeepLearning.name();
+        
         static abstract class DeepLearningModelStep extends ModelingStep.ModelStep<DeepLearningModel> {
             public DeepLearningModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.DeepLearning, id, weight, priorityGroup, autoML);
+                super(NAME, Algo.DeepLearning, id, weight, priorityGroup, autoML);
             }
             
             @Override
@@ -37,7 +37,7 @@ public class DeepLearningStepsProvider
         static abstract class DeepLearningGridStep extends ModelingStep.GridStep<DeepLearningModel> {
 
             DeepLearningGridStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.DeepLearning, id, weight, priorityGroup, autoML);
+                super(NAME, Algo.DeepLearning, id, weight, priorityGroup, autoML);
             }
 
             protected DeepLearningParameters prepareModelParameters() {
@@ -77,7 +77,7 @@ public class DeepLearningStepsProvider
                 },
         };
 
-        private final  ModelingStep[] grids = new DeepLearningGridStep[] {
+        private final ModelingStep[] grids = new DeepLearningGridStep[] {
                 new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()) {
                     @Override
                     protected Map<String, Object[]> prepareSearchParameters() {
@@ -145,6 +145,11 @@ public class DeepLearningStepsProvider
         }
 
         @Override
+        public String getProvider() {
+            return NAME;
+        }
+
+        @Override
         protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
@@ -157,7 +162,7 @@ public class DeepLearningStepsProvider
 
     @Override
     public String getName() {
-        return Algo.DeepLearning.name();
+        return DeepLearningSteps.NAME;
     }
 
     @Override

@@ -50,11 +50,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
         aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(modelingPlan));
         List<ModelingStep> orderedSteps = new ArrayList<>();
         for (StepDefinition def : modelingPlan) {
-            ModelingStepsProvider provider = stepsByName.get(def._name);
-            if (provider == null) {
-                throw new IllegalArgumentException("Missing provider for training steps '"+def._name+"'");
-            }
-            ModelingSteps steps = provider.newInstance(aml);
+            ModelingSteps steps = aml.getModelingSteps(def._name);
             if (steps == null) continue;
 
             ModelingStep[] toAdd;

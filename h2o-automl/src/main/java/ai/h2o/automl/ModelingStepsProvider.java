@@ -11,7 +11,7 @@ public interface ModelingStepsProvider<T extends ModelingSteps> {
 
     /**
      * Creates an instance of {@link ModelingSteps} associated to this provider's name,
-     * or returns null to fully skip this provider..
+     * or returns null to fully skip this provider.
      *
      * @param aml the {@link AutoML} instance needed to build the {@link ModelingSteps}
      * @return an instance of {@link ModelingSteps} listing all the various AutoML steps executable with this provider name.

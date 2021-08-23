@@ -2,12 +2,10 @@ package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
-import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
-import water.Job;
 
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
@@ -18,10 +16,12 @@ public class GLMStepsProvider
 
     public static class GLMSteps extends ModelingSteps {
 
+        static final String NAME = Algo.GLM.name();
+        
         static abstract class GLMModelStep extends ModelingStep.ModelStep<GLMModel> {
 
             GLMModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.GLM, id, weight, priorityGroup, autoML);
+                super(NAME, Algo.GLM, id, weight, priorityGroup, autoML);
             }
 
             @Override
@@ -67,6 +67,11 @@ public class GLMStepsProvider
         }
 
         @Override
+        public String getProvider() {
+            return NAME;
+        }
+
+        @Override
         protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
@@ -74,7 +79,7 @@ public class GLMStepsProvider
 
     @Override
     public String getName() {
-        return Algo.GLM.name();
+        return GLMSteps.NAME;
     }
 
     @Override

@@ -5,7 +5,7 @@ import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
 import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.grid.Grid;
-import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
@@ -20,9 +20,10 @@ import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT
 public class GBMStepsProvider
         implements ModelingStepsProvider<GBMStepsProvider.GBMSteps>
                  , ModelParametersProvider<GBMParameters> {
-
     public static class GBMSteps extends ModelingSteps {
 
+        static final String NAME = Algo.GBM.name();
+        
         static GBMParameters prepareModelParameters() {
             GBMParameters params = new GBMParameters();
             params._score_tree_interval = 5;
@@ -33,7 +34,7 @@ public class GBMStepsProvider
         static abstract class GBMModelStep extends ModelingStep.ModelStep<GBMModel> {
 
             GBMModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.GBM, id, weight, priorityGroup, autoML);
+                super(NAME, Algo.GBM, id, weight, priorityGroup, autoML);
             }
 
             protected GBMParameters prepareModelParameters() {
@@ -48,7 +49,7 @@ public class GBMStepsProvider
 
         static abstract class GBMGridStep extends ModelingStep.GridStep<GBMModel> {
             public GBMGridStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.GBM, id, weight, priorityGroup,autoML);
+                super(NAME, Algo.GBM, id, weight, priorityGroup,autoML);
             }
 
             protected GBMParameters prepareModelParameters() {
@@ -70,11 +71,12 @@ public class GBMStepsProvider
             }
 
             @Override
-            protected boolean canRun() {
+            public boolean canRun() {
                 return super.canRun() && getBestGBM() != null;
             }
             public GBMExploitationStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.GBM, id, weight, priorityGroup, autoML);
+                super(NAME, Algo.GBM, id, weight, priorityGroup, autoML);
+//                _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
             }
         }
 
@@ -148,17 +150,10 @@ public class GBMStepsProvider
         }
         
         private final ModelingStep[] grids = new GBMGridStep[] {
-                new DefaultGBMGridStep("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()) {
+                new DefaultGBMGridStep("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()),
+                new DefaultGBMGridStep("grid_1_resume", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        Job<Grid> job = super.startJob();
-                        getResumableResultKeys().put(_algo+"_grid_1", job._result);
-                        return job;
-                    }
-                },
-                new DefaultGBMGridStep("grid_1_end", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
-                    @Override
-                    protected void setSearchCriteria(HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
+                    protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
                         super.setSearchCriteria(searchCriteria, baseParms);
                         searchCriteria.set_stopping_rounds(0);
                     }
@@ -166,8 +161,9 @@ public class GBMStepsProvider
                     @Override
                     @SuppressWarnings("unchecked")
                     protected Job<Grid> startJob() {
-                        Key<Grid> resumedGrid = getResumableResultKeys().get(_algo+"_grid_1");
-                        return hyperparameterSearch(resumedGrid, prepareModelParameters(), prepareSearchParameters());
+                        Key<Grid>[] resumedGrid = aml().getResumableKeys(_provider, "grid_1");
+                        if (resumedGrid.length == 0) return null;
+                        return hyperparameterSearch(resumedGrid[0], prepareModelParameters(), prepareSearchParameters());
                     }
                 }
         };
@@ -195,7 +191,7 @@ public class GBMStepsProvider
                     @Override
                     protected ModelSelectionStrategy getSelectionStrategy() {
                         return (originalModels, newModels) ->
-                                new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
+                                new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _provider+"_"+_id)))
                                         .select(new Key[] { getBestGBM()._key }, newModels);
                     }
                 }
@@ -203,6 +199,11 @@ public class GBMStepsProvider
 
         public GBMSteps(AutoML autoML) {
             super(autoML);
+        }
+
+        @Override
+        public String getProvider() {
+            return NAME;
         }
 
         @Override
@@ -223,7 +224,7 @@ public class GBMStepsProvider
 
     @Override
     public String getName() {
-        return Algo.GBM.name();
+        return GBMSteps.NAME;
     }
 
     @Override

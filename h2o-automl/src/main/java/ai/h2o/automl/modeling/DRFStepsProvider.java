@@ -15,10 +15,12 @@ public class DRFStepsProvider
 
     public static class DRFSteps extends ModelingSteps {
 
+        static final String NAME = Algo.DRF.name();
+        
         static abstract class DRFModelStep extends ModelingStep.ModelStep<DRFModel> {
 
             DRFModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.DRF, id, weight, priorityGroup, autoML);
+                super(NAME, Algo.DRF, id, weight, priorityGroup, autoML);
             }
 
             protected DRFParameters prepareModelParameters() {
@@ -49,26 +51,24 @@ public class DRFStepsProvider
                 },
         };
 
-        private final ModelingStep[] grids = new ModelingStep[0];
-
         public DRFSteps(AutoML autoML) {
             super(autoML);
+        }
+
+        @Override
+        public String getProvider() {
+            return NAME;
         }
 
         @Override
         protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
-
-        @Override
-        protected ModelingStep[] getGrids() {
-            return grids;
-        }
     }
 
     @Override
     public String getName() {
-        return Algo.DRF.name();
+        return DRFSteps.NAME;
     }
 
     @Override

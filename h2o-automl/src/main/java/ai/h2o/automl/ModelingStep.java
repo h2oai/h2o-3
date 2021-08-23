@@ -59,7 +59,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     {
         applyPreprocessing(baseParams);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
-                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
+                .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         return GridSearch.startGridSearch(
                 resultKey,
                 baseParams,
@@ -80,7 +80,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
         builder._parms = params;
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
-                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
+                .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         try {
             builder.init(false);          // validate parameters
             return builder.trainModelOnH2ONode();
@@ -94,6 +94,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     private transient AutoML _aml;
 
     protected final IAlgo _algo;
+    protected final String _provider;
     protected final String _id;
     protected int _weight;
     protected int _priorityGroup;
@@ -104,24 +105,94 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     StepDefinition _fromDef;
     transient final Predicate<Work> _isSamePriorityGroup = w -> w._priorityGroup == _priorityGroup;
 
-    protected ModelingStep(IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+    protected ModelingStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
         assert priorityGroup >= 0;
+        _provider = provider;
         _algo = algo;
         _id = id;
         _weight = weight;
         _priorityGroup = priorityGroup;
         _aml = autoML;
-        _description = algo.name()+" "+id;
+        _description = provider+" "+id;
+    }
+    
+    public String getProvider() {
+        return _provider;
+    }
+    
+    public String getId() {
+        return _id;
+    }
+    
+    public IAlgo getAlgo() {
+        return _algo;
+    }
+    
+    public int getWeight() {
+        return _weight;
+    }
+    
+    public int getPriorityGroup() {
+        return _priorityGroup;
     }
 
-    protected abstract Work getAllocatedWork();
+    public boolean isResumable() {
+        return false;
+    }
 
-    protected abstract Key makeKey(String name, boolean withCounter);
+    protected abstract JobType getJobType();
 
-    protected abstract Work makeWork();
+    /**
+     * @return the total work allocated for this step.
+     */
+    protected Work getAllocatedWork() {
+        return getWorkAllocations().getAllocation(_id, _algo);
+    }
 
+    /**
+     * Creates the {@link Work} instance representing the total work handled by this step.
+     * @return
+     */
+    protected Work makeWork() {
+        return new Work(getId(), getAlgo(), getJobType(), getWeight(), getPriorityGroup());
+    }
+    
+    protected Key makeKey(String name, boolean withCounter) {
+        return aml().makeKey(name, null, withCounter);
+    }
+
+    protected boolean hasSubStep() {
+        return false;
+    }
+    
+    protected ModelingStep nextSubStep() {
+        throw new NoSuchElementException("no sub-step available for step "+_id);
+    }
+
+    public Job run() {
+        Job job = startJob();
+        if (job != null && job._result != null) {
+            register(job._result);
+            if (isResumable()) aml().addResumableKey(job._result);
+        }
+        return job;
+    }
+    
+    public void register(Key key) {
+        aml().registerKeySource(key, this);
+    }
+
+    public boolean canRun() {
+        Work work = getAllocatedWork();
+        return work != null && work._weight > 0;
+    }
+
+    /**
+     * starts a new {@link Job} as part of this step.
+     * @return
+     */
     protected abstract Job startJob();
-
+    
     protected void onDone(Job job) {
         for (Consumer<Job> exec : _onDone) {
             exec.accept(job);
@@ -132,16 +203,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected AutoML aml() {
         return _aml;
     }
-
-    protected boolean canRun() {
-        Work work = getAllocatedWork();
-        return work != null && work._weight > 0;
-    }
-
+    
     protected WorkAllocations getWorkAllocations() {
         return aml()._workAllocations;
     }
 
+    /**
+     * @return the models trained until now, sorted by the default leaderboard metric.
+     */
     protected Model[] getTrainedModels() {
         return aml().leaderboard().getModels();
     }
@@ -150,12 +219,21 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return aml().leaderboard().getModelKeys();
     }
     
-    protected Map<String, Key> getResumableResultKeys() {
-        return aml()._resumableResultKeys;
-    }
-
     protected boolean isCVEnabled() {
         return aml().isCVEnabled();
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this==o) return true;
+        if (o==null || getClass()!=o.getClass()) return false;
+        ModelingStep<?> that = (ModelingStep<?>) o;
+        return _provider.equals(that._provider) && _id.equals(that._id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_provider, _id);
     }
 
     /**
@@ -315,37 +393,26 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     }
 
     /**
-     * Convenient base class for single/default model steps.
+     * Step designed to build a single/default model.
      */
     public static abstract class ModelStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
 
-        public ModelStep(IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
-            super(algo, id, cost, priorityGroup, autoML);
+        public ModelStep(String provider, IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
+            super(provider, algo, id, cost, priorityGroup, autoML);
+        }
+
+        @Override
+        protected JobType getJobType() {
+            return JobType.ModelBuild;
         }
 
         protected abstract Model.Parameters prepareModelParameters();
-        
+
         @Override
         protected Job<M> startJob() {
             return trainModel(prepareModelParameters());
-        }
-
-        @Override
-        protected Work makeWork() {
-            return new Work(_id, _algo, JobType.ModelBuild, _weight, _priorityGroup);
-        }
-
-        @Override
-        protected Work getAllocatedWork() {
-            return getWorkAllocations().getAllocation(_id, _algo);
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        protected Key<M> makeKey(String name, boolean withCounter) {
-            return aml().makeKey(name, null,  withCounter);
         }
 
         protected Job<M> trainModel(Model.Parameters parms) {
@@ -391,15 +458,25 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     }
 
     /**
-     * Convenient base class for steps defining a (random) grid search.
+     * Step designed to build multiple models using a (random) grid search.
      */
     public static abstract class GridStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 30;
         protected static final int GRID_STOPPING_ROUND_FACTOR = 2;
 
-        public GridStep(IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
-            super(algo, id, cost, priorityGroup,autoML);
+        public GridStep(String provider, IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
+            super(provider, algo, id, cost, priorityGroup,autoML);
+        }
+
+        @Override
+        protected JobType getJobType() {
+            return JobType.HyperparamSearch;
+        }
+
+        @Override
+        public boolean isResumable() {
+            return true;
         }
 
         protected abstract Model.Parameters prepareModelParameters();
@@ -409,16 +486,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         @Override
         protected Job<Grid> startJob() {
             return hyperparameterSearch(prepareModelParameters(), prepareSearchParameters());
-        }
-
-        @Override
-        protected Work makeWork() {
-            return new Work(_id, _algo, JobType.HyperparamSearch, _weight, _priorityGroup);
-        }
-
-        @Override
-        protected Work getAllocatedWork() {
-            return getWorkAllocations().getAllocation(_id, _algo);
         }
 
         @Override
@@ -456,10 +523,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
             setSearchCriteria(searchCriteria, baseParms);
 
-            if (null == key) key = makeKey(_algo.name(), true);
+            if (null == key) key = makeKey(_provider, true);
             aml().trackKeys(key);
 
-            Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
+            Log.debug("Hyperparameter search: "+_provider+", time remaining (ms): "+aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
                     ? "No time limitation for "+key
                     : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
@@ -495,21 +562,19 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
     }
 
+    /**
+     * Step designed to train some models (or not) and then deciding to make a selection
+     * and add and/or remove models to/from the current leaderboard.
+     */
     public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
 
-        public SelectionStep(IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
-            super(algo, id, weight, priorityGroup, autoML);
-            _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
+        public SelectionStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+            super(provider, algo, id, weight, priorityGroup, autoML);
         }
 
         @Override
-        protected Work makeWork() {
-            return new Work(_id, _algo, JobType.Selection, _weight, _priorityGroup);
-        }
-
-        @Override
-        protected Work getAllocatedWork() {
-            return getWorkAllocations().getAllocation(_id, _algo);
+        protected JobType getJobType() {
+            return JobType.Selection;
         }
 
         @Override
@@ -552,7 +617,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         @Override
         protected Job<Models> startJob() {
             Key<Model>[] trainedModelKeys = getTrainedModelsKeys();
-            Key<Models> key = makeKey(_algo+"_"+_id, false);
+            Key<Models> key = makeKey(_provider+"_"+_id, false);
             aml().trackKeys(key);
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
@@ -583,7 +648,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard.get(), selectionEventLog, countdown);
                     localExecutor.start();
                     Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
-                    localExecutor.monitor(innerTraining, work, job, false);
+                    localExecutor.monitor(innerTraining, SelectionStep.this, job);
 
                     Log.debug("Selection leaderboard " + selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
                     Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
@@ -652,6 +717,73 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     tryComplete();
                 }
             }, job._work, job._max_runtime_msecs);
+        }
+    }
+
+
+    /**
+     * Step designed to dynamically choose to train a model or another, a grid or anything else,
+     * based on the current automl workflow history.
+     */
+    public static abstract class DynamicStep<M extends Model> extends ModelingStep<M> {
+        
+        public static class VirtualAlgo implements IAlgo {
+
+            public VirtualAlgo() {}
+            
+            @Override
+            public String name() {
+                return "virtual";
+            }
+        }
+        
+        private transient ModelingStep[] _subSteps;
+        private int _stepIdx = -1;
+
+        public DynamicStep(String provider, String id, int weight, int priorityGroup, AutoML autoML) {
+            super(provider, new VirtualAlgo(), id, weight, priorityGroup, autoML);
+        }
+
+        @Override
+        protected JobType getJobType() {
+            return JobType.Decision;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        protected Key<Models> makeKey(String name, boolean withCounter) {
+            return aml().makeKey(name, "decision", withCounter);
+        }
+
+        @Override
+        protected boolean hasSubStep() {
+            if (_subSteps == null) {
+                _subSteps = prepareModelingSteps();
+                _stepIdx = _subSteps.length > 0 ? 0 : -1;
+            }
+            return _stepIdx >= 0 && _stepIdx < _subSteps.length;
+        }
+
+        @Override
+        protected ModelingStep nextSubStep() {
+            if (hasSubStep()) {   // we don't need atomicity for this as steps are executed sequentially.
+                ModelingStep subStep = _subSteps[_stepIdx];
+                _stepIdx += 1;
+                return subStep;
+            }
+            return super.nextSubStep();
+        }
+
+        protected abstract ModelingStep<M>[] prepareModelingSteps();
+
+        @Override
+        public boolean canRun() {
+            return false;
+        }
+
+        @Override
+        protected Job startJob() {
+            return null;
         }
     }
 

@@ -7,7 +7,7 @@ import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.grid.SequentialWalker;
@@ -23,6 +23,8 @@ import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT
 
 public class XGBoostSteps extends ModelingSteps {
 
+    static final String NAME = Algo.XGBoost.name();
+            
     static XGBoostParameters prepareModelParameters(AutoML aml, boolean emulateLightGBM) {
         XGBoostParameters params = new XGBoostParameters();
 
@@ -48,7 +50,7 @@ public class XGBoostSteps extends ModelingSteps {
         boolean _emulateLightGBM;
 
         XGBoostModelStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
-            super(Algo.XGBoost, id, weight, priorityGroup, autoML);
+            super(NAME, Algo.XGBoost, id, weight, priorityGroup, autoML);
             _emulateLightGBM = emulateLightGBM;
         }
 
@@ -61,7 +63,7 @@ public class XGBoostSteps extends ModelingSteps {
         boolean _emulateLightGBM;
 
         public XGBoostGridStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
-            super(Algo.XGBoost, id, weight, priorityGroup,autoML);
+            super(NAME, Algo.XGBoost, id, weight, priorityGroup,autoML);
             _emulateLightGBM = emulateLightGBM;
         }
 
@@ -89,11 +91,12 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         @Override
-        protected boolean canRun() {
+        public boolean canRun() {
             return super.canRun() && getBestXGBs(1).size() > 0;
         }
         public XGBoostExploitationStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
-            super(Algo.XGBoost, id, weight, priorityGroup, autoML);
+            super(NAME, Algo.XGBoost, id, weight, priorityGroup, autoML);
+//            _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
             _emulateLightGBM = emulateLightGBM;
         }
     }
@@ -201,17 +204,10 @@ public class XGBoostSteps extends ModelingSteps {
     }
 
     private final ModelingStep[] grids = new XGBoostGridStep[] {
-            new DefaultXGBoostGridStep("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()) {
+            new DefaultXGBoostGridStep("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()),
+            new DefaultXGBoostGridStep("grid_1_resume", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
                 @Override
-                protected Job<Grid> startJob() {
-                    Job<Grid> job = super.startJob();
-                    getResumableResultKeys().put(_algo+"_grid_1", job._result);
-                    return job;
-                }
-            },
-            new DefaultXGBoostGridStep("grid_1_end", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
-                @Override
-                protected void setSearchCriteria(HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
+                protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
                     super.setSearchCriteria(searchCriteria, baseParms);
                     searchCriteria.set_stopping_rounds(0);
                 }
@@ -219,8 +215,9 @@ public class XGBoostSteps extends ModelingSteps {
                 @Override
                 @SuppressWarnings("unchecked")
                 protected Job<Grid> startJob() {
-                    Key<Grid> resumedGrid = getResumableResultKeys().get(_algo+"_grid_1");
-                    return hyperparameterSearch(resumedGrid, prepareModelParameters(), prepareSearchParameters());
+                    Key<Grid>[] resumedGrid = aml().getResumableKeys(_provider, "grid_1");
+                    if (resumedGrid.length == 0) return null;
+                    return hyperparameterSearch(resumedGrid[0], prepareModelParameters(), prepareSearchParameters());
                 }
             }
     };
@@ -247,7 +244,7 @@ public class XGBoostSteps extends ModelingSteps {
                 @Override
                 protected ModelSelectionStrategy getSelectionStrategy() {
                     return (originalModels, newModels) ->
-                            new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
+                            new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _provider+"_"+_id)))
                                     .select(new Key[] { getBestXGB()._key }, newModels);
                 }
             },
@@ -259,7 +256,7 @@ public class XGBoostSteps extends ModelingSteps {
                 @Override
                 protected ModelSelectionStrategy getSelectionStrategy() {
                     return (originalModels, newModels) ->
-                            new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
+                            new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _provider+"_"+_id)))
                                     .select(new Key[] { getBestXGB()._key }, newModels);
                 }
 
@@ -312,7 +309,7 @@ public class XGBoostSteps extends ModelingSteps {
 */
 
                     aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
-                            .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
+                            .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
                     return asModelsJob(GridSearch.startGridSearch(
                             Key.make(result+"_grid"),
                             new SequentialWalker<>(
@@ -334,6 +331,11 @@ public class XGBoostSteps extends ModelingSteps {
 
     public XGBoostSteps(AutoML autoML) {
         super(autoML);
+    }
+
+    @Override
+    public String getProvider() {
+        return NAME;
     }
 
     @Override

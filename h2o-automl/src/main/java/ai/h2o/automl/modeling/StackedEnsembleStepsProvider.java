@@ -14,7 +14,6 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
 import water.Key;
-import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
 import java.util.*;
@@ -28,12 +27,14 @@ public class StackedEnsembleStepsProvider
 
     public static class StackedEnsembleSteps extends ModelingSteps {
 
+        static final String NAME = Algo.StackedEnsemble.name();
+
         static abstract class StackedEnsembleModelStep extends ModelingStep.ModelStep<StackedEnsembleModel> {
             
             protected final Metalearner.Algorithm _metalearnerAlgo;
 
             StackedEnsembleModelStep(String id, Metalearner.Algorithm algo, int weight, int priorityGroup, AutoML autoML) {
-                super(Algo.StackedEnsemble, id, weight, priorityGroup,autoML);
+                super(NAME, Algo.StackedEnsemble, id, weight, priorityGroup,autoML);
                 _metalearnerAlgo = algo;
                 _ignoredConstraints = new AutoML.Constraint[] {AutoML.Constraint.MODEL_COUNT};
             }
@@ -63,7 +64,7 @@ public class StackedEnsembleStepsProvider
 
             @Override
             @SuppressWarnings("unchecked")
-            protected boolean canRun() {
+            public boolean canRun() {
                 Key<Model>[] keys = getBaseModels();
                 Work seWork = getAllocatedWork();
                 if (!super.canRun()) {
@@ -108,7 +109,8 @@ public class StackedEnsembleStepsProvider
             }
 
             protected boolean isStackedEnsemble(Key<Model> key) {
-                return key.toString().startsWith(_algo.name());
+                return aml().getModelingStep(key).getAlgo() == Algo.StackedEnsemble;
+//                return key.toString().startsWith(_algo.name());
             }
 
             @Override
@@ -127,10 +129,6 @@ public class StackedEnsembleStepsProvider
                 params.initMetalearnerParams(_metalearnerAlgo);
                 params._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 params._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
-            }
-
-            protected StackedEnsembleParameters extendSEParameters(StackedEnsembleParameters stackedEnsembleParameters) {
-                return stackedEnsembleParameters;
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {
@@ -193,7 +191,7 @@ public class StackedEnsembleStepsProvider
 
             @Override
             protected Job<StackedEnsembleModel> startJob() {
-                return stack(_algo+"_BestOfFamily", getBaseModels(), false);
+                return stack(_provider+"_BestOfFamily", getBaseModels(), false);
             }
         }
 
@@ -202,7 +200,7 @@ public class StackedEnsembleStepsProvider
             private final int _N;
             
             public BestNModelsSEModelStep(String id, int N, int priorityGroup, AutoML autoML) {
-                this((id == null ? "best"+N : id), Metalearner.Algorithm.AUTO, N, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
+                this((id == null ? "best_"+N : id), Metalearner.Algorithm.AUTO, N, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
             }
 
             public BestNModelsSEModelStep(String id, Metalearner.Algorithm algo, int N, int weight, int priorityGroup, AutoML autoML) {
@@ -222,7 +220,7 @@ public class StackedEnsembleStepsProvider
 
             @Override
             protected Job<StackedEnsembleModel> startJob() {
-                return stack(_algo+"_Best"+_N, getBaseModels(), false);
+                return stack(_provider+"_Best"+_N, getBaseModels(), false);
             }
         }
         
@@ -246,7 +244,7 @@ public class StackedEnsembleStepsProvider
 
             @Override
             protected Job<StackedEnsembleModel> startJob() {
-                return stack(_algo+"_AllModels", getBaseModels(), false);
+                return stack(_provider+"_AllModels", getBaseModels(), false);
             }
         }
         
@@ -274,7 +272,7 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
-            protected boolean canRun() {
+            public boolean canRun() {
                 boolean canRun = super.canRun();
                 if (!canRun) return false;
                 int monotoneModels=0;
@@ -308,7 +306,7 @@ public class StackedEnsembleStepsProvider
 
             @Override
             protected Job<StackedEnsembleModel> startJob() {
-                return stack(_algo + "_Monotonic", getBaseModels(), false);
+                return stack(_provider + "_Monotonic", getBaseModels(), false);
             }
         }
         
@@ -351,12 +349,19 @@ public class StackedEnsembleStepsProvider
             seSteps.add(new BestNModelsSEModelStep(null, 20, lastGroup+4, aml()));
             lastGroup=100;
             seSteps.add(new BestOfFamilySEModelStep("best_of_family_"+lastGroup, lastGroup, aml()));
-            seSteps.add(new BestNModelsSEModelStep(null, 100, lastGroup, aml()));
+            int card = aml().getResponseColumn().cardinality();
+            int maxModels = card <= 2 ? 1_000 : Math.max(100, 1_000 / (card-1));
+            seSteps.add(new BestNModelsSEModelStep(null, maxModels, lastGroup, aml()));
             defaults = seSteps.toArray(new ModelingStep[0]);
         }
 
         public StackedEnsembleSteps(AutoML autoML) {
             super(autoML);
+        }
+
+        @Override
+        public String getProvider() {
+            return NAME;
         }
 
         @Override
@@ -368,7 +373,7 @@ public class StackedEnsembleStepsProvider
 
     @Override
     public String getName() {
-        return Algo.StackedEnsemble.name();
+        return StackedEnsembleSteps.NAME;
     }
 
     @Override

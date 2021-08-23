@@ -62,6 +62,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
           new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
           new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
+//          new StepDefinition("completion", Alias.dynamics),
           new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
   };
 
@@ -72,11 +73,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       @Override
       public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
+        ModelingStep step = aml.getModelingStep(model.getKey());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
-                new AlgoName(model),
 //                new ModelSize(model._key)
+                new AlgoName(model),
+                new ModelProvider(model, step),
+                new ModelStep(model, step),
+                new ModelGroup(model, step),
         };
       }
     };
@@ -130,8 +135,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   WorkAllocations _workAllocations;
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
-  IcedHashMap<String, Key> _resumableResultKeys = new IcedHashMap<>();
   AtomicLong _incrementalSeed = new AtomicLong();
+  private IcedHashSet<Key<Keyed>> _resumableKeys = new IcedHashSet();
+  private IcedHashMap<Key, String[]> _keySources = new IcedHashMap<>();
   private NonBlockingHashMap<String, AtomicInteger> _modelCounters = new NonBlockingHashMap<>();
   private String _runId;
 
@@ -147,6 +153,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
+  private transient NonBlockingHashMap<String, ModelingSteps> _availableStepsByProviderName = new NonBlockingHashMap<>();
 
   /**
    * DO NOT USE explicitly: for schema/reflection only.
@@ -496,6 +503,48 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public boolean isCVEnabled() {
     return _buildSpec.build_control.nfolds > 0 || _buildSpec.input_spec.fold_column != null;
+  }
+  
+  public ModelingStep getModelingStep(Key key) {
+    if (!_keySources.containsKey(key)) return null;
+    String[] identifiers = _keySources.get(key);
+    assert identifiers.length > 1;
+    return getModelingStep(identifiers[0], identifiers[1]);
+  }
+  
+  public ModelingStep getModelingStep(String providerName, String id) {
+    ModelingSteps steps = getModelingSteps(providerName);
+    return steps == null ? null : steps.getStep(id).orElse(null);
+  }
+
+  ModelingSteps getModelingSteps(String providerName) {
+    if (!_availableStepsByProviderName.containsKey(providerName)) {
+      ModelingStepsProvider provider = _modelingStepsRegistry.stepsByName.get(providerName);
+      if (provider == null) {
+        eventLog().warn(Stage.ModelTraining, "Missing provider for modeling steps '"+providerName+"'");
+        return null;
+//        throw new IllegalArgumentException("Missing provider for modeling steps '"+providerName+"'");
+      }
+      ModelingSteps steps = provider.newInstance(this);
+      _availableStepsByProviderName.put(providerName, steps);
+    }
+    return _availableStepsByProviderName.get(providerName);
+  }
+  
+  public void registerKeySource(Key key, ModelingStep step) {
+    if (key != null && !_keySources.containsKey(key)) _keySources.put(key, new String[]{step.getProvider(), step.getId()});
+  }
+  
+  public void addResumableKey(Key key) {
+    _resumableKeys.add(key);
+  }
+  
+  public Key[] getResumableKeys(String providerName, String id) {
+    ModelingStep step = getModelingStep(providerName, id);
+    if (step == null) return new Key[0];
+    return _resumableKeys.stream()
+            .filter(k -> step.equals(getModelingStep(k)))
+            .toArray(Key[]::new);
   }
 
 

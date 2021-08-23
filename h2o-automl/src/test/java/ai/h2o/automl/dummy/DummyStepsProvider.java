@@ -13,6 +13,8 @@ public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvi
     public Function<AutoML, DummyModelSteps> modelStepsFactory = DummyModelSteps::new;
 
     public static class DummyModelSteps extends ModelingSteps {
+        
+        public static final String NAME = "dummy";
 
         public ModelingStep[] defaultModels = new ModelingStep[0];
         public ModelingStep[] grids = new ModelingStep[0];
@@ -20,6 +22,11 @@ public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvi
 
         public DummyModelSteps(AutoML autoML) {
             super(autoML);
+        }
+
+        @Override
+        public String getProvider() {
+            return NAME;
         }
 
         @Override
@@ -40,7 +47,7 @@ public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvi
 
     @Override
     public String getName() {
-        return "dummy";
+        return DummyModelSteps.NAME;
     }
 
     @Override

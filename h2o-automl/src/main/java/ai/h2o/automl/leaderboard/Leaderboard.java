@@ -693,7 +693,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
         if (getModelCount() > 0) {
           final Key<Model> leader = getModelKeys()[0];
           LeaderboardCell[] extCells = (extensions.length > 0 && LeaderboardExtensionsProvider.ALL.equalsIgnoreCase(extensions[0]))
-                  ? getExtensions(leader)
+                  ? Stream.of(getExtensions(leader)).filter(cell -> !cell.getColumn().isHidden()).toArray(LeaderboardCell[]::new)
                   : Stream.of(extensions).map(e -> getExtension(leader, e)).toArray(LeaderboardCell[]::new);
           Stream.of(extCells).filter(Objects::nonNull).forEach(e -> extColumns.add(e.getColumn()));
         }
