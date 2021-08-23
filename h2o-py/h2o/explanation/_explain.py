@@ -3,6 +3,10 @@
 import random
 from contextlib import contextmanager
 from collections import OrderedDict, Counter, defaultdict
+try:
+    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
+except:
+    from io import StringIO  # py3
 
 import h2o
 import numpy as np
@@ -1315,7 +1319,7 @@ def _has_varimp(model):
         # check for cases when variable importance is disabled or
         # when a model is stopped sooner than calculating varimp (xgboost can rarely have no varimp).
         output = model._model_json["output"]
-        return "variable_importances" in list(output.keys()) and output["variable_importances"]
+        return output.get("variable_importances") is not None
     else:
         return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
 
@@ -1710,10 +1714,6 @@ def model_correlation(
                     corr[i, j] = (predictions[i] == predictions[j]).mean()[0]
                     corr[j, i] = corr[i, j]
     else:
-        try:
-            from io import StringIO
-        except ImportError:
-            from StringIO import StringIO
         corr = np.genfromtxt(StringIO(predictions[0].cbind(predictions[1:]).cor().get_frame_data()),
                              delimiter=",", missing_values="", skip_header=True)
     if cluster_models:
