@@ -583,6 +583,9 @@ def shap_summary_plot(
     else:
         colormap = plt.get_cmap(colormap)
 
+    if top_n_features < 0:
+        top_n_features = float("inf")
+
     # to prevent problems with data sorted in some logical way
     # (overplotting with latest result which might have different values
     # then the rest of the data in a given region)
@@ -703,6 +706,10 @@ def shap_explain_row_plot(
     >>> gbm.shap_explain_row_plot(test, row_index=0)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+
+    if top_n_features < 0:
+        top_n_features = float("inf")
+
     row = frame[row_index, :]
     with no_progress():
         contributions = NumpyFrame(model.predict_contributions(row))
@@ -2128,28 +2135,33 @@ def _get_leaderboard(
         return leaderboard
     else:
         METRICS = [
-            "MSE",
-            "RMSE",
-            "mae",
-            "rmsle",
+            "AUC",
+            "mean_residual_deviance",
             "mean_per_class_error",
             "logloss",
+            "pr_auc",
+            "RMSE",
+            "MSE",
+            "mae",
+            "rmsle",
         ]
+        import math
         from collections import defaultdict
-
+        task = None
         result = defaultdict(list)
         predictions = []
         with no_progress():
             for model in models:
                 result["model_id"].append(model.model_id)
                 perf = model.model_performance(frame)
+                task = perf._metric_json.get("model_category")
                 for metric in METRICS:
                     result[metric.lower()].append(perf._metric_json.get(metric))
                 if row_index is not None:
                     predictions.append(model.predict(frame[row_index, :]))
             for metric in METRICS:
-                if not any(result[metric]):
-                    del result[metric]
+                if not any(result[metric.lower()]) or not all([not math.isnan(float(m)) for m in result[metric.lower()]]):
+                    del result[metric.lower()]
             leaderboard = h2o.H2OFrame(result)[["model_id"] + [m.lower()
                                                                for m in METRICS
                                                                if m.lower() in result]]
@@ -2158,7 +2170,11 @@ def _get_leaderboard(
                 for pr in predictions[1:]:
                     preds = preds.rbind(pr)
                 leaderboard = leaderboard.cbind(preds)
-            return leaderboard.sort("mse").head(rows=min(top_n, leaderboard.nrow))
+            sort_metric = "mse" if task is None else \
+                "auc" if task.lower() == "binomial" else \
+                "logloss" if task.lower() == "multinomial" else \
+                "mean_residual_deviance"
+            return leaderboard.sort(sort_metric).head(rows=min(top_n, leaderboard.nrow))
 
 
 def _process_explanation_lists(
@@ -2314,6 +2330,9 @@ def explain(
     is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
 
+    if top_n_features < 0:
+        top_n_features = float("inf")
+
     if columns is not None and isinstance(columns, list):
         columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]
     else:
@@ -2367,14 +2386,11 @@ def explain(
                 result["confusion_matrix"]["subexplanations"][model.model_id]["header"] = display(
                     Header(model.model_id, 2))
                 result["confusion_matrix"]["subexplanations"][model.model_id]["plots"] = H2OExplanation()
-                if multinomial_classification:
-                    result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
-                        model.confusion_matrix(
-                            **_custom_args(plot_overrides.get("confusion_matrix"),
-                                           data=frame)))
-                else:
-                    result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
-                        model.confusion_matrix())
+                result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
+                        model.model_performance(
+                            **_custom_args(plot_overrides.get("confusion_matrix"), test_data=frame)
+                        ).confusion_matrix()
+                )
     else:
         if "residual_analysis" in explanations:
             result["residual_analysis"] = H2OExplanation()
@@ -2579,6 +2595,9 @@ def explain_row(
     """
     is_aml, models_to_show, _, multinomial_classification, multiple_models, \
     targets, tree_models_to_show = _process_models_input(models, frame)
+
+    if top_n_features < 0:
+        top_n_features = float("inf")
 
     models_with_varimp = [model for model in models_to_show if _has_varimp(model)]
 

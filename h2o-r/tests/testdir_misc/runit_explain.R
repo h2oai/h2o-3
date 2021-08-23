@@ -189,6 +189,12 @@ explanation_test_single_model_binomial_classification <- function() {
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1)))
+
+  # test explanation
+  expect_true("H2OExplanation" %in% class(h2o.explain(gbm, train, top_n_features = -1)))
+
+  # test explanation
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(gbm, train, 1, top_n_features = -1)))
 }
 
 explanation_test_automl_binomial_classification <- function() {
@@ -370,6 +376,14 @@ explanation_test_automl_multinomial_classification <- function() {
 
   # test explanation
   expect_true("H2OExplanation" %in% class(h2o.explain_row(aml, train, 1)))
+
+  # test shortening model ids work
+  model_ids <- as.character(as.list(aml@leaderboard$model_id))
+  shortened_model_ids <- .shorten_model_ids(model_ids)
+  expect_true(length(model_ids) == length(shortened_model_ids))
+  for (i in seq_along(model_ids)) {
+    expect_true(nchar(model_ids[i]) > nchar(shortened_model_ids[i]))
+  }
 }
 
 explanation_test_list_of_models_multinomial_classification <- function() {

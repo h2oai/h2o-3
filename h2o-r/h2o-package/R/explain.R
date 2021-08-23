@@ -473,14 +473,18 @@ with_no_h2o_progress <- function(expr) {
   leaderboard <-
     as.data.frame(t(sapply(models_info$model_ids, function(m) {
       m <- models_info$get_model(m)
-      unlist(h2o.performance(m, leaderboard_frame)@metrics[c(
-        "MSE",
-        "RMSE",
-        "mae",
-        "rmsle",
+      metrics <- h2o.performance(m, leaderboard_frame)@metrics
+      unlist(metrics[intersect(c(
+        "AUC",
+        "mean_residual_deviance",
         "mean_per_class_error",
-        "logloss"
-      )])
+        "logloss",
+        "pr_auc",
+        "RMSE",
+        "MSE",
+        "mae",
+        "rmsle"
+      ), names(metrics))])
     })))
   leaderboard <- cbind(data.frame(model_id = .model_ids(models_info$model_ids), stringsAsFactors = FALSE),
                        leaderboard)
@@ -1080,6 +1084,11 @@ h2o.shap_summary_plot <-
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
+
+    if (top_n_features < 0) {
+      top_n_features <- Inf
+    }
+
     if (!(is.null(columns) ||
       is.character(columns) ||
       is.numeric(columns))) {
@@ -1285,6 +1294,9 @@ h2o.shap_explain_row_plot <-
 
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
+    }
+    if (top_n_features < 0) {
+      top_n_features <- Inf
     }
     if (!(is.null(columns) ||
       is.character(columns) ||
@@ -2851,6 +2863,11 @@ h2o.explain <- function(object,
     is.numeric(columns))) {
     stop("Parameter columns must be either a character or numeric vector or NULL.")
   }
+
+  if (top_n_features < 0) {
+    top_n_features <- Inf
+  }
+
   skip_explanations <- c()
 
   if (!missing(include_explanations)) {
@@ -3235,6 +3252,11 @@ h2o.explain_row <- function(object,
     is.numeric(columns))) {
     stop("Parameter columns must be either a character or numeric vector or NULL.")
   }
+
+  if (top_n_features < 0) {
+    top_n_features <- Inf
+  }
+
   skip_explanations <- c()
 
   if (!missing(include_explanations)) {
