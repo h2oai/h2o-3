@@ -1,7 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-# make sure tests that do not specify family runs to completion.
+# make sure tests that do not specify family runs to completion and multiple calls to anovaglm yield the same
+# result
 test.model.anovaglm.prostate <- function() {
     prostate <- h2o.importFile(path = locate("smalldata/prostate/prostate.csv"))
     prostate$CAPSULE <- h2o.asfactor(prostate$CAPSULE)
