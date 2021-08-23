@@ -415,7 +415,7 @@ SHAP explanation shows contribution of features for a given instance. The sum of
 
    .. code-tab:: python
 
-        shapr_plot = model.explain_row_plot(test, row_index=0)
+        shapr_plot = model.shap_explain_row_plot(test, row_index=0)
 
 .. figure:: images/explain_row_shap_row1.png
    :alt: H2O AutoML
@@ -435,12 +435,12 @@ Partial Dependence Multi-model Plot:
 .. tabs::
    .. code-tab:: r R
 
-        pd_plot <- h2o.pd_multi_plot(aml, test)
+        pd_plot <- h2o.pd_multi_plot(aml, test, column)
         pd_plot
 
    .. code-tab:: python
 
-        pd_plot = aml.pd_multi_plot(test)
+        pd_plot = aml.pd_multi_plot(test, column)
 
 
 .. figure:: images/explain_pd_multiplot_wine_alcohol.png
@@ -454,12 +454,12 @@ Partial Dependence Single-model Plot:
 .. tabs::
    .. code-tab:: r R
 
-        pd_plot <- h2o.pd_plot(model, test)
+        pd_plot <- h2o.pd_plot(model, test, column)
         pd_plot
 
    .. code-tab:: python
 
-        pd_plot = model.pd_plot(test)
+        pd_plot = model.pd_plot(test, column)
 
 
 .. figure:: images/explain_pd_plot_wine_alcohol.png
@@ -473,12 +473,12 @@ A single-model, single-row, PD Plot simply becomes an ICE Plot (see more below):
 .. tabs::
    .. code-tab:: r R
 
-        pd_plot <- h2o.pd_plot(model, test, row_index = 1)
+        pd_plot <- h2o.pd_plot(model, test, column, row_index = 1)
         pd_plot
 
    .. code-tab:: python
 
-        pd_plot = model.pd_plot(test, row_index=0)
+        pd_plot = model.pd_plot(test, column, row_index=0)
 
 
 .. figure:: images/explain_row_ice_plot_wine_alcohol_row1.png
@@ -495,12 +495,12 @@ An Individual Conditional Expectation (ICE) plot gives a graphical depiction of 
 .. tabs::
    .. code-tab:: r R
 
-        ice_plot <- h2o.ice_plot(model, test)
+        ice_plot <- h2o.ice_plot(model, test, column)
         ice_plot
 
    .. code-tab:: python
 
-        ice_plot = model.ice_plot(test)
+        ice_plot = model.ice_plot(test, column)
 
 
 .. figure:: images/explain_ice_plot_wine_alcohol.png

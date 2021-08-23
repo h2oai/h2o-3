@@ -207,7 +207,7 @@ public class XGBoostSteps extends ModelingSteps {
                     XGBoostModel bestXGB = getBestXGB();
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
-                    xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine-tuning)
                     xgBoostParameters._max_runtime_secs = 0; // reset max runtime
                     xgBoostParameters._learn_rate_annealing = 0.99;
                     initTimeConstraints(xgBoostParameters, maxRuntimeSecs);
