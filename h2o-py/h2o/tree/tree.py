@@ -51,7 +51,7 @@ class H2OTree(object):
     :param model: The model this tree is related to.
     :param tree_number: An integer representing the order in which the tree has been built in the model.
     :param tree_class: A string representing the name of the tree's class. Specifies the class of the tree requested. Required for multi-class classification. The number of tree classes equals the number of levels in categorical response column. As there is exactly one class per categorical level, the name of the tree's class is equal to the corresponding categorical level of the response column. In case of regression and binomial models, the name of the categorical level is ignored and can be omitted.
-    :param plain_language_rules: (Optional) Whether to generate plain language rules. False by default.
+    :param plain_language_rules: (Optional) Whether to generate plain language rules. "AUTO" by default, meaning False for big trees and True for small trees by default.
 
     :examples:
     
@@ -70,7 +70,7 @@ class H2OTree(object):
     
     """
 
-    def __init__(self, model, tree_number, tree_class=None, plain_language_rules=False):
+    def __init__(self, model, tree_number, tree_class=None, plain_language_rules="AUTO"):
         params = {"model": model.model_id,
                   "tree_number": tree_number,
                   "tree_class": tree_class,
@@ -90,12 +90,12 @@ class H2OTree(object):
         self._nas = response['nas']
         self._predictions = response['predictions']
         self._root_node = self.__assemble_tree(0)
-        if plain_language_rules:
-            self._tree_decision_path = response['tree_decision_path']
-            self._decision_paths = response['decision_paths']
-        else:
+        if response['tree_decision_path'] is None:
             self._tree_decision_path = "Plain language rules generation is turned off."
             self._decision_paths = "Plain language rules generation is turned off."
+        else:
+            self._tree_decision_path = response['tree_decision_path']
+            self._decision_paths = response['decision_paths']
             
         (left, right) = self.__per_node_cat_splits()
         self._left_cat_split = left

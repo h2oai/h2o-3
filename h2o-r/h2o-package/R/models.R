@@ -5075,7 +5075,7 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' @param tree_number Number of the tree in the model to fetch, starting with 1
 #' @param tree_class Name of the class of the tree (if applicable). This value is ignored for regression and binomial response column, as there is only one tree built.
 #'                   As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
-#' @param plain_language_rules (Optional) Whether to generate plain language rules. FALSE by default.
+#' @param plain_language_rules (Optional) Whether to generate plain language rules. AUTO by default, meaning FALSE for big trees and TRUE for small trees.
 #' @return Returns an H2OTree object with detailed information about a tree.
 #' @examples 
 #' \dontrun{
@@ -5088,7 +5088,7 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' tree <- h2o.getModelTree(gbm_model, 1, "Iris-setosa")
 #' }
 #' @export
-h2o.getModelTree <- function(model, tree_number, tree_class = NA, plain_language_rules = FALSE) {
+h2o.getModelTree <- function(model, tree_number, tree_class = NA, plain_language_rules="AUTO") {
   url <- "Tree"
   tree_class_request = tree_class;
   if(is.na(tree_class)){
@@ -5135,7 +5135,6 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA, plain_language
     res$predictions <- as.numeric(res$predictions)
   }
   
-  
   # Start of the tree-building process
   tree <- new(
     "H2OTree",
@@ -5148,8 +5147,8 @@ h2o.getModelTree <- function(model, tree_number, tree_class = NA, plain_language
     features = res$features,
     nas = res$nas,
     predictions = res$predictions,
-    tree_decision_path = ifelse(plain_language_rules, res$tree_decision_path, "Plain language rules generation is turned off."),
-    decision_paths = ifelse(plain_language_rules, res$decision_paths, "Plain language rules generation is turned off.")
+    tree_decision_path = ifelse(is.null(res$tree_decision_path), "Plain language rules generation is turned off.", res$tree_decision_path),
+    decision_paths = ifelse(is.na(res$decision_paths[1]), "Plain language rules generation is turned off.", res$decision_paths)
   )
 
   node_index <- 0

@@ -25,7 +25,7 @@ test.tree.fetch <- function() {
   data <- as.h2o(data)
   model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
-    tree <- h2o.getModelTree(model, i)
+    tree <- h2o.getModelTree(model, i, plain_language_rules = "AUTO")
     expect_false(is.null(tree))
     expect_false(is.null(tree@tree_decision_path))
     expect_equal(tree@tree_decision_path, "Plain language rules generation is turned off.")

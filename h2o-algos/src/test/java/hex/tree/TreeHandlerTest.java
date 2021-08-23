@@ -306,7 +306,7 @@ public class TreeHandlerTest extends TestUtil {
             model = new GBM(parms).trainModel().get();
             args.model = new KeyV3.ModelKeyV3(model._key);
             args.tree_class = "YES";
-            args.plain_language_rules = false;
+            args.plain_language_rules = TreeHandler.PlainLanguageRules.FALSE;
 
             // If the tree class name is specified, it must be the tree class built exactly
             final TreeHandler treeHandler = new TreeHandler();

@@ -20,6 +20,8 @@ import static hex.tree.TreeUtils.getResponseLevelIndex;
 public class TreeHandler extends Handler {
     private static final int NO_CHILD = -1;
 
+    public enum PlainLanguageRules {AUTO, TRUE, FALSE}
+
     public TreeV3 getTree(final int version, final TreeV3 args) {
 
         if (args.tree_number < 0) {
@@ -177,7 +179,7 @@ public class TreeHandler extends Handler {
      * @param sharedTreeSubgraph An instance of {@link SharedTreeSubgraph} to convert
      * @return An instance of {@link TreeProperties} with some attributes possibly empty if suitable. Never null.
      */
-    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph, boolean plainLanguageRules) {
+    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph, PlainLanguageRules plainLanguageRules) {
         Objects.requireNonNull(sharedTreeSubgraph);
 
         final TreeProperties treeprops = new TreeProperties();
@@ -201,7 +203,11 @@ public class TreeHandler extends Handler {
         treeprops._features[0] = sharedTreeSubgraph.rootNode.getColName();
         treeprops._nas[0] = getNaDirection(sharedTreeSubgraph.rootNode);
         treeprops.levels = new int[sharedTreeSubgraph.nodesArray.size()][];
-        if (plainLanguageRules) { 
+        if (plainLanguageRules.equals(PlainLanguageRules.AUTO)) {
+            /* 255 = number of nodes for complete binary tree of depth 7 (2^(k+1)−1) */
+            plainLanguageRules = sharedTreeSubgraph.nodesArray.size() < 256 ? PlainLanguageRules.TRUE : PlainLanguageRules.FALSE;
+        }
+        if (plainLanguageRules.equals(PlainLanguageRules.TRUE)) { 
             treeprops._treeDecisionPath = getLanguageRepresentation(sharedTreeSubgraph);
             treeprops._decisionPaths[0] = "Predicted value: " + sharedTreeSubgraph.rootNode.getPredValue();
             treeprops._leftChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
@@ -215,7 +221,7 @@ public class TreeHandler extends Handler {
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
                 treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false, treeprops._domainValues);
-        if (plainLanguageRules) fillLanguagePathRepresentation(treeprops, sharedTreeSubgraph.rootNode);
+        if (plainLanguageRules.equals(PlainLanguageRules.TRUE)) fillLanguagePathRepresentation(treeprops, sharedTreeSubgraph.rootNode);
 
         return treeprops;
     }
