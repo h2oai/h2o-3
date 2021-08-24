@@ -1,0 +1,15 @@
+FROM openjdk:8
+
+COPY xgboost.sh /tmp/
+COPY build/output/libs/* /tmp/
+COPY out/production/classes/ /tmp
+COPY out/production/resources/ /tmp
+COPY out/test/classes/ /tmp
+COPY out/test/resources/ /tmp
+
+RUN find /tmp/ -name '*.jar' | tr '\n' ':' > /tmp/classpath && \
+    chmod +x /tmp/xgboost.sh
+WORKDIR /tmp
+EXPOSE 54321
+
+ENTRYPOINT /tmp/xgboost.sh

@@ -32,7 +32,13 @@ dependencies {
 
     testCompile project(":h2o-test-support")
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
-    testRuntimeOnly project(":${defaultWebserverModule}")
+    testRuntime project(":${defaultWebserverModule}")
+}
+
+task copyToLib(type: Copy) {
+    into "$buildDir/output/libs"
+    from configurations.testCompile
+    from configurations.testRuntime
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
