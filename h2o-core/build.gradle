@@ -35,6 +35,7 @@ dependencies {
   testCompile project(':h2o-test-support')
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
+  testCompile 'com.amazonaws:aws-java-sdk-s3:1.12.40'
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

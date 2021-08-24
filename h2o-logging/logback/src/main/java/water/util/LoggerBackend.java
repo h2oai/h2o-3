@@ -71,8 +71,10 @@ public class LoggerBackend {
         p.setProperty("log4j.rootLogger", L4J_LVLS[_level] + ", console");
 
         // H2O-wide logging
-        String appenders = L4J_LVLS[_level] + ", R1, R2, R3, R4, R5, R6";
-        for (String packageName : new String[] {"water", "ai.h2o", "hex"}) {
+        String appendersReferences = ", R1, R2, R3, R4, R5, R6";
+        String appenders = L4J_LVLS[_level] + appendersReferences;
+        
+        for (String packageName :  new String[] {"water", "ai.h2o", "hex"}) {
             p.setProperty("log4j.logger." + packageName, appenders);
             p.setProperty("log4j.logger.additivity." + packageName, "false");
         }
@@ -143,12 +145,12 @@ public class LoggerBackend {
         p.setProperty("log4j.appender.HTTPD.layout.ConversionPattern", "%d{ISO8601} " + patternTail);
 
         // Turn down the logging for some class hierarchies.
-        p.setProperty("log4j.logger.org.apache.http",               "WARN");
-        p.setProperty("log4j.logger.com.amazonaws",                 "WARN");
-        p.setProperty("log4j.logger.org.apache.hadoop",             "WARN");
-        p.setProperty("log4j.logger.org.jets3t.service",            "WARN");
-        p.setProperty("log4j.logger.org.reflections.Reflections",   "ERROR");
-        p.setProperty("log4j.logger.com.brsanthu.googleanalytics",  "ERROR");
+        p.setProperty("log4j.logger.org.apache.http",               "WARN" + appendersReferences);
+        p.setProperty("log4j.logger.com.amazonaws",                 "WARN" + appendersReferences);
+        p.setProperty("log4j.logger.org.apache.hadoop",             "WARN" + appendersReferences);
+        p.setProperty("log4j.logger.org.jets3t.service",            "WARN" + appendersReferences);
+        p.setProperty("log4j.logger.org.reflections.Reflections",   "ERROR" + appendersReferences);
+        p.setProperty("log4j.logger.com.brsanthu.googleanalytics",  "ERROR" + appendersReferences);
 
         // Turn down the logging for external libraries that Orc parser depends on
         p.setProperty("log4j.logger.org.apache.hadoop.util.NativeCodeLoader", "ERROR");

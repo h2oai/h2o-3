@@ -107,15 +107,8 @@ public class LoggerBackend {
         builder.add(newLoggerComponent(builder, "water", appenderReferences));
         builder.add(newLoggerComponent(builder, "ai.h2o", appenderReferences));
         builder.add(builder.newRootLogger(String.valueOf(L4J_LVLS[_level])).add(consoleAppenderRef));
-        
-        // HTTPD logging
-        appenderReferences = new ArrayList();
-        appenderReferences.add(builder.newAppenderRef("HTTPD"));
-        builder.add(newLoggerComponent(builder, "water.api.RequestServer", appenderReferences));
 
         // Turn down the logging for some class hierarchies.
-        appenderReferences = new ArrayList();
-        appenderReferences.add(consoleAppenderRef);
         builder.add(newLoggerComponent(builder, "org.apache.http", appenderReferences, "WARN"));
         builder.add(newLoggerComponent(builder, "com.amazonaws", appenderReferences, "WARN"));
         builder.add(newLoggerComponent(builder, "org.apache.hadoop", appenderReferences, "WARN"));
@@ -124,7 +117,11 @@ public class LoggerBackend {
         builder.add(newLoggerComponent(builder, "com.brsanthu.googleanalytics", appenderReferences, "ERROR"));
         // Turn down the logging for external libraries that Orc parser depends on-->
         builder.add(newLoggerComponent(builder, "org.apache.hadoop.util.NativeCodeLoader", appenderReferences, "ERROR"));
-        
+
+        // HTTPD logging
+        appenderReferences = new ArrayList();
+        appenderReferences.add(builder.newAppenderRef("HTTPD"));
+        builder.add(newLoggerComponent(builder, "water.api.RequestServer", appenderReferences));
 
         Configurator.reconfigure(builder.build());
     }
