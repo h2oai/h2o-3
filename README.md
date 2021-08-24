@@ -142,7 +142,7 @@ Refer to the [h2o-droplets GitHub repository](https://github.com/h2oai/h2o-dropl
 <a name="Building"></a>
 ## 4. Building H2O-3
 
-Getting started with H2O development requires [JDK 1.7](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements), [Node.js](https://nodejs.org/), [Gradle](https://gradle.org/), [Python](https://www.python.org/) and [R](http://www.r-project.org/).  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires [JDK 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements), [Node.js](https://nodejs.org/), [Gradle](https://gradle.org/), [Python](https://www.python.org/) and [R](http://www.r-project.org/).  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
 
 ### 4.1. Before building
 
@@ -248,7 +248,7 @@ open target/docs-website/h2o-docs/index.html
 
 ##### Step 3: Install JDK
 
-Install [Java 1.7](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -319,7 +319,7 @@ If you don't have [Homebrew](http://brew.sh/), we recommend installing it.  It m
 
 ##### Step 1. Install JDK
 
-Install [Java 1.7](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirementsl). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirementsl). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
