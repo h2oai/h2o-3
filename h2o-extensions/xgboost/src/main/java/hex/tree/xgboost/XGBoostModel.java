@@ -307,7 +307,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._n_estimators = p._ntrees;
     }
     if (p._eta != 0.3) {
-      LOG.info("Using user-provided parameter eta instead of learn_rate.");
       params.put("eta", p._eta);
       p._learn_rate = p._eta;
     } else {
@@ -321,7 +320,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("silent", p._quiet_mode);
     }
     if (p._subsample != 1.0) {
-      LOG.info("Using user-provided parameter subsample instead of sample_rate.");
       params.put("subsample", p._subsample);
       p._sample_rate = p._subsample;
     } else {
@@ -329,7 +327,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._subsample = p._sample_rate;
     }
     if (p._colsample_bytree != 1.0) {
-      LOG.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
       params.put("colsample_bytree", p._colsample_bytree);
       p._col_sample_rate_per_tree = p._colsample_bytree;
     } else {
@@ -337,7 +334,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._colsample_bytree = p._col_sample_rate_per_tree;
     }
     if (p._colsample_bylevel != 1.0) {
-      LOG.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
       params.put("colsample_bylevel", p._colsample_bylevel);
       p._col_sample_rate = p._colsample_bylevel;
     } else {
@@ -348,7 +344,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("colsample_bynode", p._colsample_bynode);
     }    
     if (p._max_delta_step != 0) {
-      LOG.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
       params.put("max_delta_step", p._max_delta_step);
       p._max_abs_leafnode_pred = p._max_delta_step;
     } else {
