@@ -23,9 +23,9 @@ configurations {
 // Dependencies
 dependencies {
     compile(project(":h2o-app")) {
-        exclude module: ":h2o-logging-logback"
+        exclude module: ":h2o-logging-impl-classic"
     }
-    compile project(":h2o-logging-logback-log4j2")
+    compile project(":h2o-logging-impl-log4j2")
     runtime project(":${defaultWebserverModule}")
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")

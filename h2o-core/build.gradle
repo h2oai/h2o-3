@@ -8,7 +8,7 @@ description = "H2O Core"
 dependencies {
   // Dependency on shared model support
   compile project(":h2o-logger")
-  compile project(':h2o-logging-logback')
+  compile project(':h2o-logging-impl-classic')
   compile project(':h2o-genmodel')
   compile project(":h2o-webserver-iface")
   // Required for h2o-core
