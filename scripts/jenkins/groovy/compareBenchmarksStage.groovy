@@ -250,7 +250,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
         'merge': [
             'fileSize100millionRows2ColsallxyTF': [
                 [100000000, 2]: [
-                    'train_time_min': 33,
+                    'train_time_min': 30,
                     'train_time_max': 37
                 ]
             ],
@@ -262,7 +262,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'fileSize100millionRows2ColsallxyFF': [
                 [100000000, 2]: [
-                    'train_time_min': 33,
+                    'train_time_min': 30,
                     'train_time_max': 37
                 ]
             ],
@@ -283,7 +283,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'fileSize10millionRows2Cols': [
                 [10000000, 2]: [
                     'train_time_min': 2,
-                    'train_time_max': 5
+                    'train_time_max': 7
                 ]
             ]
         ],
