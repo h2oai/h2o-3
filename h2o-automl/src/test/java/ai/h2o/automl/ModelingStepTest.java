@@ -145,7 +145,7 @@ public class ModelingStepTest {
 
     private static class DummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public DummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, 42,autoML);
+            super(algo, id, cost, 42, autoML);
         }
 
         @Override

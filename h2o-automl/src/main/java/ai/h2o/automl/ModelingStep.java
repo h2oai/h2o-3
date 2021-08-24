@@ -370,7 +370,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
-                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work,w -> w._priorityGroup == _priorityGroup) / 1e3; // Models from a priority group + SEs
+                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, w -> w._priorityGroup == _priorityGroup) / 1e3; // Models from a priority group + SEs
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);

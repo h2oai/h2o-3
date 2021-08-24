@@ -218,19 +218,12 @@ def test_modeling_steps():
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
-    print(aml.modeling_steps )
     assert aml.modeling_steps == [
         {'name': 'DRF', 'steps': [{'id': 'def_1', 'weight': 10}, {'id': 'XRT', 'weight': 10}]},
         {'name': 'GLM', 'steps': [{'id': 'def_1', 'weight': 10}]},
         {'name': 'GBM', 'steps': [{'id': 'grid_1', 'weight': 77}]},
         {'name': 'StackedEnsemble', 'steps': [{'id': 'best10', 'weight': 10}, {'id': 'all10', 'weight': 10}]}
     ]
-    # assert aml.modeling_steps == [
-    #     dict(name='DRF', steps=[dict(id='def_1', weight=10), dict(id='XRT', weight=10)]),
-    #     dict(name='GLM', steps=[dict(id='def_1', weight=10)]),
-    #     dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
-    #     dict(name='StackedEnsemble', steps=[dict(id='best', weight=10), dict(id='all', weight=10)]),
-    # ]
 
     new_aml = H2OAutoML(project_name="py_reinject_modeling_steps",
                         max_models=5,
@@ -376,30 +369,30 @@ def test_exploitation_doesnt_impact_max_models():
     assert len(se) == 5
 
 # FIXME: THIS DOESN'T WORK WITH MULTIPLE SEs
-# def test_exploitation_impacts_exploration_duration():
-#     ds = import_dataset()
-#     planned_duration = 30
-#     aml = H2OAutoML(project_name="py_exploitation_ratio_max_runtime",
-#                     exploitation_ratio=.5,  # excessive ratio on purpose, due to training overheads in multinode
-#                     exclude_algos=['DeepLearning', 'XGBoost'],  # removing some algos for the same reason as above
-#                     max_runtime_secs=planned_duration,
-#                     seed=1,
-#                     # verbosity='debug'
-#                     )
-#     aml.train(y=ds.target, training_frame=ds.train)
-#     automl_start = int(aml.training_info['start_epoch'])
-#     assert 'start_GBM_lr_annealing' in aml.training_info
-#     # assert 'start_XGBoost_lr_search' in aml.training_info
-#     exploitation_start = int(aml.training_info['start_GBM_lr_annealing'])
-#     exploration_duration = exploitation_start - automl_start
-#     se_start = int(aml.training_info['start_StackedEnsemble_best90'])
-#     exploitation_duration = se_start - exploitation_start
-#     # can't reliably check duration ratio
-#     assert 0 < exploration_duration < planned_duration
-#     print(aml.leaderboard)
-#     print(exploitation_duration)
-#     print(exploration_duration)
-#     assert 0 < exploitation_duration < exploration_duration
+def test_exploitation_impacts_exploration_duration():
+    ds = import_dataset()
+    planned_duration = 30
+    aml = H2OAutoML(project_name="py_exploitation_ratio_max_runtime",
+                    exploitation_ratio=.5,  # excessive ratio on purpose, due to training overheads in multinode
+                    exclude_algos=['DeepLearning', 'XGBoost'],  # removing some algos for the same reason as above
+                    max_runtime_secs=planned_duration,
+                    seed=1,
+                     verbosity='debug'
+                    )
+    aml.train(y=ds.target, training_frame=ds.train)
+    automl_start = int(aml.training_info['start_epoch'])
+    assert 'start_GBM_lr_annealing' in aml.training_info
+    # assert 'start_XGBoost_lr_search' in aml.training_info
+    exploitation_start = int(aml.training_info['start_GBM_lr_annealing'])
+    exploration_duration = exploitation_start - automl_start
+    se_start = int(aml.training_info['start_StackedEnsemble_best90'])
+    exploitation_duration = se_start - exploitation_start
+    # can't reliably check duration ratio
+    assert 0 < exploration_duration < planned_duration
+    print(aml.leaderboard)
+    print(exploitation_duration)
+    print(exploration_duration)
+    assert 0 < exploitation_duration < exploration_duration
 
 
 pu.run_tests([

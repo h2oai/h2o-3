@@ -66,8 +66,8 @@ public class AutoMLTest extends water.TestUtil {
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
       assertEquals("wrong amount of standard models", maxModels, count_non_se);
-      assertEquals("wrong amount of SE models", 5, count_se);
-      assertEquals(maxModels+5, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of SE models", 4, count_se);
+      assertEquals(maxModels+4, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.delete();
