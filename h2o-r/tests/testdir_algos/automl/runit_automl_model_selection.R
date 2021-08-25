@@ -45,6 +45,7 @@ automl.model_selection.suite <- function() {
       project_name = "aml_exclude_algos",
       max_models = max_models,
       exclude_algos = c('DRF', 'GLM'),
+      seed = 42 # since SE are build only if the basemodels would differ from the other SEs, it can happen that sometime we would not improve any model from any family so we would not have a new SE which would break the test
     )
     models <- get_partitioned_models(aml)
     expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
