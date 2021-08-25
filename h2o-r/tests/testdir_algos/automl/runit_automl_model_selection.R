@@ -176,7 +176,7 @@ automl.model_selection.suite <- function() {
       list(name='DRF', steps=list(list(id='def_1', weight=10), list(id='XRT', weight=10))),
       list(name='GLM', steps=list(list(id='def_1', weight=10))),
       list(name='GBM', steps=list(list(id='grid_1', weight=777))),
-      list(name='StackedEnsemble', steps=list(list(id='best10', weight=10), list(id='all10', weight=10)))
+      list(name='StackedEnsemble', steps=list(list(id='best1', weight=10), list(id='all1', weight=10)))
     ))
 
     new_aml <- h2o.automl(x=ds$x, y=ds$y.idx,

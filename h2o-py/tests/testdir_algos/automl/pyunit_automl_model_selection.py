@@ -175,7 +175,7 @@ def test_modeling_plan_using_simplified_syntax():
                     modeling_plan=[
                         ('DRF', ['XRT', 'def_1']),
                         ('GBM', 'grids'),
-                        ('StackedEnsemble', ['best10'])
+                        ('StackedEnsemble', ['best1'])
                     ],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
@@ -222,7 +222,7 @@ def test_modeling_steps():
         {'name': 'DRF', 'steps': [{'id': 'def_1', 'weight': 10}, {'id': 'XRT', 'weight': 10}]},
         {'name': 'GLM', 'steps': [{'id': 'def_1', 'weight': 10}]},
         {'name': 'GBM', 'steps': [{'id': 'grid_1', 'weight': 77}]},
-        {'name': 'StackedEnsemble', 'steps': [{'id': 'best10', 'weight': 10}, {'id': 'all10', 'weight': 10}]}
+        {'name': 'StackedEnsemble', 'steps': [{'id': 'best1', 'weight': 10}, {'id': 'all1', 'weight': 10}]}
     ]
 
     new_aml = H2OAutoML(project_name="py_reinject_modeling_steps",
@@ -362,11 +362,12 @@ def test_exploitation_doesnt_impact_max_models():
                     max_models=6,
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
+    print(aml.leaderboard)
     assert 'start_GBM_lr_annealing' in aml.training_info
     assert 'start_XGBoost_lr_search' in aml.training_info
     _, non_se, se = get_partitioned_model_names(aml.leaderboard)
     assert len(non_se) == 6
-    assert len(se) == 5
+    assert len(se) == 3
 
 # FIXME: THIS DOESN'T WORK WITH MULTIPLE SEs
 def test_exploitation_impacts_exploration_duration():

@@ -30,14 +30,14 @@ public class DRFStepsProvider
 
 
         private ModelingStep[] defaults = new DRFModelStep[] {
-                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 20,aml()) {
+                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2,aml()) {
                     @Override
                     protected Job<DRFModel> startJob() {
                         DRFParameters drfParameters = prepareModelParameters();
                         return trainModel(drfParameters);
                     }
                 },
-                new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 30, aml()) {
+                new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     { _description = _description+" (Extremely Randomized Trees)"; }
 
                     @Override

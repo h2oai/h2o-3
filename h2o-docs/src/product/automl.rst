@@ -419,7 +419,14 @@ FAQ
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.  The metalearner in both ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles.  The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.    
+  AutoML trains several Stacked Ensemble models during the run.
+  Two kinds of Stacked Ensemble models are trained one of all available models, and one of only the best models of each kind.
+  Both kinds of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.
+  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.
+  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.
+  The metalearner in both ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles.
+  The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.
+  Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
 
 -  **How do I save AutoML runs?**
 

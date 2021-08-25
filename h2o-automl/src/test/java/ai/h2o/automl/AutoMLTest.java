@@ -472,7 +472,7 @@ public class AutoMLTest extends water.TestUtil {
                       new Step("XRT", 20),
               }),
               new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best10", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("best1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
       }, aml._actualModelingSteps);
     } finally {

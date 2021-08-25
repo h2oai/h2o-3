@@ -51,7 +51,7 @@ public class GLMStepsProvider
 
 
         private ModelingStep[] defaults = new GLMModelStep[] {
-                new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 10, aml()) {
+                new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml()) {
                     @Override
                     protected Job<GLMModel> startJob() {
                         GLMParameters glmParameters = prepareModelParameters();

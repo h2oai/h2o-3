@@ -99,7 +99,7 @@ public class XGBoostSteps extends ModelingSteps {
 
 
     private ModelingStep[] defaults = new XGBoostModelStep[] {
-            new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 20, aml(),false) {
+            new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml(),false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 1 (medium depth)
@@ -118,7 +118,7 @@ public class XGBoostSteps extends ModelingSteps {
                     return trainModel(xgBoostParameters);
                 }
             },
-            new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml(), false) {
+            new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1,aml(), false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 2 (deep)
@@ -137,7 +137,7 @@ public class XGBoostSteps extends ModelingSteps {
                     return trainModel(xgBoostParameters);
                 }
             },
-            new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 30,aml(), false) {
+            new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3,aml(), false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 3 (shallow)
@@ -159,7 +159,7 @@ public class XGBoostSteps extends ModelingSteps {
     };
 
     private ModelingStep[] grids = new XGBoostGridStep[] {
-            new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, 90,aml(), false) {
+            new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, 9, aml(), false) {
                 @Override
                 protected Job<Grid> startJob() {
                     XGBoostParameters xgBoostParameters = prepareModelParameters();

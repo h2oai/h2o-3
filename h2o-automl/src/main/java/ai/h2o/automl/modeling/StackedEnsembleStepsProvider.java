@@ -144,7 +144,7 @@ public class StackedEnsembleStepsProvider
 
 
         private ModelingStep[] defaults = new StackedEnsembleModelStep[] {
-                new StackedEnsembleModelStep("best10", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
+                new StackedEnsembleModelStep("best1", DEFAULT_MODEL_TRAINING_WEIGHT, 1,aml()) {
                     { _description = _description+" (built using top model from each algorithm type)"; }
 
                     @Override
@@ -169,7 +169,7 @@ public class StackedEnsembleStepsProvider
                         return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("all10", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
+                new StackedEnsembleModelStep("all1", DEFAULT_MODEL_TRAINING_WEIGHT, 1,aml()) {
                     { _description = _description+" (built using all AutoML models)"; }
 
                     @Override
@@ -185,7 +185,7 @@ public class StackedEnsembleStepsProvider
                     }
                 },
 
-                new StackedEnsembleModelStep("best20", DEFAULT_MODEL_TRAINING_WEIGHT, 20,aml()) {
+                new StackedEnsembleModelStep("best2", DEFAULT_MODEL_TRAINING_WEIGHT, 2,aml()) {
                     { _description = _description+" (built using top model from each algorithm type)"; }
 
                     @Override
@@ -210,7 +210,7 @@ public class StackedEnsembleStepsProvider
                         return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("all20", DEFAULT_MODEL_TRAINING_WEIGHT,20 ,aml()) {
+                new StackedEnsembleModelStep("all2", DEFAULT_MODEL_TRAINING_WEIGHT,2,aml()) {
                     { _description = _description+" (built using all AutoML models)"; }
 
                     @Override
@@ -226,7 +226,7 @@ public class StackedEnsembleStepsProvider
                     }
                 },
 
-                new StackedEnsembleModelStep("best30", DEFAULT_MODEL_TRAINING_WEIGHT, 30 ,aml()) {
+                new StackedEnsembleModelStep("best3", DEFAULT_MODEL_TRAINING_WEIGHT, 3 ,aml()) {
                     { _description = _description+" (built using top model from each algorithm type)"; }
 
                     @Override
@@ -251,7 +251,7 @@ public class StackedEnsembleStepsProvider
                         return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("all30", DEFAULT_MODEL_TRAINING_WEIGHT, 30,aml()) {
+                new StackedEnsembleModelStep("all3", DEFAULT_MODEL_TRAINING_WEIGHT, 3,aml()) {
                     { _description = _description+" (built using all AutoML models)"; }
 
                     @Override
@@ -266,7 +266,7 @@ public class StackedEnsembleStepsProvider
                         return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("best90", DEFAULT_MODEL_TRAINING_WEIGHT, 90,aml()) {
+                new StackedEnsembleModelStep("best9", DEFAULT_MODEL_TRAINING_WEIGHT, 9,aml()) {
                     { _description = _description+" (built using top model from each algorithm type)"; }
 
                     @Override
@@ -291,7 +291,7 @@ public class StackedEnsembleStepsProvider
                         return stack(makeKey(_algo + "_BestOfFamily", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("all90", DEFAULT_MODEL_TRAINING_WEIGHT, 90,aml()) {
+                new StackedEnsembleModelStep("all9", DEFAULT_MODEL_TRAINING_WEIGHT, 9,aml()) {
                     { _description = _description+" (built using all AutoML models)"; }
 
                     @Override
@@ -306,7 +306,7 @@ public class StackedEnsembleStepsProvider
                         return stack(makeKey(_algo + "_AllModels", true), getBaseModels(), false);
                     }
                 },
-                new StackedEnsembleModelStep("best100", DEFAULT_MODEL_TRAINING_WEIGHT, 100,aml()) {
+                new StackedEnsembleModelStep("best10", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
                     { _description = _description+" (built using top model from each algorithm type)"; }
 
                     @Override
@@ -386,7 +386,7 @@ public class StackedEnsembleStepsProvider
                     }
                 },
 
-                new StackedEnsembleModelStep("all100", DEFAULT_MODEL_TRAINING_WEIGHT, 100,aml()) {
+                new StackedEnsembleModelStep("all10", DEFAULT_MODEL_TRAINING_WEIGHT, 10,aml()) {
                     { _description = _description+" (built using all AutoML models)"; }
 
                     @Override

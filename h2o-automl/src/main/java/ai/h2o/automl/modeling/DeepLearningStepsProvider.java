@@ -71,7 +71,7 @@ public class DeepLearningStepsProvider
 
 
         private ModelingStep[] defaults = new DeepLearningModelStep[] {
-                new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 30, aml()) {
+                new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     @Override
                     protected Job<DeepLearningModel> startJob() {
                         DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
@@ -82,7 +82,7 @@ public class DeepLearningStepsProvider
         };
 
         private ModelingStep[] grids = new DeepLearningGridStep[] {
-                new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 100,  aml()) {
+                new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 10,  aml()) {
                     @Override
                     protected Job<Grid> startJob() {
                         DeepLearningParameters dlParameters = prepareModelParameters();
@@ -105,7 +105,7 @@ public class DeepLearningStepsProvider
                         return hyperparameterSearch(dlParameters, searchParams);
                     }
                 },
-                new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 100,aml()) {
+                new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 10,aml()) {
                     @Override
                     protected Job<Grid> startJob() {
                         DeepLearningParameters dlParameters = prepareModelParameters();
@@ -127,7 +127,7 @@ public class DeepLearningStepsProvider
                         return hyperparameterSearch(dlParameters, searchParams);
                     }
                 },
-                new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 100,aml()) {
+                new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 10,aml()) {
                     @Override
                     protected Job<Grid> startJob() {
                         DeepLearningParameters dlParameters = prepareModelParameters();
