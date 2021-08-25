@@ -3,7 +3,7 @@ ANOVA GLM
 
 H2O ANOVA GLM is used to calculate Type III SS (sum of squares) which is used to investigate the contributions of individual predictors and their interactions to a model. Predictors or interactions with negligible contributions to the model will have high p-values while those with more contributions will have low p-values. We use predictors to express individual predictors or interactions of predictors.
 
-Since ANOVA GLM is mainly used to investigate the contribution of each predictor or interaction, scoring, MOJO, and cross-validation are not supported. 
+Since ANOVA GLM is mainly used to investigate the contribution of each predictor or interaction, scoring, MOJO, and cross-validation are not supported.
 
 Defining an ANOVA GLM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
