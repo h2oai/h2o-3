@@ -34,18 +34,13 @@ At a minimum, we recommend the following for compatibility with H2O:
 Java Requirements
 ~~~~~~~~~~~~~~~~~
 
-Java is always required to run H2O. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
+H2O can run on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
 
-H2O supports the following versions of Java:
+H2O supports the following versions of Java: 
 
-- `Java SE 15 <https://www.oracle.com/java/technologies/javase/jdk15-archive-downloads.html>`__
-- `Java SE 14 <https://www.oracle.com/java/technologies/javase/jdk14-archive-downloads.html>`__
-- `Java SE 13 <https://www.oracle.com/java/technologies/javase/jdk13-archive-downloads.html>`__
-- `Java SE 12 <https://www.oracle.com/java/technologies/javase/jdk12-archive-downloads.html>`__
-- `Java SE 11 <https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html>`__
-- `Java SE 10 <https://www.oracle.com/java/technologies/java-archive-javase10-downloads.html>`__
-- `Java SE 9 <https://www.oracle.com/java/technologies/javase/javase9-archive-downloads.html>`__
-- `Java SE 8 <https://www.oracle.com/java/technologies/javase/javase8u211-later-archive-downloads.html>`__
+- Java SE 15, 14, 13, 12, 11, 10, 9, 8
+
+Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
 
 Additional Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~
