@@ -7,6 +7,7 @@ import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -22,13 +23,14 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
         return _aml;
     }
 
-    Optional<ModelingStep> getStep(String id) {
+    public Optional<ModelingStep> getStep(String id) {
         return Stream.of(getAllSteps())
-                .filter(step -> step._id.equals(id))
+                .map(step -> step._id.equals(id) ? step : step.getSubStep(id))
+                .filter(Objects::nonNull)
                 .findFirst();
     }
 
-    ModelingStep[] getSteps(Step[] steps) {
+    protected ModelingStep[] getSteps(Step[] steps) {
         List<ModelingStep> tSteps = new ArrayList<>();
         for (Step step : steps) {
             getStep(step._id).ifPresent(tStep -> {
@@ -44,7 +46,7 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
         return tSteps.toArray(new ModelingStep[0]);
     }
 
-    ModelingStep[] getSteps(Alias alias) {
+    protected ModelingStep[] getSteps(Alias alias) {
         switch (alias) {
             case all:
                 return getAllSteps();
@@ -61,7 +63,7 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
         }
     }
 
-    ModelingStep[] getAllSteps() {
+    protected ModelingStep[] getAllSteps() {
         ModelingStep[] all = new ModelingStep[0];  // create a fresh array to avoid type issues in arraycopy
         all = ArrayUtils.append(all, getDefaultModels());
         all = ArrayUtils.append(all, getGrids());

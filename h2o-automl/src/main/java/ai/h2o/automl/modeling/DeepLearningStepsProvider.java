@@ -40,7 +40,7 @@ public class DeepLearningStepsProvider
                 super(NAME, Algo.DeepLearning, id, weight, priorityGroup, autoML);
             }
 
-            protected DeepLearningParameters prepareModelParameters() {
+            public DeepLearningParameters prepareModelParameters() {
                 DeepLearningParameters params = new DeepLearningParameters();
                 params._epochs = 10000; // early stopping takes care of epochs - no need to tune!
                 params._adaptive_rate = true;
@@ -56,7 +56,7 @@ public class DeepLearningStepsProvider
                 return config;
             }
 
-            protected Map<String, Object[]> prepareSearchParameters() {
+            public Map<String, Object[]> prepareSearchParameters() {
                 Map<String, Object[]> searchParams = new HashMap<>();
                 searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
                 searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
@@ -69,7 +69,7 @@ public class DeepLearningStepsProvider
         private final ModelingStep[] defaults = new DeepLearningModelStep[] {
                 new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     @Override
-                    protected DeepLearningParameters prepareModelParameters() {
+                    public DeepLearningParameters prepareModelParameters() {
                         DeepLearningParameters params = new DeepLearningParameters();  // don't use common params for default DL
                         params._hidden = new int[]{ 10, 10, 10 };
                         return params;
@@ -80,7 +80,7 @@ public class DeepLearningStepsProvider
         private final ModelingStep[] grids = new DeepLearningGridStep[] {
                 new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()) {
                     @Override
-                    protected Map<String, Object[]> prepareSearchParameters() {
+                    public Map<String, Object[]> prepareSearchParameters() {
                         Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
                                 {  20 },
@@ -100,7 +100,7 @@ public class DeepLearningStepsProvider
                 },
                 new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 5, aml()) {
                     @Override
-                    protected Map<String, Object[]> prepareSearchParameters() {
+                    public Map<String, Object[]> prepareSearchParameters() {
                         Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
                                 {  20,  20 },
@@ -120,7 +120,7 @@ public class DeepLearningStepsProvider
                 },
                 new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 5, aml()) {
                     @Override
-                    protected Map<String, Object[]> prepareSearchParameters() {
+                    public Map<String, Object[]> prepareSearchParameters() {
                         Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
                                 {  20,  20,  20 },

@@ -29,7 +29,7 @@ public class GLMStepsProvider
                 // disabled as we're using lambda search
             }
 
-            protected GLMParameters prepareModelParameters() {
+            public GLMParameters prepareModelParameters() {
                 GLMParameters params = new GLMParameters();
                 params._lambda_search = true;
                 params._family =
@@ -53,7 +53,7 @@ public class GLMStepsProvider
         private final ModelingStep[] defaults = new GLMModelStep[] {
                 new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml()) {
                     @Override
-                    protected GLMParameters prepareModelParameters() {
+                    public GLMParameters prepareModelParameters() {
                         GLMParameters params = super.prepareModelParameters();
                         params._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
                         params._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;

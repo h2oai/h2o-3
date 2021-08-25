@@ -149,7 +149,7 @@ public class ModelingStepTest {
         }
 
         @Override
-        protected Model.Parameters prepareModelParameters() {
+        public Model.Parameters prepareModelParameters() {
             return new DummyModel.DummyModelParameters();
         }
     }
@@ -160,7 +160,7 @@ public class ModelingStepTest {
         }
 
         @Override
-        protected Model.Parameters prepareModelParameters() {
+        public Model.Parameters prepareModelParameters() {
             DummyModel.DummyModelParameters params = new DummyModel.DummyModelParameters();
             params._fail_on_init = true;
             return params;
@@ -174,12 +174,12 @@ public class ModelingStepTest {
         }
 
         @Override
-        protected Model.Parameters prepareModelParameters() {
+        public Model.Parameters prepareModelParameters() {
             return new DummyModel.DummyModelParameters();
         }
 
         @Override
-        protected Map<String, Object[]> prepareSearchParameters() {
+        public Map<String, Object[]> prepareSearchParameters() {
             Map<String, Object[]> searchParams = new HashMap<>();
             searchParams.put("_tag", new String[] {"one", "two", "three"});
             return searchParams;

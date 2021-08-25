@@ -23,7 +23,7 @@ public class DRFStepsProvider
                 super(NAME, Algo.DRF, id, weight, priorityGroup, autoML);
             }
 
-            protected DRFParameters prepareModelParameters() {
+            public DRFParameters prepareModelParameters() {
                 DRFParameters params = new DRFParameters();
                 params._score_tree_interval = 5;
                 return params;
@@ -37,7 +37,7 @@ public class DRFStepsProvider
                     { _description = _description+" (Extremely Randomized Trees)"; }
 
                     @Override
-                    protected DRFParameters prepareModelParameters() {
+                    public DRFParameters prepareModelParameters() {
                         DRFParameters params = super.prepareModelParameters();
                         params._histogram_type = HistogramType.Random;
                         return params;

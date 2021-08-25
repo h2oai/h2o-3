@@ -54,7 +54,7 @@ public class XGBoostSteps extends ModelingSteps {
             _emulateLightGBM = emulateLightGBM;
         }
 
-        protected XGBoostParameters prepareModelParameters() {
+        public XGBoostParameters prepareModelParameters() {
             return XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
         }
     }
@@ -67,7 +67,7 @@ public class XGBoostSteps extends ModelingSteps {
             _emulateLightGBM = emulateLightGBM;
         }
 
-        protected XGBoostParameters prepareModelParameters() {
+        public XGBoostParameters prepareModelParameters() {
             return XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
         }
     }
@@ -105,7 +105,7 @@ public class XGBoostSteps extends ModelingSteps {
     private final ModelingStep[] defaults = new XGBoostModelStep[] {
             new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml(), false) {
                 @Override
-                protected XGBoostParameters prepareModelParameters() {
+                public XGBoostParameters prepareModelParameters() {
                     //XGB 1 (medium depth)
                     XGBoostParameters params = super.prepareModelParameters();
                     params._max_depth = 10;
@@ -124,7 +124,7 @@ public class XGBoostSteps extends ModelingSteps {
             },
             new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml(), false) {
                 @Override
-                protected XGBoostParameters prepareModelParameters() {
+                public XGBoostParameters prepareModelParameters() {
                     //XGB 2 (deep)
                     XGBoostParameters params = super.prepareModelParameters();
                     params._max_depth = 15;
@@ -143,7 +143,7 @@ public class XGBoostSteps extends ModelingSteps {
             },
             new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml(), false) {
                 @Override
-                protected XGBoostParameters prepareModelParameters() {
+                public XGBoostParameters prepareModelParameters() {
                     //XGB 3 (shallow)
                     XGBoostParameters params = super.prepareModelParameters();
                     params._max_depth = 5;
@@ -170,7 +170,7 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         @Override
-        protected Map<String, Object[]> prepareSearchParameters() {
+        public Map<String, Object[]> prepareSearchParameters() {
             Map<String, Object[]> searchParams = new HashMap<>();
 //                    searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators
 
@@ -205,6 +205,7 @@ public class XGBoostSteps extends ModelingSteps {
 
     private final ModelingStep[] grids = new XGBoostGridStep[] {
             new DefaultXGBoostGridStep("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()),
+/*
             new DefaultXGBoostGridStep("grid_1_resume", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
                 @Override
                 protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
@@ -220,6 +221,7 @@ public class XGBoostSteps extends ModelingSteps {
                     return hyperparameterSearch(resumedGrid[0], prepareModelParameters(), prepareSearchParameters());
                 }
             }
+*/
     };
 
     private final ModelingStep[] exploitation = new ModelingStep[] {

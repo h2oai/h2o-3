@@ -32,6 +32,7 @@ import water.util.Log;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -167,6 +168,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     
     protected ModelingStep nextSubStep() {
         throw new NoSuchElementException("no sub-step available for step "+_id);
+    }
+    
+    protected ModelingStep getSubStep(String id) {
+        return null;
     }
 
     public Job run() {
@@ -399,8 +404,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
 
-        public ModelStep(String provider, IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
-            super(provider, algo, id, cost, priorityGroup, autoML);
+        public ModelStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+            super(provider, algo, id, weight, priorityGroup, autoML);
         }
 
         @Override
@@ -408,7 +413,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return JobType.ModelBuild;
         }
 
-        protected abstract Model.Parameters prepareModelParameters();
+        public abstract Model.Parameters prepareModelParameters();
 
         @Override
         protected Job<M> startJob() {
@@ -465,8 +470,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 30;
         protected static final int GRID_STOPPING_ROUND_FACTOR = 2;
 
-        public GridStep(String provider, IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
-            super(provider, algo, id, cost, priorityGroup,autoML);
+        public GridStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+            super(provider, algo, id, weight, priorityGroup,autoML);
         }
 
         @Override
@@ -479,9 +484,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return true;
         }
 
-        protected abstract Model.Parameters prepareModelParameters();
+        public abstract Model.Parameters prepareModelParameters();
         
-        protected abstract Map<String, Object[]> prepareSearchParameters();
+        public abstract Map<String, Object[]> prepareSearchParameters();
 
         @Override
         protected Job<Grid> startJob() {
@@ -746,7 +751,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         @Override
         protected JobType getJobType() {
-            return JobType.Decision;
+            return JobType.Dynamic;
         }
 
         @Override
@@ -754,13 +759,17 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected Key<Models> makeKey(String name, boolean withCounter) {
             return aml().makeKey(name, "decision", withCounter);
         }
-
-        @Override
-        protected boolean hasSubStep() {
+        
+        private void initSubSteps() {
             if (_subSteps == null) {
                 _subSteps = prepareModelingSteps();
                 _stepIdx = _subSteps.length > 0 ? 0 : -1;
             }
+        }
+
+        @Override
+        protected boolean hasSubStep() {
+            initSubSteps();
             return _stepIdx >= 0 && _stepIdx < _subSteps.length;
         }
 
@@ -774,7 +783,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return super.nextSubStep();
         }
 
-        protected abstract ModelingStep<M>[] prepareModelingSteps();
+        @Override
+        protected ModelingStep getSubStep(String id) {
+            initSubSteps();
+            return Stream.of(_subSteps)
+                    .filter(step -> step._id.equals(id))
+                    .findFirst().orElse(null);
+        }
+
+        public abstract ModelingStep<M>[] prepareModelingSteps();
 
         @Override
         public boolean canRun() {

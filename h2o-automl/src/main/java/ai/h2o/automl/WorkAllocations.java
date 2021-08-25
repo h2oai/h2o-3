@@ -16,7 +16,7 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     ModelBuild,
     HyperparamSearch,
     Selection,
-    Decision,
+    Dynamic,
   }
 
   public static class Work extends Iced<Work> {
@@ -49,7 +49,7 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     public String toString() {
       final StringBuilder sb = new StringBuilder("Work{")
               .append(_id).append(", ")
-              .append(_algo).append(", ")
+              .append(_algo.name()).append(", ")
               .append(_type).append(", ")
               .append("weight=").append(_weight).append(", ")
               .append("group=").append(_priorityGroup)

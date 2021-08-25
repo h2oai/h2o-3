@@ -72,8 +72,9 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     }
 
     boolean submit(ModelingStep step, Job parentJob) {
+        boolean retVal = false;
         while (step.hasSubStep()) {
-            submit(step.nextSubStep(), parentJob);
+            retVal |= submit(step.nextSubStep(), parentJob);
         }
         if (step.canRun()) {
             Job job = step.run();
@@ -82,7 +83,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                     skip(step, parentJob);
                 } else {
                     monitor(job, step, parentJob);
-                    return true;
+                    retVal = true;
                 }
             } finally {
                 step.onDone(job);
@@ -90,7 +91,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         } else if (step.getAllocatedWork() != null) {
             step.getAllocatedWork().consume();
         }
-        return false;
+        return retVal;
     }
 
     private void skip(ModelingStep step, Job parentJob) {

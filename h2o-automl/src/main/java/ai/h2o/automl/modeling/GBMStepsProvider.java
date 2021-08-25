@@ -37,7 +37,7 @@ public class GBMStepsProvider
                 super(NAME, Algo.GBM, id, weight, priorityGroup, autoML);
             }
 
-            protected GBMParameters prepareModelParameters() {
+            public GBMParameters prepareModelParameters() {
                 GBMParameters params = GBMSteps.prepareModelParameters();
                 params._ntrees = 10000;
                 params._sample_rate = 0.8;
@@ -52,7 +52,7 @@ public class GBMStepsProvider
                 super(NAME, Algo.GBM, id, weight, priorityGroup,autoML);
             }
 
-            protected GBMParameters prepareModelParameters() {
+            public GBMParameters prepareModelParameters() {
                 GBMParameters params = GBMSteps.prepareModelParameters();
                 params._ntrees = 10000;
                 return params;
@@ -85,7 +85,7 @@ public class GBMStepsProvider
         private final ModelingStep[] defaults = new GBMModelStep[] {
                 new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     @Override
-                    protected GBMParameters prepareModelParameters() {
+                    public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
                         params._max_depth = 6;
                         params._min_rows = 1;
@@ -94,7 +94,7 @@ public class GBMStepsProvider
                 },
                 new GBMModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {
                     @Override
-                    protected GBMParameters prepareModelParameters() {
+                    public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
                         params._max_depth = 7;
                         params._min_rows = 10;
@@ -103,7 +103,7 @@ public class GBMStepsProvider
                 },
                 new GBMModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {
                     @Override
-                    protected GBMParameters prepareModelParameters() {
+                    public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
                         params._max_depth = 8;
                         params._min_rows = 10;
@@ -112,7 +112,7 @@ public class GBMStepsProvider
                 },
                 new GBMModelStep("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {
                     @Override
-                    protected GBMParameters prepareModelParameters() {
+                    public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
                         params._max_depth = 10;
                         params._min_rows = 10;
@@ -121,7 +121,7 @@ public class GBMStepsProvider
                 },
                 new GBMModelStep("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml()) {
                     @Override
-                    protected GBMParameters prepareModelParameters() {
+                    public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
                         params._max_depth = 15;
                         params._min_rows = 100;
@@ -136,7 +136,7 @@ public class GBMStepsProvider
             }
 
             @Override
-            protected Map<String, Object[]> prepareSearchParameters() {
+            public Map<String, Object[]> prepareSearchParameters() {
                 Map<String, Object[]> searchParams = new HashMap<>();
                 searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
                 searchParams.put("_min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
@@ -151,6 +151,7 @@ public class GBMStepsProvider
         
         private final ModelingStep[] grids = new GBMGridStep[] {
                 new DefaultGBMGridStep("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()),
+/*
                 new DefaultGBMGridStep("grid_1_resume", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
                     @Override
                     protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
@@ -166,6 +167,7 @@ public class GBMStepsProvider
                         return hyperparameterSearch(resumedGrid[0], prepareModelParameters(), prepareSearchParameters());
                     }
                 }
+*/
         };
 
 

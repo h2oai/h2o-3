@@ -114,7 +114,7 @@ public class StackedEnsembleStepsProvider
             }
 
             @Override
-            protected StackedEnsembleParameters prepareModelParameters() {
+            public StackedEnsembleParameters prepareModelParameters() {
                 StackedEnsembleParameters params = new StackedEnsembleParameters();
                 params._valid = (aml().getValidationFrame() == null ? null : aml().getValidationFrame()._key);
                 params._blending = (aml().getBlendingFrame() == null ? null : aml().getBlendingFrame()._key);
