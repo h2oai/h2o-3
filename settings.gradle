@@ -46,6 +46,8 @@ include 'h2o-genmodel-ext-jgrapht'
 include 'h2o-k8s'
 include 'h2o-genmodel-ext-deepwater'
 include 'h2o-clustering'
+include 'h2o-logging-impl-classic'
+include 'h2o-logging-impl-log4j2'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
@@ -70,6 +72,10 @@ rootProject.children.each { project ->
   }
   if (project.name.startsWith("h2o-genmodel-ext-")) {
     String projectDirName = "h2o-genmodel-extensions/${project.name - 'h2o-genmodel-ext-'}"
+    project.projectDir = new File(settingsDir, projectDirName)
+  }
+  if (project.name.startsWith("h2o-logging-")) {
+    String projectDirName = "h2o-logging/${project.name - 'h2o-logging-'}"
     project.projectDir = new File(settingsDir, projectDirName)
   }
 }
