@@ -25,26 +25,20 @@ final class ModelingPlans {
             new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.defaults),
             new StepDefinition(Algo.DRF.name(), "XRT"),
             new StepDefinition(Algo.XGBoost.name(), 
-                    new Step("grid_1", DEFAULT_MODEL_GROUP, 3*DEFAULT_GRID_TRAINING_WEIGHT)
-            ),
+                    new Step("grid_1", DEFAULT_MODEL_GROUP, 3*DEFAULT_GRID_TRAINING_WEIGHT)),
             new StepDefinition(Algo.GBM.name(), 
-                    new Step("grid_1", DEFAULT_MODEL_GROUP, 2*DEFAULT_GRID_TRAINING_WEIGHT)
-            ),
+                    new Step("grid_1", DEFAULT_MODEL_GROUP, 2*DEFAULT_GRID_TRAINING_WEIGHT)),
             new StepDefinition(Algo.DeepLearning.name(),
                     new Step("grid_1", DEFAULT_MODEL_GROUP, DEFAULT_GRID_TRAINING_WEIGHT/2),
                     new Step("grid_2", DEFAULT_MODEL_GROUP, DEFAULT_GRID_TRAINING_WEIGHT/2),
-                    new Step("grid_3", DEFAULT_MODEL_GROUP, DEFAULT_GRID_TRAINING_WEIGHT/2)
-            ),
+                    new Step("grid_3", DEFAULT_MODEL_GROUP, DEFAULT_GRID_TRAINING_WEIGHT/2)),
             new StepDefinition(Algo.GBM.name(), 
-                    new Step("lr_annealing", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)
-            ),
+                    new Step("lr_annealing", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)),
             new StepDefinition(Algo.XGBoost.name(), 
-                    new Step("lr_search", DEFAULT_MODEL_GROUP, DEFAULT_GRID_TRAINING_WEIGHT)
-            ),
+                    new Step("lr_search", DEFAULT_MODEL_GROUP, DEFAULT_GRID_TRAINING_WEIGHT)),
             new StepDefinition(Algo.StackedEnsemble.name(), 
                     new Step("best_of_family", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT),
-                    new Step("all", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)
-            ),
+                    new Step("all", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)),
     };
 
 
@@ -68,8 +62,10 @@ final class ModelingPlans {
             new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),
             new StepDefinition(Algo.GBM.name(), StepDefinition.Alias.grids),
             new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids),
-            new StepDefinition(Algo.GBM.name(), new Step("lr_annealing", DEFAULT_GRID_GROUP+1, Step.DEFAULT_WEIGHT)),
-            new StepDefinition(Algo.XGBoost.name(), new Step("lr_search", DEFAULT_GRID_GROUP+1, Step.DEFAULT_WEIGHT)),
+            new StepDefinition(Algo.GBM.name(), 
+                    new Step("lr_annealing", DEFAULT_GRID_GROUP+1, Step.DEFAULT_WEIGHT)),
+            new StepDefinition(Algo.XGBoost.name(), 
+                    new Step("lr_search", DEFAULT_GRID_GROUP+1, Step.DEFAULT_WEIGHT)),
             new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults),
     };
 
