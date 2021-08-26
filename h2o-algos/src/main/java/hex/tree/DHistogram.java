@@ -238,7 +238,7 @@ public final class DHistogram extends Iced {
     if (isInt > 0 && maxEx - min <= xbins) {
       assert ((long) min) == min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
       xbins = (char) ((long) maxEx - (long) min);  // Shrink bins
-      _step = 1.0f;                           // Fixed stepsize
+      _step = 1.0f;                           // Fixed step size
     } else {
       _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
       if(_step <= 0 || Double.isInfinite(_step) || Double.isNaN(_step))
