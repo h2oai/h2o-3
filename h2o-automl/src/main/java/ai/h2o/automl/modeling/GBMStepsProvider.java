@@ -4,8 +4,6 @@ import ai.h2o.automl.*;
 import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
 import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
-import hex.grid.Grid;
-import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
@@ -13,9 +11,6 @@ import water.Job;
 import water.Key;
 
 import java.util.*;
-
-import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class GBMStepsProvider
         implements ModelingStepsProvider<GBMStepsProvider.GBMSteps>
@@ -33,8 +28,8 @@ public class GBMStepsProvider
 
         static abstract class GBMModelStep extends ModelingStep.ModelStep<GBMModel> {
 
-            GBMModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.GBM, id, weight, priorityGroup, autoML);
+            GBMModelStep(String id, AutoML autoML) {
+                super(NAME, Algo.GBM, id, autoML);
             }
 
             public GBMParameters prepareModelParameters() {
@@ -48,8 +43,8 @@ public class GBMStepsProvider
         }
 
         static abstract class GBMGridStep extends ModelingStep.GridStep<GBMModel> {
-            public GBMGridStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.GBM, id, weight, priorityGroup,autoML);
+            public GBMGridStep(String id, AutoML autoML) {
+                super(NAME, Algo.GBM, id, autoML);
             }
 
             public GBMParameters prepareModelParameters() {
@@ -74,8 +69,8 @@ public class GBMStepsProvider
             public boolean canRun() {
                 return super.canRun() && getBestGBM() != null;
             }
-            public GBMExploitationStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.GBM, id, weight, priorityGroup, autoML);
+            public GBMExploitationStep(String id, AutoML autoML) {
+                super(NAME, Algo.GBM, id, autoML);
 //                _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
             }
         }
@@ -83,7 +78,7 @@ public class GBMStepsProvider
 
 
         private final ModelingStep[] defaults = new GBMModelStep[] {
-                new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
+                new GBMModelStep("def_1", aml()) {
                     @Override
                     public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
@@ -92,7 +87,7 @@ public class GBMStepsProvider
                         return params;
                     }
                 },
-                new GBMModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {
+                new GBMModelStep("def_2", aml()) {
                     @Override
                     public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
@@ -101,7 +96,7 @@ public class GBMStepsProvider
                         return params;
                     }
                 },
-                new GBMModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {
+                new GBMModelStep("def_3", aml()) {
                     @Override
                     public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
@@ -110,7 +105,7 @@ public class GBMStepsProvider
                         return params;
                     }
                 },
-                new GBMModelStep("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {
+                new GBMModelStep("def_4", aml()) {
                     @Override
                     public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
@@ -119,7 +114,7 @@ public class GBMStepsProvider
                         return params;
                     }
                 },
-                new GBMModelStep("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml()) {
+                new GBMModelStep("def_5", aml()) {
                     @Override
                     public GBMParameters prepareModelParameters() {
                         GBMParameters params = super.prepareModelParameters();
@@ -131,8 +126,8 @@ public class GBMStepsProvider
         };
 
         static class DefaultGBMGridStep extends GBMGridStep {
-            public DefaultGBMGridStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(id, weight, priorityGroup, autoML);
+            public DefaultGBMGridStep(String id, AutoML autoML) {
+                super(id, autoML);
             }
 
             @Override
@@ -150,9 +145,9 @@ public class GBMStepsProvider
         }
         
         private final ModelingStep[] grids = new GBMGridStep[] {
-                new DefaultGBMGridStep("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()),
+                new DefaultGBMGridStep("grid_1", aml()),
 /*
-                new DefaultGBMGridStep("grid_1_resume", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
+                new DefaultGBMGridStep("grid_1_resume", aml()) {
                     @Override
                     protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
                         super.setSearchCriteria(searchCriteria, baseParms);
@@ -172,7 +167,7 @@ public class GBMStepsProvider
 
 
         private final ModelingStep[] exploitation = new ModelingStep[] {
-                new GBMExploitationStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, 6, aml()) {
+                new GBMExploitationStep("lr_annealing", aml()) {
 
                     Key<Models> resultKey = null;
 
@@ -219,7 +214,7 @@ public class GBMStepsProvider
         }
 
         @Override
-        protected ModelingStep[] getExploitation() {
+        protected ModelingStep[] getOptionals() {
             return exploitation;
         }
     }

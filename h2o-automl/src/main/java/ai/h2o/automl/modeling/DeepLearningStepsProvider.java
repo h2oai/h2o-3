@@ -9,8 +9,6 @@ import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class DeepLearningStepsProvider
         implements ModelingStepsProvider<DeepLearningStepsProvider.DeepLearningSteps>
@@ -21,8 +19,8 @@ public class DeepLearningStepsProvider
         static final String NAME = Algo.DeepLearning.name();
         
         static abstract class DeepLearningModelStep extends ModelingStep.ModelStep<DeepLearningModel> {
-            public DeepLearningModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.DeepLearning, id, weight, priorityGroup, autoML);
+            public DeepLearningModelStep(String id, AutoML autoML) {
+                super(NAME, Algo.DeepLearning, id, autoML);
             }
             
             @Override
@@ -36,8 +34,8 @@ public class DeepLearningStepsProvider
 
         static abstract class DeepLearningGridStep extends ModelingStep.GridStep<DeepLearningModel> {
 
-            DeepLearningGridStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.DeepLearning, id, weight, priorityGroup, autoML);
+            DeepLearningGridStep(String id, AutoML autoML) {
+                super(NAME, Algo.DeepLearning, id, autoML);
             }
 
             public DeepLearningParameters prepareModelParameters() {
@@ -67,7 +65,7 @@ public class DeepLearningStepsProvider
 
 
         private final ModelingStep[] defaults = new DeepLearningModelStep[] {
-                new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
+                new DeepLearningModelStep("def_1", aml()) {
                     @Override
                     public DeepLearningParameters prepareModelParameters() {
                         DeepLearningParameters params = new DeepLearningParameters();  // don't use common params for default DL
@@ -78,7 +76,7 @@ public class DeepLearningStepsProvider
         };
 
         private final ModelingStep[] grids = new DeepLearningGridStep[] {
-                new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()) {
+                new DeepLearningGridStep("grid_1", aml()) {
                     @Override
                     public Map<String, Object[]> prepareSearchParameters() {
                         Map<String, Object[]> searchParams = super.prepareSearchParameters();
@@ -98,7 +96,7 @@ public class DeepLearningStepsProvider
                         return searchParams;
                     }
                 },
-                new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 5, aml()) {
+                new DeepLearningGridStep("grid_2", aml()) {
                     @Override
                     public Map<String, Object[]> prepareSearchParameters() {
                         Map<String, Object[]> searchParams = super.prepareSearchParameters();
@@ -118,7 +116,7 @@ public class DeepLearningStepsProvider
                         return searchParams;
                     }
                 },
-                new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 5, aml()) {
+                new DeepLearningGridStep("grid_3", aml()) {
                     @Override
                     public Map<String, Object[]> prepareSearchParameters() {
                         Map<String, Object[]> searchParams = super.prepareSearchParameters();

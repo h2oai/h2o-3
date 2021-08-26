@@ -48,8 +48,8 @@ public class ModelingStepRegistryTest extends TestUtil {
 
     @Test
     public void test_registration_of_default_step_providers() {
-        assertEquals(6, ModelingStepsRegistry.stepsByName.size());
-        assertEquals("Detected some duplicate registration", 6, new HashSet<>(ModelingStepsRegistry.stepsByName.values()).size());
+        assertEquals(7, ModelingStepsRegistry.stepsByName.size());
+        assertEquals("Detected some duplicate registration", 7, new HashSet<>(ModelingStepsRegistry.stepsByName.values()).size());
         for (Algo algo: Algo.values()) {
             assertTrue(ModelingStepsRegistry.stepsByName.containsKey(algo.name()));
             assertNotNull(ModelingStepsRegistry.stepsByName.get(algo.name()));
@@ -77,22 +77,24 @@ public class ModelingStepRegistryTest extends TestUtil {
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.all))
                 .collect(Collectors.toList());
         ModelingStep[] modelingSteps = registry.getOrderedSteps(allSteps.toArray(new StepDefinition[0]), aml);
-        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1 + 1/*GBM*/) + (1/*GLM*/) + (11/*SE*/) + (3 + 1 + 2/*XGB*/),
+        assertEquals((1/*completion*/)+(1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1 + 1/*GBM*/) + (1/*GLM*/) + (11/*SE*/) + (3 + 1 + 2/*XGB*/),
                 modelingSteps.length);
-        assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.GridStep.class::isInstance).count());
-        assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DRF).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(5, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.GridStep.class::isInstance).count());
-        assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.SelectionStep.class::isInstance).count());
-        assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GLM).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(11, Stream.of(modelingSteps).filter(s -> s._algo == Algo.StackedEnsemble).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.ModelStep.class::isInstance).count());
-        assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.GridStep.class::isInstance).count());
-        assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.SelectionStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> "completion".equals(s.getProvider())).filter(ModelingStep.SelectionStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> Algo.DeepLearning.name().equals(s.getProvider())).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(3, Stream.of(modelingSteps).filter(s -> Algo.DeepLearning.name().equals(s.getProvider())).filter(ModelingStep.GridStep.class::isInstance).count());
+        assertEquals(2, Stream.of(modelingSteps).filter(s -> Algo.DRF.name().equals(s.getProvider())).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(5, Stream.of(modelingSteps).filter(s -> Algo.GBM.name().equals(s.getProvider())).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> Algo.GBM.name().equals(s.getProvider())).filter(ModelingStep.GridStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> Algo.GBM.name().equals(s.getProvider())).filter(ModelingStep.SelectionStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> Algo.GLM.name().equals(s.getProvider())).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(11, Stream.of(modelingSteps).filter(s -> Algo.StackedEnsemble.name().equals(s.getProvider())).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(3, Stream.of(modelingSteps).filter(s -> Algo.XGBoost.name().equals(s.getProvider())).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> Algo.XGBoost.name().equals(s.getProvider())).filter(ModelingStep.GridStep.class::isInstance).count());
+        assertEquals(2, Stream.of(modelingSteps).filter(s -> Algo.XGBoost.name().equals(s.getProvider())).filter(ModelingStep.SelectionStep.class::isInstance).count());
 
         List<String> orderedStepIds = Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList());
         assertEquals(Arrays.asList(
+                "resume_best_grids",
                 "def_1", "grid_1", "grid_2", "grid_3",
                 "def_1", "XRT",
                 "def_1", "def_2", "def_3", "def_4", "def_5", "grid_1", "lr_annealing",
@@ -131,20 +133,49 @@ public class ModelingStepRegistryTest extends TestUtil {
         StepDefinition[] byIdSteps = new StepDefinition[]{
                 new StepDefinition(Algo.DRF.name(), new String[]{"XRT"}),
                 new StepDefinition(Algo.XGBoost.name(), new String[]{"grid_1"}),
-                new StepDefinition(Algo.StackedEnsemble.name(), new String[]{"all10", "best10"})
+                new StepDefinition(Algo.StackedEnsemble.name(), new String[]{"all_1", "best_of_family_1"})
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(byIdSteps, aml);
         assertEquals(4, modelingSteps.length);
-        assertEquals(Arrays.asList("XRT", "grid_1", "all10", "best10"), Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList()));
-        assertEquals(Arrays.asList(10, 100, 10, 10), Arrays.stream(modelingSteps).map(s -> s._weight).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(1, 1, 1, 2), Arrays.stream(modelingSteps).map(s -> s._priorityGroup).collect(Collectors.toList()));
+        assertEquals(Arrays.asList("best_of_family_1", "XRT", "grid_1"), Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(5, 10, 9), Arrays.stream(modelingSteps).map(s -> s._weight).collect(Collectors.toList()));
     }
+
+    @Test
+    public void test_registration_with_groups() {
+        StepDefinition[] byIdSteps = new StepDefinition[]{
+                new StepDefinition(Algo.DRF.name(), new Step[] { 
+                        new Step("XRT", Step.DEFAULT_WEIGHT, 1)}
+                ),
+                new StepDefinition(Algo.XGBoost.name(), new Step[] { 
+                        new Step("grid_1", Step.DEFAULT_WEIGHT, 1)}
+                ),
+                new StepDefinition(Algo.StackedEnsemble.name(), new Step[] { 
+                        new Step("all_1", Step.DEFAULT_WEIGHT, 1),
+                        new Step("best_of_family_1", Step.DEFAULT_WEIGHT, 1)
+                })
+        };
+        ModelingStepsRegistry registry = new ModelingStepsRegistry();
+        ModelingStep[] modelingSteps = registry.getOrderedSteps(byIdSteps, aml);
+        assertEquals(4, modelingSteps.length);
+        assertEquals(Arrays.asList("XRT", "grid_1", "all_1", "best_of_family_1"), Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(10, 90, 10, 5), Arrays.stream(modelingSteps).map(s -> s._weight).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(1, 1, 1, 1), Arrays.stream(modelingSteps).map(s -> s._priorityGroup).collect(Collectors.toList()));
+    }
+
 
     @Test
     public void test_registration_with_weight() {
         StepDefinition[] withWeightSteps = new StepDefinition[]{
-                new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 666)}),
-                new StepDefinition(Algo.GBM.name(), new Step[] { new Step("def_3", 42), new Step("grid_1", 777)})
+                new StepDefinition(Algo.DRF.name(), new Step[] { 
+                        new Step("XRT", 666, Step.DEFAULT_GROUP)
+                }),
+                new StepDefinition(Algo.GBM.name(), new Step[] { 
+                        new Step("def_3", 42, Step.DEFAULT_GROUP), 
+                        new Step("grid_1", 777, Step.DEFAULT_GROUP)
+                })
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(withWeightSteps, aml);

@@ -75,18 +75,16 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
                 orderedSteps.addAll(Arrays.asList(toAdd));
             }
         }
-        if (modelingPlan == AutoML.defaultModelingPlan)
-            return orderedSteps
-                    .stream()
-                    .sorted(Comparator.comparingInt(step -> step._priorityGroup))
-                    .toArray(ModelingStep[]::new);
-        return orderedSteps.toArray(new ModelingStep[0]);
+        return orderedSteps.stream()
+                .filter(step -> step._priorityGroup > 0)
+                .sorted(Comparator.comparingInt(step -> step._priorityGroup))
+                .toArray(ModelingStep[]::new);
     }
 
     public StepDefinition[] createDefinitionPlanFromSteps(ModelingStep[] steps) {
         List<StepDefinition> definitions = new ArrayList<>();
         for (ModelingStep step : steps) {
-            Step stepDesc = new Step(step._id, step._weight);
+            Step stepDesc = new Step(step._id, step._weight, step._priorityGroup);
             if (definitions.size() > 0) {
                 StepDefinition lastDef = definitions.get(definitions.size() - 1);
                 if (lastDef._name.equals(step._fromDef._name)) {

@@ -37,8 +37,8 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
                 if (step._weight != Step.DEFAULT_WEIGHT) {
                     tStep._weight = step._weight;  // override default weight
                 }
-                if (step._priorityGroup != Step.DEFAULT_PRIORITY_GROUP) {
-                    tStep._priorityGroup = step._priorityGroup; // override default priority
+                if (step._group!= Step.DEFAULT_GROUP) {
+                    tStep._priorityGroup = step._group; // override default priority
                 }
                 tSteps.add(tStep);
             });
@@ -54,10 +54,9 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
                 return getDefaultModels();
             case grids:
                 return getGrids();
-            case exploitation:
-                return getExploitation();
-            case dynamics:
-                return getDynamics();
+            case optionals:
+            case exploitation: // old misleading alias, kept for backwards compatibility
+                return getOptionals();
             default:
                 return new ModelingStep[0];
         }
@@ -67,15 +66,23 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
         ModelingStep[] all = new ModelingStep[0];  // create a fresh array to avoid type issues in arraycopy
         all = ArrayUtils.append(all, getDefaultModels());
         all = ArrayUtils.append(all, getGrids());
-        all = ArrayUtils.append(all, getExploitation());
-        all = ArrayUtils.append(all, getDynamics());
+        all = ArrayUtils.append(all, getOptionals());
         return all;
     }
 
+    /**
+     * @return the list of all single model steps that should be executed by default when this provider is active.
+     */
     protected ModelingStep[] getDefaultModels() { return new ModelingStep[0]; }
+
+    /**
+     * @return the list of all grid steps that should be executed by default when this provider is active.
+     */
     protected ModelingStep[] getGrids() { return new ModelingStep[0]; }
-    protected ModelingStep[] getExploitation() { return new ModelingStep[0]; }
-    protected ModelingStep[] getDynamics() { return new ModelingStep[0]; }
+    /**
+     * @return the list of all steps that should be executed on-demand, i.e. requested by their id.
+     */
+    protected ModelingStep[] getOptionals() { return new ModelingStep[0]; }
     public abstract String getProvider();
 
 }

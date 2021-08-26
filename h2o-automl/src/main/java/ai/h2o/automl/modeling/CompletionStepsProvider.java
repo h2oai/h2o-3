@@ -6,14 +6,12 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.grid.Grid;
-import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Job;
 import water.Key;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 
@@ -69,9 +67,13 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
             }
         }
         
-        static class ResumeBestGridsStep extends DynamicStep<Model> {
-            public ResumeBestGridsStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, id, weight, priorityGroup, autoML);
+        static class ResumeBestNGridsStep extends DynamicStep<Model> {
+            
+            private final int _nGrids;
+            
+            public ResumeBestNGridsStep(String id, int nGrids, AutoML autoML) {
+                super(NAME, id, autoML);
+                _nGrids = nGrids;
             }
             
             private List<ModelingStep> sortModelingStepByPerf() {
@@ -107,15 +109,15 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
                         .filter(GridStep.class::isInstance)
 //                        .map(s -> aml().getModelingStep(s.getProvider(), s.getId()+"_resume"))
 //                        .filter(Objects::nonNull)
-                        .limit(2)
-                        .map(s -> new ResumingGridStep((GridStep)s, DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()))
+                        .limit(_nGrids)
+                        .map(s -> new ResumingGridStep((GridStep)s, _weight/_nGrids, _priorityGroup, aml()))
                         .toArray(ModelingStep[]::new);
                 
             }
         }
         
-        private final ModelingStep[] dynamics = new ModelingStep[] {
-                new ResumeBestGridsStep("resume_best_grids", 2*DEFAULT_GRID_TRAINING_WEIGHT, 100, aml())
+        private final ModelingStep[] optionals = new ModelingStep[] {
+                new ResumeBestNGridsStep("resume_best_grids", 2, aml())
         };
         
         public CompletionSteps(AutoML autoML) {
@@ -128,8 +130,8 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
         }
 
         @Override
-        protected ModelingStep[] getDynamics() {
-            return dynamics;
+        protected ModelingStep[] getOptionals() {
+            return optionals;
         }
     }
     

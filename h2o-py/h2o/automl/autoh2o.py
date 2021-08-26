@@ -317,9 +317,11 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             assert 'steps' not in sd or (is_type(sd['steps'], list) and all(assert_is_step(s) for s in sd['steps']))
 
         def assert_is_step(s):
-            assert is_type(s, dict), "each step must be a dict with an 'id' key and an optional 'weight' key"
+            assert is_type(s, dict), "each step must be a dict with an 'id' key and optional keys among: weight, group"
             assert 'id' in s, "each step must have an 'id' key"
-            assert len(s) == 1 or ('weight' in s and is_type(s['weight'], int)), "weight must be an integer"
+            assert len(s) == 1 or 'weight' in s or 'group' in s, "steps support only the following keys: weight, group"
+            assert 'weight' not in s or is_type(s['weight'], int), "weight must be an integer"
+            assert 'group' not in s or is_type(s['group'], int), "group must be an integer"
             return True
 
         plan = []

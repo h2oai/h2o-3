@@ -7,8 +7,6 @@ import hex.tree.drf.DRFModel.DRFParameters;
 import water.Job;
 import water.Key;
 
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
-
 public class DRFStepsProvider
         implements ModelingStepsProvider<DRFStepsProvider.DRFSteps>
                  , ModelParametersProvider<DRFParameters> {
@@ -19,8 +17,8 @@ public class DRFStepsProvider
         
         static abstract class DRFModelStep extends ModelingStep.ModelStep<DRFModel> {
 
-            DRFModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.DRF, id, weight, priorityGroup, autoML);
+            DRFModelStep(String id, AutoML autoML) {
+                super(NAME, Algo.DRF, id, autoML);
             }
 
             public DRFParameters prepareModelParameters() {
@@ -32,8 +30,8 @@ public class DRFStepsProvider
 
 
         private final ModelingStep[] defaults = new DRFModelStep[] {
-                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml()) {},
-                new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
+                new DRFModelStep("def_1", aml()) {},
+                new DRFModelStep("XRT", aml()) {
                     { _description = _description+" (Extremely Randomized Trees)"; }
 
                     @Override

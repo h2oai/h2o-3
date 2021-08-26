@@ -5,9 +5,7 @@ import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
 import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
-import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.grid.SequentialWalker;
@@ -17,9 +15,6 @@ import water.Job;
 import water.Key;
 
 import java.util.*;
-
-import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class XGBoostSteps extends ModelingSteps {
 
@@ -49,8 +44,8 @@ public class XGBoostSteps extends ModelingSteps {
 
         boolean _emulateLightGBM;
 
-        XGBoostModelStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
-            super(NAME, Algo.XGBoost, id, weight, priorityGroup, autoML);
+        XGBoostModelStep(String id, AutoML autoML, boolean emulateLightGBM) {
+            super(NAME, Algo.XGBoost, id, autoML);
             _emulateLightGBM = emulateLightGBM;
         }
 
@@ -62,8 +57,8 @@ public class XGBoostSteps extends ModelingSteps {
     static abstract class XGBoostGridStep extends ModelingStep.GridStep<XGBoostModel> {
         boolean _emulateLightGBM;
 
-        public XGBoostGridStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
-            super(NAME, Algo.XGBoost, id, weight, priorityGroup,autoML);
+        public XGBoostGridStep(String id, AutoML autoML, boolean emulateLightGBM) {
+            super(NAME, Algo.XGBoost, id, autoML);
             _emulateLightGBM = emulateLightGBM;
         }
 
@@ -94,8 +89,8 @@ public class XGBoostSteps extends ModelingSteps {
         public boolean canRun() {
             return super.canRun() && getBestXGBs(1).size() > 0;
         }
-        public XGBoostExploitationStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
-            super(NAME, Algo.XGBoost, id, weight, priorityGroup, autoML);
+        public XGBoostExploitationStep(String id, AutoML autoML, boolean emulateLightGBM) {
+            super(NAME, Algo.XGBoost, id, autoML);
 //            _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
             _emulateLightGBM = emulateLightGBM;
         }
@@ -103,7 +98,7 @@ public class XGBoostSteps extends ModelingSteps {
 
 
     private final ModelingStep[] defaults = new XGBoostModelStep[] {
-            new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml(), false) {
+            new XGBoostModelStep("def_1", aml(), false) {
                 @Override
                 public XGBoostParameters prepareModelParameters() {
                     //XGB 1 (medium depth)
@@ -122,7 +117,7 @@ public class XGBoostSteps extends ModelingSteps {
                     return params;
                 }
             },
-            new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml(), false) {
+            new XGBoostModelStep("def_2", aml(), false) {
                 @Override
                 public XGBoostParameters prepareModelParameters() {
                     //XGB 2 (deep)
@@ -141,7 +136,7 @@ public class XGBoostSteps extends ModelingSteps {
                     return params;
                 }
             },
-            new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml(), false) {
+            new XGBoostModelStep("def_3", aml(), false) {
                 @Override
                 public XGBoostParameters prepareModelParameters() {
                     //XGB 3 (shallow)
@@ -165,8 +160,8 @@ public class XGBoostSteps extends ModelingSteps {
     
     static class DefaultXGBoostGridStep extends XGBoostGridStep {
 
-        public DefaultXGBoostGridStep(String id, int weight, int priorityGroup, AutoML autoML) {
-            super(id, weight, priorityGroup, autoML, false);
+        public DefaultXGBoostGridStep(String id, AutoML autoML) {
+            super(id, autoML, false);
         }
 
         @Override
@@ -204,9 +199,9 @@ public class XGBoostSteps extends ModelingSteps {
     }
 
     private final ModelingStep[] grids = new XGBoostGridStep[] {
-            new DefaultXGBoostGridStep("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4, aml()),
+            new DefaultXGBoostGridStep("grid_1", aml()),
 /*
-            new DefaultXGBoostGridStep("grid_1_resume", DEFAULT_GRID_TRAINING_WEIGHT, 100, aml()) {
+            new DefaultXGBoostGridStep("grid_1_resume", aml()) {
                 @Override
                 protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
                     super.setSearchCriteria(searchCriteria, baseParms);
@@ -225,7 +220,7 @@ public class XGBoostSteps extends ModelingSteps {
     };
 
     private final ModelingStep[] exploitation = new ModelingStep[] {
-            new XGBoostExploitationStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, 6, aml(), false) {
+            new XGBoostExploitationStep("lr_annealing", aml(), false) {
 
                 Key<Models> resultKey = null;
 
@@ -251,7 +246,7 @@ public class XGBoostSteps extends ModelingSteps {
                 }
             },
 
-            new XGBoostExploitationStep("lr_search", DEFAULT_GRID_TRAINING_WEIGHT, 6, aml(), false) {
+            new XGBoostExploitationStep("lr_search", aml(), false) {
 
                 Key resultKey = null;
 
@@ -351,7 +346,7 @@ public class XGBoostSteps extends ModelingSteps {
     }
 
     @Override
-    protected ModelingStep[] getExploitation() {
+    protected ModelingStep[] getOptionals() {
         return exploitation;
     }
 }

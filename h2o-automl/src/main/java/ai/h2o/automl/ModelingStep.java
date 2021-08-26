@@ -403,7 +403,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     public static abstract class ModelStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
+        public static final int DEFAULT_MODEL_GROUP = 1;
 
+        public ModelStep(String provider, IAlgo algo, String id, AutoML autoML) {
+            this(provider, algo, id, DEFAULT_MODEL_TRAINING_WEIGHT, DEFAULT_MODEL_GROUP, autoML);
+        }
+        
         public ModelStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
             super(provider, algo, id, weight, priorityGroup, autoML);
         }
@@ -468,10 +473,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     public static abstract class GridStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 30;
+        public static final int DEFAULT_GRID_GROUP = 2;
         protected static final int GRID_STOPPING_ROUND_FACTOR = 2;
 
+        public GridStep(String provider, IAlgo algo, String id, AutoML autoML) {
+            this(provider, algo, id, DEFAULT_GRID_TRAINING_WEIGHT, DEFAULT_GRID_GROUP, autoML);
+        }
+        
         public GridStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
-            super(provider, algo, id, weight, priorityGroup,autoML);
+            super(provider, algo, id, weight, priorityGroup, autoML);
         }
 
         @Override
@@ -573,6 +583,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      */
     public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
 
+        public static final int DEFAULT_SELECTION_TRAINING_WEIGHT = 10;
+        public static final int DEFAULT_SELECTION_GROUP = 3;
+
+        public SelectionStep(String provider, IAlgo algo, String id, AutoML autoML) {
+            this(provider, algo, id, DEFAULT_SELECTION_TRAINING_WEIGHT, DEFAULT_SELECTION_GROUP, autoML);
+        }
+        
         public SelectionStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
             super(provider, algo, id, weight, priorityGroup, autoML);
         }
@@ -712,7 +729,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     Keyed res = job.get();
                     models.unlock(jModels);
                     if (res instanceof Model) {
-                        models.addModel(((Model)res)._key);
+                        models.addModel(res.getKey());
                     } else if (res instanceof ModelContainer) {
                         models.addModels(((ModelContainer)res).getModelKeys());
                         res.remove(false);
@@ -732,6 +749,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      */
     public static abstract class DynamicStep<M extends Model> extends ModelingStep<M> {
         
+        public static final int DEFAULT_DYNAMIC_TRAINING_WEIGHT = 10;
+        public static final int DEFAULT_DYNAMIC_GROUP = 3;
+
         public static class VirtualAlgo implements IAlgo {
 
             public VirtualAlgo() {}
@@ -745,6 +765,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         private transient ModelingStep[] _subSteps;
         private int _stepIdx = -1;
 
+        public DynamicStep(String provider, String id, AutoML autoML) {
+            this(provider, id, DEFAULT_DYNAMIC_TRAINING_WEIGHT, DEFAULT_DYNAMIC_GROUP, autoML);
+        }
+        
         public DynamicStep(String provider, String id, int weight, int priorityGroup, AutoML autoML) {
             super(provider, new VirtualAlgo(), id, weight, priorityGroup, autoML);
         }

@@ -7,8 +7,6 @@ import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
-
 
 public class GLMStepsProvider
         implements ModelingStepsProvider<GLMStepsProvider.GLMSteps>
@@ -20,8 +18,8 @@ public class GLMStepsProvider
         
         static abstract class GLMModelStep extends ModelingStep.ModelStep<GLMModel> {
 
-            GLMModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
-                super(NAME, Algo.GLM, id, weight, priorityGroup, autoML);
+            GLMModelStep(String id, AutoML autoML) {
+                super(NAME, Algo.GLM, id, autoML);
             }
 
             @Override
@@ -51,7 +49,7 @@ public class GLMStepsProvider
 
 
         private final ModelingStep[] defaults = new GLMModelStep[] {
-                new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml()) {
+                new GLMModelStep("def_1", aml()) {
                     @Override
                     public GLMParameters prepareModelParameters() {
                         GLMParameters params = super.prepareModelParameters();

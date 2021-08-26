@@ -3,11 +3,11 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.StepDefinition.Step;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.leaderboard.*;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
@@ -25,8 +25,12 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
+import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
 /**
@@ -51,21 +55,63 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
 
   final static StepDefinition[] defaultModelingPlan = {
-          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
-          new StepDefinition(Algo.GLM.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
-          new StepDefinition(Algo.GBM.name(), Alias.defaults),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
-          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), Alias.grids),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-//          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
-//          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
-          new StepDefinition("completion", Alias.dynamics),
-          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
+          // order of step definitions and steps defines the order of steps in the same priority group.
+          new StepDefinition(Algo.XGBoost.name(), new Step[]{
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
+                  new Step("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
+                  new Step("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
+                  new Step("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4),
+                  new Step("lr_search", DEFAULT_GRID_TRAINING_WEIGHT, 6),
+          }),
+          new StepDefinition(Algo.GLM.name(), new Step[] {
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
+          }),
+          new StepDefinition(Algo.DRF.name(), new Step[] {
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
+                  new Step("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
+          }),
+          new StepDefinition(Algo.GBM.name(), new Step[] {
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
+                  new Step("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
+                  new Step("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
+                  new Step("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
+                  new Step("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
+                  new Step("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4),
+                  new Step("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
+          }),
+          new StepDefinition(Algo.DeepLearning.name(), new Step[] {
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
+                  new Step("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 4),
+                  new Step("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 5),
+                  new Step("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 5),
+          }),
+          new StepDefinition("completion", new Step[] {
+                  new Step("resume_best_grids", 2*DEFAULT_GRID_TRAINING_WEIGHT, 10),
+          }),
+          // generates BoF and All SE for each group, but we prefer to customize instances and weights below 
+//          new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults), 
+          new StepDefinition(Algo.StackedEnsemble.name(), Stream.of(new Step[][] {
+                  IntStream.rangeClosed(1, 5).mapToObj(group -> // BoF should be fast, giving it half-budget for optimization.
+                          new Step("best_of_family_"+group, DEFAULT_MODEL_TRAINING_WEIGHT/2, group))
+                          .toArray(Step[]::new),
+                  IntStream.rangeClosed(2, 5).mapToObj(group -> // starts at 2 as we don't need an ALL SE for first group.
+                          new Step("all_"+group, DEFAULT_MODEL_TRAINING_WEIGHT, group))
+                          .toArray(Step[]::new),
+                  {
+                          new Step("monotonic", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
+                          new Step("best_of_family_xgboost", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
+                          new Step("best_of_family_gbm", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
+                          new Step("all_xgboost", DEFAULT_MODEL_TRAINING_WEIGHT, 7),
+                          new Step("all_gbm", DEFAULT_MODEL_TRAINING_WEIGHT, 7),
+                          new Step("best_of_family_xglm", DEFAULT_MODEL_TRAINING_WEIGHT, 8),
+                          new Step("all_xglm", DEFAULT_MODEL_TRAINING_WEIGHT, 8),
+                          new Step("best_20", DEFAULT_MODEL_TRAINING_WEIGHT, 9),
+                          new Step("best_of_family_final", DEFAULT_MODEL_TRAINING_WEIGHT, 10),
+                          new Step("best_N_final", DEFAULT_MODEL_TRAINING_WEIGHT, 10),
+                  }
+          }).flatMap(Stream::of).toArray(Step[]::new)),
   };
-
+  
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
 

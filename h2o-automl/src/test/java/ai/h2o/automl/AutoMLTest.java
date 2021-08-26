@@ -28,6 +28,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
@@ -442,7 +443,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
               new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
-              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20) }),  // 1 model
+              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20, Step.DEFAULT_GROUP) }),  // 1 model
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),      // 1 grid
               new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids), // 1 grid
               new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 models
@@ -463,16 +464,16 @@ public class AutoMLTest extends water.TestUtil {
       Log.info(Arrays.toString(aml._actualModelingSteps));
       assertArrayEquals(new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new Step[]{
-                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
               }),
               new StepDefinition(Algo.GLM.name(), new Step[]{
-                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
               }),
               new StepDefinition(Algo.DRF.name(), new Step[]{
-                      new Step("XRT", 20),
+                      new Step("XRT", 20, Step.DEFAULT_GROUP),
               }),
               new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("best_of_family_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
               }),
       }, aml._actualModelingSteps);
     } finally {

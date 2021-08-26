@@ -40,7 +40,7 @@ public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvi
         }
 
         @Override
-        protected ModelingStep[] getExploitation() {
+        protected ModelingStep[] getOptionals() {
             return exploitation;
         }
     }

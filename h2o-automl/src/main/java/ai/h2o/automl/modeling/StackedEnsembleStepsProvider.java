@@ -17,9 +17,8 @@ import water.Key;
 import water.util.PojoUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class StackedEnsembleStepsProvider
         implements ModelingStepsProvider<StackedEnsembleStepsProvider.StackedEnsembleSteps>
@@ -163,11 +162,15 @@ public class StackedEnsembleStepsProvider
         static class BestOfFamilySEModelStep extends StackedEnsembleModelStep {
 
             public BestOfFamilySEModelStep(String id, int priorityGroup, AutoML autoML) {
-                this((id == null ? "best_of_family" : id), Metalearner.Algorithm.AUTO, DEFAULT_MODEL_TRAINING_WEIGHT/2,  priorityGroup, autoML);
+                this(id, Metalearner.Algorithm.AUTO, priorityGroup, autoML);
+            }
+
+            public BestOfFamilySEModelStep(String id, Metalearner.Algorithm algo, int priorityGroup, AutoML autoML) {
+                this(id, algo, DEFAULT_MODEL_TRAINING_WEIGHT,  priorityGroup, autoML);
             }
 
             public BestOfFamilySEModelStep(String id, Metalearner.Algorithm algo, int weight, int priorityGroup, AutoML autoML) {
-                super(id, algo, weight, priorityGroup, autoML);
+                super((id == null ? "best_of_family_"+algo.name() : id), algo, weight, priorityGroup, autoML);
                 _description = _description+" (built with "+algo.name()+" metalearner, using top model from each algorithm type)";
             }
             
@@ -200,11 +203,11 @@ public class StackedEnsembleStepsProvider
             private final int _N;
             
             public BestNModelsSEModelStep(String id, int N, int priorityGroup, AutoML autoML) {
-                this((id == null ? "best_"+N : id), Metalearner.Algorithm.AUTO, N, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
+                this(id, Metalearner.Algorithm.AUTO, N, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
             }
 
             public BestNModelsSEModelStep(String id, Metalearner.Algorithm algo, int N, int weight, int priorityGroup, AutoML autoML) {
-                super(id, algo, weight, priorityGroup, autoML);
+                super((id == null ? "best_"+N+"_"+algo.name() : id), algo, weight, priorityGroup, autoML);
                 _N = N;
                 _description = _description+" (built with "+algo.name()+" metalearner, using best "+N+" non-SE models)";
             }
@@ -226,11 +229,15 @@ public class StackedEnsembleStepsProvider
         
         static class AllSEModelStep extends StackedEnsembleModelStep {
             public AllSEModelStep(String id, int priorityGroup, AutoML autoML) {
-                this((id == null ? "all" : id), Metalearner.Algorithm.AUTO, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
+                this(id, Metalearner.Algorithm.AUTO, priorityGroup, autoML);
+            }
+
+            public AllSEModelStep(String id, Metalearner.Algorithm algo, int priorityGroup, AutoML autoML) {
+                this(id, algo, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
             }
             
             public AllSEModelStep(String id, Metalearner.Algorithm algo, int weight, int priorityGroup, AutoML autoML) {
-                super(id, algo, weight, priorityGroup, autoML);
+                super((id == null ? "all_"+algo.name() : id), algo, weight, priorityGroup, autoML);
                 _description = _description+" (built with "+algo.name()+" metalearner, using all AutoML models)";
             }
             
@@ -251,11 +258,11 @@ public class StackedEnsembleStepsProvider
         static class MonotonicSEModelStep extends StackedEnsembleModelStep {
 
             public MonotonicSEModelStep(String id, int priorityGroup, AutoML autoML) {
-                this((id == null ? "monotonic" : id), Metalearner.Algorithm.AUTO, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
+                this(id, Metalearner.Algorithm.AUTO, DEFAULT_MODEL_TRAINING_WEIGHT, priorityGroup, autoML);
             }
             
             public MonotonicSEModelStep(String id, Metalearner.Algorithm algo, int weight, int priorityGroup, AutoML autoML) {
-                super(id, algo, weight, priorityGroup, autoML);
+                super((id == null ? "monotonic" : id), algo, weight, priorityGroup, autoML);
                 _description = _description+" (built with "+algo.name()+" metalearner, using monotonically constrained AutoML models)";
             }
             
@@ -311,48 +318,75 @@ public class StackedEnsembleStepsProvider
         }
         
         private final ModelingStep[] defaults;
+        private final ModelingStep[] optionals;
 
         {
-            int lastGroup = 5;
-            List<StackedEnsembleModelStep> seSteps = new ArrayList<>();
-            for (int group = 1; group <= lastGroup; group++) {
-                seSteps.add(new BestOfFamilySEModelStep("best_of_family_"+group, group, aml()));
-                // small optimization for the important first group: 
-                // we know that Best=All, so we don't want to count an additional SE in the time budget knowing in advance that it won't be used.
-                if (group > 1) seSteps.add(new AllSEModelStep("all_"+group, group, aml()));
+            // we're going to cheat a bit: ModelingSteps needs to instantiated by the AutoML instance 
+            // to convert each StepDefinition into one or more ModelingStep(s)
+            // so at that time, we have access to the entire modeling plan
+            // and we can dynamically generate the modeling steps that we're going to need.
+            StepDefinition[] modelingPlan = aml().getBuildSpec().build_models.modeling_plan;
+            StepDefinition.Step[] seDefSteps = Stream.of(modelingPlan)
+                    .filter(sd -> sd.getName().equals(NAME))
+                    .flatMap(sd -> sd.getSteps().stream())
+                    .toArray(StepDefinition.Step[]::new);
+            if (seDefSteps.length == 0) {
+                defaults = new ModelingStep[0];
+                optionals = new ModelingStep[0];
+            } else {
+                List<StackedEnsembleModelStep> defaultSeSteps = new ArrayList<>();
+                // starting to generate the SE for each "base" group
+                // ie for each group with algo steps.
+                Set<String> defaultAlgoProviders = Stream.of(Algo.values()).map(Algo::name).collect(Collectors.toSet());
+                int maxSEGroup = Stream.of(modelingPlan)
+                        .filter(sd -> defaultAlgoProviders.contains(sd.getName()))
+                        .mapToInt(sd -> sd.getSteps().stream()
+                                .map(s -> s.getGroup() == StepDefinition.Step.DEFAULT_GROUP 
+                                        ? OptionalInt.empty() 
+                                        : OptionalInt.of(s.getGroup()))
+                                .filter(OptionalInt::isPresent)
+                                .map(OptionalInt::getAsInt)
+                                .max(Integer::compareTo)
+                                .orElse(ModelingStep.GridStep.DEFAULT_GRID_GROUP)) // if no specific group given, we rely on the hard defaults.
+                        .max().orElse(0); // if no base algo, no SE…
+                
+                for (int group = 1; group <= maxSEGroup; group++) {
+                    defaultSeSteps.add(new BestOfFamilySEModelStep("best_of_family_" + group, group, aml()));
+                    defaultSeSteps.add(new AllSEModelStep("all_" + group, group, aml()));  // groups <=0 are ignored.
+                }
+                defaults = defaultSeSteps.toArray(new ModelingStep[0]);
+
+                // now all the additional SEs are available as optionals (usually requested by id).
+                int optionalGroup = maxSEGroup+1;
+                List<StackedEnsembleModelStep> optionalSeSteps = new ArrayList<>();
+                optionalSeSteps.add(new MonotonicSEModelStep("monotonic", optionalGroup, aml()));
+                optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xgboost", Metalearner.Algorithm.xgboost, optionalGroup, aml()));
+                optionalSeSteps.add(new AllSEModelStep("all_xgboost", Metalearner.Algorithm.xgboost, optionalGroup, aml()));
+                optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_gbm", Metalearner.Algorithm.gbm, optionalGroup, aml()));
+                optionalSeSteps.add(new AllSEModelStep("all_gbm", Metalearner.Algorithm.gbm, optionalGroup, aml()));
+                optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xglm", optionalGroup, aml()) {
+                    @Override
+                    protected void setMetalearnerParameters(StackedEnsembleParameters params) {
+                        super.setMetalearnerParameters(params);
+                        GLMModel.GLMParameters metalearnerParams = (GLMModel.GLMParameters) params._metalearner_parameters;
+                        metalearnerParams._lambda_search = true;
+                    }
+                });
+                optionalSeSteps.add(new AllSEModelStep("all_xglm", optionalGroup, aml()) {
+                    @Override
+                    protected void setMetalearnerParameters(StackedEnsembleParameters params) {
+                        super.setMetalearnerParameters(params);
+                        GLMModel.GLMParameters metalearnerParams = (GLMModel.GLMParameters) params._metalearner_parameters;
+                        metalearnerParams._lambda_search = true;
+                    }
+                });
+                optionalSeSteps.add(new BestNModelsSEModelStep("best_20", 20, optionalGroup, aml()));
+                optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_final", optionalGroup, aml()));
+                int card = aml().getResponseColumn().cardinality();
+                int maxModels = card <= 2 ? 1_000:Math.max(100, 1_000 / (card - 1));
+                optionalSeSteps.add(new BestNModelsSEModelStep("best_N_final", maxModels, optionalGroup, aml()));
+                optionals = optionalSeSteps.toArray(new ModelingStep[0]);
             }
-            seSteps.add(new MonotonicSEModelStep(null, lastGroup+1, aml()));
-            seSteps.add(new BestOfFamilySEModelStep("best_of_family_xgboost", Metalearner.Algorithm.xgboost,
-                    DEFAULT_MODEL_TRAINING_WEIGHT, lastGroup+1, aml()));
-            seSteps.add(new AllSEModelStep("all_xgboost", Metalearner.Algorithm.xgboost,
-                    DEFAULT_MODEL_TRAINING_WEIGHT, lastGroup+2, aml()));
-            seSteps.add(new BestOfFamilySEModelStep("best_of_family_gbm", Metalearner.Algorithm.gbm,
-                    DEFAULT_MODEL_TRAINING_WEIGHT, lastGroup+1, aml()));
-            seSteps.add(new AllSEModelStep("all_gbm", Metalearner.Algorithm.gbm,
-                    DEFAULT_MODEL_TRAINING_WEIGHT, lastGroup+2, aml()));
-            seSteps.add(new BestOfFamilySEModelStep("best_of_family_ext", lastGroup+3, aml()) {
-                @Override
-                protected void setMetalearnerParameters(StackedEnsembleParameters params) {
-                    super.setMetalearnerParameters(params);
-                    GLMModel.GLMParameters metalearnerParams = (GLMModel.GLMParameters)params._metalearner_parameters;
-                    metalearnerParams._lambda_search = true;
-                }
-            });
-            seSteps.add(new AllSEModelStep("all_ext", lastGroup+3, aml()) {
-                @Override
-                protected void setMetalearnerParameters(StackedEnsembleParameters params) {
-                    super.setMetalearnerParameters(params);
-                    GLMModel.GLMParameters metalearnerParams = (GLMModel.GLMParameters)params._metalearner_parameters;
-                    metalearnerParams._lambda_search = true;
-                }
-            });
-            seSteps.add(new BestNModelsSEModelStep(null, 20, lastGroup+4, aml()));
-            lastGroup=100;
-            seSteps.add(new BestOfFamilySEModelStep("best_of_family_"+lastGroup, lastGroup, aml()));
-            int card = aml().getResponseColumn().cardinality();
-            int maxModels = card <= 2 ? 1_000 : Math.max(100, 1_000 / (card-1));
-            seSteps.add(new BestNModelsSEModelStep(null, maxModels, lastGroup, aml()));
-            defaults = seSteps.toArray(new ModelingStep[0]);
         }
 
         public StackedEnsembleSteps(AutoML autoML) {
@@ -369,6 +403,10 @@ public class StackedEnsembleStepsProvider
             return defaults;
         }
 
+        @Override
+        protected ModelingStep[] getOptionals() {
+            return optionals;
+        }
     }
 
     @Override
