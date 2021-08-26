@@ -6,6 +6,7 @@ import water.Key;
 import water.Scope;
 import water.rapids.Env;
 import water.rapids.Session;
+import water.util.ArrayUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -219,6 +220,17 @@ public class TestFrameBuilder {
       numericData.put(column, doubles);
     }
     return this;
+  }
+
+  /**
+   * Sets data for a particular column
+   *
+   * @param column for which to set data
+   * @param data   array of long data
+   */
+  public TestFrameBuilder withDataForCol(int column, int[] data) {
+    double[] doubles = ArrayUtils.toDouble(data);
+    return withDataForCol(column, doubles);
   }
 
   public TestFrameBuilder withDomain(int column, String[] domain) {

@@ -5,26 +5,27 @@ import hex.genmodel.algos.tree.SharedTreeSubgraph;
 
 import hex.glm.GLMModel;
 import hex.schemas.TreeV3;
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
-import org.apache.commons.lang.ArrayUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
-import water.parser.ParseDataset;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
-import static water.fvec.FVecFactory.makeByteVec;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 public class TreeHandlerTest extends TestUtil {
 
@@ -455,8 +456,8 @@ public class TreeHandlerTest extends TestUtil {
         }
 
 
-        final String[] leftPreviousSplits = isRightInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
-        final String[] rightPreviousSplits = isLeftInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
+        final String[] leftPreviousSplits = isRightInclusive ? ArrayUtils.append(previousNaSplits, parentNode.getColName()) : previousNaSplits;
+        final String[] rightPreviousSplits = isLeftInclusive ? ArrayUtils.append(previousNaSplits, parentNode.getColName()) : previousNaSplits;
 
         int naSplits = 0;
         if (isRightInclusive ^ isLeftInclusive) {
@@ -505,45 +506,73 @@ public class TreeHandlerTest extends TestUtil {
         // this one was supposed to be slow but it's quite fast
         try {
             Scope.enter();
-            StringBuilder xy = new StringBuilder();
-            for (int i = 0; i < 1000; i++) {
-                xy.append("A").append(i).append(",").append(i).append(",").append(1000-i);
-                if (i !=  999)
-                    xy.append("\n");
+            int[] responseData = ArrayUtils.seq(0, 2000);
+            ArrayUtils.shuffleArray(responseData, new Random(42));
+            String[] featureData = new String[responseData.length];
+            for (int i = 0; i < featureData.length; i++) {
+                featureData[i] = "A" + i;
             }
-            
-            Key tr = Key.make("train");
-            Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy.toString())).toCategoricalCol(0);
-            
-            
-            Scope.track_generic(df);
+
+            Frame train = new TestFrameBuilder()
+                    .withColNames("Feature", "Response")
+                    .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+                    .withDataForCol(0, featureData)
+                    .withDataForCol(1, responseData)
+                    .build();
+
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-            parms._train = df._key;
+            parms._train = train._key;
             parms._distribution = AUTO;
-            parms._response_column = "C1";
+            parms._response_column = "Response";
             parms._ntrees = 1;
             parms._max_depth = 30;
             parms._seed = 0XFEED;
             parms._min_split_improvement = 1e-6;
-            parms._min_rows =1;
+            parms._min_rows = 1;
 
             GBM job = new GBM(parms);
             GBMModel model = job.trainModel().get();
             Scope.track_generic(model);
 
             final TreeHandler treeHandler = new TreeHandler();
+
+            // First try the default (tree is big - it should disable the rules)
             final TreeV3 arguments = new TreeV3();
             arguments.model = new KeyV3.ModelKeyV3(model._key);
             arguments.tree_number = 0;
-            arguments.tree_class = "A2";
-            arguments.plain_language_rules = TreeHandler.PlainLanguageRules.TRUE;
-            long startTime = System.currentTimeMillis();
-            final TreeV3 tree = treeHandler.getTree(3, arguments);
-            long estimatedTime = System.currentTimeMillis() - startTime;
-                    float inseconds = (float)estimatedTime / 1000;
-            System.out.println("got tree in " + inseconds + "seconds");
-            assertNotNull(tree);
+            arguments.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
 
+            long startTimeAuto = System.currentTimeMillis();
+            final TreeV3 treeAuto = treeHandler.getTree(3, arguments);
+            assertNotNull(treeAuto);
+            long durationAuto = System.currentTimeMillis() - startTimeAuto;
+
+            Log.info("Tree rendering AUTO rules took " + durationAuto + "ms.");
+
+            // Now try with rules explicitly disabled
+            long startTimeDisabled = System.currentTimeMillis();
+            final TreeV3 treeDisabled = treeHandler.getTree(3, arguments);
+            assertNotNull(treeDisabled);
+            long durationDisabled = System.currentTimeMillis() - startTimeDisabled;
+
+            Log.info("Tree rendering WITHOUT rules took " + durationDisabled + "ms.");
+            
+            // Now try with language rules enabled
+            arguments.plain_language_rules = TreeHandler.PlainLanguageRules.TRUE;
+            long startTimeEnabled = System.currentTimeMillis();
+            final TreeV3 treeEnabled = treeHandler.getTree(3, arguments);
+            assertNotNull(treeEnabled);
+            long durationEnabled = System.currentTimeMillis() - startTimeEnabled;
+
+            Log.info("Tree rendering WITH rules took " + durationEnabled + "ms.");
+
+            // If this assertion fails - we likely made it faster - that is great! but please do check
+            int slowdownFactor = 10; // this is very conservative lower bound, actual measured slowdown is about 100x!!!
+            assertThat("Wow, did we optimize tree rendering with language rules? It is now closer to rendering without rules!",
+                    durationEnabled, greaterThan(durationDisabled * slowdownFactor));
+
+            // duration disabled and "auto" should be similar in this case, 3x factor of tolerance because we are measuring in ms
+            assertEquals(durationDisabled, durationAuto, (double) 3 * durationDisabled);
         } finally {
             Scope.exit();
         }
