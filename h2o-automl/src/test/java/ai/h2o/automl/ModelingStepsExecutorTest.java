@@ -13,8 +13,6 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 
-import java.util.Date;
-
 import static org.junit.Assert.*;
 
 public class ModelingStepsExecutorTest extends TestUtil {

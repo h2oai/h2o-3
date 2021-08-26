@@ -16,20 +16,20 @@ public class StepDefinition extends Iced<StepDefinition> {
     public enum Alias { all, defaults, grids, exploitation, optionals }
 
     public static class Step extends Iced<Step> {
-        public static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the ModelingStep.
         public static final int DEFAULT_GROUP = -1; //step will use the default priority group as defined by the ModelingStep.
+        public static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the ModelingStep.
 
         /**
          * The id of the step (must be unique per step provider).
          */
         String _id;
+        int _group = DEFAULT_GROUP;
         /**
          * The relative weight for the given step.
          * The higher the weight, the more time percentage it will be offered in a time-constrained context.
          * For hyperparameter search, the weight may also impact the number of models trained in a count-model-constrained context.
          */
         int _weight = DEFAULT_WEIGHT;  // share of time dedicated
-        int _group = DEFAULT_GROUP;
 
         public Step() { /* for autofill from schema */ }
 
@@ -37,38 +37,38 @@ public class StepDefinition extends Iced<StepDefinition> {
             this._id = _id;
         }
 
-        public Step(String id, int weight, int group) {
-            assert weight == DEFAULT_WEIGHT || weight >= 0: "non-default weight must be >= 0";
+        public Step(String id, int group, int weight) {
             assert group == DEFAULT_GROUP || group >= 0: "non-default group must be >= 0";
+            assert weight == DEFAULT_WEIGHT || weight >= 0: "non-default weight must be >= 0";
             this._id = id;
-            this._weight = weight;
             this._group = group;
+            this._weight = weight;
         }
         
         public String getId() {
             return _id;
         }
         
-        public int getWeight() {
-            return _weight;
-        }
-        
         public int getGroup() {
             return _group;
+        }
+
+        public int getWeight() {
+            return _weight;
         }
 
         @Override
         public String toString() {
             String s = _id;
-            if (_weight > DEFAULT_WEIGHT || _group > DEFAULT_GROUP) {
+            if (_group > DEFAULT_GROUP || _weight > DEFAULT_WEIGHT) {
                 s += " (";
                 String sep = "";
-                if (_weight > DEFAULT_WEIGHT) {
-                    s += (sep+_weight+"w");
-                    sep = ", ";
-                }
                 if (_group > DEFAULT_GROUP) {
                     s += (sep+ _group +"g");
+                    sep = ", ";
+                }
+                if (_weight > DEFAULT_WEIGHT) {
+                    s += (sep+_weight+"w");
                     sep = ", ";
                 }
                 s += ")";
@@ -82,13 +82,13 @@ public class StepDefinition extends Iced<StepDefinition> {
             if (o == null || getClass() != o.getClass()) return false;
             Step step = (Step) o;
             return _id.equals(step._id)
-                    && _weight == step._weight
-                    && _group== step._group;
+                    && _group== step._group
+                    && _weight == step._weight;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(_id, _weight, _group);
+            return Objects.hash(_id, _group, _weight);
         }
     }
 

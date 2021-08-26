@@ -13,8 +13,6 @@ import water.Key;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-
 public class CompletionStepsProvider implements ModelingStepsProvider<CompletionStepsProvider.CompletionSteps> {
 
     public static class CompletionSteps extends ModelingSteps {
@@ -26,8 +24,8 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
             private transient GridStep _step;
             private Work _work;
             
-            public ResumingGridStep(GridStep step, int weight, int priorityGroup, AutoML aml) {
-                super(NAME, step.getAlgo(), step.getProvider()+"_"+step.getId(), weight, priorityGroup, aml);
+            public ResumingGridStep(GridStep step, int priorityGroup, int weight, AutoML aml) {
+                super(NAME, step.getAlgo(), step.getProvider()+"_"+step.getId(), priorityGroup, weight, aml);
                 _work = makeWork();
                 _step = step;
             }
@@ -110,7 +108,7 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
 //                        .map(s -> aml().getModelingStep(s.getProvider(), s.getId()+"_resume"))
 //                        .filter(Objects::nonNull)
                         .limit(_nGrids)
-                        .map(s -> new ResumingGridStep((GridStep)s, _weight/_nGrids, _priorityGroup, aml()))
+                        .map(s -> new ResumingGridStep((GridStep)s, _priorityGroup, _weight/_nGrids, aml()))
                         .toArray(ModelingStep[]::new);
                 
             }

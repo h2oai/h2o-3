@@ -145,7 +145,7 @@ public class ModelingStepTest {
 
     private static class DummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public DummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(TestingModelSteps.NAME, algo, id, cost, 1, autoML);
+            super(TestingModelSteps.NAME, algo, id, 1, cost, autoML);
         }
 
         @Override
@@ -156,7 +156,7 @@ public class ModelingStepTest {
 
     private static class FailingDummyModelStep extends ModelingStep.ModelStep<DummyModel> {
         public FailingDummyModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(TestingModelSteps.NAME, algo, id, cost, 1, autoML);
+            super(TestingModelSteps.NAME, algo, id, 1, cost, autoML);
         }
 
         @Override
@@ -170,7 +170,7 @@ public class ModelingStepTest {
     private static class DummyGridStep extends ModelingStep.GridStep<DummyModel> {
 
         public DummyGridStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(TestingModelSteps.NAME, algo, id, cost, 1, autoML);
+            super(TestingModelSteps.NAME, algo, id, 1, cost, autoML);
         }
 
         @Override
@@ -190,7 +190,7 @@ public class ModelingStepTest {
         boolean _useSearch;
 
         public DummySelectionStep(IAlgo algo, String id, int weight, AutoML autoML, boolean useSearch) {
-            super(TestingModelSteps.NAME, algo, id, weight, 1, autoML);
+            super(TestingModelSteps.NAME, algo, id, 1, weight, autoML);
             _useSearch = useSearch;
         }
 

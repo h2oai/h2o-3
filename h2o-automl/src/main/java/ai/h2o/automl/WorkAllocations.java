@@ -23,20 +23,15 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     String _id;
     IAlgo _algo;
     JobType _type;
-    int _weight;
     int _priorityGroup;
+    int _weight;
 
-    Work(String id, IAlgo algo, JobType type, int weight, int priorityGroup) {
+    Work(String id, IAlgo algo, JobType type, int priorityGroup, int weight) {
       this._algo = algo;
       this._type = type;
       this._id = id;
-      this._weight = weight;
       this._priorityGroup = priorityGroup;
-    }
-
-    // Used by tests
-    Work(String id, IAlgo algo, JobType type, int weight) {
-      this(id, algo, type, weight, Integer.MAX_VALUE);
+      this._weight = weight;
     }
 
     public int consume() {
@@ -51,8 +46,8 @@ public class WorkAllocations extends Iced<WorkAllocations> {
               .append(_id).append(", ")
               .append(_algo.name()).append(", ")
               .append(_type).append(", ")
-              .append("weight=").append(_weight).append(", ")
-              .append("group=").append(_priorityGroup)
+              .append("group=").append(_priorityGroup).append(",")
+              .append("weight=").append(_weight)
               .append('}');
       return sb.toString();
     }

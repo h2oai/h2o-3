@@ -106,13 +106,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     StepDefinition _fromDef;
     transient final Predicate<Work> _isSamePriorityGroup = w -> w._priorityGroup == _priorityGroup;
 
-    protected ModelingStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+    protected ModelingStep(String provider, IAlgo algo, String id, int priorityGroup, int weight, AutoML autoML) {
         assert priorityGroup >= 0;
         _provider = provider;
         _algo = algo;
         _id = id;
-        _weight = weight;
         _priorityGroup = priorityGroup;
+        _weight = weight;
         _aml = autoML;
         _description = provider+" "+id;
     }
@@ -155,7 +155,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      * @return
      */
     protected Work makeWork() {
-        return new Work(getId(), getAlgo(), getJobType(), getWeight(), getPriorityGroup());
+        return new Work(getId(), getAlgo(), getJobType(), getPriorityGroup(), getWeight());
     }
     
     protected Key makeKey(String name, boolean withCounter) {
@@ -406,11 +406,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         public static final int DEFAULT_MODEL_GROUP = 1;
 
         public ModelStep(String provider, IAlgo algo, String id, AutoML autoML) {
-            this(provider, algo, id, DEFAULT_MODEL_TRAINING_WEIGHT, DEFAULT_MODEL_GROUP, autoML);
+            this(provider, algo, id, DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT, autoML);
         }
         
-        public ModelStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
-            super(provider, algo, id, weight, priorityGroup, autoML);
+        public ModelStep(String provider, IAlgo algo, String id, int priorityGroup, int weight, AutoML autoML) {
+            super(provider, algo, id, priorityGroup, weight, autoML);
         }
 
         @Override
@@ -477,11 +477,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected static final int GRID_STOPPING_ROUND_FACTOR = 2;
 
         public GridStep(String provider, IAlgo algo, String id, AutoML autoML) {
-            this(provider, algo, id, DEFAULT_GRID_TRAINING_WEIGHT, DEFAULT_GRID_GROUP, autoML);
+            this(provider, algo, id, DEFAULT_GRID_GROUP, DEFAULT_GRID_TRAINING_WEIGHT, autoML);
         }
         
-        public GridStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
-            super(provider, algo, id, weight, priorityGroup, autoML);
+        public GridStep(String provider, IAlgo algo, String id, int priorityGroup, int weight, AutoML autoML) {
+            super(provider, algo, id, priorityGroup, weight, autoML);
         }
 
         @Override
@@ -583,15 +583,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      */
     public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
 
-        public static final int DEFAULT_SELECTION_TRAINING_WEIGHT = 10;
+        public static final int DEFAULT_SELECTION_TRAINING_WEIGHT = 20;
         public static final int DEFAULT_SELECTION_GROUP = 3;
 
         public SelectionStep(String provider, IAlgo algo, String id, AutoML autoML) {
-            this(provider, algo, id, DEFAULT_SELECTION_TRAINING_WEIGHT, DEFAULT_SELECTION_GROUP, autoML);
+            this(provider, algo, id, DEFAULT_SELECTION_GROUP, DEFAULT_SELECTION_TRAINING_WEIGHT, autoML);
         }
         
-        public SelectionStep(String provider, IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
-            super(provider, algo, id, weight, priorityGroup, autoML);
+        public SelectionStep(String provider, IAlgo algo, String id, int priorityGroup, int weight, AutoML autoML) {
+            super(provider, algo, id, priorityGroup, weight, autoML);
         }
 
         @Override
@@ -749,8 +749,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      */
     public static abstract class DynamicStep<M extends Model> extends ModelingStep<M> {
         
-        public static final int DEFAULT_DYNAMIC_TRAINING_WEIGHT = 10;
-        public static final int DEFAULT_DYNAMIC_GROUP = 3;
+        public static final int DEFAULT_DYNAMIC_TRAINING_WEIGHT = 20;
+        public static final int DEFAULT_DYNAMIC_GROUP = 100;
 
         public static class VirtualAlgo implements IAlgo {
 
@@ -766,11 +766,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         private int _stepIdx = -1;
 
         public DynamicStep(String provider, String id, AutoML autoML) {
-            this(provider, id, DEFAULT_DYNAMIC_TRAINING_WEIGHT, DEFAULT_DYNAMIC_GROUP, autoML);
+            this(provider, id, DEFAULT_DYNAMIC_GROUP, DEFAULT_DYNAMIC_TRAINING_WEIGHT, autoML);
         }
         
-        public DynamicStep(String provider, String id, int weight, int priorityGroup, AutoML autoML) {
-            super(provider, new VirtualAlgo(), id, weight, priorityGroup, autoML);
+        public DynamicStep(String provider, String id, int priorityGroup, int weight, AutoML autoML) {
+            super(provider, new VirtualAlgo(), id, priorityGroup, weight, autoML);
         }
 
         @Override

@@ -49,6 +49,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
     public ModelingStep[] getOrderedSteps(StepDefinition[] modelingPlan, AutoML aml) {
         aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(modelingPlan));
         List<ModelingStep> orderedSteps = new ArrayList<>();
+        aml.setModelingPlan(modelingPlan);
         for (StepDefinition def : modelingPlan) {
             ModelingSteps steps = aml.getModelingSteps(def._name);
             if (steps == null) continue;
@@ -84,7 +85,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
     public StepDefinition[] createDefinitionPlanFromSteps(ModelingStep[] steps) {
         List<StepDefinition> definitions = new ArrayList<>();
         for (ModelingStep step : steps) {
-            Step stepDesc = new Step(step._id, step._weight, step._priorityGroup);
+            Step stepDesc = new Step(step._id, step._priorityGroup, step._weight);
             if (definitions.size() > 0) {
                 StepDefinition lastDef = definitions.get(definitions.size() - 1);
                 if (lastDef._name.equals(step._fromDef._name)) {

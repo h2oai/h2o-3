@@ -443,7 +443,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
               new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
-              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20, 2) }),  // 1 model
+              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 2, 20) }),  // 1 model
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),      // 1 grid
               new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids), // 1 grid
               new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 models
@@ -465,16 +465,16 @@ public class AutoMLTest extends water.TestUtil {
       Log.info(Arrays.toString(aml._actualModelingSteps));
       assertArrayEquals(new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new Step[]{
-                      new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
+                      new Step("def_1", Step.DEFAULT_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
               new StepDefinition(Algo.GLM.name(), new Step[]{
-                      new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
+                      new Step("def_1", Step.DEFAULT_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
               new StepDefinition(Algo.DRF.name(), new Step[]{
-                      new Step("XRT", 20, 2),
+                      new Step("XRT", 2, 20),
               }),
               new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best_of_family_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
+                      new Step("best_of_family_1", Step.DEFAULT_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
       }, aml._actualModelingSteps);
     } finally {

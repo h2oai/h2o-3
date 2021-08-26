@@ -57,57 +57,56 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   final static StepDefinition[] defaultModelingPlan = {
           // order of step definitions and steps defines the order of steps in the same priority group.
           new StepDefinition(Algo.XGBoost.name(), new Step[]{
-                  new Step("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
-                  new Step("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
-                  new Step("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4),
-                  new Step("lr_search", DEFAULT_GRID_TRAINING_WEIGHT, 6),
+                  new Step("def_2", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("def_3", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("grid_1", 4, 3*DEFAULT_GRID_TRAINING_WEIGHT),
+                  new Step("lr_search", 6, DEFAULT_GRID_TRAINING_WEIGHT),
           }),
           new StepDefinition(Algo.GLM.name(), new Step[] {
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
+                  new Step("def_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
           }),
           new StepDefinition(Algo.DRF.name(), new Step[] {
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
-                  new Step("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
+                  new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("XRT", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
           }),
           new StepDefinition(Algo.GBM.name(), new Step[] {
-                  new Step("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
-                  new Step("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
-                  new Step("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
-                  new Step("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
-                  new Step("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4),
-                  new Step("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
+                  new Step("def_5", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("def_2", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("def_3", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("def_4", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("grid_1", 4, 2*DEFAULT_GRID_TRAINING_WEIGHT),
+                  new Step("lr_annealing", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
           }),
           new StepDefinition(Algo.DeepLearning.name(), new Step[] {
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
-                  new Step("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, 4),
-                  new Step("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, 5),
-                  new Step("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, 5),
+                  new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
+                  new Step("grid_1", 4, DEFAULT_GRID_TRAINING_WEIGHT),
+                  new Step("grid_2", 5, DEFAULT_GRID_TRAINING_WEIGHT),
+                  new Step("grid_3", 5, DEFAULT_GRID_TRAINING_WEIGHT),
           }),
           new StepDefinition("completion", new Step[] {
-                  new Step("resume_best_grids", 2*DEFAULT_GRID_TRAINING_WEIGHT, 10),
+                  new Step("resume_best_grids", 10, 2*DEFAULT_GRID_TRAINING_WEIGHT),
           }),
           // generates BoF and All SE for each group, but we prefer to customize instances and weights below 
 //          new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults), 
           new StepDefinition(Algo.StackedEnsemble.name(), Stream.of(new Step[][] {
                   IntStream.rangeClosed(1, 5).mapToObj(group -> // BoF should be fast, giving it half-budget for optimization.
-                          new Step("best_of_family_"+group, DEFAULT_MODEL_TRAINING_WEIGHT/2, group))
+                          new Step("best_of_family_"+group, group, DEFAULT_MODEL_TRAINING_WEIGHT/2))
                           .toArray(Step[]::new),
                   IntStream.rangeClosed(2, 5).mapToObj(group -> // starts at 2 as we don't need an ALL SE for first group.
-                          new Step("all_"+group, DEFAULT_MODEL_TRAINING_WEIGHT, group))
+                          new Step("all_"+group, group, DEFAULT_MODEL_TRAINING_WEIGHT))
                           .toArray(Step[]::new),
                   {
-                          new Step("monotonic", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
-                          new Step("best_of_family_xgboost", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
-                          new Step("best_of_family_gbm", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
-                          new Step("all_xgboost", DEFAULT_MODEL_TRAINING_WEIGHT, 7),
-                          new Step("all_gbm", DEFAULT_MODEL_TRAINING_WEIGHT, 7),
-                          new Step("best_of_family_xglm", DEFAULT_MODEL_TRAINING_WEIGHT, 8),
-                          new Step("all_xglm", DEFAULT_MODEL_TRAINING_WEIGHT, 8),
-                          new Step("best_20", DEFAULT_MODEL_TRAINING_WEIGHT, 9),
-                          new Step("best_of_family_final", DEFAULT_MODEL_TRAINING_WEIGHT, 10),
-                          new Step("best_N_final", DEFAULT_MODEL_TRAINING_WEIGHT, 10),
+                          new Step("monotonic", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("best_of_family_xgboost", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("best_of_family_gbm", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("all_xgboost", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("all_gbm", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("best_of_family_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("all_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("best_of_family", 10, DEFAULT_MODEL_TRAINING_WEIGHT),
+                          new Step("best_N", 10, DEFAULT_MODEL_TRAINING_WEIGHT),
                   }
           }).flatMap(Stream::of).toArray(Step[]::new)),
   };
@@ -245,7 +244,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       prepareData();
       initLeaderboard();
       initPreprocessing();
-      planWork();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -398,6 +396,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return _executionPlan == null ? (_executionPlan = _modelingStepsRegistry.getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
   }
   
+  void setModelingPlan(StepDefinition[] modelingPlan) {
+    _buildSpec.build_models.modeling_plan = modelingPlan;
+  }
+  
   void planWork() {
     Set<IAlgo> skippedAlgos = new HashSet<>();
     if (_buildSpec.build_models.exclude_algos != null) {
@@ -457,6 +459,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   public void submit() {
     if (_job == null || !_job.isRunning()) {
+      planWork();
       H2OJob<AutoML> j = new H2OJob<>(this, _key, _runCountdown.remainingTime());
       _job = j._job;
       eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(_startTime))
@@ -567,9 +570,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (!_availableStepsByProviderName.containsKey(providerName)) {
       ModelingStepsProvider provider = _modelingStepsRegistry.stepsByName.get(providerName);
       if (provider == null) {
-        eventLog().warn(Stage.ModelTraining, "Missing provider for modeling steps '"+providerName+"'");
-        return null;
-//        throw new IllegalArgumentException("Missing provider for modeling steps '"+providerName+"'");
+//        eventLog().warn(Stage.ModelTraining, "Missing provider for modeling steps '"+providerName+"'");
+//        return null;
+        throw new IllegalArgumentException("Missing provider for modeling steps '"+providerName+"'");
       }
       ModelingSteps steps = provider.newInstance(this);
       _availableStepsByProviderName.put(providerName, steps);
