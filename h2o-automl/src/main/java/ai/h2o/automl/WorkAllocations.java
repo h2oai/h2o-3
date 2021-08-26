@@ -94,7 +94,8 @@ public class WorkAllocations extends Iced<WorkAllocations> {
   private int sum(Work[] workItems) {
     int tot = 0;
     for (Work item : workItems) {
-      tot += item._weight;
+      if (item._weight > 0)
+        tot += item._weight;
     }
     return tot;
   }

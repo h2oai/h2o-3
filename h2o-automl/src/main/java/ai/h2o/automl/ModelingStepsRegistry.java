@@ -77,7 +77,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
             }
         }
         return orderedSteps.stream()
-                .filter(step -> step.getPriorityGroup() > 0 && step.getWeight() > 0)
+                .filter(step -> step.getPriorityGroup() > 0 && step.getWeight() != 0) // negative weights can be used for registration only to be loaded by a dynamic step.
                 .sorted(Comparator.comparingInt(step -> step._priorityGroup))
                 .toArray(ModelingStep[]::new);
     }
@@ -93,7 +93,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
                     continue;
                 }
             }
-            definitions.add(new StepDefinition(step._fromDef._name, new Step[]{stepDesc}));
+            definitions.add(new StepDefinition(step._fromDef._name, stepDesc));
         }
         return definitions.toArray(new StepDefinition[0]);
     }

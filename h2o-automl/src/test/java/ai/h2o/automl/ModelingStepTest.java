@@ -68,7 +68,7 @@ public class ModelingStepTest {
 
     @Test public void testModelStep() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_model".equals(s._id)).findFirst().get();
-        Job<DummyModel> job = step.startJob();
+        Job<DummyModel> job = step.run();
         DummyModel model = job.get(); toDelete.add(model);
         assertNotNull(model);
         assertEquals(aml.getBuildSpec().input_spec.response_column, model._parms._response_column);
@@ -79,13 +79,13 @@ public class ModelingStepTest {
 
     @Test public void testFailingModelStep() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_model_failing".equals(s._id)).findFirst().get();
-        Job<DummyModel> job = step.startJob();
+        Job<DummyModel> job = step.run();
         assertNull(job);
     }
 
     @Test public void testGridStep() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_grid".equals(s._id)).findFirst().get();
-        Job<Grid> job = step.startJob();
+        Job<Grid> job = step.run();
         Grid grid = job.get(); toDelete.add(grid);
         assertEquals(3, grid.getModelCount());
         for (Model model : grid.getModels()) {
@@ -98,7 +98,7 @@ public class ModelingStepTest {
 
     @Test public void testSelectionStepSingleModel() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_exploitation_single".equals(s._id)).findFirst().get();
-        Job<Models> job = step.startJob();
+        Job<Models> job = step.run();
         Models models = job.get(); toDelete.add(models);
         assertEquals(1, models.getModelCount());
         for (Model model : models.getModels()) {
@@ -111,7 +111,7 @@ public class ModelingStepTest {
 
     @Test public void testSelectionStepMultipleModels() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_exploitation_multi".equals(s._id)).findFirst().get();
-        Job<Models> job = step.startJob();
+        Job<Models> job = step.run();
         Models models = job.get(); toDelete.add(models);
         assertEquals(4, models.getModelCount());
         for (Model model : models.getModels()) {
@@ -129,7 +129,7 @@ public class ModelingStepTest {
             super(autoML);
             defaultModels = new ModelingStep[] {
                     new DummyModelStep(DummyBuilder.algo, "dummy_model", 10, aml()),
-                    new FailingDummyModelStep(DummyBuilder.algo, "dummy_model_failing", 0, aml())
+                    new FailingDummyModelStep(DummyBuilder.algo, "dummy_model_failing", 1, aml())
             };
 
             grids = new ModelingStep[] {
