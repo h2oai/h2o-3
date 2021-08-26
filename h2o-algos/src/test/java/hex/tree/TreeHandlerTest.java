@@ -60,7 +60,7 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._descriptions.length);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._thresholds.length);
@@ -134,7 +134,7 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
 
             final String[] nodeDescriptions = treeProperties._descriptions;
@@ -354,7 +354,7 @@ public class TreeHandlerTest extends TestUtil {
             // Test incorrect tree request
             model = new GBM(parms).trainModel().get();
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
@@ -405,7 +405,7 @@ public class TreeHandlerTest extends TestUtil {
 
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
             assertNotNull(sharedTreeSubgraph);
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, false);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
