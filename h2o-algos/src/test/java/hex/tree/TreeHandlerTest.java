@@ -17,12 +17,14 @@ import org.junit.Test;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
+import water.parser.ParseDataset;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
+import static water.fvec.FVecFactory.makeByteVec;
 
 public class TreeHandlerTest extends TestUtil {
 
@@ -493,6 +495,55 @@ public class TreeHandlerTest extends TestUtil {
                 final TreeV3 tree = treeHandler.getTree(3, arguments);
                 assertNotNull(tree);
             }
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSlowTree() {
+        // this one was supposed to be slow but it's quite fast
+        try {
+            Scope.enter();
+            StringBuilder xy = new StringBuilder();
+            for (int i = 0; i < 1000; i++) {
+                xy.append("A").append(i).append(",").append(i).append(",").append(1000-i);
+                if (i !=  999)
+                    xy.append("\n");
+            }
+            
+            Key tr = Key.make("train");
+            Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy.toString())).toCategoricalCol(0);
+            
+            
+            Scope.track_generic(df);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = df._key;
+            parms._distribution = AUTO;
+            parms._response_column = "C1";
+            parms._ntrees = 1;
+            parms._max_depth = 30;
+            parms._seed = 0XFEED;
+            parms._min_split_improvement = 1e-6;
+            parms._min_rows =1;
+
+            GBM job = new GBM(parms);
+            GBMModel model = job.trainModel().get();
+            Scope.track_generic(model);
+
+            final TreeHandler treeHandler = new TreeHandler();
+            final TreeV3 arguments = new TreeV3();
+            arguments.model = new KeyV3.ModelKeyV3(model._key);
+            arguments.tree_number = 0;
+            arguments.tree_class = "A2";
+            arguments.plain_language_rules = TreeHandler.PlainLanguageRules.TRUE;
+            long startTime = System.currentTimeMillis();
+            final TreeV3 tree = treeHandler.getTree(3, arguments);
+            long estimatedTime = System.currentTimeMillis() - startTime;
+                    float inseconds = (float)estimatedTime / 1000;
+            System.out.println("got tree in " + inseconds + "seconds");
+            assertNotNull(tree);
+
         } finally {
             Scope.exit();
         }
