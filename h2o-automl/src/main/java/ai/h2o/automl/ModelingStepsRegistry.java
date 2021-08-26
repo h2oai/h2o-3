@@ -77,7 +77,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
             }
         }
         return orderedSteps.stream()
-                .filter(step -> step._priorityGroup > 0)
+                .filter(step -> step.getPriorityGroup() > 0 && step.getWeight() > 0)
                 .sorted(Comparator.comparingInt(step -> step._priorityGroup))
                 .toArray(ModelingStep[]::new);
     }
