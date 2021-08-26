@@ -57,8 +57,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   final static StepDefinition[] defaultModelingPlan = {
           // order of step definitions and steps defines the order of steps in the same priority group.
           new StepDefinition(Algo.XGBoost.name(), new Step[]{
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
                   new Step("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
                   new Step("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
                   new Step("grid_1", 3*DEFAULT_GRID_TRAINING_WEIGHT, 4),
                   new Step("lr_search", DEFAULT_GRID_TRAINING_WEIGHT, 6),
@@ -71,11 +71,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                   new Step("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
           }),
           new StepDefinition(Algo.GBM.name(), new Step[] {
-                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
+                  new Step("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
                   new Step("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
                   new Step("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
                   new Step("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, 2),
-                  new Step("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, 1),
+                  new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 3),
                   new Step("grid_1", 2*DEFAULT_GRID_TRAINING_WEIGHT, 4),
                   new Step("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, 6),
           }),
