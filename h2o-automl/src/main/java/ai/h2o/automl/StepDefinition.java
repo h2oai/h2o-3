@@ -116,13 +116,13 @@ public class StepDefinition extends Iced<StepDefinition> {
         _alias = alias;
     }
 
-    public StepDefinition(String name, String[] ids) {
+    public StepDefinition(String name, String... ids) {
         _name = name;
         _steps = new Step[ids.length];
         for (int i=0; i<ids.length; i++) _steps[i] = new Step(ids[i]);
     }
 
-    public StepDefinition(String name, Step[] steps) {
+    public StepDefinition(String name, Step... steps) {
         _name = name;
         _steps = steps;
     }

@@ -128,7 +128,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  project_name=None,
                  exclude_algos=None,
                  include_algos=None,
-                 exploitation_ratio=0,
+                 exploitation_ratio=-1,
                  modeling_plan=None,
                  preprocessing=None,
                  monotone_constraints=None,
@@ -195,7 +195,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             This can't be used in combination with `exclude_algos` param.
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
         :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase.
-            By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental;
+            By default, this is set to auto (exploitation_ratio=-1) as this is still experimental;
             to activate it, it is recommended to try a ratio around 0.1.
             Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).

@@ -6,16 +6,22 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parseTestFile;
 
-public class ModelingStepRegistryTest extends TestUtil {
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class ModelingStepRegistryTest {
 
     private AutoML aml;
     private Frame fr;
@@ -24,8 +30,6 @@ public class ModelingStepRegistryTest extends TestUtil {
 
     @BeforeClass
     public static void setup() {
-        stall_till_cloudsize(1);
-
         sortedProviders = new TreeSet<>(String::compareToIgnoreCase);
         sortedProviders.addAll(ModelingStepsRegistry.stepsByName.keySet());
     }
@@ -177,9 +181,9 @@ public class ModelingStepRegistryTest extends TestUtil {
     @Test
     public void test_registration_by_id() {
         StepDefinition[] byIdSteps = new StepDefinition[]{
-                new StepDefinition(Algo.DRF.name(), new String[]{"XRT"}),  //group 1 by default
-                new StepDefinition(Algo.XGBoost.name(), new String[]{"grid_1"}), // group 2 by default
-                new StepDefinition(Algo.StackedEnsemble.name(), new String[]{"best_of_family", "all"}) //group 3=2+1 by default
+                new StepDefinition(Algo.DRF.name(), "XRT"),  //group 1 by default
+                new StepDefinition(Algo.XGBoost.name(), "grid_1"), // group 2 by default
+                new StepDefinition(Algo.StackedEnsemble.name(), "best_of_family", "all") //group 3=2+1 by default
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(byIdSteps, aml);
@@ -192,20 +196,17 @@ public class ModelingStepRegistryTest extends TestUtil {
     @Test
     public void test_registration_with_groups() {
         StepDefinition[] byIdSteps = new StepDefinition[]{
-                new StepDefinition(Algo.GBM.name(), new Step[] {
-                        new Step("grid_1", 5, Step.DEFAULT_WEIGHT)}
-                ),
-                new StepDefinition(Algo.DRF.name(), new Step[] { 
-                        new Step("XRT", 1, Step.DEFAULT_WEIGHT)}
-                ),
-                new StepDefinition(Algo.XGBoost.name(), new Step[] { 
-                        new Step("grid_1", Step.DEFAULT_GROUP, Step.DEFAULT_WEIGHT)}  //grids default to group 2
-                ),
+                new StepDefinition(Algo.GBM.name(),
+                        new Step("grid_1", 5, Step.DEFAULT_WEIGHT)),
+                new StepDefinition(Algo.DRF.name(),
+                        new Step("XRT", 1, Step.DEFAULT_WEIGHT)),
+                new StepDefinition(Algo.XGBoost.name(),   //grids default to group 2
+                        new Step("grid_1", Step.DEFAULT_GROUP, Step.DEFAULT_WEIGHT)),
                 new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults), //should generate 2 SEs for each previous group
-                new StepDefinition(Algo.StackedEnsemble.name(), new Step[] {
+                new StepDefinition(Algo.StackedEnsemble.name(), 
                         new Step("best_of_family", 7, 5),
-                        new Step("monotonic", Step.DEFAULT_GROUP, Step.DEFAULT_WEIGHT), //should default to group 5+1
-                })
+                        new Step("monotonic", Step.DEFAULT_GROUP, Step.DEFAULT_WEIGHT) //should default to group 5+1
+                )
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(byIdSteps, aml);
@@ -226,13 +227,11 @@ public class ModelingStepRegistryTest extends TestUtil {
     @Test
     public void test_registration_with_weight() {
         StepDefinition[] withWeightSteps = new StepDefinition[]{
-                new StepDefinition(Algo.DRF.name(), new Step[] { 
-                        new Step("XRT", Step.DEFAULT_GROUP, 666)
-                }),
-                new StepDefinition(Algo.GBM.name(), new Step[] { 
-                        new Step("def_3", Step.DEFAULT_GROUP, 42), 
-                        new Step("grid_1", Step.DEFAULT_GROUP, 777)
-                })
+                new StepDefinition(Algo.DRF.name(), 
+                        new Step("XRT", Step.DEFAULT_GROUP, 666)),
+                new StepDefinition(Algo.GBM.name(), 
+                        new Step("def_3", Step.DEFAULT_GROUP, 42),
+                        new Step("grid_1", Step.DEFAULT_GROUP, 777))
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(withWeightSteps, aml);
@@ -254,7 +253,7 @@ public class ModelingStepRegistryTest extends TestUtil {
     @Test
     public void test_unknown_ids_are_skipped_with_warning() {
         StepDefinition[] unknownIdsSteps = new StepDefinition[]{
-                new StepDefinition(Algo.GBM.name(), new String[] {"dummy"})
+                new StepDefinition(Algo.GBM.name(), "dummy")
         };
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(unknownIdsSteps, aml);

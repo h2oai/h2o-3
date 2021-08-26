@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
+import ai.h2o.automl.dummy.DummyStepsProvider;
 import hex.Model;
 import hex.ModelMetricsRegression;
 import hex.tree.gbm.GBM;
@@ -10,44 +11,40 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
+import static ai.h2o.automl.dummy.DummyStepsProvider.DummyModelSteps.*;
 import static org.junit.Assert.*;
+import static water.TestUtil.parseTestFile;
 
-public class ModelingStepsExecutorTest extends TestUtil {
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class ModelingStepsExecutorTest {
+    
+    private static class TestingModelSteps extends DummyStepsProvider.DummyModelSteps {
+        public TestingModelSteps(AutoML autoML) {
+            super(autoML);
+        }
+        
+        private ModelingStep[] defaults = {
+                makeStep("job_work", makeJob("dummy_job"), true, aml()),
+                makeStep("job_no_work", makeJob("dummy_job"), false, aml()),
+                makeStep("no_job_work", null, true, aml()),
+        };
 
-    private AutoML aml;
-    private Frame fr;
-
-    @BeforeClass
-    public static void setup() {
-        stall_till_cloudsize(1);
+        @Override
+        protected ModelingStep[] getDefaultModels() {
+            return defaults;
+        }
     }
+    
+    private static ModelingStep makeStep(String id, Job job, boolean withWork, AutoML aml) {
+        return new ModelingStep(NAME, Algo.GBM, id, 42, 42, aml) {
 
-    @Before
-    public void createAutoML() {
-        fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
-        AutoMLBuildSpec buildSpec = new AutoMLBuildSpec();
-        buildSpec.input_spec.training_frame = fr._key;
-        buildSpec.input_spec.response_column = "CAPSULE";
-        aml = new AutoML(buildSpec);
-        DKV.put(aml);
-    }
-
-    @After
-    public void cleanupAutoML() {
-        if(aml!=null) aml.delete();
-        if(fr!=null) fr.delete();
-    }
-
-    private Job makeJob(String name) {
-        return new Job(Key.make(name), Model.class.getName(), "does nothing, not even started");
-    }
-
-    private ModelingStep makeStep(Job job, boolean withWork) {
-        return new ModelingStep("test", Algo.GBM,"dummy", 42, 42, aml) {
-           
             @Override
             protected JobType getJobType() {
                 return JobType.ModelBuild;
@@ -72,6 +69,7 @@ public class ModelingStepsExecutorTest extends TestUtil {
                         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
                         GBMModel.GBMOutput output = new GBMModel.GBMOutput(new GBM(parms));
                         Model res = new GBMModel(job._result, parms, output);
+                        Frame fr = aml.getTrainingFrame();
                         output._training_metrics = new ModelMetricsRegression(res, fr, 1, 1, 1, 1, 1, 1, null);
                         DKV.put(job._result, res);
                         tryComplete();
@@ -79,6 +77,35 @@ public class ModelingStepsExecutorTest extends TestUtil {
                 }, _weight);
             }
         };
+    }
+    
+    private static Job makeJob(String name) {
+        return new Job(Key.make(name), Model.class.getName(), "does nothing, not even started");
+    }
+
+
+
+    private AutoML aml;
+    private Frame fr;
+
+    @Before
+    public void createAutoML() {
+        DummyStepsProvider provider = new DummyStepsProvider();
+        provider.modelStepsFactory = TestingModelSteps::new;
+        ModelingStepsRegistry.registerProvider(provider);
+        
+        fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
+        AutoMLBuildSpec buildSpec = new AutoMLBuildSpec();
+        buildSpec.input_spec.training_frame = fr._key;
+        buildSpec.input_spec.response_column = "CAPSULE";
+        aml = new AutoML(buildSpec);
+        DKV.put(aml);
+    }
+
+    @After
+    public void cleanupAutoML() {
+        if(aml!=null) aml.delete();
+        if(fr!=null) fr.delete();
     }
 
     @Test
@@ -95,7 +122,7 @@ public class ModelingStepsExecutorTest extends TestUtil {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        boolean started = executor.submit(makeStep(makeJob("dummy"), false), parentJob);
+        boolean started = executor.submit(aml.getModelingStep(NAME, "job_no_work"), parentJob);
         assertFalse(started);
         executor.stop();
     }
@@ -114,7 +141,7 @@ public class ModelingStepsExecutorTest extends TestUtil {
                 tryComplete();
             }
         }, 100);
-        boolean started = executor.submit(makeStep(null, true), parentJob);
+        boolean started = executor.submit(aml.getModelingStep(NAME, "no_job_work"), parentJob);
         executor.stop();
         assertFalse(started);
         assertEquals(0.42, parentJob.progress(), 1e-6);
@@ -139,7 +166,7 @@ public class ModelingStepsExecutorTest extends TestUtil {
             }
         }, 100);
 
-        boolean started = executor.submit(makeStep(makeJob("dummy"), true), parentJob);
+        boolean started = executor.submit(aml.getModelingStep(NAME, "job_work"), parentJob);
         executor.stop();
         assertTrue(started);
         assertEquals(1, parentJob.progress(), 1e-6); // parent job should be auto-filled with remaining work

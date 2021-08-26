@@ -3,7 +3,6 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
-import ai.h2o.automl.StepDefinition.Step;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
@@ -25,12 +24,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
-import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
 /**
@@ -54,63 +49,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
 
-  final static StepDefinition[] defaultModelingPlan = {
-          // order of step definitions and steps defines the order of steps in the same priority group.
-          new StepDefinition(Algo.XGBoost.name(), new Step[]{
-                  new Step("def_2", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("def_3", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("grid_1", 4, 3*DEFAULT_GRID_TRAINING_WEIGHT),
-                  new Step("lr_search", 6, DEFAULT_GRID_TRAINING_WEIGHT),
-          }),
-          new StepDefinition(Algo.GLM.name(), new Step[] {
-                  new Step("def_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
-          }),
-          new StepDefinition(Algo.DRF.name(), new Step[] {
-                  new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("XRT", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
-          }),
-          new StepDefinition(Algo.GBM.name(), new Step[] {
-                  new Step("def_5", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("def_2", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("def_3", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("def_4", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("grid_1", 4, 2*DEFAULT_GRID_TRAINING_WEIGHT),
-                  new Step("lr_annealing", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-          }),
-          new StepDefinition(Algo.DeepLearning.name(), new Step[] {
-                  new Step("def_1", 3, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  new Step("grid_1", 4, DEFAULT_GRID_TRAINING_WEIGHT),
-                  new Step("grid_2", 5, DEFAULT_GRID_TRAINING_WEIGHT),
-                  new Step("grid_3", 5, DEFAULT_GRID_TRAINING_WEIGHT),
-          }),
-          new StepDefinition("completion", new Step[] {
-                  new Step("resume_best_grids", 10, 2*DEFAULT_GRID_TRAINING_WEIGHT),
-          }),
-          // generates BoF and All SE for each group, but we prefer to customize instances and weights below 
-//          new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults), 
-          new StepDefinition(Algo.StackedEnsemble.name(), Stream.of(new Step[][] {
-                  IntStream.rangeClosed(1, 5).mapToObj(group -> // BoF should be fast, giving it half-budget for optimization.
-                          new Step("best_of_family_"+group, group, DEFAULT_MODEL_TRAINING_WEIGHT/2))
-                          .toArray(Step[]::new),
-                  IntStream.rangeClosed(2, 5).mapToObj(group -> // starts at 2 as we don't need an ALL SE for first group.
-                          new Step("all_"+group, group, DEFAULT_MODEL_TRAINING_WEIGHT))
-                          .toArray(Step[]::new),
-                  {
-                          new Step("monotonic", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("best_of_family_xgboost", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("best_of_family_gbm", 6, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("all_xgboost", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("all_gbm", 7, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("best_of_family_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("all_xglm", 8, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("best_of_family", 10, DEFAULT_MODEL_TRAINING_WEIGHT),
-                          new Step("best_N", 10, DEFAULT_MODEL_TRAINING_WEIGHT),
-                  }
-          }).flatMap(Stream::of).toArray(Step[]::new)),
-  };
-  
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
 
@@ -244,6 +182,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       prepareData();
       initLeaderboard();
       initPreprocessing();
+      _modelingStepsRegistry = new ModelingStepsRegistry();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -338,11 +277,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (modelBuilding.exclude_algos != null && modelBuilding.include_algos != null) {
       throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
     }
-    if (modelBuilding.exploitation_ratio < 0 || modelBuilding.exploitation_ratio > 1) {
+    if (modelBuilding.exploitation_ratio > 1) {
       throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
     }
     if (modelBuilding.modeling_plan == null) {
-      modelBuilding.modeling_plan = defaultModelingPlan;
+      modelBuilding.modeling_plan = ModelingPlans.defaultPlan();
     }
   }
 
@@ -421,7 +360,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-    _modelingStepsRegistry = new ModelingStepsRegistry();
     WorkAllocations workAllocations = new WorkAllocations();
     for (ModelingStep step: getExecutionPlan()) {
       workAllocations.allocate(step.makeWork());
@@ -438,7 +376,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
-    if (_buildSpec.build_models.exploitation_ratio == 0) return;
+    if (_buildSpec.build_models.exploitation_ratio < 0) return;
     int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
     int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
     double explorationRatio = 1 - _buildSpec.build_models.exploitation_ratio;
