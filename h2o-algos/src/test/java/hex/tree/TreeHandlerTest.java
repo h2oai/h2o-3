@@ -503,7 +503,6 @@ public class TreeHandlerTest extends TestUtil {
 
     @Test
     public void testSlowTree() {
-        // this one was supposed to be slow but it's quite fast
         try {
             Scope.enter();
             int[] responseData = ArrayUtils.seq(0, 2000);

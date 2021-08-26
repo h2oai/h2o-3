@@ -91,26 +91,6 @@ def decision_tree_language_rules_printing():
     assert read_fixture("pyunit_4007_language_path_representation_numerical_categorical_case.txt") == tree.decision_paths[tree.predictions.index(tree.predictions[207])]
 
 
-def test_slow_tree():
-    # slow tree for demonstration (very slow on rel-zipf)
-    data = h2o.import_file("https://h2o-benchmark.s3.amazonaws.com/paribas.csv")
-
-    predictors = data.columns
-    response = "v58"
-    predictors.remove(response)
-    # Build and train the model:
-    my_gbm = H2OGradientBoostingEstimator(max_depth=20,
-                                            seed=1111,
-                                            min_split_improvement=1e-6,
-                                          ntrees = 1)
-    my_gbm.train(x=predictors, y=response, training_frame=data)
-
-    start = timeit.default_timer()
-    H2OTree(model = my_gbm, tree_number = 0, tree_class = None)
-    end = timeit.default_timer()
-    assert (end - start < 10)
-    print(end - start)
-
 def read_fixture(path):
     text_file = open(pyunit_utils.locate(path), "r")
     expected_tree_representation = text_file.read()
@@ -118,6 +98,6 @@ def read_fixture(path):
     return expected_tree_representation
     
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_slow_tree)
+    pyunit_utils.standalone_test(decision_tree_language_rules_printing)
 else:
-    test_slow_tree()
+    decision_tree_language_rules_printing()
