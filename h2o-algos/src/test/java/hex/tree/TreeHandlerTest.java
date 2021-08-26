@@ -493,6 +493,7 @@ public class TreeHandlerTest extends TestUtil {
             arguments.model = new KeyV3.ModelKeyV3(model._key);
             for (int i = 0; i < parms._ntrees; i++) {
                 arguments.tree_number = i;
+                arguments.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
                 final TreeV3 tree = treeHandler.getTree(3, arguments);
                 assertNotNull(tree);
             }

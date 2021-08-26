@@ -184,6 +184,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
             final TreeHandler treeHandler = new TreeHandler();
             final TreeV3 args = new TreeV3();
             args.model = new KeyV3.ModelKeyV3(model._key);
+            args.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
             final TreeV3 tree = treeHandler.getTree(3, args);
             assertNotNull(tree);
         } finally {
@@ -217,6 +218,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
             final TreeHandler treeHandler = new TreeHandler();
             final TreeV3 args = new TreeV3();
             args.model = new KeyV3.ModelKeyV3(model._key);
+            args.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
             final TreeV3 tree = treeHandler.getTree(3, args);
             assertNotNull(tree);
         } finally {
