@@ -836,33 +836,6 @@ With the newly estimated fixed and random coefficients, we will estimate the dis
 
 Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the :math:`dev,hv` corresponding to the expanded random columns/effects.
 
-
-Maximum R Square Improvements (MAXR)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The maximum :math:`R^2` improvement technique does not settle on a single modle. Instead, it tries to find the "best" one-variable model, the "best" two-variable model, and so forth. However, it is not guaranteed to find the model with the largest :math:`R^2` for each size.
-
-MAXR method
-'''''''''''
-
-This method begins by finding the one-variable model producing the highest :math:`R^2`. Next, the variable that yields the greatest increase in :math:`R^2` is added. 
-
-Once the two-variable model is obtained, each of the variables in the model is compared to each variable not in the model. For each comparison, the MAXR method determines if removing one variable and replacing it with the other variable increases :math:`R^2`. After comparing all possible switches, the MAXR method makes the switch that produces the largest increase in :math:`R^2`.
-
-Comparisons begin again, and the process continues until the MAXR method finds that no switch could increase :math:`R^2`. Therefor, the two-variable model that's achieved is the "best" two-variable model the technique could find, the "best" three-variable model, and so forth.
-
-H2O MaxRGLM
-'''''''''''
-
-The H2O MaxRGLM algorithm is guaranteed to return the model with the best :math:`R^2` value. To guarantee we find the model with the best :math:`R^2` value for a particular number of predictors we will:
-
-- generate all possible combinations of x predictors out of the n predictors (if there are n predictors and we are looking at using x predictors),
-- generate the training frame for each element in the combination of x predictors,
-- build the model and look at the :math:`R^2` value,
-- chose the combination with the best :math:`R^2` value,
-- store the predictor names and :math:`R^2` values in an array.
-
-
 .. _regularization:
 
 Regularization
