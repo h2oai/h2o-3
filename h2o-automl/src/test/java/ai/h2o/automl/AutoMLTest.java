@@ -443,7 +443,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
               new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
-              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20, Step.DEFAULT_GROUP) }),  // 1 model
+              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20, 2) }),  // 1 model
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),      // 1 grid
               new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids), // 1 grid
               new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 models
@@ -451,14 +451,15 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning};
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
+      System.out.println(aml.leaderboard().toTwoDimTable("step", "group").toString());
 
-      assertEquals(4, aml.leaderboard().getModelCount());
+      assertEquals(5, aml.leaderboard().getModelCount());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GBMModel.class::isInstance).count());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GLMModel.class::isInstance).count());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(DRFModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(XGBoostModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
-      assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
+      assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count()); //one for each group
 
       assertNotNull(aml._actualModelingSteps);
       Log.info(Arrays.toString(aml._actualModelingSteps));
@@ -470,7 +471,7 @@ public class AutoMLTest extends water.TestUtil {
                       new Step("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),
               }),
               new StepDefinition(Algo.DRF.name(), new Step[]{
-                      new Step("XRT", 20, Step.DEFAULT_GROUP),
+                      new Step("XRT", 20, 2),
               }),
               new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
                       new Step("best_of_family_1", DEFAULT_MODEL_TRAINING_WEIGHT, Step.DEFAULT_GROUP),

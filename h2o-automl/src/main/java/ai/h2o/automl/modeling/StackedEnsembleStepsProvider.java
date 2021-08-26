@@ -326,11 +326,7 @@ public class StackedEnsembleStepsProvider
             // so at that time, we have access to the entire modeling plan
             // and we can dynamically generate the modeling steps that we're going to need.
             StepDefinition[] modelingPlan = aml().getBuildSpec().build_models.modeling_plan;
-            StepDefinition.Step[] seDefSteps = Stream.of(modelingPlan)
-                    .filter(sd -> sd.getName().equals(NAME))
-                    .flatMap(sd -> sd.getSteps().stream())
-                    .toArray(StepDefinition.Step[]::new);
-            if (seDefSteps.length == 0) {
+            if (Stream.of(modelingPlan).noneMatch(sd -> sd.getName().equals(NAME))) {
                 defaults = new ModelingStep[0];
                 optionals = new ModelingStep[0];
             } else {
