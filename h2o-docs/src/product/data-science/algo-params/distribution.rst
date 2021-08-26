@@ -103,10 +103,10 @@ Where:
 |                   | - :math:`w \times(y-f)^2`                                                                 |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Poisson           | - With :math:`\text{f_link}=link(f)`                                                      |
-|                   | - :math:`-2w\times(y\times f-exp(f))`                                                     |
+|                   | - :math:`-2w\times(y\times f- \exp(f))`                                                   |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Gamma             | - With :math:`\text{f_link}=link(f)`                                                      |
-|                   | - :math:`2w\times (y\times exp(-f)+f)`                                                    |
+|                   | - :math:`2w\times (y\times \exp(-f)+f)`                                                   |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Laplace           | :math:`w\times\mid{y-f}\mid`                                                              |
 +-------------------+-------------------------------------------------------------------------------------------+
@@ -126,8 +126,8 @@ Where:
 +-------------------+-------------------------------------------------------------------------------------------+
 | Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
 |                   | :math:`2w\times y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})\times(2-            |
-|                   | \text{Tweedie_Power}))}-y\times\text{exp}(f\times(1-\text{Tweedie_Power}))/ (1-\text      |
-|                   | {Tweedie_Power})+\text{exp}(f\times(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})`    |
+|                   | \text{Tweedie_Power}))}-y \times \exp(f\times(1-\text{Tweedie_Power}))/ (1-\text          |
+|                   | {Tweedie_Power})+ \exp(f\times(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})`         |
 +-------------------+-------------------------------------------------------------------------------------------+
 
 +-------------------+---------------------------------------------------------------------------+
@@ -139,21 +139,21 @@ Where:
 | Quantile          |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
 | Log: Multinomial, | - :math:`link(f)=\log(f)`                                                 |
-| Poisson, Gamma,   | - :math:`linkInversion(f)=exp(f)`                                         |
+| Poisson, Gamma,   | - :math:`linkInversion(f)= \exp(f)`                                       |
 | Tweedie           |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
 | Logit: Bernoulli, | - :math:`link(f)=(f/(f-1))`                                               |
-| Quasibinomial,    | - :math:`linkInversion(f)=1/(1+exp(-f))`                                  |
+| Quasibinomial,    | - :math:`linkInversion(f)=1/(1+ \exp(-f))`                                |
 | Modified_Huber    |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
 | Inversion         | :math:`f= \begin{cases}min(-1e-5, f) & \text{for }f<0 \\                  |
 |                   | max(-1e-5, f)& \text{for }f>0 \\\end{cases}`                              |
 +-------------------+---------------------------------------------------------------------------+
 | Ologit            | - :math:`link(f)=\log(f/(1-f))`                                           |
-|                   | - :math:`linkInversion(f)=1/(1+exp(-f))`                                  |
+|                   | - :math:`linkInversion(f)=1/(1+ \exp(-f))`                                |
 +-------------------+---------------------------------------------------------------------------+
 | Ologlog           | - :math:`link(f)=\log(-1\times\log(1-f))`                                 |
-|                   | - :math:`linkInversion(f)=1-exp(-1\times exp(f))`                         |
+|                   | - :math:`linkInversion(f)=1- \exp(-1\times \exp(f))`                      |
 +-------------------+---------------------------------------------------------------------------+
 | Oprobit           | - :math:`link(f)=normalDistribution.inverseCumulativeProbability(f)`      |
 |                   | - :math:`linkInversion(f)=normalDistribution.cumulativeProbability(f)`    |
