@@ -119,7 +119,12 @@ class ExprNode(object):
                 # return the int version only if all the items are ints
                 self._cache._data = data_i if data_i == data_f else data_f
             else:
-                self._cache._data = None if res['scalar'] is None else float(res['scalar'])
+                data = res['scalar']
+                data_f = float(data) if data is not None else None
+                data_i = int(data_f) if data_f is not None else None
+                self._cache._data = (None if data is None 
+                                     else data_i if data_i == data_f 
+                                     else data_f)
         if 'string' in res: self._cache._data = res['string']
         if 'funstr' in res: raise NotImplementedError
         if 'key' in res:
