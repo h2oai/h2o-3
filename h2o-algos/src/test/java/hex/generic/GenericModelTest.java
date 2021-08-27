@@ -24,10 +24,12 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.io.*;
+import java.net.URI;
 import java.util.ArrayList;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
@@ -223,6 +225,42 @@ public class GenericModelTest extends TestUtil {
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
             assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testJavaScoring_gbm_regression_offset() throws Exception {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = parseTestFile("smalldata/junit/cars_20mpg.csv");
+            Scope.track(trainingFrame);
+
+            Vec offset = trainingFrame.anyVec().makeCon(0.5);
+            trainingFrame.add("offset", offset);
+            DKV.put(trainingFrame);
+
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "economy_20mpg";
+            parms._ntrees = 1;
+            parms._offset_column = "offset";
+
+            final GBMModel model = new GBM(parms).trainModel().get();
+            Scope.track_generic(model);
+
+            File exportDir = temporaryFolder.newFolder("cars_offset_test");
+            URI mojoURI = model.exportMojo(new File(exportDir, "cars.zip").getAbsolutePath(), false);
+
+            final GenericModel genericModel = Generic.importMojoModel(mojoURI.getPath(), false);
+            Scope.track_generic(genericModel);
+
+            final Frame genericModelPredictions = genericModel.score(trainingFrame);
+            Scope.track_generic(genericModelPredictions);
+
+            assertTrue(model.testJavaScoring(trainingFrame, genericModelPredictions, 1e-6));
         } finally {
             Scope.exit();
         }
