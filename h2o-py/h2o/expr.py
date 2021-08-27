@@ -115,13 +115,13 @@ class ExprNode(object):
         if 'scalar' in res:
             if isinstance(res['scalar'], list):
                 data_f = [float(x) for x in res['scalar']]
-                data_i = [int(f) for f in data_f]
+                data_i = [None if math.isnan(f) else int(f) for f in data_f]
                 # return the int version only if all the items are ints
                 self._cache._data = data_i if data_i == data_f else data_f
             else:
                 data = res['scalar']
                 data_f = float(data) if data is not None else None
-                data_i = int(data_f) if data_f is not None else None
+                data_i = int(data_f) if data_f is not None and not math.isnan(data_f) else None
                 self._cache._data = (None if data is None 
                                      else data_i if data_i == data_f 
                                      else data_f)
