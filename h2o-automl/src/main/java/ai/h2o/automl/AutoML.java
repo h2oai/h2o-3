@@ -22,7 +22,6 @@ import water.util.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
@@ -56,7 +55,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       @Override
       public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
-        ModelingStep step = aml.getModelingStep(model.getKey());
+        ModelingStep step = aml.session().getModelingStep(model.getKey());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
@@ -119,13 +118,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
   AtomicLong _incrementalSeed = new AtomicLong();
-  private IcedHashSet<Key<Keyed>> _resumableKeys = new IcedHashSet();
-  private IcedHashMap<Key, String[]> _keySources = new IcedHashMap<>();
-  private NonBlockingHashMap<String, AtomicInteger> _modelCounters = new NonBlockingHashMap<>();
   private String _runId;
 
-  private ModelingStepsRegistry _modelingStepsRegistry;
   private ModelingStepsExecutor _modelingStepsExecutor;
+  private AutoMLSession _session;
   private Leaderboard _leaderboard;
   private EventLog _eventLog;
 
@@ -136,7 +132,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
-  private transient NonBlockingHashMap<String, ModelingSteps> _availableStepsByProviderName = new NonBlockingHashMap<>();
 
   /**
    * DO NOT USE explicitly: for schema/reflection only.
@@ -169,6 +164,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(key == null ? buildSpec.makeKey() : key);
     try {
       _startTime = startTime;
+      _session = AutoMLSession.getInstance(_key.toString());
       _eventLog = EventLog.getOrMake(_key);
       eventLog().info(Stage.Workflow, "Project: "+buildSpec.project());
 
@@ -182,7 +178,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       prepareData();
       initLeaderboard();
       initPreprocessing();
-      _modelingStepsRegistry = new ModelingStepsRegistry();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -332,7 +327,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   ModelingStep[] getExecutionPlan() {
-    return _executionPlan == null ? (_executionPlan = _modelingStepsRegistry.getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+    return _executionPlan == null ? (_executionPlan = session().getModelingStepsRegistry().getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
   }
   
   void setModelingPlan(StepDefinition[] modelingPlan) {
@@ -460,6 +455,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Model leader() {
     return leaderboard() == null ? null : _leaderboard.getLeader();
   }
+  
+  public AutoMLSession session() {
+    _session = _session == null ? null : _session._key.get();
+    _session.attach(this);
+    return _session;
+  }
 
   public Leaderboard leaderboard() {
     return _leaderboard == null ? null : (_leaderboard = _leaderboard._key.get());
@@ -492,48 +493,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return _buildSpec.build_control.nfolds > 0 || _buildSpec.input_spec.fold_column != null;
   }
   
-  public ModelingStep getModelingStep(Key key) {
-    if (!_keySources.containsKey(key)) return null;
-    String[] identifiers = _keySources.get(key);
-    assert identifiers.length > 1;
-    return getModelingStep(identifiers[0], identifiers[1]);
-  }
-  
-  public ModelingStep getModelingStep(String providerName, String id) {
-    ModelingSteps steps = getModelingSteps(providerName);
-    return steps == null ? null : steps.getStep(id).orElse(null);
-  }
-
-  ModelingSteps getModelingSteps(String providerName) {
-    if (!_availableStepsByProviderName.containsKey(providerName)) {
-      ModelingStepsProvider provider = _modelingStepsRegistry.stepsByName.get(providerName);
-      if (provider == null) {
-//        eventLog().warn(Stage.ModelTraining, "Missing provider for modeling steps '"+providerName+"'");
-//        return null;
-        throw new IllegalArgumentException("Missing provider for modeling steps '"+providerName+"'");
-      }
-      ModelingSteps steps = provider.newInstance(this);
-      _availableStepsByProviderName.put(providerName, steps);
-    }
-    return _availableStepsByProviderName.get(providerName);
-  }
-  
-  public void registerKeySource(Key key, ModelingStep step) {
-    if (key != null && !_keySources.containsKey(key)) _keySources.put(key, new String[]{step.getProvider(), step.getId()});
-  }
-  
-  public void addResumableKey(Key key) {
-    _resumableKeys.add(key);
-  }
-  
-  public Key[] getResumableKeys(String providerName, String id) {
-    ModelingStep step = getModelingStep(providerName, id);
-    if (step == null) return new Key[0];
-    return _resumableKeys.stream()
-            .filter(k -> step.equals(getModelingStep(k)))
-            .toArray(Key[]::new);
-  }
-
 
   //*****************  Data Preparation Section  *****************//
 
@@ -662,24 +621,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
     }
-    _actualModelingSteps = _modelingStepsRegistry.createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
+    _actualModelingSteps = session().getModelingStepsRegistry().createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
   }
 
 
-  private int nextModelCounter(String algoName, String type) {
-    String key = algoName+"_"+type;
-    if (!_modelCounters.containsKey(key)) {
-      synchronized (_modelCounters) {
-        if (!_modelCounters.containsKey(key))
-          _modelCounters.put(key, new AtomicInteger(0));
-      }
-    }
-    return _modelCounters.get(key).incrementAndGet();
-  }
-
   public Key makeKey(String algoName, String type, boolean with_counter) {
-    String counterStr = with_counter ? "_" + nextModelCounter(algoName, type) : "";
+    String counterStr = with_counter ? "_" + session().nextModelCounter(algoName, type) : "";
     String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
     return Key.make(prefix+counterStr+"_"+ _runId);
   }
@@ -732,6 +680,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
+    if (session() != null) session().remove(fs, cascade);
     if (cascade && _preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) {
         preprocessingStep.remove();

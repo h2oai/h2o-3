@@ -178,13 +178,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         Job job = startJob();
         if (job != null && job._result != null) {
             register(job._result);
-            if (isResumable()) aml().addResumableKey(job._result);
+            if (isResumable()) aml().session().addResumableKey(job._result);
         }
         return job;
     }
     
     public void register(Key key) {
-        aml().registerKeySource(key, this);
+        aml().session().registerKeySource(key, this);
     }
 
     public boolean canRun() {

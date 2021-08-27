@@ -122,7 +122,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        boolean started = executor.submit(aml.getModelingStep(NAME, "job_no_work"), parentJob);
+        boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_no_work"), parentJob);
         assertFalse(started);
         executor.stop();
     }
@@ -141,7 +141,7 @@ public class ModelingStepsExecutorTest {
                 tryComplete();
             }
         }, 100);
-        boolean started = executor.submit(aml.getModelingStep(NAME, "no_job_work"), parentJob);
+        boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_work"), parentJob);
         executor.stop();
         assertFalse(started);
         assertEquals(0.42, parentJob.progress(), 1e-6);
@@ -166,7 +166,7 @@ public class ModelingStepsExecutorTest {
             }
         }, 100);
 
-        boolean started = executor.submit(aml.getModelingStep(NAME, "job_work"), parentJob);
+        boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_work"), parentJob);
         executor.stop();
         assertTrue(started);
         assertEquals(1, parentJob.progress(), 1e-6); // parent job should be auto-filled with remaining work

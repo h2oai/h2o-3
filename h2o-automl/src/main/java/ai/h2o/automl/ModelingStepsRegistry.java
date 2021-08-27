@@ -51,7 +51,7 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
         List<ModelingStep> orderedSteps = new ArrayList<>();
         aml.setModelingPlan(modelingPlan);
         for (StepDefinition def : modelingPlan) {
-            ModelingSteps steps = aml.getModelingSteps(def._name);
+            ModelingSteps steps = aml.session().getModelingSteps(def._name);
             if (steps == null) continue;
 
             ModelingStep[] toAdd;

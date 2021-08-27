@@ -59,7 +59,7 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
             @Override
             @SuppressWarnings("unchecked")
             protected Job<Grid> startJob() {
-                Key<Grid>[] resumedGrid = aml().getResumableKeys(_step.getProvider(), _step.getId());
+                Key<Grid>[] resumedGrid = aml().session().getResumableKeys(_step.getProvider(), _step.getId());
                 if (resumedGrid.length == 0) return null;
                 return hyperparameterSearch(resumedGrid[0], prepareModelParameters(), prepareSearchParameters());
             }
@@ -80,7 +80,7 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
                 double[] metrics = aml().leaderboard().getSortMetricValues();
                 if (metrics == null) return Collections.emptyList();
                 for (int i = 0; i < models.length; i++) {
-                    ModelingStep source = aml().getModelingStep(models[i]._key);
+                    ModelingStep source = aml().session().getModelingStep(models[i]._key);
                     if (!scoresBySource.containsKey(source)) {
                         scoresBySource.put(source, new ArrayList<>());
                     }

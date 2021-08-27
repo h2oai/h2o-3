@@ -109,7 +109,7 @@ public class StackedEnsembleStepsProvider
             }
 
             protected boolean isStackedEnsemble(Key<Model> key) {
-                return aml().getModelingStep(key).getAlgo() == Algo.StackedEnsemble;
+                return aml().session().getModelingStep(key).getAlgo() == Algo.StackedEnsemble;
 //                return key.toString().startsWith(_algo.name());
             }
 
