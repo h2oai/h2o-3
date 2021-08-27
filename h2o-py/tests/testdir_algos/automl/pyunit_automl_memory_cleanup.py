@@ -132,7 +132,6 @@ def test_suite_clean_cv_predictions():
         for m in se:
             assert not h2o.get_model(h2o.get_model(m).metalearner()['name']).cross_validation_predictions()
 
-
     def test_param_enabled():
         print("\n=== enabling "+kcvp+" ===")
         aml = setup_and_train(True)
@@ -186,7 +185,6 @@ def test_suite_clean_cv_predictions():
             assert len(se_best_of_family) == 1, "expecting only the first StackedEnsemble_BestOfFamily, but got {}".format(len(se_best_of_family))
             assert se_best_of_family[0] == first_bof, "first StackedEnsemble_Best_of_Family got replaced by new one"
 
-
     def test_SE_retraining_works_when_param_enabled():
         print("\n=== enabling "+kcvp+" and retraining ===")
         total_runs = 4
@@ -200,7 +198,6 @@ def test_suite_clean_cv_predictions():
         se_best_of_family = [m for m in se if re.search(r'_BestOfFamily_', m)]
         assert len(se) == len(se_all_models) + len(se_best_of_family)
         assert len(se_best_of_family) + len(se_all_models) >= total_runs, "some StackedEnsembles are missing"
-
 
     return [
         test_default_behaviour,
@@ -230,7 +227,6 @@ def test_suite_clean_cv_models():
         aml.train(y=target, training_frame=train)
         # print(aml.leaderboard)
         return aml
-
 
     def test_default_behaviour():
         print("\n=== "+kcvm+" default behaviour ===")
@@ -303,7 +299,6 @@ def test_suite_remove_automl():
         # reload the first row of the frame to verify that no vec has been removed
         return frame.key is not None and H2OFrame.get_frame(frame.key, rows=1) is not None
 
-
     def test_remove_automl_with_xval():
         target, train, valid, test = prepare_data()
         project_name = 'aml_with_xval_remove_test'
@@ -345,7 +340,6 @@ def test_suite_remove_automl():
         assert len(clean['automl']) == 0
         for frame in [train, valid, test]:
             assert frame_in_cluster(frame), "frame {} has been removed from cluster".format(frame.frame_id)
-
 
     def test_remove_automl_with_xval_when_keeping_all_cv_details():
         target, train, valid, test = prepare_data()
@@ -395,7 +389,6 @@ def test_suite_remove_automl():
         for frame in [train, valid, test]:
             assert frame_in_cluster(frame), "frame {} has been removed from cluster".format(frame.frame_id)
 
-
     def test_remove_automl_no_xval():
         target, train, blend, test = prepare_data()
         project_name = 'aml_no_xval_remove_test'
@@ -437,7 +430,6 @@ def test_suite_remove_automl():
         for frame in [train, blend, test]:
             assert frame_in_cluster(frame), "frame {} has been removed from cluster".format(frame.frame_id)
 
-
     def test_remove_automl_after_individual_manual_deletions():
         target, train, blend, test = prepare_data()
         project_name='aml_no_xval_remove_test'
@@ -471,7 +463,6 @@ def test_suite_remove_automl():
         for frame in [train, blend, test]:
             assert frame_in_cluster(frame), "frame {} has been removed from cluster".format(frame.frame_id)
 
-
     return [
         test_remove_automl_with_xval,
         test_remove_automl_with_xval_when_keeping_all_cv_details,
@@ -480,9 +471,8 @@ def test_suite_remove_automl():
     ]
 
 
-
-pyunit_utils.run_tests(list(iter.chain.from_iterable([
+pyunit_utils.run_tests([
     test_suite_clean_cv_predictions(),
     test_suite_clean_cv_models(),
     test_suite_remove_automl()
-])))
+])

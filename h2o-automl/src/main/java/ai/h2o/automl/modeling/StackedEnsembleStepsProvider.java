@@ -69,7 +69,7 @@ public class StackedEnsembleStepsProvider
                 Work seWork = getAllocatedWork();
                 if (!super.canRun()) {
                     aml().job().update(0, "Skipping this StackedEnsemble");
-                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Skipping StackedEnsemble '%s' due to the exclude_algos option.", _id));
+                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Skipping StackedEnsemble '%s' due to the exclude_algos option or it is already trained.", _id));
                     return false;
                 } else if (keys.length == 0) {
                     aml().job().update(seWork.consume(), "No base models; skipping this StackedEnsemble");

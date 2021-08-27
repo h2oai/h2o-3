@@ -1,16 +1,13 @@
 package ai.h2o.automl;
 
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.Keyed;
+import water.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.IcedHashMap;
 import water.util.IcedHashSet;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AutoMLSession extends Keyed<AutoMLSession> {
+public class AutoMLSession extends Lockable<AutoMLSession> {
 
     private static Key<AutoMLSession> makeKey(String projectName) {
         return Key.make("AutoMLSession_"+projectName);
@@ -44,9 +41,17 @@ public class AutoMLSession extends Keyed<AutoMLSession> {
         return _modelingStepsRegistry;
     }
     
-    void attach(AutoML aml) {
+    void attach(AutoML aml, boolean resume) {
         assert _projectName.equals(aml._key.toString()): "AutoMLSession can only be attached to an AutoML instance from project '"+_projectName+"', but got: "+aml._key;
-        if (_aml == null) _aml = aml;
+        if (_aml == null) {
+            _aml = aml;
+            if (!resume) _availableStepsByProviderName.clear();
+        }
+    }
+    
+    void detach() {
+        _aml = null;
+        DKV.put(this);
     }
     
     public ModelingStep getModelingStep(Key key) {
@@ -76,11 +81,12 @@ public class AutoMLSession extends Keyed<AutoMLSession> {
     }
 
     public void registerKeySource(Key key, ModelingStep step) {
-        if (key != null && !_keySources.containsKey(key)) _keySources.put(key, new String[]{step.getProvider(), step.getId()});
+        if (key != null && !_keySources.containsKey(key)) 
+            atomicUpdate(() -> _keySources.put(key, new String[]{step.getProvider(), step.getId()}));
     }
 
     public void addResumableKey(Key key) {
-        _resumableKeys.add(key);
+        atomicUpdate(() -> _resumableKeys.add(key));
     }
 
     public Key[] getResumableKeys(String providerName, String id) {
@@ -96,10 +102,12 @@ public class AutoMLSession extends Keyed<AutoMLSession> {
         if (!_modelCounters.containsKey(key)) {
             synchronized (_modelCounters) {
                 if (!_modelCounters.containsKey(key))
-                    _modelCounters.put(key, new AtomicInteger(0));
+                    atomicUpdate(() -> _modelCounters.put(key, new AtomicInteger(0)));
             }
         }
-        return _modelCounters.get(key).incrementAndGet();
+        AtomicInteger c = new AtomicInteger();
+        atomicUpdate(() -> c.set(_modelCounters.get(key).incrementAndGet()));
+        return c.get();
     }
 
     @Override
@@ -109,4 +117,13 @@ public class AutoMLSession extends Keyed<AutoMLSession> {
         _availableStepsByProviderName.clear();
         return super.remove_impl(fs, cascade);
     }
+    
+    private void atomicUpdate(Runnable update) {
+        // atomic updates are unnecessary for now: 
+        // if the session can be shared by multiple AutoML instances when there are reruns of the same project,
+        // only one instance at a time is using the session, so we don't need to update the DKV on each modification.
+//        AutoMLUtils.atomicUpdate(this, update, null); 
+        update.run();
+    }
+        
 }

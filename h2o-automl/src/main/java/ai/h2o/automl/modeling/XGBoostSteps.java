@@ -91,8 +91,9 @@ public class XGBoostSteps extends ModelingSteps {
         }
         public XGBoostExploitationStep(String id, AutoML autoML, boolean emulateLightGBM) {
             super(NAME, Algo.XGBoost, id, autoML);
-//            _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
             _emulateLightGBM = emulateLightGBM;
+            if (autoML.getBuildSpec().build_models.exploitation_ratio > 0)
+                _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
         }
     }
 

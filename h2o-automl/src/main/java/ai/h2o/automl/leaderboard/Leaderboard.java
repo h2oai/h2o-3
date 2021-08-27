@@ -2,6 +2,7 @@ package ai.h2o.automl.leaderboard;
 
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
+import ai.h2o.automl.utils.DKVUtils;
 import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -425,28 +426,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   }
 
   private void atomicUpdate(Runnable update, Key<Job> jobKey) {
-    final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
-    if (writeLock.isHeldByCurrentThread()) {
-      writeLock.lock();
-      try {
-        update.run();
-      } finally {
-        writeLock.unlock();
-      }
-    } else {
-      writeLock.lock();
-      try {
-        write_lock(jobKey);
-        try {
-          update.run();
-          update(jobKey);
-        } finally {
-          unlock(jobKey);
-        }
-      } finally {
-        writeLock.unlock();
-      }
-    }
+    DKVUtils.atomicUpdate(this, update, jobKey, lock);
   }
 
   /**

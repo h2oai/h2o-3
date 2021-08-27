@@ -434,6 +434,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               +"you may want to increase this value before retrying.");
     }
 
+    session().detach();
     possiblyVerifyImmutability();
     if (!_buildSpec.build_control.keep_cross_validation_predictions) {
       cleanUpModelsCVPreds();
@@ -458,7 +459,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   
   public AutoMLSession session() {
     _session = _session == null ? null : _session._key.get();
-    _session.attach(this);
+    if (_session != null) _session.attach(this, false);
     return _session;
   }
 

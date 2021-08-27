@@ -71,7 +71,8 @@ public class GBMStepsProvider
             }
             public GBMExploitationStep(String id, AutoML autoML) {
                 super(NAME, Algo.GBM, id, autoML);
-//                _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
+                if (autoML.getBuildSpec().build_models.exploitation_ratio > 0)
+                    _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
             }
         }
 
