@@ -9,18 +9,23 @@ import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
-import org.apache.commons.lang.ArrayUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 public class TreeHandlerTest extends TestUtil {
 
@@ -58,7 +63,7 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._descriptions.length);
             assertEquals(sharedTreeSubgraph.nodesArray.size(), treeProperties._thresholds.length);
@@ -132,7 +137,7 @@ public class TreeHandlerTest extends TestUtil {
 
             assertNotNull(sharedTreeSubgraph);
 
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
 
             final String[] nodeDescriptions = treeProperties._descriptions;
@@ -304,6 +309,7 @@ public class TreeHandlerTest extends TestUtil {
             model = new GBM(parms).trainModel().get();
             args.model = new KeyV3.ModelKeyV3(model._key);
             args.tree_class = "YES";
+            args.plain_language_rules = TreeHandler.PlainLanguageRules.FALSE;
 
             // If the tree class name is specified, it must be the tree class built exactly
             final TreeHandler treeHandler = new TreeHandler();
@@ -351,7 +357,7 @@ public class TreeHandlerTest extends TestUtil {
             // Test incorrect tree request
             model = new GBM(parms).trainModel().get();
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
@@ -402,7 +408,7 @@ public class TreeHandlerTest extends TestUtil {
 
             final SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(0, 0);
             assertNotNull(sharedTreeSubgraph);
-            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph);
+            final TreeHandler.TreeProperties treeProperties = TreeHandler.convertSharedTreeSubgraph(sharedTreeSubgraph, TreeHandler.PlainLanguageRules.FALSE);
             assertNotNull(treeProperties);
 
             final SharedTreeNode rootNode = sharedTreeSubgraph.rootNode;
@@ -450,8 +456,8 @@ public class TreeHandlerTest extends TestUtil {
         }
 
 
-        final String[] leftPreviousSplits = isRightInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
-        final String[] rightPreviousSplits = isLeftInclusive ? (String[]) ArrayUtils.add(previousNaSplits, parentNode.getColName()) : previousNaSplits;
+        final String[] leftPreviousSplits = isRightInclusive ? ArrayUtils.append(previousNaSplits, parentNode.getColName()) : previousNaSplits;
+        final String[] rightPreviousSplits = isLeftInclusive ? ArrayUtils.append(previousNaSplits, parentNode.getColName()) : previousNaSplits;
 
         int naSplits = 0;
         if (isRightInclusive ^ isLeftInclusive) {
@@ -487,6 +493,7 @@ public class TreeHandlerTest extends TestUtil {
             arguments.model = new KeyV3.ModelKeyV3(model._key);
             for (int i = 0; i < parms._ntrees; i++) {
                 arguments.tree_number = i;
+                arguments.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
                 final TreeV3 tree = treeHandler.getTree(3, arguments);
                 assertNotNull(tree);
             }
@@ -495,4 +502,79 @@ public class TreeHandlerTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testSlowTree() {
+        try {
+            Scope.enter();
+            int[] responseData = ArrayUtils.seq(0, 2000);
+            ArrayUtils.shuffleArray(responseData, new Random(42));
+            String[] featureData = new String[responseData.length];
+            for (int i = 0; i < featureData.length; i++) {
+                featureData[i] = "A" + i;
+            }
+
+            Frame train = new TestFrameBuilder()
+                    .withColNames("Feature", "Response")
+                    .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+                    .withDataForCol(0, featureData)
+                    .withDataForCol(1, responseData)
+                    .build();
+
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = train._key;
+            parms._distribution = AUTO;
+            parms._response_column = "Response";
+            parms._ntrees = 1;
+            parms._max_depth = 30;
+            parms._seed = 0XFEED;
+            parms._min_split_improvement = 1e-6;
+            parms._min_rows = 1;
+
+            GBM job = new GBM(parms);
+            GBMModel model = job.trainModel().get();
+            Scope.track_generic(model);
+
+            final TreeHandler treeHandler = new TreeHandler();
+
+            // First try the default (tree is big - it should disable the rules)
+            final TreeV3 arguments = new TreeV3();
+            arguments.model = new KeyV3.ModelKeyV3(model._key);
+            arguments.tree_number = 0;
+            arguments.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
+
+            long startTimeAuto = System.currentTimeMillis();
+            final TreeV3 treeAuto = treeHandler.getTree(3, arguments);
+            assertNotNull(treeAuto);
+            long durationAuto = System.currentTimeMillis() - startTimeAuto;
+
+            Log.info("Tree rendering AUTO rules took " + durationAuto + "ms.");
+
+            // Now try with rules explicitly disabled
+            long startTimeDisabled = System.currentTimeMillis();
+            final TreeV3 treeDisabled = treeHandler.getTree(3, arguments);
+            assertNotNull(treeDisabled);
+            long durationDisabled = System.currentTimeMillis() - startTimeDisabled;
+
+            Log.info("Tree rendering WITHOUT rules took " + durationDisabled + "ms.");
+            
+            // Now try with language rules enabled
+            arguments.plain_language_rules = TreeHandler.PlainLanguageRules.TRUE;
+            long startTimeEnabled = System.currentTimeMillis();
+            final TreeV3 treeEnabled = treeHandler.getTree(3, arguments);
+            assertNotNull(treeEnabled);
+            long durationEnabled = System.currentTimeMillis() - startTimeEnabled;
+
+            Log.info("Tree rendering WITH rules took " + durationEnabled + "ms.");
+
+            // If this assertion fails - we likely made it faster - that is great! but please do check
+            int slowdownFactor = 10; // this is very conservative lower bound, actual measured slowdown is about 100x!!!
+            assertThat("Wow, did we optimize tree rendering with language rules? It is now closer to rendering without rules!",
+                    durationEnabled, greaterThan(durationDisabled * slowdownFactor));
+
+            // duration disabled and "auto" should be similar in this case, 3x factor of tolerance because we are measuring in ms
+            assertEquals(durationDisabled, durationAuto, (double) 3 * durationDisabled);
+        } finally {
+            Scope.exit();
+        }
+    }
 }

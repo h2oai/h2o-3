@@ -20,6 +20,8 @@ import static hex.tree.TreeUtils.getResponseLevelIndex;
 public class TreeHandler extends Handler {
     private static final int NO_CHILD = -1;
 
+    public enum PlainLanguageRules {AUTO, TRUE, FALSE}
+
     public TreeV3 getTree(final int version, final TreeV3 args) {
 
         if (args.tree_number < 0) {
@@ -53,7 +55,7 @@ public class TreeHandler extends Handler {
         }
 
 
-        final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph);
+        final TreeProperties treeProperties = convertSharedTreeSubgraph(sharedTreeSubgraph, args.plain_language_rules);
 
         args.left_children = treeProperties._leftChildren;
         args.right_children = treeProperties._rightChildren;
@@ -177,7 +179,7 @@ public class TreeHandler extends Handler {
      * @param sharedTreeSubgraph An instance of {@link SharedTreeSubgraph} to convert
      * @return An instance of {@link TreeProperties} with some attributes possibly empty if suitable. Never null.
      */
-    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph) {
+    static TreeProperties convertSharedTreeSubgraph(final SharedTreeSubgraph sharedTreeSubgraph, PlainLanguageRules plainLanguageRules) {
         Objects.requireNonNull(sharedTreeSubgraph);
 
         final TreeProperties treeprops = new TreeProperties();
@@ -201,10 +203,16 @@ public class TreeHandler extends Handler {
         treeprops._features[0] = sharedTreeSubgraph.rootNode.getColName();
         treeprops._nas[0] = getNaDirection(sharedTreeSubgraph.rootNode);
         treeprops.levels = new int[sharedTreeSubgraph.nodesArray.size()][];
-        treeprops._treeDecisionPath = getLanguageRepresentation(sharedTreeSubgraph);
-        treeprops._decisionPaths[0] = "Predicted value: " + sharedTreeSubgraph.rootNode.getPredValue();
-        treeprops._leftChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
-        treeprops._rightChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
+        if (plainLanguageRules.equals(PlainLanguageRules.AUTO)) {
+            /* 255 = number of nodes for complete binary tree of depth 7 (2^(k+1)−1) */
+            plainLanguageRules = sharedTreeSubgraph.nodesArray.size() < 256 ? PlainLanguageRules.TRUE : PlainLanguageRules.FALSE;
+        }
+        if (plainLanguageRules.equals(PlainLanguageRules.TRUE)) { 
+            treeprops._treeDecisionPath = getLanguageRepresentation(sharedTreeSubgraph);
+            treeprops._decisionPaths[0] = "Predicted value: " + sharedTreeSubgraph.rootNode.getPredValue();
+            treeprops._leftChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getLeftChild() != null ? sharedTreeSubgraph.rootNode.getLeftChild().getNodeNumber() : -1;
+            treeprops._rightChildrenNormalized[0] = sharedTreeSubgraph.rootNode.getRightChild() != null ? sharedTreeSubgraph.rootNode.getRightChild().getNodeNumber() : -1;
+        }
         treeprops._domainValues = new String[sharedTreeSubgraph.nodesArray.size()][];
         treeprops._domainValues[0] = sharedTreeSubgraph.rootNode.getDomainValues();
 
@@ -213,7 +221,7 @@ public class TreeHandler extends Handler {
         append(treeprops._rightChildren, treeprops._leftChildren,
                 treeprops._descriptions, treeprops._thresholds, treeprops._features, treeprops._nas,
                 treeprops.levels, treeprops._predictions, nodesToTraverse, -1, false, treeprops._domainValues);
-        fillLanguagePathRepresentation(treeprops);
+        if (plainLanguageRules.equals(PlainLanguageRules.TRUE)) fillLanguagePathRepresentation(treeprops, sharedTreeSubgraph.rootNode);
 
         return treeprops;
     }
@@ -289,104 +297,105 @@ public class TreeHandler extends Handler {
         }
         return nodeIds;
     }
-
-    private static void fillLanguagePathRepresentation(TreeProperties properties) {
-        List<Integer> nodeIds = extractInternalIds(properties);
-        nodeIds.forEach((listPathId) -> {
-                    int index = nodeIds.indexOf(listPathId);
-                    properties._decisionPaths[index] = fillNodePath(listPathId, nodeIds, false, properties);
-                });
-    }
-
-    private static String fillNodePath(int nodeId, List<Integer> nodeIds, boolean valuePrinted, TreeProperties properties) {
-        int parentIndex = -1;
-        int parentId = -1;
-        String condition = "";
-        String nodePathr = "";
-        int currentNodeIndex = nodeIds.indexOf(nodeId);
-        if (!valuePrinted) {
-            // print prediction value
-            nodePathr += "Predicted value: " + properties._predictions[currentNodeIndex] + "\n";
-            valuePrinted = true;
-            nodePathr += fillNodePath(nodeId, nodeIds, valuePrinted, properties);
-        } else {
-            // print conditions leading to prediction value
-            int[] leftChildren = properties._leftChildrenNormalized;
-            int[] rightChildren = properties._rightChildrenNormalized;
-            
-            if (IntStream.of(leftChildren).anyMatch(i -> i == currentNodeIndex)) {
-                // parent from right
-                parentIndex = IntStream.range(0, leftChildren.length).filter(i -> leftChildren[i] == currentNodeIndex).findAny().getAsInt();
-                parentId = nodeIds.get(parentIndex);
-                condition = getConditionByIndex(parentIndex, "R", properties);
+    
+    static String getCondition(SharedTreeNode node, String from) {
+        StringBuilder sb = new StringBuilder();
+        if (node.getDomainValues() != null) {
+            sb.append("If (");
+            sb.append(node.getColName());
+            sb.append(" is in [");
+            BitSet inclusiveLevels;
+            if (from.equals("R")) {
+                inclusiveLevels = node.getLeftChild().getInclusiveLevels();
+            } else {
+                inclusiveLevels = node.getRightChild().getInclusiveLevels();
             }
-
-            if (IntStream.of(rightChildren).anyMatch(i -> i == currentNodeIndex)) {
-                parentIndex = IntStream.range(0, rightChildren.length).filter(i -> rightChildren[i] == currentNodeIndex).findAny().getAsInt();
-                parentId = nodeIds.get(parentIndex);
-                condition = getConditionByIndex(parentIndex, "L", properties);
-            }
-            
-            if (parentIndex != -1) {
-                nodePathr += "^\n";
-                nodePathr += "|\n";
-                nodePathr += "|\n";
-                nodePathr += "|\n";
-                nodePathr += condition;
-                nodePathr += fillNodePath(parentId, nodeIds, valuePrinted, properties);
-            }
-        }
-        return nodePathr;
-    }
-
-    private static String getConditionByIndex(int index, String parentOrigin, TreeProperties properties) {
-        String conditionLine;
-        String nanString = " or " + properties._features[index] + " is NaN";
-        boolean useNan = false;
-        int targetNodeId = -1;
-        if (properties._domainValues[index] != null) {
-            conditionLine = "If ( " + properties._features[index] + " is in [";
-            targetNodeId = "R".equals(parentOrigin) ? properties._leftChildrenNormalized[index] : properties._rightChildrenNormalized[index];
-            int[] inclusiveLevels = properties.levels[targetNodeId];
             if (inclusiveLevels != null) {
-                for (int level : inclusiveLevels) {
-                    conditionLine += properties._domainValues[index][level] + " ";
-                }
-            } else { 
-                // can be 0 levels (TreeHandlerTest.testEmptyInheritedCategoricalLevels() case Tree1)
-                conditionLine += " ";
+                String stringToParseInclusiveLevelsFrom = inclusiveLevels.toString();
+                int inclusiveLevelsLength = stringToParseInclusiveLevelsFrom.length();
+                if (inclusiveLevelsLength > 2) {
+                    stringToParseInclusiveLevelsFrom = stringToParseInclusiveLevelsFrom.substring(1, inclusiveLevelsLength - 1);
+                    String[] inclusiveLevelsStr = stringToParseInclusiveLevelsFrom.split(",");
+                    for (String level : inclusiveLevelsStr) {
+                        sb.append(node.getDomainValues()[Integer.parseInt(level.replaceAll("\\s", ""))]).append(" ");
+                    }
             }
-            conditionLine += " ])\n";
+            } else {
+                sb.append(" ");
+            }
+            sb.append("]) -> ");
         } else {
-            if (Float.compare(properties._thresholds[index],Float.NaN) == 0) {
+            if (Float.compare(node.getSplitValue(), Float.NaN) == 0) {
                 String sign;
-                if ("R".equals(parentOrigin)) {
+                if ("R".equals(from)) {
                     sign = " is not ";
                 } else {
                     sign = " is ";
                 }
-                conditionLine = "If ( " + properties._features[index] + sign + "NaN )\n";
+                sb.append("If ( ").append(node.getColName()).append(sign).append("NaN )");
             } else {
                 String sign;
-                if ("R".equals(parentOrigin)) {
+                boolean useNan = false;
+                String nanString = " or " + node.getColName() + " is NaN";
+                if ("R".equals(from)) {
                     sign = " < ";
-                    if ("LEFT".equals(properties._nas[index])) {
+                    if (node.getLeftChild().isInclusiveNa()) {
                         useNan = true;
                     }
                 } else {
                     sign = " >= ";
-                    if ("RIGHT".equals(properties._nas[index])) {
+                    if (node.getRightChild().isInclusiveNa()) {
                         useNan = true;
                     }
                 }
-                conditionLine = "If ( " + properties._features[index] + sign + properties._thresholds[index];
+                sb.append("If ( " ).append(node.getColName()).append(sign).append(node.getSplitValue());
                 if (useNan) {
-                    conditionLine += nanString;
+                    sb.append(nanString);
+                  
                 }
-                conditionLine += " )\n";
+                sb.append(" ) -> ");
             }
         }
-        return conditionLine;
+        return sb.toString();
+    }
+
+    private static List<PathResult> findPaths(SharedTreeNode node) {
+        if (node == null)
+            return new ArrayList<>();
+        
+        List<PathResult> result = new ArrayList<>();
+
+        List<PathResult> leftSubtree = findPaths(node.getLeftChild());
+        List<PathResult> rightSubtree = findPaths(node.getRightChild());
+
+        for (int i = 0; i < leftSubtree.size(); i++){
+            PathResult leftResult = leftSubtree.get(i);
+            PathResult newResult = leftResult;
+            newResult.path.insert(0, getCondition(node, "R"));
+            result.add(newResult);
+        }
+
+        for (int i = 0; i < rightSubtree.size(); i++){
+            PathResult rightResult = rightSubtree.get(i);
+            PathResult newResult = rightResult;
+            newResult.path.insert(0, getCondition(node, "L"));
+            result.add(newResult);
+        }
+
+        if (result.size() == 0) {
+            result.add(new PathResult(node.getNodeNumber()));
+            result.get(0).path.append("Prediction: ").append(node.getPredValue());
+        }
+
+        return result;
+    }
+
+    private static void fillLanguagePathRepresentation(TreeProperties properties, SharedTreeNode root) {
+        List<Integer> nodeIds = extractInternalIds(properties);
+        List<PathResult> paths = findPaths(root);
+        for (PathResult path : paths) {
+            properties._decisionPaths[nodeIds.indexOf(path.nodeId)] = path.path.toString();
+        }
     }
     
     private static void fillnodeDescriptions(final SharedTreeNode node, final String[] nodeDescriptions,

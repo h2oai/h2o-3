@@ -7,6 +7,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import timeit
 
 
 def decision_tree_language_rules_printing():
@@ -71,7 +72,7 @@ def decision_tree_language_rules_printing():
     airlines_data = h2o.import_file(path=pyunit_utils.locate("./smalldata/testng/airlines_train.csv"))
     model = H2OGradientBoostingEstimator(ntrees=10, seed = 65261, max_depth = 10)
     model.train(y = "IsDepDelayed", training_frame=airlines_data)
-    tree = H2OTree(model = model, tree_number = 1)
+    tree = H2OTree(model = model, tree_number = 1, plain_language_rules = True)
 
     print(" -- Tree predictions: -- ")
     print(tree.predictions)
@@ -81,12 +82,13 @@ def decision_tree_language_rules_printing():
     print(tree.tree_decision_path)
     
     assert read_fixture("pyunit_4007_language_tree_representation_numerical_categorical_case.txt") == tree.tree_decision_path
-
-    print(" -- Language path representation - node ", tree.predictions.index(tree.predictions[393]), " (with pv = ", tree.predictions[393], "): -- ")
-    assert tree.decision_paths[tree.predictions.index(tree.predictions[393])] is not None
-    print(tree.decision_paths[tree.predictions.index(tree.predictions[393])])
     
-    assert read_fixture("pyunit_4007_language_path_representation_numerical_categorical_case.txt") == tree.decision_paths[tree.predictions.index(tree.predictions[393])]
+    # calculating only paths from root to leaf (not from root to 'not leaf')
+    print(" -- Language path representation - node ", tree.predictions.index(tree.predictions[207]), " (with pv = ", tree.predictions[207], "): -- ")
+    assert tree.decision_paths[tree.predictions.index(tree.predictions[207])] is not None
+    print(tree.decision_paths[tree.predictions.index(tree.predictions[207])])
+    
+    assert read_fixture("pyunit_4007_language_path_representation_numerical_categorical_case.txt") == tree.decision_paths[tree.predictions.index(tree.predictions[207])]
 
 
 def read_fixture(path):
