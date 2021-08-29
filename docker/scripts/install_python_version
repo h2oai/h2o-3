@@ -45,9 +45,11 @@ for python_version in "${array[@]}"; do
   echo "###### Installing pip for Python ${python_version} ######"
   if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]]
   then
-    python${python_version} -m easy_install 'pip<21'
-  else 
-    python${python_version} -m easy_install pip
+    curl https://bootstrap.pypa.io/pip/${python_version}/get-pip.py --output get-pip.py
+    python${python_version} get-pip.py
+  else
+    curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+    python${python_version} get-pip.py
   fi
 
   echo "###### Creating Virtualenv for Python ${python_version} ######"
