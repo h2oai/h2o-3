@@ -96,8 +96,8 @@ Where:
 +-------------------+-------------------------------------------------------------------------------------------+
 | Quasibinomial     | :math:`f= \begin{cases} -2\times w\times y\times\log(f) & \text{for } f>1 \\              |
 |                   | -2\times w\times(1-y)\times\log(1-f) & \text{for } f<0 \\                                 |
-|                   | -2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) & \text{for } 0<f<1 \\\end{cases} |
-|                   | \text{with } y==f:0`                                                                      |
+|                   | -2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) & \text{otherwise}                |
+|                   | \\\end{cases} \text{with } y==f:0`                                                        |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Gaussian          | - Equivalent to wMSE (weighted mean squared error):                                       |
 |                   | - :math:`w \times(y-f)^2`                                                                 |
@@ -118,9 +118,9 @@ Where:
 |                   | 2\times w\times(\mid{y-f}\mid -HuberDelta)\times HuberDelta & \text{for } y \leq f &      |
 |                   | \text{(Equivalent to wMAE)} \\\end{cases}`                                                |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Modified_Huber    | :math:`f= \begin{cases}-4\times w\times z & \text{for } z< -1 \\                          |
+| Modified_Huber    | :math:`f= \begin{cases}-4\times w\times z & \text{for } z\leq 1 \\                        |
 |                   | 0 & \text{for } z>1 \\                                                                    |
-|                   | w\times z^2 & \text{for } -1<z<1 \\\end{cases}                                            |
+|                   | w\times z^2 & \text{otherwise} \\\end{cases}                                              |
 |                   | \text{where } z=(2\times y-1)\times f`                                                    |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
