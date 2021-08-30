@@ -3,6 +3,7 @@ import sys
 sys.path.insert(1,"../../../")
 from tests import pyunit_utils
 from h2o.estimators.xgboost import *
+from h2o.exceptions import H2OResponseError
 
 
 def xgboost_synonym_params():
@@ -24,23 +25,27 @@ def xgboost_synonym_params():
         vals = a[2] 
         print("check parity of %s and %s via %s" % (p1, p2, vals))
         # check default values end up to same value
-        model.train(x=x, y=y, training_frame=df )
+        model.train(x=x, y=y, training_frame=df)
         assert model.parms[p1]['actual_value'] == model.parms[p2]['actual_value']
-        # changing p2 modifies both
+        # changing p2 and p1 is default - should not fail
         setattr(model, p2, vals[0])
-        model.train(x=x, y=y, training_frame=df )
+        model.train(x=x, y=y, training_frame=df)
         assert model.parms[p1]['actual_value'] == vals[0]
         assert model.parms[p1]['actual_value'],  model.parms[p2]['actual_value']
-        # changing p1 modifies both
+        # changing p1 and p2 is not default - should fail
         setattr(model, p1, vals[1])
-        model.train(x=x, y=y, training_frame=df )
-        assert model.parms[p1]['actual_value'] == vals[1]
-        assert model.parms[p1]['actual_value'], model.parms[p2]['actual_value']
-        # changing p2 has no effect since p1 has precedence
+        try:
+            model.train(x=x, y=y, training_frame=df)
+        except H2OResponseError as e:
+            assert "ERRR on field: _"+p2 in str(e), p2+" and its alias "+p1+" are both set"
+            setattr(model, p2, vals[1])
+        # changing p2 since p1 has precedence and is not default - should fail
         setattr(model, p2, vals[2])
-        model.train(x=x, y=y, training_frame=df)
-        assert model.parms[p1]['actual_value'] == vals[1]
-        assert model.parms[p1]['actual_value'], model.parms[p2]['actual_value']
+        try:
+            model.train(x=x, y=y, training_frame=df)
+        except H2OResponseError as e:
+            assert "ERRR on field: _"+p2 in str(e), p2+" and its alias "+p1+" are both set"
+            setattr(model, p2, vals[1])
 
 
 if __name__ == "__main__":
