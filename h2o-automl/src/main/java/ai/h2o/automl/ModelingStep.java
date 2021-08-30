@@ -141,7 +141,74 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return false;
     }
 
+    /**
+     * @return true iff we can call {@link #run()} on this modeling step to start a new job.
+     */
+    public boolean canRun() {
+        Work work = getAllocatedWork();
+        return work != null && work._weight > 0;
+    }
+
+    /**
+     * Execute this modeling step, returning the job associated to it if any.
+     * @return
+     */
+    public Job run() {
+        Job job = startJob();
+        if (job != null && job._result != null) {
+            register(job._result);
+            if (isResumable()) aml().session().addResumableKey(job._result);
+        }
+        return job;
+    }
+
     protected abstract JobType getJobType();
+    
+    /**
+     * Starts a new {@link Job} as part of this step.
+     * @return the newly started job.
+     */
+    protected abstract Job startJob();
+
+    protected void onDone(Job job) {
+        for (Consumer<Job> exec : _onDone) {
+            exec.accept(job);
+        }
+        _onDone.clear();
+    };
+
+    /**
+     * @return true if {@link #nextSubStep} can be called without raising an exception.
+     */
+    protected boolean hasSubStep() {
+        return false;
+    }
+
+    /**
+     * It is recommended to call {@link #hasSubStep()} before calling this method
+     * to avoid raising an exception when the sub-steps are exhausted.
+     * @return the next sub-step provided by this modeling step, if any.
+     */
+    protected ModelingStep nextSubStep() {
+        throw new NoSuchElementException("no sub-step available for step "+_id);
+    }
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    protected ModelingStep getSubStep(String id) {
+        return null;
+    }
+
+    protected void register(Key key) {
+        aml().session().registerKeySource(key, this);
+    }
+
+    protected AutoML aml() {
+        return _aml;
+    }
 
     /**
      * @return the total work allocated for this step.
@@ -162,53 +229,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return aml().makeKey(name, null, withCounter);
     }
 
-    protected boolean hasSubStep() {
-        return false;
-    }
-    
-    protected ModelingStep nextSubStep() {
-        throw new NoSuchElementException("no sub-step available for step "+_id);
-    }
-    
-    protected ModelingStep getSubStep(String id) {
-        return null;
-    }
-
-    public Job run() {
-        Job job = startJob();
-        if (job != null && job._result != null) {
-            register(job._result);
-            if (isResumable()) aml().session().addResumableKey(job._result);
-        }
-        return job;
-    }
-    
-    public void register(Key key) {
-        aml().session().registerKeySource(key, this);
-    }
-
-    public boolean canRun() {
-        Work work = getAllocatedWork();
-        return work != null && work._weight > 0;
-    }
-
-    /**
-     * starts a new {@link Job} as part of this step.
-     * @return
-     */
-    protected abstract Job startJob();
-    
-    protected void onDone(Job job) {
-        for (Consumer<Job> exec : _onDone) {
-            exec.accept(job);
-        }
-        _onDone.clear();
-    };
-
-    protected AutoML aml() {
-        return _aml;
-    }
-    
     protected WorkAllocations getWorkAllocations() {
         return aml()._workAllocations;
     }
@@ -774,6 +794,19 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         @Override
+        public boolean canRun() {
+            // this step is designed to delegate its work to sub-steps by default, 
+            // so the parent step itself has nothing to run.
+            return false;
+        }
+        
+        @Override
+        protected Job startJob() {
+            // see comment in canRun().
+            return null;
+        }
+        
+        @Override
         protected JobType getJobType() {
             return JobType.Dynamic;
         }
@@ -815,17 +848,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     .findFirst().orElse(null);
         }
 
-        public abstract ModelingStep<M>[] prepareModelingSteps();
-
-        @Override
-        public boolean canRun() {
-            return false;
-        }
-
-        @Override
-        protected Job startJob() {
-            return null;
-        }
+        protected abstract ModelingStep<M>[] prepareModelingSteps();
     }
 
 }

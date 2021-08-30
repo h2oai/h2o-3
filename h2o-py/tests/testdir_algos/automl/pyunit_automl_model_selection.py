@@ -230,7 +230,7 @@ def test_modeling_steps():
         {'name': 'DRF', 'steps': [{'id': 'def_1', 'group': 1, 'weight': 10},
                                   {'id': 'XRT', 'group': 1, 'weight': 10}]},
         {'name': 'GLM', 'steps': [{'id': 'def_1', 'group': 1, 'weight': 10}]},
-        {'name': 'StackedEnsemble', 'steps': [{'id': 'best_of_family_1', 'group': 1, 'weight': 10}]},
+        {'name': 'StackedEnsemble', 'steps': [{'id': 'best_of_family_1', 'group': 1, 'weight': 10}]},  # no all_1 as XRT is interpreted as not being of the same family as DRF (legacy decision). 
         {'name': 'GBM', 'steps': [{'id': 'def_3', 'group': 2, 'weight': 10},
                                   {'id': 'grid_1', 'group': 2, 'weight': 77}]},  # grids are 2nd group by default
         {'name': 'StackedEnsemble', 'steps': [{'id': 'best_of_family_2', 'group': 2, 'weight': 10}, 
