@@ -40,8 +40,7 @@ Example
 		airlines["Cancelled"] = airlines["Cancelled"].asfactor()
 		airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-		# set the predictor names and the response column name
-		predictors = airlines.columns[:9]
+		# set the response column name
 		response = "IsDepDelayed"
 
 		# split into train and validation sets
@@ -53,7 +52,7 @@ Example
 
 		# initialize the estimator and train the model
 		airlines_gbm = H2OGradientBoostingEstimator(ignored_columns = col_list, seed =1234)
-		airlines_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		airlines_gbm.train(y = response, training_frame = train, validation_frame = valid)
 
 		# print the auc for the validation data
 		airlines_gbm.auc(valid=True)
