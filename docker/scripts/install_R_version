@@ -74,8 +74,11 @@ echo "Installing dependencies for R ${R_VERSION}"
   )) \
 " 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
+# Install dependency proxy for e1071 and dependency robustbase for fpc in version suited for R 3.3.3
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(devtools); \
   install_version('rgl', version = '0.100.54'); \
+  install_version('proxy', version = '0.4-20'); \
+  install_version('robustbase', version = '0.93-7'); \
 " 2>&1 | tee R.install.2.log
 checkRInstallLog R.install.2.log
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
