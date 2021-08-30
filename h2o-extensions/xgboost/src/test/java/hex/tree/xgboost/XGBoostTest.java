@@ -2614,52 +2614,42 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testColSampleRate() {
-    XGBoostModel model1 = null, model2 = null;
     Scope.enter();
     try {
+      XGBoostModel model1, model2;
       Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
-      Frame calib = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
 
-      // Fix training set
-      train.remove("Site").remove();     // Remove unique ID
-      train.remove("Method").remove();     // Remove unique ID
-      Scope.track(train.vec("Angaus"));
-      train.replace(train.find("Angaus"), train.vecs()[train.find("Angaus")].toCategoricalVec());
+      train.remove("Site").remove();
+      train.remove("Method").remove();
+      train.toCategoricalCol("Angaus");
       Scope.track(train);
-      DKV.put(train); // Update frame after hacking it
-
-      // Fix calibration set (the same way as training)
-      Scope.track(calib.vec("Angaus"));
-      calib.replace(calib.find("Angaus"), calib.vecs()[calib.find("Angaus")].toCategoricalVec());
-      Scope.track(calib);
-      DKV.put(calib); // Update frame after hacking it
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = train._key;
       parms._valid = train._key;
-      parms._response_column = "Angaus"; // Train on the outcome
+      parms._response_column = "Angaus";
       parms._distribution = multinomial;
       parms._ntrees = 5;
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
       parms._seed = 42;
       parms._col_sample_rate = 0.9;
       model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model1);
 
       XGBoostModel.XGBoostParameters parms2 = new XGBoostModel.XGBoostParameters();
       parms2._train = train._key;
       parms2._valid = train._key;
-      parms2._response_column = "Angaus"; // Train on the outcome
+      parms2._response_column = "Angaus";
       parms2._distribution = multinomial;
       parms2._ntrees = 5;
       parms2._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
       parms2._seed = 42;
       parms2._col_sample_rate = 0.1;
       model2 = new hex.tree.xgboost.XGBoost(parms2).trainModel().get();
-      assert model1._output._training_metrics.rmse() != model2._output._training_metrics.rmse();
+      Scope.track_generic(model2);
+      assertNotEquals(model1._output._training_metrics.rmse(), model2._output._training_metrics.rmse(), 0);
     } finally {
       Scope.exit();
-      if (model1 != null) model1.delete();
-      if (model2 != null) model2.delete();
     }
   }
 
@@ -2669,10 +2659,8 @@ public class XGBoostTest extends TestUtil {
     try {
       Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
       
-      // Fix training set
       train.remove("Site").remove();
       train.remove("Method").remove();
-      Scope.track(train.vec("Angaus"));
       train.toCategoricalCol("Angaus");
       Scope.track(train);
 
@@ -2680,7 +2668,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = train._key;
       parms._valid = train._key;
-      parms._response_column = "Angaus"; // Train on the outcome
+      parms._response_column = "Angaus";
       parms._distribution = multinomial;
       parms._ntrees = 5;
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
@@ -2714,7 +2702,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = train._key;
       parms._valid = train._key;
-      parms._response_column = "Angaus"; // Train on the outcome
+      parms._response_column = "Angaus";
       parms._distribution = multinomial;
       parms._ntrees = 5;
       parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
