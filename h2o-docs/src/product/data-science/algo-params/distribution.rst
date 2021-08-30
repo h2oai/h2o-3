@@ -92,40 +92,39 @@ Where:
 +-------------------+-------------------------------------------------------------------------------------------+
 | Distribution Type | Equation                                                                                  |
 +===================+===========================================================================================+
-| Bernoulli         | :math:`-2w(y\times\log(f))+(1-y)\times\log(1-f))`                                         |
+| Bernoulli         | :math:`-2\times w\times(y\times\log(f))+(1-y)\times\log(1-f))`                            |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Quasibinomial     | - :math:`y==f:0`                                                                          |
-|                   | - :math:`f>1: -2w\times y\times\log(f)`                                                   |
-|                   | - :math:`f<0: -2w\times (1-y) \times\log(1-f)`                                            |
-|                   | - else :math:`-2w\times (y \times\log(f)+(1-y)\times\log(1-f))`                           |
+| Quasibinomial     | :math:`f= \begin{cases} -2\times w\times y\times\log(f) & \text{for } f>1 \\              |
+|                   | -2\times w\times(1-y)\times\log(1-f) & \text{for } f<0 \\                                 |
+|                   | -2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) & \text{for } 0<f<1 \\\end{cases} |
+|                   | \text{with } y==f:0`                                                                      |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Gaussian          | - Equivalent to wMSE (weighted mean squared error):                                       |
 |                   | - :math:`w \times(y-f)^2`                                                                 |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Poisson           | - With :math:`\text{f_link}=link(f)`                                                      |
-|                   | - :math:`-2w\times(y\times f- \exp(f))`                                                   |
+| Poisson           | - With :math:`f\text{_}link=link(f)`                                                      |
+|                   | - :math:`-2\times w\times(y\times f- \exp(f))`                                            |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Gamma             | - With :math:`\text{f_link}=link(f)`                                                      |
-|                   | - :math:`2w\times (y\times \exp(-f)+f)`                                                   |
+| Gamma             | - With :math:`f\text{_}link=link(f)`                                                      |
+|                   | - :math:`2\times w\times (y\times \exp(-f\text{_}link)+f\text{_}link)`                    |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Laplace           | :math:`w\times\mid{y-f}\mid`                                                              |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Quantile          | - :math:`y>f: w\times QuantileAlpha \times(y-f)`                                          |
-|                   | - :math:`y \leq f: w\times(1-QuantileAlpha)\times(f-y)`                                   |
+| Quantile          | :math:`f= \begin{cases}w\times QuantileAlpha \times(y-f) & \text{for }y>f \\              |
+|                   | w\times(1-QuantileAlpha)\times(f-y)& \text{for } y \leq f \\\end{cases}`                  |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Huber             | - :math:`\mid{y-f}\mid \leq HuberDelta`:                                                  |
-|                   | - :math:`w*(y-f)^2` (Equivalent to wMSE)                                                  |
-|                   | - :math:`y \leq f`:                                                                       |
-|                   | - :math:`2w\times(\mid{y-f}\mid - HuberDelta)\times HuberDelta` (Equivalent to wMAE)      |
+| Huber             | :math:`f= \begin{cases} w\times(y-f)^2 & \text{for } \mid{y-f}\mid \leq HuberDelta &      |
+|                   | \text{(Equvalent to wMSE)} \\                                                             |
+|                   | 2\times w\times(\mid{y-f}\mid -HuberDelta)\times HuberDelta & \text{for } y \leq f &      |
+|                   | \text{(Equivalent to wMAE)} \\\end{cases}`                                                |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Modified_Huber    | - with :math:`z=(2y-1)\times f`                                                           |
-|                   | - :math:`z<-1`:                                                                           |
-|                   | - :math:`-4w\times(z)`                                                                    |
-|                   | - :math:`z>1` : :math:`0`                                                                 |
-|                   | - else: :math:`w\times(z)^2`                                                              |
+| Modified_Huber    | :math:`f= \begin{cases}-4\times w\times z & \text{for } z< -1 \\                          |
+|                   | 0 & \text{for } z>1 \\                                                                    |
+|                   | w\times z^2 & \text{for } -1<z<1 \\\end{cases}                                            |
+|                   | \text{where } z=(2\times y-1)\times f`                                                    |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
-|                   | :math:`2w\times y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})\times(2-            |
+|                   | :math:`2\times w\times y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})\times(2-     |
 |                   | \text{Tweedie_Power}))}-y \times \exp(f\times(1-\text{Tweedie_Power}))/ (1-\text          |
 |                   | {Tweedie_Power})+ \exp(f\times(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})`         |
 +-------------------+-------------------------------------------------------------------------------------------+
