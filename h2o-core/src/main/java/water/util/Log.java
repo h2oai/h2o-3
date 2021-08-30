@@ -1,15 +1,13 @@
 package water.util;
 
-import org.apache.log4j.*;
+import org.apache.log4j.Logger;
 import water.H2O;
 import water.persist.PersistManager;
 
 import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
-
+import static water.util.LoggerBackend.L4J_LVLS;
 import static water.util.StringUtils.fixedLength;
 
 /** 
@@ -33,7 +31,6 @@ abstract public class Log {
   public static final byte TRACE= 5;
 
   public static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
-  public static final Level[] L4J_LVLS = { Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG, Level.TRACE };
 
   private static int _level = INFO;
   private static boolean _quiet = false;
@@ -197,19 +194,19 @@ abstract public class Log {
   /**
    * Get the directory where the logs are stored.
    */
-  public static String getLogDir() throws Exception {
+  public static String getLogDir() {
     if (_logDir == null) {
-      throw new Exception("LOG_DIR not yet defined");
+      throw new RuntimeException("LOG_DIR not yet defined");
     }
     return _logDir;
   }
 
-  private static String getLogFileNamePrefix() throws Exception {
+  private static String getLogFileNamePrefix() {
     if (H2O.SELF_ADDRESS == null) {
-      throw new Exception("H2O.SELF_ADDRESS not yet defined");
+      throw new RuntimeException("H2O.SELF_ADDRESS not yet defined");
     }
     if (H2O.H2O_PORT == 0) {
-      throw new Exception("H2O.H2O_PORT is not yet determined");
+      throw new RuntimeException("H2O.H2O_PORT is not yet determined");
     }
     String ip = H2O.SELF_ADDRESS.getHostAddress();
     int port = H2O.API_PORT;
@@ -217,10 +214,29 @@ abstract public class Log {
     return "h2o_" + ip + "_" + portString;
   }
 
+  private static File determineLogDir() {
+    File dir;
+    if (H2O.ARGS.log_dir != null) {
+      dir = new File(H2O.ARGS.log_dir);
+    } else {
+      boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
+      // Use ice folder if local, or default
+      if (windowsPath)
+        dir = new File(H2O.ICE_ROOT.toString());
+      else if (H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()))
+        dir = new File(H2O.ICE_ROOT.getPath());
+      else
+        dir = new File(H2O.DEFAULT_ICE_ROOT());
+
+      dir = new File(dir, "h2ologs");
+    }
+    return dir;
+  }
+  
   /**
    * Get log file name without the path for particular log level.
    */
-  public static String getLogFileName(String level) throws Exception {
+  public static String getLogFileName(String level) {
     return getLogFileNamePrefix() + getLogFileNameSuffix(level);
   }
 
@@ -240,166 +256,35 @@ abstract public class Log {
   }
 
   /** Get full path to a specific log file*/
-  public static String getLogFilePath(String level) throws Exception {
+  public static String getLogFilePath(String level) {
     return getLogDir() + File.separator + getLogFileName(level);
   }
-  
+
   private static String getHostPortPid() {
     String host = H2O.SELF_ADDRESS.getHostAddress();
     return fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
   }
-  
-  private static void setLog4jProperties(String logDir, Properties p) throws Exception {
-    _logDir = logDir;
-
-    String patternTail = getHostPortPid() + " %10.10t %5.5p %c: %m%n";
-    String pattern = "%d{MM-dd HH:mm:ss.SSS} " + patternTail;
-
-    p.setProperty("log4j.rootLogger", L4J_LVLS[_level] + ", console");
-
-    // H2O-wide logging
-    String appenders = L4J_LVLS[_level] + ", R1, R2, R3, R4, R5, R6";
-    for (String packageName : new String[] {"water", "ai.h2o", "hex"}) {
-      p.setProperty("log4j.logger." + packageName, appenders);
-      p.setProperty("log4j.logger.additivity." + packageName, "false");
-    }
-
-    p.setProperty("log4j.appender.console",                     "org.apache.log4j.ConsoleAppender");
-    p.setProperty("log4j.appender.console.Threshold",           L4J_LVLS[_level].toString());
-    p.setProperty("log4j.appender.console.layout",              "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.console.layout.ConversionPattern", pattern);
-
-    p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.R1.Threshold",                "TRACE");
-    p.setProperty("log4j.appender.R1.File",                     getLogFilePath("trace"));
-    p.setProperty("log4j.appender.R1.MaxFileSize",              "1MB");
-    p.setProperty("log4j.appender.R1.MaxBackupIndex",           "3");
-    p.setProperty("log4j.appender.R1.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R1.layout.ConversionPattern", pattern);
-
-    p.setProperty("log4j.appender.R2",                          "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.R2.Threshold",                "DEBUG");
-    p.setProperty("log4j.appender.R2.File",                     getLogFilePath("debug"));
-    p.setProperty("log4j.appender.R2.MaxFileSize",              _maxLogFileSize);
-    p.setProperty("log4j.appender.R2.MaxBackupIndex",           "3");
-    p.setProperty("log4j.appender.R2.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R2.layout.ConversionPattern", pattern);
-
-    p.setProperty("log4j.appender.R3",                          "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.R3.Threshold",                "INFO");
-    p.setProperty("log4j.appender.R3.File",                     getLogFilePath("info"));
-    p.setProperty("log4j.appender.R3.MaxFileSize",              _maxLogFileSize);
-    p.setProperty("log4j.appender.R3.MaxBackupIndex",           "3");
-    p.setProperty("log4j.appender.R3.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R3.layout.ConversionPattern", pattern);
-
-    p.setProperty("log4j.appender.R4",                          "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.R4.Threshold",                "WARN");
-    p.setProperty("log4j.appender.R4.File",                     getLogFilePath("warn"));
-    p.setProperty("log4j.appender.R4.MaxFileSize",              "256KB");
-    p.setProperty("log4j.appender.R4.MaxBackupIndex",           "3");
-    p.setProperty("log4j.appender.R4.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R4.layout.ConversionPattern", pattern);
-
-    p.setProperty("log4j.appender.R5",                          "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.R5.Threshold",                "ERROR");
-    p.setProperty("log4j.appender.R5.File",                     getLogFilePath("error"));
-    p.setProperty("log4j.appender.R5.MaxFileSize",              "256KB");
-    p.setProperty("log4j.appender.R5.MaxBackupIndex",           "3");
-    p.setProperty("log4j.appender.R5.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R5.layout.ConversionPattern", pattern);
-
-    p.setProperty("log4j.appender.R6",                          "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.R6.Threshold",                "FATAL");
-    p.setProperty("log4j.appender.R6.File",                     getLogFilePath("fatal"));
-    p.setProperty("log4j.appender.R6.MaxFileSize",              "256KB");
-    p.setProperty("log4j.appender.R6.MaxBackupIndex",           "3");
-    p.setProperty("log4j.appender.R6.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R6.layout.ConversionPattern", pattern);
-
-    // HTTPD logging
-    p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
-    p.setProperty("log4j.additivity.water.api.RequestServer",   "false");
-
-    p.setProperty("log4j.appender.HTTPD",                       "org.apache.log4j.RollingFileAppender");
-    p.setProperty("log4j.appender.HTTPD.Threshold",             "TRACE");
-    p.setProperty("log4j.appender.HTTPD.File",                  getLogFilePath("httpd"));
-    p.setProperty("log4j.appender.HTTPD.MaxFileSize",           "1MB");
-    p.setProperty("log4j.appender.HTTPD.MaxBackupIndex",        "3");
-    p.setProperty("log4j.appender.HTTPD.layout",                "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.HTTPD.layout.ConversionPattern", "%d{ISO8601} " + patternTail);
-
-    // Turn down the logging for some class hierarchies.
-    p.setProperty("log4j.logger.org.apache.http",               "WARN");
-    p.setProperty("log4j.logger.com.amazonaws",                 "WARN");
-    p.setProperty("log4j.logger.org.apache.hadoop",             "WARN");
-    p.setProperty("log4j.logger.org.jets3t.service",            "WARN");
-    p.setProperty("log4j.logger.org.reflections.Reflections",   "ERROR");
-    p.setProperty("log4j.logger.com.brsanthu.googleanalytics",  "ERROR");
-
-    // Turn down the logging for external libraries that Orc parser depends on
-    p.setProperty("log4j.logger.org.apache.hadoop.util.NativeCodeLoader", "ERROR");
-  }
 
   private static synchronized Logger createLog4j() {
-    if (_logger != null) return _logger; // Test again under lock
+    if (_logger == null) { // Test again under lock
+      _logDir = determineLogDir().toString();
 
-    boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
-    String h2oLog4jConfiguration = System.getProperty("h2o.log4j.configuration");
+      LoggerBackend lb = new LoggerBackend();
+      lb._launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
+      lb._haveInheritedLog4jConfiguration = H2O.haveInheritedLog4jConfiguration();
+      lb._prefix = getHostPortPid();
+      lb._maxLogFileSize = _maxLogFileSize;
+      lb._level = _level;
+      lb._getLogFilePath = Log::getLogFilePath;
 
-    if (h2oLog4jConfiguration != null) {
-      // Try to configure via a file on local filesystem
-      if (new File(h2oLog4jConfiguration).exists()) {
-        PropertyConfigurator.configure(h2oLog4jConfiguration);
-      } else {
-        // Try to load file via classloader resource (e.g., from classpath)
-        URL confUrl = Log.class.getClassLoader().getResource(h2oLog4jConfiguration);
-        if (confUrl != null) {
-          PropertyConfigurator.configure(confUrl);
-        }
-      }
-    } else {
-      // Create some default properties on the fly if we aren't using a provided configuration.
-      // H2O creates the log setup itself on the fly in code.
-      Properties p = new Properties();
-      try {
-        File dir;
-        if (H2O.ARGS.log_dir != null) {
-          dir = new File(H2O.ARGS.log_dir);
-        } else {
-          boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
-          // Use ice folder if local, or default
-          if (windowsPath)
-            dir = new File(H2O.ICE_ROOT.toString());
-          else if (H2O.ICE_ROOT.getScheme() == null || PersistManager.Schemes.FILE.equals(H2O.ICE_ROOT.getScheme()))
-            dir = new File(H2O.ICE_ROOT.getPath());
-          else
-            dir = new File(H2O.DEFAULT_ICE_ROOT());
-
-          dir = new File(dir, "h2ologs");
-        }
-        setLog4jProperties(dir.toString(), p);
-      }
-      catch (Exception e) {
-        System.err.println("ERROR: failed in createLog4j, exiting now.");
-        e.printStackTrace();
+      Logger logger = lb.createLog4j();
+      if (logger == null) {
         H2O.exit(1);
+        throw new IllegalStateException("Shouldn't reach this - exit should exit the application");
       }
-
-      // For the Hadoop case, force H2O to specify the logging setup since we don't care
-      // about any hadoop log setup, anyway.
-      //
-      // For the Sparkling Water case, we will have inherited the log4j configuration,
-      // so append to it rather than whack it.
-      if (!launchedWithHadoopJar && H2O.haveInheritedLog4jConfiguration()) {
-        // Use a modified log4j property configurator to append rather than create a new log4j configuration.
-        H2OPropertyConfigurator.configure(p);
-      } else {
-        PropertyConfigurator.configure(p);
-      }
+      _logger = logger;
     }
-    
-    return (_logger = Logger.getLogger("water.default"));
+    return _logger;
   }
 
   public static void ignore(Throwable e) {
@@ -435,8 +320,8 @@ abstract public class Log {
     }
     POST(n, e.toString());
     StackTraceElement[] els = e.getStackTrace();
-    for (int i = 0; i < els.length; i++) {
-      POST(n, els[i].toString());
+    for (StackTraceElement el : els) {
+      POST(n, el.toString());
     }
   }
 

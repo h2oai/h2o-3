@@ -6,8 +6,7 @@ import water.fvec.task.FillNAWithLongValueTask;
 import water.fvec.task.FilterByValueTask;
 import water.fvec.task.IsNotNaTask;
 import water.fvec.task.UniqTask;
-import water.logging.Logger;
-import water.logging.LoggerFactory;
+import org.apache.log4j.Logger;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.prims.advmath.AstKFold;
@@ -35,7 +34,7 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
 
   static final int NO_TARGET_CLASS = -1; // value used as a substitute for the target class in regression problems.
   
-  private static final Logger logger = LoggerFactory.getLogger(TargetEncoderHelper.class);
+  private static final Logger LOG = Logger.getLogger(TargetEncoderHelper.class);
 
   private TargetEncoderHelper() {}
 
@@ -317,8 +316,8 @@ public class TargetEncoderHelper extends Iced<TargetEncoderHelper>{
         if (num.isNA(i) || den.isNA(i)) { // 2 cases: category unseen during training, or not present in a given fold, shouldn't we make the distinction?
           encoded.setNA(i);
         } else if (den.at8(i) == 0) { //should never happen according to BroadcastJoiner, except after substracting target in LOO strategy.
-          if (logger.isDebugEnabled())
-            logger.debug("Denominator is zero for column index = " + _encodedColIdx + ". Imputing with _priorMean = " + _priorMean);
+          if (LOG.isDebugEnabled())
+            LOG.debug("Denominator is zero for column index = " + _encodedColIdx + ". Imputing with _priorMean = " + _priorMean);
           encoded.set(i, _priorMean);
         } else {
           double posteriorMean = num.atd(i) / den.atd(i);
