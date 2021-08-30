@@ -20,8 +20,8 @@ def test_param_and_alias_are_same(data, x_names, y):
     # train h2o XGBoost models
     h2o_model = H2OXGBoostEstimator(**params)
     h2o_model.train(x=x_names, y=y, training_frame=data)
-
-    assert True, "Training should not fail."
+    
+    assert h2o_model is not None, "Training should not fail."
 
 
 def test_param_and_alias_are_not_same(data, x_names, y):

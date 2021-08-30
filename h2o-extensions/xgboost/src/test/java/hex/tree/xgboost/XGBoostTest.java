@@ -2708,25 +2708,17 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testColSampleRateAndAlias() {
-    XGBoostModel model1 = null, model2 = null;
     Scope.enter();
     try {
+      XGBoostModel model1 = null, model2 = null;
       Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
-      Frame calib = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
 
       // Fix training set
       train.remove("Site").remove();     // Remove unique ID
       train.remove("Method").remove();     // Remove unique ID
-      Scope.track(train.vec("Angaus"));
-      train.replace(train.find("Angaus"), train.vecs()[train.find("Angaus")].toCategoricalVec());
+      train.toCategoricalCol("Angaus");
       Scope.track(train);
       DKV.put(train); // Update frame after hacking it
-
-      // Fix calibration set (the same way as training)
-      Scope.track(calib.vec("Angaus"));
-      calib.replace(calib.find("Angaus"), calib.vecs()[calib.find("Angaus")].toCategoricalVec());
-      Scope.track(calib);
-      DKV.put(calib); // Update frame after hacking it
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = train._key;
@@ -2739,13 +2731,12 @@ public class XGBoostTest extends TestUtil {
       parms._col_sample_rate = 0.9;
       parms._colsample_bylevel = 0.3;
       model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model1);
       
     } catch(H2OModelBuilderIllegalArgumentException ex){
       assert ex.getMessage().contains("col_sample_rate and its alias colsample_bylevel are both set");
     } finally {
       Scope.exit();
-      if (model1 != null) model1.delete();
-      if (model2 != null) model2.delete();
     }
   }
 
