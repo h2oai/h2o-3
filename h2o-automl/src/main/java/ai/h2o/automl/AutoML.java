@@ -626,11 +626,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
   }
 
-
   public Key makeKey(String algoName, String type, boolean with_counter) {
-    String counterStr = with_counter ? "_" + session().nextModelCounter(algoName, type) : "";
-    String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
-    return Key.make(prefix+counterStr+"_"+ _runId);
+    List<String> tokens = new ArrayList<>();
+    tokens.add(algoName);
+    if (!StringUtils.isNullOrEmpty(type)) tokens.add(type);
+    if (with_counter) tokens.add(Integer.toString(session().nextModelCounter(algoName, type)));
+    tokens.add(_runId);
+    return Key.make(String.join("_", tokens));
   }
 
   public void trackKeys(Key... keys) {
