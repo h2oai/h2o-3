@@ -103,7 +103,7 @@ Where:
 |                   | - :math:`w \times(y-f)^2`                                                                 |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Poisson           | - With :math:`f\text{_}link=link(f)`                                                      |
-|                   | - :math:`-2\times w\times(y\times f- \exp(f))`                                            |
+|                   | - :math:`-2\times w\times(y\times f\text{_}link- \exp(f\text{_}link))`                    |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Gamma             | - With :math:`f\text{_}link=link(f)`                                                      |
 |                   | - :math:`2\times w\times (y\times \exp(-f\text{_}link)+f\text{_}link)`                    |
