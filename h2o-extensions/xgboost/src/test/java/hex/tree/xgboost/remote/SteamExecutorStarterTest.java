@@ -245,8 +245,12 @@ public class SteamExecutorStarterTest {
             expectAndCheckStopResponse(steam, "03_stop_req_02", true);
 
             // building another model
-            params._ntrees = 5;
-            Job<XGBoostModel> model2 = new XGBoost(params).trainModel();
+            XGBoostModel.XGBoostParameters params2 = new XGBoostModel.XGBoostParameters();
+            params2._train = train._key;
+            params2._ntrees = 5;
+            params2._response_column = "AGE";
+            params2._ignored_columns = new String[]{"ID"};
+            Job<XGBoostModel> model2 = new XGBoost(params2).trainModel();
 
             // will request external cluster start again
             Map<String, String> startReq2 = steam.waitToReceiveMessage("start request");
