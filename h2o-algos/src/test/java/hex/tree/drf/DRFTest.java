@@ -10,6 +10,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.tools.PredictCsv;
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.DHistogram;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
@@ -2230,5 +2231,49 @@ public class DRFTest extends TestUtil {
             Scope.exit();
         }
 
+    }
+    
+    @Test 
+    public void reproducePUBDEV8298() throws Exception {
+      try {
+          Scope.enter();
+          int[] responseData = new int[] {1, 2, 3};
+          int[] c1Data = new int[] {1, 2, 3};
+          int[] c2Data = new int[] {2, 3, 4};
+          int[] c3Data = new int[] {3, 4, 5};
+
+          Frame train = new TestFrameBuilder()
+                  .withColNames("C1", "C2", "C3", "P")
+                  .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                  .withDataForCol(0, c1Data)
+                  .withDataForCol(1, c2Data)
+                  .withDataForCol(2, c3Data)
+                  .withDataForCol(3, responseData)
+                  .build();
+
+          DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+          parms._train = train._key;
+          parms._response_column = "P";
+          parms._ntrees = 5;
+          parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
+          parms._max_categorical_levels = 50;
+          parms._seed = 12345;
+          parms._distribution = DistributionFamily.gaussian;
+          parms._mtries = -2;
+          parms._ntrees = 1;
+          parms._sample_rate = 1.0;
+          parms._check_constant_response = false;
+          parms._max_depth = 3;
+          parms._nfolds = 0;
+
+          DRF job = new DRF(parms);
+          DRFModel gbm = job.trainModel().get();
+          Scope.track_generic(gbm);
+          
+          MojoModel mojoModel = gbm.toMojo();
+          
+      } finally {
+          Scope.exit();
+      }
     }
 }

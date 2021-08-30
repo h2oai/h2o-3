@@ -60,7 +60,7 @@ public class DeeplearningMojoReader extends ModelMojoReader<DeeplearningMojoMode
       _model._genmodel_encoding = "AUTO";
     } else {
       _model._genmodel_encoding = readkv("_genmodel_encoding").toString();
-      _model._orig_projection_array = readkv("_orig_projection_array");
+      _model._orig_projection_array = readkv("_orig_projection_array", new double[0]);
       Integer n = readkv("_n_orig_names");
       if (n != null) {
         _model._orig_names = readStringArray("_orig_names", n);
