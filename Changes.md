@@ -2,6 +2,20 @@
 
 ## H2O
 
+### Zipf (3.32.1.7) - 8/31/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/7/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8234]](https://h2oai.atlassian.net/browse/PUBDEV-8234) - Fixed predicting issues with imported MOJOs trained with an offset-column.
+- [[PUBDEV-8247]](https://h2oai.atlassian.net/browse/PUBDEV-8247) - Fixed slow tree building by implementing a switch to turn off the generation of plain language rules.
+- [[PUBDEV-8298]](https://h2oai.atlassian.net/browse/PUBDEV-8298) - Fixed potential NPE thrown by setting `_orig_projection_array=[]`.
+
+#### New Feature
+
+- [[PUBDEV-8293]](https://h2oai.atlassian.net/browse/PUBDEV-8293) - H2O Standalone now uses log4j2 as the logger implementation.
+
 ### Zipf (3.32.1.6) - 8/19/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/6/index.html</a>
