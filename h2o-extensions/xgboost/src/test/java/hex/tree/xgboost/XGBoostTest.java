@@ -2710,7 +2710,7 @@ public class XGBoostTest extends TestUtil {
   public void testColSampleRateAndAlias() {
     Scope.enter();
     try {
-      XGBoostModel model1 = null, model2 = null;
+      XGBoostModel model1;
       Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
 
       // Fix training set
@@ -2732,9 +2732,9 @@ public class XGBoostTest extends TestUtil {
       parms._colsample_bylevel = 0.3;
       model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model1);
-      
+      fail("Model training should fail.");
     } catch(H2OModelBuilderIllegalArgumentException ex){
-      assert ex.getMessage().contains("col_sample_rate and its alias colsample_bylevel are both set");
+      assertTrue(ex.getMessage().contains("col_sample_rate and its alias colsample_bylevel are both set"));
     } finally {
       Scope.exit();
     }
@@ -2742,11 +2742,10 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testColSampleRateAndAliasSame() {
-    XGBoostModel model1 = null, model2 = null;
     Scope.enter();
     try {
+      XGBoostModel model1;
       Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
-      Frame calib = parseTestFile("smalldata/gbm_test/ecology_eval.csv");
 
       // Fix training set
       train.remove("Site").remove();     // Remove unique ID
@@ -2755,12 +2754,6 @@ public class XGBoostTest extends TestUtil {
       train.replace(train.find("Angaus"), train.vecs()[train.find("Angaus")].toCategoricalVec());
       Scope.track(train);
       DKV.put(train); // Update frame after hacking it
-
-      // Fix calibration set (the same way as training)
-      Scope.track(calib.vec("Angaus"));
-      calib.replace(calib.find("Angaus"), calib.vecs()[calib.find("Angaus")].toCategoricalVec());
-      Scope.track(calib);
-      DKV.put(calib); // Update frame after hacking it
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = train._key;
@@ -2773,11 +2766,10 @@ public class XGBoostTest extends TestUtil {
       parms._col_sample_rate = 0.9;
       parms._colsample_bylevel = 0.9;
       model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      assert true : "The training should not fail.";
+      Scope.track_generic(model1);
+      assertEquals(model1._parms._col_sample_rate, model1._parms._colsample_bylevel, 0);
     } finally {
       Scope.exit();
-      if (model1 != null) model1.delete();
-      if (model2 != null) model2.delete();
     }
   }
 }
