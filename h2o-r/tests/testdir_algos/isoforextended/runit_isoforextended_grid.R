@@ -22,7 +22,6 @@ test.grid.extendedisolationforest <- function() {
       x = c(1, 2),
       training_frame = single_blob.hex,
       hyper_params = hyper_parameters,
-      is_supervised = FALSE,
       parallelism = 0
     )
   print(paste("Expected size of hyperparameter space is", length(baseline_grid@model_ids)))
