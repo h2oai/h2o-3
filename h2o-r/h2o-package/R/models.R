@@ -4048,6 +4048,7 @@ h2o.sdev <- function(object) {
   if (algo == "kmeans" ||
       algo == "glrm" ||
       algo == "pca" ||
+      algo == "isolationforest" ||
       algo == "extendedisolationforest" ||
       (algo == "deeplearning" && !is.null(params$autoencoder) && params$autoencoder)) {
     FALSE
