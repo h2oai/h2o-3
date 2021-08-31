@@ -21,7 +21,8 @@ test.grid.resume <- function() {
       x = 1:4,
       y = 5,
       training_frame = iris.hex,
-      hyper_params = hyper_parameters
+      hyper_params = hyper_parameters,
+      parallelism = 0
     )
   grid_id <- baseline_grid@grid_id
   expect_equal(length(baseline_grid@model_ids),
@@ -53,7 +54,8 @@ test.grid.resume <- function() {
       training_frame = train,
       validation_frame = test,
       hyper_params = hyper_parameters,
-      validation_response_column = "label"
+      validation_response_column = "label",
+      parallelism = 0
     )
 }
 
