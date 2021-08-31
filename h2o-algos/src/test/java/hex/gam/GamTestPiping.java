@@ -24,6 +24,7 @@ import static hex.glm.GLMModel.GLMParameters.Family.*;
 import static hex.glm.GLMModel.GLMParameters.GLMType.gam;
 import static hex.glm.GLMModel.GLMParameters.GLMType.glm;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /***
  * Here I am going to test the following:
@@ -81,6 +82,49 @@ public class GamTestPiping extends TestUtil {
       Frame rTransformedDataC = parseTestFile("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv");
       Scope.track(rTransformedDataC);
       TestUtil.assertIdenticalUpToRelTolerance(transformedDataC, rTransformedDataC, 1e-2);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  // adding test to build models multiple times with knots from a frame
+  @Test
+  public void testKnotsFromFrameMultipleRuns() {
+    try {
+      Scope.enter();
+      Frame knotsFrame = generateRealOnly(1, 5, 0);
+      Scope.track(knotsFrame);
+      final double[][] knots = new double[][]{{-1.9990569949269443}, {-0.9814307533427584}, {0.025991586992542004},
+              {1.0077098743127828}, {1.999422899675758}};
+      new ArrayUtils.CopyArrayToFrame(0,0,knots.length, knots).doAll(knotsFrame);
+      DKV.put(knotsFrame);
+      Scope.track(knotsFrame);
+
+      String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
+      String[][] gamCols = new String[][]{{"C6"}};
+      GAMModel model = getModel(gaussian,
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
+              "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
+              true, new double[]{1}, new double[]{0}, new double[]{0}, false,
+              new String[]{knotsFrame._key.toString()},null, true);
+      Scope.track_generic(model);
+      double mse1 = model._output._training_metrics.mse();
+      model = getModel(gaussian,
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
+              "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
+              true, new double[]{1}, new double[]{0}, new double[]{0}, false,
+              new String[]{knotsFrame._key.toString()},null, true);
+      Scope.track_generic(model);
+      double mse2 = model._output._training_metrics.mse();
+      assertTrue(Math.abs(mse1-mse2) < 1e-6);
+      model = getModel(gaussian,
+              Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
+              "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
+              true, new double[]{1}, new double[]{0}, new double[]{0}, false,
+              new String[]{knotsFrame._key.toString()},null, true);
+      Scope.track_generic(model);
+      double mse3 = model._output._training_metrics.mse();
+      assertTrue(Math.abs(mse1-mse3) < 1e-6);
     } finally {
       Scope.exit();
     }
