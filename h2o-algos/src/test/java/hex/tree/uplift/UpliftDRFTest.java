@@ -57,6 +57,7 @@ public class UpliftDRFTest extends TestUtil {
             p._treatment_column = "treatment";
             p._response_column = "conversion";
             p._seed = 0xDECAF;
+            p._nbins = 10;
 
             UpliftDRF udrf = new UpliftDRF(p);
             UpliftDRFModel model = udrf.trainModel().get();
@@ -286,10 +287,36 @@ public class UpliftDRFTest extends TestUtil {
             p._train = train._key;
             p._treatment_column = "treatment";
             p._response_column = "conversion";
-            p._stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+            p._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
 
             UpliftDRF udrf = new UpliftDRF(p);
             udrf.trainModel().get();
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void testMaxDepthZero() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(parseTestFile("smalldata/uplift/criteo_uplift_13k.csv"));
+            train.toCategoricalCol("treatment");
+            train.toCategoricalCol("conversion");
+            UpliftDRFModel.UpliftDRFParameters p = new UpliftDRFModel.UpliftDRFParameters();
+            p._train = train._key;
+            p._ignored_columns = new String[]{"visit", "exposure"};
+            p._treatment_column = "treatment";
+            p._response_column = "conversion";
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p._max_depth = 0;
+            p._score_each_iteration = true;
+
+            UpliftDRF udrf = new UpliftDRF(p);
+            UpliftDRFModel model = udrf.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
         } finally {
             Scope.exit();
         }

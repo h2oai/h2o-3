@@ -20,11 +20,11 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
         public UpliftMetricType _uplift_metric = UpliftMetricType.AUTO;
 
-        public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+        public int _mtries = -2; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
 
         public UpliftDRFParameters() {
             super();
-            // Set DRF Uplift specific defaults (can differ from SharedTreeModel's defaults)
+            // Set Uplift DRF specific defaults (can differ from SharedTreeModel's defaults)
             _max_depth = 20;
             _min_rows = 1;
             _treatment_column = "treatment";

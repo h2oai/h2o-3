@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
+import org.apache.commons.lang.SerializationUtils;
 import water.Job;
 import water.Key;
 import water.MRTask;
@@ -167,7 +168,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             // Initial set of histograms.  All trees; one leaf per tree (the root
             // leaf); all columns
             DHistogram hcs[][][] = new DHistogram[_nclass][1/*just root leaf*/][_ncols];
-
+            
             // Adjust real bins for the top-levels
             int adj_nbins = Math.max(_parms._nbins_top_level,_parms._nbins);
 
@@ -184,25 +185,26 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
             // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
             Sample ss[] = new Sample[_nclass];
-            for( int k=0; k<_nclass; k++)
-                if (ktrees[k] != null) ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null,new Frame(vec_nids(_train,k),vec_resp(_train)), _parms._build_tree_one_node);
-            for( int k=0; k<_nclass; k++)
-                if( ss[k] != null ) ss[k].getResult();
+            Sample s = new Sample(ktrees[0], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null,new Frame(vec_nids(_train,0),vec_resp(_train)), _parms._build_tree_one_node).getResult();
 
             // ----
             // One Big Loop till the ktrees are of proper depth.
             // Adds a layer to the trees each pass.
             int depth=0;
             for( ; depth<_parms._max_depth; depth++ ) {
-                hcs = buildLayer(_train, _parms._nbins, ktrees, leafs, hcs, _parms._build_tree_one_node);
+                hcs = buildLayer(_train, _parms._nbins, ktrees[0], leafs, hcs, _parms._build_tree_one_node);
+                
                 // If we did not make any new splits, then the tree is split-to-death
                 if( hcs == null ) break;
             }
             // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
             // LeafNodes to hold predictions.
             DTree treeTr = ktrees[0];
+            ktrees[1] = new DTree(ktrees[0]);
             DTree treeCt = ktrees[1];
             int leaf = leafs[0] = treeTr.len();
+            int[] nids = new int[leaf];
+            int j = 0;
             for (int nid = 0; nid < leaf; nid++) {
                 if (treeTr.node(nid) instanceof DTree.DecidedNode) {
                     DTree.DecidedNode dnTr = treeTr.decided(nid);
@@ -210,9 +212,9 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                     if (dnTr._split == null) { // No decision here, no row should have this NID now
                         if (nid == 0) { // Handle the trivial non-splitting tree
                             DTree.LeafNode lnTr = new DTree.LeafNode(treeTr, -1, 0);
-                            lnTr._pred = (float) (_model._output._priorClassDist[0]);
+                            lnTr._pred = (float) (_model._output._priorClassDist[1]);
                             DTree.LeafNode lnCt = new DTree.LeafNode(treeCt, -1, 0);
-                            lnCt._pred = (float) (_model._output._priorClassDist[1]);
+                            lnCt._pred = (float) (_model._output._priorClassDist[0]);
                         }
                         continue;
                     }
@@ -228,9 +230,10 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                             DTree.LeafNode lnCt = new DTree.LeafNode(treeCt, nid);
                             lnCt._pred = (float) dnCt.predControl(i);  // Set prediction into the leaf
                             dnCt._nids[i] = lnCt.nid(); // Mark a leaf here
+                            nids[j++] = lnTr.nid();
                         }
                     }
-                }
+                } 
             }
         }
 
@@ -248,39 +251,38 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                 for( int row=0; row<oobt._len; row++ ) {
                     double weight = weights.atd(row);
                     final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
+                    //final boolean wasOOBRow = false;
                     // For all tree (i.e., k-classes)
-                    for( int k=0; k<_nclass; k++ ) {
-                        final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
+                    final Chunk nids = chk_nids(chks, 0); // Node-ids  for this tree/class
                         if (weight!=0) {
-                            final DTree tree = _trees[k];
-                            if (tree == null) continue; // Empty class is ignored
+                            final DTree treeT = _trees[0];
+                            final DTree treeC = _trees[1];
+                            if (treeT == null) continue; // Empty class is ignored
                             int nid = (int) nids.at8(row);         // Get Node to decide from
                             // Update only out-of-bag rows
                             // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
                             if (wasOOBRow) {
-                                final Chunk ct = chk_tree(chks, k); // k-tree working column holding votes for given row
+                                final Chunk ct = chk_tree(chks, 0); // k-tree working column holding votes for given row
                                 nid = ScoreBuildHistogram.oob2Nid(nid);
-                                if (tree.node(nid) instanceof DTree.UndecidedNode) // If we bottomed out the tree
-                                    nid = tree.node(nid).pid();                 // Then take parent's decision
+                                if (treeT.node(nid) instanceof DTree.UndecidedNode) // If we bottomed out the tree
+                                    nid = treeT.node(nid).pid();                 // Then take parent's decision
                                 int leafnid;
-                                if (tree.root() instanceof DTree.LeafNode) {
+                                if (treeT.root() instanceof DTree.LeafNode) {
                                     leafnid = 0;
                                 } else {
-                                    DTree.DecidedNode dn = tree.decided(nid);           // Must have a decision point
+                                    DTree.DecidedNode dn = treeT.decided(nid);           // Must have a decision point
                                     if (dn._split == null)     // Unable to decide?
-                                        dn = tree.decided(tree.node(nid).pid());    // Then take parent's decision
-                                    leafnid = dn.getChildNodeID(chks,row); // Decide down to a leafnode
+                                        dn = treeT.decided(treeT.node(nid).pid());    // Then take parent's decision
+                                    leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
                                 }
                                 // Setup Tree(i) - on the fly prediction of i-tree for row-th row
-                                //   - for classification: cumulative number of votes for this row
-                                //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
-                                double prediction = ((DTree.LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
+                                //   - for uplift: cumulative sum of prediction of each tree - has to be normalized by number of trees
+                                double prediction = ((DTree.LeafNode) treeT.node(leafnid)).pred() - ((DTree.LeafNode) treeC.node(leafnid)).pred(); // Prediction for this k-class and this row
                                 ct.set(row, (float) (ct.atd(row) + prediction));
                             }
                         }
                         // reset help column for this row and this k-class
                         nids.set(row, 0);
-                    } /* end of k-trees iteration */
                     // For this tree this row is out-of-bag - i.e., a tree voted for this row
                     if (wasOOBRow) oobt.set(row, oobt.atd(row) + weight); // track number of trees
                     if (weight!=0) {

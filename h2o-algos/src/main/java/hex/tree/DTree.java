@@ -85,6 +85,33 @@ public class DTree extends Iced {
     }
     _cols = activeCols;
   }
+  
+  public DTree(DTree tree){
+    _names = tree._names;
+    _ncols = tree._ncols;
+    _parms = tree._parms;
+    _ns = new Node[tree._ns.length];
+    for(int i=0; i<_ns.length; i++) {
+      Node node = tree._ns[i];
+      if(node  instanceof UndecidedNode) {
+        _ns[i] = new UndecidedNode((UndecidedNode)node, this);
+      } else if(node instanceof DecidedNode){
+        _ns[i] = new DecidedNode((DecidedNode)node, this);
+      } else if(node instanceof LeafNode) {
+        _ns[i] = new LeafNode((LeafNode)node, this);
+      } else {
+        _ns[i] = null;
+      }
+    }
+    _mtrys = tree._mtrys;
+    _mtrys_per_tree = tree._mtrys_per_tree;
+    _seed = tree._seed;
+    _rand = tree._rand;
+    _cols = tree._cols;
+    _leaves = tree._leaves;
+    _len = tree._len;
+    _depth = tree._depth;
+  }
 
   public final Node root() { return _ns[0]; }
   // One-time local init after wire transfer
@@ -121,6 +148,12 @@ public class DTree extends Iced {
       _nid = tree.newIdx(this);
     }
 
+    Node( DTree tree, int pid, int nid, boolean copy) {
+        _tree = tree;
+        _pid = pid;
+        _nid = nid;
+    }
+    
     // Recursively print the decision-line from tree root to this child.
     StringBuilder printLine(StringBuilder sb ) {
       if( _pid== NO_PARENT) return sb.append("[root]");
@@ -386,6 +419,13 @@ public class DTree extends Iced {
       _cs = cs;
       _scoreCols = scoreCols();
     }
+    
+    public UndecidedNode(UndecidedNode node, DTree tree){
+      super(tree, node._pid, node._nid, true);
+      _hs = node._hs; //these histograms have no bins yet (just constructed)
+      _cs = node._cs;
+      _scoreCols = node._scoreCols;
+    }
 
     // Pick a random selection of columns to compute best score.
     // Can return null for 'all columns'.
@@ -527,10 +567,21 @@ public class DTree extends Iced {
     transient int _size = 0;  // Compressed byte size of this subtree
     transient int _nnodes = 0; // Number of nodes in this subtree
 
+    public DecidedNode(DecidedNode node, DTree tree){
+      super(tree, node._pid, node._nid, true);
+      _split = node._split;
+      _splat = node._splat;
+      _nids = node._nids;
+      _nodeType = node._nodeType;
+      _size = node._size;
+      _nnodes = node._nnodes;
+    }
+    
     // Make a correctly flavored Undecided
     public UndecidedNode makeUndecidedNode(DHistogram hs[], Constraints cs) {
       return new UndecidedNode(_tree, _nid, hs, cs);
     }
+    
 
     // Pick the best column from the given histograms
     public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) {
@@ -856,6 +907,10 @@ public class DTree extends Iced {
     public float _pred;
     public LeafNode( DTree tree, int pid ) { super(tree,pid); tree._leaves++; }
     public LeafNode( DTree tree, int pid, int nid ) { super(tree,pid,nid); tree._leaves++; }
+    public LeafNode( LeafNode node, DTree tree) {
+      super(tree,node._pid, node._nid, true);
+      _pred = node._pred;
+    }
     @Override public String toString() { return "Leaf#"+_nid+" = "+_pred; }
     @Override public final StringBuilder toString2(StringBuilder sb, int depth) {
       for( int d=0; d<depth; d++ ) sb.append("  ");
