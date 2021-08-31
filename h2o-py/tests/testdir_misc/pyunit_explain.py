@@ -133,6 +133,13 @@ def test_explanation_automl_regression():
     for i in range(len(model_ids)):
         assert len(model_ids[i]) > len(shortened_model_ids[i])
 
+    # Leaderboard slices work
+    # test explain
+    assert isinstance(h2o.explain(aml.leaderboard[:4, :], train, render=False), H2OExplanation)
+
+    # test explain row
+    assert isinstance(h2o.explain_row(aml.leaderboard[:4, :], train, 1, render=False), H2OExplanation)
+
 
 def test_explanation_list_of_models_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
@@ -274,6 +281,30 @@ def test_explanation_automl_binomial_classification():
     # test explain row
     assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
 
+    # Leaderboard slices work
+    # test variable importance heatmap plot
+    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert len(h2o.explanation.varimp(aml.leaderboard[:4, :], use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
+    assert isinstance(h2o.explanation.varimp(aml.leaderboard[:4, :], use_pandas=True), pandas.DataFrame)
+
+    # test model correlation heatmap plot
+    assert isinstance(h2o.model_correlation_heatmap(aml.leaderboard[:4, :], train), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    assert len(h2o.explanation.model_correlation(aml.leaderboard[:4, :], train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
+    assert isinstance(h2o.explanation.model_correlation(aml.leaderboard[:4, :], train, use_pandas=True), pandas.DataFrame)
+
+    # test partial dependences
+    assert isinstance(h2o.pd_multi_plot(aml.leaderboard[:4, :], train, cols_to_test[0]), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close()
+
+    # test explain
+    assert isinstance(h2o.explain(aml.leaderboard[:4, :], train, render=False), H2OExplanation)
+
+    # test explain row
+    assert isinstance(h2o.explain_row(aml.leaderboard[:4, :], train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_binomial_classification():
@@ -417,6 +448,13 @@ def test_explanation_automl_multinomial_classification():
 
     # test explain row
     assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
+
+    # Leaderboard slices work
+    # test explain
+    assert isinstance(h2o.explain(aml.leaderboard[:4, :], train, render=False), H2OExplanation)
+
+    # test explain row
+    assert isinstance(h2o.explain_row(aml.leaderboard[:4, :], train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_multinomial_classification():

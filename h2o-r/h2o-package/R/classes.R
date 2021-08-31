@@ -1058,3 +1058,28 @@ setMethod("h2o.varimp", signature("H2OModel"), function(object) {
 setMethod("h2o.varimp", signature("H2OAutoML"), function(object, top_n = 20) {
   .varimp_matrix(object, top_n = top_n)
 })
+
+#'
+#' Retrieve the variable importance.
+#'
+#' @param object A leaderboard frame.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
+#' response <- "GLEASON"
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' aml <- h2o.automl(x = predictors, y = response, training_frame = pros, max_runtime_secs = 60)
+#' h2o.varimp(aml@leaderboard[1:5,])
+#' }
+#' @export
+setMethod("h2o.varimp", signature("H2OFrame"), function(object) {
+  if (! "model_id" %in% names(object)){
+    warning("This is not a leaderboard frame.", call. = FALSE)
+    return(invisible(NULL))
+  }
+  .varimp_matrix(object)
+})
