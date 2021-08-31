@@ -21,7 +21,6 @@ test.grid.resume <- function() {
       x = 1:4,
       y = 5,
       training_frame = iris.hex,
-      is_supervised = TRUE,
       hyper_params = hyper_parameters
     )
   grid_id <- baseline_grid@grid_id
@@ -53,7 +52,6 @@ test.grid.resume <- function() {
       y = 5,
       training_frame = train,
       validation_frame = test,
-      is_supervised = TRUE,
       hyper_params = hyper_parameters,
       validation_response_column = "label"
     )
