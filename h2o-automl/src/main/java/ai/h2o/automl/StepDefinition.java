@@ -82,7 +82,7 @@ public class StepDefinition extends Iced<StepDefinition> {
             if (o == null || getClass() != o.getClass()) return false;
             Step step = (Step) o;
             return _id.equals(step._id)
-                    && _group== step._group
+                    && _group == step._group
                     && _weight == step._weight;
         }
 

@@ -250,8 +250,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     
     @Override
     public boolean equals(Object o) {
-        if (this==o) return true;
-        if (o==null || getClass()!=o.getClass()) return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         ModelingStep<?> that = (ModelingStep<?>) o;
         return _provider.equals(that._provider) && _id.equals(that._id);
     }
