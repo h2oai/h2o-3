@@ -11,6 +11,8 @@ Description
 
 There may be instances when your dataset includes information that you want to be ignored when building a model. Use the ``ignored_columns`` parameter to specify an array of column names that should be ignored. This is a strict parameter that takes into account the exact string of the column name. So, for example, if your dataset includes one column named **Type** and another column named **Types**, and you specify ``ignored_columns=["type"]``, then the algorithm will only ignore the **Type** column and will not ignore the **Types** column.
 
+**Note**: Properties ``x`` and ``ignored_columns`` cannot be specified simultaneously.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
@@ -40,8 +42,7 @@ Example
 		airlines["Cancelled"] = airlines["Cancelled"].asfactor()
 		airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-		# set the predictor names and the response column name
-		predictors = airlines.columns[:9]
+		# set the response column name
 		response = "IsDepDelayed"
 
 		# split into train and validation sets
@@ -53,7 +54,7 @@ Example
 
 		# initialize the estimator and train the model
 		airlines_gbm = H2OGradientBoostingEstimator(ignored_columns = col_list, seed =1234)
-		airlines_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		airlines_gbm.train(y = response, training_frame = train, validation_frame = valid)
 
 		# print the auc for the validation data
 		airlines_gbm.auc(valid=True)
