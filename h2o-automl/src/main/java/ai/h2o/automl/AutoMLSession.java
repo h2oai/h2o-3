@@ -70,8 +70,6 @@ public class AutoMLSession extends Lockable<AutoMLSession> {
         if (!_availableStepsByProviderName.containsKey(providerName)) {
             ModelingStepsProvider provider = _modelingStepsRegistry.stepsByName.get(providerName);
             if (provider == null) {
-//        eventLog().warn(Stage.ModelTraining, "Missing provider for modeling steps '"+providerName+"'");
-//        return null;
                 throw new IllegalArgumentException("Missing provider for modeling steps '"+providerName+"'");
             }
             ModelingSteps steps = provider.newInstance(_aml);

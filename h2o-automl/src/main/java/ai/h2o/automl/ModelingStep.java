@@ -101,6 +101,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected int _priorityGroup;
     protected AutoML.Constraint[] _ignoredConstraints = new AutoML.Constraint[0];  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
+    protected Work _work;
     private final transient List<Consumer<Job>> _onDone = new ArrayList<>();
 
     StepDefinition _fromDef;
@@ -214,7 +215,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      * @return the total work allocated for this step.
      */
     protected Work getAllocatedWork() {
-        return getWorkAllocations().getAllocation(_id, _algo);
+        if (_work == null) {
+            _work = getWorkAllocations().getAllocation(_id, _algo);
+        }
+        return _work;
     }
 
     /**
@@ -801,7 +805,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
         
         @Override
-        protected Job startJob() {
+        protected Job<M> startJob() {
             // see comment in canRun().
             return null;
         }

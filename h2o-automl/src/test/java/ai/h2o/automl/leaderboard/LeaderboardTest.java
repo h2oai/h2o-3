@@ -1,6 +1,9 @@
 package ai.h2o.automl.leaderboard;
 
+import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
+import ai.h2o.automl.ModelingStep;
+import ai.h2o.automl.dummy.DummyStepsProvider;
 import ai.h2o.automl.events.EventLog;
 import hex.Model;
 import hex.tree.gbm.GBM;
@@ -108,6 +111,7 @@ public class LeaderboardTest extends water.TestUtil {
       parms._response_column = "CAPSULE";
       GBM job = new GBM(parms);
       Model model = job.trainModel().get(); removables.add(model);
+      ModelingStep step = new DummyStepsProvider.DummyModelStep(Algo.GBM, "my_gbm", null);
 
       EventLog eventLog = EventLog.getOrMake(dummy); removables.add(eventLog);
       Leaderboard lb = Leaderboard.getOrMake("leaderboard_with_ext", eventLog, null, null); removables.add(lb);
@@ -117,6 +121,10 @@ public class LeaderboardTest extends water.TestUtil {
           return new LeaderboardCell[] {
                   new TrainingTime(model),
                   new ScoringTimePerRow(model, null, fr),
+                  new AlgoName(model),
+                  new ModelProvider(model, step),
+                  new ModelStep(model, step),
+                  new ModelGroup(model, step),
           };
         }
       });
@@ -134,17 +142,19 @@ public class LeaderboardTest extends water.TestUtil {
               lb_table.getColFormats());
 
       TwoDimTable lb_table_ext = lb.toTwoDimTable(LeaderboardExtensionsProvider.ALL);
-      assertEquals(7+2, lb_table_ext.getColDim());
-      assertArrayEquals(new String[] {"model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse", "training_time_ms", "predict_time_per_row_ms"},
+      assertEquals(7+3, lb_table_ext.getColDim());
+      assertArrayEquals(new String[] {"model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse", "training_time_ms", "predict_time_per_row_ms", "algo"},
               lb_table_ext.getColHeaders());
-      assertArrayEquals(new String[] {"string", "double", "double", "double", "double", "double", "double", "long", "double"},
+      assertArrayEquals(new String[] {"string", "double", "double", "double", "double", "double", "double", "long", "double", "string"},
               lb_table_ext.getColTypes());
-      assertArrayEquals(new String[] {"%s", "%.6f", "%.6f", "%.6f", "%.6f", "%.6f", "%.6f", "%s", "%.6f"},
+      assertArrayEquals(new String[] {"%s", "%.6f", "%.6f", "%.6f", "%.6f", "%.6f", "%.6f", "%s", "%.6f", "%s"},
               lb_table_ext.getColFormats());
-      assertTrue(lb_table_ext.get(0, 7/*training_time_ms*/) instanceof Long);
+      assertTrue(lb_table_ext.get(0, 7 /*training_time_ms*/) instanceof Long);
       assertTrue(lb_table_ext.get(0, 8 /*predict_time_per_row_ms*/) instanceof Double);
+      assertTrue(lb_table_ext.get(0, 9 /*algo*/) instanceof String);
       assertTrue((Long)lb_table_ext.get(0, 7) > 0);
       assertTrue((Double)lb_table_ext.get(0, 8) > 0);
+      assertEquals("GBM", lb_table_ext.get(0, 9));
 
       TwoDimTable lb_table_custom_ext = lb.toTwoDimTable("training_time_ms");
       assertEquals(7+1, lb_table_custom_ext.getColDim());
@@ -155,6 +165,16 @@ public class LeaderboardTest extends water.TestUtil {
       assertEquals(7+1, lb_table_custom_unknown.getColDim());
       assertArrayEquals(new String[] {"model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse", "training_time_ms"},
               lb_table_custom_unknown.getColHeaders());
+
+      TwoDimTable lb_table_custom_hidden = lb.toTwoDimTable("provider", "step", "group");
+      assertEquals(7+3, lb_table_custom_hidden.getColDim());
+      assertArrayEquals(new String[] {"model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse", "provider", "step", "group"},
+              lb_table_custom_hidden.getColHeaders());
+      assertArrayEquals(new String[] {"string", "double", "double", "double", "double", "double", "double", "string", "string", "int"},
+              lb_table_custom_hidden.getColTypes());
+      assertEquals(step.getProvider(), lb_table_custom_hidden.get(0, 7 /*provider*/));
+      assertEquals(step.getId(), lb_table_custom_hidden.get(0, 8 /*step*/));
+      assertEquals(step.getPriorityGroup(), lb_table_custom_hidden.get(0, 9 /*group*/));
 
     } finally {
       for (Keyed item : removables) item.remove(true);

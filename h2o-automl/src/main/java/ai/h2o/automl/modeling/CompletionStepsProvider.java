@@ -22,7 +22,6 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
         static class ResumingGridStep extends ModelingStep.GridStep {
             
             private transient GridStep _step;
-            private Work _work;
             
             public ResumingGridStep(GridStep step, int priorityGroup, int weight, AutoML aml) {
                 super(NAME, step.getAlgo(), step.getProvider()+"_"+step.getId(), priorityGroup, weight, aml);
@@ -43,11 +42,6 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
             @Override
             public Map<String, Object[]> prepareSearchParameters() {
                 return _step.prepareSearchParameters();
-            }
-
-            @Override
-            protected Work getAllocatedWork() {
-                return _work;
             }
 
             @Override
