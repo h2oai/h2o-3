@@ -120,12 +120,18 @@ def h2oinit_fail_invalid_log_level():
     finally:
         h2o.cluster().shutdown()
 
+def h2oinit_with_extra_classpath():
+    try:
+        h2o.init(strict_version_check=False, extra_classpath=[os.path.realpath(__file__)], port=40000)
+    finally:
+        h2o.cluster().shutdown()
 
 # None of the tests below need a pre initialized instance
 h2oinit_default_log_dir()
 h2oinit_custom_log_dir()
 h2oinit_fail_invalid_log_level()
 h2oinitname()
+h2oinit_with_extra_classpath()
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oinit)

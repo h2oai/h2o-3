@@ -647,8 +647,12 @@ h2o.resume <- function(recovery_dir=NULL) {
   if(enable_assertions) args <- c(args, "-ea")
   if(!is.null(jvm_custom_args)) args <- c(args,jvm_custom_args)
 
-  class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
-  args <- c(args, "-cp", class_path, "water.H2OApp")
+  if (!is.null(extra_classpath)) {
+    class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
+    args <- c(args, "-cp", class_path, "water.H2OApp")
+  } else {
+    args <- c(args, "-jar", jar_file)
+  }
   args <- c(args, "-name", name)
   args <- c(args, "-ip", ip)
   if (bind_to_localhost) {
@@ -663,6 +667,7 @@ h2o.resume <- function(recovery_dir=NULL) {
 
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
+  args <- c(args, "-allow_unsupported_java")
 
   cat("\n")
   cat(        "Note:  In case of errors look at the following log files:\n")
