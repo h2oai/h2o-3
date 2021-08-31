@@ -21,7 +21,6 @@ test.grid.isolationforest.supervised <- function() {
       x = 1:4,
       y = 5,
       training_frame = iris.hex,
-      is_supervised = TRUE,
       hyper_params = hyper_parameters,
       parallelism = 0
     )
@@ -55,7 +54,6 @@ test.grid.isolationforest.supervised <- function() {
       training_frame = train,
       validation_frame = test,
       hyper_params = hyper_parameters,
-      is_supervised = TRUE,
       validation_response_column = "label",
       parallelism = 0
     )
