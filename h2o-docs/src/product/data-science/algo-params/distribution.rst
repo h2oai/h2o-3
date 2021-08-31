@@ -145,8 +145,8 @@ Where:
 | Quasibinomial,    | - :math:`linkInversion(f)=1/(1+ \exp(-f))`                                |
 | Modified_Huber    |                                                                           |
 +-------------------+---------------------------------------------------------------------------+
-| Inversion         | :math:`f= \begin{cases}min(-1e-5, f) & \text{for }f<0 \\                  |
-|                   | max(-1e-5, f)& \text{for }f>0 \\\end{cases}`                              |
+| Inversion         | :math:`link\text{_}f= linkInversion\text{_}f = \begin{cases}min(-1e-5, f) |
+|                   | & \text{for }f<0 \\ max(-1e-5, f)& \text{for }f>0 \\\end{cases}`          |
 +-------------------+---------------------------------------------------------------------------+
 | Ologit            | - :math:`link(f)=\log(f/(1-f))`                                           |
 |                   | - :math:`linkInversion(f)=1/(1+ \exp(-f))`                                |
