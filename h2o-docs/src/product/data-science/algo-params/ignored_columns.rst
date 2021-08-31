@@ -11,6 +11,8 @@ Description
 
 There may be instances when your dataset includes information that you want to be ignored when building a model. Use the ``ignored_columns`` parameter to specify an array of column names that should be ignored. This is a strict parameter that takes into account the exact string of the column name. So, for example, if your dataset includes one column named **Type** and another column named **Types**, and you specify ``ignored_columns=["type"]``, then the algorithm will only ignore the **Type** column and will not ignore the **Types** column.
 
+**Note**: Properties ``x`` and ``ignored_columns`` cannot be specified simultaneously.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
