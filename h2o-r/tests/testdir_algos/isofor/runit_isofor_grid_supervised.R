@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-test.grid.resume <- function() {
+test.grid.isolationforest.supervised <- function() {
   iris.hex <-
     h2o.importFile(path = locate("smalldata/iris/iris.csv"),
                    destination_frame = "iris.hex")
@@ -21,6 +21,7 @@ test.grid.resume <- function() {
       x = 1:4,
       y = 5,
       training_frame = iris.hex,
+      is_supervised = TRUE,
       hyper_params = hyper_parameters,
       parallelism = 0
     )
@@ -54,9 +55,10 @@ test.grid.resume <- function() {
       training_frame = train,
       validation_frame = test,
       hyper_params = hyper_parameters,
+      is_supervised = TRUE,
       validation_response_column = "label",
       parallelism = 0
     )
 }
 
-doTest("Parallel Grid Search test", test.grid.resume)
+doTest("Parallel Grid Search test", test.grid.isolationforest.supervised)
