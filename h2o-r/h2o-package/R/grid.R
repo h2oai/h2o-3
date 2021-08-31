@@ -74,7 +74,7 @@ h2o.grid <- function(algorithm,
                      parallelism = 1)
 {
   #Unsupervised algos to account for in grid (these algos do not need response)
-  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
+  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm", "extendedisolationforest")
   # Parameter list
   dots <- list(...)
   # Add x, y, and training_frame
