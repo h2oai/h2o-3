@@ -1029,7 +1029,7 @@ public class DTree extends Iced {
       predRight = wYNA;
       if(hasDenom){
         tree_p0 = nomhi[0] /denhi[0];
-        tree_p1 = denNA / nomNA;
+        tree_p1 = nomNA / denNA;
       } else {
         tree_p0 = predLeft / nLeft;
         tree_p1 = predRight / nRight;
