@@ -11,10 +11,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zipf/7/index.h
 - [[PUBDEV-8234]](https://h2oai.atlassian.net/browse/PUBDEV-8234) - Fixed predicting issues with imported MOJOs trained with an offset-column.
 - [[PUBDEV-8247]](https://h2oai.atlassian.net/browse/PUBDEV-8247) - Fixed slow tree building by implementing a switch to turn off the generation of plain language rules.
 - [[PUBDEV-8298]](https://h2oai.atlassian.net/browse/PUBDEV-8298) - Fixed potential NPE thrown by setting `_orig_projection_array=[]`.
+- [[PUBDEV-8309]](https://h2oai.atlassian.net/browse/PUBDEV-8309) - Fixed generic model deserialization.
+- [[PUBDEV-8310]](https://h2oai.atlassian.net/browse/PUBDEV-8310) - Fixed predictions for splits NA vs REST with monotone constraints.
 
 #### New Feature
 
 - [[PUBDEV-8293]](https://h2oai.atlassian.net/browse/PUBDEV-8293) - H2O Standalone now uses log4j2 as the logger implementation.
+
 
 ### Zipf (3.32.1.6) - 8/19/2021
 
