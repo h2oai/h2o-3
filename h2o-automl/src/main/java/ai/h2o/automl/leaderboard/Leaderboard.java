@@ -361,7 +361,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       Model model = modelKey.get();
       if (model == null) {
         badKeys.add(modelKey);
-        eventLog().warn(Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
+        eventLog().warn(Stage.ModelTraining, "Model `"+modelKey+"` has unexpectedly been deleted from H2O: ignoring the model and/or removing it from the leaderboard.");
         continue;
       }
 
@@ -372,7 +372,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       assert mm != null: "Missing metrics for model "+modelKey;
       if (mm == null) {
         badKeys.add(modelKey);
-        eventLog().warn(Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
+        eventLog().warn(Stage.ModelTraining, "Metrics for model `"+modelKey+"` are missing: ignoring the model and/or removing it from the leaderboard.");
         continue;
       }
       modelMetrics.add(mm);
