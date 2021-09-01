@@ -45,10 +45,11 @@ automl.model_selection.suite <- function() {
       project_name = "aml_exclude_algos",
       max_models = max_models,
       exclude_algos = c('DRF', 'GLM'),
+      seed = 42 # since SE are build only if the basemodels would differ from the other SEs, it can happen that sometime we would not improve any model from any family so we would not have a new SE which would break the test
     )
     models <- get_partitioned_models(aml)
     expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
-    expect_equal(length(models$se), 2)
+    expect_equal(length(models$se), 3)
   }
 
   test_include_algos <- function() {
@@ -175,7 +176,7 @@ automl.model_selection.suite <- function() {
       list(name='DRF', steps=list(list(id='def_1', weight=10), list(id='XRT', weight=10))),
       list(name='GLM', steps=list(list(id='def_1', weight=10))),
       list(name='GBM', steps=list(list(id='grid_1', weight=777))),
-      list(name='StackedEnsemble', steps=list(list(id='best', weight=10), list(id='all', weight=10)))
+      list(name='StackedEnsemble', steps=list(list(id='best1', weight=10), list(id='all1', weight=10)))
     ))
 
     new_aml <- h2o.automl(x=ds$x, y=ds$y.idx,

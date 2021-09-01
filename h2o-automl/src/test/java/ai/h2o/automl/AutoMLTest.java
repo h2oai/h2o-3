@@ -66,8 +66,8 @@ public class AutoMLTest extends water.TestUtil {
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
       assertEquals("wrong amount of standard models", maxModels, count_non_se);
-      assertEquals("wrong amount of SE models", 2, count_se);
-      assertEquals(maxModels+2, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of SE models", 4, count_se);
+      assertEquals(maxModels+4, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.delete();
@@ -143,8 +143,8 @@ public class AutoMLTest extends water.TestUtil {
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
       assertEquals("wrong amount of standard models", 5, count_non_se);
-      assertEquals("wrong amount of SE models", 2, count_se);
-      assertEquals(7, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of SE models", 3, count_se);
+      assertEquals(8, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       for (Lockable l: deletables) {
@@ -355,7 +355,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 3*10);
+        put(Algo.StackedEnsemble, 11*10);
       }};
       int maxTotalWork = 0;
       for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
@@ -395,7 +395,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 3*10);
+        put(Algo.StackedEnsemble, 11*10);
       }};
       Map<Algo, Integer> exploitationAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.GBM, 1*10);
@@ -451,13 +451,13 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
-      assertEquals(5, aml.leaderboard().getModelCount());
+      assertEquals(4, aml.leaderboard().getModelCount());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GBMModel.class::isInstance).count());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GLMModel.class::isInstance).count());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(DRFModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(XGBoostModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
-      assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
+      assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
 
       assertNotNull(aml._actualModelingSteps);
       Log.info(Arrays.toString(aml._actualModelingSteps));
@@ -472,8 +472,7 @@ public class AutoMLTest extends water.TestUtil {
                       new Step("XRT", 20),
               }),
               new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-                      new Step("all", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("best1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
       }, aml._actualModelingSteps);
     } finally {

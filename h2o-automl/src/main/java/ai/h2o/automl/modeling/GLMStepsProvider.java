@@ -20,8 +20,8 @@ public class GLMStepsProvider
 
         static abstract class GLMModelStep extends ModelingStep.ModelStep<GLMModel> {
 
-            GLMModelStep(String id, int weight, AutoML autoML) {
-                super(Algo.GLM, id, weight, autoML);
+            GLMModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
+                super(Algo.GLM, id, weight,priorityGroup, autoML);
             }
 
             @Override
@@ -51,7 +51,7 @@ public class GLMStepsProvider
 
 
         private ModelingStep[] defaults = new GLMModelStep[] {
-                new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 1, aml()) {
                     @Override
                     protected Job<GLMModel> startJob() {
                         GLMParameters glmParameters = prepareModelParameters();

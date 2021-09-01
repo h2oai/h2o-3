@@ -82,6 +82,11 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
                 orderedSteps.addAll(Arrays.asList(toAdd));
             }
         }
+        if (modelingPlan == AutoML.defaultModelingPlan)
+            return orderedSteps
+                    .stream()
+                    .sorted((step1, step2) -> step1._priorityGroup - step2._priorityGroup)
+                    .toArray(ModelingStep[]::new);
         return orderedSteps.toArray(new ModelingStep[0]);
     }
 

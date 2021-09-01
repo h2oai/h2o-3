@@ -48,6 +48,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         Incremental
     }
 
+    Integer _priorityGroup = 100;
+
     static Predicate<Work> isDefaultModel = w -> w._type == JobType.ModelBuild;
     static Predicate<Work> isExplorationWork = w -> w._type == JobType.ModelBuild || w._type == JobType.HyperparamSearch;
     static Predicate<Work> isExploitationWork = w -> w._type == JobType.Selection;
@@ -103,10 +105,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     StepDefinition _fromDef;
 
-    protected ModelingStep(IAlgo algo, String id, int weight, AutoML autoML) {
+    protected ModelingStep(IAlgo algo, String id, int weight, int priorityGroup, AutoML autoML) {
+        assert priorityGroup >= 0;
         _algo = algo;
         _id = id;
         _weight = weight;
+        _priorityGroup = priorityGroup;
         _aml = autoML;
         _description = algo.name()+" "+id;
     }
@@ -314,8 +318,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
 
-        public ModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, autoML);
+        public ModelStep(IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
+            super(algo, id, cost, priorityGroup, autoML);
         }
 
         @Override
@@ -323,7 +327,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         @Override
         protected Work makeWork() {
-            return new Work(_id, _algo, JobType.ModelBuild, _weight);
+            return new Work(_id, _algo, JobType.ModelBuild, _weight, _priorityGroup);
         }
 
         @Override
@@ -364,8 +368,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             } else {
                 Work work = getAllocatedWork();
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
-                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
+//                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
 //                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, isDefaultModel) / 1e3; //PUBDEV-7595
+                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, w -> w._priorityGroup == _priorityGroup) / 1e3; // Models from a priority group + SEs
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
@@ -385,8 +390,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 20;
 
-        public GridStep(IAlgo algo, String id, int cost, AutoML autoML) {
-            super(algo, id, cost, autoML);
+        public GridStep(IAlgo algo, String id, int cost, int priorityGroup, AutoML autoML) {
+            super(algo, id, cost, priorityGroup,autoML);
         }
 
         @Override
@@ -394,7 +399,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         @Override
         protected Work makeWork() {
-            return new Work(_id, _algo, JobType.HyperparamSearch, _weight);
+            return new Work(_id, _algo, JobType.HyperparamSearch, _weight, _priorityGroup);
         }
 
         @Override
@@ -474,13 +479,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
 
         public SelectionStep(IAlgo algo, String id, int weight, AutoML autoML) {
-            super(algo, id, weight, autoML);
+            super(algo, id, weight, 100, autoML);
             _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
         }
 
         @Override
         protected Work makeWork() {
-            return new Work(_id, _algo, JobType.Selection, _weight);
+            return new Work(_id, _algo, JobType.Selection, _weight, _priorityGroup);
         }
 
         @Override

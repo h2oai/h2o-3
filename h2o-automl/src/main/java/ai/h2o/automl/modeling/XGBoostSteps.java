@@ -46,8 +46,8 @@ public class XGBoostSteps extends ModelingSteps {
 
         boolean _emulateLightGBM;
 
-        XGBoostModelStep(String id, int weight, AutoML autoML, boolean emulateLightGBM) {
-            super(Algo.XGBoost, id, weight, autoML);
+        XGBoostModelStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
+            super(Algo.XGBoost, id, weight, priorityGroup, autoML);
             _emulateLightGBM = emulateLightGBM;
         }
 
@@ -59,8 +59,8 @@ public class XGBoostSteps extends ModelingSteps {
     static abstract class XGBoostGridStep extends ModelingStep.GridStep<XGBoostModel> {
         boolean _emulateLightGBM;
 
-        public XGBoostGridStep(String id, int weight, AutoML autoML, boolean emulateLightGBM) {
-            super(Algo.XGBoost, id, weight, autoML);
+        public XGBoostGridStep(String id, int weight, int priorityGroup, AutoML autoML, boolean emulateLightGBM) {
+            super(Algo.XGBoost, id, weight, priorityGroup,autoML);
             _emulateLightGBM = emulateLightGBM;
         }
 
@@ -99,7 +99,7 @@ public class XGBoostSteps extends ModelingSteps {
 
 
     private ModelingStep[] defaults = new XGBoostModelStep[] {
-            new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml(),false) {
+            new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2, aml(),false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 1 (medium depth)
@@ -118,12 +118,12 @@ public class XGBoostSteps extends ModelingSteps {
                     return trainModel(xgBoostParameters);
                 }
             },
-            new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
+            new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, 1,aml(), false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 2 (deep)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
-                    xgBoostParameters._max_depth = 20;
+                    xgBoostParameters._max_depth = 15;
                     xgBoostParameters._min_rows = 10;
                     xgBoostParameters._sample_rate = 0.6;
                     xgBoostParameters._col_sample_rate = 0.8;
@@ -137,7 +137,7 @@ public class XGBoostSteps extends ModelingSteps {
                     return trainModel(xgBoostParameters);
                 }
             },
-            new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
+            new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, 3,aml(), false) {
                 @Override
                 protected Job<XGBoostModel> startJob() {
                     //XGB 3 (shallow)
@@ -159,7 +159,7 @@ public class XGBoostSteps extends ModelingSteps {
     };
 
     private ModelingStep[] grids = new XGBoostGridStep[] {
-            new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
+            new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, 9, aml(), false) {
                 @Override
                 protected Job<Grid> startJob() {
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
@@ -170,7 +170,7 @@ public class XGBoostSteps extends ModelingSteps {
                         searchParams.put("_max_leaves", new Integer[]{1<<5, 1<<10, 1<<15, 1<<20});
                         searchParams.put("_max_depth", new Integer[]{10, 20, 50});
                     } else {
-                        searchParams.put("_max_depth", new Integer[]{5, 10, 15, 20});
+                        searchParams.put("_max_depth", new Integer[]{3, 6, 9, 12, 15});
                         if (aml().getWeightsColumn() == null || aml().getWeightsColumn().isInt()) {
                             searchParams.put("_min_rows", new Double[]{1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
                         } else {

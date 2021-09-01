@@ -323,7 +323,7 @@ def test_stacked_ensembles_are_trained_after_max_models():
     aml.train(y=ds['target'], training_frame=ds['train'])
 
     _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) == 2, "StackedEnsemble should still be trained after max models have been reached"
+    assert len(se) == 3, "StackedEnsemble should still be trained after max models have been reached"
 
 
 def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0():
@@ -334,7 +334,7 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
     aml.train(y=ds['target'], training_frame=ds['train'], blending_frame=ds['valid'], leaderboard_frame=ds['test'])
 
     _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) == 2, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
+    assert len(se) == 3, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
     for m in se:
         model = h2o.get_model(m)
         assert model.params['blending_frame']['actual']['name'] == ds['valid'].frame_id

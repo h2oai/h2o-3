@@ -17,8 +17,8 @@ public class DRFStepsProvider
 
         static abstract class DRFModelStep extends ModelingStep.ModelStep<DRFModel> {
 
-            DRFModelStep(String id, int weight, AutoML autoML) {
-                super(Algo.DRF, id, weight, autoML);
+            DRFModelStep(String id, int weight, int priorityGroup, AutoML autoML) {
+                super(Algo.DRF, id, weight, priorityGroup, autoML);
             }
 
             DRFParameters prepareModelParameters() {
@@ -30,14 +30,14 @@ public class DRFStepsProvider
 
 
         private ModelingStep[] defaults = new DRFModelStep[] {
-                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, 2,aml()) {
                     @Override
                     protected Job<DRFModel> startJob() {
                         DRFParameters drfParameters = prepareModelParameters();
                         return trainModel(drfParameters);
                     }
                 },
-                new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                new DRFModelStep("XRT", DEFAULT_MODEL_TRAINING_WEIGHT, 3, aml()) {
                     { _description = _description+" (Extremely Randomized Trees)"; }
 
                     @Override

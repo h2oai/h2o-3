@@ -191,7 +191,8 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         int before = leaderboard.getModelCount();
         leaderboard.addModel(model._key);
         int after = leaderboard.getModelCount();
-        _modelCount.addAndGet(after - before);
+        if (!model._parms.algoName().equals(Algo.StackedEnsemble.name()))
+            _modelCount.addAndGet(after - before);
     }
 
     private EventLog eventLog() {
