@@ -305,7 +305,7 @@ public abstract class SharedTreeModel<
   }
 
   @Override
-  public void updateAuxTreeWeights(Frame frame, String weightsColumn) {
+  public UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn) {
     if (weightsColumn == null) {
       throw new IllegalArgumentException("Weights column name is not defined");
     }
@@ -318,8 +318,12 @@ public abstract class SharedTreeModel<
     // keep features only and re-introduce weights column at the end of the frame
     Frame featureFrm = new Frame(_output.features(), frame.vecs(_output.features()));
     featureFrm.add(weightsColumn, weights);
-    
-    new UpdateAuxTreeWeightsTask(_output).doAll(featureFrm);
+
+    UpdateAuxTreeWeightsTask t = new UpdateAuxTreeWeightsTask(_output).doAll(featureFrm);
+    UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport report = new UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport();
+    report._warn_trees = t._warnTrees;
+    report._warn_classes = t._warnClasses;
+    return report;
   }
 
   public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
@@ -488,6 +492,8 @@ public abstract class SharedTreeModel<
     private transient int[/*treeId*/][/*classId*/] _maxNodeIds;
     // OUT
     private double[/*treeId*/][/*classId*/][/*leafNodeId*/] _leafNodeWeights;
+    private int[] _warnTrees;
+    private int[] _warnClasses;
 
     private UpdateAuxTreeWeightsTask(SharedTreeOutput output) {
       _treeKeys = output._treeKeys;
@@ -564,6 +570,8 @@ public abstract class SharedTreeModel<
 
     @Override
     protected void postGlobal() {
+      _warnTrees = new int[0];
+      _warnClasses = new int[0];
       Futures fs = new Futures();
       for (int treeId = 0; treeId < _leafNodeWeights.length; treeId++) {
         double[][] classWeights = _leafNodeWeights[treeId];
@@ -576,9 +584,14 @@ public abstract class SharedTreeModel<
           CompressedTree updatedTree = auxTree.updateLeafNodeWeights(nodeWeights);
           assert auxTree._key.equals(updatedTree._key);
           DKV.put(updatedTree, fs);
+          if (updatedTree.hasZeroWeight()) {
+            _warnTrees = ArrayUtils.append(_warnTrees, treeId);
+            _warnClasses = ArrayUtils.append(_warnClasses, classId);
+          }
         }
       }
       fs.blockForPending();
+      assert _warnTrees.length == _warnClasses.length;
     }
   }
   

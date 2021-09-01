@@ -2737,7 +2737,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model1;
       Frame train = parseTestFile("smalldata/gbm_test/ecology_model.csv");
 
-      train.remove("Site").remove();    
+      train.remove("Site").remove();
       train.remove("Method").remove();
       train.toCategoricalCol("Angaus");
       Scope.track(train);
@@ -2755,6 +2755,50 @@ public class XGBoostTest extends TestUtil {
       model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model1);
       assertEquals(model1._parms._col_sample_rate, model1._parms._colsample_bylevel, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUpdateWeightsWarning() {
+    Scope.enter();
+    try {
+      Frame train = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withDataForCol(0, new double[]{0, 1})
+              .withDataForCol(1, new double[]{0, 1})
+              .build();
+      
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._response_column = train.lastVecName();
+      parms._train = train._key;
+      parms._ntrees = 100;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      
+      Vec weights = train.anyVec().makeCon(1.0);
+      train.add("ws", weights);
+      DKV.put(train);
+      
+      int nonEmpty = 0;
+      for (int i = 0; i < parms._ntrees; i++) {
+        if (model.convert(i, null).subgraphArray.get(0).rootNode.isLeaf()) {
+          break;
+        }
+        nonEmpty += 1;
+      }
+      assertTrue(nonEmpty < parms._ntrees);
+      
+      assertFalse(model.updateAuxTreeWeights(train, "ws").hasWarnings());
+
+      // now use a subset of the dataset to leave some nodes empty 
+      weights.set(0, 0);
+      Model.UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport report = model.updateAuxTreeWeights(train, "ws");
+      assertTrue(report.hasWarnings());
+      assertArrayEquals(ArrayUtils.seq(0, nonEmpty), report._warn_trees);
+      assertArrayEquals(new int[nonEmpty], report._warn_classes);
     } finally {
       Scope.exit();
     }

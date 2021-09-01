@@ -8,6 +8,7 @@ from .h_statistic import HStatistic
 from .scoring_history import ScoringHistory, ScoringHistoryDL, ScoringHistoryGLM, ScoringHistoryTrees
 from .std_coef import StandardCoef
 from .trees import Trees
+from .supervised_trees import SupervisedTrees
 from .varimp import VariableImportance
 
 module = sys.modules[__name__]
@@ -44,6 +45,7 @@ __all__ = [  # mainly useful here for the generated documentation
     'HStatistic', 
     'ScoringHistory', 
     'StandardCoef', 
-    'Trees', 
+    'Trees',
+    'SupervisedTrees', 
     'VariableImportance'
 ]

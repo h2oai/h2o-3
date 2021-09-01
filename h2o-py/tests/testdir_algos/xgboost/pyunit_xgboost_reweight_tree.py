@@ -34,15 +34,17 @@ def xgboost_reweight_tree():
     # 2. Scale weights => contributions should stay the same
     weights_scale = 2
     prostate_frame["weights"] = weights_scale
-    h2o.rapids('(tree.update.weights {} {} "{}")'.format(xgb_model.model_id, prostate_frame.frame_id, "weights"))
+    xgb_model.update_tree_weights(prostate_frame, "weights")
     contribs_reweighted = xgb_model.predict_contributions(prostate_frame)
     assert_frame_equal(contribs_reweighted.as_data_frame(), contribs_original.as_data_frame(), check_less_precise=3)
 
-    # 3. Reweight based on small subset of the data => contributions are expected to change
-    prostate_subset = prostate_frame.head(10)
-    h2o.rapids('(tree.update.weights {} {} "{}")'.format(xgb_model.model_id, prostate_subset.frame_id, "weights"))
-    contribs_subset = xgb_model.predict_contributions(prostate_subset)
-    assert contribs_subset["BiasTerm"].min() != contribs_original["BiasTerm"].min()
+    # 3. Re-weight based on small subset of the data => contributions are expected to change
+    with pyunit_utils.catch_warnings() as ws:
+        prostate_subset = prostate_frame.head(10)
+        xgb_model.update_tree_weights(prostate_subset, "weights")
+        contribs_subset = xgb_model.predict_contributions(prostate_subset)
+        assert contribs_subset["BiasTerm"].min() != contribs_original["BiasTerm"].min()
+        assert any(issubclass(w.category, UserWarning) and 'Some of the updated nodes have zero weights' in str(w.message) for w in ws)
 
     # 4. Save modified mojo
     reweighted_mojo_path = xgb_model.download_mojo()

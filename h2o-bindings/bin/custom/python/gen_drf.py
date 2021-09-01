@@ -4,6 +4,7 @@ options = dict(
         'h2o.model.extensions.ScoringHistoryTrees',
         'h2o.model.extensions.VariableImportance',
         'h2o.model.extensions.Trees',
+        'h2o.model.extensions.SupervisedTrees',
     ],
 )
 deprecated_params = dict(offset_column=None)

@@ -117,7 +117,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public interface UpdateAuxTreeWeights {
-    void updateAuxTreeWeights(Frame frame, String weightsColumn);
+    UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn);
+
+    class UpdateAuxTreeWeightsReport {
+      public int[] _warn_trees;
+      public int[] _warn_classes;
+      public boolean hasWarnings() {
+        return _warn_trees != null && _warn_trees.length > 0;
+      }
+    }
   }
 
   public interface Contributions {

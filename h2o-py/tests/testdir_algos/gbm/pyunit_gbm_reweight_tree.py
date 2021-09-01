@@ -24,15 +24,17 @@ def gbm_reweight_tree():
 
     # 2. Scale weights => contributions should stay the same 
     prostate_frame["weights"] = 2
-    h2o.rapids('(tree.update.weights {} {} "{}")'.format(gbm_model.model_id, prostate_frame.frame_id, "weights"))
+    gbm_model.update_tree_weights(prostate_frame, "weights")
     contribs_reweighted = gbm_model.predict_contributions(prostate_frame)
     assert_frame_equal(contribs_reweighted.as_data_frame(), contribs_original.as_data_frame())
 
-    # 3. Reweight based on small subset of the data => contributions are expected to change
-    prostate_subset = prostate_frame.head(10)
-    h2o.rapids('(tree.update.weights {} {} "{}")'.format(gbm_model.model_id, prostate_subset.frame_id, "weights"))
-    contribs_subset = gbm_model.predict_contributions(prostate_subset)
-    assert contribs_subset["BiasTerm"].min() != contribs_original["BiasTerm"].min()
+    # 3. Re-weight based on small subset of the data => contributions are expected to change
+    with pyunit_utils.catch_warnings() as ws:
+        prostate_subset = prostate_frame.head(10)
+        gbm_model.update_tree_weights(prostate_subset, "weights")
+        contribs_subset = gbm_model.predict_contributions(prostate_subset)
+        assert contribs_subset["BiasTerm"].min() != contribs_original["BiasTerm"].min()
+        assert any(issubclass(w.category, UserWarning) and 'Some of the updated nodes have zero weights' in str(w.message) for w in ws)
 
 
 if __name__ == "__main__":

@@ -585,7 +585,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
     }
 
     public static int findMaxNodeId(byte[] auxTreeInfo) {
-      int maxNodeId = -1;
+      int maxNodeId = 0;
       AuxInfoLightReader reader = new AuxInfoLightReader(auxTreeInfo);
       while (reader.hasNext()) {
         int nodeId = reader.readMaxChildNodeIdAndSkip();
