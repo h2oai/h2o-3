@@ -108,20 +108,20 @@ Where:
 | Gamma             | - With :math:`f\text{_}link=link(f)`                                                      |
 |                   | - :math:`2\times w\times (y\times \exp(-f\text{_}link)+f\text{_}link)`                    |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Laplace           | :math:`w\times\mid{y-f}\mid`                                                              |
+| Laplace           | :math:`w \text{ }\times\mid{y-f}\mid`                                                     |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Quantile          | :math:`f= \begin{cases}w\times QuantileAlpha \times(y-f) & \text{for }y>f \\              |
 |                   | w\times(1-QuantileAlpha)\times(f-y)& \text{for } y \leq f \\\end{cases}`                  |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Huber             | :math:`f= \begin{cases} w\times(y-f)^2 & \text{for } \mid{y-f}\mid \leq HuberDelta &      |
-|                   | \text{(Equvalent to wMSE)} \\                                                             |
+|                   | \text{(Equivalent to wMSE)} \\                                                            |
 |                   | 2\times w\times(\mid{y-f}\mid -HuberDelta)\times HuberDelta & \text{for } y \leq f &      |
 |                   | \text{(Equivalent to wMAE)} \\\end{cases}`                                                |
 +-------------------+-------------------------------------------------------------------------------------------+
-| Modified_Huber    | :math:`f= \begin{cases}-4\times w\times z & \text{for } z\leq 1 \\                        |
+| Modified_Huber    | :math:`\text{With } z=(2\times y-1)\times f \\                                            |
+|                   | f= \begin{cases}-4\times w\times z & \text{for } z\leq 1 \\                               |
 |                   | 0 & \text{for } z>1 \\                                                                    |
-|                   | w\times z^2 & \text{otherwise} \\\end{cases}                                              |
-|                   | \text{where } z=(2\times y-1)\times f`                                                    |
+|                   | w\times z^2 & \text{otherwise} \\\end{cases}`                                             |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
 |                   | :math:`2\times w\times y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})\times(2-     |
