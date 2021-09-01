@@ -701,7 +701,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  public void updateAuxTreeWeights(Frame frame, String weightsColumn) {
+  public UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn) {
     if (weightsColumn == null) {
       throw new IllegalArgumentException("Weights column name is not defined");
     }
@@ -723,6 +723,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
             .getNodeWeights();
     AuxNodeWeights auxNodeWeights = new AuxNodeWeights(model_info().getAuxNodeWeightsKey(), nodeWeights);
     DKV.put(auxNodeWeights);
+
+    UpdateAuxTreeWeightsReport report = new UpdateAuxTreeWeightsReport();
+    report._warn_classes = new int[0];
+    report._warn_trees = new int[0];
+    for (int treeId = 0; treeId < nodeWeights.length; treeId++) {
+      if (nodeWeights[treeId] == null)
+        continue;
+      for (double w : nodeWeights[treeId]) {
+        if (w == 0) {
+          report._warn_trees = ArrayUtils.append(report._warn_trees, treeId);
+          report._warn_classes = ArrayUtils.append(report._warn_classes, 0);
+          break;
+        }
+      }
+    }
+    return report;
   }
 
   @Override

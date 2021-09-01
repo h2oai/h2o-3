@@ -32,8 +32,16 @@ public class AstTreeUpdateWeights extends AstPrimitive<AstTreeUpdateWeights> {
         Model.UpdateAuxTreeWeights model = (Model.UpdateAuxTreeWeights) stk.track(asts[1].exec(env)).getModel();
         Frame frame = stk.track(asts[2].exec(env)).getFrame();
         String weightsColumn = stk.track(asts[3].exec(env)).getStr();
-        model.updateAuxTreeWeights(frame, weightsColumn);
-        return new ValStr("OK");
+        Model.UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport report = model.updateAuxTreeWeights(frame, weightsColumn);
+        if (report.hasWarnings()) {
+            return new ValStr(makeShortWarning(report));
+        } else 
+            return new ValStr("OK");
+    }
+
+    private static String makeShortWarning(Model.UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport report) {
+        return "Some of the updated nodes have zero weights " +
+                "(eg.: tree #" + (report._warn_trees[0] + 1) + ", class #" + (report._warn_classes[0] + 1) + ").";
     }
 
 }

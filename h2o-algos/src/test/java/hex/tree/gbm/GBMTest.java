@@ -4842,5 +4842,41 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testUpdateWeightsWarning() {
+    Scope.enter();
+    try {
+      Frame train = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withDataForCol(0, new double[]{0, 1})
+              .withDataForCol(1, new double[]{0, 1})
+              .build();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = train.lastVecName();
+      parms._train = train._key;
+      parms._ntrees = 2;
+      parms._learn_rate = 1.0;
+      parms._min_rows = 1.0;
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Vec weights = train.anyVec().makeCon(1.0);
+      train.add("ws", weights);
+      DKV.put(train);
+
+      assertFalse(model.updateAuxTreeWeights(train, "ws").hasWarnings());
+
+      // now use a subset of the dataset to leave some nodes empty 
+      weights.set(0, 0);
+      Model.UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport report = model.updateAuxTreeWeights(train, "ws");
+      assertTrue(report.hasWarnings());
+      assertArrayEquals(new int[1], report._warn_trees);
+      assertArrayEquals(new int[1], report._warn_classes);
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

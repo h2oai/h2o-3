@@ -96,6 +96,13 @@ public class CompressedTree extends Keyed<CompressedTree> {
     return new CompressedTree(_key, bits, _seed);
   }
   
+  public boolean hasZeroWeight() {
+    return SharedTreeMojoModel.readAuxInfos(_bits)
+            .values()
+            .stream()
+            .anyMatch(auxInfo -> auxInfo.weightL == 0 || auxInfo.weightR == 0);
+  }
+  
   public SharedTreeSubgraph toSharedTreeSubgraph(final CompressedTree auxTreeInfo,
                                                  final String[] colNames, final String[][] domains) {
     TreeCoords tc = getTreeCoords();

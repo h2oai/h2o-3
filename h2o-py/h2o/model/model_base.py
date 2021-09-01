@@ -516,6 +516,19 @@ class ModelBase(h2o_meta(Keyed)):
             return self._h(frame=frame, variables=variables)
         print("No calculation available for this model")
 
+    def update_tree_weights(self, frame, weights_column):
+        """
+        Re-calculates tree-node weights based on provided dataset. Modifying node weights will affect how
+        contribution predictions (Shapley values) are calculated. This can be used to explain the model
+        on a curated sub-population of the training dataset.
+
+        :param frame: frame that will be used to re-populate trees with new observations and to collect per-node weights 
+        :param weights_column: name of the weight column (can be different from training weights) 
+        """
+        if has_extension(self, 'SupervisedTrees'):
+            return self._update_tree_weights(frame, weights_column)
+        print("Only supervised tree-based models support tree-reweighting")
+
     def cross_validation_metrics_summary(self):
         """
         Retrieve Cross-Validation Metrics Summary.
