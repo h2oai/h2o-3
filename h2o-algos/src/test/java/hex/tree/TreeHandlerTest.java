@@ -571,8 +571,8 @@ public class TreeHandlerTest extends TestUtil {
             assertThat("Wow, did we optimize tree rendering with language rules? It is now closer to rendering without rules!",
                     durationEnabled, greaterThan(durationDisabled * slowdownFactor));
 
-            // duration disabled and "auto" should be similar in this case, 3x factor of tolerance because we are measuring in ms
-            assertEquals(durationDisabled, durationAuto, (double) 3 * durationDisabled);
+            // duration disabled and "auto" should be similar in this case, 10x factor of tolerance because we are measuring in ms
+            assertEquals(durationDisabled, durationAuto, (double) 10 * durationDisabled);
         } finally {
             Scope.exit();
         }
