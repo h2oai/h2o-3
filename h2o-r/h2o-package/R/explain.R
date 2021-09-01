@@ -2700,6 +2700,7 @@ h2o.learning_curve_plot <- function(model,
     labels <- sort(unique(scoring_history$type))
 
   labels <- names(colors)[names(colors) %in% labels]
+  colors <- colors[labels]
   p <- ggplot2::ggplot(ggplot2::aes_string(
     x = "x",
     y = "metric",

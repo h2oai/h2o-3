@@ -4802,4 +4802,45 @@ public class GBMTest extends TestUtil {
     return random;
   }
 
+  @Test
+  public void testMonotoneNAvsRestSplit() {
+    Assume.assumeTrue(test_type.equals("Default")); // no need to run 2x
+
+    Scope.enter();
+    try {
+      Frame f = new TestFrameBuilder()
+              .withColNames("C1", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, ard(0, 1, 2, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN))
+              .withDataForCol(1, new String[]{"a", "a", "a", "b", "b", "b", "b", "b", "b"})
+              .build();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = "Response";
+      parms._min_rows = 1;
+      parms._learn_rate = 1;
+      parms._train = f._key;
+      parms._ntrees = 3;
+      parms._seed = 1234L;
+      parms._distribution = bernoulli;
+      parms._score_each_iteration = true;
+
+      GBMModel.GBMParameters parmsMonotone = (GBMModel.GBMParameters) parms.clone();
+      parmsMonotone._monotone_constraints = new KeyValue[] {
+              new KeyValue("C1", 1)
+      };
+
+      GBMModel model = new GBM(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      GBMModel modelMonotone = new GBM(parmsMonotone).trainModel().get();
+      Scope.track_generic(modelMonotone);
+
+      Assert.assertArrayEquals(model._output._scored_train, modelMonotone._output._scored_train);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }
