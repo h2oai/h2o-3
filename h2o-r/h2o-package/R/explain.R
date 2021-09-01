@@ -289,7 +289,8 @@ with_no_h2o_progress <- function(expr) {
   }
 
 
-  if ("H2OAutoML" %in% class(object) || ("H2OFrame" %in% class(object) && "model_id" %in% names(object))) {
+  if ("H2OAutoML" %in% class(object) || (("H2OFrame" %in% class(object) ||
+      "data.frame" %in% class(object)) && "model_id" %in% names(object))) {
     leaderboard <- if ("H2OAutoML" %in% class(object)) object@leaderboard else object
     if (require_single_model && nrow(leaderboard) > 1) {
       stop("Only one model is allowed!")

@@ -1040,7 +1040,7 @@ def pd_plot(
 
 
 def pd_multi_plot(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.model_base]]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.model_base]]
         frame,  # type: h2o.H2OFrame
         column,  # type: str
         best_of_family=True,  # type: bool
@@ -1508,8 +1508,8 @@ def _calculate_clustering_indices(matrix):
 
 
 def varimp_heatmap(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
-        top_n=20,  # type: int
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
+        top_n=None,  # type: Option[int]
         figsize=(16, 9),  # type: Tuple[float]
         cluster=True,  # type: bool
         colormap="RdYlBu_r"  # type: str
@@ -1526,8 +1526,8 @@ def varimp_heatmap(
     encoded features and return a single variable importance for the original categorical
     feature. By default, the models and variables are ordered by their similarity.
 
-    :param models: H2O AutoML object or list of H2O models
-    :param top_n: use just top n models (applies only when used with H2OAutoML)
+    :param models: H2O AutoML object, leaderboard slice or list of H2O models
+    :param top_n: DEPRECATED. use just top n models (applies only when used with H2OAutoML)
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
@@ -1557,7 +1557,15 @@ def varimp_heatmap(
     >>> aml.varimp_heatmap()
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    varimps, model_ids,  x = varimp(models=models, top_n=top_n, cluster=cluster, use_pandas=False)
+    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
+        if top_n is not None:
+            import warnings
+            from h2o.exceptions import H2ODeprecationWarning
+            warnings.warn("Setting the `top_n` parameter is deprecated, use leaderboard slice instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
+            models = models.leaderboard.head(top_n)
+        else:
+            models = models.leaderboard.head(20)
+    varimps, model_ids,  x = varimp(models=models, cluster=cluster, use_pandas=False)
 
     plt.figure(figsize=figsize)
     plt.imshow(varimps, cmap=plt.get_cmap(colormap))
@@ -1574,8 +1582,7 @@ def varimp_heatmap(
 
 
 def varimp(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
-        top_n=20,  # type: int
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         cluster=True,  # type: bool
         use_pandas=True  # type: bool
 ):
@@ -1583,23 +1590,16 @@ def varimp(
     """
         Get data that are used to build varimp_heatmap plot.
 
-        :param models: H2O AutoML object or list of H2O models
-        :param top_n: use just top n models (applies only when used with H2OAutoML)
+        :param models: H2O AutoML object, leaderboard slice or list of H2O models
         :param cluster: if True, cluster the models and variables
         :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a triple (varimps, model_ids, variable_names)
         :returns: either pandas DataFrame (if use_pandas == True) or a triple (varimps, model_ids, variable_names)
     """
     if _is_automl_or_leaderboard(models):
         model_ids = _get_model_ids_from_automl_or_leaderboard(models, filter_=_has_varimp)
-        models = [
-            h2o.get_model(model_id)
-            for model_id in model_ids[:min(top_n, len(model_ids))]
-        ]
-    else:
-        top_n = len(models)
+        models = [h2o.get_model(model_id) for model_id in model_ids]
     # Filter out models that don't have varimp
     models = [model for model in models if _has_varimp(model)]
-    models = models[:min(len(models), top_n)]
     if len(models) == 0:
         raise RuntimeError("No model with variable importance")
     varimps = [_consolidate_varimps(model) for model in models]
@@ -1625,9 +1625,9 @@ def varimp(
 
 
 def model_correlation_heatmap(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
-        top_n=20,  # type: int
+        top_n=None,  # type: Optional[int]
         cluster_models=True,  # type: bool
         triangular=True,  # type: bool
         figsize=(13, 13),  # type: Tuple[float]
@@ -1641,9 +1641,9 @@ def model_correlation_heatmap(
     For classification, frequency of identical predictions is used. By default, models
     are ordered by their similarity (as computed by hierarchical clustering).
 
-    :param models: H2OAutoML object or a list of H2O models
+    :param models: H2OAutoML object, leaderboard slice or a list of H2O models
     :param frame: H2OFrame
-    :param top_n: show just top n models (applies only when used with H2OAutoML)
+    :param top_n: DEPRECATED. show just top n models (applies only when used with H2OAutoML).
     :param cluster_models: if True, cluster the models
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
@@ -1674,7 +1674,15 @@ def model_correlation_heatmap(
     >>> aml.model_correlation_heatmap(test)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    corr, model_ids = model_correlation(models, frame, top_n, cluster_models, use_pandas=False)
+    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
+        if top_n is not None:
+            import warnings
+            from h2o.exceptions import H2ODeprecationWarning
+            warnings.warn("Setting the `top_n` parameter is deprecated, use leaderboard slice instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
+            models = models.leaderboard.head(top_n)
+        else:
+            models = models.leaderboard.head(20)
+    corr, model_ids = model_correlation(models, frame, cluster_models, use_pandas=False)
 
     if triangular:
         corr = np.where(np.triu(np.ones_like(corr), k=1).astype(bool), float("nan"), corr)
@@ -1699,9 +1707,8 @@ def model_correlation_heatmap(
 
 
 def model_correlation(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
-        top_n=20,  # type: int
         cluster_models=True,  # type: bool
         use_pandas=True  # type: bool
 ):
@@ -1709,23 +1716,16 @@ def model_correlation(
     """
     Get data that are used to build model_correlation_heatmap plot.
 
-    :param models: H2OAutoML object or a list of H2O models
+    :param models: H2OAutoML object, leaderboard slice or a list of H2O models
     :param frame: H2OFrame
-    :param top_n: show just top n models (applies only when used with H2OAutoML)
     :param cluster_models: if True, cluster the models
     :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a tuple (correlation_matrix, model_ids)
     :returns: either pandas DataFrame (if use_pandas == True) or a tuple (correlation_matrix, model_ids)
     """
     if _is_automl_or_leaderboard(models):
         model_ids = _get_model_ids_from_automl_or_leaderboard(models)
-        models = [
-            h2o.get_model(model_id)
-            for model_id in model_ids[:min(top_n, len(model_ids))]
-        ]
-    else:
-        top_n = len(models)
+        models = [h2o.get_model(model_id) for model_id in model_ids]
     is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
-    models = models[:min(len(models), top_n)]
     predictions = []
     with no_progress():
         for idx, model in enumerate(models):

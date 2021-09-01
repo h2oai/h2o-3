@@ -349,9 +349,21 @@ Variable importance heatmap shows variable importance across multiple models. So
         va_plot <- h2o.varimp_heatmap(aml)
         va_plot
 
+        # or if some subset of the models is needed a slice of leaderboard can be used, e.g., using MAE as the sorting metric
+        va_plot <- h2o.varimp_heatmap(h2o.head(h2o.arrange(aml@leaderboard, mae), n = 10))
+
+        # or even extended leaderboard can be used
+        h2o.varimp_heatmap(h2o.head(h2o.arrange(h2o.get_leaderboard(aml, extra_columns = "training_time_ms"), training_time_ms), n = 10))
+
    .. code-tab:: python
 
-        ra_plot = aml.varimp_heatmap()
+        va_plot = aml.varimp_heatmap()
+
+        # or if some subset of the models is needed a slice of leaderboard can be used, e.g., using MAE as the sorting metric
+        va_plot = h2o.varimp_heatmap(aml.leaderboard.sort("mae").head(10))
+
+        # or even extended leaderboard can be used
+        va_plot = h2o.varimp_heatmap(h2o.automl.get_leaderboard(aml, extra_columns="training_time_ms").sort("training_time_ms").head(10))
 
 
 .. figure:: images/explain_varimp_heatmap_wine.png
@@ -372,9 +384,32 @@ This plot shows the correlation between the predictions of the models. For class
         mc_plot <- h2o.model_correlation_heatmap(aml, test)
         mc_plot
 
+        # or if some subset of the models is needed a slice of leaderboard can be used, e.g., using MAE as the sorting metric
+        mc_plot <- h2o.model_correlation_heatmap(h2o.head(h2o.arrange(aml@leaderboard, mae), n = 10), test)
+        mc_plot
+
+        # or even extended leaderboard can be used
+        mc_plot <- h2o.model_correlation_heatmap(h2o.head(h2o.arrange(h2o.get_leaderboard(aml, extra_columns = "training_time_ms"), training_time_ms), n = 10), test)
+        mc_plot
+
+        # also more complicated queries on leaderboard can be used, e.g., model correlation between 5 fastest models to train and Stacked Ensembles
+        leaderboard <- as.data.frame(h2o.arrange(h2o.get_leaderboard(aml, extra_columns = "training_time_ms"), training_time_ms))
+        mc_plot <- h2o.model_correlation_heatmap(rbind(head(leaderboard, n = 5), leaderboard[grep("StackedEnsemble", leaderboard$model_id),]), test)
+
+
    .. code-tab:: python
 
         mc_plot = aml.model_correlation_heatmap(test)
+
+        # or if some subset of the models is needed a slice of leaderboard can be used, e.g., using MAE as the sorting metric
+        mc_plot = h2o.model_correlation_heatmap(aml.leaderboard.sort("mae").head(10), test)
+
+        # or even extended leaderboard can be used
+        mc_plot = h2o.model_correlation_heatmap(h2o.automl.get_leaderboard(aml, extra_columns="training_time_ms").sort("training_time_ms").head(10), test)
+
+        # also more complicated queries on leaderboard can be used, e.g., model correlation between 5 fastest models to train and Stacked Ensembles
+        leaderboard = h2o.automl.get_leaderboard(aml, extra_columns="training_time_ms").sort("training_time_ms")
+        mc_plot = h2o.model_correlation_heatmap(leaderboard.head(5).rbind(leaderboard[leaderboard["model_id"].grep("StackedEnsemble", output_logical=True)]), test)
 
 .. figure:: images/explain_model_correlation_heatmap_wine.png
    :alt: H2O AutoML
@@ -441,10 +476,16 @@ Partial Dependence Multi-model Plot:
         pd_plot <- h2o.pd_multi_plot(aml, test, column)
         pd_plot
 
+        # or if some subset of the models is needed a slice of leaderboard can be used, e.g., using MAE as the sorting metric
+        pd_plot <- h2o.pd_multi_plot(h2o.arrange(aml@leaderboard, mae), test, column)
+        pd_plot
+
    .. code-tab:: python
 
         pd_plot = aml.pd_multi_plot(test, column)
 
+        # or if some subset of the models is needed a slice of leaderboard can be used, e.g., using MAE as the sorting metric
+        pd_plot = h2o.pd_multi_plot(aml.leaderboard.sort("mae"), test, column)
 
 .. figure:: images/explain_pd_multiplot_wine_alcohol.png
    :alt: H2O AutoML
@@ -490,7 +531,7 @@ A single-model, single-row, PD Plot simply becomes an ICE Plot (see more below):
    :align: center
 
 
-Individual Conditional Expectiation (ICE) Plots
+Individual Conditional Expectation (ICE) Plots
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 An Individual Conditional Expectation (ICE) plot gives a graphical depiction of the marginal effect of a variable on the response. ICE plots are similar to partial dependence plots (PDP); PDP shows the average effect of a feature while ICE plot shows the effect for a single instance. This function will plot the effect for each decile. In contrast to the PDP, ICE plots can provide more insight, especially when there is stronger feature interaction.
