@@ -49,7 +49,7 @@ def compare_params(original, generic):
             continue
         generic_param = generic_params[param_name]
         original_param = original_params[param_name]
-        if (param_name == "ignored_columns" ):
+        if (param_name == "ignored_columns"):
             assert generic_param == original_param
         assert generic_param is not None
         assert original_param is not None
