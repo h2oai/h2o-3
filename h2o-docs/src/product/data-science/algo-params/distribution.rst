@@ -95,7 +95,7 @@ Where:
 | Bernoulli         | :math:`-2\times w\times(y\times\log(f))+(1-y)\times\log(1-f))`                            |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Quasibinomial     | :math:`f= \begin{cases} -2\times w\times y\times\log(f) & \text{for } f>1 \\              |
-|                   | -2\times w\times(1-y)\times\log(1-f) & \text{for } f<0 \\ 0 & \text{for } y=f \\          |
+|                   | -2\times w\times(1-y)\times\log(1-f) & \text{for } f<0 \\ 0 & \text{for } f=y \\          |
 |                   | -2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) & \text{otherwise}                |
 |                   | \\\end{cases}`                                                                            |
 +-------------------+-------------------------------------------------------------------------------------------+
