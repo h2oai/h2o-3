@@ -356,10 +356,11 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
 
     final List<ModelMetrics> modelMetrics = new ArrayList<>();
     final Map<Key<Model>, LeaderboardCell[]> extensions = new HashMap<>();
-
+    final List<Key<Model>> badKeys = new ArrayList<>();
     for (Key<Model> modelKey : allModelKeys) {  // fully rebuilding modelMetrics, so we loop through all keys, not only new ones
       Model model = modelKey.get();
       if (model == null) {
+        badKeys.add(modelKey);
         eventLog().warn(Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
         continue;
       }
@@ -367,12 +368,25 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       if (_extensionsProvider != null) {
         extensions.put(modelKey, _extensionsProvider.createExtensions(model));
       }
-      modelMetrics.add(getOrCreateModelMetrics(modelKey, extensions));
+      ModelMetrics mm = getOrCreateModelMetrics(modelKey, extensions);
+      assert mm != null: "Missing metrics for model "+modelKey;
+      if (mm == null) {
+        badKeys.add(modelKey);
+        eventLog().warn(Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
+        continue;
+      }
+      modelMetrics.add(mm);
     }
-
+    
     if (_metrics == null) {
       // lazily set to default for this model category
       setDefaultMetrics(modelKeys[0].get());
+    }
+
+    for (Key<Model> key : badKeys) {
+      // keep everything clean for the update
+      allModelKeys.remove(key);
+      extensions.remove(key);
     }
 
     atomicUpdate(() -> {
