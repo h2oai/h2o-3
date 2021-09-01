@@ -21,6 +21,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
@@ -124,23 +125,21 @@ public class ModelingStepTest {
         }
     }
     
-    @Test(expected = NoSuchElementException.class)
     public void testDynamicStepNoSubStepsNoMain() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_dynamic_nothing".equals(s._id)).findFirst().get();
         assertFalse(step.canRun());
         assertNull(step.run());
-        assertFalse(step.hasSubStep());
-        step.nextSubStep().run();
+        assertFalse(step.iterateSubSteps().hasNext());
     }
     
     @Test public void testDynamicStepWithSubStepsNoMain() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_dynamic_no_main".equals(s._id)).findFirst().get();
         assertFalse(step.canRun());
         assertNull(step.run());
-        assertTrue(step.hasSubStep());
+        assertTrue(step.iterateSubSteps().hasNext());
         List<Model> models = new ArrayList<>();
-        while (step.hasSubStep()) {
-            Job<Model> job = step.nextSubStep().run();
+        for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
+            Job<Model> job = it.next().run();
             models.add(job.get()); 
         }
         toDelete.addAll(models);
@@ -156,10 +155,10 @@ public class ModelingStepTest {
     @Test public void testDynamicStepWithSubStepsWithMain() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_dynamic_substeps_and_main".equals(s._id)).findFirst().get();
         assertTrue(step.canRun());
-        assertTrue(step.hasSubStep());
+        assertTrue(step.iterateSubSteps().hasNext());
         List<Model> models = new ArrayList<>();
-        while (step.hasSubStep()) {
-            Job<Model> job = step.nextSubStep().run();
+        for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
+            Job<Model> job = it.next().run();
             models.add(job.get());
         }
         models.add(((Job<Model>)step.run()).get());
@@ -273,10 +272,10 @@ public class ModelingStepTest {
 
         @SuppressWarnings("unchecked")
         @Override
-        protected ModelingStep<DummyModel>[] prepareModelingSteps() {
+        protected Collection<ModelingStep> prepareModelingSteps() {
             return IntStream.rangeClosed(1, _numSubSteps)
                     .mapToObj(i -> new DummyModelStep(DummyBuilder.algo, "dummy_model_"+i, true, aml()))
-                    .toArray(ModelingStep[]::new);
+                    .collect(Collectors.toList());
         }
 
         @Override

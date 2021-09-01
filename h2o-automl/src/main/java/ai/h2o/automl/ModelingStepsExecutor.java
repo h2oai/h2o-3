@@ -16,6 +16,7 @@ import water.util.Countdown;
 import water.util.Log;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -71,10 +72,11 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs = null;
     }
 
+    @SuppressWarnings("unchecked")
     boolean submit(ModelingStep step, Job parentJob) {
         boolean retVal = false;
-        while (step.hasSubStep()) {
-            retVal |= submit(step.nextSubStep(), parentJob);
+        for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
+            retVal |= submit(it.next(), parentJob);
         }
         if (step.canRun()) {
             Job job = step.run();

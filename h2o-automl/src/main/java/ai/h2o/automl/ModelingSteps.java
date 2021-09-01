@@ -25,8 +25,10 @@ public abstract class ModelingSteps extends Iced<ModelingSteps> {
 
     public Optional<ModelingStep> getStep(String id) {
         return Stream.of(getAllSteps())
-                .map(step -> step._id.equals(id) ? step : step.getSubStep(id))
-                .filter(Objects::nonNull)
+                .map(step -> step._id.equals(id) ? Optional.of(step) 
+                            : (Optional<ModelingStep>)step.getSubStep(id))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .findFirst();
     }
 

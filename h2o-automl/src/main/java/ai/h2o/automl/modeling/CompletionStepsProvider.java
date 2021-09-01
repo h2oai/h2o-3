@@ -94,7 +94,7 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
             }
 
             @Override
-            public ModelingStep[] prepareModelingSteps() {
+            protected Collection<ModelingStep> prepareModelingSteps() {
                 List<ModelingStep> bestStep = sortModelingStepByPerf();
                 return bestStep.stream()
                         .filter(ModelingStep::isResumable)
@@ -103,8 +103,7 @@ public class CompletionStepsProvider implements ModelingStepsProvider<Completion
 //                        .filter(Objects::nonNull)
                         .limit(_nGrids)
                         .map(s -> new ResumingGridStep((GridStep)s, _priorityGroup, _weight/_nGrids, aml()))
-                        .toArray(ModelingStep[]::new);
-                
+                        .collect(Collectors.toList());
             }
         }
         

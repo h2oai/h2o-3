@@ -32,7 +32,6 @@ import water.util.Log;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -163,6 +162,22 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return job;
     }
 
+    /**
+     * @return an {@link Iterator} for the potential sub-steps provided by this modeling step.
+     */
+    public Iterator<? extends ModelingStep> iterateSubSteps() {
+        return Collections.emptyIterator();
+    }
+    
+    /**
+     * @param id
+     * @return the sub-step (if any) with the given identifier, or null if there's no sub-step 
+     */
+    protected Optional<? extends ModelingStep> getSubStep(String id) {
+        return Optional.empty();
+    }
+
+
     protected abstract JobType getJobType();
     
     /**
@@ -177,31 +192,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
         _onDone.clear();
     };
-
-    /**
-     * @return true if {@link #nextSubStep} can be called without raising an exception.
-     */
-    protected boolean hasSubStep() {
-        return false;
-    }
-
-    /**
-     * It is recommended to call {@link #hasSubStep()} before calling this method
-     * to avoid raising an exception when the sub-steps are exhausted.
-     * @return the next sub-step provided by this modeling step, if any.
-     */
-    protected ModelingStep nextSubStep() {
-        throw new NoSuchElementException("no sub-step available for step "+_id);
-    }
-
-    /**
-     *
-     * @param id
-     * @return
-     */
-    protected ModelingStep getSubStep(String id) {
-        return null;
-    }
 
     protected void register(Key key) {
         aml().session().registerKeySource(key, this);
@@ -786,8 +776,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             }
         }
         
-        private transient ModelingStep[] _subSteps;
-        private int _stepIdx = -1;
+        private transient Collection<ModelingStep> _subSteps;
 
         public DynamicStep(String provider, String id, AutoML autoML) {
             this(provider, id, DEFAULT_DYNAMIC_GROUP, DEFAULT_DYNAMIC_TRAINING_WEIGHT, autoML);
@@ -824,35 +813,24 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         private void initSubSteps() {
             if (_subSteps == null) {
                 _subSteps = prepareModelingSteps();
-                _stepIdx = _subSteps.length > 0 ? 0 : -1;
             }
         }
 
         @Override
-        protected boolean hasSubStep() {
+        public Iterator<? extends ModelingStep> iterateSubSteps() {
             initSubSteps();
-            return _stepIdx >= 0 && _stepIdx < _subSteps.length;
+            return _subSteps.iterator();
         }
 
         @Override
-        protected ModelingStep nextSubStep() {
-            if (hasSubStep()) {   // we don't need atomicity for this as steps are executed sequentially.
-                ModelingStep subStep = _subSteps[_stepIdx];
-                _stepIdx += 1;
-                return subStep;
-            }
-            return super.nextSubStep();
-        }
-
-        @Override
-        protected ModelingStep getSubStep(String id) {
+        protected Optional<? extends ModelingStep> getSubStep(String id) {
             initSubSteps();
-            return Stream.of(_subSteps)
+            return _subSteps.stream()
                     .filter(step -> step._id.equals(id))
-                    .findFirst().orElse(null);
+                    .findFirst();
         }
 
-        protected abstract ModelingStep<M>[] prepareModelingSteps();
+        protected abstract Collection<ModelingStep> prepareModelingSteps();
     }
 
 }
