@@ -614,12 +614,12 @@ h2o.resume <- function(recovery_dir=NULL) {
   if (!is.null(jver_error)) {
     stop(jver_error, "\n",
     "Please download the latest Java SE JDK from the following URL:\n",
-    "https://www.oracle.com/technetwork/java/javase/downloads/index.html")
+    "http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements")
   }
   if(any(grepl("Client VM", jver))) {
     warning("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
             "Please download the latest Java SE JDK from the following URL:\n",
-            "https://www.oracle.com/technetwork/java/javase/downloads/index.html")
+            "http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements")
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"

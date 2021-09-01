@@ -23,19 +23,24 @@ At a minimum, we recommend the following for compatibility with H2O:
    -  Ubuntu 12.04
    -  RHEL/CentOS 6 or later
 
--  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
-
-   -  Java 8, 9, 10, 11, 12, 13, 14, 15
-
-      - To build H2O or run H2O tests, the 64-bit JDK is required.
-      - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
-      - Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+-  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
    -  Scala 2.10 or later
    -  R version 3 or later
    -  Python 2.7.x, 3.5.x, 3.6.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
+
+Java Requirements
+~~~~~~~~~~~~~~~~~
+
+H2O can run on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
+
+H2O supports the following versions of Java: 
+
+- Java SE 15, 14, 13, 12, 11, 10, 9, 8
+
+Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
 
 Additional Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~

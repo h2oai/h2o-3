@@ -437,7 +437,7 @@ class H2OLocalServer(object):
 
         # not found...
         raise H2OStartupError("Cannot find Java. Please install the latest JRE from\n"
-                              "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
+                              "http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements")
 
     def _tmp_file(self, kind):
         """

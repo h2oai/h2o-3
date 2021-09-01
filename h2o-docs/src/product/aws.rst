@@ -288,8 +288,8 @@ Downloading Java and H2O
 ------------------------
 
 1. Download
-   `Java <http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html>`__
-   (JDK 1.7 or later) if it is not already available on the instance.
+   `Java <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__
+   (JDK 1.8+ or later) if it is not already available on the instance.
 2. To download H2O, run the ``wget`` command with the link to the zip
    file available on our `website <http://h2o.ai/download/>`__ by
    copying the link associated with the **Download** button for the
