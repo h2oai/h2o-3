@@ -377,7 +377,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       }
       modelMetrics.add(mm);
     }
-    
+
     if (_metrics == null) {
       // lazily set to default for this model category
       setDefaultMetrics(modelKeys[0].get());
