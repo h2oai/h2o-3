@@ -16,6 +16,9 @@ test.ExtendedIsolationForest.smoke <- function() {
     score <- h2o.predict(exisofor.model, random_data.hex)
     result_pred <- as.data.frame(score)$anomaly_score
 
+    print(exisofor.model)
+    expect_false(is.na(exisofor.model@model$model_summary$seed))
+
     # The output of the EIF algorithm is based on randomly generated values. 
     # If the randomization is changed, then the output can be slightly different and it is fine to update them.
     # The link to source paper: https://arxiv.org/pdf/1811.02141.pdf
