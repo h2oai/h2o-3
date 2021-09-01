@@ -1396,12 +1396,11 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         return parms["gam_columns"]
 
-    def summary(self):
+    def _summary(self):
         """Print a detailed summary of the model."""
         model = self._model_json["output"]
         if "glm_model_summary" in model and model["glm_model_summary"] is not None:
             return model["glm_model_summary"]
-        print("No model summary for this model")
 
     def scoring_history(self):
         """

@@ -9,9 +9,31 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 # noinspection PyUnresolvedReferences
 from .utils.compatibility import *  # NOQA
 
+import contextlib
 import os
+import sys
+
+try:
+    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
+except:
+    from io import StringIO  # py3
 
 import tabulate
+
+
+@contextlib.contextmanager
+def capture_output(out=None, err=None):
+    tmp_out = out or StringIO()
+    tmp_err = err or StringIO()
+    ori_out = sys.stdout
+    ori_err = sys.stderr
+    try:
+        sys.stdout = tmp_out
+        sys.stderr = tmp_err
+        yield tmp_out, tmp_err
+    finally:
+        sys.stdout = ori_out
+        sys.stderr = ori_err
 
 
 class H2ODisplay(object):
@@ -80,7 +102,7 @@ class H2ODisplay(object):
 
     @staticmethod
     def prefer_pandas():
-        return H2ODisplay._in_ipy() 
+        return H2ODisplay._in_ipy()
 
     @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
@@ -93,7 +115,7 @@ class H2ODisplay(object):
             except ImportError:
                 H2ODisplay._jupyter = False
         return H2ODisplay._jupyter
-        
+
     @staticmethod
     def _in_zep():  # are we in zeppelin? then use zeppelin pretty print support
         if H2ODisplay._zeppelin is None:

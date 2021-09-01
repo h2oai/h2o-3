@@ -116,9 +116,14 @@ class H2OTwoDimTable(object):
             return table, nr, False
 
     def __repr__(self):
-        # FIXME: should return a string rather than printing it
+        return repr(vars(self))
+    
+    def __str__(self):
         self.show()
         return ""
+    
+    def _repr_pretty_(self, p, cycle):  # used by IPython
+        self.show()
 
     def _parse_values(self, values, types):
         if self._col_header[0] is None:

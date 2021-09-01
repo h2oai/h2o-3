@@ -6,6 +6,7 @@ import traceback
 
 import h2o
 from h2o.base import Keyed
+from h2o.display import capture_output
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
@@ -46,6 +47,40 @@ class ModelBase(h2o_meta(Keyed)):
         self._end_time = None
         self._run_time = None
 
+    def __repr__(self):
+        return repr(vars(self))
+    
+    def __str__(self):
+        self.show()  # nasty but for backwards compatibility: prints directly in stdout
+        return ""
+
+    def _str_(self):
+        """this is what __str__ should be"""
+        if self._model_json is None:
+            return "No model available"
+        if self.key is None:
+            return "This model (key={}) has been removed".format(self.key)
+
+        with capture_output() as (out, err):
+            return """
+{cls_name}: {algo}
+Model Key: {key})
+
+{summary}{out}""".format(cls_name=self.__class__.__name__, 
+                         algo=self._model_json["algo_full_name"],
+                         key=self.key,
+                         summary=str(self._summary() or ""),
+                         out=out.getvalue())
+
+    def _repr_pretty_(self, p, cycle):  # used by IPython
+        if cycle:
+            p.text("{}(...)".format(self.__class__.__name__))
+        else:
+            usage = """
+Use `model.show()` for more details about the model.
+Use `model.explain(…)` to inspect the model.
+"""
+            p.text(self._str_()+(usage if self._model_json else ""))
 
     @property
     def key(self):
@@ -138,13 +173,6 @@ class ModelBase(h2o_meta(Keyed)):
     def run_time(self):
         """Model training time in milliseconds."""
         return self._run_time
-
-    def __repr__(self):
-        # PUBDEV-2278: using <method>? from IPython caused everything to dump
-        stk = traceback.extract_stack()
-        if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
-            self.show()
-        return ""
 
     def predict_leaf_node_assignment(self, test_data, type="Path"):
         """
@@ -580,13 +608,18 @@ class ModelBase(h2o_meta(Keyed)):
         if "cross_validation_metrics_summary" in model and model["cross_validation_metrics_summary"] is not None:
             return model["cross_validation_metrics_summary"]
         print("No cross-validation metrics summary for this model")
-
-    def summary(self):
-        """Print a detailed summary of the model."""
+        
+    def _summary(self):
         model = self._model_json["output"]
         if "model_summary" in model and model["model_summary"] is not None:
             return model["model_summary"]
-        print("No model summary for this model")
+
+    def summary(self):
+        """Print a detailed summary of the model."""
+        s = self._summary()
+        if not s:
+            print("No model summary for this model")
+        return s
 
     def show_summary(self):
         summary = self.summary()
@@ -612,7 +645,9 @@ class ModelBase(h2o_meta(Keyed)):
         print("Model Key: ", self._id)
         print()
 
-        self.show_summary()
+        summary = self.summary() # quid legacy show_summary()
+        if summary:
+            print(summary)
 
         # training metrics
         tm = model["training_metrics"]

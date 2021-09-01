@@ -19,14 +19,24 @@ class H2OCoxPHModel(ModelBase):
         return self._model_json["output"]["coefficients_table"]
 
     def show_summary(self):
+        print(self._summary())
+
+
+    def _summary(self):
         """Prints summary information about this model."""
-        print("Call: ")
-        print(self.formula())
-        print(self.coefficients_table())
         output = self._model_json["output"]
-        print("Likelihood ratio test=%f" % (output["loglik_test"]))
-        print("Concordance=%f" % (self.concordance()))
-        print("n=%d, number of events=%d" % (output["n"], output["total_event"]))
+        return """Call:
+{formula}
+{coefs}
+Likelihood ratio test={lrt:f}
+Concordance={concordance:f}
+n={n:d}, number of events={tot_events:d}
+""".format(formula=self.formula(),
+           coefs=self.coefficients_table(),
+           lrt=output["loglik_test"],
+           concordance=self.concordance(),
+           n=output['n'],
+           tot_events=output["total_event"])
 
 
 class H2OCoxPHMojoModel(ModelBase):
