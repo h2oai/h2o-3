@@ -7,7 +7,6 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.leaderboard.*;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
@@ -23,7 +22,6 @@ import water.util.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
@@ -50,21 +48,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
 
-  final static StepDefinition[] defaultModelingPlan = {
-          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
-          new StepDefinition(Algo.GLM.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
-          new StepDefinition(Algo.GBM.name(), Alias.defaults),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
-          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), Alias.grids),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
-          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
-          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
-  };
-
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
 
@@ -72,11 +55,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       @Override
       public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
+        ModelingStep step = aml.session().getModelingStep(model.getKey());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
-                new AlgoName(model),
 //                new ModelSize(model._key)
+                new AlgoName(model),
+                new ModelProvider(model, step),
+                new ModelStep(model, step),
+                new ModelGroup(model, step),
         };
       }
     };
@@ -131,11 +118,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
   AtomicLong _incrementalSeed = new AtomicLong();
-  private NonBlockingHashMap<String, AtomicInteger> _modelCounters = new NonBlockingHashMap<>();
   private String _runId;
 
-  private ModelingStepsRegistry _modelingStepsRegistry;
   private ModelingStepsExecutor _modelingStepsExecutor;
+  private AutoMLSession _session;
   private Leaderboard _leaderboard;
   private EventLog _eventLog;
 
@@ -178,6 +164,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(key == null ? buildSpec.makeKey() : key);
     try {
       _startTime = startTime;
+      _session = AutoMLSession.getInstance(_key.toString());
       _eventLog = EventLog.getOrMake(_key);
       eventLog().info(Stage.Workflow, "Project: "+buildSpec.project());
 
@@ -191,7 +178,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       prepareData();
       initLeaderboard();
       initPreprocessing();
-      planWork();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -286,11 +272,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (modelBuilding.exclude_algos != null && modelBuilding.include_algos != null) {
       throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
     }
-    if (modelBuilding.exploitation_ratio < 0 || modelBuilding.exploitation_ratio > 1) {
+    if (modelBuilding.exploitation_ratio > 1) {
       throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
     }
     if (modelBuilding.modeling_plan == null) {
-      modelBuilding.modeling_plan = defaultModelingPlan;
+      modelBuilding.modeling_plan = ModelingPlans.defaultPlan();
     }
   }
 
@@ -341,7 +327,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   ModelingStep[] getExecutionPlan() {
-    return _executionPlan == null ? (_executionPlan = _modelingStepsRegistry.getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+    return _executionPlan == null ? (_executionPlan = session().getModelingStepsRegistry().getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+  }
+  
+  void setModelingPlan(StepDefinition[] modelingPlan) {
+    _buildSpec.build_models.modeling_plan = modelingPlan;
   }
   
   void planWork() {
@@ -365,7 +355,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-    _modelingStepsRegistry = new ModelingStepsRegistry();
     WorkAllocations workAllocations = new WorkAllocations();
     for (ModelingStep step: getExecutionPlan()) {
       workAllocations.allocate(step.makeWork());
@@ -382,6 +371,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
+    if (_buildSpec.build_models.exploitation_ratio < 0) return;
     int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
     int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
     double explorationRatio = 1 - _buildSpec.build_models.exploitation_ratio;
@@ -402,6 +392,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    */
   public void submit() {
     if (_job == null || !_job.isRunning()) {
+      planWork();
       H2OJob<AutoML> j = new H2OJob<>(this, _key, _runCountdown.remainingTime());
       _job = j._job;
       eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(_startTime))
@@ -443,6 +434,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               +"you may want to increase this value before retrying.");
     }
 
+    session().detach();
     possiblyVerifyImmutability();
     if (!_buildSpec.build_control.keep_cross_validation_predictions) {
       cleanUpModelsCVPreds();
@@ -463,6 +455,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public Model leader() {
     return leaderboard() == null ? null : _leaderboard.getLeader();
+  }
+  
+  public AutoMLSession session() {
+    _session = _session == null ? null : _session._key.get();
+    if (_session != null) _session.attach(this, false);
+    return _session;
   }
 
   public Leaderboard leaderboard() {
@@ -495,7 +493,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public boolean isCVEnabled() {
     return _buildSpec.build_control.nfolds > 0 || _buildSpec.input_spec.fold_column != null;
   }
-
+  
 
   //*****************  Data Preparation Section  *****************//
 
@@ -624,30 +622,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
     }
-    _actualModelingSteps = _modelingStepsRegistry.createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
+    _actualModelingSteps = session().getModelingStepsRegistry().createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
   }
 
-
-  private int nextModelCounter(String algoName, String type) {
-    String key = algoName+"_"+type;
-    if (!_modelCounters.containsKey(key)) {
-      synchronized (_modelCounters) {
-        if (!_modelCounters.containsKey(key))
-          _modelCounters.put(key, new AtomicInteger(0));
-      }
-    }
-    return _modelCounters.get(key).incrementAndGet();
-  }
-
   public Key makeKey(String algoName, String type, boolean with_counter) {
-    String counterStr = with_counter ? "_" + nextModelCounter(algoName, type) : "";
-    String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
-    return Key.make(prefix+counterStr+"_"+ _runId);
+    List<String> tokens = new ArrayList<>();
+    tokens.add(algoName);
+    if (!StringUtils.isNullOrEmpty(type)) tokens.add(type);
+    if (with_counter) tokens.add(Integer.toString(session().nextModelCounter(algoName, type)));
+    tokens.add(_runId);
+    return Key.make(String.join("_", tokens));
   }
 
-  public void trackKey(Key key) {
-    _trackedKeys.put(key, Arrays.toString(Thread.currentThread().getStackTrace()));
+  public void trackKeys(Key... keys) {
+    String whereFrom = Arrays.toString(Thread.currentThread().getStackTrace());
+    for (Key key : keys) _trackedKeys.put(key, whereFrom);
   }
 
   private boolean exceededSearchLimits(ModelingStep step) {
@@ -693,6 +683,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
+    if (session() != null) session().remove(fs, cascade);
     if (cascade && _preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) {
         preprocessingStep.remove();

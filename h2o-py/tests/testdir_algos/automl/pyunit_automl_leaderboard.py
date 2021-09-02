@@ -323,8 +323,8 @@ def test_custom_leaderboard():
 
 def test_get_best_model_per_family():
     ds = prepare_data('binomial')
-    aml = H2OAutoML(project_name="py_aml_custom_lb_test",
-                    max_models=11,
+    aml = H2OAutoML(project_name="py_aml_best_model_per_family_test",
+                    max_models=12,
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
@@ -339,10 +339,9 @@ def test_get_best_model_per_family():
         for model_id in model_ids:
             model_type = model_id.split("_")[0]
             if model_type not in seen:
-                assert model_id in top_model_ids
+                assert model_id in top_model_ids, "%s not found in top models %s" % (model_id, top_model_ids)
                 if model_type in ("DRF", "XRT"):
-                    seen.add("DRT")
-                    seen.add("XRT")
+                    seen.update(["DRF", "XRT"])
                 else:
                     seen.add(model_type)
     # Check default criterion

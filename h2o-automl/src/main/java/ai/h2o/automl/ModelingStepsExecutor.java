@@ -16,9 +16,9 @@ import water.util.Countdown;
 import water.util.Log;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 
 /**
@@ -72,39 +72,47 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs = null;
     }
 
+    @SuppressWarnings("unchecked")
     boolean submit(ModelingStep step, Job parentJob) {
+        boolean retVal = false;
+        for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
+            retVal |= submit(it.next(), parentJob);
+        }
         if (step.canRun()) {
-            Job job = step.startJob();
+            Job job = step.run();
             try {
                 if (job==null) {
-                    skip(step._description, step.getAllocatedWork(), parentJob);
+                    skip(step, parentJob);
                 } else {
-                    monitor(job,
-                            step.getAllocatedWork(),
-                            parentJob,
-                            ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT));
-                    return true;
+                    monitor(job, step, parentJob);
+                    retVal = true;
                 }
             } finally {
                 step.onDone(job);
             }
+        } else if (step.getAllocatedWork() != null) {
+            step.getAllocatedWork().consume();
         }
-        return false;
+        return retVal;
     }
 
-    private void skip(String name, Work work, Job parentJob) {
+    private void skip(ModelingStep step, Job parentJob) {
         if (null != parentJob) {
-            parentJob.update(work.consume(), "SKIPPED: " + name);
-            Log.info("AutoML; skipping " + name);
+            String desc = step._description;
+            Work work = step.getAllocatedWork();
+            parentJob.update(work.consume(), "SKIPPED: "+desc);
+            Log.info("AutoML; skipping "+desc);
         }
     }
 
-    void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+    void monitor(Job job, ModelingStep step, Job parentJob) {
         EventLog eventLog = eventLog();
-        String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
+        String jobDescription = job._result == null ? job._description : job._result+" ["+job._description+"]";
         eventLog.debug(Stage.ModelTraining, jobDescription + " started");
         _jobs.add(job);
 
+        boolean ignoreTimeout = ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT);
+        Work work = step.getAllocatedWork();
         long lastWorkedSoFar = 0;
         long lastTotalModelsBuilt = 0;
 
@@ -130,7 +138,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 int totalModelsBuilt = container == null ? 0 : container.getModelCount();
                 if (totalModelsBuilt > lastTotalModelsBuilt) {
                     eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
-                    this.addModels(container);
+                    this.addModels(container, step);
                     lastTotalModelsBuilt = totalModelsBuilt;
                 }
             }
@@ -156,7 +164,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 int totalModelsBuilt = container.getModelCount();
                 if (totalModelsBuilt > lastTotalModelsBuilt) {
                     eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
-                    this.addModels(container);
+                    this.addModels(container, step);
                 }
             }
         } else if (JobType.ModelBuild == work._type) {
@@ -166,7 +174,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
                 eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
-                this.addModel((Model)job.get());
+                this.addModel((Model)job.get(), step);
             }
         }
 
@@ -178,7 +186,8 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs.remove(job);
     }
 
-    private void addModels(final ModelContainer container) {
+    private void addModels(final ModelContainer container, ModelingStep step) {
+        for (Key<Model> key : container.getModelKeys()) step.register(key);
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
         leaderboard.addModels(container.getModelKeys());
@@ -186,12 +195,14 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _modelCount.addAndGet(after - before);
     }
 
-    private void addModel(final Model model) {
+    private void addModel(final Model model, ModelingStep step) {
+        step.register(model._key);
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
         leaderboard.addModel(model._key);
         int after = leaderboard.getModelCount();
-        if (!model._parms.algoName().equals(Algo.StackedEnsemble.name()))
+        boolean ignoreModelCount = ArrayUtils.contains(step._ignoredConstraints, Constraint.MODEL_COUNT);
+        if (!ignoreModelCount)
             _modelCount.addAndGet(after - before);
     }
 

@@ -128,7 +128,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  project_name=None,
                  exclude_algos=None,
                  include_algos=None,
-                 exploitation_ratio=0,
+                 exploitation_ratio=-1,
                  modeling_plan=None,
                  preprocessing=None,
                  monotone_constraints=None,
@@ -195,7 +195,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             This can't be used in combination with `exclude_algos` param.
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
         :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase.
-            By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental;
+            By default, this is set to auto (exploitation_ratio=-1) as this is still experimental;
             to activate it, it is recommended to try a ratio around 0.1.
             Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
@@ -317,9 +317,11 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             assert 'steps' not in sd or (is_type(sd['steps'], list) and all(assert_is_step(s) for s in sd['steps']))
 
         def assert_is_step(s):
-            assert is_type(s, dict), "each step must be a dict with an 'id' key and an optional 'weight' key"
+            assert is_type(s, dict), "each step must be a dict with an 'id' key and optional keys among: weight, group"
             assert 'id' in s, "each step must have an 'id' key"
-            assert len(s) == 1 or ('weight' in s and is_type(s['weight'], int)), "weight must be an integer"
+            assert len(s) == 1 or 'weight' in s or 'group' in s, "steps support only the following keys: weight, group"
+            assert 'weight' not in s or is_type(s['weight'], int), "weight must be an integer"
+            assert 'group' not in s or is_type(s['group'], int), "group must be an integer"
             return True
 
         plan = []

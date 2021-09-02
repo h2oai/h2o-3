@@ -153,18 +153,21 @@ def test_bad_modeling_plan_using_simplified_syntax():
 def test_modeling_plan_using_full_syntax():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_modeling_plan_full_syntax",
-                    max_models=2,
+                    max_models=3,
                     modeling_plan=[
                         dict(name='GLM', steps=[dict(id='def_1')]),
                         dict(name='GBM', alias='grids'),
-                        dict(name='DRF', steps=[dict(id='def_1', weight=333)]),  # just testing that it is parsed correctly on backend (no model won't be build due to max_models)
+                        dict(name='DRF', steps=[dict(id='def_1', group=5, weight=333)]),  # just testing that it is parsed correctly on backend (no model will be built due to the priority group + max_models)
+                        dict(name='GBM', steps=[dict(id="def_1")]),
                     ],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
+    print(aml.leaderboard)
     _, non_se, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(non_se) == 2
+    assert len(non_se) == 3
     assert len(se) == 0
     assert any('GLM' in name for name in non_se)
+    assert any('GBM' in name for name in non_se)
     assert any('GBM_grid' in name for name in non_se)
 
 
@@ -175,18 +178,18 @@ def test_modeling_plan_using_simplified_syntax():
                     modeling_plan=[
                         ('DRF', ['XRT', 'def_1']),
                         ('GBM', 'grids'),
-                        ('StackedEnsemble', ['best1'])
+                        ('StackedEnsemble',)
                     ],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
     _, non_se, se = get_partitioned_model_names(aml.leaderboard)
     assert len(non_se) == 3
-    assert len(se) == 1
+    assert len(se) == 2
     assert any('DRF' in name for name in non_se)
     assert any('XRT' in name for name in non_se)
     assert any('GBM_grid' in name for name in non_se)
-    assert any('BestOfFamily' in name for name in se)
+    assert len([name for name in se if 'BestOfFamily' in name]) == 2  # we should get a BoF for group1 + one after GBM grid group.
 
 
 def test_modeling_plan_using_minimal_syntax():
@@ -212,17 +215,26 @@ def test_modeling_steps():
     aml = H2OAutoML(project_name="py_modeling_steps",
                     max_models=5,
                     modeling_plan=['DRF',
+                                   dict(name='GBM', steps=[
+                                       dict(id='def_3', group=2),
+                                       dict(id='grid_1', weight=77)
+                                   ]),
                                    ('GLM', 'defaults'),
-                                   dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
                                    'StackedEnsemble'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
+    # we should now see the detailed steps sorted in their execution order.
+    print(aml.modeling_steps)
     assert aml.modeling_steps == [
-        {'name': 'DRF', 'steps': [{'id': 'def_1', 'weight': 10}, {'id': 'XRT', 'weight': 10}]},
-        {'name': 'GLM', 'steps': [{'id': 'def_1', 'weight': 10}]},
-        {'name': 'GBM', 'steps': [{'id': 'grid_1', 'weight': 77}]},
-        {'name': 'StackedEnsemble', 'steps': [{'id': 'best1', 'weight': 10}, {'id': 'all1', 'weight': 10}]}
+        {'name': 'DRF', 'steps': [{'id': 'def_1', 'group': 1, 'weight': 10},
+                                  {'id': 'XRT', 'group': 1, 'weight': 10}]},
+        {'name': 'GLM', 'steps': [{'id': 'def_1', 'group': 1, 'weight': 10}]},
+        {'name': 'StackedEnsemble', 'steps': [{'id': 'best_of_family_1', 'group': 1, 'weight': 10}]},  # no all_1 as XRT is interpreted as not being of the same family as DRF (legacy decision). 
+        {'name': 'GBM', 'steps': [{'id': 'def_3', 'group': 2, 'weight': 10},
+                                  {'id': 'grid_1', 'group': 2, 'weight': 77}]},  # grids are 2nd group by default
+        {'name': 'StackedEnsemble', 'steps': [{'id': 'best_of_family_2', 'group': 2, 'weight': 10}, 
+                                              {'id': 'all_2', 'group': 2, 'weight': 10}]}
     ]
 
     new_aml = H2OAutoML(project_name="py_reinject_modeling_steps",
@@ -360,25 +372,26 @@ def test_exploitation_doesnt_impact_max_models():
     aml = H2OAutoML(project_name="py_exploitation_ratio_max_models",
                     exploitation_ratio=.1,
                     max_models=6,
-                    seed=1)
+                    seed=1, verbosity='debug')
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
-    assert 'start_GBM_lr_annealing' in aml.training_info
-    assert 'start_XGBoost_lr_search' in aml.training_info
     _, non_se, se = get_partitioned_model_names(aml.leaderboard)
     assert len(non_se) == 6
-    assert len(se) == 3
+    assert len(se) == 5  # that's because we have 2 additional SEs after exploitation phase
+    print(aml.training_info)
+    assert 'start_GBM_lr_annealing' in aml.training_info
+    assert 'start_XGBoost_lr_search' in aml.training_info
 
-# FIXME: THIS DOESN'T WORK WITH MULTIPLE SEs
+
 def test_exploitation_impacts_exploration_duration():
     ds = import_dataset()
     planned_duration = 30
     aml = H2OAutoML(project_name="py_exploitation_ratio_max_runtime",
                     exploitation_ratio=.5,  # excessive ratio on purpose, due to training overheads in multinode
-                    exclude_algos=['DeepLearning', 'XGBoost'],  # removing some algos for the same reason as above
+                    exclude_algos=['DeepLearning', 'XGBoost'],  # removing some algos for the same reason
                     max_runtime_secs=planned_duration,
                     seed=1,
-                     verbosity='debug'
+                    verbosity='info'
                     )
     aml.train(y=ds.target, training_frame=ds.train)
     automl_start = int(aml.training_info['start_epoch'])
@@ -386,7 +399,7 @@ def test_exploitation_impacts_exploration_duration():
     # assert 'start_XGBoost_lr_search' in aml.training_info
     exploitation_start = int(aml.training_info['start_GBM_lr_annealing'])
     exploration_duration = exploitation_start - automl_start
-    se_start = int(aml.training_info['start_StackedEnsemble_best90'])
+    se_start = int(aml.training_info['start_completion_GBM_grid_1'])
     exploitation_duration = se_start - exploitation_start
     # can't reliably check duration ratio
     assert 0 < exploration_duration < planned_duration
@@ -413,5 +426,5 @@ pu.run_tests([
     test_cannot_set_unauthorized_algo_parameter,
     test_exploitation_disabled,
     test_exploitation_doesnt_impact_max_models,
-    #test_exploitation_impacts_exploration_duration,
+    test_exploitation_impacts_exploration_duration,
 ])

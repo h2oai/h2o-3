@@ -2,6 +2,7 @@ package ai.h2o.automl.leaderboard;
 
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
+import ai.h2o.automl.utils.DKVUtils;
 import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -10,9 +11,7 @@ import water.util.*;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -349,9 +348,10 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     allModelKeys.forEach(DKV::prefetch);
     for (Key<Model> k : newModelKeys) {
       Model m = k.get();
+      if (m == null) continue; // warning handled in next loop below
       eventLog().debug(Stage.ModelTraining, "Adding model "+k+" to leaderboard "+_key+"."
-              + " Training time: model="+Math.round(m._output._run_time/1000)+"s,"
-              + " total="+Math.round(m._output._total_run_time/1000)+"s");
+              + " Training time: model=" + Math.round(m._output._run_time / 1000) + "s,"
+              + " total=" + Math.round(m._output._total_run_time / 1000) + "s");
     }
 
     final List<ModelMetrics> modelMetrics = new ArrayList<>();
@@ -375,7 +375,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       setDefaultMetrics(modelKeys[0].get());
     }
 
-    atomicUpdate(v -> {
+    atomicUpdate(() -> {
       _leaderboard_model_metrics.clear();
       modelMetrics.forEach(this::addModelMetrics);
       updateModels(allModelKeys.toArray(new Key[0]));
@@ -391,7 +391,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
 
   /**
    * @param modelKeys the keys of the models to be removed from this leaderboard.
-   * @param cascade if true, the model itself and it's dependencies will be completely removed from the backend.
+   * @param cascade if true, the model itself and its dependencies will be completely removed from the backend.
    */
   public void removeModels(final Key<Model>[] modelKeys, boolean cascade) {
     if (modelKeys == null
@@ -402,7 +402,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       eventLog().debug(Stage.ModelTraining, "Removing model "+k+" from leaderboard "+_key);
     });
     Key<Model>[] remainingKeys = Arrays.stream(_model_keys).filter(k -> !ArrayUtils.contains(modelKeys, k)).toArray(Key[]::new);
-    atomicUpdate(v -> {
+    atomicUpdate(() -> {
       _model_keys = new Key[0];
       addModels(remainingKeys);
     }, null);
@@ -425,29 +425,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     _model_keys = sortedModelKeys;
   }
 
-  private void atomicUpdate(Consumer<Void> update, Key<Job> jobKey) {
-    final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
-    if (writeLock.isHeldByCurrentThread()) {
-      writeLock.lock();
-      try {
-        update.accept(null);
-      } finally {
-        writeLock.unlock();
-      }
-    } else {
-      writeLock.lock();
-      try {
-        write_lock(jobKey);
-        try {
-          update.accept(null);
-          update(jobKey);
-        } finally {
-          unlock(jobKey);
-        }
-      } finally {
-        writeLock.unlock();
-      }
-    }
+  private void atomicUpdate(Runnable update, Key<Job> jobKey) {
+    DKVUtils.atomicUpdate(this, update, jobKey, lock);
   }
 
   /**
@@ -691,7 +670,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
         if (getModelCount() > 0) {
           final Key<Model> leader = getModelKeys()[0];
           LeaderboardCell[] extCells = (extensions.length > 0 && LeaderboardExtensionsProvider.ALL.equalsIgnoreCase(extensions[0]))
-                  ? getExtensions(leader)
+                  ? Stream.of(getExtensions(leader)).filter(cell -> !cell.getColumn().isHidden()).toArray(LeaderboardCell[]::new)
                   : Stream.of(extensions).map(e -> getExtension(leader, e)).toArray(LeaderboardCell[]::new);
           Stream.of(extCells).filter(Objects::nonNull).forEach(e -> extColumns.add(e.getColumn()));
         }

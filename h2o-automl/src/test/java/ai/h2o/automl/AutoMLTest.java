@@ -28,6 +28,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_GROUP;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
@@ -57,6 +59,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -66,8 +69,8 @@ public class AutoMLTest extends water.TestUtil {
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
       assertEquals("wrong amount of standard models", maxModels, count_non_se);
-      assertEquals("wrong amount of SE models", 4, count_se);
-      assertEquals(maxModels+4, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of SE models", 2, count_se);
+      assertEquals(maxModels+2, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.delete();
@@ -89,6 +92,7 @@ public class AutoMLTest extends water.TestUtil {
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -134,6 +138,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
       aml.get();
@@ -143,8 +148,8 @@ public class AutoMLTest extends water.TestUtil {
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
       assertEquals("wrong amount of standard models", 5, count_non_se);
-      assertEquals("wrong amount of SE models", 3, count_se);
-      assertEquals(8, aml.leaderboard().getModelCount());
+      assertEquals("wrong amount of SE models", 2, count_se);
+      assertEquals(7, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       for (Lockable l: deletables) {
@@ -170,6 +175,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
       autoMLBuildSpec.build_models.include_algos = aro(Algo.GBM);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
       aml.get();
@@ -209,6 +215,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(1+new Random().nextInt(30));
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -235,6 +242,7 @@ public class AutoMLTest extends water.TestUtil {
 //      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -267,6 +275,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -285,7 +294,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void KeepCrossValidationFoldAssignmentEnabledTest() {
+  @Test public void test_keep_cross_validation_enabled() {
     AutoML aml = null;
     Frame fr = null;
     Model leader = null;
@@ -297,6 +306,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -312,7 +322,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void KeepCrossValidationFoldAssignmentDisabledTest() {
+  @Test public void test_keep_cross_validation_fold_assignment_disabled() {
     AutoML aml = null;
     Frame fr = null;
     Model leader = null;
@@ -323,6 +333,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -338,7 +349,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testWorkPlanWithoutExploitation() {
+  @Test public void test_work_plan_without_exploitation() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -347,15 +358,15 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exploitation_ratio = 0;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.ONE_LAYERED;
       aml = new AutoML(autoMLBuildSpec);
-
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
-        put(Algo.DeepLearning, 1*10+3*20); // models+grids
+        put(Algo.DeepLearning, 1*10+3*15); // models+grids
         put(Algo.DRF, 2*10);
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
-        put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 11*10);
+        put(Algo.XGBoost, 3*10+1*90); // models+grids
+        put(Algo.StackedEnsemble, 2*10);
       }};
       int maxTotalWork = 0;
       for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
@@ -363,7 +374,7 @@ public class AutoMLTest extends water.TestUtil {
           maxTotalWork += entry.getValue();
         }
       }
-
+      aml.planWork();
       assertEquals(maxTotalWork, aml._workAllocations.remainingWork());
 
       autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
@@ -377,7 +388,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testWorkPlanWithExploitation() {
+  @Test public void test_work_plan_with_exploitation() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -387,19 +398,21 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exploitation_ratio = exploitationRatio;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.ONE_LAYERED;
       aml = new AutoML(autoMLBuildSpec);
+      aml.planWork();
 
       Map<Algo, Integer> explorationAllocs = new HashMap<Algo, Integer>(){{
-        put(Algo.DeepLearning, 1*10+3*20); // models+grids
+        put(Algo.DeepLearning, 1*10+3*15); // models+grids
         put(Algo.DRF, 2*10);
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
-        put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 11*10);
+        put(Algo.XGBoost, 3*10+1*90); // models+grids
+        put(Algo.StackedEnsemble, 2*10);
       }};
       Map<Algo, Integer> exploitationAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.GBM, 1*10);
-        put(Algo.XGBoost, 2*20);
+        put(Algo.XGBoost, 1*30);
       }};
       int expectedExplorationWork = explorationAllocs.entrySet().stream().filter(algo -> algo.getKey().enabled()).mapToInt(Map.Entry::getValue).sum();
 
@@ -440,40 +453,34 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
-              new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
+              new StepDefinition(Algo.GBM.name(), "def_1"),                             // 1 model
               new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
-              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20) }),  // 1 model
+              new StepDefinition(Algo.DRF.name(), new Step("XRT", 2, 20)),  // 1 model
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),      // 1 grid
               new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids), // 1 grid
-              new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 models
+              new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 groups = 2 models (all SEs are redundant and ignored)
       };
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning};
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
+      System.out.println(aml.leaderboard().toTwoDimTable("step", "group").toString());
 
-      assertEquals(4, aml.leaderboard().getModelCount());
+      assertEquals(5, aml.leaderboard().getModelCount());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GBMModel.class::isInstance).count());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GLMModel.class::isInstance).count());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(DRFModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(XGBoostModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
-      assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
+      assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count()); //one for each group
 
       assertNotNull(aml._actualModelingSteps);
       Log.info(Arrays.toString(aml._actualModelingSteps));
       assertArrayEquals(new StepDefinition[] {
-              new StepDefinition(Algo.GBM.name(), new Step[]{
-                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-              }),
-              new StepDefinition(Algo.GLM.name(), new Step[]{
-                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-              }),
-              new StepDefinition(Algo.DRF.name(), new Step[]{
-                      new Step("XRT", 20),
-              }),
-              new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-              }),
+              new StepDefinition(Algo.GBM.name(), new Step("def_1", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)),
+              new StepDefinition(Algo.GLM.name(), new Step("def_1", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)),
+              new StepDefinition(Algo.StackedEnsemble.name(), new Step("best_of_family_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT)),
+              new StepDefinition(Algo.DRF.name(), new Step("XRT", 2, 20)),
+              new StepDefinition(Algo.StackedEnsemble.name(), new Step("best_of_family_2", 2, DEFAULT_MODEL_TRAINING_WEIGHT)),
       }, aml._actualModelingSteps);
     } finally {
       if (aml != null) aml.delete();
@@ -495,6 +502,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -522,6 +530,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -548,6 +557,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -572,6 +582,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.leaderboard_frame = null;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       assertEquals(fr.numRows(), aml.getTrainingFrame().numRows());
@@ -583,7 +594,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testExcludeAlgos() {
+  @Test public void test_exclude_algos() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -592,7 +603,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = new AutoML(autoMLBuildSpec);
+      aml.planWork();
       for (IAlgo algo : autoMLBuildSpec.build_models.exclude_algos) {
         assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
       }
@@ -607,7 +620,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testIncludeAlgos() {
+  @Test public void test_include_algos() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -616,7 +629,9 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = new AutoML(autoMLBuildSpec);
+      aml.planWork();
       for (IAlgo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
           assertNotEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
@@ -635,7 +650,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testExcludeIncludeAlgos() {
+  @Test public void test_exclude_include_algos() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -645,6 +660,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       try {
         aml = new AutoML(autoMLBuildSpec);
         fail("Should have thrown an H2OIllegalArgumentException for providing both include_algos and exclude_algos");
@@ -658,7 +674,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Test public void testAlgosHaveDefaultParametersEnforcingReproducibility() {
+  @Test public void test_algos_have_default_parameters_enforcing_reproducibility() {
     AutoML aml=null;
     Frame fr=null;
     try {
@@ -673,6 +689,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
       autoMLBuildSpec.build_control.nfolds = nfolds;
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();

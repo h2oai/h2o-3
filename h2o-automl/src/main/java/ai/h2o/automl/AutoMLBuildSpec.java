@@ -171,7 +171,7 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
-    public double exploitation_ratio = 0;
+    public double exploitation_ratio = -1;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
     public PreprocessingStepDefinition[] preprocessing;
   }
