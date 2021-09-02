@@ -117,6 +117,14 @@ def test_explanation_automl_regression():
     # test explain row
     assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
 
+    # test shortening model ids work correctly
+    from h2o.explanation._explain import _shorten_model_ids
+    model_ids = aml.leaderboard.as_data_frame()["model_id"]
+    shortened_model_ids = _shorten_model_ids(model_ids)
+    assert len(set(model_ids)) == len(set(shortened_model_ids))
+    for i in range(len(model_ids)):
+        assert len(model_ids[i]) > len(shortened_model_ids[i])
+
 
 def test_explanation_list_of_models_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
@@ -209,6 +217,12 @@ def test_explanation_single_model_binomial_classification():
     # test explain row
     assert isinstance(gbm.explain_row(train, 1, render=False), H2OExplanation)
 
+    # test explain
+    assert isinstance(gbm.explain(train, top_n_features=-1,  render=False), H2OExplanation)
+
+    # test explain row
+    assert isinstance(gbm.explain_row(train, 1, top_n_features=-1, render=False), H2OExplanation)
+
 
 def test_explanation_automl_binomial_classification():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
@@ -244,6 +258,7 @@ def test_explanation_automl_binomial_classification():
 
     # test explain row
     assert isinstance(aml.explain_row(train, 1, render=False), H2OExplanation)
+
 
 
 def test_explanation_list_of_models_binomial_classification():
