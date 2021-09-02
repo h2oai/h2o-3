@@ -111,7 +111,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100);
+        startParentJob(parentJob, j -> j._work < 100 && j._work > 0 && j.msec() < 5000);
         
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_work"), parentJob);
         executor.stop();
@@ -125,7 +125,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42);
+        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 5000);
 
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_work"), parentJob);
         executor.stop();
@@ -140,7 +140,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42);
+        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 5000);
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_with_substeps"), parentJob);
         assertTrue(started);
         executor.stop();
@@ -152,7 +152,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42);
+        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 5000);
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_with_substeps"), parentJob);
         assertTrue(started);
         executor.stop();
@@ -167,7 +167,7 @@ public class ModelingStepsExecutorTest {
                 while (true) {
                     try {
                         if (stoppingCondition.test(parent)) break;
-                        Thread.sleep(10);
+                        Thread.sleep(100);
                     } catch (InterruptedException ignored) {}
                 }
                 tryComplete();
