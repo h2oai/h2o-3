@@ -78,7 +78,7 @@ public class GenericModelParameters extends Model.Parameters {
         } else if (original instanceof KeyValue) {
             final KeyValue keyValue = (KeyValue) original;
             converted = new hex.KeyValue(keyValue.key, keyValue.value);
-        } else if (original instanceof Object[]) {
+        } else if ((original instanceof Object[]) && !(original instanceof String[])) {
             Object[] originalArr = (Object[]) original; 
             Iced[] convertedArr = new Iced[originalArr.length];
             for (int i = 0; i < originalArr.length; i++) {
