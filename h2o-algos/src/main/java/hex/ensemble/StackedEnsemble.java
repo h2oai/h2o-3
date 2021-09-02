@@ -267,7 +267,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (old != null && old instanceof Frame) {
         Frame oldFrame = (Frame) old;
         oldFrame.write_lock(_job);
-        // Remove ALL the columns so we don't delete them in remove_impl.  Their
+        // Remove ALL the columns, so we don't delete them in remove_impl.  Their
         // lifetime is controlled by their model.
         oldFrame.removeAll();
         oldFrame.update(_job);
