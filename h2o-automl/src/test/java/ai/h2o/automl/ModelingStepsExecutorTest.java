@@ -7,10 +7,8 @@ import hex.Model;
 import hex.ModelMetricsRegression;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
@@ -77,6 +75,10 @@ public class ModelingStepsExecutorTest {
         if(fr!=null) fr.delete();
     }
 
+    @Rule
+    public Timeout testTimeout = Timeout.seconds(10);
+
+
     @Test
     public void test_start_stop() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
@@ -111,7 +113,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work > 0 && j.msec() < 5000);
+        startParentJob(parentJob, j -> j._work < 100 && j._work > 0 && j.msec() < 1000);
         
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_work"), parentJob);
         executor.stop();
@@ -125,7 +127,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 5000);
+        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 1000);
 
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_work"), parentJob);
         executor.stop();
@@ -140,7 +142,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 5000);
+        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 1000);
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_with_substeps"), parentJob);
         assertTrue(started);
         executor.stop();
@@ -152,7 +154,7 @@ public class ModelingStepsExecutorTest {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 5000);
+        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 1000);
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_with_substeps"), parentJob);
         assertTrue(started);
         executor.stop();
