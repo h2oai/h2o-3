@@ -10,7 +10,6 @@ import water.util.Log;
 import water.util.VecUtils;
 import static hex.tree.SharedTree.ScoreBuildOneTree;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -184,11 +183,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       if(sz > largestChunkSz) largestChunkSz = sz;
     }
     final int fLargestChunkSz = largestChunkSz;
-    if(_weightIdx == -1){
-      double [] ws = new double[largestChunkSz];
-      Arrays.fill(ws,1);
-      Arrays.fill(_ws,ws);
-    }
     final AtomicInteger cidx = new AtomicInteger(0);
     // First do the phase 1 on all local data
     new LocalMR(new MrFun(){
@@ -239,10 +233,33 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           chks[_nidIdx].close(cidx,_fs);
           Chunk resChk = chks[_workIdx];
           int len = resChk.len();
+          final double[] y;
           if(resChk instanceof C8DVolatileChunk){
-            _ys[id] = ((C8DVolatileChunk)resChk).getValues();
-          } else _ys[id] = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
-          if(_weightIdx != -1){
+            y = ((C8DVolatileChunk)resChk).getValues();
+          } else 
+            y = resChk.getDoubles(MemoryManager.malloc8d(len), 0, len);
+          int[] nh = _nhs[id];
+          _ys[id] = MemoryManager.malloc8d(len);
+          // Important optimization that helps to avoid cache misses when working on larger datasets
+          // `y` has original order corresponding to row order
+          // In binning we are accessing data semi-randomly - we only touch values/rows that are in the given
+          // node. These are not necessarily next to each other in memory. This is done on a per-feature basis.
+          // To optimize for sequential access we reorder the target so that values corresponding to the same node
+          // are co-located. Observed speed-up is up to 50% for larger datasets.
+          // See DHistogram#updateHisto for reference.
+          for (int n = 0; n < nh.length; n++) {
+            final int lo = (n == 0 ? 0 : nh[n - 1]);
+            final int hi = nh[n];
+            if (hi == lo)
+              continue;
+            for (int i = lo; i < hi; i++) {
+              _ys[id][i] = y[_rss[id][i]];
+            }
+          }
+          // Only allocate weights if weight columns is actually used. It is faster to handle null case
+          // in binning that to represent the weights using a constant array (it still needs to be in memory
+          // and is accessed frequently - waste of CPU cache). 
+          if (_weightIdx != -1) {
             _ws[id] = chks[_weightIdx].getDoubles(MemoryManager.malloc8d(len), 0, len);
           }
         }
@@ -366,23 +383,22 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     @Override
     protected void map(int id){
-      double[] cs = null;
+      Object cs = null;
       double[] resp = null;
       double[] preds = null;
       final int maxWorkId = _allocator.getMaxId(id);
       for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
         if (cs == null) {
-          cs = MemoryManager.malloc8d(_maxChunkSz);
           if (_respIdx >= 0)
             resp = MemoryManager.malloc8d(_maxChunkSz);
           if (_predsIdx >= 0)
             preds = MemoryManager.malloc8d(_maxChunkSz);
         }
-        computeChunk(i, cs, _ws[i], resp, preds);
+        cs = computeChunk(i, cs, _ws[i], resp, preds);
       }
     }
 
-    private void computeChunk(int id, double[] cs, double[] ws, double[] resp, double[] preds){
+    private Object computeChunk(int id, Object cs, double[] ws, double[] resp, double[] preds){
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
       Chunk resChk = _chks[id][_workIdx];
@@ -399,7 +415,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
           if (! extracted) {
-            _chks[id][_col].getDoubles(cs, 0, len);
+            cs = h.extractData(_chks[id][_col], cs, len, _maxChunkSz);
             if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
               if (h._vals_dim == 7) {
@@ -411,6 +427,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo);
         }
       }
+      return cs;
     }
 
     @Override
