@@ -739,7 +739,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
                 @Override
                 public void compute2() {
-                    ModelingStepsExecutor.ensureStopRequestPropagated(job, jModels);
+                    ModelingStepsExecutor.ensureStopRequestPropagated(job, jModels, ModelingStepsExecutor.DEFAULT_POLLING_INTERVAL_IN_MILLIS);
                     Keyed res = job.get();
                     models.unlock(jModels);
                     if (res instanceof Model) {

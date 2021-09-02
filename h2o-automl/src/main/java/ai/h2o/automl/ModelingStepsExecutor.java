@@ -27,9 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
-    private static final int pollingIntervalInMillis = 1000;
-
-    static void ensureStopRequestPropagated(Job job, Job parentJob) {
+    static final int DEFAULT_POLLING_INTERVAL_IN_MILLIS = 1000;
+    
+    static void ensureStopRequestPropagated(Job job, Job parentJob, int pollingIntervalInMillis) {
         if (job == null || parentJob == null) return;
         while (job.isRunning()) {
             if (parentJob.stop_requested()) {
@@ -44,6 +44,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     final Key<EventLog> _eventLogKey;
     final Key<Leaderboard> _leaderboardKey;
     final Countdown _runCountdown;
+    private int _pollingIntervalInMillis;
 
     private transient List<Job> _jobs; // subjobs
     private final AtomicInteger _modelCount = new AtomicInteger();
@@ -53,12 +54,22 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _eventLogKey = eventLog._key;
         _runCountdown = runCountdown;
     }
+    
+    void setPollingInterval(int millis) {
+        assert millis > 0;
+        _pollingIntervalInMillis = millis;
+    }
 
     int modelCount() {
         return _modelCount.get();
     }
 
     void start() {
+        start(DEFAULT_POLLING_INTERVAL_IN_MILLIS);
+    }
+    
+    void start(int pollingIntervalInMillis) {
+        setPollingInterval(pollingIntervalInMillis);
         _jobs = new ArrayList<>();
         _modelCount.set(0);
         _runCountdown.start();
@@ -144,7 +155,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             }
 
             try {
-                Thread.sleep(pollingIntervalInMillis);
+                Thread.sleep(_pollingIntervalInMillis);
             }
             catch (InterruptedException e) {
                 // keep going

@@ -48,7 +48,7 @@ public class ModelingStepsExecutorTest {
     }
 
     private static Job makeJob(String name) {
-        return new Job(Key.make(name), Model.class.getName(), "does nothing, not even started");
+        return new Job(Key.make(name), Model.class.getName(), name+" pretends to be real");
     }
 
 
@@ -76,13 +76,13 @@ public class ModelingStepsExecutorTest {
     }
 
     @Rule
-    public Timeout testTimeout = Timeout.seconds(10);
+    public Timeout testTimeout = Timeout.seconds(5);
 
 
     @Test
     public void test_start_stop() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         assertTrue(executor._runCountdown.running());
         executor.stop();
         assertFalse(executor._runCountdown.running());
@@ -91,7 +91,7 @@ public class ModelingStepsExecutorTest {
     @Test
     public void test_submit_training_step_with_zero_work() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         Job parentJob = makeJob("parent");
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_zero_work"), parentJob);
         assertFalse(started);
@@ -101,7 +101,7 @@ public class ModelingStepsExecutorTest {
     @Test
     public void test_submit_training_step_with_no_allocated_work() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         Job parentJob = makeJob("parent");
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_no_work"), parentJob);
         assertFalse(started);
@@ -111,9 +111,9 @@ public class ModelingStepsExecutorTest {
     @Test
     public void test_submit_training_step_with_no_job() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work > 0 && j.msec() < 1000);
+        startParentJob(parentJob, j -> j.msec() > 1000);
         
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_work"), parentJob);
         executor.stop();
@@ -125,9 +125,9 @@ public class ModelingStepsExecutorTest {
     @Test
     public void test_submit_valid_training_step() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 1000);
+        startParentJob(parentJob, j -> j.msec() > 1000);
 
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_work"), parentJob);
         executor.stop();
@@ -140,9 +140,9 @@ public class ModelingStepsExecutorTest {
     @Test
     public void test_submit_training_step_with_substeps_but_no_main_job() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 1000);
+        startParentJob(parentJob, j -> j.msec() > 1000);
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "no_job_with_substeps"), parentJob);
         assertTrue(started);
         executor.stop();
@@ -152,9 +152,9 @@ public class ModelingStepsExecutorTest {
     @Test
     public void test_submit_training_step_with_substeps_and_main_job() {
         ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
-        executor.start();
+        executor.start(10);
         Job parentJob = makeJob("parent");
-        startParentJob(parentJob, j -> j._work < 100 && j._work >= 42 && j.msec() < 1000);
+        startParentJob(parentJob, j -> j.msec() > 1000);
         boolean started = executor.submit(aml.session().getModelingStep(NAME, "job_with_substeps"), parentJob);
         assertTrue(started);
         executor.stop();
