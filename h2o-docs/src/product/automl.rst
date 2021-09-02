@@ -145,7 +145,7 @@ Notes
 Validation Options
 ''''''''''''''''''
 
-If the user turns off cross-validation by setting ``nfolds == 0``, then cross-validation metrics will not be available to populate the leaderboard.  In this case, we need to make sure there is a holdout frame (aka. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard.  Without cross-validation, we will also require a validation frame to be used for early stopping on the models.  Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data.  If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
+If the user turns off cross-validation by setting ``nfolds == 0``, then cross-validation metrics will not be available to populate the leaderboard.  In this case, we need to make sure there is a holdout frame (i.e. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard.  Without cross-validation, we will also require a validation frame to be used for early stopping on the models.  Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data.  If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
 
 XGBoost Memory Requirements
 '''''''''''''''''''''''''''
@@ -170,7 +170,7 @@ Code Examples
 Training
 ~~~~~~~~
 
-Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the ``x`` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
+Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the ``x`` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
 
 
 .. tabs::
@@ -469,7 +469,7 @@ AutoML Log
 When using Python or R clients, you can also access meta information with the following AutoML object properties:
 
 - **event_log**: an ``H2OFrame`` with selected AutoML backend events generated during training.
-- **training_info**: a dictionary exposing data that could be useful for - **training_info**: a dictionary exposing data that could be useful for post-analysis; for example various timings.  If you want training and prediction times for each model, it's easier to explore that data in the extended leaderboard using the ``h2o.get_leaderboard()`` function.
+- **training_info**: a dictionary exposing data that could be useful for post-analysis (e.g. various timings).  If you want training and prediction times for each model, it's easier to explore that data in the extended leaderboard using the ``h2o.get_leaderboard()`` function.
 
 
 .. tabs::
