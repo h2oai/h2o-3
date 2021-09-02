@@ -179,7 +179,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         colHeaders.add("Number of Trees"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Size of Subsample"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Extension Level"); colTypes.add("int"); colFormat.add("%d");
-        colHeaders.add("Seed"); colTypes.add("int"); colFormat.add("%d");
+        colHeaders.add("Seed"); colTypes.add("long"); colFormat.add("%d");
 
         final int rows = 1;
         TwoDimTable table = new TwoDimTable(
