@@ -80,6 +80,86 @@ Some examples of response distributions are provided below.
 .. figure:: ../../images/bernoulli.png
    :alt: Bernoulli distribution
 
+Equations
+~~~~~~~~~
+
+Where:
+
+- :math:`y` is a true response
+- :math:`f` is a predicted response
+- :math:`w` is weight
+
++-------------------+-------------------------------------------------------------------------------------------+
+| Distribution Type | Equation                                                                                  |
++===================+===========================================================================================+
+| Bernoulli         | :math:`-2\times w\times(y\times\log(f))+(1-y)\times\log(1-f))`                            |
++-------------------+-------------------------------------------------------------------------------------------+
+| Quasibinomial     | :math:`f= \begin{cases} -2\times w\times y\times\log(f) & \text{for } f>1 \\              |
+|                   | -2\times w\times(1-y)\times\log(1-f) & \text{for } f<0 \\ 0 & \text{for } f=y \\          |
+|                   | -2\times w\times (y \times\log(f)+(1-y)\times\log(1-f)) & \text{otherwise}                |
+|                   | \\\end{cases}`                                                                            |
++-------------------+-------------------------------------------------------------------------------------------+
+| Gaussian          | - Equivalent to wMSE (weighted mean squared error):                                       |
+|                   | - :math:`w \times(y-f)^2`                                                                 |
++-------------------+-------------------------------------------------------------------------------------------+
+| Poisson           | - With :math:`f\text{_}link=link(f)`                                                      |
+|                   | - :math:`-2\times w\times(y\times f\text{_}link- \exp(f\text{_}link))`                    |
++-------------------+-------------------------------------------------------------------------------------------+
+| Gamma             | - With :math:`f\text{_}link=link(f)`                                                      |
+|                   | - :math:`2\times w\times (y\times \exp(-f\text{_}link)+f\text{_}link)`                    |
++-------------------+-------------------------------------------------------------------------------------------+
+| Laplace           | :math:`w \text{ }\times\mid{y-f}\mid`                                                     |
++-------------------+-------------------------------------------------------------------------------------------+
+| Quantile          | :math:`f= \begin{cases}w\times QuantileAlpha \times(y-f) & \text{for }y>f \\              |
+|                   | w\times(1-QuantileAlpha)\times(f-y)& \text{for } y \leq f \\\end{cases}`                  |
++-------------------+-------------------------------------------------------------------------------------------+
+| Huber             | :math:`f= \begin{cases} w\times(y-f)^2 & \text{for } \mid{y-f}\mid \leq HuberDelta &      |
+|                   | \text{(Equivalent to wMSE)} \\                                                            |
+|                   | 2\times w\times(\mid{y-f}\mid -HuberDelta)\times HuberDelta & \text{for } y \leq f &      |
+|                   | \text{(Equivalent to wMAE)} \\\end{cases}`                                                |
++-------------------+-------------------------------------------------------------------------------------------+
+| Modified_Huber    | :math:`\text{With } z=(2\times y-1)\times f \\                                            |
+|                   | f= \begin{cases}-4\times w\times z & \text{for } z\leq 1 \\                               |
+|                   | 0 & \text{for } z>1 \\                                                                    |
+|                   | w\times z^2 & \text{otherwise} \\\end{cases}`                                             |
++-------------------+-------------------------------------------------------------------------------------------+
+| Tweedie           | with :math:`f=\text{link}(f)`, requires :math:`1>\text{Tweedie_Power}<2`:                 |
+|                   | :math:`2\times w\times y^{(2-\text{Tweedie_Power})/((1-\text{Tweedie_Power})\times(2-     |
+|                   | \text{Tweedie_Power}))}-y \times \exp(f\times(1-\text{Tweedie_Power}))/ (1-\text          |
+|                   | {Tweedie_Power})+ \exp(f\times(2-\text{Tweedie_Power}))/(2-\text{Tweedie_Power})`         |
++-------------------+-------------------------------------------------------------------------------------------+
+
++-------------------+---------------------------------------------------------------------------+
+| Link/Inverse Link | Equation                                                                  |
+| Functions         |                                                                           |
++===================+===========================================================================+
+| Identity: Gaussian| - :math:`link(f)=f`                                                       |
+| Huber, Laplace,   | - :math:`linkInversion(f)=f`                                              |
+| Quantile          |                                                                           |
++-------------------+---------------------------------------------------------------------------+
+| Log: Multinomial, | - :math:`link(f)=\log(f)`                                                 |
+| Poisson, Gamma,   | - :math:`linkInversion(f)= \exp(f)`                                       |
+| Tweedie           |                                                                           |
++-------------------+---------------------------------------------------------------------------+
+| Logit: Bernoulli, | - :math:`link(f)=(f/(f-1))`                                               |
+| Quasibinomial,    | - :math:`linkInversion(f)=1/(1+ \exp(-f))`                                |
+| Modified_Huber    |                                                                           |
++-------------------+---------------------------------------------------------------------------+
+| Inversion         | :math:`link(f)= linkInversion(f) = \begin{cases}min(-1e-5, f)             |
+|                   | & \text{for }f<0 \\ max(-1e-5, f)& \text{for }f>0 \\\end{cases}`          |
++-------------------+---------------------------------------------------------------------------+
+| Ologit            | - :math:`link(f)=\log(f/(1-f))`                                           |
+|                   | - :math:`linkInversion(f)=1/(1+ \exp(-f))`                                |
++-------------------+---------------------------------------------------------------------------+
+| Ologlog           | - :math:`link(f)=\log(-1\times\log(1-f))`                                 |
+|                   | - :math:`linkInversion(f)=1- \exp(-1\times \exp(f))`                      |
++-------------------+---------------------------------------------------------------------------+
+| Oprobit           | - :math:`link(f)=normalDistribution.inverseCumulativeProbability(f)`      |
+|                   | - :math:`linkInversion(f)=normalDistribution.cumulativeProbability(f)`    |
++-------------------+---------------------------------------------------------------------------+
+
+**Note**: Inversion, Ologit, Ologlog, and Oprobit are not associated with concrete distributions but can be used with a custom distribution.
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
