@@ -67,7 +67,7 @@ Optional Miscellaneous Parameters
 
 - `balance_classes <data-science/algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size calculated using the ``max_after_balance_size parameter``, then the majority classes will be undersampled to satisfy the size limit.
 
-- `class_sampling_factors <data-science/algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
+- `class_sampling_factors <data-science/algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes`` set to True.
 
 
 - `max_after_balance_size <data-science/algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance\_classes** must be enabled). Defaults to 5.0.  (The value can be less than 1.0).
@@ -114,12 +114,12 @@ Optional Miscellaneous Parameters
 
 - `include_algos <data-science/algo-params/include_algos.html>`__: A list/vector of character strings naming the algorithms to include during the model-building phase.  An example use is ``include_algos = ["GLM", "DeepLearning", "DRF"]`` in Python or ``include_algos = c("GLM", "DeepLearning", "DRF")`` in R.  Defaults to ``None/NULL``, which means that all appropriate H2O algorithms will be used if the search stopping criteria allows and if no algorithms are specified in ``exclude_algos``. This option is mutually exclusive with ``exclude_algos``. The available algorithms are:
 
-    - ``DRF`` (This includes both the Random Forest and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
-    - ``GLM``
+    - ``DRF`` (This includes both the Distributed Random Forest (DRF) and Extremely Randomized Trees (XRT) models. Refer to the :ref:`xrt` section in the DRF chapter and the `histogram_type <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/algo-params/histogram_type.html>`__ parameter description for more information.)
+    - ``GLM`` (Generalized Linear Model with regularization)
     - ``XGBoost``  (XGBoost GBM)
     - ``GBM``  (H2O GBM)
     - ``DeepLearning``  (Fully-connected multi-layer artificial neural network)
-    - ``StackedEnsemble``
+    - ``StackedEnsemble`` (Stacked Ensembles, includes an ensemble of all the base models and ensembles using subsets of the base models)
 
 - **modeling_plan**: The list of modeling steps to be used by the AutoML engine. (They may not all get executed, depending on other constraints.)
 
@@ -142,11 +142,21 @@ Optional Miscellaneous Parameters
 Notes
 ~~~~~
 
-If the user sets ``nfolds == 0``, then cross-validation metrics will not be available to populate the leaderboard.  In this case, we need to make sure there is a holdout frame (aka. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard.  Without cross-validation, we will also require a validation frame to be used for early stopping on the models.  Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data.  If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
+Validation Options
+''''''''''''''''''
+
+If the user turns off cross-validation by setting ``nfolds == 0``, then cross-validation metrics will not be available to populate the leaderboard.  In this case, we need to make sure there is a holdout frame (i.e. the "leaderboard frame") to score the models on so that we can generate model performance metrics for the leaderboard.  Without cross-validation, we will also require a validation frame to be used for early stopping on the models.  Therefore, if either of these frames are not provided by the user, they will be automatically partitioned from the training data.  If either frame is missing, 10% of the training data will be used to create a missing frame (if both are missing then a total of 20% of the training data will be used to create a 10% validation and 10% leaderboard frame).
+
+XGBoost Memory Requirements
+'''''''''''''''''''''''''''
+
+XGBoost, which is included in H2O as a third party library, requires its own memory outside the H2O (Java) cluster. When running AutoML with XGBoost (it is included by default), be sure you allow H2O no more than 2/3 of the total available RAM.  Example:  If you have 60G RAM, use ``h2o.init(max_mem_size = "40G")``, leaving 20G for XGBoost.
+
+Scikit-learn Compatibility
+''''''''''''''''''''''''''
 
 ``H2OAutoML`` can interact with the ``h2o.sklearn`` module. The ``h2o.sklearn`` module exposes 2 wrappers for ``H2OAutoML`` (``H2OAutoMLClassifier`` and ``H2OAutoMLRegressor``), which expose the standard API familiar to ``sklearn`` users: ``fit``, ``predict``, ``fit_predict``, ``score``, ``get_params``, and ``set_params``. It accepts various formats as input data (H2OFrame, ``numpy`` array, ``pandas`` Dataframe) which allows them to be combined with pure ``sklearn`` components in pipelines. For an example using ``H2OAutoML`` with the ``h2o.sklearn`` module, click `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/sklearn-integration/H2OAutoML_as_sklearn_estimator.ipynb>`__.
 
-XGBoost requires its own memory outside the H2O (Java) cluster. When running AutoML with XGBoost, be sure you allow H2O-3 no more than 2/3 of the total available RAM.
 
 Explainability
 --------------
@@ -160,12 +170,15 @@ Code Examples
 Training
 ~~~~~~~~
 
-Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
+Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the ``x`` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
+
 
 .. tabs::
    .. code-tab:: r R
 
         library(h2o)
+
+        # Start the H2O cluster (locally)
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
@@ -180,7 +193,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         train[, y] <- as.factor(train[, y])
         test[, y] <- as.factor(test[, y])
 
-        # Run AutoML for 20 base models (limited to 1 hour max runtime by default)
+        # Run AutoML for 20 base models
         aml <- h2o.automl(x = x, y = y, 
                           training_frame = train,
                           max_models = 20,
@@ -224,6 +237,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         import h2o
         from h2o.automl import H2OAutoML
 
+        # Start the H2O cluster (locally)
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
@@ -239,7 +253,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         train[y] = train[y].asfactor()
         test[y] = test[y].asfactor()
         
-        # Run AutoML for 20 base models (limited to 1 hour max runtime by default)
+        # Run AutoML for 20 base models
         aml = H2OAutoML(max_models=20, seed=1)
         aml.train(x=x, y=y, training_frame=train)
 
@@ -291,7 +305,7 @@ Using the previous code example, you can generate test set predictions as follow
    .. code-tab:: r R
 
         # To generate predictions on a test set, you can make predictions
-        # directly on the `"H2OAutoML"` object or on the leader model 
+        # directly on the `H2OAutoML` object or on the leader model 
         # object directly
         pred <- h2o.predict(aml, test)  # predict(aml, test) also works
 
@@ -301,7 +315,7 @@ Using the previous code example, you can generate test set predictions as follow
    .. code-tab:: python
 
         # To generate predictions on a test set, you can make predictions
-        # directly on the `"H2OAutoML"` object or on the leader model 
+        # directly on the `H2OAutoML` object or on the leader model 
         # object directly
         preds = aml.predict(test)
 
@@ -330,14 +344,14 @@ Using the previous example, you can retrieve the leaderboard as follows:
 .. tabs::
    .. code-tab:: r R
 
-        # Get leaderboard with 'extra_columns = 'ALL'
-        lb <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
+        # Get leaderboard with all possible columns
+        lb <- h2o.get_leaderboard(object = aml, extra_columns = "ALL")
         lb
 
    .. code-tab:: python
 
-        # Get leaderboard with `extra_columns` = 'ALL'
-        lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
+        # Get leaderboard with all possible columns
+        lb = h2o.automl.get_leaderboard(aml, extra_columns = "ALL")
         lb
 
 
@@ -391,13 +405,105 @@ Here is an example of a basic leaderboard (no extra columns) for a binary classi
 | GLM_1_AutoML_20191213_174603                           | 0.682648 | 0.63852  | 0.680344 |             0.397234 | 0.472683 | 0.223429 |              195 |                0.001312 |
 +--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
 
+
+Examine Models
+~~~~~~~~~~~~~~
+
+To examine the trained models more cloesly, you can interact with the models, either by model ID, or a convenience function which can grab the best model of each model type (ranked by the default metric, or a metric of your choosing).  
+
+
+Get the best model, or the best model of a certain type:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Get the best model using the metric
+        m <- aml@leader
+        # this is equivalent to 
+        m <- h2o.get_best_model(aml)
+
+        # Get the best model using a non-default metric
+        m <- h2o.get_best_model(aml, criterion = "logloss")
+
+        # Get the best XGBoost model using default sort metric
+        xgb <- h2o.get_best_model(aml, algorithm = "xgboost")
+
+        # Get the best XGBoost model, ranked by logloss
+        xgb <- h2o.get_best_model(aml, algorithm = "xgboost", criterion = "logloss")
+
+   .. code-tab:: python
+
+        # Get the best model using the metric
+        m = aml.leader
+        # this is equivalent to 
+        m = aml.get_best_model()
+
+        # Get the best model using a non-default metric
+        m = aml.get_best_model(criterion="logloss")
+
+        # Get the best XGBoost model using default sort metric
+        xgb = aml.get_best_model(algorithm="xgboost")
+
+        # Get the best XGBoost model, ranked by logloss
+        xgb = aml.get_best_model(algorithm="xgboost", criterion="logloss")
+
+
+Get a specific model by model ID:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Get a specific model by model ID
+        m <- h2o.getModel("StackedEnsemble_BestOfFamily_AutoML_20191213_174603")
+
+   .. code-tab:: python
+
+        # Get a specific model by model ID
+        m = h2o.get_model("StackedEnsemble_BestOfFamily_AutoML_20191213_174603")
+
+
+Once you have retreived the model in R or Python, you can inspect the model parameters as follows:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # View the non-default parameter values for the XGBoost model above
+        xgb@parameters
+
+   .. code-tab:: python
+
+        # View the parameters for the XGBoost model selected above
+        xgb.params.keys()
+
+        # Inspect individual parameter values
+        xgb.params['ntrees']
+
+
 AutoML Log
 ~~~~~~~~~~
 
 When using Python or R clients, you can also access meta information with the following AutoML object properties:
 
 - **event_log**: an ``H2OFrame`` with selected AutoML backend events generated during training.
-- **training_info**: a dictionary exposing data that could be useful for post-analysis; for example various timings.
+- **training_info**: a dictionary exposing data that could be useful for post-analysis (e.g. various timings).  If you want training and prediction times for each model, it's easier to explore that data in the extended leaderboard using the ``h2o.get_leaderboard()`` function.
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Get AutoML event log
+        log <- aml@event_log
+
+        # Get training timing info
+        info <- aml@training_info
+
+   .. code-tab:: python
+
+        # Get AutoML event log
+        log = aml.event_log
+
+        # Get training timing info
+        info = aml.training_info
 
 
 
