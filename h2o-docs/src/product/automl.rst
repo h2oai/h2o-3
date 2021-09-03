@@ -462,6 +462,22 @@ Get a specific model by model ID:
         m = h2o.get_model("StackedEnsemble_BestOfFamily_AutoML_20191213_174603")
 
 
+Once you have retreived the model in R or Python, you can inspect the model parameters as follows:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # View the non-default parameter values for the XGBoost model above
+        xgb@parameters
+
+   .. code-tab:: python
+
+        # View the parameters for the XGBoost model selected above
+        xgb.params.keys()
+
+        # Inspect individual parameter values
+        xgb.params['ntrees']
+
 
 AutoML Log
 ~~~~~~~~~~
