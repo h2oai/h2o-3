@@ -4,6 +4,7 @@ import hex.Model;
 import hex.MultiModelMojoWriter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
     protected void writeParentModelData() throws IOException {
         writekv("linear_model", model._output.glmModelKey);
         if (!model._parms._model_type.equals(RuleFitModel.ModelType.LINEAR)) {
-            writeRuleEnsemble(model.ruleEnsemble);
+            writeOrderedRuleEnsemble(model.ruleEnsemble, model._parms._max_rule_length - model._parms._min_rule_length + 1, model._parms._rule_generation_ntrees);
         }
         if (model._parms._model_type.equals(RuleFitModel.ModelType.LINEAR)) {
             writekv("model_type", 0);
@@ -62,15 +63,29 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
         }
     }
 
-    void writeRuleEnsemble(RuleEnsemble ruleEnsemble) throws IOException {
-        int numRules = ruleEnsemble.rules.length;
-        writekv("num_rules", numRules);
-        for (int i = 0; i < numRules; i++) {
-            writeRule(ruleEnsemble.rules[i], i);
+    void writeOrderedRuleEnsemble(RuleEnsemble ruleEnsemble, int depth, int ntrees) throws IOException {
+        for (int i = 0; i < depth; i++) {
+            for (int j = 0; j < ntrees; j++) {
+                // filter rules according to varname
+                // varname is of structue "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()
+                String regex = "M" + i + "T" + j + "N" + "\\d+";
+                List<Rule> filteredRules = new ArrayList<>();
+                for (int k = 0; k < ruleEnsemble.rules.length; k++) {
+                    if (ruleEnsemble.rules[k].varName.matches(regex)) {
+                        filteredRules.add(ruleEnsemble.rules[k]);
+                    }
+                }
+                int currNumRules = filteredRules.size();
+                writekv("num_rules_M".concat(String.valueOf(i)).concat("T").concat(String.valueOf(j)), currNumRules);
+                String currIdPrefix = String.valueOf(i).concat("_").concat(String.valueOf(j)).concat("_");
+                for (int k = 0; k < currNumRules; k++) {
+                    writeRule(filteredRules.get(k), currIdPrefix.concat(String.valueOf(k)));
+                }
+            }
         }
     }
 
-    void writeRule(Rule rule, int ruleId) throws IOException {
+    void writeRule(Rule rule, String ruleId) throws IOException {
         int numConditions = rule.conditions.length;
         writekv("num_conditions_rule_id_" + ruleId, numConditions);
         for (int i = 0; i < numConditions; i++) {
@@ -82,7 +97,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
         writekv("var_name_rule_id_" + ruleId, rule.varName);
     }
 
-    void writeCondition(Condition condition, int conditionId, int ruleId) throws IOException {
+    void writeCondition(Condition condition, int conditionId, String ruleId) throws IOException {
         String conditionIdentifier = conditionId + "_" + ruleId;
         writekv("feature_index_" + conditionIdentifier, condition.featureIndex);
         if (Condition.Type.Categorical.equals(condition.type)) {

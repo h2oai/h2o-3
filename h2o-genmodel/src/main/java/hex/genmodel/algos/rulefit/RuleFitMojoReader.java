@@ -9,13 +9,12 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
   protected void readParentModelData() throws IOException {
     _model._linearModel = getModel((String) readkv("linear_model"));
     _model.model_type = readkv("model_type");
+    _model.depth = readkv("depth");
+    _model.ntrees = readkv("ntrees");
 
     if (_model.model_type != 0) {
       _model._ruleEnsemble = readRuleEnseble();
     }
-    
-    _model.depth = readkv("depth");
-    _model.ntrees = readkv("ntrees");
     
     int len = readkv("data_from_rules_codes_len");
     _model.dataFromRulesCodes = new String[len];
@@ -47,20 +46,28 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
   }
 
   MojoRuleEnsemble readRuleEnseble() throws IOException {
-    MojoRuleEnsemble ruleEnsemble = new MojoRuleEnsemble(readRules());
+    MojoRuleEnsemble ruleEnsemble = new MojoRuleEnsemble(readOrderedRuleEnseble());
     return ruleEnsemble;
   }
   
-  MojoRule[] readRules() throws IOException {
-    int numRules = readkv("num_rules");
-    MojoRule[] rules = new MojoRule[numRules];
-    for (int i = 0; i < numRules; i++) {
-      rules[i] = readRule(i);
+  MojoRule[][][] readOrderedRuleEnseble() throws IOException {
+    MojoRule[][][] orderedRules = new MojoRule[_model.depth][_model.ntrees][];
+
+    for (int i = 0; i < _model.depth; i++) {
+      for (int j = 0; j < _model.ntrees; j++) {
+        int currNumRules = readkv("num_rules_M".concat(String.valueOf(i)).concat("T").concat(String.valueOf(j)));
+        MojoRule[] currRules = new MojoRule[currNumRules];
+        String currIdPrefix = String.valueOf(i).concat("_").concat(String.valueOf(j)).concat("_");
+        for (int k = 0; k < currNumRules; k++) {
+          currRules[k] = readRule(currIdPrefix.concat(String.valueOf(k)));
+        }
+        orderedRules[i][j] = currRules;
+      }
     }
-    return rules;
+    return orderedRules;
   }
   
-  MojoRule readRule(int ruleId)  throws IOException {
+  MojoRule readRule(String ruleId) throws IOException {
     MojoRule rule = new MojoRule();
     int numConditions = readkv("num_conditions_rule_id_" + ruleId);
     MojoCondition[] conditions = new MojoCondition[numConditions];
@@ -75,7 +82,7 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
     return rule;
   }
   
-  MojoCondition readCondition(int conditionId, int ruleId) {
+  MojoCondition readCondition(int conditionId, String ruleId) {
     MojoCondition condition = new MojoCondition();
     String conditionIdentifier = conditionId + "_" + ruleId;
     condition.featureIndex = readkv("feature_index_" + conditionIdentifier);
