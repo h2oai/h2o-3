@@ -32,6 +32,9 @@ The interface is designed to be simple and automatic -- all of the explanations 
         exa = aml.explain(test)
 
 
+Here you can see the output from `Python <explain-code-examples/Explain-wine-example-Python.html>`_ (`.ipynb <explain-code-examples/Explain-wine-example.ipynb>`_)
+and `R <explain-code-examples/Explain-wine-example-R.html>`_ (`.Rmd <explain-code-examples/Explain-wine-example.Rmd>`_).
+
 
 Parameters
 ~~~~~~~~~~
