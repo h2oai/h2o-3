@@ -6,14 +6,16 @@ import java.util.List;
 
 public class RuleFitMojoModel extends MojoModel {
 
+  public enum ModelType {LINEAR, RULES_AND_LINEAR, RULES}
+  
   MojoModel _linearModel;
   MojoRuleEnsemble _ruleEnsemble;
-  int depth;
-  int ntrees;
-  int model_type; // 0 = LINEAR, 1 = RULES_AND_LINEAR, 2 = RULES
-  String[] dataFromRulesCodes;
-  String weights_column;
-  String[] linear_names;
+  int _depth;
+  int _ntrees;
+  ModelType _modelType;
+  String[] _dataFromRulesCodes;
+  String _weightsColumn;
+  String[] _linearNames;
   
   RuleFitMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -23,21 +25,21 @@ public class RuleFitMojoModel extends MojoModel {
   public double[] score0(double[] row, double[] preds) {
     double[] linearFromRules = null;
     int testsize = 0;
-    if (model_type != 0) {
-      linearFromRules = _ruleEnsemble.transformRow(row, depth, ntrees, _linearModel._names, _linearModel._domains);
+    if (!_modelType.equals(ModelType.LINEAR)) {
+      linearFromRules = _ruleEnsemble.transformRow(row, _depth, _ntrees, _linearModel._names, _linearModel._domains);
       testsize += linearFromRules.length;
-      if (model_type == 1) {
+      if (_modelType.equals(ModelType.RULES_AND_LINEAR)) {
         testsize += row.length;
       }
     }
     double[] test = new double[testsize];
-    if (model_type == 1 || model_type == 2) {
+    if (_modelType.equals(ModelType.RULES_AND_LINEAR) || _modelType.equals(ModelType.RULES)) {
       System.arraycopy(linearFromRules, 0, test, 0, linearFromRules.length);
     }
-    if (model_type == 1) {
+    if (_modelType.equals(ModelType.RULES_AND_LINEAR)) {
       System.arraycopy(row, 0, test, linearFromRules.length, row.length);
     }
-    if (model_type == 0) {
+    if (_modelType.equals(ModelType.LINEAR)) {
       test = row;
     }
     double[] linearModelInput = map(test);
@@ -45,8 +47,8 @@ public class RuleFitMojoModel extends MojoModel {
     _linearModel.score0(linearModelInput, preds);
     
     // if current weight is zero, zero the prediction
-    if (weights_column != null) {
-      int weightsId = Arrays.asList(linear_names).indexOf("linear." + weights_column);
+    if (_weightsColumn != null) {
+      int weightsId = Arrays.asList(_linearNames).indexOf("linear." + _weightsColumn);
       double currWeight = test[weightsId];
       if (currWeight == 0.0) {
         for (int i = 0; i < preds.length; i++)
@@ -61,7 +63,7 @@ public class RuleFitMojoModel extends MojoModel {
     double[] newtest = new double[_linearModel.nfeatures()];
     List list = Arrays.asList(_linearModel._names);
     for (int i = 0; i < _linearModel.nfeatures(); i++) {
-      int id = list.indexOf(linear_names[i]);
+      int id = list.indexOf(_linearNames[i]);
       newtest[id] = test[i];
     }
     return newtest;

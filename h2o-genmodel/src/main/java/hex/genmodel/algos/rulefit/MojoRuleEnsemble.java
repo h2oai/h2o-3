@@ -5,18 +5,18 @@ import java.util.Arrays;
 
 public class MojoRuleEnsemble implements Serializable {
     
-    MojoRule[][][] orderedRules;
+    MojoRule[][][] _orderedRules;
 
     public MojoRuleEnsemble(MojoRule[][][] orderedRules) {
-        this.orderedRules = orderedRules;
+        this._orderedRules = orderedRules;
     }
     
     public double[] transformRow(double[] row, int depth, int ntrees, String[] linearModelNames, String[][] linearModelDomains) {
         double[] transformedRow = new double[depth * ntrees];
         for (int i = 0; i < depth; i++) {
             for (int j = 0; j < ntrees; j++) {
-                MojoRule[] filteredOrderedRules = orderedRules[i][j];
-                transformedRow[i * ntrees + j] = decode(transform(row, orderedRules[i][j]), filteredOrderedRules, linearModelNames, linearModelDomains);
+                MojoRule[] filteredOrderedRules = _orderedRules[i][j];
+                transformedRow[i * ntrees + j] = decode(transform(row, _orderedRules[i][j]), filteredOrderedRules, linearModelNames, linearModelDomains);
             }
         }
         return transformedRow;
@@ -26,7 +26,7 @@ public class MojoRuleEnsemble implements Serializable {
         int newValue = -1;
         for (int iCol = 0; iCol < cs.length; iCol++) {
             if (cs[iCol] == 1) {
-                newValue = getValueByVarName(rules[iCol].varName, linearModelNames, linearModelDomains);
+                newValue = getValueByVarName(rules[iCol]._varName, linearModelNames, linearModelDomains);
             }
         }
         if (newValue >= 0)

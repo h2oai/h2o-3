@@ -8,24 +8,32 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
   @Override
   protected void readParentModelData() throws IOException {
     _model._linearModel = getModel((String) readkv("linear_model"));
-    _model.model_type = readkv("model_type");
-    _model.depth = readkv("depth");
-    _model.ntrees = readkv("ntrees");
+    int modelType = readkv("model_type");
+    if (modelType == 0) {
+      _model._modelType = RuleFitMojoModel.ModelType.LINEAR;
+    } else if (modelType == 1) {
+      _model._modelType = RuleFitMojoModel.ModelType.RULES_AND_LINEAR;
+    } else {
+      _model._modelType = RuleFitMojoModel.ModelType.RULES;
+    }
+    
+    _model._depth = readkv("depth");
+    _model._ntrees = readkv("ntrees");
 
-    if (_model.model_type != 0) {
+    if (!_model._modelType.equals(RuleFitMojoModel.ModelType.LINEAR)) {
       _model._ruleEnsemble = readRuleEnseble();
     }
     
     int len = readkv("data_from_rules_codes_len");
-    _model.dataFromRulesCodes = new String[len];
+    _model._dataFromRulesCodes = new String[len];
     for (int i = 0; i < len; i++) {
-      _model.dataFromRulesCodes[i] = readkv("data_from_rules_codes_" + i);
+      _model._dataFromRulesCodes[i] = readkv("data_from_rules_codes_" + i);
     }
-    _model.weights_column =  readkv("weights_column");
+    _model._weightsColumn =  readkv("weights_column");
     len = readkv("linear_names_len");
-    _model.linear_names = new String[len];
+    _model._linearNames = new String[len];
     for (int i = 0; i < len; i++) {
-      _model.linear_names[i] = readkv("linear_names_" + i);
+      _model._linearNames[i] = readkv("linear_names_" + i);
     }
 
   }
@@ -51,10 +59,10 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
   }
   
   MojoRule[][][] readOrderedRuleEnseble() throws IOException {
-    MojoRule[][][] orderedRules = new MojoRule[_model.depth][_model.ntrees][];
+    MojoRule[][][] orderedRules = new MojoRule[_model._depth][_model._ntrees][];
 
-    for (int i = 0; i < _model.depth; i++) {
-      for (int j = 0; j < _model.ntrees; j++) {
+    for (int i = 0; i < _model._depth; i++) {
+      for (int j = 0; j < _model._ntrees; j++) {
         int currNumRules = readkv("num_rules_M".concat(String.valueOf(i)).concat("T").concat(String.valueOf(j)));
         MojoRule[] currRules = new MojoRule[currNumRules];
         String currIdPrefix = String.valueOf(i).concat("_").concat(String.valueOf(j)).concat("_");
@@ -74,48 +82,48 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
     for (int i = 0; i < numConditions; i++) {
       conditions[i] = readCondition(i, ruleId);
     }
-    rule.conditions = conditions;
-    rule.predictionValue = readkv("prediction_value_rule_id_" + ruleId);
-    rule.languageRule = readkv("language_rule_rule_id_" + ruleId);
-    rule.coefficient = readkv("coefficient_rule_id_" + ruleId);
-    rule.varName = readkv("var_name_rule_id_" + ruleId);
+    rule._conditions = conditions;
+    rule._predictionValue = readkv("prediction_value_rule_id_" + ruleId);
+    rule._languageRule = readkv("language_rule_rule_id_" + ruleId);
+    rule._coefficient = readkv("coefficient_rule_id_" + ruleId);
+    rule._varName = readkv("var_name_rule_id_" + ruleId);
     return rule;
   }
   
   MojoCondition readCondition(int conditionId, String ruleId) {
     MojoCondition condition = new MojoCondition();
     String conditionIdentifier = conditionId + "_" + ruleId;
-    condition.featureIndex = readkv("feature_index_" + conditionIdentifier);
+    condition._featureIndex = readkv("feature_index_" + conditionIdentifier);
     int type = readkv("type_" + conditionIdentifier);
     if (type == 0) {
-      condition.type = MojoCondition.Type.Categorical;
+      condition._type = MojoCondition.Type.Categorical;
       int languageCatTresholdLength = readkv("language_cat_treshold_length_" + conditionIdentifier);
       String[] languageCatTreshold = new String[languageCatTresholdLength];
       for (int i = 0; i < languageCatTresholdLength; i++) {
         languageCatTreshold[i] = readkv("language_cat_treshold_" + i + "_" + conditionIdentifier).toString();
       }
-      condition.languageCatTreshold = languageCatTreshold;
+      condition._languageCatThreshold = languageCatTreshold;
       int catTresholdLength = readkv("cat_treshold_length_" + conditionIdentifier);
       int[] catTreshold = new int[catTresholdLength];
       for (int i = 0; i < catTresholdLength; i++) {
         catTreshold[i] = readkv("cat_treshold_length_" + i + "_" + conditionIdentifier);
       }
-      condition.catTreshold = catTreshold;
+      condition._catThreshold = catTreshold;
     } else {
-      condition.type = MojoCondition.Type.Numerical;
-      condition.numTreshold = readkv("num_treshold" + conditionIdentifier);
+      condition._type = MojoCondition.Type.Numerical;
+      condition._numThreshold = readkv("num_treshold" + conditionIdentifier);
     }
     int operator = readkv("operator_" + conditionIdentifier);
     if (operator == 0) {
-      condition.operator = MojoCondition.Operator.LessThan;
+      condition._operator = MojoCondition.Operator.LessThan;
     } else if (operator == 1) {
-      condition.operator = MojoCondition.Operator.GreaterThanOrEqual;
+      condition._operator = MojoCondition.Operator.GreaterThanOrEqual;
     } else {
-      condition.operator = MojoCondition.Operator.In;
+      condition._operator = MojoCondition.Operator.In;
     }
-    condition.featureName = readkv("feature_name_" + conditionIdentifier);
-    condition.NAsIncluded = readkv("nas_included_" + conditionIdentifier);
-    condition.languageCondition = readkv("language_condition" + conditionIdentifier);
+    condition._featureName = readkv("feature_name_" + conditionIdentifier);
+    condition._NAsIncluded = readkv("nas_included_" + conditionIdentifier);
+    condition._languageCondition = readkv("language_condition" + conditionIdentifier);
     
     return condition;
   }
