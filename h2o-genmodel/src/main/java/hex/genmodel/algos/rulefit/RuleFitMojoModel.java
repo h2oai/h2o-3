@@ -61,7 +61,7 @@ public class RuleFitMojoModel extends MojoModel {
   
   double[] map(double[] test) {
     double[] newtest = new double[_linearModel.nfeatures()];
-    List list = Arrays.asList(_linearModel._names);
+    List<String> list = Arrays.asList(_linearModel._names);
     for (int i = 0; i < _linearModel.nfeatures(); i++) {
       int id = list.indexOf(_linearNames[i]);
       newtest[id] = test[i];

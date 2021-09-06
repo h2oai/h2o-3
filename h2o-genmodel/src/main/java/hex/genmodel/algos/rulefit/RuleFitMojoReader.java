@@ -65,9 +65,9 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
       for (int j = 0; j < _model._ntrees; j++) {
         int currNumRules = readkv("num_rules_M".concat(String.valueOf(i)).concat("T").concat(String.valueOf(j)));
         MojoRule[] currRules = new MojoRule[currNumRules];
-        String currIdPrefix = String.valueOf(i).concat("_").concat(String.valueOf(j)).concat("_");
+        String currIdPrefix = i + "_" + j + "_";
         for (int k = 0; k < currNumRules; k++) {
-          currRules[k] = readRule(currIdPrefix.concat(String.valueOf(k)));
+          currRules[k] = readRule(currIdPrefix + k);
         }
         orderedRules[i][j] = currRules;
       }

@@ -5,7 +5,7 @@ import hex.MultiModelMojoWriter;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 
 public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
@@ -25,11 +25,10 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
 
     @Override
     protected List<Model> getSubModels() {
-        LinkedList<Model> subModels = new LinkedList<>();
         if (model.glmModel != null) {
-            subModels.add(model.glmModel);
+            return Collections.singletonList(model.glmModel);
         }
-        return subModels;
+        return Collections.emptyList();
     }
     
     @Override
@@ -77,9 +76,9 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
                 }
                 int currNumRules = filteredRules.size();
                 writekv("num_rules_M".concat(String.valueOf(i)).concat("T").concat(String.valueOf(j)), currNumRules);
-                String currIdPrefix = String.valueOf(i).concat("_").concat(String.valueOf(j)).concat("_");
+                String currIdPrefix = i + "_" + j + "_";
                 for (int k = 0; k < currNumRules; k++) {
-                    writeRule(filteredRules.get(k), currIdPrefix.concat(String.valueOf(k)));
+                    writeRule(filteredRules.get(k), currIdPrefix + k);
                 }
             }
         }
@@ -126,8 +125,5 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
         writekv("feature_name_" + conditionIdentifier, condition.featureName);
         writekv("nas_included_" + conditionIdentifier, condition.NAsIncluded);
         writekv("language_condition" + conditionIdentifier, condition.languageCondition);
-        
-        
-       
     }
 }
