@@ -27,5 +27,4 @@ h2o_connect_test <- function() {
   expect_true("Cannot connect to H2O server. Please check that H2O is running at http://localhost:54321/" == err_message)
 }
 
-doTest("Error thrown when h2o.connect() is called on non-existent cluster (local cluster)",
-       h2o_connect_test)
+doTest("Test that h2o.connect() throws error when connecting to a non-existent cluster", h2o_connect_test)
