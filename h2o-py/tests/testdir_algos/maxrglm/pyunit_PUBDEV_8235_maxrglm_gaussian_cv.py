@@ -10,24 +10,24 @@ from h2o.estimators.maxrglm import H2OMaxRGLMEstimator as maxrglm
 def test_maxrglm_cross_validation():
 
     d = h2o.import_file(path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
-    myY = "C21"
-    myX = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15", "C16",
+    my_y = "C21"
+    my_x = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14", "C15", "C16",
            "C17", "C18", "C19", "C20"]
     factorX = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
     for x in factorX:
         d[x] = d[x].asfactor()
-    nFolds = 3
+    n_folds = 3
 
-    maxrglmModelr = maxrglm(seed=12345, max_predictor_number=3, nfolds=nFolds, fold_assignment="random")
-    maxrglmModelr.train(training_frame=d, x=myX, y=myY)
-    bestR2valuer = maxrglmModelr.get_best_R2_values()
+    maxrglm_model_r = maxrglm(seed=12345, max_predictor_number=3, nfolds=n_folds, fold_assignment="random")
+    maxrglm_model_r.train(training_frame=d, x=my_x, y=my_y)
+    best_r_value_r = maxrglm_model_r.get_best_R2_values()
 
-    maxrglmModela = maxrglm(seed=12345, max_predictor_number=3, nfolds=nFolds, fold_assignment="auto")
-    maxrglmModela.train(training_frame=d, x=myX, y=myY)
-    bestR2valuea = maxrglmModela.get_best_R2_values()
+    maxrglm_model_a = maxrglm(seed=12345, max_predictor_number=3, nfolds=n_folds, fold_assignment="auto")
+    maxrglm_model_a.train(training_frame=d, x=my_x, y=my_y)
+    best_r2_value_a = maxrglm_model_a.get_best_R2_values()
      
      # both models should provide same best R2 values
-    pyunit_utils.equal_two_arrays(bestR2valuer, bestR2valuea, eps=1e-6)
+    pyunit_utils.equal_two_arrays(best_r_value_r, best_r2_value_a, eps=1e-6)
 
 
 if __name__ == "__main__":
