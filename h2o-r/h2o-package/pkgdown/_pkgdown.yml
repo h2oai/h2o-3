@@ -137,6 +137,8 @@ reference:
       - h2o.giniCoef
       - h2o.gam
       - h2o.anovaglm
+      - h2o.get_best_r2_values
+      - h2o.get_best_model_predictors
       - h2o.glm
       - h2o.glrm
       - h2o.grep
@@ -194,6 +196,7 @@ reference:
       - h2o.makeGLMModel
       - h2o.match
       - h2o.max
+      - h2o.maxrglm
       - h2o.mean_per_class_error
       - h2o.mean_residual_deviance
       - h2o.mean
