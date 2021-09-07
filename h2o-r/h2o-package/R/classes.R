@@ -720,6 +720,14 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
 
 #' @rdname H2OModelMetrics-class
 #' @export
+setMethod("show", "H2OAnomalyDetectionMetrics", function(object) {
+  callNextMethod(object)  # call to the super
+  cat("Anomaly Score:", object@metrics$mean_score, "\n")
+  cat("Normalized Anomaly Score:", object@metrics$mean_normalized_score, "\n")
+})
+
+#' @rdname H2OModelMetrics-class
+#' @export
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")
 #' @rdname H2OModelMetrics-class
 #' @export
