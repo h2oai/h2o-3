@@ -85,6 +85,7 @@ shadowJar {
   exclude 'devpay_products.properties'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
+    attributes 'Multi-Release': 'true'
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
     file = file("${buildDir}/reports/license/dependency-license.xml")
