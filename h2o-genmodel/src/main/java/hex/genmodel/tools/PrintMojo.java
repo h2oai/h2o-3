@@ -8,6 +8,7 @@ import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
+import water.init.AbstractBuildVersion;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,6 +23,8 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
  */
 public class PrintMojo implements MojoPrinter {
+
+  public static final AbstractBuildVersion ABV = AbstractBuildVersion.getBuildVersion();
   
   protected MojoModel genModel;
   protected Format format = Format.dot;
@@ -97,6 +100,13 @@ public class PrintMojo implements MojoPrinter {
   }
 
   protected static void usage() {
+    System.out.println("Build git branch: " + ABV.branchName());
+    System.out.println("Build git hash: " + ABV.lastCommitHash());
+    System.out.println("Build git describe: " + ABV.describe());
+    System.out.println("Build project version: " + ABV.projectVersion());
+    System.out.println("Built by: '" + ABV.compiledBy() + "'");
+    System.out.println("Built on: '" + ABV.compiledOn() + "'");
+    System.out.println();
     System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
     System.out.println("The currently supported model types are DRF, GBM and XGBoost.");
     System.out.println();
