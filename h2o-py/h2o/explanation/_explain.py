@@ -1058,7 +1058,7 @@ def pd_multi_plot(
     on the response. The effect of a variable is measured in change in the mean response.
     PDP assumes independence between the feature for which is the PDP computed and the rest.
 
-    :param models: H2O AutoML object, slice of leaderboard, or list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
     :param column: string containing column name
     :param best_of_family: if True, show only the best models per family
@@ -1314,14 +1314,11 @@ def _has_varimp(model):
     :param model: model or a string containing model_id
     :returns: bool
     """
-    if isinstance(model, h2o.model.ModelBase):
-        # check for cases when variable importance is disabled or
-        # when a model is stopped sooner than calculating varimp (xgboost can rarely have no varimp).
-        output = model._model_json["output"]
-        return output.get("variable_importances") is not None
-    else:
-        return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
-
+    assert isinstance(model, h2o.model.ModelBase)
+    # check for cases when variable importance is disabled or
+    # when a model is stopped sooner than calculating varimp (xgboost can rarely have no varimp).
+    output = model._model_json["output"]
+    return output.get("variable_importances") is not None
 
 def _is_automl_or_leaderboard(obj):
     # type: (object) -> bool
@@ -1341,14 +1338,25 @@ def _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard, filter_=lam
     """
     Get model ids from H2OAutoML object or leaderboard
     :param automl_or_leaderboard: AutoML
-    :param filter_: a predicate used to filter model_ids. Signature of the filter is (model_id: str) -> bool.
     :return: List[str]
     """
-    leaderboard = automl_or_leaderboard.leaderboard \
-        if isinstance(automl_or_leaderboard, h2o.automl._base.H2OAutoMLBaseMixin) \
-        else automl_or_leaderboard
+    leaderboard = (automl_or_leaderboard.leaderboard
+                   if isinstance(automl_or_leaderboard, h2o.automl._base.H2OAutoMLBaseMixin)
+                   else automl_or_leaderboard)
     return [model_id[0] for model_id in leaderboard[:, "model_id"].as_data_frame(use_pandas=False, header=False)
             if filter_(model_id[0])]
+
+
+def _get_models_from_automl_or_leaderboard(automl_or_leaderboard, filter_=lambda _: True):
+    # type: (object) -> List[str]
+    """
+    Get model ids from H2OAutoML object or leaderboard
+    :param automl_or_leaderboard: AutoML
+    :param filter_: a predicate used to filter model_ids. Signature of the filter is (model) -> bool.
+    :return: Generator[h2o.model.ModelBase, None, None]
+    """
+    models = map(h2o.get_model, _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard))
+    return (model for model in models if filter_(model))
 
 
 def _get_xy(model):
@@ -1526,7 +1534,7 @@ def varimp_heatmap(
     encoded features and return a single variable importance for the original categorical
     feature. By default, the models and variables are ordered by their similarity.
 
-    :param models: H2O AutoML object, leaderboard slice or list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param top_n: DEPRECATED. use just top n models (applies only when used with H2OAutoML)
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
@@ -1558,13 +1566,7 @@ def varimp_heatmap(
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        if top_n is not None:
-            import warnings
-            from h2o.exceptions import H2ODeprecationWarning
-            warnings.warn("Setting the `top_n` parameter is deprecated, use leaderboard slice instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
-            models = models.leaderboard.head(top_n)
-        else:
-            models = models.leaderboard.head(20)
+        models = _check_deprecated_top_n_argument(models, top_n)
     varimps, model_ids,  x = varimp(models=models, cluster=cluster, use_pandas=False)
 
     plt.figure(figsize=figsize)
@@ -1590,16 +1592,16 @@ def varimp(
     """
         Get data that are used to build varimp_heatmap plot.
 
-        :param models: H2O AutoML object, leaderboard slice or list of H2O models
+        :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
         :param cluster: if True, cluster the models and variables
         :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a triple (varimps, model_ids, variable_names)
         :returns: either pandas DataFrame (if use_pandas == True) or a triple (varimps, model_ids, variable_names)
     """
     if _is_automl_or_leaderboard(models):
-        model_ids = _get_model_ids_from_automl_or_leaderboard(models, filter_=_has_varimp)
-        models = [h2o.get_model(model_id) for model_id in model_ids]
-    # Filter out models that don't have varimp
-    models = [model for model in models if _has_varimp(model)]
+        models = _get_models_from_automl_or_leaderboard(models, filter_=_has_varimp)
+    else:
+        # Filter out models that don't have varimp
+        models = [model for model in models if _has_varimp(model)]
     if len(models) == 0:
         raise RuntimeError("No model with variable importance")
     varimps = [_consolidate_varimps(model) for model in models]
@@ -1641,7 +1643,7 @@ def model_correlation_heatmap(
     For classification, frequency of identical predictions is used. By default, models
     are ordered by their similarity (as computed by hierarchical clustering).
 
-    :param models: H2OAutoML object, leaderboard slice or a list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
     :param top_n: DEPRECATED. show just top n models (applies only when used with H2OAutoML).
     :param cluster_models: if True, cluster the models
@@ -1675,13 +1677,7 @@ def model_correlation_heatmap(
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        if top_n is not None:
-            import warnings
-            from h2o.exceptions import H2ODeprecationWarning
-            warnings.warn("Setting the `top_n` parameter is deprecated, use leaderboard slice instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
-            models = models.leaderboard.head(top_n)
-        else:
-            models = models.leaderboard.head(20)
+        models = _check_deprecated_top_n_argument(models, top_n)
     corr, model_ids = model_correlation(models, frame, cluster_models, use_pandas=False)
 
     if triangular:
@@ -1706,6 +1702,18 @@ def model_correlation_heatmap(
     return fig
 
 
+def _check_deprecated_top_n_argument(models, top_n):
+    if top_n is not None:
+        import warnings
+        from h2o.exceptions import H2ODeprecationWarning
+        warnings.warn("Setting the `top_n` parameter is deprecated, use leaderboard (sub)frame "
+                      "instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
+        models = models.leaderboard.head(top_n)
+    else:
+        models = models.leaderboard.head(20)
+    return models
+
+
 def model_correlation(
         models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
@@ -1716,15 +1724,14 @@ def model_correlation(
     """
     Get data that are used to build model_correlation_heatmap plot.
 
-    :param models: H2OAutoML object, leaderboard slice or a list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
     :param cluster_models: if True, cluster the models
     :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a tuple (correlation_matrix, model_ids)
     :returns: either pandas DataFrame (if use_pandas == True) or a tuple (correlation_matrix, model_ids)
     """
     if _is_automl_or_leaderboard(models):
-        model_ids = _get_model_ids_from_automl_or_leaderboard(models)
-        models = [h2o.get_model(model_id) for model_id in model_ids]
+        models = list(_get_models_from_automl_or_leaderboard(models))
     is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
     predictions = []
     with no_progress():
@@ -2302,17 +2309,23 @@ def _process_models_input(
     :returns: tuple (is_aml, models_to_show, classification, multinomial_classification,
                     multiple_models, targets, tree_models_to_show)
     """
-    from itertools import islice
     is_aml = False
     if _is_automl_or_leaderboard(models):
         is_aml = True
-        models = models.leaderboard if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin) else models
-        models_to_show = [h2o.get_model(models[0, "model_id"])]
+        if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
+            models_to_show = [models.leader]
+            models = models.leaderboard
+        else:
+            models_to_show = [h2o.get_model(models[0, "model_id"])]
+        if _has_varimp(models_to_show[0]):
+            models_with_varimp = models_to_show
+        else:
+            model_with_varimp = next(_get_models_from_automl_or_leaderboard(models, filter_=_has_varimp), None)
+            if model_with_varimp is None:
+                models_with_varimp = []
+            else:
+                models_with_varimp = [model_with_varimp]
         multiple_models = models.nrow > 1
-        models_with_varimp = models_to_show if _has_varimp(models_to_show[0]) \
-            else list(islice((h2o.get_model(model)
-                              for model in _get_model_ids_from_automl_or_leaderboard(models, filter_=_has_varimp)
-                              if _has_varimp(h2o.get_model(model))), 1))
     elif isinstance(models, h2o.model.ModelBase):
         models_to_show = [models]
         multiple_models = False
@@ -2373,13 +2386,7 @@ def explain(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-<<<<<<< HEAD
-    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models
-||||||| parent of d867567f4a (Allow usage of leaderboard in the explain functions)
-    :param models: H2OAutoML object, H2OModel, or list of H2O models
-=======
-    :param models: H2OAutoML object, slice of a leaderboard, H2OModel, or list of H2O models
->>>>>>> d867567f4a (Allow usage of leaderboard in the explain functions)
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
     :param columns: either a list of columns or column indices to show. If specified
                     parameter top_n_features will be ignored.
@@ -2419,7 +2426,8 @@ def explain(
     >>> aml.leader.explain(test)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    (is_aml, models_to_show, classification, multinomial_classification, multiple_models, targets, tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
+    (is_aml, models_to_show, classification, multinomial_classification, multiple_models, targets,
+     tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if top_n_features < 0:
         top_n_features = float("inf")
@@ -2677,7 +2685,8 @@ def explain_row(
     >>> # Create the leader model explanation
     >>> aml.leader.explain_row(test, row_index=0)
     """
-    (is_aml, models_to_show, _, multinomial_classification, multiple_models, targets, tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
+    (is_aml, models_to_show, _, multinomial_classification, multiple_models,
+     targets, tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if columns is not None and isinstance(columns, list):
         columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]

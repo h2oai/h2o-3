@@ -8,7 +8,7 @@ H2O Explainability Interface is a convenient wrapper to a number of explainabilt
 Model Explainability Interface
 ------------------------------
 
-The interface is designed to be simple and automatic -- all of the explanations are generated with a single function, ``h2o.explain()``.  The input can be any of the following: an H2O model, a list of H2O models, an ``H2OAutoML`` object or an ``H2OAutoML`` Leaderboard slice, and a holdout frame.  If you provide a list of models or an AutoML object, there will be additional plots that do multi-model comparisons.  
+The interface is designed to be simple and automatic -- all of the explanations are generated with a single function, ``h2o.explain()``.  The input can be any of the following: an H2O model, a list of H2O models, an ``H2OAutoML`` object or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard), and a holdout frame.  If you provide a list of models or an AutoML object, there will be additional plots that do multi-model comparisons.
 
 
 .. tabs::
@@ -39,7 +39,7 @@ and `R <explain-code-examples/Explain-wine-example-R.html>`_ (`.Rmd <explain-cod
 Parameters
 ~~~~~~~~~~
 
-- **object**: (R only) One of the following: an H2O supervised model, a list of supervised models, an H2OAutoML object, or an H2OAutoML leaderboard slice.
+- **object**: (R only) A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 
 - **newdata** (R) / **frame** (Python): An H2OFrame used in Residual Analysis, Shapley contributions and a number of other explanation functions.
 
@@ -244,7 +244,7 @@ For classification models, we also display the **Confusion Matrix** of a single 
 Explanation Plotting Functions 
 ------------------------------
 
-There are a number of individual plotting functions that are used inside the ``explain()`` function.  Some of these functions take a group of models as input and others just evaluate a single model at a time.  The following functions take a list of models (including an AutoML object or leaderboard slice) as input:
+There are a number of individual plotting functions that are used inside the ``explain()`` function.  Some of these functions take a group of models as input and others just evaluate a single model at a time.  The following functions take a list of models (including an AutoML object or an H2OFrame with `model_id` column, e.g., the Leaderboard) as input:
 
 .. tabs::
    .. code-tab:: r R

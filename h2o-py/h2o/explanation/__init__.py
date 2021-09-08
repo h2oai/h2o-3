@@ -29,9 +29,7 @@ def _register_dummy_methods():
 try:
     import numpy
     import matplotlib
-    from ._explain import varimp_heatmap, model_correlation_heatmap, shap_explain_row_plot, shap_summary_plot,\
-        explain, explain_row, pd_plot, pd_multi_plot, ice_plot, residual_analysis_plot, learning_curve_plot, \
-        varimp, model_correlation
+    from ._explain import *
 
     __all__ = [
         "explain",

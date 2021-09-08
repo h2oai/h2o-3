@@ -1541,7 +1541,7 @@ h2o.shap_explain_row_plot <-
 #' encoded features and return a single variable importance for the original categorical
 #' feature. By default, the models and variables are ordered by their similarity.
 #'
-#' @param object An H2OAutoML object, leaderboard slice or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param top_n Integer specifying the number models shown in the heatmap 
 #'              (based on leaderboard ranking). Defaults to 20.
 #' @return A ggplot2 object.
@@ -1630,7 +1630,7 @@ h2o.varimp_heatmap <- function(object, top_n = 20) {
 #' For classification, frequency of identical predictions is used. By default, models
 #' are ordered by their similarity (as computed by hierarchical clustering).
 #'
-#' @param object An H2OAutoML object, leaderboard slice or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)..
 #' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame,
 #'                so this should be a holdout set.
 #' @param top_n Integer specifying the number models shown in the heatmap (used only with an
@@ -1710,7 +1710,7 @@ h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = 
 #' For classification, frequency of identical predictions is used. By default, models
 #' are ordered by their similarity (as computed by hierarchical clustering).
 #'
-#' @param object An H2OAutoML object, leaderboard slice or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame, 
 #'                so this should be a holdout set.
 #' @param top_n Integer specifying the number models shown in the heatmap (used only with an 
@@ -2840,8 +2840,7 @@ h2o.learning_curve_plot <- function(model,
 #' are visual (ggplot plots).  These plots can also be created by individual utility functions 
 #' as well.
 #'
-#' @param object One of the following: a supervised H2O model, a list of supervised H2O models, an H2OAutoML object or
-#'               an H2OAutoML Leaderboard slice.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
@@ -3232,8 +3231,7 @@ h2o.explain <- function(object,
 #' are visual (ggplot plots).  These plots can also be created by individual utility functions 
 #' as well.
 #' 
-#' @param object One of the following: a supervised H2O model, a list of supervised H2O models, an H2OAutoML object
-#'               or an H2OAutoML Leaderboard slice.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
 #' @param columns A vector of column names or column indices to create plots with. If specified
