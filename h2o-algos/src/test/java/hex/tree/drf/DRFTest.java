@@ -2278,8 +2278,9 @@ public class DRFTest extends TestUtil {
               parms._nfolds = 0;
 
               DRF job = new DRF(parms);
-              DRFModel gbm = job.trainModel().get();
-              Scope.track_generic(gbm);
+              DRFModel drfModel= job.trainModel().get();
+              assertNotNull(drfModel);
+              Scope.track_generic(drfModel);                     
 
               // conversion to mojo shouldn't produce exception
               MojoModel mojoModel = drfModel.toMojo();
