@@ -13,19 +13,6 @@ cd $H2O_BASE/h2o-k8s/tests/clustering/ || exit 1
 k3d --version
 k3d delete
 k3d create -v "$H2O_BASE":"$H2O_BASE" --registries-file registries.yaml --publish 8080:80 --api-port localhost:6444 --server-arg --tls-san="127.0.0.1" --wait 120 --server-arg '--kube-proxy-arg=conntrack-max-per-core=0' --agent-arg '--kube-proxy-arg=conntrack-max-per-core=0'
-for img in harbor.h2o.ai/library/everpeace/curl-jq:latest \
-           harbor.h2o.ai/library/rancher/k3s:v1.17.3-k3s1 \
-           harbor.h2o.ai/library/coredns/coredns:1.6.3 \
-           harbor.h2o.ai/library/rancher/klipper-helm:v0.2.3 \
-           harbor.h2o.ai/library/rancher/klipper-lb:v0.1.2 \
-           harbor.h2o.ai/library/rancher/local-path-provisioner:v0.0.11 \
-           harbor.h2o.ai/library/rancher/metrics-server:v0.3.6 \
-           harbor.h2o.ai/library/rancher/pause:3.1; do
-  new_name=$(echo $img | perl -pe 's#harbor.h2o.ai/library#docker.io#g')
-  docker pull $img
-  docker tag $img $new_name
-  k3d import-images $new_name
-done
 
 export KUBECONFIG="$(k3d get-kubeconfig --name='k3s-default')"
 kubectl cluster-info
