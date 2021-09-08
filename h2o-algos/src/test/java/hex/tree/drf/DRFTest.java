@@ -2282,7 +2282,8 @@ public class DRFTest extends TestUtil {
               Scope.track_generic(gbm);
 
               // conversion to mojo shouldn't produce exception
-              MojoModel mojoModel = gbm.toMojo();
+              MojoModel mojoModel = drfModel.toMojo();
+              assertNotNull(mojoModel);
           }
       } finally {
           Scope.exit();
