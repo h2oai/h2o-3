@@ -17,6 +17,7 @@ import water.Key;
 import water.Value;
 import water.api.API;
 import water.api.EnumValuesProvider;
+import water.api.Schema;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.FrameV3;
@@ -159,7 +160,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           }
         }
         
-        ModelParametersSchemaV3 paramsSchema = Metalearners.createParametersSchema(metalearner_algorithm.name());
+        Schema paramsSchema = Metalearners.createParametersSchema(metalearner_algorithm.name());
         Model.Parameters params = Metalearners.createParameters(metalearner_algorithm.name());
         
         paramsSchema.init_meta();

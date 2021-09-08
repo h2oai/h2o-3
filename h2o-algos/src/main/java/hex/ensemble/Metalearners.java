@@ -8,7 +8,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.schemas.*;
-import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
@@ -55,7 +55,7 @@ public class Metalearners {
         return createInstance(name).createBuilder()._parms;
     }
 
-    static public ModelParametersSchemaV3 createParametersSchema(String name) {
+    public static Schema createParametersSchema(String name) {
         assertAvailable(name);
         return providersByName.get(name).newParametersSchemaInstance();
     }
@@ -73,16 +73,16 @@ public class Metalearners {
     /**
      * A local implementation of {@link MetalearnerProvider} to expose the {@link Metalearner}s defined in this class.
      */
-    static class LocalProvider<M extends Metalearner, MPS extends ModelParametersSchemaV3> implements MetalearnerProvider<M, MPS> {
+    static class LocalProvider<M extends Metalearner> implements MetalearnerProvider<M> {
 
         private Algorithm _algorithm;
         private Supplier<M> _instanceFactory;
 
-        private Supplier<MPS> _parameterSchemaInstanceFactory;
+        private Supplier<Schema> _parameterSchemaInstanceFactory;
 
         public LocalProvider(Algorithm algorithm,
                              Supplier<M> instanceFactory,
-                             Supplier<MPS> parameterSchemaInstanceFactory) {
+                             Supplier<Schema> parameterSchemaInstanceFactory) {
             _algorithm = algorithm;
             _instanceFactory = instanceFactory;
             _parameterSchemaInstanceFactory = parameterSchemaInstanceFactory;
@@ -99,7 +99,7 @@ public class Metalearners {
         }
 
         @Override
-        public MPS newParametersSchemaInstance() {
+        public Schema newParametersSchemaInstance() {
             return _parameterSchemaInstanceFactory.get();
         }
     }

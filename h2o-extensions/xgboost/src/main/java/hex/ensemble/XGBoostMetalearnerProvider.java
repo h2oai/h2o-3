@@ -3,7 +3,7 @@ package hex.ensemble;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.XGBoostV3;
 
-public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMetalearnerProvider.XGBoostMetalearner, XGBoostV3.XGBoostParametersV3> {
+public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMetalearnerProvider.XGBoostMetalearner> {
 
     static class XGBoostMetalearner extends Metalearners.MetalearnerWithDistribution {
         public XGBoostMetalearner() {
