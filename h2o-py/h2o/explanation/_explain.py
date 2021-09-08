@@ -1706,7 +1706,7 @@ def _check_deprecated_top_n_argument(models, top_n):
     if top_n is not None:
         import warnings
         from h2o.exceptions import H2ODeprecationWarning
-        warnings.warn("Setting the `top_n` parameter is deprecated, use leaderboard (sub)frame "
+        warnings.warn("Setting the `top_n` parameter is deprecated, use a leaderboard (sub)frame "
                       "instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
         models = models.leaderboard.head(top_n)
     else:
