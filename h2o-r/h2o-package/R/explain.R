@@ -541,7 +541,7 @@ with_no_h2o_progress <- function(expr) {
 
   if (anyDuplicated(names(col_domain_mapping))) {
     dups <- duplicated(names(col_domain_mapping)) | duplicated(names(col_domain_mapping), fromLast = TRUE)
-    stop("Ambiguous encoding of the column x category pairs: ", col_domain_mapping[dups])
+    warning("Ambiguous encoding of the column x category pairs: ", col_domain_mapping[dups])
   }
 
   for (feature in names(to_process)) {

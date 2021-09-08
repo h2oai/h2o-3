@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 import random
+import warnings
 from contextlib import contextmanager
 from collections import OrderedDict, Counter, defaultdict
 
@@ -1366,9 +1367,10 @@ def _consolidate_varimps(model):
                     if domains is not None
                     for domain in domains + ["missing(NA)"]]
     if len(encoded_cols) > len(set(encoded_cols)):
+        duplicates = encoded_cols[:]
         for x in set(encoded_cols):
-            encoded_cols.remove(x)
-        raise RuntimeError("Ambiguous encoding of the column x category pairs: {}".format(set(encoded_cols)))
+            duplicates.remove(x)
+        warnings.warn("Ambiguous encoding of the column x category pairs: {}".format(set(duplicates)))
 
     varimp_to_col = {"{}.{}".format(name, domain): name
                      for name, domains in domain_mapping.items()
