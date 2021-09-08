@@ -1598,7 +1598,7 @@ def varimp(
         :returns: either pandas DataFrame (if use_pandas == True) or a triple (varimps, model_ids, variable_names)
     """
     if _is_automl_or_leaderboard(models):
-        models = _get_models_from_automl_or_leaderboard(models, filter_=_has_varimp)
+        models = list(_get_models_from_automl_or_leaderboard(models, filter_=_has_varimp))
     else:
         # Filter out models that don't have varimp
         models = [model for model in models if _has_varimp(model)]
