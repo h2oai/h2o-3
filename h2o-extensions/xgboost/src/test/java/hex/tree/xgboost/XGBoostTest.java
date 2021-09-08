@@ -2605,19 +2605,9 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel modelScaled = new hex.tree.xgboost.XGBoost(parmsScaled).trainModel().get();
       Scope.track_generic(modelScaled);
 
-      switch(modelDefault._parms._backend) {
-        case cpu:
-          // expect at least 10% improvement in MPCE with positive observations upweighted
-          assertThat("MPCE", modelDefault.mean_per_class_error() * 0.9, greaterThan(modelScaled.mean_per_class_error()));
-          break;
-        case gpu:
-          // expect that _scale_pos_weight gives at least different output for GPU run
-          assertNotEquals("_scale_pos_weight xgboost parameter is not working. MPCEs for both models are the same",
-                  modelDefault.mean_per_class_error(), modelScaled.mean_per_class_error(), 1e-6);
-          break;          
-        default:
-          throw new IllegalStateException("Don't know how to determine tolerance for backend `" + modelDefault._parms._backend + "`.");
-      }
+      // expect that _scale_pos_weight gives at least different output
+      assertNotEquals("_scale_pos_weight xgboost parameter is not working. MPCEs for both models are the same",
+              modelDefault.mean_per_class_error(), modelScaled.mean_per_class_error(), 1e-6);
     } finally {
       Scope.exit();
     }

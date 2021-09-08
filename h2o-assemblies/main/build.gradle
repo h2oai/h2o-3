@@ -86,6 +86,7 @@ shadowJar {
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
     attributes 'Add-Opens': 'java.base/java.lang'
+    attributes 'Multi-Release': 'true'
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {
     file = file("${buildDir}/reports/license/dependency-license.xml")
