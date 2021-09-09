@@ -41,4 +41,9 @@ public class JavaVersionSupport {
         }
         return false;
     }
+
+    public static String describeSupportedVersions() {
+        return MIN_SUPPORTED_JAVA_VERSION + "-" + MAX_SUPPORTED_JAVA_VERSION;
+    }
+
 }

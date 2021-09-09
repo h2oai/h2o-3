@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
   public static final int H2O_DEFAULT_PORT = 54321;
-
+  
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
@@ -376,6 +378,8 @@ final public class H2O {
     /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
     public boolean allow_clients = false;
 
+    public boolean allow_unsupported_java = false;
+
     /** If this timeout is set to non 0 value, stop the cluster if there hasn't been any rest api request to leader
      * node after the given timeout. Unit is milliseconds.
      */
@@ -595,7 +599,11 @@ final public class H2O {
       }
       else if (s.matches("allow_clients")) {
         trgt.allow_clients = true;
-      } else if (s.matches("rest_api_ping_timeout")) {
+      }
+      else if (s.matches("allow_unsupported_java")) {
+        trgt.allow_unsupported_java = true;
+      } 
+      else if (s.matches("rest_api_ping_timeout")) {
         i = s.incrementAndCheck(i, args);
         trgt.rest_api_ping_timeout = s.parseInt(args[i]);
       }
@@ -2197,21 +2205,52 @@ final public class H2O {
     }
   }
 
+  private static boolean JAVA_CHECK_PASSED = false;
+
   /**
    * Check if the Java version is not supported
    *
    * @return true if not supported
    */
-  public static boolean checkUnsupportedJava() {
+  public static boolean checkUnsupportedJava(String[] args) {
+    if (JAVA_CHECK_PASSED)
+      return false;
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
       return false;
+    } 
+    boolean unsupported = runCheckUnsupportedJava(args);
+    if (!unsupported) {
+      JAVA_CHECK_PASSED = true;
     }
+    return unsupported;
+  }
 
+  static boolean runCheckUnsupportedJava(String[] args) {
     if (!JavaVersionSupport.runningOnSupportedVersion()) {
-      System.err.println(String.format("Only Java versions %d-%d are supported, system version is %s",
-              JavaVersionSupport.MIN_SUPPORTED_JAVA_VERSION,
-              JavaVersionSupport.MAX_SUPPORTED_JAVA_VERSION,
-              System.getProperty("java.version")));
+      Throwable error = null;
+      boolean allowUnsupported = ArrayUtils.contains(args, "-allow_unsupported_java");
+      if (allowUnsupported) {
+        boolean checkPassed = false;
+        try {
+          checkPassed = dynamicallyInvokeJavaSelfCheck();
+        } catch (Throwable t) {
+          error = t;
+        }
+        if (checkPassed) {
+          Log.warn("H2O is running on a version of Java (" + System.getProperty("java.version") + ") that was not certified at the time of the H2O release. " + 
+                  "For production use please use a certified Java version (versions " + JavaVersionSupport.describeSupportedVersions() + " are officially supported).");
+          return false;
+        }
+      }
+      System.err.printf("Only Java versions %s are supported, system version is %s%n",
+              JavaVersionSupport.describeSupportedVersions(),
+              System.getProperty("java.version"));
+      if (ARGS.allow_unsupported_java) {
+        System.err.println("H2O was invoked with flag -allow_unsupported_java, however, " +
+                "we found out that your Java version doesn't meet the requirements to run H2O. Please use a supported Java version.");
+      }
+      if (error != null)
+        error.printStackTrace(System.err);
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2220,6 +2259,22 @@ final public class H2O {
       return true;
     }
     return false;
+  }
+
+  /**
+   * Dynamically invoke water.JavaSelfCheck#checkCompatibility. The call is dynamic in order to prevent
+   * classloading issues to even load this class.
+   *
+   * @return true if Java-compatibility self-check passes successfully
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
+   * @throws InvocationTargetException
+   * @throws IllegalAccessException
+   */
+  static boolean dynamicallyInvokeJavaSelfCheck() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Class<?> cls = Class.forName("water.JavaSelfCheck");
+    Method m = cls.getDeclaredMethod("checkCompatibility");
+    return (Boolean) m.invoke(null);
   }
 
   /**
@@ -2243,7 +2298,7 @@ final public class H2O {
 
    long time0 = System.currentTimeMillis();
 
-   if (checkUnsupportedJava())
+   if (checkUnsupportedJava(args))
      throw new RuntimeException("Unsupported Java version");
 
     // Record system start-time.

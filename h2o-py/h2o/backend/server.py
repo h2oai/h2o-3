@@ -276,9 +276,6 @@ class H2OLocalServer(object):
             print("  Starting server from " + self._jar_path)
             print("  Ice root: " + self._ice_root)
 
-        # Combine jar path with the optional extra classpath
-        classpath = [self._jar_path] if self._extra_classpath is None else [self._jar_path] + self._extra_classpath
-
         # Construct java command to launch the process
         cmd = [java]
 
@@ -295,7 +292,14 @@ class H2OLocalServer(object):
                 assert type(arg) is str
                 cmd += [arg]
 
-        cmd += ["-cp", os.pathsep.join(classpath), "water.H2OApp"]  # This should be the last JVM option
+        # This should be the last JVM option
+        if self._extra_classpath is None:
+            # Use jar file directly
+            cmd += ["-jar", self._jar_path]
+        else:
+            # Combine jar path with the optional extra classpath
+            classpath = [self._jar_path] + self._extra_classpath
+            cmd += ["-cp", os.pathsep.join(classpath), "water.H2OApp"]
 
         # ...add H2O options
         cmd += ["-ip", self._ip]
@@ -322,6 +326,7 @@ class H2OLocalServer(object):
         # Warning: do not change to any higher log-level, otherwise we won't be able to know which port the
         # server is listening to.
         cmd += ["-log_level", "INFO"]
+        cmd += ["-allow_unsupported_java"]
 
         # Create stdout and stderr files
         self._stdout = self._tmp_file("stdout")
