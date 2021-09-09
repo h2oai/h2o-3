@@ -986,3 +986,99 @@ setMethod("summary", signature("H2OAutoML"), function(object) {
 
   invisible(NULL)
 })
+
+#'
+#' Retrieve the variable importance.
+#'
+#' @param object An H2O object.
+#' @param ... Additional arguments for specific use-cases.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
+#' response <- "GLEASON"
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' aml <- h2o.automl(x = predictors, y = response, training_frame = pros, max_runtime_secs = 60)
+#'
+#' h2o.varimp(aml, top_n = 20)  # get variable importance matrix for the top 20 models
+#'
+#' h2o.varimp(aml@leader)  # get variable importance for the leader model
+#' }
+#' @export
+setGeneric("h2o.varimp", function(object, ...)
+  warning(paste0("No variable importances for ", class(object)), call. = FALSE))
+
+#'
+#' Retrieve the variable importance.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
+#' response <- "GLEASON"
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' model <- h2o.glm(x = predictors, y = response, training_frame = pros)
+#' h2o.varimp(model)
+#' }
+#' @export
+setMethod("h2o.varimp", signature("H2OModel"), function(object) {
+  vi <- object@model$variable_importances
+  if( is.null(vi) ) {
+    warning("This model doesn't have variable importances", call. = FALSE)
+    return(invisible(NULL))
+  }
+  return(vi)
+})
+
+#'
+#' Retrieve the variable importance.
+#'
+#' @param object An \linkS4class{H2OAutoML} object.
+#' @param top_n Show at most top_n models
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
+#' response <- "GLEASON"
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' aml <- h2o.automl(x = predictors, y = response, training_frame = pros, max_runtime_secs = 60)
+#' h2o.varimp(aml)
+#' }
+#' @export
+setMethod("h2o.varimp", signature("H2OAutoML"), function(object, top_n = 20) {
+  .varimp_matrix(object, top_n = top_n)
+})
+
+#'
+#' Retrieve the variable importance.
+#'
+#' @param object A leaderboard frame.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
+#' response <- "GLEASON"
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+#' aml <- h2o.automl(x = predictors, y = response, training_frame = pros, max_runtime_secs = 60)
+#' h2o.varimp(aml@leaderboard[1:5,])
+#' }
+#' @export
+setMethod("h2o.varimp", signature("H2OFrame"), function(object) {
+  if (! "model_id" %in% names(object)){
+    stop("This is not a leaderboard frame. Only frames containing `model_id` column are supported.")
+  }
+  .varimp_matrix(object)
+})

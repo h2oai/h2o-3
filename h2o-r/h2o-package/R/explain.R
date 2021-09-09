@@ -131,7 +131,11 @@ with_no_h2o_progress <- function(expr) {
 #' @param model model or a string containing model id
 #' @return boolean
 .has_varimp <- function(model) {
-  return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
+  if (is.character(model))
+    return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
+  else {
+    return(!is.null(model@model$variable_importances))
+  }
 }
 
 #' Get a mapping between columns and their domains
@@ -251,9 +255,7 @@ with_no_h2o_progress <- function(expr) {
     stop("object must be specified!")
   if (missing(newdata))
     stop("newdata must be specified!")
-  if ("H2OFrame" %in% class(object)) {
-    object <- as.list(object[["model_id"]])
-  }
+
   newdata_name <- deparse(substitute(newdata, environment()))
   if (!"H2OFrame" %in% class(newdata) && require_newdata) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
@@ -297,14 +299,16 @@ with_no_h2o_progress <- function(expr) {
   }
 
 
-  if ("H2OAutoML" %in% class(object)) {
-    if (require_single_model && nrow(object@leaderboard) > 1) {
+  if ("H2OAutoML" %in% class(object) || (("H2OFrame" %in% class(object) ||
+      "data.frame" %in% class(object)) && "model_id" %in% names(object))) {
+    leaderboard <- if ("H2OAutoML" %in% class(object)) object@leaderboard else object
+    if (require_single_model && nrow(leaderboard) > 1) {
       stop("Only one model is allowed!")
     }
-    if (require_multiple_models && nrow(object@leaderboard) <= 1) {
+    if (require_multiple_models && nrow(leaderboard) <= 1) {
       stop("More than one model is needed!")
     }
-    model_ids <- unlist(as.list(object@leaderboard$model_id))
+    model_ids <- unlist(as.list(leaderboard$model_id))
     if (only_with_varimp) {
       model_ids <- Filter(.has_varimp, model_ids)
     }
@@ -319,7 +323,8 @@ with_no_h2o_progress <- function(expr) {
     return(make_models_info(
       newdata = newdata,
       is_automl = TRUE,
-      leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
+      leaderboard = as.data.frame(if ("H2OAutoML" %in% class(object)) h2o.get_leaderboard(object, extra_columns = "ALL")
+                                  else leaderboard),
       model_ids = head(model_ids, top_n_from_AutoML)
     ))
   } else {
@@ -1530,6 +1535,20 @@ h2o.shap_explain_row_plot <-
     }
   }
 
+.varimp_matrix <- function(object, top_n = 20){
+  models_info <- .process_models_or_automl(object, NULL,
+                                           require_multiple_models = TRUE,
+                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE,
+                                           require_newdata = FALSE)
+  models <- Filter(.has_varimp, models_info$model_ids)
+  varimps <- lapply(lapply(models, models_info$get_model), .varimp)
+  names(varimps) <- .model_ids(models)
+
+  res <- do.call(rbind, varimps)
+  results <- as.data.frame(res)
+  return(results)
+}
+
 
 #' Variable Importance Heatmap across multiple models
 #'
@@ -1541,10 +1560,9 @@ h2o.shap_explain_row_plot <-
 #' encoded features and return a single variable importance for the original categorical
 #' feature. By default, the models and variables are ordered by their similarity.
 #'
-#' @param object An H2OAutoML object or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param top_n Integer specifying the number models shown in the heatmap 
 #'              (based on leaderboard ranking). Defaults to 20.
-#'
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -1574,21 +1592,11 @@ h2o.shap_explain_row_plot <-
 #' print(varimp_heatmap)
 #' }
 #' @export
-h2o.varimp_heatmap <- function(object,
-                               top_n = 20) {
+h2o.varimp_heatmap <- function(object, top_n = 20) {
   .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  models_info <- .process_models_or_automl(object, NULL,
-                                           require_multiple_models = TRUE,
-                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE,
-                                           require_newdata = FALSE)
-  models <- Filter(.has_varimp, models_info$model_ids)
-  varimps <- lapply(lapply(models, models_info$get_model), .varimp)
-  names(varimps) <- .model_ids(models)
-
-  res <- do.call(rbind, varimps)
-  results <- as.data.frame(res)
+  results <- .varimp_matrix(object, top_n = top_n)
   ordered <- row.names(results)
   y_ordered <- make.names(names(results))
   if (length(ordered) > 2) {
@@ -1597,7 +1605,8 @@ h2o.varimp_heatmap <- function(object,
   if (length(y_ordered) > 2) {
     y_ordered <- y_ordered[stats::hclust(stats::dist(t(results)))$order]
   }
-  results[["model_id"]] <- row.names(results)
+  model_ids <- row.names(results)
+  results[["model_id"]] <- model_ids
   results <- stats::reshape(results,
                             direction = "long",
                             varying = Filter(function(col) col != "model_id", names(results)),
@@ -1613,7 +1622,7 @@ h2o.varimp_heatmap <- function(object,
   )
 
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5, "pt")
-  if (max(nchar(.shorten_model_ids(.model_ids(models)))) > 30)
+  if (max(nchar(.shorten_model_ids(model_ids))) > 30)
     margin <- ggplot2::margin(1, 1, 1, 7, "lines")
   p <- ggplot2::ggplot(ggplot2::aes(
     x = .shorten_model_ids(.data$model_id), y = .data$feature, fill = .data$value, text = .data$text
@@ -1633,20 +1642,100 @@ h2o.varimp_heatmap <- function(object,
   return(p)
 }
 
+
+#' Model Prediction Correlation
+#'
+#' Get a data.frame containing the correlation between the predictions of the models.
+#' For classification, frequency of identical predictions is used. By default, models
+#' are ordered by their similarity (as computed by hierarchical clustering).
+#'
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)..
+#' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame,
+#'                so this should be a holdout set.
+#' @param top_n (DEPRECATED) Integer specifying the number models shown in the heatmap (used only with an
+#'              AutoML object, and based on the leaderboard ranking.  Defaults to 20.
+#' @param cluster_models Logical.  Order models based on their similarity.  Defaults to TRUE.
+#' @return A data.frame containing variable importance.
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the model correlation
+#' model_correlation <- h2o.model_correlation(aml, test)
+#' print(model_correlation)
+#' }
+#' @export
+h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = TRUE) {
+  models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
+  models <- models_info$model_ids
+  with_no_h2o_progress({
+    preds <- do.call(h2o.cbind,
+      lapply(models, function(m, df) {
+        m <- models_info$get_model(m)
+       as.numeric(stats::predict(m, df)[["predict"]])
+      }, newdata))
+    names(preds) <- unlist(.model_ids(models))
+  })
+  if (models_info$is_classification) {
+    model_ids <- .model_ids(models)
+    res <- matrix(0, length(models), length(models),
+                  dimnames = list(model_ids, model_ids))
+    for (i in seq_along(model_ids)) {
+      for (j in seq_along(model_ids)) {
+        if (i <= j) {
+          res[i, j] <- mean(preds[[model_ids[i]]] == preds[[model_ids[j]]])
+          res[j, i] <- res[i, j]
+        }
+      }
+    }
+    res <- as.data.frame(res)
+  } else {
+    res <- as.data.frame(h2o.cor(preds))
+    row.names(res) <- names(res)
+  }
+  ordered <- names(res)
+  if (cluster_models) {
+    ordered <- names(res)[stats::hclust(stats::dist(replace(res, is.na(res), 0)))$order]
+  }
+  res <- res[ordered, ordered]
+  # Remove rounding artifacts - even if the number shows as "1" it can has slightly higher value
+  # which messes up the plot showing that the value is outside of the range
+  res[res > 1] <- 1
+  return(res)
+}
+
 #' Model Prediction Correlation Heatmap
 #'
 #' This plot shows the correlation between the predictions of the models.
 #' For classification, frequency of identical predictions is used. By default, models
 #' are ordered by their similarity (as computed by hierarchical clustering).
 #'
-#' @param object An H2OAutoML object or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame, 
 #'                so this should be a holdout set.
 #' @param top_n Integer specifying the number models shown in the heatmap (used only with an 
 #'              AutoML object, and based on the leaderboard ranking.  Defaults to 20.
 #' @param cluster_models Logical.  Order models based on their similarity.  Defaults to TRUE.
 #' @param triangular Print just the lower triangular part of correlation matrix.  Defaults to TRUE.
-#'
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -1678,42 +1767,10 @@ h2o.varimp_heatmap <- function(object,
 #' @export
 h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
                                           cluster_models = TRUE, triangular = TRUE) {
-  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
-  models <- models_info$model_ids
-  with_no_h2o_progress({
-    preds <-
-      sapply(models, function(m, df) {
-        m <- models_info$get_model(m)
-        list(predict = as.numeric(as.data.frame(stats::predict(m, df)[["predict"]])[["predict"]]))
-      }, newdata)
-    preds <- as.data.frame(do.call(cbind, preds))
-    names(preds) <- unlist(.model_ids(models))
-  })
-
-  if (models_info$is_classification) {
-    model_ids <- .model_ids(models)
-    res <- matrix(0, length(models), length(models),
-                  dimnames = list(model_ids, model_ids))
-    for (i in seq_along(model_ids)) {
-      for (j in seq_along(model_ids)) {
-        if (i <= j) {
-          res[i, j] <- mean(as.numeric(preds[[model_ids[i]]] == preds[[model_ids[j]]]))
-          res[j, i] <- res[i, j]
-        }
-      }
-    }
-    res <- as.data.frame(res)
-  } else {
-    res <- as.data.frame(cor(preds))
-  }
+  res <- h2o.model_correlation(object, newdata, top_n, cluster_models)
   ordered <- names(res)
-  if (cluster_models) {
-    ordered <- names(res)[stats::hclust(stats::dist(replace(res, is.na(res), 0)))$order]
-  }
-  res <- res[ordered, ordered]
   varying <- row.names(res)
   if (triangular) {
     res[lower.tri(res)] <- NA
@@ -2802,8 +2859,7 @@ h2o.learning_curve_plot <- function(model,
 #' are visual (ggplot plots).  These plots can also be created by individual utility functions 
 #' as well.
 #'
-#' @param object One of the following: a supervised H2O model, a list of supervised H2O models, an H2OAutoML object or
-#'               an H2OAutoML Leaderboard slice.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
@@ -3194,8 +3250,7 @@ h2o.explain <- function(object,
 #' are visual (ggplot plots).  These plots can also be created by individual utility functions 
 #' as well.
 #' 
-#' @param object One of the following: a supervised H2O model, a list of supervised H2O models, an H2OAutoML object
-#'               or an H2OAutoML Leaderboard slice.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
 #' @param columns A vector of column names or column indices to create plots with. If specified

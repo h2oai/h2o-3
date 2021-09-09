@@ -22,20 +22,23 @@ def _register_dummy_methods():
     h2o.automl._base.H2OAutoMLBaseMixin.model_correlation_heatmap = _complain_about_matplotlib
     h2o.automl._base.H2OAutoMLBaseMixin.explain = _complain_about_matplotlib
     h2o.automl._base.H2OAutoMLBaseMixin.explain_row = _complain_about_matplotlib
+    h2o.automl._base.H2OAutoMLBaseMixin.model_correlation = _complain_about_matplotlib
+    h2o.automl._base.H2OAutoMLBaseMixin.varimp = _complain_about_matplotlib
 
 
 try:
     import numpy
     import matplotlib
-    from ._explain import varimp_heatmap, model_correlation_heatmap, shap_explain_row_plot, shap_summary_plot,\
-        explain, explain_row, pd_plot, pd_multi_plot, ice_plot, residual_analysis_plot, learning_curve_plot
+    from ._explain import *
 
     __all__ = [
         "explain",
         "explain_row",
         "varimp_heatmap",
         "model_correlation_heatmap",
-        "pd_multi_plot"
+        "pd_multi_plot",
+        "varimp",
+        "model_correlation",
     ]
 except ImportError as e:  # Numpy, Matplotlib
     _register_dummy_methods()
@@ -60,3 +63,5 @@ def register_explain_methods():
     h2o.automl._base.H2OAutoMLBaseMixin.model_correlation_heatmap = model_correlation_heatmap
     h2o.automl._base.H2OAutoMLBaseMixin.explain = explain
     h2o.automl._base.H2OAutoMLBaseMixin.explain_row = explain_row
+    h2o.automl._base.H2OAutoMLBaseMixin.model_correlation = model_correlation
+    h2o.automl._base.H2OAutoMLBaseMixin.varimp = varimp
