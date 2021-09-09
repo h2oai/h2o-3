@@ -1,0 +1,108 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: "h2o-tests"
+rules:
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: h2o-tests
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: "h2o-tests-role-binding"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: "h2o-tests"
+subjects:
+  - kind: ServiceAccount
+    name: h2o-tests
+    namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: h2o-assisted-python
+  labels:
+    app: h2o-assisted-python
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: h2o-assisted-python
+  template:
+    metadata:
+      labels:
+        app: h2o-assisted-python
+    spec:
+      serviceAccountName: h2o-tests
+      containers:
+        - name: "h2o-assisted-python"
+          image: "harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner:4"
+          command: ['/bin/bash', '-c', 'python assisted-clustering.py --namespace default h2o-assisted']
+          volumeMounts:
+            - name: python-clustering-script
+              mountPath: "/assisted-clustering.py"
+          resources:
+            limits:
+              cpu: '100m'
+              memory: "256Mi"
+            requests:
+              cpu: '100m'
+              memory: "256Mi"
+      volumes:
+        - name: python-clustering-script
+          hostPath:
+            path: $H2O_BASE/h2o-k8s/tests/clustering/assisted-clustering.py
+            type: File
+---
+apiVersion: v1
+kind: Service
+metadata:
+ name: h2o-assisted
+ namespace: default
+ labels:
+   app: h2o-assisted
+spec:
+ type: ClusterIP
+ clusterIP: None
+ selector:
+   app: h2o-assisted
+ ports:
+   - protocol: TCP
+     port: 80
+     targetPort: 54321
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+ name: h2o-assisted
+ namespace: default
+ labels:
+   app: h2o-assisted
+ annotations:
+   kubernetes.io/ingress.class: traefik
+spec:
+ rules:
+   - host: ""
+     http:
+       paths:
+         - path: /
+           backend:
+             serviceName: h2o-assisted
+             servicePort: 80
