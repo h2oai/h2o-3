@@ -47,9 +47,9 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
         writekv("type", model._output.glmModelKey);
         writekv("depth", model._parms._max_rule_length - model._parms._min_rule_length + 1);
         writekv("ntrees", model._parms._rule_generation_ntrees);
-        writekv("data_from_rules_codes_len", model.dataFromRulesCodes.length);
-        for (int i = 0; i < model.dataFromRulesCodes.length; i++) {
-            writekv("data_from_rules_codes_" + i, model.dataFromRulesCodes[i]);
+        writekv("data_from_rules_codes_len", model._output._dataFromRulesCodes.length);
+        for (int i = 0; i < model._output._dataFromRulesCodes.length; i++) {
+            writekv("data_from_rules_codes_" + i, model._output._dataFromRulesCodes[i]);
         }
         
         if (model._parms._weights_column != null) {

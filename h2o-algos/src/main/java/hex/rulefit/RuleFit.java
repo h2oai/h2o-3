@@ -278,7 +278,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 
-                model.dataFromRulesCodes = dataFromRulesCodes;
+                model._output._dataFromRulesCodes = dataFromRulesCodes;
                 
                 fillModelMetrics(model, glmModel);
 

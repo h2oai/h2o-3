@@ -24,8 +24,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
     RuleEnsemble ruleEnsemble;
     
-    String[] dataFromRulesCodes;
-    
     public static class RuleFitParameters extends Model.Parameters {
         public String algoName() {
             return "RuleFit";
@@ -75,6 +73,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         public TwoDimTable _rule_importance = null;
 
         Key glmModelKey = null;
+
+        String[] _dataFromRulesCodes;
 
         //  feature interactions ...
 
