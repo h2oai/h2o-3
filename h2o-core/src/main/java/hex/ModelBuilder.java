@@ -1443,7 +1443,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
         }
-        if(_nclass == 1 && _response.toCategoricalVec().cardinality() == 2){
+        if(_nclass == 1 && _response.isBinary()){
           warn("_response", "Response is numeric, so the regression model will be trained. However, the cardinality is equaled to two, so if you want to train a classification model, convert the response column to categorical before training.");
         }
       }
