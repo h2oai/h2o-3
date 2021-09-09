@@ -2321,10 +2321,7 @@ def _process_models_input(
             models_with_varimp = models_to_show
         else:
             model_with_varimp = next(_get_models_from_automl_or_leaderboard(models, filter_=_has_varimp), None)
-            if model_with_varimp is None:
-                models_with_varimp = []
-            else:
-                models_with_varimp = [model_with_varimp]
+            models_with_varimp = [] if model_with_varimp is None else [model_with_varimp]
         multiple_models = models.nrow > 1
     elif isinstance(models, h2o.model.ModelBase):
         models_to_show = [models]
