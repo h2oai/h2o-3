@@ -1078,8 +1078,7 @@ setMethod("h2o.varimp", signature("H2OAutoML"), function(object, top_n = 20) {
 #' @export
 setMethod("h2o.varimp", signature("H2OFrame"), function(object) {
   if (! "model_id" %in% names(object)){
-    warning("This is not a leaderboard frame.", call. = FALSE)
-    return(invisible(NULL))
+    stop("This is not a leaderboard frame. Only frames containing `model_id` column are supported.")
   }
   .varimp_matrix(object)
 })
