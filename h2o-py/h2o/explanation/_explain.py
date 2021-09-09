@@ -1349,14 +1349,15 @@ def _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard, filter_=lam
 
 
 def _get_models_from_automl_or_leaderboard(automl_or_leaderboard, filter_=lambda _: True):
-    # type: (object) -> List[str]
+    # type: (object) -> Generator[h2o.model.ModelBase, None, None]
     """
     Get model ids from H2OAutoML object or leaderboard
     :param automl_or_leaderboard: AutoML
     :param filter_: a predicate used to filter model_ids. Signature of the filter is (model) -> bool.
     :return: Generator[h2o.model.ModelBase, None, None]
     """
-    return filter(filter_, map(h2o.get_model, _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard)))
+    models = (h2o.get_model(model_id) for model_id in _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard))
+    return (model for model in models if filter_(model))
 
 
 def _get_xy(model):
