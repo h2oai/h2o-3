@@ -1633,7 +1633,7 @@ h2o.varimp_heatmap <- function(object, top_n = 20) {
 #' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)..
 #' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame,
 #'                so this should be a holdout set.
-#' @param top_n Integer specifying the number models shown in the heatmap (used only with an
+#' @param top_n (DEPRECATED) Integer specifying the number models shown in the heatmap (used only with an
 #'              AutoML object, and based on the leaderboard ranking.  Defaults to 20.
 #' @param cluster_models Logical.  Order models based on their similarity.  Defaults to TRUE.
 #' @return A data.frame containing variable importance.
