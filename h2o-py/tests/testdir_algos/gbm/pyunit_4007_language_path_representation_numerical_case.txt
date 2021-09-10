@@ -1,1 +1,0 @@
-If ( GLEASON < 6.5 or GLEASON is NaN ) -> If ( DPROS < 2.5 or DPROS is NaN ) -> Prediction: -0.10676821
