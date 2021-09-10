@@ -1,4 +1,0 @@
-#!/bin/bash -ex
-
-service hive-server2 start
-sleep 60 # wait for hive server to startup completely

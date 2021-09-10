@@ -1,6 +1,0 @@
-#! /bin/bash
-
-set -e -x
-
-sudo -E -u hdfs hadoop fs -mkdir -p /user/jenkins
-sudo -E -u hdfs hadoop fs -chown jenkins:jenkins /user/jenkins

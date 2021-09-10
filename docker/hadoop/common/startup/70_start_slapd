@@ -1,9 +1,0 @@
-#! /bin/bash
-
-set -ex
-
-set +e
-service slapd start
-set -e
-
-ldapwhoami -H ldap:// -x
