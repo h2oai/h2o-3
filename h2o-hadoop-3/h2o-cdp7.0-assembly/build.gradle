@@ -1,7 +1,0 @@
-ext {
-    hadoopVersion = 'cdp7.0-3.1.1'
-    hadoopMavenArtifactVersion = '3.1.1.7.0.3.0-79'
-    orcSupported = true
-    orcHiveExecVersion = "3.1.2000.7.0.3.0-79"
-}
-apply from: '../assemblyjar_cdp.gradle'
