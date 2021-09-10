@@ -67,10 +67,14 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         // a set of rules and coefficients
 
         public double[] _intercept;
+        
+        String[] _linear_names;
 
         public TwoDimTable _rule_importance = null;
 
         Key glmModelKey = null;
+
+        String[] _dataFromRulesCodes;
 
         //  feature interactions ...
 
@@ -117,6 +121,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             }
             if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
                 linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
+            } else {
+                linearTest.add(RuleFitUtils.getLinearNames(1, new String[] {this._parms._response_column})[0], adaptFrm.vec(this._parms._response_column));
             }
 
             Frame scored = glmModel.score(linearTest, destination_key, null, true);
@@ -145,5 +151,15 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             if (modelMetricsKey.get() != null)
                 this.addModelMetrics(modelMetricsKey.get().deepCloneWithDifferentModelAndFrame(this, fr));
         }
+    }
+
+    @Override
+    public RuleFitMojoWriter getMojo() {
+        return new RuleFitMojoWriter(this);
+    }
+
+    @Override
+    public boolean haveMojo() {
+        return true;
     }
 }

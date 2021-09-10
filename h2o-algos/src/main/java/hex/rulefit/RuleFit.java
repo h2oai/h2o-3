@@ -172,6 +172,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         // Main worker thread
         @Override
         public void computeImpl() {
+            String[] dataFromRulesCodes = null;
             RuleFitModel model = null;
             GLMModel glmModel;
             List<Rule> rulesList;
@@ -219,6 +220,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
                     linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees));
                     if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees));
+                    dataFromRulesCodes = linearTrain.names();
                 }
 
                 // prepare linear terms
@@ -257,23 +259,27 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 long endGLMTime = System.nanoTime() - startGLMTime;
                 LOG.info("GLM trained in " + ((double)endGLMTime) / 1E9 + "s.");
                 DKV.put(glmModel);
-
-                DKV.remove(linearTrain._key);
-                if (linearValid != null) DKV.remove(linearValid._key);
-                DKV.remove(trainAdapted._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
                 
                 model._output.glmModelKey = glmModel._key;
 
+                model._output._linear_names = linearTrain.names();
+
+                DKV.remove(linearTrain._key);
+                if (linearValid != null) DKV.remove(linearValid._key);
+                DKV.remove(trainAdapted._key);
+                
                 // 3. Step 3 (optional): Feature importance
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
                 model._output._rule_importance = convertRulesToTable(getRules(glmModel.coefficients(), ruleEnsemble));
                 
-                model._output._model_summary = generateSummary(glmModel, ruleEnsemble.size(), overallTreeStats, ntrees);
-
+                model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
+                
+                model._output._dataFromRulesCodes = dataFromRulesCodes;
+                
                 fillModelMetrics(model, glmModel);
 
                 model.delete_and_lock(_job);
@@ -530,6 +536,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         return summary;
     }
+    @Override
+    public boolean haveMojo() { return true; }
 }
 
 
