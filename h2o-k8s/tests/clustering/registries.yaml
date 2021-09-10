@@ -1,4 +1,0 @@
-mirrors:
-  "harbor.h2o.ai":
-    endpoint:
-      - http://harbor.h2o.ai
