@@ -60,4 +60,10 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
     @Override
     public void print() {
     }
+
+    @Override
+    public boolean disableNonLeaderNodeAccess() {
+        return KubernetesEmbeddedConfigProvider.isRunningOnKubernetes();
+    }
+
 }

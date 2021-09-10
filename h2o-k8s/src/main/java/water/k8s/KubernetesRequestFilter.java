@@ -57,7 +57,7 @@ public class KubernetesRequestFilter implements RequestAuthExtension {
 
     @Override
     public boolean isEnabled() {
-        return KubernetesEmbeddedConfigProvider.isRunningOnKubernetes();
+        return H2O.getEmbeddedH2OConfig().disableNonLeaderNodeAccess();
     }
 
 }
