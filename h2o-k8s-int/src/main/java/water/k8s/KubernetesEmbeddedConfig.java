@@ -32,6 +32,10 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
 
     @Override
     public void notifyAboutEmbeddedWebServerIpPort(InetAddress ip, int port) {
+        if (H2O.SELF == null) {
+            throw new IllegalStateException("H2O.SELF is expected to be defined at this point!");
+        }
+        H2OCluster.setCurrentNodeInfo(new NodeInfo());
     }
 
     @Override
@@ -64,6 +68,13 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
     @Override
     public boolean disableNonLeaderNodeAccess() {
         return H2OCluster.isRunningOnKubernetes();
+    }
+
+    private static class NodeInfo implements H2OCluster.H2ONodeInfo {
+        @Override
+        public boolean isLeader() {
+            return H2O.SELF.isLeaderNode();
+        }
     }
 
 }
