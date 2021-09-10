@@ -23,41 +23,17 @@ helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG
 helm test h2o
 # After the deployment, show status of H2O-related K8S resources
 kubectl logs h2o-h2o-3-test-connection
+CLOUDING_RESULT=$(kubectl logs h2o-h2o-3-test-connection | grep -F 'CLOUDING-RESULT' | tail -1)
 kubectl get ingresses
 kubectl describe pods
-# Check H2O is clustered with a script independent from the one in h2o-helm triggered previously with 'helm test'
-timeout 120s bash h2o-cluster-check.sh
-export CLUSTER_EXIT_CODE=$?
 kubectl get pods
 kubectl get nodes
 # To save resources in Jenkins pipeline (e.g. CPUs are limited), remove the H2O cluster deployed via HELM
 helm uninstall h2o 
-# Test assisted clustering regime by adding h2o-clustering artifact into the H2O container using volumes.
-envsubst < h2o-assisted-template.yaml >> h2o-assisted.yaml
-envsubst < h2o-python-clustering-template.yaml >> h2o-python-clustering.yaml
-kubectl apply -f h2o-assisted.yaml
-# First, wait for H2O Pods to be ready
-kubectl wait --timeout=180s --for=condition=ready --selector app=h2o-assisted pods
-# Once H2O pods are ready, deploy another pod with H2O assisted clustering script into K8S
-# This script has to be present inside Kubernetes in order to be able to query the H2O pods via their ClusterIP.
-kubectl apply -f h2o-python-clustering.yaml
-kubectl wait --timeout=180s --for=condition=ready --selector app=h2o-assisted-python pods
-# Show status of H2O assisted clustering-related resources for diagnostics
-echo "H2O Assisted Clustering Python script logs:"
-kubectl logs -l app=h2o-assisted-python
-kubectl get services
-kubectl get ingresses
-kubectl describe pods
-# Perform the same cluster check to make sure H2O has formed a cluster of expected size
-timeout 120s bash h2o-cluster-check.sh
-export ASSISTED_EXIT_CODE=$?
-kubectl get pods
 # Make sure to delete the in-docker K3S cluster
 k3d delete
 # If at least one clustering phase failed, return exit code != 0 to make the stage fail
-echo "Cluster checks exit code:"
-echo $CLUSTER_EXIT_CODE
-echo "Assisted clustering checks exit code:"
-echo $ASSISTED_EXIT_CODE
-export EXIT_STATUS=$(if [ "$CLUSTER_EXIT_CODE" -ne 0 ] || [ "$ASSISTED_EXIT_CODE" -ne 0 ]; then echo 1; else echo 0; fi)
-exit $EXIT_STATUS
+if [ "$CLOUDING_RESULT" != "CLOUDING-RESULT: OK" ]; then
+  echo "$CLOUDING_RESULT"
+  exit 1
+fi

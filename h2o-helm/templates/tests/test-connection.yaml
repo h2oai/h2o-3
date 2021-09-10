@@ -56,8 +56,10 @@ spec:
           expected_forbidden_count=$((cloud_size - 1))
           if [ "$clouded" = true ]  && [ "$forbidden_codes" -eq "$expected_forbidden_count" ]
           then
+              echo "CLOUDING-RESULT: OK"
               exit 0
           else
+              echo "CLOUDING-RESULT: FAILED (clouded=$clouded, forbidden_codes=$forbidden_codes)"
               exit 1
           fi
       
