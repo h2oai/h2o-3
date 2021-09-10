@@ -1,7 +1,0 @@
-#! /bin/bash
-
-set -e -x
-
-service hadoop-yarn-resourcemanager start
-service hadoop-yarn-nodemanager start
-service hadoop-mapreduce-historyserver start

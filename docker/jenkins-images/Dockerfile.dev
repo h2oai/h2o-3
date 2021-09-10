@@ -1,6 +1,0 @@
-FROM ubuntu:latest
-
-RUN apt-get update \
-	&& apt-get install default-jdk -y
-
-CMD ls -lah && java -jar h2o.jar

@@ -1,6 +1,0 @@
-#!/bin/bash -ex
-
-sudo -E -u hdfs hadoop fs -mkdir -p /user/hive/warehouse
-sudo -E -u hdfs hadoop fs -chown -R hive:hive /user/hive
-sudo -E -u hdfs hadoop fs -chmod a+w /user/hive/warehouse
-sudo -E -u hdfs hadoop fs -chmod a+w /tmp

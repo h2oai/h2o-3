@@ -1,4 +1,0 @@
-dn: ou=users,dc=0xdata,dc=loc
-objectclass: organizationalUnit
-objectclass: top
-ou: users

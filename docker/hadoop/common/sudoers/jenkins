@@ -1,1 +1,0 @@
-jenkins ALL=(ALL) NOPASSWD:SETENV: /usr/sbin/startup.sh

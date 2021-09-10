@@ -1,7 +1,0 @@
-#! /bin/bash
-
-set -e
-set -x
-
-yum install -y libgomp
-rpm --rebuilddb
