@@ -1,6 +1,7 @@
 package water.server;
 
 import water.H2O;
+import water.init.AbstractEmbeddedH2OConfig;
 import water.webserver.iface.RequestAuthExtension;
 
 import javax.servlet.http.HttpServletRequest;
@@ -57,7 +58,8 @@ public class LeaderNodeRequestFilter implements RequestAuthExtension {
 
     @Override
     public boolean isEnabled() {
-        return H2O.getEmbeddedH2OConfig().disableNonLeaderNodeAccess();
+        AbstractEmbeddedH2OConfig config = H2O.getEmbeddedH2OConfig();
+        return config != null && config.disableNonLeaderNodeAccess();
     }
 
 }
