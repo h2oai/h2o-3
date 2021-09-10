@@ -1,2 +1,0 @@
-Main-Class: water.H2OApp
-
