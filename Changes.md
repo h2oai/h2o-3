@@ -8,6 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/inde
 
 #### Bug
 
+- [[PUBDEV-8316]](https://h2oai.atlassian.net/browse/PUBDEV-8316) - Deprecated `is_supervised` parameter for h2o.grid method in R.
 - [[PUBDEV-8314]](https://h2oai.atlassian.net/browse/PUBDEV-8314) - Fixed AutoML NPE by ensuring that models without metrics are not added to the leaderboard.
 - [[PUBDEV-8295]](https://h2oai.atlassian.net/browse/PUBDEV-8295) - Redistributed the time budget for AutoML.
 - [[PUBDEV-8290]](https://h2oai.atlassian.net/browse/PUBDEV-8290) - Fixed and reorganized the H2O Explain leaderboard and fixed the confusion matrix.
@@ -22,6 +23,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/inde
 - [[PUBDEV-8233]](https://h2oai.atlassian.net/browse/PUBDEV-8233) - Added StackedEnsembles to AutoML’s time budget to prevent unexpected training times.
 - [[PUBDEV-8210]](https://h2oai.atlassian.net/browse/PUBDEV-8210) - Fixed the failing `pyunit_scale_pca_rf.py` test.
 - [[PUBDEV-8175]](https://h2oai.atlassian.net/browse/PUBDEV-8175) - Improved AutoML behavior when multiple instances are created in parallel.
+- [[PUBDEV-7855]](https://h2oai.atlassian.net/browse/PUBDEV-7855) - Solved corner cases involving mapping between encoded varimps and predictor columns for H2O explain by making the varimp feature consolidation more robust.
 
 #### Improvement
 
@@ -39,6 +41,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/inde
 - [[PUBDEV-8114]](https://h2oai.atlassian.net/browse/PUBDEV-8114) - Reduced the workspace of the validation frame in GBM by sharing it with the training frame in cross validation.
 - [[PUBDEV-8085]](https://h2oai.atlassian.net/browse/PUBDEV-8085) - Slightly reduced precision of predictions stored in holdout frames to significantly save on memory.
 - [[PUBDEV-8015]](https://h2oai.atlassian.net/browse/PUBDEV-8015) - Removed warning in the Stacked Ensemble prediction function about missing ``fold_column`` frame.
+- [[PUBDEV-7958]](https://h2oai.atlassian.net/browse/PUBDEV-7958) - Enabled returning data from Explain’s `varimp_heatmap` and `model_correlation_matrix`.
 - [[PUBDEV-7937]](https://h2oai.atlassian.net/browse/PUBDEV-7937) - Exposed the ``top n`` and ``bottom n`` reason codes in Python/R and MOJO.
 - [[PUBDEV-5300]](https://h2oai.atlassian.net/browse/PUBDEV-5300) - Fixed nightly build version mismatch that prevented the H2OCluster timezone being set to America/Denver.
 
@@ -51,6 +54,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/inde
 - [[PUBDEV-8229]](https://h2oai.atlassian.net/browse/PUBDEV-8229) - Added warning for when H2O doesn’t have enough memory to run XGBoost.
 - [[PUBDEV-8221]](https://h2oai.atlassian.net/browse/PUBDEV-8221) - Added the ability to specify a custom file name when saving a MOJO.
 - [[PUBDEV-8203]](https://h2oai.atlassian.net/browse/PUBDEV-8203) - Added output version number of genmodel.jar when printing usage for PrintMojo.
+- [[PUBDEV-8113]](https://h2oai.atlassian.net/browse/PUBDEV-8113) - Added MOJO to Rulefit.
 - [[PUBDEV-8099]](https://h2oai.atlassian.net/browse/PUBDEV-8099) - Implemented ability to calculate Shapley values on a re-weighted tree.
 - [[PUBDEV-8088]](https://h2oai.atlassian.net/browse/PUBDEV-8088) - Implemented H2O ANOVA GLM algorithm for GLM.
 - [[PUBDEV-7354]](https://h2oai.atlassian.net/browse/PUBDEV-7354) - Improved and consolidated the handling of version mismatch between Python and Backend.
