@@ -1,9 +1,0 @@
-//
-// JAAS PAM Module
-//
-// This module is a copy of a project https://github.com/dirk-olmes/jaas-pam/ (MIT License)
-description = "JAAS PAM Module"
-
-dependencies {
-    compile "org.kohsuke:libpam4j:1.8"
-}
