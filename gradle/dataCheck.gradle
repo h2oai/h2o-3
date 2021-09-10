@@ -1,7 +1,0 @@
-task smalldataCheck(group: "Datasets") {
-    doLast {
-        if (!file("$rootDir/smalldata").isDirectory()){
-            throw new ResourceException('Please pull the required test data with ./gradlew syncSmalldata')
-        }
-    }
-}
