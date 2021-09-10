@@ -4,7 +4,7 @@ import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.router.RouterNanoHTTPD;
 import water.H2O;
 import water.H2ONode;
-import water.k8s.KubernetesEmbeddedConfigProvider;
+import water.k8s.H2OCluster;
 
 import java.util.Map;
 
@@ -32,7 +32,7 @@ public class KubernetesLeaderNodeProbeHandler extends RouterNanoHTTPD.DefaultHan
     public NanoHTTPD.Response get(RouterNanoHTTPD.UriResource uriResource, Map<String, String> urlParams, NanoHTTPD.IHTTPSession session) {
         // All nodes report ready state until the clustering process is finished. Since then, only the leader node is ready.
         final H2ONode self = H2O.SELF;
-        if (self == null || self.isLeaderNode() || !KubernetesEmbeddedConfigProvider.isClustered()) {
+        if (self == null || self.isLeaderNode() || !H2OCluster.isClustered()) {
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.OK, getMimeType(), null);
         } else {
             return NanoHTTPD.newFixedLengthResponse(NanoHTTPD.Response.Status.NOT_FOUND, getMimeType(), null);
