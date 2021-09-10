@@ -1,4 +1,4 @@
-package water.k8s;
+package water.server;
 
 import water.H2O;
 import water.server.ServletService;
@@ -19,11 +19,11 @@ import java.util.Set;
  * Some APIs intended for internal use (mainly used by other products such as Sparkling Water) might still remain active.
  * All user-facing APIs, mostly the ones used by Python/R/Flow clients are disabled.
  */
-public class KubernetesRequestFilter implements RequestAuthExtension {
+public class LeaderNodeRequestFilter implements RequestAuthExtension {
 
     private final Set<String> allowedContextPaths;
 
-    public KubernetesRequestFilter() {
+    public LeaderNodeRequestFilter() {
         // Allowed paths are copied into a HashSet to guarantee constant search time and lowest possible memory
         // overhead, as the LinkedKeySet inside the LinkedHashMap returned by getAlwaysEnabledServlets() method
         // maintains order, which is not required for the needs of KubernetesRequestFilter.
