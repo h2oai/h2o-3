@@ -409,7 +409,7 @@ Here is an example of a basic leaderboard (no extra columns) for a binary classi
 Examine Models
 ~~~~~~~~~~~~~~
 
-To examine the trained models more cloesly, you can interact with the models, either by model ID, or a convenience function which can grab the best model of each model type (ranked by the default metric, or a metric of your choosing).  
+To examine the trained models more closely, you can interact with the models, either by model ID, or a convenience function which can grab the best model of each model type (ranked by the default metric, or a metric of your choosing).  
 
 
 Get the best model, or the best model of a certain type:
