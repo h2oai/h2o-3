@@ -320,6 +320,16 @@ public class Vec extends Keyed<Vec> {
     return rs._isInt && rs._mins[0] >= 0 && rs._maxs[0] <= 1;
   }
 
+  /**
+   * Check binary vector case -1/1
+   * @return true if the vector is consist of -1/1 only
+   */
+  public boolean isBinaryOnes(){
+      RollupStats rs = rollupStats();
+      long zeroCount = rs._rows - rs._naCnt - rs._nzCnt;
+      return rs._isInt && rs._mins[0] >= -1 && rs._maxs[0] <= 1 && zeroCount == 0;
+  }
+
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
   public static Vec makeZero( long len, boolean redistribute ) {
