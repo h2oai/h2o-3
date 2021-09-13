@@ -1367,8 +1367,8 @@ class ModelBase(h2o_meta(Keyed)):
             axs.set_xlim(min(x) - 0.2, max(x) + 0.2)
         if plot_stddev:
             std = pp[pp_start_index+2]
-            upper = [a + b for a, b in zip(y, std)]  # pp[1] is mean, pp[2] is std
-            lower = [a - b for a, b in zip(y, std)]
+            upper = np.array([a + b for a, b in zip(y, std)])  # pp[1] is mean, pp[2] is std
+            lower = np.array([a - b for a, b in zip(y, std)])
             if cat:
                 axs.errorbar(x, y, yerr=std, fmt=fmt, alpha=0.5, capsize=5, label=target)
             else:
@@ -1426,8 +1426,8 @@ class ModelBase(h2o_meta(Keyed)):
             max_y = max(max_y, max(y))
             if plot_stddev:  # set std
                 std = pp[pp_start_index + 2]
-                upper = [a + b for a, b in zip(y, std)]  # pp[1] is mean, pp[2] is std
-                lower = [a - b for a, b in zip(y, std)]
+                upper = np.array([a + b for a, b in zip(y, std)])  # pp[1] is mean, pp[2] is std
+                lower = np.array([a - b for a, b in zip(y, std)])
                 min_lower = min(min_lower, min(lower))
                 max_upper = max(max_upper, max(upper))
                 if cat:
