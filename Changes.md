@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Zizler? (3.34.0.1) - 9/xx/2021
+### Zizler (3.34.0.1) - 9/14/2021
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index.html</a>
 
 #### Bug
 
@@ -23,7 +23,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler?/1/inde
 - [[PUBDEV-8233]](https://h2oai.atlassian.net/browse/PUBDEV-8233) - Added StackedEnsembles to AutoML’s time budget to prevent unexpected training times.
 - [[PUBDEV-8210]](https://h2oai.atlassian.net/browse/PUBDEV-8210) - Fixed the failing `pyunit_scale_pca_rf.py` test.
 - [[PUBDEV-8175]](https://h2oai.atlassian.net/browse/PUBDEV-8175) - Improved AutoML behavior when multiple instances are created in parallel.
-- [[PUBDEV-7855]](https://h2oai.atlassian.net/browse/PUBDEV-7855) - Solved corner cases involving mapping between encoded varimps and predictor columns for H2O explain by making the varimp feature consolidation more robust.
+- [[PUBDEV-7855]](https://h2oai.atlassian.net/browse/PUBDEV-7855) - Solved corner cases involving mapping between encoded varimps and predictor columns for H2O Explain by making the varimp feature consolidation more robust.
 
 #### Improvement
 
