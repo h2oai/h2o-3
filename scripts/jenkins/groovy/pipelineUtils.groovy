@@ -125,10 +125,10 @@ class PipelineUtils {
         return gradleVersion
     }
 
-    boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {
+    boolean dockerImageExistsInRegistry(final context, final String registry, final String projectName, final String repositoryName, final String version) {
         context.withCredentials([context.usernamePassword(credentialsId: "${registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-            context.echo "URL: http://${registry}/api/repositories/${imageName}/tags"
-            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/repositories/${imageName}/tags".execute().text
+            context.echo "URL: http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryName}/artifacts/${version}/tags"
+            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryName}/artifacts/${version}/tags".execute().text
             final def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
             def matched = jsonResponse.findAll { it.name == version }
             return matched.size() > 0
