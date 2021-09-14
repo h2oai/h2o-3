@@ -8,6 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index
 
 #### Bug
 
+- [[PUBDEV-8326]](https://h2oai.atlassian.net/browse/PUBDEV-8326) - Fixed matplotlib 3.4 compatibility issues with `partial_plot`.
 - [[PUBDEV-8316]](https://h2oai.atlassian.net/browse/PUBDEV-8316) - Deprecated `is_supervised` parameter for h2o.grid method in R.
 - [[PUBDEV-8314]](https://h2oai.atlassian.net/browse/PUBDEV-8314) - Fixed AutoML NPE by ensuring that models without metrics are not added to the leaderboard.
 - [[PUBDEV-8295]](https://h2oai.atlassian.net/browse/PUBDEV-8295) - Redistributed the time budget for AutoML.
@@ -27,6 +28,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index
 
 #### Improvement
 
+- [[PUBDEV-8273]](https://h2oai.atlassian.net/browse/PUBDEV-8273) - Ensured that AutoML uses the entire time budget for `max_runtime`.
 - [[PUBDEV-8196]](https://h2oai.atlassian.net/browse/PUBDEV-8196) - Implemented custom progress widgets for Wave apps using H2O-3.
 - [[PUBDEV-8189]](https://h2oai.atlassian.net/browse/PUBDEV-8189) - Allowed users to convert floats to doubles with PrintMojo to prevent possible parsing issues.
 - [[PUBDEV-8185]](https://h2oai.atlassian.net/browse/PUBDEV-8185) - Updated GBM cross validation with ``early_stopping`` to use ``ntrees`` that produce the best score.
@@ -48,6 +50,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index
 
 #### New Feature
 
+- [[PUBDEV-8319]](https://h2oai.atlassian.net/browse/PUBDEV-8319) - Implemented a java-self-check to allow users to run on latest Java.
 - [[PUBDEV-8312]](https://h2oai.atlassian.net/browse/PUBDEV-8312) - Sped up GBM by optimizing the building of histograms.
 - [[PUBDEV-8287]](https://h2oai.atlassian.net/browse/PUBDEV-8287) - Added a warning to the TreeSHAP reweighting feature if there are 0 weights and updated the API.
 - [[PUBDEV-8235]](https://h2oai.atlassian.net/browse/PUBDEV-8235) - Added Maximum R Square Improvement (MAXR) algorithm to GLM.
@@ -75,6 +78,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index
 
 #### Docs
 
+- [[PUBDEV-8307]](https://h2oai.atlassian.net/browse/PUBDEV-8307) - Updated the AutoML FAQ.
 - [[PUBDEV-8304]](https://h2oai.atlassian.net/browse/PUBDEV-8304) - Corrected the ``ignored_columns`` example.
 - [[PUBDEV-8299]](https://h2oai.atlassian.net/browse/PUBDEV-8299) - Added RMarkdown, Jupyter Notebook, and HTML output example files to H2O Explain documentation.
 - [[PUBDEV-8282]](https://h2oai.atlassian.net/browse/PUBDEV-8282) - Added Maximum R Improvements (MAXR) GLM documentation.
