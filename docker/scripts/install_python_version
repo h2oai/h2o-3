@@ -67,6 +67,8 @@ for python_version in "${array[@]}"; do
     su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && grep -v \"^#\" docs-requirements.txt | sed -r 's/(.*)/\"\\1\"/' | xargs -n 1 -L 1 pip install"    
   fi
   su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
+  echo "###### Show all packages installed for Python ${python_version} ######"
+  su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip freeze"
 done
 
 rm *-requirements*.txt
