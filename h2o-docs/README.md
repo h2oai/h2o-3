@@ -13,14 +13,14 @@ Note that there are also some directories under the **/product** folder from the
 - [Read The Docs theme](https://sphinx-rtd-theme.readthedocs.io/en/stable/)
 - Additional extensions
   - [recommonmark](https://recommonmark.readthedocs.io/en/latest/)
-  - [sphinx-prompt](https://pypi.org/project/sphinx-prompt/) version 1.1.0
-  - [sphinx-tabs](https://pypi.org/project/sphinx-tabs/1.1.12/) version 1.1.12
+  - [sphinx-prompt](https://pypi.org/project/sphinx-prompt/) version 1.5.0
+  - [sphinx-tabs](https://pypi.org/project/sphinx-tabs/1.1.12/) version 3.2.0
   - [sphinx-substitutions-extension](https://pypi.org/project/Sphinx-Substitution-Extensions/2019.6.15.0/) version 2019.6.15.0
 
 Run the following to install Sphinx and the RTD theme. 
 
 ```
-python3 -m pip install sphinx==2.1.1
+python3 -m pip install sphinx==4.2.0
 python3 -m pip install sphinx_rtd_theme==0.2.4
 ```
 
@@ -28,8 +28,8 @@ Run the following to install the additional required extensions:
 
 ```
 python3 -m pip install recommonmark
-python3 -m pip install sphinx_prompt==1.1.0
-python3 -m pip install sphinx-tabs==1.1.12
+python3 -m pip install sphinx_prompt==1.5.0
+python3 -m pip install sphinx-tabs==3.2.0
 python3 -m pip install sphinx_substitution_extensions==2019.6.15.0
 ```
 
