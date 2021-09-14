@@ -355,55 +355,14 @@ Using the previous example, you can retrieve the leaderboard as follows:
         lb
 
 
-Here is an example of a basic leaderboard (no extra columns) for a binary classification task:
+Here is an example of a leaderboard (with all columns) for a binary classification task.  Click the image to enlarge.
 
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-|                                               model_id |      auc |  logloss |    aucpr | mean_per_class_error |     rmse |      mse | training_time_ms | predict_time_per_row_ms |
-+========================================================+==========+==========+==========+======================+==========+==========+==================+=========================+
-| StackedEnsemble_AllModels_AutoML_20191213_174603       | 0.789844 | 0.551067 | 0.804672 |             0.314665 | 0.432045 | 0.186663 |              924 |                0.05695  |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| StackedEnsemble_BestOfFamily_AutoML_20191213_174603    | 0.789768 | 0.550906 | 0.805696 |             0.313059 | 0.431977 | 0.186604 |              639 |                0.024567 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_grid__1_AutoML_20191213_174603_model_4         | 0.784698 | 0.55681  | 0.80312  |             0.323143 | 0.434743 | 0.189002 |             3092 |                0.002083 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_3_AutoML_20191213_174603                       | 0.784232 | 0.557749 | 0.802341 |             0.317933 | 0.434976 | 0.189204 |             2878 |                0.002173 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_2_AutoML_20191213_174603                       | 0.783533 | 0.555997 | 0.803189 |             0.32475  | 0.434678 | 0.188945 |             4635 |                0.003292 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_grid__1_AutoML_20191213_174603_model_3         | 0.782582 | 0.560218 | 0.800749 |             0.34334  | 0.435944 | 0.190047 |             2695 |                0.002269 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_5_AutoML_20191213_174603                           | 0.78219  | 0.558353 | 0.800234 |             0.319658 | 0.435512 | 0.18967  |              768 |                0.004318 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_1_AutoML_20191213_174603                       | 0.781901 | 0.557944 | 0.801237 |             0.325446 | 0.435519 | 0.189676 |             4428 |                0.003039 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_grid__1_AutoML_20191213_174603_model_1         | 0.781648 | 0.561112 | 0.799203 |             0.312015 | 0.436434 | 0.190474 |             5430 |                0.002557 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_2_AutoML_20191213_174603                           | 0.777673 | 0.562514 | 0.796181 |             0.334056 | 0.437583 | 0.191479 |              655 |                0.003772 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_1_AutoML_20191213_174603                           | 0.777294 | 0.562744 | 0.798244 |             0.356261 | 0.437727 | 0.191605 |              700 |                0.003571 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_3_AutoML_20191213_174603                           | 0.775488 | 0.564794 | 0.793585 |             0.327971 | 0.438722 | 0.192477 |              635 |                0.003748 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XGBoost_grid__1_AutoML_20191213_174603_model_2         | 0.773621 | 0.578141 | 0.791949 |             0.341118 | 0.443963 | 0.197104 |             9722 |                0.003896 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_grid__1_AutoML_20191213_174603_model_1             | 0.772656 | 0.568314 | 0.79164  |             0.332175 | 0.440049 | 0.193643 |              647 |                0.004546 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_4_AutoML_20191213_174603                           | 0.77248  | 0.569483 | 0.791078 |             0.336913 | 0.440873 | 0.194369 |              800 |                0.004142 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| DRF_1_AutoML_20191213_174603                           | 0.764975 | 0.5801   | 0.781588 |             0.336001 | 0.445222 | 0.198222 |             1399 |                0.007475 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| XRT_1_AutoML_20191213_174603                           | 0.759957 | 0.585158 | 0.776857 |             0.338976 | 0.447598 | 0.200344 |             1426 |                0.00495  |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GBM_grid__1_AutoML_20191213_174603_model_2             | 0.748007 | 0.632981 | 0.758833 |             0.375308 | 0.462237 | 0.213663 |              588 |                0.003119 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| DeepLearning_grid__2_AutoML_20191213_174603_model_1    | 0.739884 | 0.600688 | 0.747948 |             0.359883 | 0.455205 | 0.207212 |            40408 |                0.010939 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| DeepLearning_1_AutoML_20191213_174603                  | 0.700406 | 0.63169  | 0.70199  |             0.395333 | 0.469084 | 0.22004  |              445 |                0.002288 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| DeepLearning_grid__1_AutoML_20191213_174603_model_1    | 0.692235 | 0.671512 | 0.691883 |             0.409836 | 0.478393 | 0.22886  |            32546 |                0.003623 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
-| GLM_1_AutoML_20191213_174603                           | 0.682648 | 0.63852  | 0.680344 |             0.397234 | 0.472683 | 0.223429 |              195 |                0.001312 |
-+--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
+.. figure:: images/h2o-automl-leaderboard.png
+   :alt: H2O AutoML Leaderboard
+   :scale: 90%
+   :align: center
+
+
 
 
 Examine Models
@@ -522,18 +481,16 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates the following algorithms: three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets.  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.  AutoML trains multiple Stacked Ensemble models through out the process (more info about the ensembles below). Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a recommendation, if you have really wide (10k+ columns) and/or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF, XGBoost).
+  The current version of AutoML trains and cross-validates the following algorithms: three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets.  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.  In other cases, the grids will stop early, and if there's time left, the top two random grids will be restarted to train more models.  AutoML trains multiple Stacked Ensemble models throughout the process (more info about the ensembles below). 
+
+  Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a first step you could leave all the algorithms on, and examine their performance characteristics (e.g. prediction speed) to get a sense of what might be practically useful in your specific use-case, and then turn off algorithms that are not interesting or useful to you.  We recommend using the `H2O Model Explainability <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html>`__ interface to explore and further evaluate your AutoML models, which can inform your choice of model (if you have other goals beyond simply maximizing model accuracy).
 
   A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  AutoML trains several Stacked Ensemble models during the run.
-  Two kinds of Stacked Ensemble models are trained one of all available models, and one of only the best models of each kind.
-  Both kinds of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.
-  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.
-  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.
-  The metalearner in both ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles.
-  The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.
-  Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
+  AutoML trains several Stacked Ensemble models during the run (unless ensembles are turned off using ``exclude_algos``).  We have subdivided the model training in AutoML into "model groups" with different priority levels.  After each group is completed, and at the very end of the AutoML process, we train (at most) two additional Stacked Ensembles with the existing models.  There are currently two types of Stacked Ensembles: one which includes all the base models ("All Models"), and one comprised only of the best model from each algorithm family ("Best of Family").  The Best of Family ensembles are more optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use in production (to generate predictions on new data) without much degradation in model performance when compared to the final "All Models" ensemble, for example.  This may be useful if you want the model performance boost from ensembling without the added time or complexity of a large ensemble. You can also inspect some of the earlier "All Models" Stacked Ensembles that have fewer models as an alternative to the Best of Family ensembles.
+  The metalearner used in all ensembles is a variant of the default Stacked Ensemble metalearner: a non-negative GLM with regularization (Lasso or Elastic net, chosen by CV) to encourage more sparse ensembles.  The metalearner also uses a logit transform (on the base learner CV preds) for classification tasks before training.
+
+  For information about how previous versions of AutoML were different than the current one, there's a brief description `here <https://github.com/h2oai/sparkling-water/pull/2585#issuecomment-916114162>`__.
 
 -  **How do I save AutoML runs?**
 
@@ -558,7 +515,7 @@ FAQ
 
 -   **Why doesn't AutoML use all the time that it's given?** 
 
-  AutoML has a ``max_runtime_secs`` parameter, which is a limit on the total runtime.  However, early stopping is also enabled by default:  AutoML will stop once there's no longer "enough" incremental improvement.  The user can tweak the early stopping paramters to be more or less sensitive.  Set ``stopping_rounds`` higher if you want to slow down early stopping and let AutoML train more models before it stops. In a future release, we are planning to allow the user to specify an exact runtime, rather than just a maximum runtime.
+  If you're using 3.34.0.1 or later, AutoML should use all the time that it's given using ``max_runtime_secs``.  However, if you're using an earlier version, then early stopping was enabled by default and you can stop early.  With early stopping, AutoML will stop once there's no longer "enough" incremental improvement.  The user can tweak the early stopping paramters to be more or less sensitive.  Set ``stopping_rounds`` higher if you want to slow down early stopping and let AutoML train more models before it stops. 
 
 
 Resources
