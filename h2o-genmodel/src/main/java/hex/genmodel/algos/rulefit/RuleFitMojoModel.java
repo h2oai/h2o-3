@@ -46,15 +46,6 @@ public class RuleFitMojoModel extends MojoModel {
     
     _linearModel.score0(linearModelInput, preds);
     
-    // if current weight is zero, zero the prediction
-    if (_weightsColumn != null) {
-      int weightsId = Arrays.asList(_linearNames).indexOf("linear." + _weightsColumn);
-      double currWeight = test[weightsId];
-      if (currWeight == 0.0) {
-        for (int i = 0; i < preds.length; i++)
-          preds[i] *= currWeight;
-      }
-    }
     
     return preds;
   }
@@ -69,7 +60,4 @@ public class RuleFitMojoModel extends MojoModel {
     return newtest;
   }
 
-    @Override public int nfeatures() {
-      return _names.length;
-    }
 }
