@@ -829,7 +829,33 @@ public class RuleFitTest extends TestUtil {
 
             final Frame fr2 = Scope.track(rfModel.score(fr));
 
-            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+            Assert.assertTrue(rfModel.testJavaScoring(fr, fr2, 1e-4));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testProstateMulticlass() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parseTestFile("smalldata/prostate/prostate_cat.csv"));
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 12345;
+            params._train = fr._key;
+            params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._response_column = "DPROS";
+
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
+
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+            final Frame fr2 = Scope.track(rfModel.score(fr));
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr, fr2, 1e-4));
         } finally {
             Scope.exit();
         }
@@ -864,4 +890,144 @@ public class RuleFitTest extends TestUtil {
         }
     }
     
+    @Test
+    public void testIrisMulticlassWithoutScope() {
+        RuleFitModel rfModel = null;
+        Frame fr = null, fr2 = null;
+        try {
+            fr = parseTestFile("./smalldata/iris/iris_wheader.csv");
+            DKV.put(fr);
+            
+            final RuleFitModel.RuleFitParameters ruleFitParameters = new RuleFitModel.RuleFitParameters();
+            ruleFitParameters._train = fr._key;
+            ruleFitParameters._response_column = "class";
+            ruleFitParameters._seed = 0XFEED;
+            ruleFitParameters._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            ruleFitParameters._max_rule_length = 5;
+            ruleFitParameters._min_rule_length = 1;
+            ruleFitParameters._max_num_rules = 50;
+            
+            rfModel = new RuleFit(ruleFitParameters).trainModel().get();
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+            
+            fr2 = rfModel.score(fr);
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr, fr2,1e-4));
+            
+        } finally {
+            if (rfModel != null) {
+                rfModel.remove();
+            }
+            if (fr != null) fr.remove();
+            if (fr2 != null) fr2.remove();
+        }
+    }
+
+    @Test
+    public void testTitanicMulticlass() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parseTestFile("./smalldata/gbm_test/titanic.csv"));
+
+            String responseColumnName = "parch";
+            asFactor(fr, responseColumnName);
+            asFactor(fr, "pclass");
+            fr.remove("name").remove();
+            fr.remove("ticket").remove();
+            fr.remove("cabin").remove();
+            fr.remove("embarked").remove();
+            fr.remove("boat").remove();
+            fr.remove("body").remove();
+            fr.remove("home.dest").remove();
+            DKV.put(fr);
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 1234;
+            params._train = fr._key;
+            params._response_column = responseColumnName;
+            params._max_num_rules = 100;
+            params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
+
+
+            RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+           // TODO: this reproduces problem with mapping (will be fixed in PUBDEV-8333)
+            //     Frame scored = rfModel.score(fr);
+            //   Assert.assertTrue(rfModel.testJavaScoring(fr, scored, 1e-4));
+
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test public void testEcologyMulticlass() {
+        try {
+            Scope.enter();
+            Frame  train = parseTestFile("smalldata/gbm_test/ecology_model.csv")
+                    .toCategoricalCol("Method");
+     
+            train.remove("Site").remove();
+            Scope.track(train);
+            DKV.put(train);
+            RuleFitModel.RuleFitParameters parms = new RuleFitModel.RuleFitParameters();
+            parms._seed = 1234;
+            parms._train = train._key;
+            parms._response_column = "Method";
+            parms._max_num_rules = 100;
+            parms._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+
+            RuleFitModel rfit = new RuleFit(parms).trainModel().get();
+            Scope.track_generic(rfit);
+            
+            System.out.println("Intercept: \n" + rfit._output._intercept[0]);
+            System.out.println(rfit._output._rule_importance);
+            
+            Frame scored = Scope.track(rfit.score(train));
+            
+            Assert.assertTrue(rfit.testJavaScoring(train, scored, 1e-4));
+        } finally {
+            Scope.exit();
+        }
+
+    }
+
+
+    @Test public void testEcologyBinomial() {
+        try {
+            Scope.enter();
+            Frame  train = parseTestFile("smalldata/gbm_test/ecology_model.csv")
+                    .toCategoricalCol("Angaus");
+            train.remove("Site").remove();
+            Scope.track(train);
+            DKV.put(train);
+            RuleFitModel.RuleFitParameters parms = new RuleFitModel.RuleFitParameters();
+            parms._train = train._key;
+            parms._response_column = "Angaus";
+            parms._max_num_rules = 100;
+            parms._model_type = RuleFitModel.ModelType.RULES;
+            parms._min_rule_length = 1;
+            parms._max_rule_length = 10;
+
+            RuleFitModel rfit = new RuleFit(parms).trainModel().get();
+            Scope.track_generic(rfit);
+
+            System.out.println("Intercept: \n" + rfit._output._intercept[0]);
+            System.out.println(rfit._output._rule_importance);
+
+            Frame scored = Scope.track(rfit.score(train));
+
+            Assert.assertTrue(rfit.testJavaScoring(train, scored, 1e-4));
+        } finally {
+            Scope.exit();
+        }
+
+    }
+
 }
