@@ -837,8 +837,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
       if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
         error("_compute_p_values","P-values can not be computed for constrained problems");
-      if(bc.hasBounds())
-        _parms._early_stopping = false; // PUBDEV-4641: early stopping does not work correctly with non-negative option
+      if (bc.hasBounds() && _parms._early_stopping)
+        warn("beta constraint and early_stopping", "if both are enabled may degrade model performance.");
       _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
