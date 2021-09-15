@@ -95,7 +95,7 @@ public class RuleFitUtilsTest extends TestUtil {
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = gbm._output;
             final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
             SharedTreeSubgraph sharedTreeSubgraph = gbm.getSharedTreeSubgraph(0, treeClass);
-            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
+            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
             Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"GLEASON", false);
@@ -144,7 +144,7 @@ public class RuleFitUtilsTest extends TestUtil {
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = isofor._output;
             final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
             SharedTreeSubgraph sharedTreeSubgraph = isofor.getSharedTreeSubgraph(0, treeClass);
-            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
+            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
             List<String> languageRules = treeRules.stream().map(it -> it.languageRule).sorted().collect(Collectors.toList());

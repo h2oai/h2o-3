@@ -18,28 +18,38 @@ public class RuleEnsemble extends Iced {
         this.rules = rules;
     }
     
-    public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees) {
+    public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees, String[] classNames) {
         Frame glmTrainFrame = new Frame();
         // filter rules and create a column for each tree
+        boolean isMultinomial = classNames != null && classNames.length > 2;
+        int nclasses = isMultinomial ? classNames.length : 1;
         for (int i = 0; i < depth; i++) {
             for (int j = 0; j < ntrees; j++) {
-                // filter rules according to varname
-                // varname is of structue "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()
-                String regex = "M" + i + "T" + j + "N" + "\\d+";
-                List<Rule> filteredRules = Arrays.asList(rules)
-                        .stream()
-                        .filter(rule ->  rule.varName.matches(regex))
-                        .collect(Collectors.toList());
-                
-                RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[] {}));
-                Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
-                try {
-                    Decoder mrtask = new Decoder();
-                    Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)
-                            .outputFrame(null, null, new String[][]{frameToMakeCategorical.names()}).vec(0);
-                    glmTrainFrame.add("M" + i + "T" + j, catCol);
-                } finally {
-                    frameToMakeCategorical.remove();
+                for (int k = 0; k < nclasses; k++) {
+                    // filter rules according to varname
+                    // varname is of structue "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()
+                    String regex = "M" + i + "T" + j + "N" + "\\d+";
+                    if (isMultinomial) {
+                        regex +=  "_" + classNames[k];
+                    }
+                    String finalRegex = regex;
+                    List<Rule> filteredRules = Arrays.asList(rules)
+                            .stream()
+                            .filter(rule -> rule.varName.matches(finalRegex))
+                            .collect(Collectors.toList());
+
+                    RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[]{}));
+                    Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
+                    try {
+                        Decoder mrtask = new Decoder();
+                        Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)
+                                .outputFrame(null, null, new String[][]{frameToMakeCategorical.names()}).vec(0);
+                        String name = isMultinomial ? "M" + i + "T" + j + "C" + k : "M" + i + "T" + j;
+                        
+                        glmTrainFrame.add(name, catCol);
+                    } finally {
+                        frameToMakeCategorical.remove();
+                    }
                 }
             }
         }
