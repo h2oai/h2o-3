@@ -6,6 +6,12 @@ if [[ $string == *"@"* ]]; then
   echo "H2O base path contains at sign. Unable to create K3S cluster."
   exit 1
 fi
+
+# Force in-house version of the image in tests
+sed -i.bu 's,everpeace,harbor.h2o.ai/opsh2oai,' $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml
+rm $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml.bu
+cat $H2O_BASE/h2o-helm/templates/tests/test-connection.yaml
+
 cd $H2O_BASE/h2o-k8s/tests/clustering/
 k3d --version
 k3d delete
@@ -16,7 +22,7 @@ sleep 15 # Making sure the default namespace is initialized. The --wait flag doe
 kubectl get namespaces
 # Deploy H2O-3 Cluster as defined by Helm template in h2o-helm subproject
 # Also tests correctness of the H2O HELM chart
-envsubst < testvalues-template.yaml >> testvalues.yaml
+envsubst < testvalues-template.yaml > testvalues.yaml
 helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG --dry-run # Shows resulting YAML
 helm install -f testvalues.yaml h2o $H2O_BASE/h2o-helm --kubeconfig $KUBECONFIG
 # Use helm built-in test pod
