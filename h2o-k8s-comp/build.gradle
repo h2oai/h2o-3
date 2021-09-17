@@ -1,7 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'com.github.johnrengelman.shadow'
 
-description = "H2O Kuberentes Compatibility Library - enables older H2O versions to run on K8S"
+description = "H2O Kubernetes Compatibility Library - enables older H2O versions to run on K8S"
 
 sourceCompatibility = 1.8
 

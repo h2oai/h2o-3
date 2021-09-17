@@ -5,7 +5,7 @@ import water.init.EmbeddedConfigProvider;
 import java.util.Collection;
 
 /**
- * A configuration provider for H2O running in Kubernetes cluster. It is able to detected H2O is being ran in K8S
+ * A configuration provider for H2O running in Kubernetes cluster. It is able to detected H2O is being run in K8S
  * environment, otherwise remains inactive.
  * <p>
  * Uses potentially multiple strategies to discover H2O Pods on a Kubernetes cluster.
