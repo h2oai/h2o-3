@@ -1,6 +1,6 @@
 dependencies {
-    compile "ai.h2o:vis-data-server-library:${visDataServerVersion}"
-    compile "ai.h2o:vis-data-server-integrated:${visDataServerVersion}"
+    api "ai.h2o:vis-data-server-library:${visDataServerVersion}"
+    api "ai.h2o:vis-data-server-integrated:${visDataServerVersion}"
 }
 
 repositories {

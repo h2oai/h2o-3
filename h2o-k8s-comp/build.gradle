@@ -1,0 +1,40 @@
+apply plugin: 'java-library'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = "H2O Kubernetes Compatibility Library - enables older H2O versions to run on K8S"
+
+sourceCompatibility = 1.8
+
+configurations {
+    compile.exclude group: 'log4j'
+}
+
+dependencies {
+    api project(":h2o-k8s")
+    compileOnly group: 'ai.h2o', name: 'h2o-app', version: '3.22.0.3'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile project(":h2o-test-support")
+}
+
+shadowJar {
+    mergeServiceFiles()
+    classifier = ''
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.SF'
+    exclude 'synchronize.properties'
+    exclude 'uploader.properties'
+    exclude 'test.properties'
+    exclude 'cockpitlite.properties'
+    exclude 'devpay_products.properties'
+}
+
+artifacts {
+    archives shadowJar
+}
+
+// Disable regular jar since the project is empty
+jar.enabled = false
+// Plug ShadowJar task into execution graph
+build.dependsOn shadowJar
+

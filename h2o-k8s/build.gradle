@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 sourceCompatibility = 1.8
 
@@ -7,10 +7,10 @@ repositories {
 }
 
 dependencies {
-    compile project(":h2o-core")
-    compile 'org.nanohttpd:nanohttpd:2.3.1'
-    compile 'org.nanohttpd:nanohttpd-webserver:2.3.1'
-    compile 'org.nanohttpd:nanohttpd-nanolets:2.3.1'
+    api project(":h2o-core")
+    api 'org.nanohttpd:nanohttpd:2.3.1'
+    api 'org.nanohttpd:nanohttpd-webserver:2.3.1'
+    api 'org.nanohttpd:nanohttpd-nanolets:2.3.1'
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
     
     testCompile group: 'junit', name: 'junit', version: '4.12'

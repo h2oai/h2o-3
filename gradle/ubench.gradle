@@ -54,8 +54,8 @@ jmh {
 
 dependencies {
     jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
-    compile group: 'org.openjdk.jmh', name:'jmh-core', version: project.jmhVersion
-    compile group: 'org.openjdk.jmh', name:'jmh-generator-annprocess', version: project.jmhVersion
+    api group: 'org.openjdk.jmh', name:'jmh-core', version: project.jmhVersion
+    api group: 'org.openjdk.jmh', name:'jmh-generator-annprocess', version: project.jmhVersion
 }
 
 task jmhPostProcess(dependsOn: "jmh") {

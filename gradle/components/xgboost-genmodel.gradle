@@ -1,3 +1,3 @@
 dependencies {
-    compile project(":h2o-genmodel-ext-xgboost")
+    api project(":h2o-genmodel-ext-xgboost")
 }
