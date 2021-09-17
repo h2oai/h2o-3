@@ -23,6 +23,7 @@ dependencies {
 // Independently distributed/put on existing classpath with H2O already present. Therefore,
 // the artifact produced must carry it's own dependencies.
 jar {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from {
         configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
