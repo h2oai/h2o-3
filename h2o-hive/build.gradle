@@ -25,8 +25,8 @@ dependencies {
   api("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
   api project(":h2o-core")
 
-  testCompile "junit:junit:${junitVersion}"
-  testCompile project(':h2o-test-support')
+  testImplementation "junit:junit:${junitVersion}"
+  testImplementation project(':h2o-test-support')
   testRuntimeOnly project(":h2o-parquet-parser")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }

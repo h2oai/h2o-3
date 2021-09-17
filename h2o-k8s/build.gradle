@@ -13,8 +13,8 @@ dependencies {
     api 'org.nanohttpd:nanohttpd-nanolets:2.3.1'
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
     
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile 'com.github.stefanbirkner:system-rules:1.19.0'
-    testCompile project(":h2o-test-support")
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation 'com.github.stefanbirkner:system-rules:1.19.0'
+    testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }

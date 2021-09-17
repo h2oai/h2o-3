@@ -16,7 +16,7 @@ dependencies {
     api("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
     api("com.nimbusds:nimbus-jose-jwt:9.11.3")
 
-    testCompile project(":h2o-test-support")
+    testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

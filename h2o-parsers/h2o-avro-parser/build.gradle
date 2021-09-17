@@ -8,7 +8,7 @@ dependencies {
   // Avro support
   api "org.apache.avro:avro:1.8.0"
 
-  testCompile project(":h2o-test-support")
+  testImplementation project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

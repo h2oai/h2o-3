@@ -23,10 +23,10 @@ dependencies {
     api 'com.squareup.okhttp3:okhttp:4.6.0'
     api 'com.squareup.okio:okio:2.6.0'
 
-    testCompile project(":h2o-app")
-    testCompile project(":h2o-web")
-    testCompile project(":h2o-avro-parser")
-    testCompile "junit:junit:${junitVersion}"
+    testImplementation project(":h2o-app")
+    testImplementation project(":h2o-web")
+    testImplementation project(":h2o-avro-parser")
+    testImplementation "junit:junit:${junitVersion}"
 
     // Generator dependencies
     srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")

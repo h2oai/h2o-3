@@ -13,5 +13,5 @@ dependencies {
         exclude module: "mail"
     }
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 }

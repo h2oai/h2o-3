@@ -30,8 +30,8 @@ dependencies {
     api "ai.h2o:xgboost4j-linux-minimal:${xgboost4jVersion}"
     api "ai.h2o:xgboost4j-osx-minimal:${xgboost4jVersion}"
 
-    testCompile project(":h2o-test-support")
-    testCompile 'com.esotericsoftware.kryo:kryo:2.21'
+    testImplementation project(":h2o-test-support")
+    testImplementation 'com.esotericsoftware.kryo:kryo:2.21'
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

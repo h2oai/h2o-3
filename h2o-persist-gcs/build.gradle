@@ -6,7 +6,7 @@ dependencies {
     api project(":h2o-core")
     api 'com.google.cloud:google-cloud-storage:1.118.0'
 
-    testCompile project(":h2o-test-support")
+    testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

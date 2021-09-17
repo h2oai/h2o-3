@@ -35,8 +35,8 @@ dependencies {
     }
   }
 
-  testCompile project(":h2o-test-support")
-  testCompile project(":h2o-parquet-parser-tests")
+  testImplementation project(":h2o-test-support")
+  testImplementation project(":h2o-parquet-parser-tests")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 
