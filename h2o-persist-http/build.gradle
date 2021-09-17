@@ -4,7 +4,7 @@ dependencies {
   api project(":h2o-core")
   api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
 
-  testCompile project(":h2o-test-support")
+  testImplementation project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

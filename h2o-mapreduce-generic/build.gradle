@@ -22,7 +22,7 @@ dependencies {
     transitive = false
   }
   api project(":h2o-security")
-  testCompile "junit:junit:${junitVersion}"
-  testCompile "org.mockito:mockito-core:2.23.0"
-  testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
+  testImplementation "junit:junit:${junitVersion}"
+  testImplementation "org.mockito:mockito-core:2.23.0"
+  testImplementation "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
 }

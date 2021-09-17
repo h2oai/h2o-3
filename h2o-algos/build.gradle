@@ -48,8 +48,8 @@ dependencies {
   }
 
   // Test dependencies only
-  testCompile project(":h2o-test-support")
-  testCompile project(":h2o-genmodel-ext-jgrapht")
+  testImplementation project(":h2o-test-support")
+  testImplementation project(":h2o-genmodel-ext-jgrapht")
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
   

@@ -8,9 +8,9 @@ dependencies {
   compileOnly project(":h2o-ext-target-encoder")
 
   // Test dependencies only
-  testCompile project(":h2o-test-support")
-  testCompile project(":h2o-ext-xgboost")
-  testCompile project(":h2o-ext-target-encoder")
+  testImplementation project(":h2o-test-support")
+  testImplementation project(":h2o-ext-xgboost")
+  testImplementation project(":h2o-ext-target-encoder")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

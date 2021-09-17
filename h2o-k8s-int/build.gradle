@@ -10,6 +10,6 @@ dependencies {
     api project(":h2o-core")
     api project(":h2o-k8s")
     
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile project(":h2o-test-support")
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation project(":h2o-test-support")
 }

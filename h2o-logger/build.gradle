@@ -9,7 +9,7 @@ compileJava {
 
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
     compileOnly "org.slf4j:slf4j-api:1.7.29"
-    testCompile "org.slf4j:slf4j-api:1.7.29"
+    testImplementation "org.slf4j:slf4j-api:1.7.29"
 }
