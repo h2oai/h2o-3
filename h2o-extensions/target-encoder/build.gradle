@@ -7,9 +7,9 @@ dependencies {
     api project(":h2o-algos")
     api project(":h2o-genmodel")
 
-    testCompile project(":h2o-test-support")
-    testCompile "com.pholser:junit-quickcheck-core:0.9"
-    testCompile 'com.pholser:junit-quickcheck-generators:0.9'
+    testImplementation project(":h2o-test-support")
+    testImplementation "com.pholser:junit-quickcheck-core:0.9"
+    testImplementation 'com.pholser:junit-quickcheck-generators:0.9'
     testRuntimeOnly project(":${defaultWebserverModule}")
     
     jmh project(":${defaultWebserverModule}") 

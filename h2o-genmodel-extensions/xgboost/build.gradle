@@ -18,6 +18,6 @@ dependencies {
     api "commons-logging:commons-logging:1.2"
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
-    testCompile 'com.esotericsoftware.kryo:kryo:2.21'
-    testCompile "junit:junit:${junitVersion}"
+    testImplementation 'com.esotericsoftware.kryo:kryo:2.21'
+    testImplementation "junit:junit:${junitVersion}"
 }
