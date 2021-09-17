@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 sourceCompatibility = 1.8
 
@@ -7,8 +7,8 @@ repositories {
 }
 
 dependencies {
-    compile project(":h2o-core")
-    compile project(":h2o-k8s")
+    api project(":h2o-core")
+    api project(":h2o-k8s")
     
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile project(":h2o-test-support")

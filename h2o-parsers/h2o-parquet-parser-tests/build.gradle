@@ -4,12 +4,12 @@ def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
         binding.variables.get("hadoopVersion") : defaultHadoopVersion
 
 dependencies {
-    compile project(":h2o-core")
-    compile project(":h2o-parquet-parser")
-    compile project(":h2o-test-support")
-    compile("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
+    api project(":h2o-core")
+    api project(":h2o-parquet-parser")
+    api project(":h2o-test-support")
+    api("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
     // We need correct version of MapRe Hadoop to run JUnits
-    compile("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
+    api("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
         exclude module: "servlet-api"
     }
 }

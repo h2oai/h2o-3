@@ -5,5 +5,5 @@
 description = "JAAS PAM Module"
 
 dependencies {
-    compile "org.kohsuke:libpam4j:1.8"
+    api "org.kohsuke:libpam4j:1.8"
 }

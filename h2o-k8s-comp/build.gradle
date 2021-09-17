@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 description = "H2O Kubernetes Compatibility Library - enables older H2O versions to run on K8S"
@@ -10,7 +10,7 @@ configurations {
 }
 
 dependencies {
-    compile project(":h2o-k8s")
+    api project(":h2o-k8s")
     compileOnly group: 'ai.h2o', name: 'h2o-app', version: '3.22.0.3'
 
     testCompile group: 'junit', name: 'junit', version: '4.12'

@@ -4,7 +4,7 @@ plugins {
     id "com.google.protobuf" version "0.8.0"
 }
 
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.google.protobuf'
 
 repositories {
@@ -22,11 +22,11 @@ if (System.env.VIRTUAL_ENV) {
 
 
 dependencies {
-    compile project(":h2o-core")
-    compile "com.google.protobuf:protobuf-java:${protocVersion}"
-    compile "io.grpc:grpc-netty:${grpcVersion}"
-    compile "io.grpc:grpc-protobuf:${grpcVersion}"
-    compile "io.grpc:grpc-stub:${grpcVersion}"
+    api project(":h2o-core")
+    api "com.google.protobuf:protobuf-java:${protocVersion}"
+    api "io.grpc:grpc-netty:${grpcVersion}"
+    api "io.grpc:grpc-protobuf:${grpcVersion}"
+    api "io.grpc:grpc-stub:${grpcVersion}"
 }
 
 task verifyDependencies(type: Exec) {

@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 description = "H2O HDFS client shadowjar for Hadoop ${ext.hadoopVersion}"
@@ -7,16 +7,16 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile(project(":h2o-mapreduce-generic")) {
+    api(project(":h2o-mapreduce-generic")) {
         transitive = false
     }
-    compile project(":h2o-security")
-    compile project(":h2o-ext-steam")
-    compile "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
-    compile "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
+    api project(":h2o-security")
+    api project(":h2o-ext-steam")
+    api "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
+    api "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
     // Libraries need for Google Cloud Storage strongly require this Guava version
-    compile('com.google.guava:guava:20.0') { force = true }
-    compile(project(':h2o-app')) {
+    api('com.google.guava:guava:20.0') { force = true }
+    api(project(':h2o-app')) {
         exclude module: "${defaultWebserverModule}"
     }
 }

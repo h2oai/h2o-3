@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'groovy'
 
 repositories {
@@ -6,7 +6,7 @@ repositories {
 }
 
 dependencies {
-    compile 'io.minio:minio:3.0.3'
+    api 'io.minio:minio:3.0.3'
     // Upgrade http client since the old version was colliding with other plugins
-    compile 'org.apache.httpcomponents:httpclient:4.5.2'
+    api 'org.apache.httpcomponents:httpclient:4.5.2'
 }
