@@ -235,13 +235,13 @@ subprojects {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
             maven {
-                url "http://repo.hortonworks.com/content/repositories/releases/"
+                url "https://repo.hortonworks.com/content/repositories/releases/"
             }
             maven {
-                url "http://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+                url "https://repo.hortonworks.com/content/repositories/jetty-hadoop/"
             }
             maven {
-                url "http://repository.mapr.com/maven/"
+                url "https://repository.mapr.com/maven/"
             }
             maven {
                 url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
