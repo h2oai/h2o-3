@@ -10,7 +10,7 @@ dependencies {
   api project(":h2o-automl")
   api project(":h2o-admissibleml")
   api project(":h2o-ext-target-encoder")
-  runtime project(":${defaultWebserverModule}")
+  runtimeOnly project(":${defaultWebserverModule}")
   if (project.hasProperty("doIncludeMojoPipeline") && project.doIncludeMojoPipeline == "true") {
     api project(":h2o-ext-mojo-pipeline")
   }

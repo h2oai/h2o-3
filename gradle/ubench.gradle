@@ -79,7 +79,7 @@ task jmhFatJar(type: ShadowJar) {
     manifest {
         attributes "Main-Class": "org.openjdk.jmh.Main"
     }
-    configurations = [project.configurations.runtime, project.configurations.jmh]
+    configurations = [project.configurations.runtimeOnly, project.configurations.jmh]
     from sourceSets.main.output
     from sourceSets.jmh.output
     from tasks.jmhRunBytecodeGenerator.outputs
