@@ -25,7 +25,7 @@ configurations {
 dependencies {
     api project(":h2o-app")
     api project(":h2o-logging-impl-log4j2")
-    runtime project(":${defaultWebserverModule}")
+    runtimeOnly project(":${defaultWebserverModule}")
     api project(":h2o-web")
     api project(":h2o-avro-parser")
     api project(":h2o-persist-gcs")
