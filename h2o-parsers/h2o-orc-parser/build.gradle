@@ -52,7 +52,7 @@ dependencies {
   testCompile project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
   // We need correct version of MapRe Hadoop to run JUnits
-  testRuntime("org.apache.hadoop:hadoop-client:$defaultHadoopVersion") {
+  testRuntimeOnly("org.apache.hadoop:hadoop-client:$defaultHadoopVersion") {
       exclude module: "jasper-runtime"
       exclude module: "jasper-compiler"
       exclude module: "curator-client"
