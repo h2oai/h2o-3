@@ -1,8 +1,8 @@
 description = "H2O Jython Udfs"
 
 dependencies {
-    compile project(":h2o-core")
-    compile 'org.python:jython:2.7.1b3'
+    api project(":h2o-core")
+    api 'org.python:jython:2.7.1b3'
 
     testCompile project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")

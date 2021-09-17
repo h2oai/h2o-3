@@ -1,17 +1,17 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 dependencies {
-  compile project(':h2o-core')
+  api project(':h2o-core')
   
-  compile "junit:junit:${junitVersion}"
-  compile "com.google.guava:guava:16.0.1"
-  compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
-  compile "org.hamcrest:hamcrest-junit:2.0.0.0"
-  compile "org.mockito:mockito-core:2.18.0"
-  compile "com.github.stefanbirkner:system-rules:1.18.0"
-  compile "org.apache.derby:derby:10.14.2.0"
+  api "junit:junit:${junitVersion}"
+  api "com.google.guava:guava:16.0.1"
+  api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
+  api "org.hamcrest:hamcrest-junit:2.0.0.0"
+  api "org.mockito:mockito-core:2.18.0"
+  api "com.github.stefanbirkner:system-rules:1.18.0"
+  api "org.apache.derby:derby:10.14.2.0"
   // using tyrus client since using jetty gets us into conflict because of jetty8/9 dichotomy
-  compile "org.glassfish.tyrus.bundles:tyrus-standalone-client:1.12"
+  api "org.glassfish.tyrus.bundles:tyrus-standalone-client:1.12"
   testRuntimeOnly project(":${defaultWebserverModule}")
   testCompileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 }
