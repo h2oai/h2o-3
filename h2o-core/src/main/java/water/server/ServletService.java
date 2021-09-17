@@ -22,7 +22,7 @@ public final class ServletService {
             .stream(_loader.spliterator(), false)
             .sorted(Comparator.comparing(ServletProvider::priority).reversed())
             .flatMap(provider -> provider.servlets().stream())
-            .filter(servletMeta -> servletMeta.isAlwaysEnabled())
+            .filter(ServletMeta::isAlwaysEnabled)
             .collect(Collectors.toMap(ServletMeta::getContextPath, ServletMeta::getServletClass,
                     (val1, val2) -> val2, // Latest always wins
                     LinkedHashMap::new));

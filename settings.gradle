@@ -44,10 +44,13 @@ include 'h2o-security'
 include 'h2o-logger'
 include 'h2o-genmodel-ext-jgrapht'
 include 'h2o-k8s'
+include 'h2o-k8s-int'
 include 'h2o-genmodel-ext-deepwater'
 include 'h2o-clustering'
 include 'h2o-logging-impl-classic'
 include 'h2o-logging-impl-log4j2'
+include 'h2o-k8s-comp'
+
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {

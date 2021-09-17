@@ -90,4 +90,13 @@ public abstract class AbstractEmbeddedH2OConfig {
    * Print debug information.
    */
   public abstract void print();
+
+  /**
+   * Indicates whether we should disable REST API access on non-leader nodes.
+   * @return false by default == all nodes will be accessible 
+   */
+  public boolean disableNonLeaderNodeAccess() {
+    return false;
+  }
+
 }
