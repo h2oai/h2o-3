@@ -34,7 +34,7 @@ buildscript {
 
 plugins {
     id "java-library"
-    id "com.github.hierynomus.license" version "0.14.0"
+    id "com.github.hierynomus.license" version "0.16.1"
 }
 
 //
