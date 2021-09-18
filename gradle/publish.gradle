@@ -147,8 +147,10 @@ publishing {
           maven {
               name "LocalNexusRepo"
               if (project.ext.isRelease) {
+                allowInsecureProtocol = true
                 url "${localNexusLocation}/releases"
               } else {
+                allowInsecureProtocol = true
                 url "${localNexusLocation}/snapshots"
               }
 

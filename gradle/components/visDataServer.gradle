@@ -6,8 +6,10 @@ dependencies {
 repositories {
     maven {
         if (visDataServerVersion.endsWith("-SNAPSHOT")) {
+            allowInsecureProtocol = true
             url "$localNexusLocation/snapshots/"
         } else {
+            allowInsecureProtocol = true
             url "$localNexusLocation/releases/"
         }
     }
