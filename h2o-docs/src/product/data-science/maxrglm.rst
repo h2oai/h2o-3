@@ -203,7 +203,7 @@ Examples
 	.. code-tab:: python
 
 		import h2o
-		from estimators import H2OMaxRGLMEstimator
+		from h2o.estimators import H2OMaxRGLMEstimator
 		h2o.init()
 
 		# Import the prostate dataset:
