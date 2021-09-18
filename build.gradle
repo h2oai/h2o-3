@@ -11,7 +11,10 @@ buildscript {
 
     repositories {
         if (isCi) {
-            maven { url "${localNexusLocation}/public" }
+            maven {
+                allowInsecureProtocol = true
+                url "${localNexusLocation}/public"
+            }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
@@ -232,6 +235,7 @@ subprojects {
         }
         if (isCi) {
             maven {
+                allowInsecureProtocol = true
                 url "${localNexusLocation}/public"
             }
         } else {
