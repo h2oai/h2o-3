@@ -19,7 +19,7 @@ properties([
 
 IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
 
-JDK_VERSIONS = ['8', '10', '11', '12', '13', '14', '15', '16', '17']
+JDK_VERSIONS = ['16', '17']
 JDK_VERSIONS_PY_R = ['8', '11', '14', '15', '16', '17'] // stable, last-supported, latest
 PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
 R_VERSION = ['3.3.3', '3.4.1', '3.5.3', '3.6.2', '4.0.2']
@@ -67,7 +67,7 @@ ansiColor('xterm') {
             }
         }
 
-        buildInParallel(pipelineContext, ['dev-base'])
+        /*buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
 
         buildInParallel(pipelineContext, ['dev-python-base'])
@@ -81,16 +81,17 @@ ansiColor('xterm') {
         def componentImages = []
         R_VERSION.each {version ->
             componentImages += "dev-r-${version}"
-        }
+        }*/
+        def componentImages = []
         JDK_VERSIONS.each {version ->
             componentImages += "dev-jdk-${version}"
         }
-        componentImages += "dev-mojocompat"
+        //componentImages += "dev-mojocompat"
         buildInParallel(pipelineContext, componentImages)
 
-        buildInParallel(pipelineContext, ["dev-build-base"])
+        /*buildInParallel(pipelineContext, ["dev-build-base"])
         buildInParallel(pipelineContext, ["dev-build-hadoop"],)
-        buildInParallel(pipelineContext, ["dev-release"])
+        buildInParallel(pipelineContext, ["dev-release"])*/
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -103,7 +104,7 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
             }
         }
-        buildInParallel(pipelineContext, componentJdkImages)
+        //buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 
