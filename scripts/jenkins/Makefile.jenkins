@@ -316,7 +316,7 @@ test-junit:
 
 test-junit-core-jenkins:
 	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit
+	@$(MAKE) -f $(THIS_FILE) test-junit-core
 
 test-junit-core:
 	./gradlew h2o-core:test $$ADDITIONAL_GRADLE_OPTS
