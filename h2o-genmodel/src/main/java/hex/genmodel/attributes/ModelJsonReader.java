@@ -483,7 +483,11 @@ public class ModelJsonReader {
             } else break;
         }
 
-        return result;
+        if (result == null) {
+            return JsonNull.INSTANCE;
+        } else {
+            return result;   
+        }
     }
 
     /**
