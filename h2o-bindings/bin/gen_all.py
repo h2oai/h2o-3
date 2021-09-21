@@ -22,7 +22,11 @@ if not os.path.exists(results_dir):
 
 # Allow override of the H2O jarfile so we can use this with projects which extend h2o.jar
 h2o_jarfile = os.getenv('H2O_JARFILE', '../../build/h2o.jar')
-h2o_jvm_opts = "-Dsys.ai.h2o.debug.noJavaVersionCheck=true"
+h2o_java_version = os.getenv('H2O_JAVA_VERSION', '1.8')
+h2o_jvm_opts = ["-Dsys.ai.h2o.debug.noJavaVersionCheck=true"]
+if h2o_java_version != '1.8':
+    h2o_jvm_opts.append("--add-opens=java.base/java.lang=ALL-UNNAMED")
+
 
 # Start H2O cloud
 print("Starting H2O cloud...")

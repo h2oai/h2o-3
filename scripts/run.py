@@ -347,7 +347,7 @@ class H2OCloudNode(object):
                "-Xmx" + self.xmx,
                "-ea"]
         if self.jvm_opts is not None:
-            cmd += [self.jvm_opts]
+            cmd += self.jvm_opts
         port_spec = "-port" if self.strict_port else "-baseport"
         cmd += ["-cp", classpath,
                main_class,
