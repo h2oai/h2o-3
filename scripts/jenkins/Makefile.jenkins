@@ -312,7 +312,14 @@ test-junit-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit
 
 test-junit:
-	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-core:test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
+
+test-junit-core-jenkins:
+	$(call sed_test_scripts)
+	@$(MAKE) -f $(THIS_FILE) test-junit-core
+
+test-junit-core:
+	./gradlew h2o-core:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-automl-jenkins:
 	$(call sed_test_scripts)
