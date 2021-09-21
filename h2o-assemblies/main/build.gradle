@@ -39,7 +39,7 @@ dependencies {
         compile project(":h2o-orc-parser")
     }
     compile project(":h2o-parquet-parser")
-    compile project(":h2o-k8s")
+    compile project(":h2o-k8s-int")
 }
 
 jar {

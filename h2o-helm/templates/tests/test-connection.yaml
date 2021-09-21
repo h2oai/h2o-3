@@ -35,7 +35,13 @@ spec:
           while [ "$clouded" != true ]
           do
               sleep 1
-              cloud_size=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' | jq '.cloud_size' )
+              response_code=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' -w "%{http_code}" -o cloud.info )
+              cat cloud.info
+              if [ "$response_code" -eq 403 ]; then
+                echo "Warning: We reached a non-leader node - this can happen if the readiness probe has not yet marked this node as 'not ready' but H2O is already clustered"
+              else
+                cloud_size=$( jq '.cloud_size' cloud.info )
+              fi
             if [ "$cloud_size" == {{.Values.h2o.nodeCount}} ]
             then
                 echo "H2O Cluster size is ${cloud_size}"
@@ -43,9 +49,11 @@ spec:
             fi
           done
           forbidden_codes=0
-          for (( node = 0; node < cloud_size; node++ )); do
-              node_address=$( curl '{{ include "h2o-helm.fullname" . }}-test-service:{{ .Values.service.port }}/3/Cloud' | jq ".nodes[${node}].ip_port" | cut -d '"' -f 2 )
-              echo "http://${node_address}/3/Cloud"
+          nodes=$(jq ".nodes[].ip_port" cloud.info | cut -d '"' -f 2)
+          echo "Nodes:\n$nodes"
+          for node_address in $nodes
+          do
+              echo "---> Testing node ${node_address} (http://${node_address}/3/Cloud)"
               response_code=$( curl -w "%{http_code}" -o /dev/null "http://${node_address}/3/Cloud" )
               echo "$response_code"
               if [ "$response_code" -eq 403 ]; then

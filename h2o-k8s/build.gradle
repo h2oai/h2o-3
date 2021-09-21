@@ -7,7 +7,7 @@ repositories {
 }
 
 dependencies {
-    compile project(":h2o-core")
+    compile project(":h2o-logging-impl-classic")
     compile 'org.nanohttpd:nanohttpd:2.3.1'
     compile 'org.nanohttpd:nanohttpd-webserver:2.3.1'
     compile 'org.nanohttpd:nanohttpd-nanolets:2.3.1'

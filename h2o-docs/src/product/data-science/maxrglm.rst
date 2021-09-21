@@ -203,7 +203,7 @@ Examples
 	.. code-tab:: python
 
 		import h2o
-		from estimators import H2OMaxRGLMEstimator
+		from h2o.estimators import H2OMaxRGLMEstimator
 		h2o.init()
 
 		# Import the prostate dataset:
@@ -218,7 +218,7 @@ Examples
 		maxrglm_model.train(x=predictors, y=response, training_frame=prostate)
 
 		# Find the best R2 value:
-		maxrglm_model.get_best_r2_values()
+		maxrglm_model.get_best_R2_values()
 
 
 
