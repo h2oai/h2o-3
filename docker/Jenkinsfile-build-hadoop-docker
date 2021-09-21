@@ -3,7 +3,8 @@
 final String NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
 final String REGISTRY_PREFIX = "${params.dockerRegistry}"
-final String IMAGE_NAME_PREFIX = "opsh2oai/h2o-3-hadoop"
+final String REGISTRY_PROJECT = "opsh2oai"
+final String IMAGE_NAME_PREFIX = "h2o-3-hadoop"
 final List INTERNAL_CLUSTER_HADOOPS = [
         [ distribution: "hdp-2.2", krb: false ], // 0xd6 cluster
         [ distribution: "hdp-2.4", krb: true  ], // 0xg5 cluster
@@ -80,7 +81,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
 
                         final String imageName = "${IMAGE_NAME_PREFIX}-${distribution.name}-${distribution.version}"
                         final boolean conflict = pipelineContext.getUtils()
-                                .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                                .dockerImageExistsInRegistry(this, params.dockerRegistry, REGISTRY_PROJECT, imageName, version)
                         if (conflict && !params.force) {
                             error "Tag ${imageName}:${version} already exists in the repository"
                         }
@@ -175,7 +176,7 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                         cleanWs()
     
                         final boolean conflict = pipelineContext.getUtils()
-                                .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                                .dockerImageExistsInRegistry(this, params.dockerRegistry, REGISTRY_PROJECT, imageName, version)
                         if (conflict && !params.force) {
                             error "Tag ${imageName}:${version} already exists in the repository"
                         }

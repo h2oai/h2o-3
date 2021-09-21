@@ -3,8 +3,9 @@
 final String NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
 final String DOCKER_STASH = 'h2o-3-k8s-docker-stash'
 final String REGISTRY_PREFIX = "${params.dockerRegistry}"
-final String IMAGE_NAME_PREFIX = "opsh2oai/h2o-3-k8s"
-final String IMAGE_NAME_PREFIX_RUNNER = "opsh2oai/h2o-3-k8s-runner"
+final String REGISTRY_PROJECT = "opsh2oai"
+final String IMAGE_NAME_PREFIX = "h2o-3-k8s"
+final String IMAGE_NAME_PREFIX_RUNNER = "h2o-3-k8s-runner"
 
 def pipelineContext = null
 def version = null
@@ -69,13 +70,13 @@ node(NODE_LABEL) {
             pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
 
             boolean conflict = pipelineContext.getUtils()
-                    .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                    .dockerImageExistsInRegistry(this, params.dockerRegistry, REGISTRY_PROJECT, imageName, version)
             if (conflict && !params.force) {
                 error "Tag ${imageName}:${version} already exists in the repository"
             }
             
             boolean conflictRunner = pipelineContext.getUtils()
-                    .dockerImageExistsInRegistry(this, params.dockerRegistry, imageNameRunner, version)
+                    .dockerImageExistsInRegistry(this, params.dockerRegistry, REGISTRY_PROJECT, imageNameRunner, version)
             if (conflictRunner && !params.force) {
                 error "Tag ${imageNameRunner}:${version} already exists in the repository"
             }
