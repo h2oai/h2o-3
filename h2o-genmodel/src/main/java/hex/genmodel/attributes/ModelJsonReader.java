@@ -50,9 +50,10 @@ public class ModelJsonReader {
     public static Table[] readTableArray(final JsonObject modelJson, final String tablePath) {
         Table[] tableArray;
         Objects.requireNonNull(modelJson);
-        JsonArray jsonArray = ((JsonArray) findInJson(modelJson, tablePath));
-        if (jsonArray == null)
+        JsonElement jsonElement = findInJson(modelJson, tablePath);
+        if (jsonElement.isJsonNull())
             return null;
+        JsonArray jsonArray = jsonElement.getAsJsonArray();
         tableArray = new Table[jsonArray.size()];
         for (int i = 0; i < jsonArray.size(); i++) {
             Table table = readTableJson(jsonArray.get(i).getAsJsonObject());
@@ -169,7 +170,7 @@ public class ModelJsonReader {
 
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
-        if (jsonSourceObject instanceof JsonNull) {
+        if (jsonSourceObject.isJsonNull()) {
             LOG.warn(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
@@ -498,7 +499,7 @@ public class ModelJsonReader {
      * @return True if the element exists under the given path in the target JSON, otherwise false
      */
     public static boolean elementExists(JsonElement jsonElement, String jsonPath){
-        final boolean isEmpty = findInJson(jsonElement, jsonPath) instanceof JsonNull;
+        final boolean isEmpty = findInJson(jsonElement, jsonPath).isJsonNull();
         return !isEmpty;
     }
 }
