@@ -2251,27 +2251,41 @@ public class DRFTest extends TestUtil {
                   .withDataForCol(3, responseData)
                   .build();
 
-          DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-          parms._train = train._key;
-          parms._response_column = "P";
-          parms._ntrees = 5;
-          parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
-          parms._max_categorical_levels = 50;
-          parms._seed = 12345;
-          parms._distribution = DistributionFamily.gaussian;
-          parms._mtries = -2;
-          parms._ntrees = 1;
-          parms._sample_rate = 1.0;
-          parms._check_constant_response = false;
-          parms._max_depth = 3;
-          parms._nfolds = 0;
+          Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+                  Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+                  Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                  Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+                  Model.Parameters.CategoricalEncodingScheme.Enum,
+                  Model.Parameters.CategoricalEncodingScheme.Binary,
+                  Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+                  Model.Parameters.CategoricalEncodingScheme.Eigen
+          };
 
-          DRF job = new DRF(parms);
-          DRFModel gbm = job.trainModel().get();
-          Scope.track_generic(gbm);
-          
-          MojoModel mojoModel = gbm.toMojo();
-          
+          for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+              DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+              parms._train = train._key;
+              parms._response_column = "P";
+              parms._ntrees = 5;
+              parms._categorical_encoding = scheme;
+              parms._max_categorical_levels = 50;
+              parms._seed = 12345;
+              parms._distribution = DistributionFamily.gaussian;
+              parms._mtries = -2;
+              parms._ntrees = 1;
+              parms._sample_rate = 1.0;
+              parms._check_constant_response = false;
+              parms._max_depth = 3;
+              parms._nfolds = 0;
+
+              DRF job = new DRF(parms);
+              DRFModel drfModel= job.trainModel().get();
+              assertNotNull(drfModel);
+              Scope.track_generic(drfModel);                     
+
+              // conversion to mojo shouldn't produce exception
+              MojoModel mojoModel = drfModel.toMojo();
+              assertNotNull(mojoModel);
+          }
       } finally {
           Scope.exit();
       }
