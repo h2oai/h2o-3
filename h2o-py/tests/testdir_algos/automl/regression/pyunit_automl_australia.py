@@ -43,7 +43,7 @@ def test_workaround_for_distribution():
             dist = m.params['distribution'] if 'distribution' in m.params else m.params['family'] if 'family' in m.params else None
             print("{}: distribution = {}".format(mn, dist))
     except:
-        h2o.rapids("(setproperty \"{}\" \"{}\")".format("sys.ai.h2o.algos.evaluate_auto_model_parameters", "false"))
+        h2o.rapids("(setproperty \"{}\" \"{}\")".format("sys.ai.h2o.automl.algo_parameters.all.enabled", "false"))
 
 
 pu.run_tests([
