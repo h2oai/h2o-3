@@ -93,22 +93,26 @@ def _get_custom_params(cls):
 
 
 def _estimator_supports_predict_proba(cls):
-    return cls.__name__ not in ['H2OAutoEncoderEstimator',
+    return cls.__name__ not in ['H2OANOVAGLMEstimator',
+                                'H2OAutoEncoderEstimator',
+                                'H2OExtendedIsolationForestEstimator',
                                 'H2OGeneralizedLowRankEstimator',
                                 'H2OIsolationForestEstimator',
-                                'H2OExtendedIsolationForestEstimator',
                                 'H2OKMeansEstimator',
+                                'H2OMaxRGLMEstimator',
                                 'H2OPrincipalComponentAnalysisEstimator',
                                 'H2OSingularValueDecompositionEstimator',
                                 'H2OTargetEncoderEstimator']
 
 
 def _estimator_supports_score(cls):
-    return cls.__name__ not in ['H2OAutoEncoderEstimator',
+    return cls.__name__ not in ['H2OANOVAGLMEstimator',
+                                'H2OAutoEncoderEstimator',
+                                'H2OExtendedIsolationForestEstimator',
                                 'H2OGeneralizedLowRankEstimator',
                                 'H2OIsolationForestEstimator',
-                                'H2OExtendedIsolationForestEstimator',
                                 'H2OKMeansEstimator',
+                                'H2OMaxRGLMEstimator',
                                 'H2OPrincipalComponentAnalysisEstimator',
                                 'H2OSingularValueDecompositionEstimator',
                                 'H2OTargetEncoderEstimator']
@@ -198,13 +202,15 @@ _excluded_estimators = (  # e.g. abstract classes
     'H2OTransformer',
 )
 _generic_only_estimators = (  # e.g. unsupervised and misc estimators
+    'H2OANOVAGLMEstimator',
     'H2OAggregatorEstimator',
     'H2OAutoEncoderEstimator',
+    'H2OExtendedIsolationForestEstimator',
     'H2OGeneralizedLowRankEstimator',
     'H2OGenericEstimator',
     'H2OIsolationForestEstimator',
-    'H2OExtendedIsolationForestEstimator',
     'H2OKMeansEstimator',
+    'H2OMaxRGLMEstimator',
     'H2OPrincipalComponentAnalysisEstimator',
     'H2OSingularValueDecompositionEstimator',
     'H2OTargetEncoderEstimator',
