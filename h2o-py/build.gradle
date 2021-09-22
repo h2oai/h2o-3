@@ -154,4 +154,5 @@ task cleanBuild(type: Delete) {
 //
 clean.dependsOn cleanBuild, cleanUpSmokeTest, cleanCoverageData
 buildDist.dependsOn buildClientDist // to have a predictable order of these 2 
+copyH2OJar.dependsOn ":h2o-assemblies:main:copyJar"
 build.dependsOn copyMainDist
