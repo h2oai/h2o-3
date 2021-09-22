@@ -317,7 +317,7 @@ public class Vec extends Keyed<Vec> {
 
   public boolean isBinary(){
     RollupStats rs = rollupStats();
-    return rs._isInt && rs._mins[0] >= 0 && rs._maxs[0] <= 1;
+    return rs._isInt && rs._mins[0] != rs._maxs[0] && rs._mins[0] >= 0 && rs._maxs[0] <= 1;
   }
 
   /**
@@ -327,7 +327,7 @@ public class Vec extends Keyed<Vec> {
   public boolean isBinaryOnes(){
       RollupStats rs = rollupStats();
       long zeroCount = rs._rows - rs._naCnt - rs._nzCnt;
-      return rs._isInt && rs._mins[0] >= -1 && rs._maxs[0] <= 1 && zeroCount == 0;
+      return rs._isInt && rs._mins[0] != rs._maxs[0] && rs._mins[0] >= -1 && rs._maxs[0] <= 1 && zeroCount == 0;
   }
 
   // ======= Create zero/constant Vecs ======
