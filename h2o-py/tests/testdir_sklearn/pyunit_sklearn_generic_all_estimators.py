@@ -45,23 +45,25 @@ def _get_data(format='numpy', n_classes=2):
 
 def _get_default_args(estimator_cls):
     defaults = dict(
+        # H2OANOVAGLMEstimator=dict(seed=seed),
         H2OAggregatorEstimator=dict(),
         H2OAutoEncoderEstimator=dict(),
         H2OCoxProportionalHazardsEstimator=dict(),
         H2ODeepLearningEstimator=dict(distribution='bernoulli', seed=seed, reproducible=True),
         H2OGenericEstimator=dict(),
+        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_columns=["C1"]),
         H2OGeneralizedLinearEstimator=dict(family='binomial', seed=seed),
         H2OGeneralizedLowRankEstimator=dict(k=2, seed=seed),
         H2OIsolationForestEstimator=dict(seed=seed),
         H2OExtendedIsolationForestEstimator=dict(seed=seed, sample_size=10),
         H2OKMeansEstimator=dict(seed=seed),
+        # H2OMaxRGLMEstimator=dict(seed=seed),
         H2ONaiveBayesEstimator=dict(seed=seed),
         H2OPrincipalComponentAnalysisEstimator=dict(k=2, seed=seed),
         H2OSingularValueDecompositionEstimator=dict(seed=seed),
         H2OSupportVectorMachineEstimator=dict(seed=seed),
         H2OTargetEncoderEstimator=dict(),
         H2OWord2vecEstimator=dict(),
-        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_columns = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(distribution='bernoulli', seed=seed))
 
