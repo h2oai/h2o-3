@@ -99,7 +99,6 @@ artifacts {
   archives shadowJar
 }
 
-
 //
 // Support current infrastructure by copying the resulting assembly into parent
 // project build directory
