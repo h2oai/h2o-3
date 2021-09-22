@@ -472,7 +472,6 @@ public class ModelJsonReader {
                 continue;
 
             if (result == null) {
-                result = JsonNull.INSTANCE;
                 break;
             }
 
