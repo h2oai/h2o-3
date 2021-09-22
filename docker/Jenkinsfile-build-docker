@@ -103,6 +103,9 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-r-${version}-jdk-${jdkVersion}"
             }
         }
+        // add python 16 manually, we dont need all JAVA_16xPYTHON_VERSIONS and JAVA_16xR_VERSION  images
+        // to be able run Java 16 on nightly
+        componentJdkImages += "dev-python-2.7-jdk-16" // FIXME can be deleted when Java 16 not run in NIGHTLY_REPEATED_STAGES
         buildInParallel(pipelineContext, componentJdkImages)
     }
 }
