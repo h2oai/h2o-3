@@ -12,7 +12,8 @@ buildscript {
     }
 }
 
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.gradle.jmh' // This plugin is not compatible with Gradle 8, upgrade to Gradle 8 friendly
+                                       // version of the plugin should help in the future
 apply plugin: "com.github.johnrengelman.shadow"
 
 
