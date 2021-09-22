@@ -8,6 +8,7 @@ import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.KeyValue;
 import hex.Model;
 import hex.ensemble.Metalearner;
+import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.glm.GLMModel;
@@ -84,7 +85,11 @@ public class StackedEnsembleStepsProvider
                     aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Cross-validation is disabled by the user and no blending frame was provided; skipping StackedEnsemble '%s'.", _id));
                     return false;
                 }
-
+                return !hasDoppelganger(keys);
+            }
+            
+            @SuppressWarnings("unchecked")
+            protected boolean hasDoppelganger(Key<Model>[] keys) {
                 Key<StackedEnsembleModel>[] seModels = Arrays
                         .stream(getTrainedModelsKeys())
                         .filter(k -> isStackedEnsemble(k))
@@ -92,13 +97,17 @@ public class StackedEnsembleStepsProvider
 
                 Set<Key> keySet = new HashSet<>(Arrays.asList(keys));
                 for (Key<StackedEnsembleModel> seKey: seModels) {
-                    final Key[] baseModels = seKey.get()._parms._base_models;
+                    StackedEnsembleModelStep seStep = (StackedEnsembleModelStep)aml().session().getModelingStep(seKey);
+                    if (seStep._metalearnerAlgo != _metalearnerAlgo) continue;
+                    
+                    final StackedEnsembleParameters seParams = seKey.get()._parms;
+                    final Key[] baseModels = seParams._base_models;
                     if (baseModels.length != keys.length) continue;
                     if (keySet.equals(new HashSet<>(Arrays.asList(baseModels))))
-                        return false; // We already have a SE with the same base models
+                        return true; // We already have a SE with the same base models
                 }
 
-                return true;
+                return false;
             }
 
             protected abstract Key<Model>[] getBaseModels();
@@ -109,8 +118,8 @@ public class StackedEnsembleStepsProvider
             }
 
             protected boolean isStackedEnsemble(Key<Model> key) {
-                return aml().session().getModelingStep(key).getAlgo() == Algo.StackedEnsemble;
-//                return key.toString().startsWith(_algo.name());
+                ModelingStep step = aml().session().getModelingStep(key);
+                return step != null && step.getAlgo() == Algo.StackedEnsemble;
             }
 
             @Override
@@ -371,6 +380,11 @@ public class StackedEnsembleStepsProvider
                     optionalSeSteps.add(new AllSEModelStep("all_gbm", Metalearner.Algorithm.gbm, optionalGroup, aml()));
                     optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xglm", optionalGroup, aml()) {
                         @Override
+                        protected boolean hasDoppelganger(Key<Model>[] keys) {
+                            return false;
+                        }
+
+                        @Override
                         protected void setMetalearnerParameters(StackedEnsembleParameters params) {
                             super.setMetalearnerParameters(params);
                             GLMModel.GLMParameters metalearnerParams = (GLMModel.GLMParameters) params._metalearner_parameters;
@@ -378,6 +392,11 @@ public class StackedEnsembleStepsProvider
                         }
                     });
                     optionalSeSteps.add(new AllSEModelStep("all_xglm", optionalGroup, aml()) {
+                        @Override
+                        protected boolean hasDoppelganger(Key<Model>[] keys) {
+                            return false;
+                        }
+
                         @Override
                         protected void setMetalearnerParameters(StackedEnsembleParameters params) {
                             super.setMetalearnerParameters(params);
