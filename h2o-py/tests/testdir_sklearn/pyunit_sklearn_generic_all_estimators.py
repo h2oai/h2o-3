@@ -70,14 +70,14 @@ def _get_default_args(estimator_cls):
 
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
-        H2OANOVAGLMEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        # H2OANOVAGLMEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OAutoEncoderEstimator=dict(n_classes=0, preds_as_vector=False, predict_proba=False, score=False),
         # H2ODeepLearningEstimator=dict(scores_may_differ=True),
         H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
         H2OExtendedIsolationForestEstimator=dict(predict_proba=False, score=False),
         H2OKMeansEstimator=dict(predict_proba=False, score=False),
-        H2OMaxRGLMEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
+        # H2OMaxRGLMEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OPrincipalComponentAnalysisEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OSingularValueDecompositionEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OTargetEncoderEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
