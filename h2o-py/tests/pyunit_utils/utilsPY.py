@@ -599,13 +599,12 @@ def run_tests(tests, run_in_isolation=True, init_options={}):
     #flatten in case of nested tests/test suites
     all_tests = reduce(lambda l, r: (l.extend(r) if isinstance(r, (list, tuple)) else l.append(r)) or l, tests, [])
     for test in all_tests:
-        if not(hasattr(test, 'tag') and (('H2OANOVAGLM' in test.tag) or ('H2OMaxRGLM' in test.tag))): # exclude AnovaGLM because it does not have score function
-            header = "Running {}{}".format(test.__name__, "" if not hasattr(test, 'tag') else " [{}]".format(test.tag))
-            print("\n"+('='*len(header))+"\n"+header)
-            if run_in_isolation:
-                standalone_test(test, init_options)
-            else:
-                test()
+        header = "Running {}{}".format(test.__name__, "" if not hasattr(test, 'tag') else " [{}]".format(test.tag))
+        print("\n"+('='*len(header))+"\n"+header)
+        if run_in_isolation:
+            standalone_test(test)
+        else:
+            test()
             
 def tag_test(test, tag):
     if tag is not None:
