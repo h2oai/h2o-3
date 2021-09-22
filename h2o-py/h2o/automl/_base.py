@@ -1,9 +1,13 @@
 import h2o
+from h2o.base import Keyed
+from h2o.exceptions import H2OValueError
+from h2o.job import H2OJob
 from h2o.model import ModelBase
-from h2o.utils.typechecks import assert_is_type
+from h2o.utils.typechecks import assert_is_type, is_type
 
 
 class H2OAutoMLBaseMixin:
+    
     def predict(self, test_data):
         """
         Predict on a dataset.
@@ -126,6 +130,27 @@ class H2OAutoMLBaseMixin:
         :return: an H2OFrame with detailed events occurred during the AutoML training.
         """
         pass
+    
+    def get_leaderboard(self, extra_columns=None):
+        """
+        Retrieve the leaderboard.
+        Contrary to the default leaderboard attached to the instance, this one can return columns other than the metrics.
+        :param extra_columns: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
+            Currently supported extensions are:
+            - 'ALL': adds all columns below.
+            - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
+            - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
+            - 'algo': column providing the algorithm name for each model.
+        :return: An H2OFrame representing the leaderboard.
+        :examples:
+        >>> aml = H2OAutoML(max_runtime_secs=30)
+        >>> aml.train(y=y, training_frame=train)
+        >>> lb_all = aml.get_leaderboard('ALL')
+        >>> lb_custom = aml.get_leaderboard(['predict_time_per_row_ms', 'training_time_ms'])
+        >>> lb_custom_sorted = lb_custom.sort(by='predict_time_per_row_ms')
+        """
+        assert isinstance(self, Keyed)
+        return _fetch_leaderboard(self.key, extra_columns)
 
     def get_best_model(self, algorithm=None, criterion=None):
         """
@@ -151,6 +176,7 @@ class H2OAutoMLBaseMixin:
         >>> gbm = aml.get_best_model("gbm")
         """
         from h2o.exceptions import H2OValueError
+        
         def _get_models(leaderboard):
             return [m[0] for m in
                     leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
@@ -196,3 +222,62 @@ class H2OAutoMLBaseMixin:
         picked_model = [model for model in models_in_default_order if model in selected_models][0]
 
         return h2o.get_model(picked_model)
+    
+    
+def _fetch_leaderboard(aml_id, extensions=None):
+    assert_is_type(extensions, None, str, [str])
+    extensions = ([] if extensions is None
+                  else [extensions] if is_type(extensions, str)
+    else extensions)
+    resp = h2o.api("GET /99/Leaderboards/%s" % aml_id, data=dict(extensions=extensions))
+    dest_key = resp['project_name'].split('@', 1)[0]+"_custom_leaderboard"
+    lb = _fetch_table(resp['table'], key=dest_key, progress_bar=False)
+    return h2o.assign(lb[1:], dest_key)
+
+
+def _fetch_table(table, key=None, progress_bar=True):
+    try:
+        # Intentionally mask the progress bar here since showing multiple progress bars is confusing to users.
+        # If any failure happens, revert back to user's original setting for progress and display the error message.
+        ori_progress_state = H2OJob.__PROGRESS_BAR__
+        H2OJob.__PROGRESS_BAR__ = progress_bar
+        # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
+        return h2o.H2OFrame(table.cell_values, destination_frame=key, column_names=table.col_header, column_types=table.col_types)
+    finally:
+        H2OJob.__PROGRESS_BAR__ = ori_progress_state
+
+
+def _fetch_state(aml_id, properties=None):
+    state_json = h2o.api("GET /99/AutoML/%s" % aml_id)
+    project_name = state_json["project_name"]
+    if project_name is None:
+        raise H2OValueError("No AutoML instance with id {}.".format(aml_id))
+
+    leaderboard_list = [key["name"] for key in state_json['leaderboard']['models']]
+    leader_id = leaderboard_list[0] if (leaderboard_list is not None and len(leaderboard_list) > 0) else None
+
+    should_fetch = lambda prop: properties is None or prop in properties
+
+    leader = None
+    if should_fetch('leader'):
+        leader = h2o.get_model(leader_id) if leader_id is not None else None
+
+    leaderboard = None
+    if should_fetch('leaderboard'):
+        leaderboard = _fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
+        leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
+
+    event_log = None
+    if should_fetch('event_log'):
+        event_log = _fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
+        event_log = h2o.assign(event_log[1:], project_name+"_eventlog")  # removing index and reassign id to ensure persistence on backend
+
+    return dict(
+        project_name=project_name,
+        json=state_json,
+        leader_id=leader_id,
+        leader=leader,
+        leaderboard=leaderboard,
+        event_log=event_log,
+    )
+
