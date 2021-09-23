@@ -19,7 +19,7 @@ public class ANOVAGLMModelV3 extends ModelSchemaV3<ANOVAGLMModel, ANOVAGLMModelV
     String transformed_columns_key;
 
     @API(help="ANOVA table frame key containing same results in the model summary.")
-    String anova_table_key;
+    String result_frame_key;
 
     @Override
     public ANOVAGLMModelOutputV3 fillFromImpl(ANOVAGLMModel.ANOVAGLMModelOutput impl) {

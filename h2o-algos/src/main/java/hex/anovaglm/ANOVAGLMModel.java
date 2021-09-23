@@ -55,9 +55,9 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * Return the ANOVA table as an H2OFrame per seb suggestion
    * @return H2O Frame containing the ANOVA table as in the model summary
    */
-  public Frame anovaTableFrame() {
-    assert _output._ANOVATableKey != null : "ANOVA Table Key is null";
-    return DKV.getGet(_output._ANOVATableKey);
+  public Frame resultFrame() {
+    assert _output._resultFramekey != null : "ANOVA Table Key is null";
+    return DKV.getGet(_output._resultFramekey);
   }
   
   public static class ANOVAGLMParameters extends Model.Parameters {
@@ -138,8 +138,8 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     Family _family;
     public String _transformed_columns_key;
     public Key<Frame> _transformedColumnKey;
-    public Key<Frame> _ANOVATableKey;
-    public String _anova_table_key;
+    public Key<Frame> _resultFramekey;
+    public String _result_frame_key;
     public TwoDimTable[] _coefficients_table;
 
     @Override
@@ -175,7 +175,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * @return
    */
   public TwoDimTable generateSummary(String[] modelNames, GLMModel[] glmModels, int[] degreeOfFreedom){
-    String[] names = new String[]{"Model", "family", "link", "SS", "DF", "MS", "F", "p-value"};
+    String[] names = new String[]{"model", "family", "link", "ss", "df", "ms", "f", "p_value"};
     String[] types = new String[]{"string", "string", "string", "double", "double", "double", "double", "double"};
     String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d",  "%d", "%d", "%d"};
     int numModel = glmModels.length;
@@ -214,8 +214,9 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
       _output._model_summary.set(rIndex, colInd, p_value);
       pValues[rIndex] = p_value;
     }
-    _output._ANOVATableKey = generateANOVATableFrame(names, modelNames, familyNames, linkNames, ss,
+    _output._resultFramekey = generateANOVATableFrame(names, modelNames, familyNames, linkNames, ss,
             Arrays.stream(degreeOfFreedom).asDoubleStream().toArray(), msA, fA, pValues);
+    _output._result_frame_key = _output._resultFramekey.toString();
     return _output._model_summary;
   }
 

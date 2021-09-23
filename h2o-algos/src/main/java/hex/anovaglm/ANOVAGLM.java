@@ -177,7 +177,7 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
         int numFrame2Delete = _parms._save_transformed_framekeys ? (_trainingFrames.length - 1) : _trainingFrames.length;
         removeFromDKV(_trainingFrames, numFrame2Delete);
         if (model != null) {
-          keepFrameKeys(keep, model._output._ANOVATableKey);
+          keepFrameKeys(keep, model._output._resultFramekey);
           if (_parms._save_transformed_framekeys)
             keepFrameKeys(keep, _transformedColsKey);
           else

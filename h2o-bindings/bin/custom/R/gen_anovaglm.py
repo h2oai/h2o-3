@@ -7,12 +7,13 @@ parms$response_column <- args$y
 """,
     module="""
 #' Extract and return ANOVA Table as an H2OFrame
-#'
-h2o.anovaTableFrame(model) {
+#' @param model an H2OANOVAGLM.
+#' @export 
+h2o.resultFrame <- function(model) {
   if (is(model, "H2OModel") && (model@algorithm=='anovaglm')) 
-    return(h2o.getFrame(model@model$anova_table_key))
+    return(h2o.getFrame(model@model$result_frame_key))
 }
-    """
+"""
 )
 
 doc = dict(

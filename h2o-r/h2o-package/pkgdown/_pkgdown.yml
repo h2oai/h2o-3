@@ -258,6 +258,7 @@ reference:
       - h2o.residual_deviance 
       - h2o.residual_dof
       - h2o.residual_analysis_plot
+      - h2o.resultFrame
       - h2o.rm 
       - h2o.rmse
       - h2o.rmsle
