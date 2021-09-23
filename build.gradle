@@ -91,6 +91,7 @@ ext {
       project(':h2o-logging-impl-log4j2'),
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'),
+      project(':h2o-k8s-int'),
       project(':h2o-genmodel-ext-deepwater'),
       project(':h2o-clustering')
     ]
@@ -132,7 +133,9 @@ ext {
       project(':h2o-logging-impl-classic'),
       project(':h2o-logging-impl-log4j2'),
       project(':h2o-genmodel-ext-jgrapht'),
-      project(':h2o-k8s'), 
+      project(':h2o-k8s'),
+      project(':h2o-k8s-int'),
+      project(':h2o-k8s-comp'),
       project(':h2o-genmodel-ext-deepwater'),
       project(':h2o-clustering')
     ]

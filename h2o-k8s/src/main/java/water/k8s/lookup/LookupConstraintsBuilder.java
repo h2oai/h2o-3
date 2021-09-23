@@ -1,6 +1,6 @@
 package water.k8s.lookup;
 
-import water.util.Log;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +11,9 @@ import java.util.List;
  * of {@link LookupConstraint} to meet user's requirements.
  */
 public class LookupConstraintsBuilder {
+
+    private static final Logger LOG = Logger.getLogger(KubernetesDnsLookup.class);
+
     private static final int K8S_DEFAULT_CLUSTERING_TIMEOUT_SECONDS = 180;
     private Integer timeoutSeconds;
     private Integer desiredClusterSize;
@@ -51,17 +54,17 @@ public class LookupConstraintsBuilder {
 
         // If there are no constraints set by the user via environment variables, use a sensible timeout.
         if (timeoutSeconds == null && desiredClusterSize == null) {
-            Log.info(String.format("No H2O Node discovery constraints set. Using default timeout of %d seconds.",
+            LOG.info(String.format("No H2O Node discovery constraints set. Using default timeout of %d seconds.",
                     K8S_DEFAULT_CLUSTERING_TIMEOUT_SECONDS));
             lookupConstraintList.add(new TimeoutConstraint(K8S_DEFAULT_CLUSTERING_TIMEOUT_SECONDS));
         }
 
         if (timeoutSeconds != null) {
-            Log.info(String.format("Timeout for node discovery is set to %d seconds.", timeoutSeconds));
+            LOG.info(String.format("Timeout for node discovery is set to %d seconds.", timeoutSeconds));
             lookupConstraintList.add(new TimeoutConstraint(timeoutSeconds));
         }
         if (desiredClusterSize != null) {
-            Log.info(String.format(String.format("Desired cluster size is set to %d nodes.", desiredClusterSize)));
+            LOG.info(String.format(String.format("Desired cluster size is set to %d nodes.", desiredClusterSize)));
             lookupConstraintList.add(new ClusterSizeConstraint(desiredClusterSize));
         }
         return lookupConstraintList;
