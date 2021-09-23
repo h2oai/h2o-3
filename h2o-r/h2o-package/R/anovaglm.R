@@ -365,3 +365,12 @@ h2o.anovaglm <- function(x,
   segment_models <- .h2o.segmentModelsJob('anovaglm', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+#' Extract and return ANOVA Table as an H2OFrame
+#'
+h2o.anovaTableFrame(model) {
+  if (is(model, "H2OModel") && (model@algorithm=='anovaglm')) 
+    return(h2o.getFrame(model@model$anova_table_key))
+}
+    

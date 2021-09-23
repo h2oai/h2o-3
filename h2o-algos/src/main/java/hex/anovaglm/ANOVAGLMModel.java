@@ -7,10 +7,12 @@ import hex.glm.GLMModel;
 import org.apache.commons.math3.distribution.FDistribution;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import static hex.anovaglm.ANOVAGLMUtils.generateGLMSS;
 import static hex.glm.GLMModel.GLMParameters.*;
@@ -47,6 +49,15 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     throw new UnsupportedOperationException("ANOVAGLM does not support scoring on data.  It only provide information" +
             " on predictor relevance");
+  }
+
+  /***
+   * Return the ANOVA table as an H2OFrame per seb suggestion
+   * @return H2O Frame containing the ANOVA table as in the model summary
+   */
+  public Frame anovaTableFrame() {
+    assert _output._ANOVATableKey != null : "ANOVA Table Key is null";
+    return DKV.getGet(_output._ANOVATableKey);
   }
   
   public static class ANOVAGLMParameters extends Model.Parameters {
@@ -127,6 +138,8 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     Family _family;
     public String _transformed_columns_key;
     public Key<Frame> _transformedColumnKey;
+    public Key<Frame> _ANOVATableKey;
+    public String _anova_table_key;
     public TwoDimTable[] _coefficients_table;
 
     @Override
@@ -167,7 +180,12 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d",  "%d", "%d", "%d"};
     int numModel = glmModels.length;
     int lastModelIndex = numModel-1;
+    String[] familyNames = new String[lastModelIndex];
+    String[] linkNames = new String[lastModelIndex];
     String[] rowHeaders = new String[lastModelIndex];
+    double[] pValues = new double[lastModelIndex];
+    double[] msA = new double[lastModelIndex];
+    double[] fA = new double[lastModelIndex];
     System.arraycopy(modelNames, 0, rowHeaders, 0, lastModelIndex);
     double[] ss = generateGLMSS(glmModels, _parms._family);
     long dofFullModel = glmModels[lastModelIndex]._output._training_metrics.residual_degrees_of_freedom();
@@ -181,19 +199,44 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
       _output._model_summary.set(rIndex, colInd++, modelNames[rIndex]);
       _output._model_summary.set(rIndex, colInd++, _parms._family.toString());
       _output._model_summary.set(rIndex, colInd++, _parms._link.toString());
+      familyNames[rIndex] = _parms._family.toString();
+      linkNames[rIndex] = _parms._link.toString();
       _output._model_summary.set(rIndex, colInd++, ss[rIndex]);
       _output._model_summary.set(rIndex, colInd++, degreeOfFreedom[rIndex]);
       double ms = ss[rIndex]/degreeOfFreedom[rIndex];
+      msA[rIndex] = ms;
       _output._model_summary.set(rIndex, colInd++, ms);
       FDistribution fdist = new FDistribution(degreeOfFreedom[rIndex], dofFullModel);
       double f = oneOverMse*ss[rIndex]/degreeOfFreedom[rIndex];
+      fA[rIndex] = f;
       _output._model_summary.set(rIndex, colInd++, f);
       double p_value = 1.0 - fdist.cumulativeProbability(f);
       _output._model_summary.set(rIndex, colInd, p_value);
+      pValues[rIndex] = p_value;
     }
+    _output._ANOVATableKey = generateANOVATableFrame(names, modelNames, familyNames, linkNames, ss,
+            Arrays.stream(degreeOfFreedom).asDoubleStream().toArray(), msA, fA, pValues);
     return _output._model_summary;
   }
 
+  public Key<Frame> generateANOVATableFrame(String[] colNames, String[] rowNames, String[] familyNames,
+                                            String[] linkNames, double[] ss, double[] dof, double[] msA, double[] fA,
+                                            double[] pValues) {
+    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+    Vec rNames = Vec.makeVec(rowNames, vg.addVec());
+    Vec fNames = Vec.makeVec(familyNames, vg.addVec());
+    Vec lNames = Vec.makeVec(linkNames, vg.addVec());
+    Vec sumSquares = Vec.makeVec(ss, vg.addVec());
+    Vec degOfFreedom = Vec.makeVec(dof, vg.addVec());
+    Vec msV = Vec.makeVec(msA, vg.addVec());
+    Vec fV = Vec.makeVec(fA, vg.addVec());
+    Vec pValuesV = Vec.makeVec(pValues, vg.addVec());
+    Frame anovaFrame = new Frame(Key.<Frame>make(), colNames, new Vec[]{rNames, fNames, lNames, sumSquares, 
+            degOfFreedom, msV, fV, pValuesV});
+    DKV.put(anovaFrame);
+    return anovaFrame._key;
+  }
+  
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);

@@ -1,4 +1,6 @@
-def class_extensions():
+rest_api_version = 3
+
+def class_extensions():        
     @property
     def Lambda(self):
         """DEPRECATED. Use ``self.lambda_`` instead"""
@@ -7,7 +9,13 @@ def class_extensions():
     @Lambda.setter
     def Lambda(self, value):
         self._parms["lambda"] = value
-
+        
+    def anova_table_frame(self):
+        keyString = self._model_json["output"]["anova_table_key"]
+        if keyString is None:
+            return None
+        else:
+            return h2o.get_frame(keyString)
 
 extensions = dict(
     __imports__="""import h2o""",

@@ -244,6 +244,39 @@ public class AnovaGLMBasicTest {
       Scope.exit();
     }
   }
+  
+  @Test 
+  public void testANOVATableFrame() {
+    try {
+      Scope.enter();
+      Frame train  = parseTestFile("smalldata/anovaGlm/poissonAnova.csv");
+      Scope.track(train);
+      ANOVAGLMModel.ANOVAGLMParameters params = new ANOVAGLMModel.ANOVAGLMParameters();
+      params._family = poisson;
+      params._link = log;
+      params._response_column = "response";
+      params._train = train._key;
+      params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+      ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
+      Frame anovaTable = anovaG.anovaTableFrame();
+      Scope.track(anovaTable);
+      Scope.track_generic(anovaG);
+      // compare and make sure anova table frame and model summary contains the same contents, testing only numerics
+      String[] rowHeaders = new String[]{"C1", "C2", "C1:C2"};
+      String[] colHeaders = anovaTable.names();
+      for (int rIndex=0; rIndex < rowHeaders.length; rIndex++) {
+        for (int cIndex=0; cIndex < colHeaders.length; cIndex++) {
+          if (colHeaders[cIndex].equals("DF"))
+            assertTrue(getModelSummaryIntField(anovaG, rowHeaders[rIndex], colHeaders[cIndex])==anovaTable.vec(cIndex).at(rIndex));
+          else if (anovaTable.vec(cIndex).isNumeric())
+          assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, rowHeaders[rIndex], colHeaders[cIndex])-
+                  anovaTable.vec(cIndex).at(rIndex))<1e-6);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
   /**
    * This test compare h2o result with R result for binomial family:

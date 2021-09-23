@@ -244,6 +244,7 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         self.highest_interaction_term = highest_interaction_term
         self.nparallelism = nparallelism
         self.type = type
+        self._parms["_rest_version"] = 3
 
     @property
     def training_frame(self):
@@ -778,3 +779,10 @@ class H2OANOVAGLMEstimator(H2OEstimator):
     @Lambda.setter
     def Lambda(self, value):
         self._parms["lambda"] = value
+
+    def anova_table_frame(self):
+        keyString = self._model_json["output"]["anova_table_key"]
+        if keyString is None:
+            return None
+        else:
+            return h2o.get_frame(keyString)

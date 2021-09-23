@@ -4,7 +4,15 @@ parms$training_frame <- training_frame
 args <- .verify_dataxy(training_frame, x, y)
 parms$ignored_columns <- args$x_ignore
 parms$response_column <- args$y
-"""
+""",
+    module="""
+#' Extract and return ANOVA Table as an H2OFrame
+#'
+h2o.anovaTableFrame(model) {
+  if (is(model, "H2OModel") && (model@algorithm=='anovaglm')) 
+    return(h2o.getFrame(model@model$anova_table_key))
+}
+    """
 )
 
 doc = dict(
