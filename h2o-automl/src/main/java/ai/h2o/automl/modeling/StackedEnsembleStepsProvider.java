@@ -372,10 +372,8 @@ public class StackedEnsembleStepsProvider
                     optionalSeSteps.add(new MonotonicSEModelStep("monotonic", optionalGroup, aml()));
                     optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family", optionalGroup, aml()));
                     optionalSeSteps.add(new AllSEModelStep("all", optionalGroup, aml()));
-                    if (Algo.XGBoost.enabled()) {
-                        optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xgboost", Metalearner.Algorithm.xgboost, optionalGroup, aml()));
-                        optionalSeSteps.add(new AllSEModelStep("all_xgboost", Metalearner.Algorithm.xgboost, optionalGroup, aml()));
-                    }
+                    optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xgboost", Metalearner.Algorithm.xgboost, optionalGroup, aml()));
+                    optionalSeSteps.add(new AllSEModelStep("all_xgboost", Metalearner.Algorithm.xgboost, optionalGroup, aml()));
                     optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_gbm", Metalearner.Algorithm.gbm, optionalGroup, aml()));
                     optionalSeSteps.add(new AllSEModelStep("all_gbm", Metalearner.Algorithm.gbm, optionalGroup, aml()));
                     optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xglm", optionalGroup, aml()) {
