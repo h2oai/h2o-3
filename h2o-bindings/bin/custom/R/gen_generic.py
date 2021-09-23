@@ -5,6 +5,20 @@ extensions = dict(
 if (is.null(model_key) && is.null(path)) stop("argument 'model_key' or 'path' must be provided")
 """,
     set_required_params="",
+    skip_default_set_params_for=["model_id", "path", "model_key"],
+    set_params="""
+if (!missing(model_id)) {
+  parms$model_id <- model_id
+} else if(!missing(path)) {
+  splited <- strsplit(path, "/")
+  parms$model_id <- strsplit(splited[length(split)-1], ".")[0]
+}
+if (!missing(model_key)) {
+  parms$model_key <- model_key
+} else if (!missing(path)) {
+  parms$path <- path
+}
+"""
 )
 
 

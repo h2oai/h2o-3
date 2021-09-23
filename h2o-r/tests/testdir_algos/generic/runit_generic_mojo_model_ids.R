@@ -21,6 +21,11 @@ test.model.generic.mojo.ids <- function() {
   print(mojo_model@model_id)
 
   expect_equal(mojo_model@model_id, original_model_id)
+
+  mojo_model <- h2o.import_mojo(mojo_original_path)
+  print(mojo_model@model_id)
+
+  expect_equal(mojo_model@model_id, original_model_id)
   
   # MOJO Upload
   print("Upload MOJO")
@@ -28,6 +33,11 @@ test.model.generic.mojo.ids <- function() {
   mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
   mojo_model_up <- h2o.upload_mojo(mojo_original_path, original_model_id)
   print(mojo_model_up@model_id)  
+
+  expect_equal(mojo_model_up@model_id, original_model_id)
+    
+  mojo_model_up <- h2o.upload_mojo(mojo_original_path)
+  print(mojo_model_up@model_id)
 
   expect_equal(mojo_model_up@model_id, original_model_id)
 

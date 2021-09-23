@@ -258,9 +258,14 @@ def gen_module(schema, algo):
     for p in extended_params:
         pname = p.get('pname')
         if pname == 'model_id':
+            if classname == "H2OGenericEstimator": 
+                yield "        if model_id is None and path is not None:"
+                yield "            path_split = path.split('/')"
+                yield "            model_id = path_split[len(path_split)-1].split('.')[0]"
             yield "        self._id = self._parms['model_id'] = model_id"
         else:
             yield "        self.%s = %s" % (pname, pname)
+            
     rest_api_version = get_customizations_for(algo, 'rest_api_version')
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version

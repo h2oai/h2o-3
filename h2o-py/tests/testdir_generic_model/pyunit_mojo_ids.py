@@ -37,9 +37,14 @@ def test_mojo_ids():
     print(mojo_model_from_file.model_id)
     assert_equals(mojo_model_from_file.model_id, original_model_id, "Ids should be the same.")
 
+    # Test initialize model_id from path
     mojo_model_up_wid = h2o.upload_mojo(original_model_filename)
     print(mojo_model_up_wid.model_id)
-    assert mojo_model_up_wid.model_id != original_model_id, "Ids should not be the same."
+    assert_equals(mojo_model_up_wid.model_id, original_model_id, "Ids should not be the same.")
+
+    mojo_model_im_wid = h2o.import_mojo(original_model_filename)
+    print(mojo_model_im_wid.model_id)
+    assert_equals(mojo_model_im_wid.model_id, original_model_id, "Ids should not be the same.")
     
     
 if __name__ == "__main__":
