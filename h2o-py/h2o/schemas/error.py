@@ -21,6 +21,7 @@ class H2OErrorV3(H2OSchema):
         super(H2OErrorV3, self).__init__()
         self.endpoint = None
         self.payload = None
+        self.show_stacktrace = True
 
     def __setitem__(self, key, value):
         if key in self._schema_attrs_.keys():
@@ -37,15 +38,16 @@ class H2OErrorV3(H2OSchema):
             if self.payload[1]: res += "    json: %r\n" % self.payload[1]
             if self.payload[2]: res += "    file: %r\n" % self.payload[2]
             if self.payload[3]: res += "    params: %r\n" % self.payload[3]
-        if self.stacktrace:
+        if self.show_stacktrace and self.stacktrace:
             res += "  Stacktrace: %s\n" % self._format_stacktrace(indent=6)
         return res
     
     def _format_stacktrace(self, indent=4, top=10):
-        if self.stacktrace:
-            return "\n".join(("%s%s" % ((indent*" " if i > 0 else ""), l.strip()) 
-                              for i, l in enumerate(self.stacktrace) 
-                              if i < top))
+        if not self.stacktrace:
+            return ""
+        return "\n".join(("%s%s" % ((indent*" " if i > 0 else ""), l.strip()) 
+                          for i, l in enumerate(self.stacktrace) 
+                          if i < top))
 
 
 class H2OModelBuilderErrorV3(H2OErrorV3):
