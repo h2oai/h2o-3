@@ -79,8 +79,8 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
                         classRegex[k] = regex;
                     }
                 }
-                for (int l = 0; l < ruleEnsemble.rules.length; l++) {
-                    for (int k = 0; k < nclasses; k++) {
+                for (int k = 0; k < nclasses; k++) {
+                    for (int l = 0; l < ruleEnsemble.rules.length; l++) {
                         if (ruleEnsemble.rules[l].varName.matches(classRegex[k])) {
                             if (filteredClassRules[k] == null) {
                                 filteredClassRules[k] = new ArrayList<>();
@@ -88,9 +88,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
                             filteredClassRules[k].add(ruleEnsemble.rules[l]);
                         }
                     }
-                }
-                // filtered ordered rules // class 0 ... class k
-                for (int k = 0; k < nclasses; k++) {
+                    // filtered ordered rules // class 0 ... class k
                     filteredRules.addAll(filteredClassRules[k]);
                 }
                 
