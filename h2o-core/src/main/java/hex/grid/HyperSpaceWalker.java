@@ -527,6 +527,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         private Map<String, Object[]> _currentHyperParams = _hyperParams;
         private String[] _currentHyperParamNames = _hyperParamNames;
 
+        private boolean _exhausted = false;
+
         // TODO: override into a common subclass:
         @Override
         public MP nextModelParameters() {
@@ -569,7 +571,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           //
           // _currentPermutationNum is 1-based
           return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
-                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
+                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models()) &&
+                  !_exhausted
           );
         }
 
@@ -589,8 +592,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           
           int[] hyperparamIndices = new int[_currentHyperParamNames.length];
           
-          do {
-            if(_hyperParamSubspaces.length != 0) {
+          for (int j=0; j < Math.max(1e4, _maxHyperSpaceSize); j++) {
+            if (_hyperParamSubspaces.length != 0) {
               _currentSubspace = _random.nextInt(_hyperParamSubspaces.length);
               _currentHyperParams = mergeHashMaps(_hyperParams, _hyperParamSubspaces[_currentSubspace]);
               _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
@@ -600,9 +603,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               hyperparamIndices[i] = _random.nextInt(_currentHyperParams.get(_currentHyperParamNames[i]).length);
             }
             // check for aliases and loop if we've visited this combo before
-          } while (_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentSubspace)));
-          
-          return hyperparamIndices;
+           if (!_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentSubspace)))
+            return hyperparamIndices;
+          }
+
+          _exhausted = true;
+          return null;
         } // nextModel
 
       }; // anonymous HyperSpaceIterator class

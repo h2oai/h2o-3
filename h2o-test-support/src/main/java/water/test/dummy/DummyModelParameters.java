@@ -20,4 +20,16 @@ public class DummyModelParameters extends Model.Parameters {
   @Override public String algoName() { return "dummymodelbuilder"; }
   @Override public String javaName() { return DummyModelBuilder.class.getName(); }
   @Override public long progressUnits() { return 1; }
+
+  // Used for HyperSpaceWalkerTest - XGBoost's combination of parameters ended up making an infinite loop due to hash collision
+  public int _max_depth;
+  public double _min_rows;
+  public double _sample_rate;
+  public double _col_sample_rate;
+  public double _col_sample_rate_per_tree;
+  public String _booster;
+  public float _reg_lambda;
+  public float _reg_alpha;
+  public float _scale_pos_weight;
+  public float _max_delta_step;
 }
