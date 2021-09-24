@@ -28,7 +28,7 @@ H2O algorithms will treat a problem as a classification problem if the column ty
 		# Change the column type back to numeric:
 		cars_df["cylinders"] <- as.numeric(cars_df["cylinders"])
 		# Verify that the column is now numeric and not a factor:
-		print(h2o.isfactor(cars_df["cylinders"])))
+		print(h2o.isfactor(cars_df["cylinders"]))
 		#FALSE
 		print(h2o.isnumeric(cars_df["cylinders"]))
 		#TRUE
