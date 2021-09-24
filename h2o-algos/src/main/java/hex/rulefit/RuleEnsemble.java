@@ -33,8 +33,7 @@ public class RuleEnsemble extends Iced {
                         regex +=  "_" + classNames[k];
                     }
                     String finalRegex = regex;
-                    List<Rule> filteredRules = Arrays.asList(rules)
-                            .stream()
+                    List<Rule> filteredRules = Arrays.stream(rules)
                             .filter(rule -> rule.varName.matches(finalRegex))
                             .collect(Collectors.toList());
 
