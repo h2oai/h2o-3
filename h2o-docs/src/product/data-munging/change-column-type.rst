@@ -68,6 +68,9 @@ H2O algorithms will treat a problem as a classification problem if the column ty
 		print(cars_df['cylinders'].isnumeric())
 		#[True]
 
+		# Reload data:
+		cars_df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
 		# Change multiple columns to factors:
 		cars_df[['cylinders','economy_20mpg']] = cars_df[['cylinders','economy_20mpg']].asfactor()
 
