@@ -42,12 +42,11 @@ class H2OErrorV3(H2OSchema):
             res += "  Stacktrace: %s\n" % self._format_stacktrace(indent=6)
         return res
     
-    def _format_stacktrace(self, indent=4, top=10):
+    def _format_stacktrace(self, indent=4, head=10):
         if not self.stacktrace:
             return ""
-        return "\n".join(("%s%s" % ((indent*" " if i > 0 else ""), l.strip()) 
-                          for i, l in enumerate(self.stacktrace) 
-                          if i < top))
+        return "\n".join(("%s%s" % ((indent*' ' if i > 0 else ""), l.strip())
+                          for i, l in enumerate(self.stacktrace[:head])))
 
 
 class H2OModelBuilderErrorV3(H2OErrorV3):
@@ -59,9 +58,7 @@ class H2OModelBuilderErrorV3(H2OErrorV3):
         for k, v in self._props.items():
             if k in {"exception_type"}: continue
             if k == "stacktrace":
-                res += "    stacktrace =\n"
-                for line in v:
-                    res += "        %s\n" % line.strip()
+                res += "    stacktrace = %s\n" % self._format_stacktrace(indent=8, head=None)
             else:
                 res += "    %s = %r\n" % (k, v)
         return res
