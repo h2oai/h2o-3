@@ -89,21 +89,21 @@ public class StackedEnsembleStepsProvider
             }
             
             @SuppressWarnings("unchecked")
-            protected boolean hasDoppelganger(Key<Model>[] keys) {
+            protected boolean hasDoppelganger(Key<Model>[] baseModelsKeys) {
                 Key<StackedEnsembleModel>[] seModels = Arrays
                         .stream(getTrainedModelsKeys())
                         .filter(k -> isStackedEnsemble(k))
                         .toArray(Key[]::new);
 
-                Set<Key> keySet = new HashSet<>(Arrays.asList(keys));
+                Set<Key> keySet = new HashSet<>(Arrays.asList(baseModelsKeys));
                 for (Key<StackedEnsembleModel> seKey: seModels) {
                     StackedEnsembleModelStep seStep = (StackedEnsembleModelStep)aml().session().getModelingStep(seKey);
                     if (seStep._metalearnerAlgo != _metalearnerAlgo) continue;
                     
                     final StackedEnsembleParameters seParams = seKey.get()._parms;
-                    final Key[] baseModels = seParams._base_models;
-                    if (baseModels.length != keys.length) continue;
-                    if (keySet.equals(new HashSet<>(Arrays.asList(baseModels))))
+                    final Key[] seBaseModels = seParams._base_models;
+                    if (seBaseModels.length != baseModelsKeys.length) continue;
+                    if (keySet.equals(new HashSet<>(Arrays.asList(seBaseModels))))
                         return true; // We already have a SE with the same base models
                 }
 
@@ -378,7 +378,7 @@ public class StackedEnsembleStepsProvider
                     optionalSeSteps.add(new AllSEModelStep("all_gbm", Metalearner.Algorithm.gbm, optionalGroup, aml()));
                     optionalSeSteps.add(new BestOfFamilySEModelStep("best_of_family_xglm", optionalGroup, aml()) {
                         @Override
-                        protected boolean hasDoppelganger(Key<Model>[] keys) {
+                        protected boolean hasDoppelganger(Key<Model>[] baseModelsKeys) {
                             return false;
                         }
 
@@ -391,8 +391,14 @@ public class StackedEnsembleStepsProvider
                     });
                     optionalSeSteps.add(new AllSEModelStep("all_xglm", optionalGroup, aml()) {
                         @Override
-                        protected boolean hasDoppelganger(Key<Model>[] keys) {
-                            return false;
+                        protected boolean hasDoppelganger(Key<Model>[] baseModelsKeys) {
+                            Set<String> modelTypes = new HashSet<>();
+                            for (Key<Model> key : baseModelsKeys) {
+                                String modelType = getModelType(key);
+                                if (modelTypes.contains(modelType)) return false;
+                                modelTypes.add(modelType);
+                            }
+                            return true;
                         }
 
                         @Override
