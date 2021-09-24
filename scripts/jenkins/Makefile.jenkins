@@ -51,6 +51,11 @@ lookup-automl-tests: init-lookup
 	mkdir -p h2o-{r,py}/tests
 	find h2o-r/tests -name '*automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+	
+lookup-automl-smoke-tests: init-lookup
+	mkdir -p h2o-{r,py}/tests
+	find h2o-r/tests -name '*SMOKE_automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -name '*SMOKE_automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
 lookup-fault-tolerance-tests:
 	mkdir -p h2o-{r,py}/tests
@@ -94,6 +99,9 @@ test-pyunit-xgboost-stress:
 test-pyunit-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt
 
+test-pyunit-automl-smoke-noxgb: lookup-automl-smoke-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 4g --jvm.opts '-Dsys.ai.h2o.ext.core.toggle.XGBoost=false' --testlist .lookup.txt
+
 test-pyunit-fault-tolerance: init-lookup lookup-fault-tolerance-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --numnodes 3 --jvm.xmx 4g --testlist .lookup.txt
 
@@ -123,6 +131,9 @@ test-r-small-client-mode-attack: lookup-automl-tests
 
 test-r-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
+
+test-r-automl-smoke-noxgb: lookup-automl-smoke-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 4g --jvm.opts '-Dsys.ai.h2o.ext.core.toggle.XGBoost=false' --testlist .lookup.txt
 
 test-r-client-mode-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
