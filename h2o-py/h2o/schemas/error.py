@@ -57,7 +57,7 @@ class H2OModelBuilderErrorV3(H2OErrorV3):
         res = "ModelBuilderErrorV3  (%s):\n" % self.exception_type
         for k, v in self._props.items():
             if k in {"exception_type"}: continue
-            if k == "stacktrace":
+            if k == "stacktrace" and self.show_stacktrace:
                 res += "    stacktrace = %s\n" % self._format_stacktrace(indent=8, head=None)
             else:
                 res += "    %s = %r\n" % (k, v)
