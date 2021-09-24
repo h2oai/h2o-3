@@ -11,49 +11,69 @@ H2O algorithms will treat a problem as a classification problem if the column ty
 		library(h2o)
 		h2o.init()
 
-		# import the boston housing dataset:
-		boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+		# Import the cars dataset:
+		cars_df <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-		# check the column type for the `chas` column
-		h2o.isnumeric(boston["chas"])
-		[1] TRUE
+		# Check the column type for the "cylinders" column:
+		print(h2o.isnumeric(cars_df["cylinders"]))
+		#TRUE
 
-		# change the column type to a factor
-		boston["chas"] <- as.factor(boston["chas"])
-		# verify that the column is now a factor
-		h2o.isfactor(boston["chas"])
-		[1] TRUE
+		# Change the column type to a factor:
+		cars_df["cylinders"] <- as.factor(cars_df["cylinders"])
 
-		# change the column type back to numeric
-		boston["chas"] <- as.numeric(boston["chas"])
-		# verify that the column is numeric and not a factor
-		h2o.isfactor(boston["chas"])
-		[1] FALSE
-		h2o.isnumeric(boston["chas"])
-		[1] TRUE
+		# Verify that the column is now a factor:
+		print(h2o.isfactor(cars_df["cylinders"]))
+		#TRUE
+
+		# Change the column type back to numeric:
+		cars_df["cylinders"] <- as.numeric(cars_df["cylinders"])
+		# Verify that the column is now numeric and not a factor:
+		print(h2o.isfactor(cars_df["cylinders"])))
+		#FALSE
+		print(h2o.isnumeric(cars_df["cylinders"]))
+		#TRUE
+
+		# Change multiple columns to factors:
+		cars_df[c("cylinders","economy_20mpg")] <- as.factor(cars_df[c("cylinders","economy_20mpg")])
+
+		# Verify that the columns are now factors:
+		print(h2o.isfactor(cars_df[c("cylinders","economy_20mpg")]))
+		# TRUE TRUE
+
 
    .. code-tab:: python
 
 		import h2o
-		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 		h2o.init()
 
-		# import the boston dataset:
-		boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+		# Import the cars dataset:
+		cars_df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-		# check the column type for the `chas` column
-		boston["chas"].isnumeric()
-		[True]
-		# change the column type to a factor
-		boston['chas'] = boston['chas'].asfactor()
-		# verify that the column is now a factor
-		boston["chas"].isfactor()
-		[True]
+		# Check the column type for the 'cylinders' column:
+		print(cars_df['cylinders'].isnumeric())
+		#[True]
 
-		# change the column type back to numeric
-		boston["chas"] = boston["chas"].asnumeric()
-		# verify that the column is numeric and not a factor
-		boston["chas"].isfactor()
-		[False]
-		boston["chas"].isnumeric()
-		[True]
+		# Change the column type to a factor:
+		cars_df['cylinders'] = cars_df['cylinders'].asfactor()
+
+		# Verify that the column is now a factor:
+		print(cars_df['cylinders'].isfactor())
+		#[True]
+
+		# Change the column type back to numeric:
+		cars_df["cylinders"] = cars_df["cylinders"].asnumeric()
+		# Verify that the column is now numeric and not a factor:
+		print(cars_df['cylinders'].isfactor())
+		#[False]
+		print(cars_df['cylinders'].isnumeric())
+		#[True]
+
+		# Change multiple columns to factors:
+		cars_df[['cylinders','economy_20mpg']] = cars_df[['cylinders','economy_20mpg']].asfactor()
+
+		# Verify that the columns are now factors:
+		print(cars_df[['cylinders','economy_20mpg']].isfactor())
+		# [True, True]
+
+
+		
