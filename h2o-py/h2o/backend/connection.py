@@ -815,6 +815,7 @@ class H2OConnection(h2o_meta()):
 
         # Client errors (400 = "Bad Request", 404 = "Not Found", 412 = "Precondition Failed")
         if status_code in {400, 404, 412} and isinstance(data, H2OErrorV3):
+            data.show_stacktrace = False
             raise H2OResponseError(data)
 
         # Server errors (notably 500 = "Server Error")

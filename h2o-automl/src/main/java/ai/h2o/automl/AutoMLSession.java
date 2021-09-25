@@ -73,7 +73,7 @@ public class AutoMLSession extends Lockable<AutoMLSession> {
                 throw new IllegalArgumentException("Missing provider for modeling steps '"+providerName+"'");
             }
             ModelingSteps steps = provider.newInstance(_aml);
-            _availableStepsByProviderName.put(providerName, steps);
+            if (steps != null) _availableStepsByProviderName.put(providerName, steps);
         }
         return _availableStepsByProviderName.get(providerName);
     }
