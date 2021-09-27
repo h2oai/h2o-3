@@ -66,9 +66,6 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "stopping_metric",
             "stopping_tolerance",
             // dead unused args forced here by backwards compatibility, remove in V4
-            "balance_classes",
-            "class_sampling_factors",
-            "max_after_balance_size",
             "max_confusion_matrix_size",
             "max_runtime_secs",
             "custom_metric_func",
@@ -191,29 +188,6 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help="A list of pairwise (first order) column interactions.", direction=Direction.INPUT, level=Level.expert)
     public StringPairV3[] interaction_pairs;
-
-    // dead unused args, formely inherited from supervised model schema
-    /**
-     * For imbalanced data, balance training data class counts via
-     * over/under-sampling. This can result in improved predictive accuracy.
-     */
-    @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).", level = API.Level.secondary, direction = API.Direction.INOUT)
-    public boolean balance_classes;
-
-    /**
-     * Desired over/under-sampling ratios per class (lexicographic order).
-     * Only when balance_classes is enabled.
-     * If not specified, they will be automatically computed to obtain class balance during training.
-     */
-    @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.", level = API.Level.expert, direction = API.Direction.INOUT)
-    public float[] class_sampling_factors;
-
-    /**
-     * When classes are balanced, limit the resulting dataset size to the
-     * specified multiple of the original dataset size.
-     */
-    @API(help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires balance_classes.", /* dmin=1e-3, */ level = API.Level.expert, direction = API.Direction.INOUT)
-    public float max_after_balance_size;
 
     /** For classification models, the maximum size (in terms of classes) of
      *  the confusion matrix for it to be printed. This option is meant to

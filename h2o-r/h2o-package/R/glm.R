@@ -116,12 +116,6 @@
 #'        Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
-#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        FALSE.
-#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-#'        be automatically computed to obtain class balance during training. Requires balance_classes.
-#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-#'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param generate_scoring_history \code{Logical}. If set to true, will generate scoring history for GLM.  This may significantly slow down the
@@ -231,9 +225,6 @@ h2o.glm <- function(x,
                     stopping_rounds = 0,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
-                    balance_classes = FALSE,
-                    class_sampling_factors = NULL,
-                    max_after_balance_size = 5.0,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL,
                     generate_scoring_history = FALSE,
@@ -382,12 +373,6 @@ h2o.glm <- function(x,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
-  if (!missing(balance_classes))
-    parms$balance_classes <- balance_classes
-  if (!missing(class_sampling_factors))
-    parms$class_sampling_factors <- class_sampling_factors
-  if (!missing(max_after_balance_size))
-    parms$max_after_balance_size <- max_after_balance_size
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
@@ -481,9 +466,6 @@ h2o.glm <- function(x,
                                     stopping_rounds = 0,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
-                                    balance_classes = FALSE,
-                                    class_sampling_factors = NULL,
-                                    max_after_balance_size = 5.0,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
                                     generate_scoring_history = FALSE,
@@ -637,12 +619,6 @@ h2o.glm <- function(x,
     parms$stopping_metric <- stopping_metric
   if (!missing(stopping_tolerance))
     parms$stopping_tolerance <- stopping_tolerance
-  if (!missing(balance_classes))
-    parms$balance_classes <- balance_classes
-  if (!missing(class_sampling_factors))
-    parms$class_sampling_factors <- class_sampling_factors
-  if (!missing(max_after_balance_size))
-    parms$max_after_balance_size <- max_after_balance_size
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))

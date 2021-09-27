@@ -55,9 +55,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
                  stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
                  early_stopping=False,  # type: bool
                  stopping_tolerance=0.001,  # type: float
-                 balance_classes=False,  # type: bool
-                 class_sampling_factors=None,  # type: Optional[List[float]]
-                 max_after_balance_size=5.0,  # type: float
                  max_runtime_secs=0.0,  # type: float
                  save_transformed_framekeys=False,  # type: bool
                  highest_interaction_term=0,  # type: int
@@ -176,18 +173,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
                is not at least this much)
                Defaults to ``0.001``.
         :type stopping_tolerance: float
-        :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
-               Defaults to ``False``.
-        :type balance_classes: bool
-        :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
-               specified, sampling factors will be automatically computed to obtain class balance during training.
-               Requires balance_classes.
-               Defaults to ``None``.
-        :type class_sampling_factors: List[float], optional
-        :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
-               less than 1.0). Requires balance_classes.
-               Defaults to ``5.0``.
-        :type max_after_balance_size: float
         :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
                Defaults to ``0.0``.
         :type max_runtime_secs: float
@@ -236,9 +221,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         self.stopping_metric = stopping_metric
         self.early_stopping = early_stopping
         self.stopping_tolerance = stopping_tolerance
-        self.balance_classes = balance_classes
-        self.class_sampling_factors = class_sampling_factors
-        self.max_after_balance_size = max_after_balance_size
         self.max_runtime_secs = max_runtime_secs
         self.save_transformed_framekeys = save_transformed_framekeys
         self.highest_interaction_term = highest_interaction_term
@@ -653,50 +635,6 @@ class H2OANOVAGLMEstimator(H2OEstimator):
     def stopping_tolerance(self, stopping_tolerance):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
-
-    @property
-    def balance_classes(self):
-        """
-        Balance training data class counts via over/under-sampling (for imbalanced data).
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("balance_classes")
-
-    @balance_classes.setter
-    def balance_classes(self, balance_classes):
-        assert_is_type(balance_classes, None, bool)
-        self._parms["balance_classes"] = balance_classes
-
-    @property
-    def class_sampling_factors(self):
-        """
-        Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-        be automatically computed to obtain class balance during training. Requires balance_classes.
-
-        Type: ``List[float]``.
-        """
-        return self._parms.get("class_sampling_factors")
-
-    @class_sampling_factors.setter
-    def class_sampling_factors(self, class_sampling_factors):
-        assert_is_type(class_sampling_factors, None, [float])
-        self._parms["class_sampling_factors"] = class_sampling_factors
-
-    @property
-    def max_after_balance_size(self):
-        """
-        Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes.
-
-        Type: ``float``, defaults to ``5.0``.
-        """
-        return self._parms.get("max_after_balance_size")
-
-    @max_after_balance_size.setter
-    def max_after_balance_size(self, max_after_balance_size):
-        assert_is_type(max_after_balance_size, None, float)
-        self._parms["max_after_balance_size"] = max_after_balance_size
 
     @property
     def max_runtime_secs(self):
