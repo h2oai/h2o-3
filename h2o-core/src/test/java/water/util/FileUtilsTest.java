@@ -5,11 +5,14 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.runner.RunWith;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
+import java.util.Arrays;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -25,6 +28,32 @@ public class FileUtilsTest {
     @Rule
     public EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
+    @Test
+    public void testFileDelete() throws Exception {
+        // Absolute path
+        String absPath = new File(System.getProperty("user.dir")).getAbsolutePath();
+        
+        // Set up directory with a file + subdirectory with a file
+        File mainDir = new File(absPath + "/tmp_h2o_fileutil_delete_test");
+        File fileMainDir = new File(mainDir.getAbsolutePath(), "test_main.txt");
+        File subDir = new File(mainDir.getAbsolutePath(), "sub_dir");
+        File subDirFile = new File(subDir.getAbsolutePath(), "test_sub.txt");
+        
+        // Ensure directories were just created (should not already exist) and can delete all contents of main directory
+        boolean mainDirCreated = mainDir.mkdirs();
+        boolean mainDirFileCreated = fileMainDir.mkdirs();
+        boolean subDirCreated = subDir.mkdirs();
+        boolean subDirFileCreated = subDirFile.mkdirs();
+        if (mainDirCreated && mainDirFileCreated && subDirCreated && subDirFileCreated) {
+            FileUtils.delete(mainDir);
+            boolean fileExists = mainDir.exists();
+            assertFalse(fileExists);
+        } else {
+            throw new Exception("Path, " + mainDir + ", was not cleaned up in previous run. The following file(s) & " +
+                    "sub-directories were found: " + Arrays.toString(mainDir.list()));
+        }
+    }
+    
     @Test
     public void testFindFileInPredefinedPath() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         final Method testedMethod = FileUtils.class.getDeclaredMethod("findFileInPredefinedPath",
