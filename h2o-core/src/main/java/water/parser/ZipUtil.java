@@ -21,7 +21,7 @@ import java.util.zip.*;
 
 import static water.fvec.FileVec.getPathForKey;
 
-abstract class ZipUtil {
+public abstract class ZipUtil {
 
   public enum Compression { NONE, ZIP, GZIP }
 
@@ -35,6 +35,12 @@ abstract class ZipUtil {
   static byte[] getFirstUnzippedBytes(byte[] bits) {
     ZipUtil.Compression guessedCompression = guessCompressionMethod(bits);
     return unzipBytes(bits, guessedCompression, FileVec.DFLT_CHUNK_SIZE);
+  }
+
+  public static boolean isCompressed(ByteVec bv) {
+    byte[] bits = bv.getFirstBytes();
+    ZipUtil.Compression guessedCompression = guessCompressionMethod(bits);
+    return guessedCompression != Compression.NONE;
   }
 
   /**

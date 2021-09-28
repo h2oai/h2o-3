@@ -1,6 +1,7 @@
 package hex.genmodel.descriptor;
 
 import hex.ModelCategory;
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 
 import java.io.Serializable;
@@ -18,6 +19,10 @@ public class ModelDescriptorBuilder {
      */
     public static ModelDescriptor makeDescriptor(final MojoModel mojoModel, final String fullAlgorithmName) {
         return new MojoModelDescriptor(mojoModel, fullAlgorithmName);
+    }
+
+    public static ModelDescriptor makeDescriptor(final GenModel pojoModel) {
+        return new PojoModelDescriptor(pojoModel);
     }
 
     public static class MojoModelDescriptor implements ModelDescriptor, Serializable {
@@ -148,6 +153,136 @@ public class ModelDescriptorBuilder {
         @Override
         public String uuid() {
             return _uuid;
+        }
+
+        @Override
+        public String timestamp() {
+            return null;
+        }
+
+        @Override
+        public String[] getOrigNames() {
+            return _origNames;
+        }
+
+        @Override
+        public String[][] getOrigDomains() {
+            return _origDomains;
+        }
+    }
+
+    public static class PojoModelDescriptor implements ModelDescriptor, Serializable {
+        // Mandatory
+        private final hex.ModelCategory _category;
+        private final boolean _supervised;
+        private final int _nfeatures;
+        private final int _nclasses;
+        private final String _offsetColumn;
+        private final String[][] _domains;
+        private final String[][] _origDomains;
+        private final String[] _names;
+        private final String[] _origNames;
+
+        private PojoModelDescriptor(final GenModel mojoModel) {
+            _category = mojoModel.getModelCategory();
+            _supervised = mojoModel.isSupervised();
+            _nfeatures = mojoModel.nfeatures();
+            _nclasses = mojoModel.getNumResponseClasses();
+            _offsetColumn = mojoModel.getOffsetName();
+            _domains = mojoModel.getDomainValues();
+            _origDomains = mojoModel.getOrigDomainValues();
+            _names = mojoModel.getNames();
+            _origNames = mojoModel.getOrigNames();
+        }
+
+        @Override
+        public String[][] scoringDomains() {
+            return _domains;
+        }
+
+        @Override
+        public String projectVersion() {
+            return "unknown";
+        }
+
+        @Override
+        public String algoName() {
+            return "pojo";
+        }
+
+        @Override
+        public String algoFullName() {
+            return "POJO Scorer";
+        }
+
+        @Override
+        public String offsetColumn() {
+            return _offsetColumn;
+        }
+
+        @Override
+        public String weightsColumn() {
+            return null;
+        }
+
+        @Override
+        public String foldColumn() {
+            return null;
+        }
+
+        @Override
+        public ModelCategory getModelCategory() {
+            return _category;
+        }
+
+        @Override
+        public boolean isSupervised() {
+            return _supervised;
+        }
+
+        @Override
+        public int nfeatures() {
+            return _nfeatures;
+        }
+
+        @Override
+        public String[] features() {
+            return Arrays.copyOf(columnNames(), nfeatures());
+        }
+
+        @Override
+        public int nclasses() {
+            return _nclasses;
+        }
+
+        @Override
+        public String[] columnNames() {
+            return _names;
+        }
+
+        @Override
+        public boolean balanceClasses() {
+            return false;
+        }
+
+        @Override
+        public double defaultThreshold() {
+            return Double.NaN;
+        }
+
+        @Override
+        public double[] priorClassDist() {
+            return null;
+        }
+
+        @Override
+        public double[] modelClassDist() {
+            return null;
+        }
+
+        @Override
+        public String uuid() {
+            return null;
         }
 
         @Override

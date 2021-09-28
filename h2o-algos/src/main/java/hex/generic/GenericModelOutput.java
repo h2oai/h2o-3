@@ -20,8 +20,7 @@ public class GenericModelOutput extends Model.Output {
     public final double _defaultThreshold;
     public TwoDimTable _variable_importances;
 
-
-    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, final Table[] reproducibilityInformation) {
+    public GenericModelOutput(final ModelDescriptor modelDescriptor) {
         _isSupervised = modelDescriptor.isSupervised();
         _domains = modelDescriptor.scoringDomains();
         _origDomains = modelDescriptor.getOrigDomains();
@@ -37,7 +36,11 @@ public class GenericModelOutput extends Model.Output {
         _defaultThreshold = modelDescriptor.defaultThreshold();
         _original_model_identifier = modelDescriptor.algoName();
         _original_model_full_name = modelDescriptor.algoFullName();
-        _reproducibility_information_table = convertTables(reproducibilityInformation);
+    }
+
+    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, 
+                              final Table[] reproducibilityInformation) {
+        this(modelDescriptor);
 
         if (modelAttributes != null) {
             _model_summary = convertTable(modelAttributes.getModelSummary());
@@ -54,6 +57,9 @@ public class GenericModelOutput extends Model.Output {
             }
             convertMetrics(modelAttributes, modelDescriptor);
             _scoring_history = convertTable(modelAttributes.getScoringHistory());
+        }
+        if (reproducibilityInformation != null) {
+            _reproducibility_information_table = convertTables(reproducibilityInformation);
         }
     }
 
