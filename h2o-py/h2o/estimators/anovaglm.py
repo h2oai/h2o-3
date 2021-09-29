@@ -781,8 +781,8 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         self._parms["lambda"] = value
 
     def result_frame(self):
-        keyString = self._model_json["output"]["result_frame_key"]
-        if keyString is None:
+        key = self._model_json["output"]["result_frame_key"]
+        if key is None:
             return None
         else:
-            return h2o.get_frame(keyString)
+            return h2o.get_frame(key['name'])

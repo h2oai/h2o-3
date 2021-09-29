@@ -157,8 +157,7 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
         model = new ANOVAGLMModel(dest(), _parms, new ANOVAGLMModel.ANOVAGLMModelOutput(ANOVAGLM.this, _dinfo));
         model.write_lock(_job);
         if (_parms._save_transformed_framekeys) {
-          model._output._transformed_columns_key = _transformedColsKey.toString();
-          model._output._transformedColumnKey = _transformedColsKey;
+          model._output._transformed_columns_key = _transformedColsKey;
         }
         _trainingFrames = buildTrainingFrames(_transformedColsKey, _numberOfModels, _transformedColNames, _parms);  // build up training frames
         _glmParams = buildGLMParameters(_trainingFrames, _parms);
@@ -168,7 +167,7 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
         GLMModel[] glmModels = extractGLMModels(_glmResults);
         copyGLMCoeffs(model, glmModels, _modelNames);
         fillModelMetrics(model, glmModels[_numberOfPredCombo], _trainingFrames[_numberOfPredCombo]); // take full model metrics as our model metrics
-        model.generateSummary(combineAndFlat(_predictComboNames), glmModels, _degreeOfFreedom);
+        model.fillOutput(combineAndFlat(_predictComboNames), glmModels, _degreeOfFreedom);
         _job.update(0, "Completed GLM model building.  Extracting metrics from GLM models and building" +
                 " ANOVAGLM outputs");
         model.update(_job);
@@ -177,7 +176,7 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
         int numFrame2Delete = _parms._save_transformed_framekeys ? (_trainingFrames.length - 1) : _trainingFrames.length;
         removeFromDKV(_trainingFrames, numFrame2Delete);
         if (model != null) {
-          keepFrameKeys(keep, model._output._resultFramekey);
+          keepFrameKeys(keep, model._output._result_frame_key);
           if (_parms._save_transformed_framekeys)
             keepFrameKeys(keep, _transformedColsKey);
           else

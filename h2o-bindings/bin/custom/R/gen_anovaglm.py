@@ -11,7 +11,7 @@ parms$response_column <- args$y
 #' @export 
 h2o.resultFrame <- function(model) {
   if (is(model, "H2OModel") && (model@algorithm=='anovaglm')) 
-    return(h2o.getFrame(model@model$result_frame_key))
+    return(h2o.getFrame(model@model$result_frame_key$name))
 }
 """
 )

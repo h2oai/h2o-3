@@ -12,7 +12,7 @@ test.model.anovaglm.frame.transformation <- function() {
                     'fcategory_low:partner.status_high')
     answer_names <-c('fcategory1', 'fcategory2', 'partner.status1', 
                        'fcategory1:partner.status1', 'fcategory2:partner.status1')
-    transformF <- h2o.getFrame(model@model$transformed_columns_key)
+    transformF <- h2o.getFrame(model@model$transformed_columns_key$name)
     compareFrames(answer[answer_names], transformF[transform_names ], prob=1)
 }
 

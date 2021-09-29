@@ -58,7 +58,7 @@ public class AnovaGLMBasicTest {
       params._save_transformed_framekeys = true;
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      Frame transformedFrame = DKV.getGet(anovaG._output._transformedColumnKey);
+      Frame transformedFrame = DKV.getGet(anovaG._output._transformed_columns_key);
       Scope.track(transformedFrame);
       String[] tNames = new String[]{"fcategory_high", "fcategory_low", "partner.status_high", 
               "fcategory_high:partner.status_high", "fcategory_low:partner.status_high"};
@@ -116,7 +116,7 @@ public class AnovaGLMBasicTest {
 
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      Frame transformedFrame = DKV.getGet(anovaG._output._transformedColumnKey);
+      Frame transformedFrame = DKV.getGet(anovaG._output._transformed_columns_key);
       Scope.track(transformedFrame);
       String[] compareCols = new String[]{params._weights_column, params._offset_column, params._response_column};
       TestUtil.assertIdenticalUpToRelTolerance(Scope.track(train.subframe(compareCols)), 

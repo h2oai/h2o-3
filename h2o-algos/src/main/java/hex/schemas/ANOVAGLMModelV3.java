@@ -2,9 +2,11 @@ package hex.schemas;
 
 import hex.anovaglm.ANOVAGLMModel;
 import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
+import water.fvec.Frame;
 import water.util.TwoDimTable;
 
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.copyTwoDimTable;
@@ -16,10 +18,10 @@ public class ANOVAGLMModelV3 extends ModelSchemaV3<ANOVAGLMModel, ANOVAGLMModelV
     TwoDimTableV3[] coefficients_table; // from all models
 
     @API(help="AnovaGLM transformed predictor frame key.  For debugging purposes only")
-    String transformed_columns_key;
+    KeyV3.FrameKeyV3 transformed_columns_key;
 
     @API(help="ANOVA table frame key containing same results in the model summary.")
-    String result_frame_key;
+    KeyV3.FrameKeyV3 result_frame_key;
 
     @Override
     public ANOVAGLMModelOutputV3 fillFromImpl(ANOVAGLMModel.ANOVAGLMModelOutput impl) {
