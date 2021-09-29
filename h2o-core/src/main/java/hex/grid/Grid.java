@@ -513,9 +513,27 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     if (_hyper_names == null || model_ids == null || model_ids.length == 0) return null;
     int extra_len = sort_by != null ? 2 : 1;
     String[] colTypes = new String[_hyper_names.length + extra_len];
-    Arrays.fill(colTypes, "string");
     String[] colFormats = new String[_hyper_names.length + extra_len];
+
+    // Set the default type to string
+    Arrays.fill(colTypes, "string");
     Arrays.fill(colFormats, "%s");
+
+    // Change where appropriate (and only the hyper params)
+    for (int i = 0; i < _hyper_names.length; i++) {
+      Object[] objects = _hyper_params.getValues().get(_hyper_names[i]);
+      if (objects != null && objects.length > 0) {
+        Object obj = objects[0];
+        if (obj instanceof Double || obj instanceof Float) {
+          colTypes[i] = "double";
+          colFormats[i] = "%.5f";
+        } else if (obj instanceof Integer) {
+          colTypes[i] = "integer";
+          colFormats[i] = "%d";
+        }
+      }
+    }
+
     String[] colNames = Arrays.copyOf(_hyper_names, _hyper_names.length + extra_len);
     colNames[_hyper_names.length] = "model_ids";
     if (sort_by != null)
