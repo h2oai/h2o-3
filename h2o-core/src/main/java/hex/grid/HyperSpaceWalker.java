@@ -112,7 +112,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * @param maxModels
    * @return estimate of grid work
    */
-  default long getGridWork(long maxModels) {
+  default long estimateGridWork(long maxModels) {
     HyperSpaceWalker.HyperSpaceIterator<MP> it = iterator();
     long gridWork = 0;
     // if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
@@ -644,7 +644,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     } // iterator()
 
     @Override
-    public long getGridWork(long maxModels) {
+    public long estimateGridWork(long maxModels) {
       // We don't want to randomly sample the whole hyperspace
       return Long.MAX_VALUE;
     }

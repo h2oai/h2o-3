@@ -103,7 +103,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     // this function the grid object is in DKV and accessible.
     final Grid<MP> grid = getOrCreateGrid();
 
-    long gridWork = _hyperSpaceWalker.getGridWork(maxModels());
+    long gridWork = _hyperSpaceWalker.estimateGridWork(maxModels());
 
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
