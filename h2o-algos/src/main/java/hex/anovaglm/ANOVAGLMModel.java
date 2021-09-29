@@ -181,9 +181,9 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     int ncols = result.numCols();
     int nrows = (int) result.numRows();
     String[] names = result.names();
-    String[] types = new String[]{"string", "string", "string", "double", "double", "double", "double", "double"};
-    String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d",  "%d", "%d", "%d"};
-    String[] rowHeaders = names;
+    String[] types = new String[]{"string", "string", "string", "double", "int", "double", "double", "double"};
+    String[] formats = new String[]{"%s", "%s", "%s", "%f", "%d", "%f", "%f", "%f"};
+    String[] rowHeaders = new String[nrows];
     TwoDimTable table = new TwoDimTable("GLM ANOVA Type III SS", "summary", 
             rowHeaders, names, types, formats, "");
     
@@ -191,6 +191,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
       for (int cIdx = 0; cIdx < ncols; cIdx++) {
         Vec v = result.vec(cIdx);
         table.set(rIdx, cIdx, v.isNumeric() ? v.at(rIdx) : v.stringAt(rIdx));
+        if (cIdx == 0) rowHeaders[rIdx] = v.stringAt(rIdx);
       }
     }
     return table;
