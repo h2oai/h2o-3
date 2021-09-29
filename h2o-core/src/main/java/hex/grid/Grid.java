@@ -527,8 +527,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
         if (obj instanceof Double || obj instanceof Float) {
           colTypes[i] = "double";
           colFormats[i] = "%.5f";
-        } else if (obj instanceof Integer) {
-          colTypes[i] = "integer";
+        } else if (obj instanceof Integer || obj instanceof Long) {
+          colTypes[i] = "long";
           colFormats[i] = "%d";
         }
       }
