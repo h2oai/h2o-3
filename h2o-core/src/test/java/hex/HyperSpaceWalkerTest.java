@@ -15,6 +15,20 @@ import java.util.NoSuchElementException;
 public class HyperSpaceWalkerTest extends TestUtil {
     @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
+    static public class DummyXGBoostModelParameters extends DummyModelParameters {
+        public int _max_depth;
+        public double _min_rows;
+        public double _sample_rate;
+        public double _col_sample_rate;
+        public double _col_sample_rate_per_tree;
+        public String _booster;
+        public float _reg_lambda;
+        public float _reg_alpha;
+        public float _scale_pos_weight;
+        public float _max_delta_step;
+    }
+
+
     @Test
     public void testRandomDiscreteValueWalkerFinishes() {
         Map<String, Object[]> searchParams = new HashMap<>();
@@ -33,7 +47,7 @@ public class HyperSpaceWalkerTest extends TestUtil {
         searchParams.put("_scale_pos_weight", new Float[]{1.f, 30f, 5f});
         searchParams.put("_max_delta_step", new Float[]{0f, 5f, 10f});
 
-        HyperSpaceWalker.RandomDiscreteValueWalker rdvw = new HyperSpaceWalker.RandomDiscreteValueWalker<>(new DummyModelParameters(),
+        HyperSpaceWalker.RandomDiscreteValueWalker rdvw = new HyperSpaceWalker.RandomDiscreteValueWalker<>(new DummyXGBoostModelParameters(),
                 searchParams, new GridSearch.SimpleParametersBuilderFactory<>(), new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria());
         HyperSpaceWalker.HyperSpaceIterator hsi = rdvw.iterator();
         try {
