@@ -45,41 +45,41 @@ Example
 ~~~~~~~
 
 .. code-block:: r
-  :substitutions:
+   :substitutions:
 
-  library h2o
-  h2o.init()
+   library h2o
+   h2o.init()
 
-  H2O is not running yet, starting it now...
+   H2O is not running yet, starting it now...
 
-  Note:  In case of errors look at the following log files:
-      /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKtZXsy/h2o_techwriter_started_from_r.out
-      /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKtZXsy/h2o_techwriter_started_from_r.err
+   Note:  In case of errors look at the following log files:
+       /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKtZXsy/h2o_techwriter_started_from_r.out
+       /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T//RtmpKtZXsy/h2o_techwriter_started_from_r.err
 
-  java version "1.8.0_25"
-  Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
-  Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
+   java version "1.8.0_25"
+   Java(TM) SE Runtime Environment (build 1.8.0_25-b17)
+   Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
 
-  Starting H2O JVM and connecting: .. Connection successful!
+   Starting H2O JVM and connecting: .. Connection successful!
 
-  R is connected to the H2O cluster: 
-    H2O cluster uptime:         2 seconds 73 milliseconds 
-    H2O cluster timezone:       America/Los_Angeles 
-    H2O data parsing timezone:  UTC 
-    H2O cluster version:        |version|
-    H2O cluster version age:    9 days  
-    H2O cluster name:           H2O_started_from_R_angelabartz_dxr691 
-    H2O cluster total nodes:    1 
-    H2O cluster total memory:   2.00 GB 
-    H2O cluster total cores:    8 
-    H2O cluster allowed cores:  8 
-    H2O cluster healthy:        TRUE 
-    H2O Connection ip:          localhost 
-    H2O Connection port:        54321 
-    H2O Connection proxy:       NA 
-    H2O Internal Security:      FALSE 
-    H2O API Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4 
-    R Version:                  R version 3.5.1 (2018-07-02)  
+   R is connected to the H2O cluster: 
+     H2O cluster uptime:         2 seconds 73 milliseconds 
+     H2O cluster timezone:       America/Los_Angeles 
+     H2O data parsing timezone:  UTC 
+     H2O cluster version:        |version|
+     H2O cluster version age:    9 days  
+     H2O cluster name:           H2O_started_from_R_angelabartz_dxr691 
+     H2O cluster total nodes:    1 
+     H2O cluster total memory:   2.00 GB 
+     H2O cluster total cores:    8 
+     H2O cluster allowed cores:  8 
+     H2O cluster healthy:        TRUE 
+     H2O Connection ip:          localhost 
+     H2O Connection port:        54321 
+     H2O Connection proxy:       NA 
+     H2O Internal Security:      FALSE 
+     H2O API Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4 
+     R Version:                  R version 3.5.1 (2018-07-02)  
 
 From Python
 -----------
@@ -119,38 +119,38 @@ Example
 ~~~~~~~
 
 .. code-block:: python
-  :substitutions:
+   :substitutions:
 
-  import h2o
-  h2o.init(ip="localhost", port=54323)
+   import h2o
+   h2o.init(ip="localhost", port=54323)
 
-  Checking whether there is an H2O instance running at http://localhost:54323..... not found.
-  Attempting to start a local H2O server...
-    Java Version: java version "1.8.0_25"; Java(TM) SE Runtime Environment (build 1.8.0_25-b17); Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
-    Starting server from /Users/techwriter/anaconda/lib/python2.7/site-packages/h2o/backend/bin/h2o.jar
-    Ice root: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW
-    JVM stdout: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW/h2o_techwriter_started_from_python.out
-    JVM stderr: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW/h2o_techwriter_started_from_python.err
-    Server is running at http://127.0.0.1:54323
-  Connecting to H2O server at http://127.0.0.1:54323... successful.
-  --------------------------  ---------------------------------
-  H2O_cluster_uptime:         02 secs
-  H2O_cluster_timezone:       America/Los_Angeles
-  H2O_data_parsing_timezone:  UTC
-  H2O_cluster_version:        |version|
-  H2O_cluster_version_age:    12 days
-  H2O_cluster_name:           H2O_from_python_angelabartz_52yc47
-  H2O_cluster_total_nodes:    1
-  H2O_cluster_free_memory:    2 Gb
-  H2O_cluster_total_cores:    8
-  H2O_cluster_allowed_cores:  8
-  H2O_cluster_status:         accepting new members, healthy
-  H2O_connection_url:         http://127.0.0.1:54321
-  H2O_connection_proxy:       {"http": null, "https": null}
-  H2O_internal_security:      False
-  H2O_API_Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4
-  Python_version:             3.7.7 final
-  --------------------------  ---------------------------------
+   Checking whether there is an H2O instance running at http://localhost:54323..... not found.
+   Attempting to start a local H2O server...
+     Java Version: java version "1.8.0_25"; Java(TM) SE Runtime Environment (build 1.8.0_25-b17); Java HotSpot(TM) 64-Bit Server VM (build 25.25-b02, mixed mode)
+     Starting server from /Users/techwriter/anaconda/lib/python2.7/site-packages/h2o/backend/bin/h2o.jar
+     Ice root: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW
+     JVM stdout: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW/h2o_techwriter_started_from_python.out
+     JVM stderr: /var/folders/yl/cq5nhky53hjcl9wrqxt39kz80000gn/T/tmpN2xfkW/h2o_techwriter_started_from_python.err
+     Server is running at http://127.0.0.1:54323
+   Connecting to H2O server at http://127.0.0.1:54323... successful.
+   --------------------------  ---------------------------------
+   H2O_cluster_uptime:         02 secs
+   H2O_cluster_timezone:       America/Los_Angeles
+   H2O_data_parsing_timezone:  UTC
+   H2O_cluster_version:        |version|
+   H2O_cluster_version_age:    12 days
+   H2O_cluster_name:           H2O_from_python_angelabartz_52yc47
+   H2O_cluster_total_nodes:    1
+   H2O_cluster_free_memory:    2 Gb
+   H2O_cluster_total_cores:    8
+   H2O_cluster_allowed_cores:  8
+   H2O_cluster_status:         accepting new members, healthy
+   H2O_connection_url:         http://127.0.0.1:54321
+   H2O_connection_proxy:       {"http": null, "https": null}
+   H2O_internal_security:      False
+   H2O_API_Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4
+   Python_version:             3.7.7 final
+   --------------------------  ---------------------------------
 
 From Anaconda
 ~~~~~~~~~~~~~

@@ -614,63 +614,63 @@ The following code snippet shows how to download a MOJO and run the PrintMojo to
    .. group-tab:: R
 
     .. code-block:: r
-      :substitutions:
+       :substitutions:
 
-      library(h2o)
-      h2o.init()
-      df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-      model <- h2o.gbm(model_id = "model",
-                      training_frame = df,
-                      x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
-                      y = "IsDepDelayed",
-                      max_depth = 3,
-                      ntrees = 5)
-      h2o.download_mojo(model, getwd(), FALSE)
+       library(h2o)
+       h2o.init()
+       df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+       model <- h2o.gbm(model_id = "model",
+                       training_frame = df,
+                       x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
+                       y = "IsDepDelayed",
+                       max_depth = 3,
+                       ntrees = 5)
+       h2o.download_mojo(model, getwd(), FALSE)
 
-      # In another terminal window, download and extract the 
-      # latest stable h2o.jar from http://www.h2o.ai/download/
-      cd ~/Downloads
-      unzip h2o-|version|.zip
-      cd h2o-|version|
+       # In another terminal window, download and extract the 
+       # latest stable h2o.jar from http://www.h2o.ai/download/
+       cd ~/Downloads
+       unzip h2o-|version|.zip
+       cd h2o-|version|
 
-      # Run the PrintMojo tool from the command line. 
-      # This requires that graphviz is installed.
-      brew install graphviz # if not already installed
-      java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
-      dot -Tpng model.gv -o model.png
-      open model.png
+       # Run the PrintMojo tool from the command line. 
+       # This requires that graphviz is installed.
+       brew install graphviz # if not already installed
+       java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
+       dot -Tpng model.gv -o model.png
+       open model.png
 
    .. group-tab:: Python
 
     .. code-block:: python
-      :substitutions:
+       :substitutions:
 
-      import h2o
-      h2o.init()
-      from h2o.estimators.gbm import H2OGradientBoostingEstimator
-      df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+       import h2o
+       h2o.init()
+       from h2o.estimators.gbm import H2OGradientBoostingEstimator
+       df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-      predictors = ["Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"]
-      response = "IsDepDelayed"
+       predictors = ["Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"]
+       response = "IsDepDelayed"
 
-      model = H2OGradientBoostingEstimator(max_depth=3, ntrees=5)
-      model.train(x = predictors, 
-                  y = response, 
-                  training_frame = df)
-      model.download_mojo(path="/path/to/mojo/zip", get_genmodel_jar=False, genmodel_name=genmodel_path)
+       model = H2OGradientBoostingEstimator(max_depth=3, ntrees=5)
+       model.train(x = predictors, 
+                   y = response, 
+                   training_frame = df)
+       model.download_mojo(path="/path/to/mojo/zip", get_genmodel_jar=False, genmodel_name=genmodel_path)
 
-      # In another terminal window, download and extract the 
-      # latest stable h2o.jar from http://www.h2o.ai/download/
-      cd ~/Downloads
-      unzip h2o-|version|.zip
-      cd h2o-|version|
+       # In another terminal window, download and extract the 
+       # latest stable h2o.jar from http://www.h2o.ai/download/
+       cd ~/Downloads
+       unzip h2o-|version|.zip
+       cd h2o-|version|
 
-      # Run the PrintMojo tool from the command line. 
-      # This requires that graphviz is installed. 
-      brew install graphviz # example for Mac OsX if not already installed
-      java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
-      dot -Tpng model.gv -o model.png
-      open model.png
+       # Run the PrintMojo tool from the command line. 
+       # This requires that graphviz is installed. 
+       brew install graphviz # example for Mac OsX if not already installed
+       java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
+       dot -Tpng model.gv -o model.png
+       open model.png
 
 If you cannot install Graphviz on your environment, another option is to produce a picture output directly with PrintMojo. This option requires Java 8 or higher and uses the h2o-genmodel.jar file. 
 
@@ -775,19 +775,19 @@ FAQ
   If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
 
   .. code-block:: bash
-    :substitutions:
+     :substitutions:
 
-    <groupId>ai.h2o</groupId>
-    <artifactId>xgboost-mojo-example</artifactId>
-    <version>1.0-SNAPSHOT</version>
+     <groupId>ai.h2o</groupId>
+     <artifactId>xgboost-mojo-example</artifactId>
+     <version>1.0-SNAPSHOT</version>
 
-    dependency>
-        <groupId>ai.h2o</groupId>
-        <artifactId>h2o-genmodel-ext-xgboost</artifactId>
-        <version>|version|</version>
-    </dependency>
-    <dependency>
-        <groupId>ai.h2o</groupId>
-        <artifactId>h2o-genmodel</artifactId>
-        <version>|version|</version>
-    </dependency>
+     dependency>
+         <groupId>ai.h2o</groupId>
+         <artifactId>h2o-genmodel-ext-xgboost</artifactId>
+         <version>|version|</version>
+     </dependency>
+     <dependency>
+         <groupId>ai.h2o</groupId>
+         <artifactId>h2o-genmodel</artifactId>
+         <version>|version|</version>
+     </dependency>

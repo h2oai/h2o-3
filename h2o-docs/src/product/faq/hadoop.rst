@@ -129,8 +129,8 @@ Then run the command to launch the H2O Application in the driver by
 specifying the classpath:
 
 .. code-block:: bash
-    :substitutions:
+   :substitutions:
 
-      unzip h2o-|version|.zip
-      cd h2o-|version|
-      java -cp h2odriver.jar water.H2OApp
+   unzip h2o-|version|.zip
+   cd h2o-|version|
+   java -cp h2odriver.jar water.H2OApp

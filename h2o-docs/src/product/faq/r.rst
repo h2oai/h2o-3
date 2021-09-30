@@ -111,7 +111,7 @@ I received the following error after launching H2O in RStudio and using ``h2o.in
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
-    :substitutions:
+   :substitutions:
 
 
     Error in h2o.init() : 

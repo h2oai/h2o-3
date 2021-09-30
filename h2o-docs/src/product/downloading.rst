@@ -18,12 +18,12 @@ If you plan to exclusively use H2O's web GUI, `Flow <http://docs.h2o.ai/h2o/late
 2. From your terminal, unzip and start H2O as in the example below. 
 
  .. code-block:: bash
- 		:substitutions:
+    :substitutions:
 
-		cd ~/Downloads
-		unzip h2o-|version|.zip
-		cd h2o-|version|
-		java -jar h2o.jar
+    cd ~/Downloads
+    unzip h2o-|version|.zip
+    cd h2o-|version|
+    java -jar h2o.jar
 
 3. Point your browser to http://localhost:54321 to open up the H2O Flow web GUI.
 
@@ -117,9 +117,9 @@ This section describes how to set up and run H2O in an Anaconda Cloud environmen
 Open a terminal window and run the following command to install H2O on the Anaconda Cloud. The H2O version in this command should match the version that you want to download. If you leave the h2o version blank and specify just ``h2o``, then the latest version will be installed. For example: 
 
  .. code-block:: bash
- 		:substitutions:
+    :substitutions:
 
- 		user$ conda install -c h2oai h2o=|version|
+    user$ conda install -c h2oai h2o=|version|
 
 or:
 
@@ -146,11 +146,11 @@ Install on Hadoop
 2. Unpack the zip file and launch a 6g instance of H2O. For example:
 
  .. code-block:: bash
- 	:substitutions:
+    :substitutions:
 
-	unzip h2o-|version|-*.zip
-	cd h2o-|version|-*
-	hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
+    unzip h2o-|version|-*.zip
+    cd h2o-|version|-*
+    hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
 3. Point your browser to H2O. (See "Open H2O Flow in your web browser" in the output below.)
 

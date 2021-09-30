@@ -23,20 +23,20 @@ Download Flow
 1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line.
 
   .. code-block:: bash
-   :substitutions:
+     :substitutions:
 
-    curl -o h2o.zip http://download.h2o.ai/versions/h2o-|version|.zip
+     curl -o h2o.zip http://download.h2o.ai/versions/h2o-|version|.zip
         
 
 2. Next in your terminal, enter the following command lines one at a time. The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3-|version| folder, and the fourth line runs your jar file.
 
   .. code-block:: bash
-   :substitutions:
+     :substitutions:
 
-    cd ~/Downloads
-    unzip h2o-|version|.zip
-    cd h2o-|version|
-    java -jar h2o.jar
+     cd ~/Downloads
+     unzip h2o-|version|.zip
+     cd h2o-|version|
+     java -jar h2o.jar
 
 3. Finally, to start Flow point your browser to http://localhost:54321.
 
