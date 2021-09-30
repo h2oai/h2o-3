@@ -23,16 +23,17 @@
 #'        this data frame intead of using cross-validation metrics, which is the default.
 #' @param blending_frame Blending frame (H2OFrame or ID) used to train the the metalearning algorithm in Stacked Ensembles (instead of relying on cross-validated predicted values); Optional.
 #'        When provided, it also is recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
-#' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
+#' @param nfolds Number of folds for k-fold cross-validation. Must be >= 2; defaults to 5. Use 0 to disable cross-validation; 
+#'        this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
-#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        FALSE.
+#' @param balance_classes \code{Logical}. Specify whether to oversample the minority classes to balance the class distribution; only applicable to classification. If the oversampled size of the 
+#'        dataset exceeds the maximum size calculated during `max_after_balance_size` parameter, then the majority class will be undersampled to satisfy the size limit. Defaults to FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-#'        be automatically computed to obtain class balance during training. Requires balance_classes.
+#'        be automatically computed to obtain class balance during training. Requires `balance_classes`.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-#'        balance_classes. Defaults to 5.0.
+#'        `balance_classes`. Defaults to 5.0.
 #' @param max_runtime_secs This argument specifies the maximum time that the AutoML process will run for. If neither `max_runtime_secs` nor `max_models` are specified by the user, then `max_runtime_secs` defaults to 3600 seconds (1 hour).
 #' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL (no strict limit).
@@ -41,15 +42,18 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the
 #'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed
 #'        as 1/sqrt(nrows * non-NA-rate).
-#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric
-#'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
-#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used
-#'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
-#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated.
-#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
+#' @param stopping_rounds Integer. Early stopping based on convergence of `stopping_metric`. Stop if simple moving average of length k of the `stopping_metric`
+#'        does not improve for k (`stopping_rounds`) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
+#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if `max_models` or early stopping is used
+#'        because `max_runtime_secs` is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
+#'        In addition, H2O Deep Learning models are not reproducible by default for performance reasons, so if the user requires reproducibility, then `exclude_algos` must
+#'        contain "DeepLearning".
+#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated. More models can be trained and added to an existing
+#'        AutoML project by specifying the same project name in multiple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
+#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is `exclude_algos = c("GLM", "DeepLearning", "DRF")`,
 #'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble".
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-#' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
+#' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with `exclude_algos` param.
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param exploitation_ratio The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, this is set to AUTO (exploitation_ratio=-1) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
