@@ -99,12 +99,12 @@ artifacts {
   archives shadowJar
 }
 
+
 //
-// Support make infrastructure by copying the resulting assembly into parent
+// Support current infrastructure by copying the resulting assembly into parent
 // project build directory
 //
-
-def assembly = "main.jar"
+def assembly = "main-${project.version}.jar"
 def allInOne = "h2o.jar"
 
 task copyJar(type: Copy) {
