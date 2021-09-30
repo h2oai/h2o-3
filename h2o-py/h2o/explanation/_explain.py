@@ -471,7 +471,7 @@ def _get_algorithm(model,  treat_xrt_as_algorithm=False):
     return model.algo
 
 
-def _first_of_family(models, all_stackedensembles=True):
+def _first_of_family(models, all_stackedensembles=False):
     # type: (Union[str, h2o.model.ModelBase], bool) -> Union[str, h2o.model.ModelBase]
     """
     Get first of family models

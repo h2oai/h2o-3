@@ -56,7 +56,7 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @param models models or model ids
 #' @param all_stackedensembles if TRUE, select all stacked ensembles
-.get_first_of_family <- function(models, all_stackedensembles = TRUE) {
+.get_first_of_family <- function(models, all_stackedensembles = FALSE) {
   selected_models <- character()
   included_families <- character()
   for (model in models) {
