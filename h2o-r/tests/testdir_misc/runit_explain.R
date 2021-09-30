@@ -568,14 +568,14 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
 
 # 
 doSuite("Explanation Tests", makeSuite(
-  # explanation_test_single_model_regression
+  explanation_test_single_model_regression
   , explanation_test_automl_regression
-  # , explanation_test_list_of_models_regression
-  # , explanation_test_single_model_binomial_classification
-  # , explanation_test_automl_binomial_classification
-  # , explanation_test_list_of_models_binomial_classification
-  # , explanation_test_single_model_multinomial_classification
-  # , explanation_test_automl_multinomial_classification
-  # , explanation_test_list_of_models_multinomial_classification
-  # , learning_curve_plot_test_of_models_not_included_in_automl
+  , explanation_test_list_of_models_regression
+  , explanation_test_single_model_binomial_classification
+  , explanation_test_automl_binomial_classification
+  , explanation_test_list_of_models_binomial_classification
+  , explanation_test_single_model_multinomial_classification
+  , explanation_test_automl_multinomial_classification
+  , explanation_test_list_of_models_multinomial_classification
+  , learning_curve_plot_test_of_models_not_included_in_automl
 ))
