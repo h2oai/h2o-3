@@ -182,6 +182,8 @@ public class PredictCsv {
         RowData row = formatDataRow(splitLine, inputColumnNames);
         // Do the prediction.
         // Emit the result to the output file.
+        String offsetColumn = modelWrapper.m.getOffsetName();
+        double offset = offsetColumn==null ? 0 : Double.parseDouble((String) row.get(offsetColumn));
         switch (category) {
           case AutoEncoder: { // write the expanded predictions out
             AutoEncoderModelPrediction p = modelWrapper.predictAutoEncoder(row);
@@ -194,7 +196,7 @@ public class PredictCsv {
             break;
           }
           case Binomial: {
-            BinomialModelPrediction p = modelWrapper.predictBinomial(row);
+            BinomialModelPrediction p = modelWrapper.predictBinomial(row, offset);
             if (getTreePath) {
               writeTreePaths(p.leafNodeAssignments, output);
             } else if (predictContributions) {
@@ -228,7 +230,7 @@ public class PredictCsv {
             break;
           }
           case Ordinal: {
-            OrdinalModelPrediction p = modelWrapper.predictOrdinal(row);
+            OrdinalModelPrediction p = modelWrapper.predictOrdinal(row, offset);
             output.write(p.label);
             output.write(",");
             for (int i = 0; i < p.classProbabilities.length; i++) {
@@ -246,7 +248,7 @@ public class PredictCsv {
           }
 
           case Regression: {
-              RegressionModelPrediction p = modelWrapper.predictRegression(row);
+              RegressionModelPrediction p = modelWrapper.predictRegression(row, offset);
               if (getTreePath) {
                 writeTreePaths(p.leafNodeAssignments, output);
               } else if (predictContributions) {

@@ -3819,7 +3819,7 @@ def random_dataset_real_only(nrow, ncol, realR=100, misFrac=0.01, randSeed=None)
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] = 0
 
-    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=realR,
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, real_range=realR,
                           seed=randSeed, **fractions)
     return df
 

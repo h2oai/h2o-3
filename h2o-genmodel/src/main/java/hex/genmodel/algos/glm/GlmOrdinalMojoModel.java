@@ -27,9 +27,9 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
       throw new IllegalStateException("Incorrect coding of Beta.");
     noff = _catOffsets[_cats];
   }
-
+  
   @Override
-  double[] glmScore0(double[] data, double[] preds) {
+  double[] glmScore0(double[] data, double offset, double[] preds) {
     Arrays.fill(preds, 0);
     preds[0]=lastClass;
 
@@ -61,7 +61,7 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
 
     double previousCDF = 0.0;
     for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
-      double eta = preds[cInd + 1];
+      double eta = preds[cInd + 1]+offset;
       double currCDF = 1.0 / (1 + Math.exp(-eta));
       preds[cInd + 1] = currCDF - previousCDF;
       previousCDF = currCDF;

@@ -16,9 +16,9 @@ public class GlmMultinomialMojoModel extends GlmMojoModelBase {
       throw new IllegalStateException("Incorrect coding of Beta.");
     noff = _catOffsets[_cats];
   }
-
+  
   @Override
-  double[] glmScore0(double[] data, double[] preds) {
+  double[] glmScore0(double[] data, double offset, double[] preds) {
     preds[0] = 0;
     for (int c = 0; c < _nclasses; ++c) {
       preds[c + 1] = 0;
