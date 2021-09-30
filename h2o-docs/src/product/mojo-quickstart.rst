@@ -613,7 +613,8 @@ The following code snippet shows how to download a MOJO and run the PrintMojo to
 .. tabs::
    .. group-tab:: R
 
-    .. substitution-code-block:: r
+    .. code-block:: r
+      :substitutions:
 
       library(h2o)
       h2o.init()
@@ -641,7 +642,8 @@ The following code snippet shows how to download a MOJO and run the PrintMojo to
 
    .. group-tab:: Python
 
-    .. substitution-code-block:: python
+    .. code-block:: python
+      :substitutions:
 
       import h2o
       h2o.init()
@@ -772,7 +774,8 @@ FAQ
 
   If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
 
-  .. substitution-code-block:: bash
+  .. code-block:: bash
+    :substitutions:
 
     <groupId>ai.h2o</groupId>
     <artifactId>xgboost-mojo-example</artifactId>

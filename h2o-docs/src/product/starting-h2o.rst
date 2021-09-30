@@ -44,7 +44,8 @@ Once connected, the ``h2o.init()`` method checks to see if the local H2O R packa
 Example
 ~~~~~~~
 
-.. substitution-code-block:: r
+.. code-block:: r
+  :substitutions:
 
   library h2o
   h2o.init()
@@ -117,7 +118,8 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 Example
 ~~~~~~~
 
-.. substitution-code-block:: python
+.. code-block:: python
+  :substitutions:
 
   import h2o
   h2o.init(ip="localhost", port=54323)

@@ -110,7 +110,8 @@ Look for the following output to confirm the changes:
 I received the following error after launching H2O in RStudio and using ``h2o.init``. What should I do to resolve this error?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. substitution-code-block:: bash
+.. code-block:: bash
+    :substitutions:
 
 
     Error in h2o.init() : 

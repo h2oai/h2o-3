@@ -128,7 +128,8 @@ file for your Hadoop distribution `from here <http://www.h2o.ai/download/h2o/had
 Then run the command to launch the H2O Application in the driver by
 specifying the classpath:
 
-.. substitution-code-block:: bash
+.. code-block:: bash
+    :substitutions:
 
       unzip h2o-|version|.zip
       cd h2o-|version|

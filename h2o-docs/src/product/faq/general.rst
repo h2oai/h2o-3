@@ -307,7 +307,8 @@ To cite H2O AutoML, please use the instructions `here <../automl.html#citation>`
 
 If you are using Bibtex:
 
-.. substitution-code-block:: bash
+.. code-block:: bash
+    :substitutions:
 
 
     @Manual{h2o_R_package,
