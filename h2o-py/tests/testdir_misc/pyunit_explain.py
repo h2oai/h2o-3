@@ -35,8 +35,9 @@ def test_get_xy():
 
 
 def test_explanation_single_model_regression():
-    train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
-    y = "quality"
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    y = "fare"
+
     # get at most one column from each type
     cols_to_test = []
     for col, typ in train.types.items():
@@ -63,11 +64,17 @@ def test_explanation_single_model_regression():
 
     # test pd_plot
     for col in cols_to_test:
-        assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
+        try:
+            assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
+        except ValueError:
+            assert col == "name", "'name' is a string column which is not supported."
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+        try:
+            assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+        except ValueError:
+            assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
 
     # test learning curve
@@ -85,8 +92,10 @@ def test_explanation_single_model_regression():
 
 
 def test_explanation_automl_regression():
-    train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
-    y = "quality"
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+
     # get at most one column from each type
     cols_to_test = []
     for col, typ in train.types.items():
@@ -116,7 +125,10 @@ def test_explanation_automl_regression():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+        try:
+            assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+        except ValueError:
+            assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -142,8 +154,10 @@ def test_explanation_automl_regression():
 
 
 def test_explanation_list_of_models_regression():
-    train = h2o.upload_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
-    y = "quality"
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
+    train["name"] = train["name"].asfactor()
+    y = "fare"
+
     # get at most one column from each type
     cols_to_test = []
     for col, typ in train.types.items():
@@ -174,7 +188,10 @@ def test_explanation_list_of_models_regression():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+        try:
+            assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+        except ValueError:
+            assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
 
     # test learning curve

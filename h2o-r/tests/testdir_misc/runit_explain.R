@@ -10,8 +10,8 @@ expect_ggplot <- function(gg) {
 }
 
 explanation_test_single_model_regression <- function() {
-  train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
-  y <- "quality"
+  train <- h2o.uploadFile(locate("smalldata/titanic/titanic_expanded.csv"))
+  y <- "fare"
 
   col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
   col_types <- col_types[names(col_types) != y]
@@ -33,12 +33,18 @@ explanation_test_single_model_regression <- function() {
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.pd_plot(gbm, train, col))
+    if (col == "name")  # a string column
+      expect_error(expect_ggplot(h2o.pd_multi_plot(models, train, col)))
+    else
+      expect_ggplot(h2o.pd_plot(gbm, train, col))
   }
 
   # test ice plot
   for (col in cols_to_test) {
-    expect_ggplot(h2o.ice_plot(gbm, train, col))
+    if (col == "name")  # a string column
+      expect_error(expect_ggplot(h2o.pd_multi_plot(models, train, col)))
+    else
+      expect_ggplot(h2o.ice_plot(gbm, train, col))
   }
 
   # test learning curve plot
@@ -56,8 +62,8 @@ explanation_test_single_model_regression <- function() {
 }
 
 explanation_test_automl_regression <- function() {
-  train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
-  y <- "quality"
+  train <- h2o.uploadFile(locate("smalldata/titanic/titanic_expanded.csv"))
+  y <- "fare"
 
   col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
   col_types <- col_types[names(col_types) != y]
@@ -85,7 +91,10 @@ explanation_test_automl_regression <- function() {
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.pd_multi_plot(aml, train, col))
+    if (col == "name")  # a string column
+      expect_error(expect_ggplot(h2o.pd_multi_plot(models, train, col)))
+    else
+      expect_ggplot(h2o.pd_multi_plot(aml, train, col))
   }
   # test ice plot
   expect_error(h2o.ice_plot(aml, train, cols_to_test[[1]]), "Only one model is allowed!")
@@ -105,8 +114,8 @@ explanation_test_automl_regression <- function() {
 }
 
 explanation_test_list_of_models_regression <- function() {
-  train <- h2o.uploadFile(locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
-  y <- "quality"
+  train <- h2o.uploadFile(locate("smalldata/titanic/titanic_expanded.csv"))
+  y <- "fare"
 
   col_types <- setNames(unlist(h2o.getTypes(train)), names(train))
   col_types <- col_types[names(col_types) != y]
@@ -137,7 +146,10 @@ explanation_test_list_of_models_regression <- function() {
 
   # test partial dependences
   for (col in cols_to_test) {
-    expect_ggplot(h2o.pd_multi_plot(models, train, col))
+    if (col == "name")  # a string column
+      expect_error(expect_ggplot(h2o.pd_multi_plot(models, train, col)))
+    else
+      expect_ggplot(h2o.pd_multi_plot(models, train, col))
   }
   # test ice plot
   expect_error(h2o.ice_plot(models, train, cols_to_test[[1]]), "Only one model is allowed!")

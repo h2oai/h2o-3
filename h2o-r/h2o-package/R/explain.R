@@ -311,6 +311,7 @@ with_no_h2o_progress <- function(expr) {
     model_ids <- unlist(as.list(leaderboard$model_id))
     if (only_with_varimp) {
       model_ids <- Filter(.has_varimp, model_ids)
+      if (length(model_ids) == 0) stop("No models with Variable Importance.")
     }
     if (best_of_family) {
       model_ids <- .get_first_of_family(model_ids)
@@ -362,6 +363,7 @@ with_no_h2o_progress <- function(expr) {
 
       if (only_with_varimp) {
         object <- Filter(.has_varimp, object)
+        if (length(object) == 0) stop("No models with Variable Importance.")
       }
 
       memoised_models <- list()
@@ -1938,6 +1940,9 @@ h2o.pd_plot <- function(object,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (h2o.getTypes(newdata[[column]])[[1]] == "string")
+    stop("String columns are not supported by h2o.pd_plot.")
+
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, require_single_model = TRUE)
@@ -2110,6 +2115,9 @@ h2o.pd_multi_plot <- function(object,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (h2o.getTypes(newdata[[column]])[[1]] == "string")
+    stop("String columns are not supported by h2o.pd_multi_plot.")
+
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
@@ -2371,6 +2379,8 @@ h2o.ice_plot <- function(model,
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (h2o.getTypes(newdata[[column]])[[1]] == "string")
+    stop("String columns are not supported by h2o.ice_plot.")
 
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
 
@@ -3005,6 +3015,14 @@ h2o.explain <- function(object,
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
   }
+  # Make sure that there are no string columns to explain as they are not supported by pdp
+  # Usually those columns would not be used by algos so this just makes sure to exclude them
+  # if user specifies top_n = Inf or columns_of_interest = x etc.
+  dropped_string_columns <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] == "string", columns_of_interest)
+  if (length(dropped_string_columns) > 1) {
+    warning(sprintf("Dropping string columns as they are unsupported: %s", paste(dropped_string_columns, collapse = ", ")), call. = FALSE)
+    columns_of_interest <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] != "string", columns_of_interest)
+  }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result$leaderboard <- list(
@@ -3394,7 +3412,14 @@ h2o.explain_row <- function(object,
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
   }
-
+  # Make sure that there are no string columns to explain as they are not supported by pdp
+  # Usually those columns would not be used by algos so this just makes sure to exclude them
+  # if user specifies top_n = Inf or columns_of_interest = x etc.
+  dropped_string_columns <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] == "string", columns_of_interest)
+  if (length(dropped_string_columns) > 1) {
+    warning(sprintf("Dropping string columns as they are unsupported: %s", paste(dropped_string_columns, collapse = ", ")), call. = FALSE)
+    columns_of_interest <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] != "string", columns_of_interest)
+  }
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result$leaderboard <- list(
       header = .h2o_explanation_header("Leaderboard"),
