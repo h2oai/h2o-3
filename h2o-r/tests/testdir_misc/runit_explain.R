@@ -566,7 +566,6 @@ learning_curve_plot_test_of_models_not_included_in_automl <- function() {
   expect_ggplot(h2o.learning_curve_plot(if_model))
 }
 
-# 
 doSuite("Explanation Tests", makeSuite(
   explanation_test_single_model_regression
   , explanation_test_automl_regression
