@@ -25,6 +25,8 @@ def call(final stageConfig, final boolean getMakeTarget = false) {
             return getCommandHadoop(stageConfig, false, true, false, true)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return getCommandStandalone(stageConfig)
+        case H2O_HADOOP_STARTUP_MODE_STANDALONE_KEYTAB:
+            return getCommandStandaloneKeytab(stageConfig)
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
     }
@@ -117,19 +119,27 @@ private GString getCommandHadoop(
         """
 }
 
-private GString getCommandStandalone(final stageConfig) {
-    def defaultPort = 54321
+private GString getCommandStandaloneKeytab(final stageConfig) {
     return """
             klist
             kdestroy
-            klist
+            klist || echo 'No ticket expected'
+            bash -c 'printf "%b" "addent -password -p jenkins@H2O.AI -k 1 -e aes256-cts-hmac-sha1-96\\\\nh2o\\\\nwrite_kt /tmp/jenkins.keytab" | ktutil'
+            ${getCommandStandalone(stageConfig, '-principal jenkins@H2O.AI -keytab /tmp/jenkins.keytab')}
+            echo 'h2o' | kinit        
+    """
+}
+
+private GString getCommandStandalone(final stageConfig, final extraArgs = '') {
+    def defaultPort = 54321
+    return """
             java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
                 -login_conf ${stageConfig.customData.spnegoConfigPath} \\
                 -spnego_properties ${stageConfig.customData.spnegoPropertiesPath} \\
-                -principal steam/localhost@H2O.AI -keytab /etc/hadoop/conf/steam.keytab \\
+                ${extraArgs} \\
                 > standalone_h2o.log 2>&1 & 
             for i in \$(seq 4); do
               if grep "Open H2O Flow in your web browser" standalone_h2o.log
