@@ -49,7 +49,7 @@ automl.model_selection.suite <- function() {
     )
     models <- get_partitioned_models(aml)
     expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
-    expect_equal(length(models$se), 3)
+    expect_gt(length(models$se), 3)
   }
 
   test_include_algos <- function() {
@@ -152,7 +152,7 @@ automl.model_selection.suite <- function() {
     )
     models <- get_partitioned_models(aml)
     expect_equal(length(models$non_se), 5)
-    expect_equal(length(models$se), 3) # grids in group 2 by default, therefore we have 2 SEs after group 1 and 2 (or only 1 of BestOf is the same after group 2). 
+    expect_gt(length(models$se), 2) 
     expect_true(any(grepl("XRT", models$all)))
     expect_true(any(grepl("GLM", models$all)))
     expect_equal(sum(grepl("GBM_grid", models$all)), 2)
@@ -171,7 +171,7 @@ automl.model_selection.suite <- function() {
             list(id="def_3", group=2),
             list(id="grid_1", weight=777)
         )),
-        "StackedEnsemble"
+        list(name="StackedEnsemble", alias="defaults")
       ),
       project_name = "r_modeling_steps",
       max_models = 5,
