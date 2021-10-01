@@ -8,7 +8,9 @@ import h2o
 import random
 import sys
 from tests import pyunit_utils
-from h2o.automl import H2OAutoML, get_leaderboard
+from h2o.automl import H2OAutoML, get_automl, get_leaderboard
+
+from pandas.util.testing import assert_frame_equal
 
 """
 This test is used to check leaderboard, especially sorting logic and filtered algos
@@ -321,6 +323,22 @@ def test_custom_leaderboard():
                                                  "GLM", "StackedEnsemble", "XGBoost"]).all().all())
 
 
+def test_custom_leaderboard_as_method():
+    ds = prepare_data('binomial')
+    aml = H2OAutoML(project_name="py_aml_custom_lb_method_test",
+                    max_models=5,
+                    seed=automl_seed)
+    aml.train(y=ds.target, training_frame=ds.train)
+    
+    assert_frame_equal(aml.get_leaderboard().as_data_frame(), aml.leaderboard.as_data_frame())
+    lb_ext = get_leaderboard(aml, extra_columns='ALL')
+    assert_frame_equal(aml.get_leaderboard('ALL').as_data_frame(), lb_ext.as_data_frame())
+    
+    aml2 = get_automl(aml.project_name)
+    assert_frame_equal(aml2.get_leaderboard().as_data_frame(), aml.leaderboard.as_data_frame())
+    assert_frame_equal(aml2.get_leaderboard('ALL').as_data_frame(), lb_ext.as_data_frame())
+    
+
 def test_get_best_model_per_family():
     ds = prepare_data('binomial')
     aml = H2OAutoML(project_name="py_aml_best_model_per_family_test",
@@ -394,5 +412,6 @@ pyunit_utils.run_tests([
     test_AUTO_stopping_metric_with_auc_sorting_metric,
     test_AUTO_stopping_metric_with_custom_sorting_metric,
     test_custom_leaderboard,
+    test_custom_leaderboard_as_method,
     test_get_best_model_per_family,
 ])
