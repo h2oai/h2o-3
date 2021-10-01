@@ -120,12 +120,16 @@ private GString getCommandHadoop(
 private GString getCommandStandalone(final stageConfig) {
     def defaultPort = 54321
     return """
+            klist
+            kdestroy
+            klist
             java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
                 -login_conf ${stageConfig.customData.spnegoConfigPath} \\
                 -spnego_properties ${stageConfig.customData.spnegoPropertiesPath} \\
+                -principal steam/localhost@H2O.AI -keytab /etc/hadoop/conf/steam.keytab \\
                 > standalone_h2o.log 2>&1 & 
             for i in \$(seq 4); do
               if grep "Open H2O Flow in your web browser" standalone_h2o.log
