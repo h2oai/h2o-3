@@ -428,7 +428,6 @@ class NumpyFrame:
             yield col, self.get(col, with_categorical_names)
 
 
-
 def _get_domain_mapping(model):
     """
     Get a mapping between columns and their domains.
@@ -472,7 +471,7 @@ def _get_algorithm(model,  treat_xrt_as_algorithm=False):
     return model.algo
 
 
-def _first_of_family(models, all_stackedensembles=True):
+def _first_of_family(models, all_stackedensembles=False):
     # type: (Union[str, h2o.model.ModelBase], bool) -> Union[str, h2o.model.ModelBase]
     """
     Get first of family models
@@ -998,6 +997,9 @@ def pd_plot(
     if target is not None and not isinstance(target, list):
         target = [target]
 
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
+
     color = plt.get_cmap(colormap)(0)
     with no_progress():
         plt.figure(figsize=figsize)
@@ -1114,6 +1116,10 @@ def pd_multi_plot(
                 raise ValueError("Only one target can be specified!")
             target = target[0]
         target = [target]
+
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
+
     if _is_automl_or_leaderboard(models):
         all_models = _get_model_ids_from_automl_or_leaderboard(models)
     else:
@@ -1249,6 +1255,10 @@ def ice_plot(
                 raise ValueError("Only one target can be specified!")
             target = target[0]
         target = [target]
+
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
+
     with no_progress():
         frame = frame.sort(model.actual_params["response_column"])
         is_factor = frame[column].isfactor()[0]
@@ -2535,6 +2545,13 @@ def explain(
     else:
         if columns_of_interest is None:
             columns_of_interest = _get_xy(models_to_show[0])[0]
+    # Make sure that there are no string columns to explain as they are not supported by pdp
+    # Usually those columns would not be used by algos so this just makes sure to exclude them
+    # if user specifies top_n=float('inf') or columns_of_interest=x etc.
+    dropped_string_columns = [col for col in columns_of_interest if frame.type(col) == "string"]
+    if len(dropped_string_columns) > 0:
+        warnings.warn("Dropping string columns as they are not supported: {}".format(dropped_string_columns))
+        columns_of_interest = [col for col in columns_of_interest if frame.type(col) != "string"]
 
     if is_aml or len(models_to_show) > 1:
         if "varimp_heatmap" in explanations:
@@ -2721,6 +2738,14 @@ def explain_row(
             import warnings
             warnings.warn("No model with variable importance. Selecting all features to explain.")
             columns_of_interest = _get_xy(models_to_show[0])[0]
+
+    # Make sure that there are no string columns to explain as they are not supported by pdp
+    # Usually those columns would not be used by algos so this just makes sure to exclude them
+    # if user specifies top_n=float('inf') or columns_of_interest=x etc.
+    dropped_string_columns = [col for col in columns_of_interest if frame.type(col) == "string"]
+    if len(dropped_string_columns) > 0:
+        warnings.warn("Dropping string columns as they are not supported: {}".format(dropped_string_columns))
+        columns_of_interest = [col for col in columns_of_interest if frame.type(col) != "string"]
 
     possible_explanations = ["leaderboard", "shap_explain_row", "ice"]
 
