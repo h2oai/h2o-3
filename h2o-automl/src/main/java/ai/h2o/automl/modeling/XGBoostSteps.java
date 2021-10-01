@@ -195,7 +195,7 @@ public class XGBoostSteps extends ModelingSteps {
             searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
             searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
-            if (aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+            if (aml().getDistributionFamily().equals(DistributionFamily.bernoulli) && aml().getBuildSpec().build_control.balance_classes) {
                 double[] dist = aml().getClassDistribution();
                 float imbalanceRatio = (float)(dist[0]/dist[1]);
                 if (imbalanceRatio > 5 || 1 / imbalanceRatio > 5) // both positive and negative class can be underrepresented

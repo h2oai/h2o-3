@@ -595,7 +595,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     _distributionFamily = inferDistribution(_responseColumn);
 
-    if (_distributionFamily.equals(DistributionFamily.bernoulli)) {
+    if (_distributionFamily.equals(DistributionFamily.bernoulli) && getBuildSpec().build_control.balance_classes) {
       _classDistribution = (new MRUtils.ClassDist(_responseColumn)).doAll(_responseColumn).dist();
     }
 
