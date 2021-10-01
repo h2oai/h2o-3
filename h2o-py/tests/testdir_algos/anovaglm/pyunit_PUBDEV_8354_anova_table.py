@@ -12,7 +12,7 @@ def test_anova_table_frame():
 
   model = H2OANOVAGLMEstimator(family='gaussian', lambda_=0, save_transformed_framekeys=True)
   model.train(x=x, y=y, training_frame=train)
-  anova_table = model.result_frame()
+  anova_table = model.result()
   # compare model summary and anova table frame
   colNames = anova_table.names
   for name in colNames:

@@ -258,7 +258,7 @@ public class AnovaGLMBasicTest {
       params._train = train._key;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
-      Frame anovaTable = anovaG.resultFrame();
+      Frame anovaTable = anovaG.result();
       Scope.track(anovaTable);
       Scope.track_generic(anovaG);
       // compare and make sure anova table frame and model summary contains the same contents, testing only numerics

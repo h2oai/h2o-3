@@ -55,7 +55,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * Return the ANOVA table as an H2OFrame per seb suggestion
    * @return H2O Frame containing the ANOVA table as in the model summary
    */
-  public Frame resultFrame() {
+  public Frame result() {
     assert _output._result_frame_key!= null : "ANOVA Table Key is null";
     return DKV.getGet(_output._result_frame_key);
   }

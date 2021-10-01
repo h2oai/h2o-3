@@ -10,7 +10,7 @@ def class_extensions():
     def Lambda(self, value):
         self._parms["lambda"] = value
         
-    def result_frame(self):
+    def result(self):
         key = self._model_json["output"]["result_frame_key"]
         if key is None:
             return None

@@ -370,7 +370,7 @@ h2o.anovaglm <- function(x,
 #' Extract and return ANOVA Table as an H2OFrame
 #' @param model an H2OANOVAGLM.
 #' @export 
-h2o.resultFrame <- function(model) {
+h2o.result <- function(model) {
   if (is(model, "H2OModel") && (model@algorithm=='anovaglm')) 
     return(h2o.getFrame(model@model$result_frame_key$name))
 }

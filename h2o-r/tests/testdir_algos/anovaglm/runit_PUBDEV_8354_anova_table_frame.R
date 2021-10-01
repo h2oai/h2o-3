@@ -7,7 +7,7 @@ test.model.anovaglm.table.frame <- function() {
     prostate$CAPSULE <- h2o.asfactor(prostate$CAPSULE)
     # check for classification
     modelBinomial <- h2o.anovaglm(y = "CAPSULE", x = c("AGE","VOL","DCAPS"), training_frame = prostate, family="binomial")
-    anovaTableFrame <- as.data.frame(h2o.resultFrame(modelBinomial))
+    anovaTableFrame <- as.data.frame(h2o.result(modelBinomial))
     modelSummary <- modelBinomial@model$model_summary
     for (ind in c(1:h2o.ncol(anovaTableFrame))) {
         eleSummary <- modelSummary[,ind]

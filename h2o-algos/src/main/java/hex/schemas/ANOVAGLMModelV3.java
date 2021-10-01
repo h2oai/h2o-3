@@ -20,7 +20,8 @@ public class ANOVAGLMModelV3 extends ModelSchemaV3<ANOVAGLMModel, ANOVAGLMModelV
     @API(help="AnovaGLM transformed predictor frame key.  For debugging purposes only")
     KeyV3.FrameKeyV3 transformed_columns_key;
 
-    @API(help="ANOVA table frame key containing same results in the model summary.")
+    @API(help="ANOVA table frame key containing Type III SS calculation, degree of freedom, F-statistics and " +
+            "p-values.  This frame content is repeated in the model summary.")
     KeyV3.FrameKeyV3 result_frame_key;
 
     @Override
