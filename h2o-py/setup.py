@@ -13,7 +13,7 @@ with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
 
 version = "0.0.local"
 # Get the version from the relevant file
-with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
+with open(os.path.join(here, 'h2o', 'version.txt'), encoding='utf-8') as f:
     version = f.read()
 
 client = "--client" in sys.argv

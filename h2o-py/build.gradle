@@ -50,13 +50,16 @@ task verifyTestDependencies(type: Exec) {
 }
 
 task copyH2OJar(type: Copy, dependsOn: [configurations.compile]) {
-    from "${rootDir}/build/h2o.jar"
+    from configurations.compileClasspath.getSingleFile()
+    rename { filename ->
+        return 'h2o.jar'
+    }
     into "${buildDir}/main/h2o/backend/bin/"
 }
 
 task copyH2OClientJar(type: Copy, dependsOn: [jar]) {
-    from("${buildDir}/libs/h2o-py.jar") {
-        rename("h2o-py.jar", "h2o.jar")
+    from("${buildDir}/libs/h2o-py-${project.version}.jar") {
+        rename("h2o-py-${project.version}.jar", "h2o.jar")
     }
     into "${buildDir}/client/h2o/backend/bin/"
 }

@@ -64,7 +64,8 @@ def list_keys_in_memory(project_name=None):
         cv_models=cv_model_keys,
         cv_predictions=cv_prediction_keys,
         cv_metrics=cv_metrics_keys,
-        cv_fold_assignment=cv_fold_assignment
+        cv_fold_assignment=cv_fold_assignment,
+        metalearners=metalearner_keys,
     )
 
 
@@ -167,13 +168,15 @@ def test_suite_clean_cv_predictions():
         for i in range(total_runs - 1):
             aml.train(y=target, training_frame=train)
         _, _, se = get_partitioned_model_names(aml.leaderboard)
+        first_se_all_models = [m for m in first_se if re.search(r'_AllModels_', m)]
         se_all_models = [m for m in se if re.search(r'_AllModels_', m)]
         se_best_of_family = [m for m in se if re.search(r'_BestOfFamily_', m)]
         lb = aml.leaderboard
         print(lb.head(lb.nrows))
 
         assert len(se) == len(se_all_models) + len(se_best_of_family)
-        assert len(se_all_models) == 1, "expecting only the first StackedEnsemble_AllModels, but got {}".format(len(se_all_models))
+        assert len(se_all_models) == len(first_se_all_models), \
+            "expecting only the {} first StackedEnsemble_AllModels, but got {}".format(len(first_se_all_models), len(se_all_models))
         assert se_all_models[0] in first_se, "first StackedEnsemble_AllModels got replaced by new one"
         if len(se_best_of_family) > 1:
             assert first_bof in se_best_of_family, "first StackedEnsemble_BestOfFamily disappeared after multiple runs"
@@ -314,13 +317,15 @@ def test_suite_remove_automl():
         assert aml.key.startswith(project_name)
         assert contains_leaderboard(aml.key, keys)
         assert contains_event_log(aml.key, keys)
+        num_SEs = len(keys['metalearners'])
+        print({k: len(v) for k, v in keys.items()})
         expectations = dict(
-            models_base=max_models + 3,  # 2 SEs
+            models_base=max_models + num_SEs,
             cv_models=0,
             predictions=0,
             metrics=(max_models * 3  # for each non-SE model, 1 on training_frame, 1 on validation_frame, 1 on leaderboard_frame
-                     + (3 * 2)  # for each SE model, 1 on training frame, 1 on leaderboard frame
-                     + (3 * 2)  # for each SE metalearner, 1+1 on levelone training+validation
+                     + (num_SEs * 2)  # for each SE model, 1 on training frame, 1 on leaderboard frame
+                     + (num_SEs * 2)  # for each SE metalearner, 1+1 on levelone training+validation
                      + (1 if any(("DeepLearning" in x for x in keys["metrics"])) else 0)  # DeepLearning has 2 training metrics (IDK why)
                      )
         )
@@ -360,15 +365,17 @@ def test_suite_remove_automl():
         assert aml.key.startswith(project_name)
         assert contains_leaderboard(aml.key, keys)
         assert contains_event_log(aml.key, keys)
+        num_SEs = len(keys['metalearners']) / (nfolds + 1)  # keeping cv models, so metalearners include cv models
+        print({k: len(v) for k, v in keys.items()})
         expectations = dict(
-            models_base=max_models + 3,  # 2 SEs
-            cv_models=(max_models+3) * nfolds,  # 1 cv model per fold for all models, incl. SEs
+            models_base=max_models + num_SEs,
+            cv_models=(max_models+num_SEs) * nfolds,  # 1 cv model per fold for all models, incl. SEs
             predictions=(len(keys['cv_models'])  # cv predictions
                          + len(keys['models_base'])  # cv holdout predictions
                          ),
             metrics=(len(keys['cv_models']) * 3  # for each cv model, 1 on training frame, 1 on validation frame (=training for cv), one on adapted frame (to be removed with PUBDEV-6638)
                      + len(keys['models_base'])  # for each model, 1 on training_frame
-                     + (3 * 1)  # for each SE, 1 on levelone training
+                     + (num_SEs * 1)  # for each SE, 1 on levelone training
                      + (1 if any(("DeepLearning" in x for x in keys["metrics"])) else 0)  # DeepLearning has 2 training metrics (IDK why)
                      )
         )
@@ -404,13 +411,15 @@ def test_suite_remove_automl():
         assert aml.key.startswith(project_name)
         assert contains_leaderboard(aml.key, keys)
         assert contains_event_log(aml.key, keys)
+        num_SEs = len(keys['metalearners'])
+        print({k: len(v) for k, v in keys.items()})
         expectations = dict(
-            models_base=max_models + 3,  # 2 SEs
+            models_base=max_models + num_SEs,
             cv_models=0,
             predictions=0,
             metrics=(len(keys['models_base']) * 2  # for each model, 1 on training_frame, 1 on leaderboard frame (those are extracted from original training_frame)
                      + max_models * 1  # for each non-SE model, 1 on validation frame
-                     + (3 * 2)  # for each SE metalearner, 1 on levelone training, 1 on levelone validation
+                     + (num_SEs * 2)  # for each SE metalearner, 1 on levelone training, 1 on levelone validation
                      )
         )
         for k, v in expectations.items():

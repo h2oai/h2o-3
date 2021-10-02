@@ -4468,14 +4468,14 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 #' # Single column
 #' cars <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' df <- h2o.importFile(cars)
-#' cars["cylinders"] <- as.factor(cars["cylinders"])
+#' df["cylinders"] <- as.factor(df["cylinders"])
 #' h2o.describe(df["cylinders"])
 #' 
 #' # Multiple columns
 #' cars <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' df <- h2o.importFile(cars)
-#' cars[c("cylinders","economy_20mpg")] <- as.factor(cars[c("cylinders","economy_20mpg")])
-#' h2o.describe(cars[c("cylinders","economy_20mpg")])
+#' df[c("cylinders","economy_20mpg")] <- as.factor(df[c("cylinders","economy_20mpg")])
+#' h2o.describe(df[c("cylinders","economy_20mpg")])
 #' }
 #' @export
 as.factor <- function(x) {
