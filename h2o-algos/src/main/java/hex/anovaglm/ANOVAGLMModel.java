@@ -199,7 +199,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
 
   public Key<Frame> generateANOVATableFrame(String[] modelNames, GLMModel[] glmModels, int[] degreeOfFreedom) {
     int lastModelIndex = glmModels.length - 1;
-    String[] colNames = new String[]{"predictor/predictors interaction", "family", "link", "ss", "df", "ms", "f", "p_value"};
+    String[] colNames = new String[]{"predictors_interactions", "family", "link", "ss", "df", "ms", "f", "p_value"};
     String[] rowNames = new String[lastModelIndex];
     String[] familyNames = new String[lastModelIndex];
     String[] linkNames = new String[lastModelIndex];
