@@ -32,14 +32,15 @@ test.GLM.offset.quasibinomial <- function() {
   params$y <- y
   params$family <- "quasibinomial"
   params$offset_column <- "C1"
-
+  browser()
   modelAndDir<-buildModelSaveMojoGLM(params) # build the model and save mojo
   filename <- sprintf("%s/in.csv", modelAndDir$dirName) # save the test dataset into a in.csv file.
   h2o.downloadCSV(hf[1:100, xOffset], filename)
   twoFrames<-mojoH2Opredict(modelAndDir$model, modelAndDir$dirName, filename, col.types=c("numeric", "numeric", "numeric")) # perform H2O and mojo prediction and return frames
   h2o.downloadCSV(twoFrames$h2oPredict, sprintf("%s/h2oPred.csv", modelAndDir$dirName))
   h2o.downloadCSV(twoFrames$mojoPredict, sprintf("%s/mojoOut.csv", modelAndDir$dirname))
-  twoFrames$h2oPredict[,1] <- h2o.asnumeric(twoFrames$h2oPredict[,1])
+  twoFrames$h2oPredict[,1] <- h2o.asfactor(twoFrames$h2oPredict[,1])
+  twoFrames$mojoPredict[,1] <- h2o.asfactor(twoFrames$mojoPredict[,1])
   compareFrames(twoFrames$h2oPredict,twoFrames$mojoPredict, prob=1, tolerance = 1e-6)
 }
 
