@@ -13,7 +13,7 @@ def testFrameTransform():
 
   model = H2OANOVAGLMEstimator(family='gaussian', lambda_=0, save_transformed_framekeys=True)
   model.train(x=x, y=y, training_frame=train)
-  transformFrame = h2o.get_frame(model._model_json["output"]["transformed_columns_key"])
+  transformFrame = h2o.get_frame(model._model_json['output']['transformed_columns_key']['name'])
   pyunit_utils.compare_frames_local(answer[['fcategory1', 'fcategory2', 'partner.status1', 
                                             'fcategory1:partner.status1', 'fcategory2:partner.status1']], 
                                     transformFrame[['fcategory_high', 'fcategory_low', 'partner.status_high', 

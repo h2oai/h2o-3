@@ -58,7 +58,7 @@ public class AnovaGLMBasicTest {
       params._save_transformed_framekeys = true;
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      Frame transformedFrame = DKV.getGet(anovaG._output._transformedColumnKey);
+      Frame transformedFrame = DKV.getGet(anovaG._output._transformed_columns_key);
       Scope.track(transformedFrame);
       String[] tNames = new String[]{"fcategory_high", "fcategory_low", "partner.status_high", 
               "fcategory_high:partner.status_high", "fcategory_low:partner.status_high"};
@@ -66,12 +66,12 @@ public class AnovaGLMBasicTest {
       TestUtil.assertIdenticalUpToRelTolerance(Scope.track(correctFrame.subframe(correctNames)), 
               Scope.track(transformedFrame.subframe(tNames)), 0);
       // check model summary with correct SS
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "fcategory", "F") *
-                      getModelSummaryIntField(anovaG, "fcategory", "DF")-1.7178) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "partner.status", "F") *
-              getModelSummaryIntField(anovaG, "partner.status", "DF") -11.4250) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "fcategory:partner.status", "F") *
-              getModelSummaryIntField(anovaG, "fcategory:partner.status", "DF")-8.3692) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "fcategory", "f") *
+                      getModelSummaryIntField(anovaG, "fcategory", "df")-1.7178) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "partner.status", "f") *
+              getModelSummaryIntField(anovaG, "partner.status", "df") -11.4250) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "fcategory:partner.status", "f") *
+              getModelSummaryIntField(anovaG, "fcategory:partner.status", "df")-8.3692) < 1e-2);
       System.out.println("Completed test testFrameTransformGaussian");
       
     } finally {
@@ -88,7 +88,7 @@ public class AnovaGLMBasicTest {
   public static int getModelSummaryIntField(ANOVAGLMModel anovaG, String rowHeader, String colHeader) {
     int colIndex = Arrays.asList(anovaG._output._model_summary.getColHeaders()).indexOf(colHeader);
     int rowIndex = Arrays.asList(anovaG._output._model_summary.getRowHeaders()).indexOf(rowHeader);
-    return (int) anovaG._output._model_summary.get(rowIndex, colIndex);
+    return (int) Math.round((Double) anovaG._output._model_summary.get(rowIndex, colIndex));
   }
 
   /**
@@ -116,7 +116,7 @@ public class AnovaGLMBasicTest {
 
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      Frame transformedFrame = DKV.getGet(anovaG._output._transformedColumnKey);
+      Frame transformedFrame = DKV.getGet(anovaG._output._transformed_columns_key);
       Scope.track(transformedFrame);
       String[] compareCols = new String[]{params._weights_column, params._offset_column, params._response_column};
       TestUtil.assertIdenticalUpToRelTolerance(Scope.track(train.subframe(compareCols)), 
@@ -233,13 +233,46 @@ public class AnovaGLMBasicTest {
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      assertTrue(Math.abs(Math.round(getModelSummaryDoubleField(anovaG, "C1", "SS"))-9360)
+      assertTrue(Math.abs(Math.round(getModelSummaryDoubleField(anovaG, "C1", "ss"))-9360)
               == 0);
-      assertTrue(Math.abs(Math.round(getModelSummaryDoubleField(anovaG, "C2", "SS"))-14248)
+      assertTrue(Math.abs(Math.round(getModelSummaryDoubleField(anovaG, "C2", "ss"))-14248)
               == 0);
-      assertTrue(Math.abs(Math.round(getModelSummaryDoubleField(anovaG, "C1:C2", "SS"))
+      assertTrue(Math.abs(Math.round(getModelSummaryDoubleField(anovaG, "C1:C2", "ss"))
               -92800) == 0);
       System.out.println("Completed test testPoisson");
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test 
+  public void testANOVATableFrame() {
+    try {
+      Scope.enter();
+      Frame train  = parseTestFile("smalldata/anovaGlm/poissonAnova.csv");
+      Scope.track(train);
+      ANOVAGLMModel.ANOVAGLMParameters params = new ANOVAGLMModel.ANOVAGLMParameters();
+      params._family = poisson;
+      params._link = log;
+      params._response_column = "response";
+      params._train = train._key;
+      params._solver = GLMModel.GLMParameters.Solver.IRLSM;
+      ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
+      Frame anovaTable = anovaG.result();
+      Scope.track(anovaTable);
+      Scope.track_generic(anovaG);
+      // compare and make sure anova table frame and model summary contains the same contents, testing only numerics
+      String[] rowHeaders = new String[]{"C1", "C2", "C1:C2"};
+      String[] colHeaders = anovaTable.names();
+      for (int rIndex=0; rIndex < rowHeaders.length; rIndex++) {
+        for (int cIndex=0; cIndex < colHeaders.length; cIndex++) {
+          if (colHeaders[cIndex].equals("DF"))
+            assertTrue(getModelSummaryIntField(anovaG, rowHeaders[rIndex], colHeaders[cIndex])==anovaTable.vec(cIndex).at(rIndex));
+          else if (anovaTable.vec(cIndex).isNumeric())
+          assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, rowHeaders[rIndex], colHeaders[cIndex])-
+                  anovaTable.vec(cIndex).at(rIndex))<1e-6);
+        }
+      }
     } finally {
       Scope.exit();
     }
@@ -273,16 +306,16 @@ public class AnovaGLMBasicTest {
       params._lambda = new double[]{0.0};
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE", "SS")-103.565) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE", "SS")-224.449) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "DCAPS", "SS")-27.427) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE", "SS")-179.645)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE", "ss")-103.565) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE", "ss")-224.449) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "DCAPS", "ss")-27.427) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE", "ss")-179.645)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:DCAPS", "SS")-0.992)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:DCAPS", "ss")-0.992)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:DCAPS", "SS")-23.554)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:DCAPS", "ss")-23.554)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:DCAPS", "SS")
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:DCAPS", "ss")
               -8.612) < 1e-2);
       System.out.println("Completed test testBinomial");
     } finally {
@@ -328,29 +361,29 @@ public class AnovaGLMBasicTest {
       params._lambda = new double[]{0.0};
       ANOVAGLMModel anovaG = new ANOVAGLM(params).trainModel().get();
       Scope.track_generic(anovaG);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE", "F")-58.53) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE", "F")-75.80) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "DCAPS", "F")-160.48) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "VOL", "F")-1492.63) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE", "F")-83.56)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE", "f")-58.53) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE", "f")-75.80) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "DCAPS", "f")-160.48) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "VOL", "f")-1492.63) < 1e-2);
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE", "f")-83.56)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:DCAPS", "F")-250.40) 
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:DCAPS", "f")-250.40) 
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:VOL", "F")-1445.69)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:VOL", "f")-1445.69)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:DCAPS", "F")-281.29)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:DCAPS", "f")-281.29)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:VOL", "F")-1875.09)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:VOL", "f")-1875.09)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "DCAPS:VOL", "F")-1448.79)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "DCAPS:VOL", "f")-1448.79)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:DCAPS", "F")-321.98)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:DCAPS", "f")-321.98)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:VOL", "F")-1820.74)
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:VOL", "f")-1820.74)
               < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:DCAPS:VOL", "F")-
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "RACE:DCAPS:VOL", "f")-
               1793.20) < 1e-2);
-      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:DCAPS:VOL", "F")-
+      assertTrue(Math.abs(getModelSummaryDoubleField(anovaG, "AGE:RACE:DCAPS:VOL", "f")-
               1770.32) < 1e-2);
       System.out.println("Completed test testTweedie");
     } finally {

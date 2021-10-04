@@ -1,4 +1,6 @@
-def class_extensions():
+rest_api_version = 3
+
+def class_extensions():        
     @property
     def Lambda(self):
         """DEPRECATED. Use ``self.lambda_`` instead"""
@@ -7,7 +9,13 @@ def class_extensions():
     @Lambda.setter
     def Lambda(self, value):
         self._parms["lambda"] = value
-
+        
+    def result(self):
+        key = self._model_json["output"]["result_frame_key"]
+        if key is None:
+            return None
+        else:
+            return h2o.get_frame(key['name'])
 
 extensions = dict(
     __imports__="""import h2o""",
