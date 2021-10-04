@@ -1,0 +1,16 @@
+// Copy each jar artifact to a file without version to support Cliff's make files
+tasks.withType(Jar) { Jar t ->
+  t.doLast {
+    copy {
+      from t.archivePath
+      into t.destinationDir
+      // Here we expected standard JAR file archive name:
+      //    [baseName]-[appendix]-[version]-[classifier].[extension]
+      if (t.classifier!=null) {
+          rename("(.*)-${t.version}(.*)", '$1$2')
+      } else {
+          rename("(.*)${t.version}-?(.*)", '$1$2')
+      }
+    }
+  }
+}

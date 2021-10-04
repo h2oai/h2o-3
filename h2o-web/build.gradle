@@ -179,8 +179,6 @@ processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
 
-copyGenModelJarToWebRoot.dependsOn ":h2o-assemblies:genmodel:copyJar"
-
 compileAndInstallDocFiles.dependsOn installNpmPackages
 compileAndInstallDocFiles.dependsOn ":h2o-bindings:runGenerateRESTAPIBindingsSrc"
 build.dependsOn compileAndInstallDocFiles
