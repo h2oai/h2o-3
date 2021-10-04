@@ -26,7 +26,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index
 
 #### Task
 
-- [[PUBDEV-8330]](https://h2oai.atlassian.net/browse/PUBDEV-8330) - Added GLM offset support to GLM MOJO.
+- [[PUBDEV-8330]](https://h2oai.atlassian.net/browse/PUBDEV-8330) - Added GLM offset column support to GLM MOJO.
 
 #### Docs
 
