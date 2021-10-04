@@ -513,9 +513,31 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     if (_hyper_names == null || model_ids == null || model_ids.length == 0) return null;
     int extra_len = sort_by != null ? 2 : 1;
     String[] colTypes = new String[_hyper_names.length + extra_len];
-    Arrays.fill(colTypes, "string");
     String[] colFormats = new String[_hyper_names.length + extra_len];
+
+    // Set the default type to string
+    Arrays.fill(colTypes, "string");
     Arrays.fill(colFormats, "%s");
+
+    // Change where appropriate (and only the hyper params)
+    for (int i = 0; i < _hyper_names.length; i++) {
+      Object[] objects = _hyper_params.getValues().get(_hyper_names[i]);
+      if (objects != null && objects.length > 0) {
+        Object obj = objects[0];
+        if (obj instanceof Double || obj instanceof Float) {
+          colTypes[i] = "double";
+          colFormats[i] = "%.5f";
+        } else if (obj instanceof Integer || obj instanceof Long) {
+          colTypes[i] = "long";
+          colFormats[i] = "%d";
+        }
+      }
+    }
+    if (sort_by != null) {
+      colTypes[colTypes.length-1] = "double";
+      colFormats[colFormats.length-1] = "%.5f";
+    }
+
     String[] colNames = Arrays.copyOf(_hyper_names, _hyper_names.length + extra_len);
     colNames[_hyper_names.length] = "model_ids";
     if (sort_by != null)
@@ -528,8 +550,18 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       Model m = DKV.getGet(km);
       Model.Parameters parms = m._parms;
       int j;
-      for (j = 0; j < _hyper_names.length; ++j)
-        table.set(i, j, PojoUtils.getFieldValue(parms, _hyper_names[j], _field_naming_strategy));
+      for (j = 0; j < _hyper_names.length; ++j) {
+        Object paramValue = PojoUtils.getFieldValue(parms, _hyper_names[j], _field_naming_strategy);
+        if (paramValue.getClass().isArray()) {
+          // E.g., GLM alpha/lambda parameters can be arrays with one value
+          if (paramValue instanceof float[] && ((float[])paramValue).length == 1) paramValue = ((float[]) paramValue)[0];
+          else if (paramValue instanceof double[] && ((double[])paramValue).length == 1) paramValue = ((double[]) paramValue)[0];
+          else if (paramValue instanceof int[] && ((int[])paramValue).length == 1) paramValue = ((int[]) paramValue)[0];
+          else if (paramValue instanceof long[] && ((long[])paramValue).length == 1) paramValue = ((long[]) paramValue)[0];
+          else if (paramValue instanceof Object[] && ((Object[])paramValue).length == 1) paramValue = ((Object[]) paramValue)[0];
+        }
+        table.set(i, j, paramValue);
+      }
       table.set(i, j, km.toString());
       if (sort_by != null) table.set(i, j + 1, ModelMetrics.getMetricFromModel(km, sort_by));
       i++;
