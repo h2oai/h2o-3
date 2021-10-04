@@ -147,15 +147,16 @@ def test_explanation_automl_regression():
 
     # Leaderboard slices work
     # test explain
-    assert isinstance(h2o.explain(aml.leaderboard[:8, :], train, render=False), H2OExplanation)
+    assert isinstance(h2o.explain(aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :],
+                                  train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(h2o.explain_row(aml.leaderboard[:8, :], train, 1, render=False), H2OExplanation)
+    assert isinstance(h2o.explain_row(aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :],
+                                      train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_regression():
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
-    train["name"] = train["name"].asfactor()
     y = "fare"
 
     # get at most one column from each type
@@ -303,25 +304,26 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
-    assert len(h2o.explanation.varimp(aml.leaderboard[:8, :], use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
-    assert isinstance(h2o.explanation.varimp(aml.leaderboard[:8, :], use_pandas=True), pandas.DataFrame)
+    leaderboard_without_SE = aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :]
+    assert len(h2o.explanation.varimp(leaderboard_without_SE, use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
+    assert isinstance(h2o.explanation.varimp(leaderboard_without_SE, use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(aml.leaderboard[:8, :], train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
-    assert len(h2o.explanation.model_correlation(aml.leaderboard[:8, :], train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
-    assert isinstance(h2o.explanation.model_correlation(aml.leaderboard[:8, :], train, use_pandas=True), pandas.DataFrame)
+    assert len(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
+    assert isinstance(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=True), pandas.DataFrame)
 
     # test partial dependences
-    assert isinstance(h2o.pd_multi_plot(aml.leaderboard[:8, :], train, cols_to_test[0]), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.pd_multi_plot(leaderboard_without_SE, train, cols_to_test[0]), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test explain
-    assert isinstance(h2o.explain(aml.leaderboard[:8, :], train, render=False), H2OExplanation)
+    assert isinstance(h2o.explain(leaderboard_without_SE, train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(h2o.explain_row(aml.leaderboard[:8, :], train, 1, render=False), H2OExplanation)
+    assert isinstance(h2o.explain_row(leaderboard_without_SE, train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_binomial_classification():
@@ -468,10 +470,10 @@ def test_explanation_automl_multinomial_classification():
 
     # Leaderboard slices work
     # test explain
-    assert isinstance(h2o.explain(aml.leaderboard[:8, :], train, render=False), H2OExplanation)
+    assert isinstance(h2o.explain(aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :], train, render=False), H2OExplanation)
 
     # test explain row
-    assert isinstance(h2o.explain_row(aml.leaderboard[:8, :], train, 1, render=False), H2OExplanation)
+    assert isinstance(h2o.explain_row(aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :], train, 1, render=False), H2OExplanation)
 
 
 def test_explanation_list_of_models_multinomial_classification():
