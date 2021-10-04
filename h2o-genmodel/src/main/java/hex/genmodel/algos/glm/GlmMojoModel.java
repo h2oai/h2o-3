@@ -23,7 +23,13 @@ public class GlmMojoModel extends GlmMojoModelBase {
     _binomial = "binomial".equals(_family) || "fractionalbinomial".equals(_family) || "quasibinomial".equals(_family);
   }
 
-  @Override
+  public final double[] score0(double[] data, double offset, double[] preds) {
+    if (_meanImputation)
+      super.imputeMissingWithMeans(data);
+
+    return glmScore0(data, offset, preds);
+  }
+  
   double[] glmScore0(double[] data, double offset, double[] preds) {
     double eta = 0.0;
 

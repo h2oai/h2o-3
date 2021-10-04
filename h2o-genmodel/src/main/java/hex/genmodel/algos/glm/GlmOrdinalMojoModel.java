@@ -27,8 +27,14 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
       throw new IllegalStateException("Incorrect coding of Beta.");
     noff = _catOffsets[_cats];
   }
+
+  public final double[] score0(double[] data, double offset, double[] preds) {
+    if (_meanImputation)
+      super.imputeMissingWithMeans(data);
+
+    return glmScore0(data, offset, preds);
+  }
   
-  @Override
   double[] glmScore0(double[] data, double offset, double[] preds) {
     Arrays.fill(preds, 0);
     preds[0]=lastClass;
