@@ -125,7 +125,7 @@ shadowJar {
 }
 
 task copyJar(type: Copy) {
-  from configurations.compileClasspath
+  from "${buildDir}/libs/${archiveName}-${project.version}.jar"
   rename { filename ->
     return "${archiveName}.jar"
   }
