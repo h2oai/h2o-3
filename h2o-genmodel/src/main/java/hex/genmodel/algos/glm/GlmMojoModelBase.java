@@ -17,16 +17,19 @@ abstract class GlmMojoModelBase extends MojoModel {
   double[] _beta;
 
   String _family;
+  boolean _versionSupportOffset;
 
   GlmMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
 
-  void init() { /* do nothing by default */ }
+  void init() {
+    _versionSupportOffset = _mojo_version >= 1.1;
+  }
 
   @Override
   public final double[] score0(double[] data, double[] preds) {
-    return score0(data, 0, preds);
+      return score0(data, 0, preds);
   }
 
   void imputeMissingWithMeans(double[] data) {

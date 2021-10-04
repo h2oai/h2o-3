@@ -61,7 +61,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   }
 
   @Override public String mojoVersion() {
-    return "1.10";
+    return "1.00";
   } // add support to offset
 
 }
