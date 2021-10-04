@@ -1,3 +1,5 @@
+def archiveName = "h2odriver"
+
 dependencies {
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")
@@ -79,12 +81,20 @@ shadowJar {
     exclude hadoopShadowJarExcludes
     relocate 'com.google.common', 'ai.h2o.com.google.common'
     relocate 'org.eclipse.jetty', 'ai.h2o.org.eclipse.jetty'
-    baseName = 'h2odriver'
+    baseName = archiveName
     classifier = ''
     manifest {
         attributes 'Main-Class': 'water.hadoop.h2odriver'
     }
     zip64 true
+}
+
+task copyJar(type: Copy) {
+    from configurations.compileClasspath
+    rename { filename ->
+        return "${archiveName}.jar"
+    }
+    into "${buildDir}/libs/"
 }
 
 artifacts {
@@ -97,3 +107,4 @@ jar {
 }
 
 build.dependsOn shadowJar
+shadowJar.finalizedBy copyJar
