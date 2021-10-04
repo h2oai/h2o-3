@@ -9,7 +9,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index
 #### Bug
 
 - [[PUBDEV-8357]](https://h2oai.atlassian.net/browse/PUBDEV-8357) - Improved error messages in Explain module by making the errors clearer.
+- [[PUBDEV-8350]](https://h2oai.atlassian.net/browse/PUBDEV-8350) - Fixed H2OTable colTypes in Grid’s summary table.
 - [[PUBDEV-8349]](https://h2oai.atlassian.net/browse/PUBDEV-8349) - Fixed infinite loop in hex.grid.HyperSpaceWalker.RandomDiscreteValueWalker.
+- [[PUBDEV-8340]](https://h2oai.atlassian.net/browse/PUBDEV-8340) - Fixed AutoML ignoring optional Stacked Ensembles.
 - [[PUBDEV-8338]](https://h2oai.atlassian.net/browse/PUBDEV-8338) - Fixed NPE thrown in AutoML when XGBoost is disabled/not available.
 - [[PUBDEV-8337]](https://h2oai.atlassian.net/browse/PUBDEV-8337) - Fixed CRAN install.
 - [[PUBDEV-8266]](https://h2oai.atlassian.net/browse/PUBDEV-8266) - Fixed `col_sample_rate` in XGBoost.
@@ -17,8 +19,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index
 
 #### Improvement
 
+- [[PUBDEV-8366]](https://h2oai.atlassian.net/browse/PUBDEV-8366) - Removed support for legacy Cliffs makefile.
+- [[PUBDEV-8343]](https://h2oai.atlassian.net/browse/PUBDEV-8343) - Exposed AutoML `get_leaderboard` as a method in Python.
 - [[PUBDEV-8342]](https://h2oai.atlassian.net/browse/PUBDEV-8342) - Improved Python client by printing the stacktrace in case of ServerError allowing users to report informative issues for investigation.
 - [[PUBDEV-8305]](https://h2oai.atlassian.net/browse/PUBDEV-8305) - Enhanced tests by testing the case through all encodings.
+
+#### Task
+
+- [[PUBDEV-8330]](https://h2oai.atlassian.net/browse/PUBDEV-8330) - Added GLM offset support to GLM MOJO.
 
 #### Docs
 
