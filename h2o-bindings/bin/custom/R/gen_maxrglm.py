@@ -22,7 +22,7 @@ h2o.get_best_r2_values<- function(model) {
 h2o.get_best_model_predictors<-function(model) {
   if ( is(model, "H2OModel") && (model@algorithm=='maxrglm'))
     return(model@model$best_model_predictors)
-}    
+} 
     """
 )
 

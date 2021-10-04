@@ -3,11 +3,14 @@ package hex.maxrglm;
 import hex.*;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import water.DKV;
 import water.H2O;
 import water.Key;
-import water.api.schemas3.FrameV3;
+import water.Scope;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+
+import java.util.stream.Stream;
 
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
@@ -24,7 +27,6 @@ public class MaxRGLM extends ModelBuilder<MaxRGLMModel, MaxRGLMModel.MaxRGLMPara
     public int _glmNFolds = 0;
     Model.Parameters.FoldAssignmentScheme _foldAssignment = null;
     String _foldColumn = null;
-    
 
     public MaxRGLM(boolean startup_once) {
         super(new MaxRGLMModel.MaxRGLMParameters(), startup_once);
@@ -126,6 +128,9 @@ public class MaxRGLM extends ModelBuilder<MaxRGLMModel, MaxRGLMModel.MaxRGLMPara
             try {
                 model = new MaxRGLMModel(dest(), _parms, new MaxRGLMModel.MaxRGLMModelOutput(MaxRGLM.this, _dinfo));
                 model.write_lock(_job);
+                model._output._best_model_ids = new Key[_parms._max_predictor_number];
+                model._output._best_r2_values = new double[_parms._max_predictor_number];
+                model._output._best_model_predictors = new String[_parms._max_predictor_number][];
                 // build glm model with num_predictors and find one with best R2
                 for (int predNum=1; predNum <= _parms._max_predictor_number; predNum++) { 
                     int numModels = combinatorial(_numPredictors, predNum);
@@ -139,8 +144,14 @@ public class MaxRGLM extends ModelBuilder<MaxRGLMModel, MaxRGLMModel.MaxRGLMPara
                     GLM[] glmBuilder = buildGLMBuilders(trainingParams);
                     // call parallel build
                     GLM[] glmResults = ModelBuilderHelper.trainModelsParallel(glmBuilder, _parms._nparallelism);
+                    Stream.of(glmResults).map(GLM::get).forEach(Scope::track_generic);
+                    // find best GLM Model with highest R2 value
+                    int index = predNum-1;
+                    GLMModel bestModel = findBestModel(glmResults);
+                    Scope.untrack(bestModel.getKey());  // untrack best model
+                    DKV.put(bestModel);
                     // extract R2 and collect the best R2 and the predictors set
-                    extractBestModels(_bestModelPredictors, _bestR2Values, glmResults, predNum-1);
+                    model._output.updateBestModels(bestModel, index);
                     // remove training frames from DKV
                     removeTrainingFrames(trainingFrames);
                     _job.update(predNum, "finished building all models with "+predNum+" predictors.");
@@ -148,7 +159,7 @@ public class MaxRGLM extends ModelBuilder<MaxRGLMModel, MaxRGLMModel.MaxRGLMPara
                 _job.update(0, "Completed GLM model building.  Extracting results now.");
                 model.update(_job);
                 // copy best R2 and best predictors to model._output
-                model._output.summarizeRunResult(_bestModelPredictors, _bestR2Values);
+                model._output.generateSummary();
             } finally {
                 model.update(_job);
                 model.unlock(_job);

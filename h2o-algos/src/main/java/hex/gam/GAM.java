@@ -724,7 +724,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 "smoothers, \ndisable scaling for TP penalty matrics, or not use thin plate regression smoothers at all.");
       } finally {
         try {
-          final List<Key<Vec>> keep = new ArrayList<>();
+          final List<Key> keep = new ArrayList<>();
           if (model != null) {
             if (_parms._keep_gam_cols) {
               keepFrameKeys(keep, newTFrame._key);

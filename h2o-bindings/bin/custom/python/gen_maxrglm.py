@@ -1,4 +1,13 @@
 def class_extensions():
+    def result(self):
+        """
+        Get result frame that contains the model name, model ID, best r2 values and predictors used in building the model.
+        
+        :param self: 
+        :return: 
+        """
+        return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
+        
     def get_best_R2_values(self):
         """
         Get list of best R2 values of models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors
@@ -27,7 +36,13 @@ def class_extensions():
 
 
 extensions = dict(
-    __imports__="""import h2o""",
+    __imports__="""
+    import h2o
+    from h2o.base import Keyed
+    from h2o.frame import H2OFrame
+    from h2o.expr import ExprNode
+    from h2o.expr import ASTId
+    """,
     __class__=class_extensions,
     __init__validation="""
 if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")

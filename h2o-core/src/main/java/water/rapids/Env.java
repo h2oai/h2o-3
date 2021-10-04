@@ -327,6 +327,9 @@ public class Env extends Iced {
 
     // For internal use only
     init(new AstRunTool());
+    
+    // generate result frame
+    init(new AstResultFrame());
 
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
