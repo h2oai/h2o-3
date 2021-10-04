@@ -107,10 +107,10 @@ explanation_test_automl_regression <- function() {
 
   # Leaderboard slice works
   # test explanation
-  expect_true("H2OExplanation" %in% class(h2o.explain(aml@leaderboard[1:4,], train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(aml@leaderboard[-1,], train)))
 
   # test explanation
-  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml@leaderboard[1:4,], train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml@leaderboard[-1,], train, 1)))
 }
 
 explanation_test_list_of_models_regression <- function() {
@@ -260,28 +260,28 @@ explanation_test_automl_binomial_classification <- function() {
 
   # Leaderboard slice works
   # test model correlation
-  expect_ggplot(h2o.model_correlation_heatmap(aml@leaderboard[1:8,], train))
+  expect_ggplot(h2o.model_correlation_heatmap(aml@leaderboard[-1,], train))
 
   # test variable importance heatmap
-  expect_ggplot(h2o.varimp_heatmap(aml@leaderboard[1:8,]))
+  expect_ggplot(h2o.varimp_heatmap(aml@leaderboard[-1,]))
 
   # test shap summary
-  expect_error(h2o.shap_summary_plot(aml@leaderboard[1:8,], train), "SHAP summary plot requires a tree-based model!")
+  expect_error(h2o.shap_summary_plot(aml@leaderboard[-1,], train), "SHAP summary plot requires a tree-based model!")
 
   # test shap explain row
-  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[1:8,], train, 1), "SHAP explain_row plot requires a tree-based model!")
+  expect_error(h2o.shap_explain_row_plot(aml@leaderboard[-1,], train, 1), "SHAP explain_row plot requires a tree-based model!")
 
   # test partial dependences
-  expect_ggplot(h2o.pd_multi_plot(aml@leaderboard[1:8,], train, cols_to_test[[1]]))
+  expect_ggplot(h2o.pd_multi_plot(aml@leaderboard[-1,], train, cols_to_test[[1]]))
 
   # test ice plot
-  expect_error(h2o.ice_plot(aml@leaderboard[1:8,], train, cols_to_test[[1]]), "Only one model is allowed!")
+  expect_error(h2o.ice_plot(aml@leaderboard[-1,], train, cols_to_test[[1]]), "Only one model is allowed!")
 
   # test explanation
-  expect_true("H2OExplanation" %in% class(h2o.explain(aml@leaderboard[1:8,], train)))
+  expect_true("H2OExplanation" %in% class(h2o.explain(aml@leaderboard[-1,], train)))
 
   # test explanation
-  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml@leaderboard[1:8,], train, 1)))
+  expect_true("H2OExplanation" %in% class(h2o.explain_row(aml@leaderboard[-1,], train, 1)))
 }
 
 explanation_test_list_of_models_binomial_classification <- function() {
