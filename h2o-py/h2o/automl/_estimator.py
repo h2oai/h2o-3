@@ -145,36 +145,40 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
             Defaults to ``5``.
 
-        :param bool balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
+        :param bool balance_classes: Specify whether to oversample the minority classes to balance the class distribution. This option can increase
+            the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size
+            calculated using the ``max_after_balance_size`` parameter, then the majority classes will be undersampled to satisfy the size limit.
             Defaults to ``False``.
         :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order).
-            If not specified, sampling factors will be automatically computed to obtain class balance during training.
+            If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires ``balance_classes`` set to ``True``.
         :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
             Requires ``balance_classes``.
             Defaults to ``5.0``.
         :param int max_runtime_secs: Specify the maximum time that the AutoML process will run for.
-            If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs``.
-            Defaults to 3600 seconds (1 hour).
+            If neither ``max_runtime_secs`` nor ``max_models`` are specified by the user, then ``max_runtime_secs`` dynamically
+            defaults to 3600 seconds (1 hour). Otherwise, defaults to ``0`` (no limit).
         :param int max_runtime_secs_per_model: Controls the max time the AutoML run will dedicate to each individual model.
             Defaults to ``0`` (disabled: no time limit).
         :param int max_models: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.
-            Defaults to ``0`` (disabled: no limitation).
+            Defaults to ``None`` (disabled: no limitation).
         :param str stopping_metric: Specifies the metric to use for early stopping. 
             The available options are:
             ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
             ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
             ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
             Defaults to ``"AUTO"``.
-        :param float stopping_tolerance: Specify the relative tolerance for the metric-based stopping to stop the AutoML run if the improvement is less than this value. 
+        :param float stopping_tolerance: Specify the relative tolerance for the metric-based stopping criterion to stop a grid search and
+            the training of individual models within the AutoML run.
             Defaults to ``0.001`` if the dataset is at least 1 million rows;
             otherwise it defaults to a value determined by the size of the dataset and the non-NA-rate, in which case the value is computed as 1/sqrt(nrows * non-NA-rate).
         :param int stopping_rounds: Stop training new models in the AutoML run when the option selected for
-            stopping_metric doesn't improve for the specified number of models, based on a simple moving average.
+            ``stopping_metric`` doesn't improve for the specified number of models, based on a simple moving average.
             To disable this feature, set it to ``0``.
             Defaults to ``3`` and must be an non-negative integer.
         :param int seed: Set a seed for reproducibility. 
             AutoML can only guarantee reproducibility if ``max_models`` or early stopping is used because ``max_runtime_secs`` is resource limited, 
-            meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another. 
+            meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
+            In addition, H2O Deep Learning models are not reproducible by default for performance reasons, so ``exclude_algos`` must contain ``DeepLearning``.
             Defaults to ``None``.
         :param str project_name: Character string to identify an AutoML project.
             Defaults to ``None``, which means a project name will be auto-generated based on the training frame ID.
@@ -191,17 +195,18 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
             Usage example: ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``.
         :param include_algos: List the algorithms to restrict to during the model-building phase.
-            This can't be used in combination with `exclude_algos` param.
+            This can't be used in combination with ``exclude_algos`` param.
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+            Usage example: ``include_algos = ["GLM, "DeepLearning", "DRF"]``.
         :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase.
-            By default, this is set to auto (exploitation_ratio=-1) as this is still experimental;
+            By default, the exploitation phase is ``0`` (disabled) as this is still experimental;
             to activate it, it is recommended to try a ratio around 0.1.
             Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
-            Defaults to None (Expert usage only).
-        :param preprocessing: List of preprocessing steps to run. Only 'target_encoding' is currently supported.
-        :param monotone_constraints: Dict representing monotonic constraints.
-            Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
+            Defaults to ``None`` (Expert usage only).
+        :param preprocessing: List of preprocessing steps to run. Only ``["target_encoding"]`` is currently supported. Experimental.
+        :param monotone_constraints: A mapping that represents monotonic constraints.
+            Use ``+1`` to enforce an increasing constraint and ``-1`` to specify a decreasing constraint.
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
             This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
             additional Stacked Ensemble models in AutoML. 
@@ -212,14 +217,14 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param keep_cross_validation_fold_assignment: Whether to keep fold assignments in the models.
             Deleting them will save memory in the H2O cluster. 
             Defaults to ``False``.
-        :param sort_metric: Metric to sort the leaderboard by. 
+        :param sort_metric: Metric to sort the leaderboard by at the end of an AutoML run. 
             For binomial classification choose between ``"auc"``, ``"aucpr"``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.
             For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
             For regression choose between ``"deviance"``, ``"rmse"``, ``"mse"``, ``"mae"``, ``"rmlse"``.
             Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are None (live log disabled), ``"debug"``, ``"info"`` or ``"warn"``.
+            Available options are ``None`` (live log disabled), ``"debug"``, ``"info"`` or ``"warn"``.
             Defaults to ``"warn"``.
         """
 
@@ -451,9 +456,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     @property
     def modeling_steps(self):
         """
-        expose the modeling steps effectively used by the AutoML run.
+        Expose the modeling steps effectively used by the AutoML run.
         This executed plan can be directly reinjected as the `modeling_plan` property of a new AutoML instance
-         to improve reproducibility across AutoML versions.
+        to improve reproducibility across AutoML versions.
 
         :return: a list of dictionaries representing the effective modeling plan.
         """
