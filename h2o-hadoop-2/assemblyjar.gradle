@@ -5,7 +5,7 @@ description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
-
+def archiveName = "h2odriver"
 def hasCustomHdfsDep = ext.has("hdfsDependency") && (ext.get("hdfsDependency") != defaultHdfsDependency)
 
 if (hasCustomHdfsDep) {
@@ -116,12 +116,20 @@ shadowJar {
   relocate 'org.apache.http', 'ai.h2o.org.apache.http'
   exclude hadoopShadowJarExcludes
   relocate 'com.google.common', 'ai.h2o.com.google.common'
-  baseName = 'h2odriver'
+  baseName = archiveName
   classifier = ''
   manifest {
     attributes 'Main-Class': 'water.hadoop.h2odriver'
   }
   zip64 true
+}
+
+task copyJar(type: Copy) {
+  from configurations.compileClasspath
+  rename { filename ->
+    return "${archiveName}.jar"
+  }
+  into "${buildDir}/libs/"
 }
 
 artifacts {
@@ -134,3 +142,4 @@ jar {
 }
 
 build.dependsOn shadowJar
+shadowJar.finalizedBy copyJar

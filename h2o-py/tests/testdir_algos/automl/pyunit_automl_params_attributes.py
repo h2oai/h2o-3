@@ -20,7 +20,7 @@ def test_params_can_be_set_as_attributes():
     aml = H2OAutoML()
     aml.max_models = 4
     aml.seed = 42
-    aml.nfolds = 0
+    aml.exclude_algos = ['StackedEnsemble']
 
     ds = import_dataset()
     aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds.valid)
@@ -39,12 +39,12 @@ def test_params_are_validated_in_setter():
     aml.nfolds = 3
     assert aml.nfolds == 3
     
-
+    
 def test_non_train_params_are_frozen_after_first_train():
     aml = H2OAutoML(max_models=2, nfolds=3, seed=42, keep_cross_validation_predictions=True)
     ds = import_dataset()
     aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds.valid)
-    assert aml.leaderboard.nrows == aml.max_models+1 == 3  # only 1 SE as we have only one type of models
+    assert aml.leaderboard.nrows == aml.max_models + aml.leaderboard["model_id"].grep("StackedEnsemble").sum()
     assert aml.leaderboard.columns[1] == 'auc'
     
     try:

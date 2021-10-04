@@ -4457,17 +4457,25 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 
 #' Convert H2O Data to Factors
 #'
-#' Convert a column into a factor column.
+#' Convert column/columns in the current frame to categoricals.
 #' @param x a column from an H2OFrame data set.
 #' @seealso \code{\link{as.factor}}.
 #' @examples
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate <- h2o.uploadFile(path = prostate_path)
-#' prostate[, 2] <- as.factor(prostate[, 2])
-#' summary(prostate)
+#' 
+#' # Single column
+#' cars <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' df <- h2o.importFile(cars)
+#' df["cylinders"] <- as.factor(df["cylinders"])
+#' h2o.describe(df["cylinders"])
+#' 
+#' # Multiple columns
+#' cars <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' df <- h2o.importFile(cars)
+#' df[c("cylinders","economy_20mpg")] <- as.factor(df[c("cylinders","economy_20mpg")])
+#' h2o.describe(df[c("cylinders","economy_20mpg")])
 #' }
 #' @export
 as.factor <- function(x) {

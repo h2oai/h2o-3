@@ -8,7 +8,7 @@ from h2o.exceptions import H2OTypeError, H2OJobCancelled
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils as pu
-from h2o.automl import H2OAutoML
+from h2o.automl import H2OAutoML, get_leaderboard
 
 """
 This test is used to check arguments passed into H2OAutoML along with different ways of using `.train()`
@@ -68,7 +68,6 @@ def test_early_stopping_defaults():
     assert stopping_criteria['max_models'] == max_models
     assert stopping_criteria['max_runtime_secs'] == 0
     assert stopping_criteria['max_runtime_secs_per_model'] == 0
-
 
 
 def test_early_stopping_args():
@@ -323,7 +322,7 @@ def test_stacked_ensembles_are_trained_after_max_models():
     aml.train(y=ds['target'], training_frame=ds['train'])
 
     _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) == 3, "StackedEnsemble should still be trained after max models have been reached"
+    assert len(se) > 3, "StackedEnsemble should still be trained after max models have been reached"
 
 
 def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0():
@@ -334,7 +333,7 @@ def test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0()
     aml.train(y=ds['target'], training_frame=ds['train'], blending_frame=ds['valid'], leaderboard_frame=ds['test'])
 
     _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) == 3, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
+    assert len(se) > 3, "In blending mode, StackedEnsemble should still be trained in spite of nfolds=0."
     for m in se:
         model = h2o.get_model(m)
         assert model.params['blending_frame']['actual']['name'] == ds['valid'].frame_id
@@ -366,8 +365,21 @@ def test_no_time_limit_if_max_models_is_provided():
     max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
     assert max_models == 1, max_models
     assert max_runtime == 0, max_runtime
-
-
+    
+    
+def test_optional_SEs_trained_by_default_when_no_time_limit():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_SEs_with_no_time_limit", seed=1, max_models=3)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    lb = get_leaderboard(aml, ['provider', 'step']).as_data_frame()
+    steps_SE = lb.query("provider == 'StackedEnsemble'").step.to_list()
+    assert len(steps_SE) > 1
+    assert 'best_of_family_1' in steps_SE, "default SE for first group is missing"
+    assert 'best_of_family_2' not in steps_SE, 'all other SEs should be optional ones'
+    assert 'all_1' not in steps_SE, 'all other SEs should be optional ones'
+    assert 'all_2' not in steps_SE, 'all other SEs should be optional ones'
+    
+    
 def test_max_runtime_secs_alone():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_max_runtime_secs", seed=1, max_runtime_secs=7)
@@ -440,6 +452,7 @@ pu.run_tests([
     test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
     test_frames_can_be_passed_as_key,
     test_no_time_limit_if_max_models_is_provided,
+    test_optional_SEs_trained_by_default_when_no_time_limit,
     test_max_runtime_secs_alone,
     test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_models_wins,
     test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_runtime_wins,

@@ -1,6 +1,6 @@
 import h2o
-from h2o.automl._base import H2OAutoMLBaseMixin
 from h2o.base import Keyed
+from ._base import H2OAutoMLBaseMixin
 
 
 class H2OAutoMLOutput(H2OAutoMLBaseMixin, Keyed):

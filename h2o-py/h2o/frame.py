@@ -3463,15 +3463,21 @@ class H2OFrame(Keyed):
 
     def asfactor(self):
         """
-        Convert columns in the current frame to categoricals.
+        Convert column/columns in the current frame to categoricals.
 
         :returns: new H2OFrame with columns of the "enum" type.
 
         :examples:
 
-        >>> h2o = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> h2o['cylinders'] = h2o['cylinders'].asfactor()
-        >>> h2o['cylinders']
+        >>> # Single column
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> df['cylinders'] = h2o['cylinders'].asfactor()
+        >>> df['cylinders'].describe()
+        >>>
+        >>> # Multiple columns
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> df[['cylinders','economy_20mpg']] = df[['cylinders','economy_20mpg']].asfactor()
+        >>> df[['cylinders','economy_20mpg']].describe()
         """
         for colname in self.names:
             t = self.types[colname]

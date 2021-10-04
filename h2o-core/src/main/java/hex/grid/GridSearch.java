@@ -101,25 +101,9 @@ public final class GridSearch<MP extends Model.Parameters> {
     // Create grid object and lock it
     // Creation is done here, since we would like make sure that after leaving
     // this function the grid object is in DKV and accessible.
-    final Grid<MP> grid = getOrCreateGrid();  
+    final Grid<MP> grid = getOrCreateGrid();
 
-    HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
-    long gridWork=0;
-    // if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
-    // skip it if no model limit it specified as the entire hyperspace can be extremely large.
-    if (gridSize > 0 && maxModels() > 0) {
-      while (it.hasNext()) {
-        try {
-          Model.Parameters parms = it.nextModelParameters();
-          gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
-        } catch(Throwable ex) {
-          //swallow invalid combinations
-        }
-      }
-    } else {
-      //TODO: Future totally unbounded search: need a time-based progress bar
-      gridWork = Long.MAX_VALUE;
-    }
+    long gridWork = _hyperSpaceWalker.estimateGridWork(maxModels());
 
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
