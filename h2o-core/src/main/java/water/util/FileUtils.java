@@ -88,7 +88,11 @@ public class FileUtils {
     else if (file.isDirectory()) {
       File[] files = file.listFiles();
       for (File f: files) {
-        f.delete();
+        if (f.isDirectory()) {
+          delete(f);
+        } else {
+          f.delete();
+        }
       }
       // Delete top-level directory
       return file.delete();
