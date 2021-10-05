@@ -178,7 +178,7 @@ task cpClientPKG {
         }
         new File([T, "build", "h2o-package-client", "inst", "java", "h2o.jar"].join(File.separator)).delete()
         copy{
-            from "../h2o-py/build/libs/h2o-py-${project.version}.jar"
+            from "../h2o-py/build/libs/h2o-py.jar"
             rename { filename ->
                 return 'h2o.jar'
             }

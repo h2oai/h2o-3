@@ -33,14 +33,6 @@ for (comp in optionalComponents) {
     }
 }
 
-task copyJar(type: Copy) {
-    from "${buildDir}/libs/genmodel-${project.version}.jar"
-    rename { filename ->
-        return 'genmodel.jar'
-    }
-    into "${buildDir}/libs/"
-}
-
 shadowJar {
   mergeServiceFiles()
   classifier = ''
@@ -69,7 +61,5 @@ artifacts {
 jar.enabled = false
 // Plug ShadowJar task into execution graph
 shadowJar.dependsOn(project.tasks.getByName('downloadLicenses'))
-// Execute always copyJar
-shadowJar.finalizedBy copyJar
 build.dependsOn shadowJar
 
