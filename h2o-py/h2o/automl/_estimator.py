@@ -143,7 +143,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         
         :param int nfolds: Number of folds for k-fold cross-validation.
             Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
-            Defaults to ``5``.
+            Defaults to ``5``. 
 
         :param bool balance_classes: Specify whether to oversample the minority classes to balance the class distribution. This option can increase
             the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size
