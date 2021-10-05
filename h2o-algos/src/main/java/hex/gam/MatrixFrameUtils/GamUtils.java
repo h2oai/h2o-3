@@ -1,8 +1,11 @@
 package hex.gam.MatrixFrameUtils;
 
 import hex.Model;
+import hex.gam.GAM;
+import hex.gam.GAMModel;
 import hex.gam.GAMModel.GAMParameters;
-import hex.glm.GLMModel.GLMParameters;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.DKV;
@@ -12,14 +15,14 @@ import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.calculateM;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.calculatem;
+import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
 
 public class GamUtils {
 
@@ -126,32 +129,98 @@ public class GamUtils {
     }
   }
 
-  public static GLMParameters copyGAMParams2GLMParams(GAMParameters parms, Frame trainData, Frame valid) {
-    GLMParameters glmParam = new GLMParameters();
-    List<String> gamOnlyList = Arrays.asList(
-            "_num_knots", "_gam_columns", "_bs", "_scale", "_train",
-            "_saveZMatrix", "_saveGamCols", "_savePenaltyMat"
-    );
-    Field[] field1 = GAMParameters.class.getDeclaredFields();
-    setParamField(parms, glmParam, false, field1, gamOnlyList);
-    Field[] field2 = Model.Parameters.class.getDeclaredFields();
-    setParamField(parms, glmParam, true, field2, gamOnlyList);
-    glmParam._train = trainData._key;
-    glmParam._valid = valid==null?null:valid._key;
-    glmParam._nfolds = 0; // always set nfolds to 0 to disable cv in GLM.  It is done in GAM
-    glmParam._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
-    glmParam._keep_cross_validation_fold_assignment = false;
-    glmParam._keep_cross_validation_models = false;
-    glmParam._keep_cross_validation_predictions = false;
-    glmParam._is_cv_model = false; // disable cv in GLM.
-    return glmParam;
+  public static void copyCVGLMtoGAMModel(GAMModel model, GLMModel glmModel, GAMParameters parms, String foldColumn) {
+    // copy over cross-validation metrics
+    model._output._cross_validation_metrics = glmModel._output._cross_validation_metrics;
+    model._output._cross_validation_metrics_summary =
+            copyTwoDimTable(glmModel._output._cross_validation_metrics_summary,
+                    "GLM cross-validation metrics summary");
+    int nFolds = glmModel._output._cv_scoring_history.length;
+    model._output._glm_cv_scoring_history = new TwoDimTable[nFolds];
+    if (parms._keep_cross_validation_predictions)
+      model._output._cross_validation_predictions = new Key[nFolds];
+    
+    for (int fInd = 0; fInd < nFolds; fInd++) {
+      model._output._glm_cv_scoring_history[fInd] = copyTwoDimTable(glmModel._output._cv_scoring_history[fInd],
+              glmModel._output._cv_scoring_history[fInd].getTableHeader());
+      // copy over hold-out predictions
+      if (parms._keep_cross_validation_predictions) {
+        Frame pred = DKV.getGet(glmModel._output._cross_validation_predictions[fInd]);
+        Frame newPred = pred.deepCopy(Key.make().toString());
+        DKV.put(newPred);
+        model._output._cross_validation_predictions[fInd] = newPred.getKey();
+      }
+    }
+
+    // copy over cross-validation models
+    if (parms._keep_cross_validation_models)
+      model._output._cross_validation_models = buildCVGamModels(model, glmModel, parms, foldColumn);
+    
+    // copy over fold_assignments
+    if (parms._keep_cross_validation_predictions) {
+      Frame cvPred = DKV.getGet(glmModel._output._cross_validation_holdout_predictions_frame_id);
+      Frame newPred = cvPred.deepCopy(Key.make().toString());
+      DKV.put(newPred);
+      model._output._cross_validation_holdout_predictions_frame_id = newPred.getKey();
+    }
+
+    if (parms._keep_cross_validation_fold_assignment) {
+      Frame foldAssignment = DKV.getGet(glmModel._output._cross_validation_fold_assignment_frame_id);
+      Frame newFold = foldAssignment.deepCopy((Key.make()).toString());
+      DKV.put(newFold);
+      model._output._cross_validation_fold_assignment_frame_id = newFold.getKey();
+    }
   }
 
-  public static void setParamField(Model.Parameters parms, GLMParameters glmParam, boolean superClassParams,
+  public static Key[] buildCVGamModels(GAMModel model, GLMModel glmModel, GAMParameters parms, String foldColumn) {
+    int nFolds = glmModel._output._cross_validation_models.length;
+    Key[] cvModelKeys = new Key[nFolds];
+    for (int fInd=0; fInd<nFolds; fInd++) {
+      GLMModel cvModel = DKV.getGet(glmModel._output._cross_validation_models[fInd]);
+      // set up GAMParameters
+      GAMParameters gamParams = makeGAMParameters(parms);
+      if (foldColumn != null) {
+        if (gamParams._ignored_columns != null) {
+          List<String> ignoredCols = new ArrayList<>(Arrays.asList(gamParams._ignored_columns));
+          ignoredCols.add(foldColumn);
+          gamParams._ignored_columns = ignoredCols.toArray(new String[0]);
+        } else {
+          gamParams._ignored_columns = new String[]{foldColumn};
+        }
+      }
+      int maxIterations = gamParams._max_iterations;
+      gamParams._max_iterations = 1;
+      // instantiate GAMModels
+      GAMModel gamModel = new GAM(gamParams).trainModel().get();
+      gamParams._max_iterations = maxIterations;
+      // extract GLM CV model run results to GAMModels
+      copyGLMCoeffs(cvModel, gamModel, gamParams, model._nclass);
+      copyGLMtoGAMModel(gamModel, cvModel, parms, true);
+      cvModelKeys[fInd] = gamModel.getKey();
+      DKV.put(gamModel);
+    }
+    return cvModelKeys;
+  }
+  
+  public static GAMParameters makeGAMParameters(GAMParameters parms) {
+    GAMParameters gamParams = new GAMParameters();
+    final Field[] field1 = GAMParameters.class.getDeclaredFields();
+    final Field[] field2 = Model.Parameters.class.getDeclaredFields();
+    setParamField(parms, gamParams, false, field1, Collections.emptyList());
+    setParamField(parms, gamParams, true, field2, Collections.emptyList());
+    gamParams._nfolds = 0;
+    gamParams._keep_cross_validation_predictions = false;
+    gamParams._keep_cross_validation_fold_assignment = false;
+    gamParams._keep_cross_validation_models = false;
+    gamParams._train = parms._train;
+    return gamParams;
+  }
+
+  public static void setParamField(Model.Parameters parms, Model.Parameters glmParam, boolean superClassParams,
                                    Field[] gamFields, List<String> excludeList) {
     // assign relevant GAMParameter fields to GLMParameter fields
     Field glmField;
-    boolean emptyExcludeList = excludeList.size() == 0;
+    boolean emptyExcludeList = excludeList == null || excludeList.size() == 0;
     for (Field oneField : gamFields) {
       try {
         if (emptyExcludeList || !excludeList.contains(oneField.getName())) {

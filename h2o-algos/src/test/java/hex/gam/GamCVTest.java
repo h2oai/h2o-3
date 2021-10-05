@@ -31,6 +31,10 @@ public class GamCVTest extends TestUtil {
 //
 // If we keep the cross-validation models and the fold assignment, then the prediction using the folds and
 // the predictions kept from cross-validation should yield the same result!  
+
+  /***
+   * CV test for binomial family
+   */
   @Test
   public void testCVBinomial() {
     try {
@@ -85,7 +89,8 @@ public class GamCVTest extends TestUtil {
       for (int rind = 0; rind < train.numRows(); rind++) {
         if (rnd.nextDouble() > threshold) {
           int foldNum = (int) fold_assignment_frame.vec(0).at(rind);
-          assert predFrames[foldNum].vec(2).at(rind) == cvModelPreds[foldNum].vec(2).at(rind) : "Frame contents differ.";
+          assert Math.abs(predFrames[foldNum].vec(2).at(rind) - cvModelPreds[foldNum].vec(2).at(rind)) < 1e-6 
+                  : "Frame contents differ.";
         }
       }
     } finally {
@@ -93,6 +98,9 @@ public class GamCVTest extends TestUtil {
     }
   }
 
+  /***
+   * Test cv for Multinomial family.  
+   */
   @Test
   public void testCVMultinomial() {
     try {
@@ -137,13 +145,17 @@ public class GamCVTest extends TestUtil {
       
       for (int row = 0; row < train.numRows(); row++) {
         int foldNum = (int) fold_assignment_frame.vec(0).at(row);
-        assert predFrames[foldNum].vec(2).at(row) == cvModelPreds[foldNum].vec(2).at(row) : "Frame contents differ.";
+        assert Math.abs(predFrames[foldNum].vec(2).at(row) - cvModelPreds[foldNum].vec(2).at(row)) < 1e-6 
+                : "Frame contents differ.";
       }
     } finally {
       Scope.exit();
     }
   }
 
+  /***
+   * Test cv for Gaussian family.  
+   */
   @Test
   public void testCVRegression() {
     try {
@@ -171,34 +183,35 @@ public class GamCVTest extends TestUtil {
       assertNotNull(gam._output._cross_validation_metrics_summary);
       assertEquals(params._nfolds, gam._output._cross_validation_models.length);
       
-      GAMModel[] cv_models = new GAMModel[params._nfolds];
+      GAMModel[] cvModels = new GAMModel[params._nfolds];
       Frame[] cvModelPreds = new Frame[params._nfolds];
       Frame[] predFrames = new Frame[params._nfolds];
-      Frame fold_assignment_frame = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_fold_assignment_frame_id));
-
+      Frame foldAssignmentFrame = DKV.getGet(gam._output._cross_validation_fold_assignment_frame_id);
+     Scope.track(foldAssignmentFrame);
 
       // generate prediction from different cv models
       for (int foldRun = 0; foldRun < params._nfolds; foldRun++) {
-        cv_models[foldRun] = DKV.getGet(gam._output._cross_validation_models[foldRun]);
-        Scope.track_generic(cv_models[foldRun]);
-        predFrames[foldRun] = Scope.track(cv_models[foldRun].score(train));
+        cvModels[foldRun] = DKV.getGet(gam._output._cross_validation_models[foldRun]);
+        Scope.track_generic(cvModels[foldRun]);
+        predFrames[foldRun] = Scope.track(cvModels[foldRun].score(train));
         cvModelPreds[foldRun] = Scope.track((Frame) DKV.getGet(gam._output._cross_validation_predictions[foldRun]));
       }
       for (int row = 0; row < train.numRows(); row++) {
-        int foldNum = (int) fold_assignment_frame.vec(0).at(row);
-        assert predFrames[foldNum].vec(0).at(row) == cvModelPreds[foldNum].vec(0).at(row) : "Frame contents differ.";
+        int foldNum = (int) foldAssignmentFrame.vec(0).at(row);
+        assert predFrames[foldNum].vec(0).at(row) == cvModelPreds[foldNum].vec(0).at(row) 
+                : "Frame contents differ.";
       }
     } finally {
       Scope.exit();
     }
   }
 
-  // test CV with validation data for GAM with CS and TP
+  // test CV with validation data for GAM with CS and TP, make sure validation metrics and cv metrics are not null
   @Test
   public void testCVTP() {
     Scope.enter();
     try {
-      Frame data = parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv");
+      Frame data = TestUtil.parseTestFile("smalldata/glm_test/binomial_20_cols_10KRows.csv");
       data.replace((20), data.vec(20).toCategoricalVec()).remove();
       DKV.put(data);
       Scope.track(data);

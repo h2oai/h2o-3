@@ -5,8 +5,6 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
-from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
 import random
 
 # In this test, I will test all the following cross-validation parameters:
