@@ -1,4 +1,5 @@
-// Copy each jar artifact to a file without version to support Cliff's make files
+// Copy each jar artifact to a file without version for convenient scripting
+// Current known usage is genmodel.jar, h2o.jar and all hadoop h2odriver.jar
 tasks.withType(Jar) { Jar t ->
   t.doLast {
     copy {
