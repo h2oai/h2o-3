@@ -8,13 +8,14 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index
 
 #### Bug
 
+- [[PUBDEV-8367]](https://h2oai.atlassian.net/browse/PUBDEV-8367) - Fixed user login from key tab in standalone on Kerberos.
 - [[PUBDEV-8357]](https://h2oai.atlassian.net/browse/PUBDEV-8357) - Improved error messages in Explain module by making the errors clearer.
 - [[PUBDEV-8350]](https://h2oai.atlassian.net/browse/PUBDEV-8350) - Fixed H2OTable colTypes in Grid’s summary table.
 - [[PUBDEV-8349]](https://h2oai.atlassian.net/browse/PUBDEV-8349) - Fixed infinite loop in hex.grid.HyperSpaceWalker.RandomDiscreteValueWalker.
 - [[PUBDEV-8340]](https://h2oai.atlassian.net/browse/PUBDEV-8340) - Fixed AutoML ignoring optional Stacked Ensembles.
 - [[PUBDEV-8338]](https://h2oai.atlassian.net/browse/PUBDEV-8338) - Fixed NPE thrown in AutoML when XGBoost is disabled/not available.
 - [[PUBDEV-8337]](https://h2oai.atlassian.net/browse/PUBDEV-8337) - Fixed CRAN install.
-- [[PUBDEV-8266]](https://h2oai.atlassian.net/browse/PUBDEV-8266) - Fixed `col_sample_rate` in XGBoost.
+- [[PUBDEV-8266]](https://h2oai.atlassian.net/browse/PUBDEV-8266) - Improved XGBoost API to ensure both `col_sample_rate` and `colsample_bylevel` (and other XGBoost parameters aliases) are set correctly. 
 - [[PUBDEV-8280]](https://h2oai.atlassian.net/browse/PUBDEV-8280) - Fixed NPE thrown for `ModelJsonReader.findINJson` for cases when path does not exist.
 
 #### Improvement
