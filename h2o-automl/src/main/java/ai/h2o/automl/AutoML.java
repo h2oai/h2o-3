@@ -106,6 +106,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public double[] getClassDistribution() {
+    if (_classDistribution == null)
+      _classDistribution = (new MRUtils.ClassDist(_responseColumn)).doAll(_responseColumn).dist();
     return _classDistribution;
   }
 
@@ -121,7 +123,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Vec _weightsColumn;
 
   DistributionFamily _distributionFamily;
-  double[] _classDistribution;
+  private double[] _classDistribution;
 
   Date _startTime;
   Countdown _runCountdown;
@@ -594,10 +596,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _weightsColumn = _trainingFrame.vec(input.weights_column);
 
     _distributionFamily = inferDistribution(_responseColumn);
-
-    if (_distributionFamily.equals(DistributionFamily.bernoulli) && getBuildSpec().build_control.balance_classes) {
-      _classDistribution = (new MRUtils.ClassDist(_responseColumn)).doAll(_responseColumn).dist();
-    }
 
     eventLog().info(Stage.DataImport,
         "training frame: "+_trainingFrame.toString().replace("\n", " ")+" checksum: "+_trainingFrame.checksum());

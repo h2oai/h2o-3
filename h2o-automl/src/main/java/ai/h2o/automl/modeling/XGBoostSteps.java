@@ -115,6 +115,11 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_depth = params._max_depth * 2;
                     }
 
+                    if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+                        double[] dist = aml().getClassDistribution();
+                        params._scale_pos_weight =  (float) (dist[0] / dist[1]);
+                    }
+
                     return params;
                 }
             },
@@ -134,6 +139,11 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_depth = params._max_depth * 2;
                     }
 
+                    if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+                        double[] dist = aml().getClassDistribution();
+                        params._scale_pos_weight =  (float) (dist[0] / dist[1]);
+                    }
+
                     return params;
                 }
             },
@@ -151,6 +161,11 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
+                    }
+
+                    if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+                        double[] dist = aml().getClassDistribution();
+                        params._scale_pos_weight =  (float) (dist[0] / dist[1]);
                     }
 
                     return params;
@@ -195,7 +210,7 @@ public class XGBoostSteps extends ModelingSteps {
             searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
             searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
 
-            if (aml().getDistributionFamily().equals(DistributionFamily.bernoulli) && aml().getBuildSpec().build_control.balance_classes) {
+            if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
                 double[] dist = aml().getClassDistribution();
                 float imbalanceRatio = (float)(dist[0]/dist[1]);
                 if (imbalanceRatio > 5 || 1 / imbalanceRatio > 5) // both positive and negative class can be underrepresented
