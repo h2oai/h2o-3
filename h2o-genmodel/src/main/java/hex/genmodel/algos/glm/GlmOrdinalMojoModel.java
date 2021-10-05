@@ -28,8 +28,14 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
     noff = _catOffsets[_cats];
   }
 
-  @Override
-  double[] glmScore0(double[] data, double[] preds) {
+  public final double[] score0(double[] data, double offset, double[] preds) {
+    if (_meanImputation)
+      super.imputeMissingWithMeans(data);
+
+    return glmScore0(data, offset, preds);
+  }
+  
+  double[] glmScore0(double[] data, double offset, double[] preds) {
     Arrays.fill(preds, 0);
     preds[0]=lastClass;
 
@@ -61,7 +67,7 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
 
     double previousCDF = 0.0;
     for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
-      double eta = preds[cInd + 1];
+      double eta = preds[cInd + 1]+offset;
       double currCDF = 1.0 / (1 + Math.exp(-eta));
       preds[cInd + 1] = currCDF - previousCDF;
       previousCDF = currCDF;

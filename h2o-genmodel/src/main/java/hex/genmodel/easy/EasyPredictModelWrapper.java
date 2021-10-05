@@ -612,7 +612,7 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data) throws PredictException {
-    return predictBinomial(data, 0.0);
+      return predictBinomial(data, 0.0);
   }
 
   /**
@@ -831,7 +831,7 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public RegressionModelPrediction predictRegression(RowData data) throws PredictException {
-    return predictRegression(data, 0D);
+      return predictRegression(data, 0D);
   }
 
   /**

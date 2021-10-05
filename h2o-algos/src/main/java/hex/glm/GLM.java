@@ -770,6 +770,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           error("_plug_values", "Plug values frame needs to have exactly 1 row.");
         }
       }
+      if (hasOffsetCol() && multinomial.equals(_parms._family)) { // offset has no effect on multinomial
+        warn("offset_column", " has no effect on multinomial and will be ignored.");
+        if (_parms._ignored_columns != null) {
+          List<String> ignoredCols = Arrays.asList(_parms._ignored_columns);
+          ignoredCols.add(_parms._offset_column);
+          _parms._ignored_columns = ignoredCols.toArray(new String[0]);
+        } else {
+          _parms._ignored_columns = new String[]{_parms._offset_column};
+        }
+        _parms._offset_column = null;
+        _offset = null;
+      }
+      
+      if (hasOffsetCol() && ordinal.equals(_parms._family)) 
+        error("offset_column", " does not work with ordinal family right now.  Will be fixed in" +
+                " the future.");
+      
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
               _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
@@ -840,7 +857,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (bc.hasBounds() && _parms._early_stopping)
         warn("beta constraint and early_stopping", "if both are enabled may degrade model performance.");
       _state.setBC(bc);
-      if(hasOffsetCol() && _parms._intercept) { // fit intercept
+      if(hasOffsetCol() && _parms._intercept && !ordinal.equals(_parms._family)) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
                 _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _penaltyMatrix, _gamColIndices) 
                 : new GLMGradientSolver(_job,_parms, _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC());

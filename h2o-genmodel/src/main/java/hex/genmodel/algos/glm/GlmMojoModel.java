@@ -20,11 +20,17 @@ public class GlmMojoModel extends GlmMojoModelBase {
   @Override
   void init() {
     _linkFn = createLinkFunction();
-    _binomial = _family.equals("binomial");
+    _binomial = "binomial".equals(_family) || "fractionalbinomial".equals(_family) || "quasibinomial".equals(_family);
   }
 
-  @Override
-  double[] glmScore0(double[] data, double[] preds) {
+  public final double[] score0(double[] data, double offset, double[] preds) {
+    if (_meanImputation)
+      super.imputeMissingWithMeans(data);
+
+    return glmScore0(data, offset, preds);
+  }
+  
+  double[] glmScore0(double[] data, double offset, double[] preds) {
     double eta = 0.0;
 
     if (!_useAllFactorLevels) { // skip level 0 of all factors
@@ -57,10 +63,11 @@ public class GlmMojoModel extends GlmMojoModelBase {
     for(int i = _cats; i < _beta.length - 1 - noff; ++i)
       eta += _beta[noff + i] * data[i];
     eta += _beta[_beta.length - 1]; // reduce intercept
+    eta += offset;
 
     double mu = _linkFn.eval(eta);
 
-    if (_binomial || _family.equals("fractionalbinomial")) {
+    if (_binomial) {
       preds[0] = (mu >= _defaultThreshold) ? 1 : 0; // threshold given by ROC
       preds[1] = 1.0 - mu; // class 0
       preds[2] =       mu; // class 1

@@ -1928,7 +1928,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   @Override
   public boolean havePojo() {
-    if (!_parms._HGLM && _parms.interactionSpec() == null) return super.havePojo();
+    if (!_parms._HGLM && _parms.interactionSpec() == null && _parms._offset_column == null) return super.havePojo();
     else return false;
   }
 
