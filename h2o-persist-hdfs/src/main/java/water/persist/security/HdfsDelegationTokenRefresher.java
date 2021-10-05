@@ -12,10 +12,12 @@ import water.H2O;
 import water.MRTask;
 import water.Paxos;
 import water.persist.PersistHdfs;
+import water.util.ArrayUtils;
 import water.util.BinaryFileTransfer;
 import water.util.FileUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
@@ -210,7 +212,21 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     }
 
     private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials) throws IOException {
-        return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        String uris = System.getProperty("uris.to.refresh");
+        System.out.println("Use specified URIs to refresh: " + uris);
+        if (uris == null) {
+            return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        } else {
+            Token<?>[] tokens = new Token<?>[0];
+            for (String uri : uris.split(";")) {
+                System.out.println("Processing uri " + uri);
+                tokens = ArrayUtils.append(
+                        tokens,
+                        FileSystem.get(URI.create(uri), PersistHdfs.CONF).addDelegationTokens(renewer, credentials)
+                );
+            }
+            return tokens;
+        }
     } 
     
     private void distribute(Credentials creds) throws IOException {
