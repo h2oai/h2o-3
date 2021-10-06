@@ -19,7 +19,7 @@ import static water.util.ArrayUtils.findLongestCommonPrefix;
  * Supports sparse data, sparse columns can be transformed to sparse rows on the fly with some (significant) memory overhead,
  * as the data of the whole chunk(s) will be copied.
  *
-*/
+ */
 public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
@@ -65,7 +65,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public double[] numNAFill() {return _numNAFill; }
   public double numNAFill(int nid) {return _numNAFill[nid];}
-  
+
   public void setCatNAFill(int[] catNAFill) {
     _catNAFill = catNAFill;
   }
@@ -134,13 +134,13 @@ public class DataInfo extends Keyed<DataInfo> {
   public Model.InteractionSpec _interactionSpec; // formal specification of interactions
   public int _interactionVecs[]; // the interaction columns appearing in _adaptedFrame
   public int[] _numOffsets; // offset column indices used by numerical interactions: total number of numerical columns is given by _numOffsets[_nums] - _numOffsets[0]
-  public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment ?1:0);}
+  public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment?1:0);}
   public int treatmentChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
   public int outputChunkId() { return outputChunkId(0);}
-  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment ?1:0) + _responses;}
+  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment?1:0) + _responses;}
   public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v);}
   public Vec getOutputVec(int i) {return _adaptedFrame.vec(outputChunkId(i));}
   public void setResponse(String name, Vec v){ setResponse(name,v,0);}
@@ -152,7 +152,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int [][] _catLvls; // cat lvls post filter (e.g. by strong rules)
   public final int [][] _intLvls; // interaction lvls post filter (e.g. by strong rules)
 
-  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; _treatment =false;}
+  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; _treatment=false;}
   public String[] _coefNames;
   public int[] _coefOriginalIndices; // 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
@@ -291,7 +291,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catNAFill[i] = imputeMissing ? 
+      _catNAFill[i] = imputeMissing ?
               imputer.imputeCat(names[i], train.vec(cats[i]), _useAllFactorLevels)
               :
               _catMissing[i] ? v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1) : -100;
@@ -333,7 +333,7 @@ public class DataInfo extends Keyed<DataInfo> {
         numIdx++;
       }
     }
-    for(int i = names.length - nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0) - (treatment?1:0); i < names.length; ++i) {
+    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0) - (treatment?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }
@@ -392,7 +392,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return beta;
   }
-  
+
   public double[] normalizeBeta(double [] beta, boolean standardize){
     int N = fullN()+1;
     assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
@@ -599,7 +599,7 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
-    dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0) - (dinfo._treatment ?1:0);
+    dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0) - (dinfo._treatment?1:0);
     dinfo._numMeans=new double[nnums];
     dinfo._numNAFill=new double[nnums];
     int colsSize = id+nnums;  // small optimization
@@ -663,8 +663,8 @@ public class DataInfo extends Keyed<DataInfo> {
           if( isIWV ) {
             InteractionWrappedVec iwv = (InteractionWrappedVec)v;
             for(int offset=0;offset<iwv.expandedLength();++offset) {
-                normMul[idx+offset] = iwv.getSigma(offset+(iwv._useAllFactorLevels?0:1));
-                normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
+              normMul[idx+offset] = iwv.getSigma(offset+(iwv._useAllFactorLevels?0:1));
+              normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
             }
           } else {
             normMul[idx] = v.sigma();
@@ -706,7 +706,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(t == TransformType.NONE) {
       _normMul = null;
       _normSub = null;
-      if (_adaptedFrame != null) { 
+      if (_adaptedFrame != null) {
         _normSigmaStandardizationOff = MemoryManager.malloc8d(numNums());
         _normSubStandardizationOff = MemoryManager.malloc8d(numNums());
         setTransform(t, _normSigmaStandardizationOff, _normSubStandardizationOff, _cats, _nums);
@@ -776,7 +776,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if( currentColIdx+1 >= _numOffsets.length ) return fullN() - _numOffsets[currentColIdx];
     return _numOffsets[currentColIdx+1] - _numOffsets[currentColIdx];
   }
-  
+
   public final String[] coefNames() {
     if (_coefNames != null) return _coefNames; // already computed
     int k = 0;
@@ -943,7 +943,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
 
     public double[] mtrxMul(double [][] m, double [] res){
-       for(int i = 0; i < m.length; ++i)
+      for(int i = 0; i < m.length; ++i)
         res[i] = innerProduct(m[i],false);
       return res;
     }
@@ -1136,7 +1136,7 @@ public class DataInfo extends Keyed<DataInfo> {
       cloned.binIds = binIds.clone();
       return cloned;
     }
-    
+
     public void addToArray(double scale, double []res) {
       for (int i = 0; i < nBins; i++)
         res[binIds[i]] += scale;
@@ -1168,7 +1168,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
-      if (isIWV && !_useAllFactorLevels) 
+      if (isIWV && !_useAllFactorLevels)
         val = _catNAFill[cid]-1; // need to -1 here because no -1 in 6 lines later for isIWV vector
       else
         val = _catNAFill[cid];
@@ -1185,7 +1185,7 @@ public class DataInfo extends Keyed<DataInfo> {
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
-      
+
       if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
         val = val - 1;
       }
@@ -1371,7 +1371,7 @@ public class DataInfo extends Keyed<DataInfo> {
         if(_skipMissing && isMissing){
           row.predictors_bad = true;
           continue;
-        }         
+        }
         int cid = getCategoricalId(i,isMissing? -1:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
@@ -1519,5 +1519,5 @@ public class DataInfo extends Keyed<DataInfo> {
       return means;
     }
   }
-  
+
 }

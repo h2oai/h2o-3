@@ -85,7 +85,11 @@ public class DTree extends Iced {
     }
     _cols = activeCols;
   }
-  
+
+  /**
+   * Copy constructor
+   * @param tree
+   */
   public DTree(DTree tree){
     _names = tree._names;
     _ncols = tree._ncols;
@@ -149,11 +153,15 @@ public class DTree extends Iced {
     }
 
     Node( DTree tree, int pid, int nid, boolean copy) {
-        _tree = tree;
-        _pid = pid;
+      _tree = tree;
+      _pid = pid;
+      if(copy) {
         _nid = nid;
+      } else {
+        _nid = tree.newIdx(this);
+      }
     }
-    
+
     // Recursively print the decision-line from tree root to this child.
     StringBuilder printLine(StringBuilder sb ) {
       if( _pid== NO_PARENT) return sb.append("[root]");
@@ -201,7 +209,7 @@ public class DTree extends Iced {
       _n0Treat = _n0Contr = _n1Treat = _n1Contr = 0;
     }
 
-    public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1, 
+    public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1, double tree_p0, double tree_p1,
                  double p0Treat, double p0Contr, double p1Treat, double p1Contr, double n0Treat, double n0Contr, double n1Treat, double n1Contr) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
@@ -216,7 +224,6 @@ public class DTree extends Iced {
       _p0Treat = p0Treat; _p0Contr = p0Contr; _p1Treat = p1Treat; _p1Contr = p1Contr;
       _n0Treat = n0Treat; _n0Contr = n0Contr; _n1Treat = n1Treat; _n1Contr = n1Contr;
     }
-    
     public final double pre_split_se() { return _se; }
     public final double se() { return _se0+_se1; }
     public final int   col() { return _col; }
@@ -332,7 +339,7 @@ public class DTree extends Iced {
           min = h._min;         // Then no improvement over last go
           maxEx = h._maxEx;
         } else {                // Else pick up tighter observed bounds
-          min = h.findMin();   // Tracked inclusive lower bound
+          min = h.find_min();   // Tracked inclusive lower bound
           if( h.find_maxIn() == min )
             continue; // This column will not split again
           maxEx = h.find_maxEx(); // Exclusive max
@@ -380,7 +387,7 @@ public class DTree extends Iced {
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
 
         // only count NAs if we have any going our way (note: NAvsREST doesn't build a histo for the NA direction)
-        final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 || 
+        final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 ||
                 _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
 
         nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs, h._checkFloatSplits);
@@ -419,7 +426,7 @@ public class DTree extends Iced {
       _cs = cs;
       _scoreCols = scoreCols();
     }
-    
+
     public UndecidedNode(UndecidedNode node, DTree tree){
       super(tree, node._pid, node._nid, true);
       _hs = node._hs; //these histograms have no bins yet (just constructed)
@@ -476,7 +483,7 @@ public class DTree extends Iced {
       DecidedNode dn = _tree.decided(_pid);
       for( int i=0; i<dn._nids.length; i++ )
         if( dn._nids[i]==_nid )
-          { dn._nids[i] = ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID; return; }
+        { dn._nids[i] = ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID; return; }
       throw H2O.fail();
     }
 
@@ -529,7 +536,7 @@ public class DTree extends Iced {
       return sb.append(StringUtils.fixedLength(s,w));
     }
     static private StringBuilder p(StringBuilder sb, double d, int w) {
-      String s = Double.isNaN(d) ? "NaN" :
+      String s = Double.isNaN(d) ? "NaN" : 
         ((d==Float.MAX_VALUE || d==-Float.MAX_VALUE || d==Double.MAX_VALUE || d==-Double.MAX_VALUE) ? " -" :
          (d==0?" 0":Double.toString(d)));
       if( s.length() <= w ) return p(sb,s,w);
@@ -576,12 +583,11 @@ public class DTree extends Iced {
       _size = node._size;
       _nnodes = node._nnodes;
     }
-    
+
     // Make a correctly flavored Undecided
     public UndecidedNode makeUndecidedNode(DHistogram hs[], Constraints cs) {
       return new UndecidedNode(_tree, _nid, hs, cs);
     }
-    
 
     // Pick the best column from the given histograms
     public Split bestCol(UndecidedNode u, DHistogram hs[], Constraints cs) {
@@ -640,7 +646,7 @@ public class DTree extends Iced {
       final int _nid;
       DTree.Split _s;
       final boolean _useUplift;
-      
+
       @Override public void compute() {
         computeSplit();
       }
@@ -774,8 +780,8 @@ public class DTree extends Iced {
       int i = _nids[0]==nid ? 0 : 1;
       assert _nids[i]==nid : "No child nid "+nid+"? " +Arrays.toString(_nids);
       sb.append("[").append(_tree._names[_split._col]);
-      sb.append(_split._equal != 0
-                ? (i==0 ? " != " : " == ")
+      sb.append(_split._equal != 0 
+                ? (i==0 ? " != " : " == ") 
                 : (i==0 ? " <  " : " >= "));
       sb.append((_split._equal == 2 || _split._equal == 3) ? _split._bs.toString() : _splat).append("]");
       return sb;
@@ -883,7 +889,6 @@ public class DTree extends Iced {
         abAux.put4f((float)_split._se1);
         abAux.put4(_nids[0]);
         abAux.put4(_nids[1]);
-        
       }
 
       Node left = _tree.node(_nids[0]);
@@ -950,7 +955,6 @@ public class DTree extends Iced {
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(), _seed,tid,cls);
   }
-
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows, int constraint, double min, double max,
                                   boolean useBounds, Distribution dist) {
@@ -1458,7 +1462,7 @@ public class DTree extends Iced {
   }
 
   static Split findBestSplitPointUplift(DHistogram hs, int col, double min_rows, int constraint, double min, double max,
-                                  boolean useBounds, Distribution dist) {
+                                        boolean useBounds, Distribution dist) {
     if(hs._valsUplift == null) {
       if (LOG.isTraceEnabled()) LOG.trace("can't split " + hs._name + ": histogram not filled yet.");
       return null;
@@ -1469,8 +1473,8 @@ public class DTree extends Iced {
     final boolean hasPreds = hs.hasPreds();
     final boolean hasDenom = hs.hasDenominator();
     final boolean hasNomin = hs.hasNominator();
-    
-    
+
+
     final boolean useUplift = hs.useUplift();
     assert useUplift;
     final Divergence upliftMetric = hs._upliftMetric;
