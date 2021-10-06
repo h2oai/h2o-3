@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zizler (3.34.0.2) - 10/XX/2021
+### Zizler (3.34.0.2) - 10/6/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index.html</a>
 
@@ -27,6 +27,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index
 
 #### Task
 
+- [[PUBDEV-8345]](https://h2oai.atlassian.net/browse/PUBDEV-8345) - Updated ANOVA GLM to save model summary as a frame.
 - [[PUBDEV-8330]](https://h2oai.atlassian.net/browse/PUBDEV-8330) - Added GLM offset column support to GLM MOJO.
 
 #### Docs
