@@ -565,6 +565,10 @@ def call(final pipelineContext) {
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
 
+    def standaloneKeytabStage = evaluate(stageTemplate.inspect())
+    standaloneKeytabStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE KEYTAB"
+    standaloneKeytabStage.customData.mode = 'STANDALONE_KEYTAB'
+
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
@@ -593,7 +597,7 @@ def call(final pipelineContext) {
     steamSparklingStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM SPARKLING"
     steamSparklingStage.customData.mode = 'STEAM_SPARKLING'
 
-    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
+    KERBEROS_STAGES += [ standaloneStage, standaloneKeytabStage, onHadoopStage, onHadoopWithSpnegoStage, onHadoopWithHdfsTokenRefreshStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
   final MULTINODE_CLUSTERS_CONFIGS = [

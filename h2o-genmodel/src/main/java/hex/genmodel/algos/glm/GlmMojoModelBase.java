@@ -17,24 +17,22 @@ abstract class GlmMojoModelBase extends MojoModel {
   double[] _beta;
 
   String _family;
+  boolean _versionSupportOffset;
 
   GlmMojoModelBase(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
 
-  void init() { /* do nothing by default */ }
+  void init() {
+    _versionSupportOffset = _mojo_version >= 1.1;
+  }
 
   @Override
   public final double[] score0(double[] data, double[] preds) {
-    if (_meanImputation)
-      imputeMissingWithMeans(data);
-
-    return glmScore0(data, preds);
+      return score0(data, 0, preds);
   }
 
-  abstract double[] glmScore0(double[] data, double[] preds);
-
-  private void imputeMissingWithMeans(double[] data) {
+  void imputeMissingWithMeans(double[] data) {
     for (int i = 0; i < _cats; ++i)
       if (Double.isNaN(data[i])) data[i] = _catModes[i];
     for (int i = 0; i < _nums; ++i)

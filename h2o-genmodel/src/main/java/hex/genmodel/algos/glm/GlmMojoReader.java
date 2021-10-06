@@ -35,7 +35,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
       m._link = readkv("link");
       m._tweedieLinkPower = readkv("tweedie_link_power", 0.0);
     }
-
+    
     _model.init();
   }
 
@@ -62,6 +62,6 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
 
   @Override public String mojoVersion() {
     return "1.00";
-  }
+  } // add support to offset
 
 }

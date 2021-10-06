@@ -100,7 +100,8 @@ public class KerberosExtension extends AbstractH2OExtension {
 
   private static UserGroupInformation loginUserFromKeytab(String authPrincipal, String authKeytabPath) {
     try {
-      return UserGroupInformation.loginUserFromKeytabAndReturnUGI(authPrincipal, authKeytabPath);
+      UserGroupInformation.loginUserFromKeytab(authPrincipal, authKeytabPath);
+      return UserGroupInformation.getCurrentUser();
     } catch (IOException e) {
       throw new RuntimeException("Failed to login user " + authPrincipal + " from keytab " + authKeytabPath);
     }
