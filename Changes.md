@@ -32,6 +32,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index
 
 #### Docs
 
+- [[PUBDEV-8355]](https://h2oai.atlassian.net/browse/PUBDEV-8355) - Updated the R/Python AutoML documentation parameters to match the descriptions in the User Guide.
 - [[PUBDEV-8353]](https://h2oai.atlassian.net/browse/PUBDEV-8353) - Removed GLM from `balance_classes` parameter appendix page in the User Guide.
 - [[PUBDEV-8348]](https://h2oai.atlassian.net/browse/PUBDEV-8348) - Updated the `asfactor` procedure documentation to show multiple column usage.
 
