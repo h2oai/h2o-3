@@ -2,6 +2,42 @@
 
 ## H2O
 
+### Zizler (3.34.0.2) - 10/6/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8367]](https://h2oai.atlassian.net/browse/PUBDEV-8367) - Fixed user login from key tab in standalone on Kerberos.
+- [[PUBDEV-8357]](https://h2oai.atlassian.net/browse/PUBDEV-8357) - Improved error messages in Explain module by making the errors clearer.
+- [[PUBDEV-8350]](https://h2oai.atlassian.net/browse/PUBDEV-8350) - Fixed H2OTable colTypes in Grid’s summary table.
+- [[PUBDEV-8349]](https://h2oai.atlassian.net/browse/PUBDEV-8349) - Fixed infinite loop in hex.grid.HyperSpaceWalker.RandomDiscreteValueWalker.
+- [[PUBDEV-8340]](https://h2oai.atlassian.net/browse/PUBDEV-8340) - Fixed AutoML ignoring optional Stacked Ensembles.
+- [[PUBDEV-8338]](https://h2oai.atlassian.net/browse/PUBDEV-8338) - Fixed NPE thrown in AutoML when XGBoost is disabled/not available.
+- [[PUBDEV-8337]](https://h2oai.atlassian.net/browse/PUBDEV-8337) - Fixed CRAN install.
+- [[PUBDEV-8266]](https://h2oai.atlassian.net/browse/PUBDEV-8266) - Improved XGBoost API to ensure both `col_sample_rate` and `colsample_bylevel` (and other XGBoost parameters aliases) are set correctly. 
+- [[PUBDEV-8280]](https://h2oai.atlassian.net/browse/PUBDEV-8280) - Fixed NPE thrown for `ModelJsonReader.findINJson` for cases when path does not exist.
+
+#### Improvement
+
+- [[PUBDEV-8366]](https://h2oai.atlassian.net/browse/PUBDEV-8366) - Removed support for legacy Cliffs makefile.
+- [[PUBDEV-8343]](https://h2oai.atlassian.net/browse/PUBDEV-8343) - Exposed AutoML `get_leaderboard` as a method in Python.
+- [[PUBDEV-8342]](https://h2oai.atlassian.net/browse/PUBDEV-8342) - Improved Python client by printing the stacktrace in case of ServerError allowing users to report informative issues for investigation.
+- [[PUBDEV-8305]](https://h2oai.atlassian.net/browse/PUBDEV-8305) - Enhanced tests by testing the case through all encodings.
+
+#### Task
+
+- [[PUBDEV-8345]](https://h2oai.atlassian.net/browse/PUBDEV-8345) - Updated ANOVA GLM to save model summary as a frame.
+- [[PUBDEV-8330]](https://h2oai.atlassian.net/browse/PUBDEV-8330) - Added GLM offset column support to GLM MOJO.
+
+#### Docs
+
+- [[PUBDEV-8355]](https://h2oai.atlassian.net/browse/PUBDEV-8355) - Updated the R/Python AutoML documentation parameters to match the descriptions in the User Guide.
+- [[PUBDEV-8353]](https://h2oai.atlassian.net/browse/PUBDEV-8353) - Removed GLM from `balance_classes` parameter appendix page in the User Guide.
+- [[PUBDEV-8348]](https://h2oai.atlassian.net/browse/PUBDEV-8348) - Updated the `asfactor` procedure documentation to show multiple column usage.
+
+
+
 ### Zizler (3.34.0.1) - 9/14/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/1/index.html</a>
