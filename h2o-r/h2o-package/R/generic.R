@@ -36,7 +36,7 @@ h2o.generic <- function(model_id = NULL,
     parms$model_id <- model_id
   } else if(!missing(path)) {
     splited <- strsplit(path, "/")
-    parms$model_id <- strsplit(splited[length(split)-1], ".")[0]
+    parms$model_id <- strsplit(splited[[1]][length(splited[[1]])], "\\.")[[1]][1]
   }
   if (!missing(model_key)) {
     parms$model_key <- model_key
