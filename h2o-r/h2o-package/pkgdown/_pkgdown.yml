@@ -52,6 +52,7 @@ reference:
       - h2o.assign
       - h2o.auc
       - h2o.automl
+      - h2o.auuc
       - h2o.betweenss
       - h2o.biases
       - h2o.bottomN
@@ -324,6 +325,7 @@ reference:
       - h2o.trim
       - h2o.trunc
       - h2o.unique
+      - h2o.upliftRandomForest
       - h2o.upload_model
       - h2o.upload_mojo
       - h2o.var 

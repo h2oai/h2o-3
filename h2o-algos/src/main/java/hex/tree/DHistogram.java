@@ -46,7 +46,7 @@ import static hex.tree.SharedTreeModel.SharedTreeParameters.HistogramType;
  *
  */
 public final class DHistogram extends Iced<DHistogram> {
-
+  
   private static final Logger LOG = Logger.getLogger(DHistogram.class);
 
   public static final int INT_NA = Integer.MIN_VALUE; // integer representation of NA
@@ -113,7 +113,7 @@ public final class DHistogram extends Iced<DHistogram> {
 
   final boolean hasPreds() {
     return _vals_dim >= 5;
-  }
+  } 
 
   final boolean hasDenominator() {
     return _vals_dim >= 6;
@@ -355,7 +355,7 @@ public final class DHistogram extends Iced<DHistogram> {
         }
       }
     }
-    if (idx1 == _nbin)
+    if (idx1 == _nbin) 
       idx1--; // Round-off error allows idx1 to hit upper bound, so truncate
     assert 0 <= idx1 && idx1 < _nbin : idx1 + " " + _nbin;
     return idx1;
@@ -380,7 +380,7 @@ public final class DHistogram extends Iced<DHistogram> {
     else
       return wNA() > 0;
   }
-
+  
   // Big allocation of arrays
   public void init() { init(null, null);}
   public void init(double[] vals) { init(vals, null);}
@@ -447,12 +447,12 @@ public final class DHistogram extends Iced<DHistogram> {
     assert !_intOpt || _splitPts == null : "Integer-optimization cannot be enabled when split points are defined";
     assert !_intOpt || _histoType == HistogramType.UniformAdaptive : "Integer-optimization can only be enabled for histogram type 'UniformAdaptive'.";
   }
-
+  
   // Merge two equal histograms together.  Done in a F/J reduce, so no
   // synchronization needed.
   public void add( DHistogram dsh ) {
     assert (_vals == null || dsh._vals == null) || (_isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
-            _min == dsh._min && _maxEx == dsh._maxEx);
+      _min == dsh._min && _maxEx == dsh._maxEx);
     if( dsh._vals == null ) return;
     if(_vals == null) {
       init(dsh._vals, dsh._valsUplift);

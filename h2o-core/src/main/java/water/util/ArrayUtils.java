@@ -2247,7 +2247,7 @@ public class ArrayUtils {
         tmpStep++;
       }
     }
-
+    if(nonNullIdx.size() == 0) return;
     double start = Double.NaN, end = Double.NaN, step = Double.NaN, mean = Double.NaN;
     for (int i=0; i<array.length; i++) {
       // begin always with 0

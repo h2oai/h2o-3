@@ -65,7 +65,6 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public double[] numNAFill() {return _numNAFill; }
   public double numNAFill(int nid) {return _numNAFill[nid];}
-
   public void setCatNAFill(int[] catNAFill) {
     _catNAFill = catNAFill;
   }
@@ -291,7 +290,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catNAFill[i] = imputeMissing ?
+      _catNAFill[i] = imputeMissing ? 
               imputer.imputeCat(names[i], train.vec(cats[i]), _useAllFactorLevels)
               :
               _catMissing[i] ? v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1) : -100;
@@ -360,7 +359,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo validDinfo(Frame valid) {
-    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold, _intercept);
+    DataInfo res = new DataInfo(_adaptedFrame,null,1,_useAllFactorLevels,TransformType.NONE,TransformType.NONE,_skipMissing,_imputeMissing,!(_skipMissing || _imputeMissing),_weights,_offset,_fold);
     res._interactions = _interactions;
     res._interactionSpec = _interactionSpec;
     if (_interactionSpec != null) {
@@ -392,7 +391,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return beta;
   }
-
+  
   public double[] normalizeBeta(double [] beta, boolean standardize){
     int N = fullN()+1;
     assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
@@ -663,8 +662,8 @@ public class DataInfo extends Keyed<DataInfo> {
           if( isIWV ) {
             InteractionWrappedVec iwv = (InteractionWrappedVec)v;
             for(int offset=0;offset<iwv.expandedLength();++offset) {
-              normMul[idx+offset] = iwv.getSigma(offset+(iwv._useAllFactorLevels?0:1));
-              normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
+                normMul[idx+offset] = iwv.getSigma(offset+(iwv._useAllFactorLevels?0:1));
+                normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
             }
           } else {
             normMul[idx] = v.sigma();
@@ -706,7 +705,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(t == TransformType.NONE) {
       _normMul = null;
       _normSub = null;
-      if (_adaptedFrame != null) {
+      if (_adaptedFrame != null) { 
         _normSigmaStandardizationOff = MemoryManager.malloc8d(numNums());
         _normSubStandardizationOff = MemoryManager.malloc8d(numNums());
         setTransform(t, _normSigmaStandardizationOff, _normSubStandardizationOff, _cats, _nums);
@@ -776,7 +775,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if( currentColIdx+1 >= _numOffsets.length ) return fullN() - _numOffsets[currentColIdx];
     return _numOffsets[currentColIdx+1] - _numOffsets[currentColIdx];
   }
-
+  
   public final String[] coefNames() {
     if (_coefNames != null) return _coefNames; // already computed
     int k = 0;
@@ -943,7 +942,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
 
     public double[] mtrxMul(double [][] m, double [] res){
-      for(int i = 0; i < m.length; ++i)
+       for(int i = 0; i < m.length; ++i)
         res[i] = innerProduct(m[i],false);
       return res;
     }
@@ -1136,7 +1135,7 @@ public class DataInfo extends Keyed<DataInfo> {
       cloned.binIds = binIds.clone();
       return cloned;
     }
-
+    
     public void addToArray(double scale, double []res) {
       for (int i = 0; i < nBins; i++)
         res[binIds[i]] += scale;
@@ -1168,7 +1167,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
-      if (isIWV && !_useAllFactorLevels)
+      if (isIWV && !_useAllFactorLevels) 
         val = _catNAFill[cid]-1; // need to -1 here because no -1 in 6 lines later for isIWV vector
       else
         val = _catNAFill[cid];
@@ -1185,7 +1184,7 @@ public class DataInfo extends Keyed<DataInfo> {
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
-
+      
       if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
         val = val - 1;
       }
@@ -1371,7 +1370,7 @@ public class DataInfo extends Keyed<DataInfo> {
         if(_skipMissing && isMissing){
           row.predictors_bad = true;
           continue;
-        }
+        }         
         int cid = getCategoricalId(i,isMissing? -1:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
@@ -1519,5 +1518,5 @@ public class DataInfo extends Keyed<DataInfo> {
       return means;
     }
   }
-
+  
 }

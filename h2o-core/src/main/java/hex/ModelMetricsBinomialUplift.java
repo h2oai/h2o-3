@@ -200,7 +200,7 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                                                        Frame frameWithExtraColumns, final Frame preds) {
             Vec resp = null;
             Vec weight = null;
-            Vec uplift = null;
+            Vec treatment = null;
             if (_wcount > 0) {
                 if (preds!=null) {
                     if (frameWithExtraColumns == null)
@@ -213,11 +213,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
                         weight = m==null?null : frameWithExtraColumns.vec(m._parms._weights_column);
                     }
                     if(m != null && m._parms._treatment_column != null){
-                        uplift = frameWithExtraColumns.vec(m._parms._treatment_column);
+                        treatment = frameWithExtraColumns.vec(m._parms._treatment_column);
                     }
                 }
             }
-            return makeModelMetrics(m, f, preds, resp, weight, uplift);
+            return makeModelMetrics(m, f, preds, resp, weight, treatment);
         }
 
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,

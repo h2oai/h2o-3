@@ -64,13 +64,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     double[][] cm = _auc.defaultCM();
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
-
+  
   public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) {
     if( _auc == null ) return null;
     double[][] cm = _auc.cmByCriterion(criterion);
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
-
+  
   public GainsLift gainsLift() { return _gainsLift; }
 
   // expose simple metrics criteria for sorting
@@ -127,7 +127,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       MetricBuilderBinomial mb = new BinomialMetrics(labels.domain()).doAll(fr)._mb;
       labels.remove();
       Frame preds = new Frame(targetClassProbs);
-      ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds,
+      ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds, 
               fr.vec("labels"), fr.vec("weights")); // use the Vecs from the frame (to make sure the ESPC is identical)
       mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
       return mm;
@@ -218,15 +218,15 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      * @return ModelMetricsBinomial
      */
-    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f,
+    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, 
                                                    Frame frameWithWeights, final Frame preds) {
       Vec resp = null;
       Vec weight = null;
       if (_wcount > 0) {
         if (preds!=null) {
-          if (frameWithWeights == null)
+          if (frameWithWeights == null) 
             frameWithWeights = f;
-          resp = m == null && frameWithWeights.vec(f.numCols()-1).isCategorical() ?
+          resp = m==null && frameWithWeights.vec(f.numCols()-1).isCategorical() ? 
                   frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
                   :
                   frameWithWeights.vec(m._parms._response_column);

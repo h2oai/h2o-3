@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<
-    M extends SharedTreeModel<M,P,O>,
-    P extends SharedTreeModel.SharedTreeParameters,
-    O extends SharedTreeModel.SharedTreeOutput>
-    extends ModelBuilder<M,P,O>
+    M extends SharedTreeModel<M,P,O>, 
+    P extends SharedTreeModel.SharedTreeParameters, 
+    O extends SharedTreeModel.SharedTreeOutput> 
+    extends ModelBuilder<M,P,O> 
     implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
 
   private static final Logger LOG = Logger.getLogger(SharedTree.class);
@@ -36,7 +36,7 @@ public abstract class SharedTree<
   private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
 
   public boolean shouldReorder(Vec v) {
-    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse 
+    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
            && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
   }
 
@@ -84,7 +84,7 @@ public abstract class SharedTree<
   public boolean isUplift(){return _isUplift;}
 
   @Override public boolean haveMojo() { return true; }
-  @Override public boolean havePojo() {
+  @Override public boolean havePojo() { 
     if (_parms == null)
       return true;
     return _parms._offset_column == null; // offset column is not supported for POJO
@@ -176,7 +176,7 @@ public abstract class SharedTree<
             "sharedtree.crossvalidation.parallelMainModelBuilding", _parms._parallel_main_model_building);
     if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
       _parms._parallel_main_model_building = false;
-      warn("_parallel_main_model_building",
+      warn("_parallel_main_model_building", 
               "Parallel main model will be disabled because max_runtime_secs is specified.");
     }
     if (_parms._use_best_cv_iteration && _parms._parallel_main_model_building) {
@@ -293,16 +293,16 @@ public abstract class SharedTree<
               _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               if (isQuasibinomial){
-                MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?
-                        new MRUtils.ClassDistQuasibinomial(domain).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(domain).doAll(_response);
-                _model._output._distribution = cdmt2.dist();
-                _model._output._modelClassDist = cdmt2.relDist();
-                _model._output._domains[_model._output._domains.length] = domain;
+                  MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?
+                          new MRUtils.ClassDistQuasibinomial(domain).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(domain).doAll(_response);
+                  _model._output._distribution = cdmt2.dist();
+                  _model._output._modelClassDist = cdmt2.relDist();
+                  _model._output._domains[_model._output._domains.length] = domain;
               }  else {
-                MRUtils.ClassDist cdmt2 = _weights != null ?
-                        new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
-                _model._output._distribution = cdmt2.dist();
-                _model._output._modelClassDist = cdmt2.relDist();
+                  MRUtils.ClassDist cdmt2 = _weights != null ?
+                          new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                  _model._output._distribution = cdmt2.dist();
+                  _model._output._modelClassDist = cdmt2.relDist();
               }
             }
           }
@@ -509,12 +509,12 @@ public abstract class SharedTree<
       _model.update(_job);
     }
   }
-
+  
   protected ScoreKeeper.ProblemType getProblemType() {
     assert isSupervised();
     return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
   }
-
+  
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
@@ -895,8 +895,8 @@ public abstract class SharedTree<
   }
 
   @Override
-  public final Frame getCalibrationFrame() {
-    return _calib;
+  public final Frame getCalibrationFrame() { 
+    return _calib; 
   }
 
   @Override
@@ -916,7 +916,7 @@ public abstract class SharedTree<
   protected TwoDimTable createScoringHistoryTable() {
     O out = _model._output;
     return createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
-            out._training_time_ms, _parms._custom_metric_func != null,
+            out._training_time_ms, _parms._custom_metric_func != null, 
             _parms._custom_distribution_func != null);
   }
 
@@ -924,7 +924,7 @@ public abstract class SharedTree<
                                                       ScoreKeeper[] _scored_train,
                                                       ScoreKeeper[] _scored_valid,
                                                       Job job, long[] _training_time_ms,
-                                                      boolean hasCustomMetric,
+                                                      boolean hasCustomMetric, 
                                                       boolean hasCustomDistribution) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
@@ -1256,7 +1256,7 @@ public abstract class SharedTree<
     }
     return (int)((double)totalNTrees / cvModelBuilders.length);
   }
-
+  
   @Override protected final boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
     final int ntreesOld = _ntrees;
     _ntrees = computeOptimalNTrees(cvModelBuilders);

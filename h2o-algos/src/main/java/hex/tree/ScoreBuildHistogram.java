@@ -95,7 +95,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       }
     }
   }
-  
+
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
     // Merge histograms
@@ -111,6 +111,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           else if( hs2[j] != null )
             hs1[j].add(hs2[j]);
     }
-    
   }
+
 }

@@ -1051,6 +1051,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' @param domain Vector with response factors for classification.
 #' @param distribution Distribution for regression.
 #' @param weights (optional) An H2OFrame containing observation weights.
+#' @param treatment (optional, for uplift models only) An H2OFrame containing treatment column for uplift classification.
 #' @param auc_type (optional) For multinomial classification you have to specify which type of agregated AUC/AUCPR will be used to calculate this metric. 
 #         Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR (OVO = One vs. One, OVR = One vs. Rest)
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
@@ -1189,19 +1190,20 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training AUUC
 #' @param valid Retrieve the validation AUUC
 #' @param xval Retrieve the cross-validation AUUC
-#' @seealso 
 #' @examples
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' train <- h2o.importFile(locate("smalldata/uplift/criteo_uplift_13k.csv"))
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"
+#' train <- h2o.importFile(f)
 #' train$treatment <- as.factor(train$treatment)
 #' train$conversion <- as.factor(train$conversion)
 #' 
 #' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
-#'                                        ntrees=10, max_depth=5, treatment_column="treatment", auuc_type="AUTO")
-#' perf <- h2o.performance(model, train) 
-#  h2o.auuc(perf)
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
+#'                                        auuc_type="AUTO")
+#' perf <- h2o.performance(model, train=TRUE) 
+#' h2o.auuc(perf)
 #' }
 #' @export
 h2o.auuc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
@@ -2305,7 +2307,7 @@ h2o.scoreHistoryGAM <- function(object) {
 h2o.get_ntrees_actual <- function(object) {
     o <- object
     if( is(o, "H2OModel") ) {
-        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost" | o@algorithm == "extendedisolationforest"){
+        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost" | o@algorithm == "extendedisolationforest" | o@algorithm == "upliftdrf"){
             sh <- o@model$model_summary['number_of_trees'][,1]
             if( is.null(sh) ) return(NULL)
             sh
