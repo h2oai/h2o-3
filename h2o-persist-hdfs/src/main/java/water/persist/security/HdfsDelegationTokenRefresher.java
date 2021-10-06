@@ -52,12 +52,11 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             return;
         }
         String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
-        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri);
+        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, null);
     }
-
-    static void startRefresher(Configuration conf,
-                               String authPrincipal, String authKeytabPath, String authUser, String uri) {
-        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser, uri).start();
+    
+    public static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri, Runnable callback) {
+        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, callback).start();
     }
 
     public static void startRefresher(Configuration conf,
@@ -85,6 +84,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private final int _retryDelaySecs;
     private final long _fallbackIntervalSecs;
     private final String _uri;
+    private Runnable _callback;
 
     public HdfsDelegationTokenRefresher(
             Configuration conf,
@@ -107,7 +107,8 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             String authPrincipal,
             String authKeytabPath,
             String authUser,
-            String uri
+            String uri,
+            Runnable callback
     ) {
         _authPrincipal = authPrincipal;
         _authKeytabPath = authKeytabPath;
@@ -117,6 +118,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         _retryDelaySecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS, 10);
         _fallbackIntervalSecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS, 12 * 3600); // 12h
         _uri = uri;
+        _callback = callback;
     }
 
     void start() {
@@ -177,6 +179,9 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        }
+        if (_callback != null) {
+            _callback.run();
         }
     }
 
@@ -244,6 +249,12 @@ public class HdfsDelegationTokenRefresher implements Runnable {
 
     private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials, String uri) throws IOException {
         log("FETCHING DELEGATION TOKEN WITH URI to " + uri, null);
+//        FileSystem fs = FileSystem.get( URI.create(uri), PersistHdfs.CONF);
+//        if (fs instanceof S3AFileSystem) {
+//            
+//        }
+        
+        
         return FileSystem.get( URI.create(uri), PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
     } 
     

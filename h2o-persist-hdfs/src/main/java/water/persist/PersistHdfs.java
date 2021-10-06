@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -282,20 +283,33 @@ public final class PersistHdfs extends Persist {
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
     Log.info("Iam in PesistHdfs#addFolder() L1");
-    String ice_root = System.getProperty("java.io.tmpdir");
-    if (!FileUtils.makeSureDirExists(ice_root)) {
-      throw new RuntimeException(ice_root + "does not exist!");
-    }
-    Configuration conf = PersistHdfs.CONF;
+
     //todo: think of how to check whether a dont have token already for this bucket
-    HdfsDelegationTokenRefresher.setup(conf, ice_root, p.toString());
-    Log.info("Iam in PesistHdfs#addFolder() after token reefresher setup");
-    FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
-    if(!fs.exists(p)){
-      failed.add("Path does not exist: '" + p.toString() + "'");
-      return;
+    //todo: where to get principal keytab user params values from?
+    String tmpPrincipal = System.getProperty("tmp.principal");
+    String tmpKeytabPath = System.getProperty("tmp.keytab.path");
+    String tmpUser = System.getProperty("tmpUser");
+    Log.info("H2O.ARGS.hdfs_config content: " + H2O.ARGS.hdfs_config);
+    Log.info("H2O.ARGS.principal content: " + H2O.ARGS.principal);
+    Log.info("H2O.ARGS.keytab_path content: " + H2O.ARGS.keytab_path);
+
+    //temporary setup:
+  //  HdfsDelegationTokenRefresher.setup(conf, ice_root, p.toString());
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    HdfsDelegationTokenRefresher.startRefresher(PersistHdfs.CONF, tmpPrincipal,  tmpKeytabPath, tmpUser, p.toString(), countDownLatch::countDown);
+// HdfsDelegationTokenRefresher.startRefresher(conf, H2O.ARGS.principal, H2O.ARGS.keytab_path,p.toString());
+    try {
+      countDownLatch.await();
+      Log.info("Iam in PesistHdfs#addFolder() after token reefresher setup");
+      FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
+      if(!fs.exists(p)){
+        failed.add("Path does not exist: '" + p.toString() + "'");
+        return;
+      }
+      addFolder(fs, p, keys, failed);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
-    addFolder(fs, p, keys, failed);
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
