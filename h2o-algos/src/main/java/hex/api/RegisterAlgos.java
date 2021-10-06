@@ -34,6 +34,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new ANOVAGLM(true),
             new PSVM(true),
             new hex.rulefit     .RuleFit     (true),
+            new hex.tree.uplift.UpliftDRF    (true),
             new hex.maxrglm     .MaxRGLM     (true)
     };
 

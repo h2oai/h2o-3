@@ -57,7 +57,7 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         EffectiveParametersUtils.initUpliftMetric(_parms);
     }
 
-    @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
+    @Override public boolean binomialOpt() { return false; }
     
     /** Bulk scoring API for one row.  Chunks are all compatible with the model,
      *  and expect the last Chunks are for the final distribution and prediction.
@@ -71,14 +71,4 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         preds[0] = preds[1] - preds[2];
         return preds;
     }
-
-    @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-        body.ip("preds[1] /= " + _output._ntrees + ";").nl();
-        body.ip("preds[2] /= " + _output._ntrees + ";").nl();
-        if (_parms._balance_classes)
-            body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-        body.ip("preds[0] = preds[1] - preds[2];").nl();
-    }
-    
-
 }

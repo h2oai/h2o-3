@@ -1099,12 +1099,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if(!_hasWeights) return -1;
       return _names.length - (isSupervised()?1:0) - (hasOffset()?1:0) - 1 - (hasFold()?1:0) - (hasTreatment()?1:0);
     }
-    
     public int offsetIdx() {
       if(!_hasOffset) return -1;
       return _names.length - (isSupervised()?1:0) - (hasFold()?1:0) - 1 - (hasTreatment()?1:0);
     }
-    
     public int foldIdx() {
       if(!_hasFold) return -1;
       return _names.length - (isSupervised()?1:0) - 1 -  (hasTreatment()?1:0);
@@ -1113,8 +1111,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int responseIdx() {
       if(!isSupervised()) return -1;
       return _names.length-1;
-    } 
-    
+    }
     public int treatmentIdx() {
       if(!_hasTreatment) return -1;
       return _names.length - (isSupervised()?1:0) - 1;
@@ -1723,6 +1720,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             assert ds != null && ds.length >= domains[i].length;
             if( isResponse && vec.domain() != null && ds.length == domains[i].length+vec.domain().length )
               throw new IllegalArgumentException("Test/Validation dataset has a categorical response column '"+names[i]+"' with no levels in common with the model");
+            if( isTreatment && vec.domain() != null && ds.length == domains[i].length+vec.domain().length)
+              throw new IllegalArgumentException("Test/Validation dataset has a categorical treatment column '"+names[i]+"' with no levels in common with the model");
             if (ds.length > domains[i].length)
               msgs.add("Test/Validation dataset column '" + names[i] + "' has levels not trained on: " + ArrayUtils.toStringQuotedElements(Arrays.copyOfRange(ds, domains[i].length, ds.length), 20));
             vec = evec;
@@ -2027,7 +2026,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                       Frame adaptFrm, boolean computeMetrics,
                                       boolean makePrediction, Job j,
                                       CFuncRef customMetricFunc) {
-    
     return new BigScore(domains[0],
                         names != null ? names.length : 0,
                         adaptFrm.means(),

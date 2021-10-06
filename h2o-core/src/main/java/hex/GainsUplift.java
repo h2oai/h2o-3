@@ -7,7 +7,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -22,7 +21,7 @@ public class GainsUplift extends Iced {
     public Vec _labels;
     public Vec _preds; //of length N, n_i = N/GROUPS
     public Vec _weights;
-    public Vec _uplift;
+    public Vec _treatment;
 
     //OUTPUT
     public long[] _nct1;
@@ -37,11 +36,11 @@ public class GainsUplift extends Iced {
     public GainsUplift(Vec preds, Vec labels, Vec uplift) {
         this(preds, labels, null, uplift);
     }
-    public GainsUplift(Vec preds, Vec labels, Vec weights, Vec uplift) {
+    public GainsUplift(Vec preds, Vec labels, Vec weights, Vec treatment) {
         _preds = preds;
         _labels = labels;
         _weights = weights;
-        _uplift = uplift;
+        _treatment = treatment;
     }
 
     private void init(Job job) throws IllegalArgumentException {
@@ -58,15 +57,15 @@ public class GainsUplift extends Iced {
             throw new IllegalArgumentException("Predicted probabilities cannot be class labels, expect probabilities.");
         if (_weights != null && !_weights.isNumeric())
             throw new IllegalArgumentException("Observation weights must be numeric.");
-        if (_uplift == null || !_uplift.isCategorical() || _uplift.cardinality() != 2)
-            throw new IllegalArgumentException("Uplift values must be defined and must be categorical with cardinality size 2.");
+        if (_treatment == null || !_treatment.isCategorical() || _treatment.cardinality() != 2)
+            throw new IllegalArgumentException("Treatment values must be defined and must be categorical with cardinality size 2.");
 
         // The vectors are from different groups => align them, but properly delete it after computation
         if (!_labels.group().equals(_preds.group())) {
             _preds = _labels.align(_preds);
             Scope.track(_preds);
-            _uplift = _labels.align(_uplift);
-            Scope.track(_uplift);
+            _treatment = _labels.align(_treatment);
+            Scope.track(_treatment);
             if (_weights != null) {
                 _weights = _labels.align(_weights);
                 Scope.track(_weights);
@@ -131,7 +130,7 @@ public class GainsUplift extends Iced {
         init(job); //check parameters and obtain _quantiles from _preds
         try {
             GainsUpliftBuilder gt = new GainsUpliftBuilder(_quantiles);
-            gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights, _uplift) : gt.doAll(_labels, _preds, _uplift);
+            gt = (_weights != null) ? gt.doAll(_labels, _preds, _weights, _treatment) : gt.doAll(_labels, _preds, _treatment);
             _nct1 = gt.nct1();
             _nct0 = gt.nct0();
             _ny1ct1 = gt.ny1ct1();

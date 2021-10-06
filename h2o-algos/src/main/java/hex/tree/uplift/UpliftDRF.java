@@ -184,7 +184,6 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             }
 
             // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
-            Sample ss[] = new Sample[_nclass];
             Sample s = new Sample(ktrees[0], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null,new Frame(vec_nids(_train,0),vec_resp(_train)), _parms._build_tree_one_node).getResult();
 
             // ----
@@ -200,15 +199,15 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
             // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
             // LeafNodes to hold predictions.
             DTree treeTr = ktrees[0];
-            ktrees[1] = new DTree(ktrees[0]);
-            DTree treeCt = ktrees[1];
+            ktrees[1] = new DTree(ktrees[0]); // make a deep copy of the tree to assign control prediction to the leaves
+            DTree treeCt = ktrees[1]; 
             int leaf = leafs[0] = treeTr.len();
             int[] nids = new int[leaf];
             int j = 0;
             for (int nid = 0; nid < leaf; nid++) {
-                if (treeTr.node(nid) instanceof DTree.DecidedNode) {
-                    DTree.DecidedNode dnTr = treeTr.decided(nid);
-                    DTree.DecidedNode dnCt = treeCt.decided(nid);
+                if (treeTr.node(nid) instanceof DTree.DecidedNode) { // Should be the same for treatment and control tree
+                    DTree.DecidedNode dnTr = treeTr.decided(nid); // Treatment tree node
+                    DTree.DecidedNode dnCt = treeCt.decided(nid); // Control tree node
                     if (dnTr._split == null) { // No decision here, no row should have this NID now
                         if (nid == 0) { // Handle the trivial non-splitting tree
                             DTree.LeafNode lnTr = new DTree.LeafNode(treeTr, -1, 0);
@@ -225,11 +224,11 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
                                 (treeTr.node(cnid) instanceof DTree.DecidedNode &&  // Or not possible to split
                                         ((DTree.DecidedNode) treeTr.node(cnid))._split == null)) {
                             DTree.LeafNode lnTr = new DTree.LeafNode(treeTr, nid);
-                            lnTr._pred = (float) dnTr.predTreatment(i);  // Set prediction into the leaf
-                            dnTr._nids[i] = lnTr.nid(); // Mark a leaf here
+                            lnTr._pred = (float) dnTr.predTreatment(i);  // Set prediction into the treatment leaf
+                            dnTr._nids[i] = lnTr.nid(); // Mark a leaf here for treatment 
                             DTree.LeafNode lnCt = new DTree.LeafNode(treeCt, nid);
-                            lnCt._pred = (float) dnCt.predControl(i);  // Set prediction into the leaf
-                            dnCt._nids[i] = lnCt.nid(); // Mark a leaf here
+                            lnCt._pred = (float) dnCt.predControl(i);  // Set prediction into the control leaf
+                            dnCt._nids[i] = lnCt.nid(); // Mark a leaf here for control
                             nids[j++] = lnTr.nid();
                         }
                     }
@@ -310,7 +309,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
      * fs[] array, and return the sum.  Dividing any fs[] element by the sum
      * turns the results into a probability distribution.
      */
-    @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+    @Override protected double score1( Chunk chks[], double weight, double offset, double fs[], int row ) {
         double sum = 0;
         fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
         fs[2] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
