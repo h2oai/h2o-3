@@ -20,6 +20,7 @@ import water.Value;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
+import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -279,7 +280,16 @@ public final class PersistHdfs extends Persist {
     } catch( InterruptedException ie ) {}
   }
 
-  public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException {
+  public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
+    Log.info("Iam in PesistHdfs#addFolder() L1");
+    String ice_root = System.getProperty("java.io.tmpdir");
+    if (!FileUtils.makeSureDirExists(ice_root)) {
+      throw new RuntimeException(ice_root + "does not exist!");
+    }
+    Configuration conf = PersistHdfs.CONF;
+    //todo: think of how to check whether a dont have token already for this bucket
+    HdfsDelegationTokenRefresher.setup(conf, ice_root, p.toString());
+    Log.info("Iam in PesistHdfs#addFolder() after token reefresher setup");
     FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
     if(!fs.exists(p)){
       failed.add("Path does not exist: '" + p.toString() + "'");
