@@ -40,7 +40,8 @@ test.model.generic.mojo.ids <- function() {
   print(mojo_model_up@model_id)
 
   expect_equal(mojo_model_up@model_id, original_model_id)
-
+    
+  print("Get model MOJO")  
   model <- h2o.getModel(original_model_id)
   print(model@model_id)
     

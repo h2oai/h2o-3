@@ -14,7 +14,7 @@
 #' # library(h2o)
 #' # h2o.init()
 #' 
-#' # generic_model <- h2o.genericModel("/path/to/model.zip")
+#' # generic_model <- h2o.genericModel(path="/path/to/model.zip", model_id="my_model")
 #' # predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
@@ -32,11 +32,11 @@ h2o.generic <- function(model_id = NULL,
   parms <- list()
 
 
-  if (!missing(model_id)) {
+  if (!is.null(model_id)) {
     parms$model_id <- model_id
   } else if(!missing(path)) {
-    splited <- strsplit(path, "/")
-    parms$model_id <- strsplit(splited[[1]][length(splited[[1]])], "\\.")[[1]][1]
+    splited <- strsplit(path, "/")[[1]]
+    parms$model_id <- strsplit(splited[length(splited)], '\\.')[[1]][1]
   }
   if (!missing(model_key)) {
     parms$model_key <- model_key
