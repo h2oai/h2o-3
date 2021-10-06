@@ -37,11 +37,10 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
   }
 
   // Called from an http request
-  public DRF(hex.tree.drf.DRFModel.DRFParameters parms                   ) { super(parms     ); init(false); }
-  public DRF(hex.tree.drf.DRFModel.DRFParameters parms, Key<DRFModel> key) { super(parms, key); init(false); }
-  public DRF(hex.tree.drf.DRFModel.DRFParameters parms, Job job          ) { super(parms, job); init(false); }
-  public DRF(boolean startup_once) { super(new hex.tree.drf.DRFModel.DRFParameters(), startup_once); }
-  public DRF(hex.tree.drf.DRFModel.DRFParameters parms, boolean startup_once) { super(parms, startup_once); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms                   ) { super(parms     ); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Key<DRFModel> key) { super(parms, key); init(false); }
+  public DRF( hex.tree.drf.DRFModel.DRFParameters parms, Job job          ) { super(parms, job); init(false); }
+  public DRF(boolean startup_once) { super(new hex.tree.drf.DRFModel.DRFParameters(),startup_once); }
 
   /** Start the DRF training Job on an F/J thread. */
   @Override protected Driver trainModelImpl() { return new DRFDriver(); }
@@ -213,30 +212,31 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
+
       // Each tree bottomed-out in a DecidedNode; go 1 more level and insert
       // LeafNodes to hold predictions.
-      for(int k = 0; k < _nclass; k++) {
+      for( int k=0; k<_nclass; k++ ) {
         DTree tree = ktrees[k];
-        if(tree == null) continue;
+        if( tree == null ) continue;
         int leaf = leafs[k] = tree.len();
-        for(int nid = 0; nid < leaf; nid++) {
-          if(tree.node(nid) instanceof DecidedNode) {
+        for( int nid=0; nid<leaf; nid++ ) {
+          if( tree.node(nid) instanceof DecidedNode ) {
             DecidedNode dn = tree.decided(nid);
-            if(dn._split == null) { // No decision here, no row should have this NID now
-              if(nid == 0) { // Handle the trivial non-splitting tree
+            if( dn._split == null ) { // No decision here, no row should have this NID now
+              if( nid==0 ) {               // Handle the trivial non-splitting tree
                 LeafNode ln = new LeafNode(tree, -1, 0);
-                ln._pred = (float) (isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
+                ln._pred = (float)(isClassifier() ? _model._output._priorClassDist[k] : _initialPrediction);
               }
               continue;
             }
-            for (int i = 0; i < dn._nids.length; i++) {
+            for( int i=0; i<dn._nids.length; i++ ) {
               int cnid = dn._nids[i];
-              if(cnid == -1 || // Bottomed out (predictors or responses known constant)
+              if( cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode) tree.node(cnid))._split == null)) {
-                LeafNode ln = new LeafNode(tree, nid);
-                ln._pred = (float) dn.pred(i);  // Set prediction into the leaf
+                              ((DecidedNode)tree.node(cnid))._split==null) ) {
+                LeafNode ln = new LeafNode(tree,nid);
+                ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
               }
             }
@@ -339,7 +339,8 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     if (_nclass > 2 || (_nclass == 2 && !_model.binomialOpt())) {
       for (int k = 0; k < _nclass; k++)
         sum += (fs[k+1] = weight * chk_tree(chks, k).atd(row) / chk_oobt(chks).atd(row));
-    } else if (_nclass==2 && _model.binomialOpt()) {
+    }
+    else if (_nclass==2 && _model.binomialOpt()) {
       fs[1] = weight * chk_tree(chks, 0).atd(row) / chk_oobt(chks).atd(row);
       if (fs[1]>1 && fs[1]<=ONEBOUND)
         fs[1] = 1.0;

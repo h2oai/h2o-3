@@ -64,13 +64,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     double[][] cm = _auc.defaultCM();
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
-  
+
   public ConfusionMatrix cm(AUC2.ThresholdCriterion criterion) {
     if( _auc == null ) return null;
     double[][] cm = _auc.cmByCriterion(criterion);
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
-  
+
   public GainsLift gainsLift() { return _gainsLift; }
 
   // expose simple metrics criteria for sorting
@@ -127,7 +127,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       MetricBuilderBinomial mb = new BinomialMetrics(labels.domain()).doAll(fr)._mb;
       labels.remove();
       Frame preds = new Frame(targetClassProbs);
-      ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds, 
+      ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds,
               fr.vec("labels"), fr.vec("weights")); // use the Vecs from the frame (to make sure the ESPC is identical)
       mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
       return mm;
@@ -214,24 +214,24 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * Create a ModelMetrics for a given model and frame
      * @param m Model
      * @param f Frame
-     * @param frameWithExtraColumns Frame that contains extra columns such as weights
+     * @param frameWithWeights Frame that contains extra columns such as weights
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      * @return ModelMetricsBinomial
      */
-    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, Frame frameWithExtraColumns, final Frame preds) {
+    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f,
+                                                   Frame frameWithWeights, final Frame preds) {
       Vec resp = null;
       Vec weight = null;
       if (_wcount > 0) {
-        if (preds != null) {
-          if (frameWithExtraColumns == null) {
-            frameWithExtraColumns = f;
-          }
-          resp = m == null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ? 
-                  frameWithExtraColumns.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+        if (preds!=null) {
+          if (frameWithWeights == null)
+            frameWithWeights = f;
+          resp = m == null && frameWithWeights.vec(f.numCols()-1).isCategorical() ?
+                  frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
                   :
-                  frameWithExtraColumns.vec(m._parms._response_column);
+                  frameWithWeights.vec(m._parms._response_column);
           if (resp != null) {
-            weight = m==null ? null : frameWithExtraColumns.vec(m._parms._weights_column);
+            weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
           }
         }
       }
@@ -245,7 +245,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         if (preds != null) {
           if (resp != null) {
             final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
-            if (optionalGainsLift.isPresent()) {
+            if(optionalGainsLift.isPresent()){
               gl = optionalGainsLift.get();
             }
           }

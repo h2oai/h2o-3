@@ -41,7 +41,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  nbins_cats=1024,  # type: int
                  max_runtime_secs=0.0,  # type: float
                  seed=-1,  # type: int
-                 mtries=-1,  # type: int
+                 mtries=-2,  # type: int
                  sample_rate=0.632,  # type: float
                  sample_rate_per_class=None,  # type: Optional[List[float]]
                  checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
@@ -126,7 +126,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :type seed: int
         :param mtries: Number of variables randomly sampled as candidates at each split. If set to -1, defaults to
                sqrt{p} for classification and p/3 for regression (where p is the # of predictors
-               Defaults to ``-1``.
+               Defaults to ``-2``.
         :type mtries: int
         :param sample_rate: Row sample rate per tree (from 0.0 to 1.0)
                Defaults to ``0.632``.
@@ -489,7 +489,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
         classification and p/3 for regression (where p is the # of predictors
 
-        Type: ``int``, defaults to ``-1``.
+        Type: ``int``, defaults to ``-2``.
         """
         return self._parms.get("mtries")
 

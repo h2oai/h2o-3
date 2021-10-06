@@ -8,7 +8,6 @@ import hex.util.CheckpointUtils;
 import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -28,10 +27,10 @@ import java.util.Random;
 import java.util.function.Consumer;
 
 public abstract class SharedTree<
-    M extends SharedTreeModel<M,P,O>, 
-    P extends SharedTreeModel.SharedTreeParameters, 
-    O extends SharedTreeModel.SharedTreeOutput> 
-    extends ModelBuilder<M,P,O> 
+    M extends SharedTreeModel<M,P,O>,
+    P extends SharedTreeModel.SharedTreeParameters,
+    O extends SharedTreeModel.SharedTreeOutput>
+    extends ModelBuilder<M,P,O>
     implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
 
   private static final Logger LOG = Logger.getLogger(SharedTree.class);
@@ -39,7 +38,7 @@ public abstract class SharedTree<
   private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
 
   public boolean shouldReorder(Vec v) {
-    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse
+    return _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.SortByResponse 
            && v.cardinality() > _parms._nbins_cats;  // no need to sort categoricals with fewer than nbins_cats - they will be sorted in every leaf anyway
   }
 
@@ -87,7 +86,7 @@ public abstract class SharedTree<
   public boolean isUplift(){return _isUplift;}
 
   @Override public boolean haveMojo() { return true; }
-  @Override public boolean havePojo() { 
+  @Override public boolean havePojo() {
     if (_parms == null)
       return true;
     return _parms._offset_column == null; // offset column is not supported for POJO
@@ -167,10 +166,9 @@ public abstract class SharedTree<
         error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
                 + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
     }
-    if( _train != null ) {
-      _ncols = _train.numCols() - (isSupervised() ? 1 : 0) - numSpecialCols();
-    }
-    
+    if( _train != null )
+      _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
+
     PlattScalingHelper.initCalibration(this, _parms, expensive);
 
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
@@ -180,7 +178,7 @@ public abstract class SharedTree<
             "sharedtree.crossvalidation.parallelMainModelBuilding", _parms._parallel_main_model_building);
     if (_parms._max_runtime_secs > 0 && _parms._parallel_main_model_building) {
       _parms._parallel_main_model_building = false;
-      warn("_parallel_main_model_building", 
+      warn("_parallel_main_model_building",
               "Parallel main model will be disabled because max_runtime_secs is specified.");
     }
     if (_parms._use_best_cv_iteration && _parms._parallel_main_model_building) {
@@ -297,16 +295,16 @@ public abstract class SharedTree<
               _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               if (isQuasibinomial){
-                  MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?
-                          new MRUtils.ClassDistQuasibinomial(domain).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(domain).doAll(_response);
-                  _model._output._distribution = cdmt2.dist();
-                  _model._output._modelClassDist = cdmt2.relDist();
-                  _model._output._domains[_model._output._domains.length] = domain;
+                MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?
+                        new MRUtils.ClassDistQuasibinomial(domain).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(domain).doAll(_response);
+                _model._output._distribution = cdmt2.dist();
+                _model._output._modelClassDist = cdmt2.relDist();
+                _model._output._domains[_model._output._domains.length] = domain;
               }  else {
-                  MRUtils.ClassDist cdmt2 = _weights != null ?
-                          new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
-                  _model._output._distribution = cdmt2.dist();
-                  _model._output._modelClassDist = cdmt2.relDist();
+                MRUtils.ClassDist cdmt2 = _weights != null ?
+                        new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                _model._output._distribution = cdmt2.dist();
+                _model._output._modelClassDist = cdmt2.relDist();
               }
             }
           }
@@ -513,14 +511,14 @@ public abstract class SharedTree<
       _model.update(_job);
     }
   }
-  
+
   protected ScoreKeeper.ProblemType getProblemType() {
     assert isSupervised();
     return ScoreKeeper.ProblemType.forSupervised(_nclass > 1);
   }
-  
+
   // --------------------------------------------------------------------------
-  // Build an entire layer of uplift tree
+  // Build an entire layer of all K trees
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
@@ -528,25 +526,16 @@ public abstract class SharedTree<
     // Nearly all leaves will split one more level.  This loop nest is
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
-    DTree tmpTree =  new DTree(ktrees[0]);
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
     Vec vecs[] = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
-      DTree tree = ktrees[k]; // Tree for class K
+      final DTree tree = ktrees[k]; // Tree for class K
+      if( tree == null ) continue;
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      if(isUplift() && k==1){
-        ktrees[k] = new DTree(tmpTree);
-        tree = ktrees[k]; // Tree for class K
-      }
-      if( tree == null ) continue;
-      int selectedCol = _ncols + 1;
-      if(isUplift()){
-        selectedCol++;
-      }
-      final String[] fr2cols = Arrays.copyOf(fr._names, selectedCol);
-      final Vec[] fr2vecs = Arrays.copyOf(vecs, selectedCol);
+      final String[] fr2cols = Arrays.copyOf(fr._names,_ncols+1);
+      final Vec[] fr2vecs = Arrays.copyOf(vecs,_ncols+1);
       if (DEBUG_PUBDEV_6686) {
         boolean hasNull = false;
         for (Vec v : fr2vecs) {
@@ -573,7 +562,7 @@ public abstract class SharedTree<
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int respIdx = fr2.find(_parms._response_column);
       int weightIdx = fr2.find(_parms._weights_column);
-      int treatmentIdx = fr2.find(_parms._treatment_column);
+      int treatmentIdx = -1;
       int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
       int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
@@ -581,7 +570,7 @@ public abstract class SharedTree<
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, 
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution,
               respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
     }
     // Block for all K trees to complete.
@@ -607,7 +596,7 @@ public abstract class SharedTree<
   }
 
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree tree, final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
-    // Build K trees, one per class.
+    // Build 1 uplift tree
 
     // Build up the next-generation tree splits from the current histograms.
     // Nearly all leaves will split one more level.  This loop nest is
@@ -619,11 +608,8 @@ public abstract class SharedTree<
     // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
     // to close other tree's Vecs when run in parallel.
     int k = 0;
-    if( tree != null ) { 
+    if( tree != null ) {
       int selectedCol = _ncols + 2;
-      if(isUplift()){
-        selectedCol++;
-      }
       final String[] fr2cols = Arrays.copyOf(fr._names, selectedCol);
       final Vec[] fr2vecs = Arrays.copyOf(vecs, selectedCol);
       Frame fr2 = new Frame(fr2cols, fr2vecs); //predictors, weights and the actual response
@@ -911,8 +897,8 @@ public abstract class SharedTree<
   }
 
   @Override
-  public final Frame getCalibrationFrame() { 
-    return _calib; 
+  public final Frame getCalibrationFrame() {
+    return _calib;
   }
 
   @Override
@@ -932,7 +918,7 @@ public abstract class SharedTree<
   protected TwoDimTable createScoringHistoryTable() {
     O out = _model._output;
     return createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
-            out._training_time_ms, _parms._custom_metric_func != null, 
+            out._training_time_ms, _parms._custom_metric_func != null,
             _parms._custom_distribution_func != null);
   }
 
@@ -940,7 +926,7 @@ public abstract class SharedTree<
                                                       ScoreKeeper[] _scored_train,
                                                       ScoreKeeper[] _scored_valid,
                                                       Job job, long[] _training_time_ms,
-                                                      boolean hasCustomMetric, 
+                                                      boolean hasCustomMetric,
                                                       boolean hasCustomDistribution) {
     List<String> colHeaders = new ArrayList<>();
     List<String> colTypes = new ArrayList<>();
@@ -1272,7 +1258,7 @@ public abstract class SharedTree<
     }
     return (int)((double)totalNTrees / cvModelBuilders.length);
   }
-  
+
   @Override protected final boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
     final int ntreesOld = _ntrees;
     _ntrees = computeOptimalNTrees(cvModelBuilders);
