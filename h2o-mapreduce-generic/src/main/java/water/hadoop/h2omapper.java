@@ -153,7 +153,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     final int localPort = ss.getLocalPort();
 
     DelegationTokenRefresher.setup(conf, ice_root);
-    HdfsDelegationTokenRefresher.setup(conf, ice_root, null);
+    HdfsDelegationTokenRefresher.setup(conf, ice_root, null, null);
+    HdfsDelegationTokenRefresher.lastSavedHadoopConfiguration = conf;
 
     final String[] args = makeArgs(conf, ice_root);
     try {

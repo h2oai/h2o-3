@@ -285,26 +285,10 @@ public final class PersistHdfs extends Persist {
     Log.info("Iam in PesistHdfs#addFolder() L1");
 
     //todo: think of how to check whether a dont have token already for this bucket
-    //todo: where to get principal keytab user params values from?
-    String tmpPrincipal = System.getProperty("tmp.principal");
-    String tmpKeytabPath = System.getProperty("tmp.keytab.path");
-    String tmpUser = System.getProperty("tmpUser");
-    String tmpiodir = System.getProperty("java.io.tmpdir");
-    Log.info("H2O.ARGS.hdfs_config content: " + H2O.ARGS.hdfs_config);
-    Log.info("H2O.ARGS.principal content: " + H2O.ARGS.principal);
-    Log.info("H2O.ARGS.keytab_path content: " + H2O.ARGS.keytab_path);
 
-    Log.info("tmpPrincipal content: " + tmpPrincipal);
-    Log.info("tmpKeytabPath content: " + tmpKeytabPath);
-    Log.info("tmpUser content: " + tmpUser);
-    Log.info("p.toString() content: " + p.toString());
-    String authKeytabPath = HdfsDelegationTokenRefresher.writeKeytabToFile(tmpKeytabPath, tmpiodir);
-    Log.info("authKeytabPath content: " + authKeytabPath);
-    
-    //temporary setup:
-  //  HdfsDelegationTokenRefresher.setup(conf, ice_root, p.toString());
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    HdfsDelegationTokenRefresher.startRefresher(PersistHdfs.CONF, tmpPrincipal,  authKeytabPath, tmpUser, p.toString(), countDownLatch::countDown);
+    HdfsDelegationTokenRefresher.setup(HdfsDelegationTokenRefresher.lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
+    //HdfsDelegationTokenRefresher.startRefresher(PersistHdfs.CONF, tmpPrincipal,  authKeytabPath, tmpUser, p.toString(), countDownLatch::countDown);
 // HdfsDelegationTokenRefresher.startRefresher(conf, H2O.ARGS.principal, H2O.ARGS.keytab_path,p.toString());
     try {
       countDownLatch.await();

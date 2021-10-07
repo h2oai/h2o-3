@@ -33,8 +33,9 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public static final String H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS = "h2o.auth.tokenRefresher.maxAttempts";
     public static final String H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS = "h2o.auth.tokenRefresher.retryDelaySecs";
     public static final String H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS = "h2o.auth.tokenRefresher.fallbackIntervalSecs";
+    public static Configuration lastSavedHadoopConfiguration = null;
 
-    public static void setup(Configuration conf, String tmpDir, String uri) throws IOException {
+    public static void setup(Configuration conf, String tmpDir, String uri, Runnable callback) throws IOException {
         boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
         if (!enabled) {
             log("HDFS Token renewal is not enabled in configuration", null);
@@ -58,7 +59,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         log("authKeytabPath content:" + authKeytabPath, null);
         log("authUser content:" + authUser, null);
         log("uri content:" + uri, null);
-        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, null);
+        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, callback);
     }
     
     public static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri, Runnable callback) {
