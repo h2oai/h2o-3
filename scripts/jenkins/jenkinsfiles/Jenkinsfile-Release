@@ -83,7 +83,7 @@ try {
                                 # Stop on error.
                                 set -e
 
-                                export BUILD_HADOOP=true
+                                export BUILD_HADOOP=false
                                 export JAVA_HOME=/usr/lib/jvm/java-8-oracle
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
@@ -142,9 +142,6 @@ try {
                         throw e
                     }
                 }
-
-                env.PROJECT_VERSION = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat target/project_version", returnStdout: true).trim()
-                env.SHA256_HASH = sh(script: "cd ${env.BUILD_NUMBER_DIR} && sha256sum target/h2o-*${currentBuild.number}.zip", returnStdout: true).trim()
 
                     if (params.BUILD_CONDA) {
                         final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
