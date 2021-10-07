@@ -39,7 +39,7 @@ public final class PersistHdfs extends Persist {
 
   public static Configuration lastSavedHadoopConfiguration = null;
   
-  private static List<Path> pathsWithToken;
+  private static List<Path> pathsWithDelegationToken;
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -287,13 +287,13 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
-    if (pathsWithToken == null)
-      pathsWithToken = new ArrayList();
+    if (pathsWithDelegationToken == null)
+      pathsWithDelegationToken = new ArrayList();
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    if (!pathsWithToken.contains(p) || !isChildOfBucketWithAlreadyExistingToken(p)) {
+    if (!pathsWithDelegationToken.contains(p) || !isChildOfBucketWithAlreadyExistingToken(p)) {
       HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
       Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
-      pathsWithToken.add(p);
+      pathsWithDelegationToken.add(p);
     } else {
       countDownLatch.countDown();
     }
@@ -311,7 +311,7 @@ public final class PersistHdfs extends Persist {
   }
   
   private static boolean isChildOfBucketWithAlreadyExistingToken(Path path) {
-    for (Path currPath : pathsWithToken) {
+    for (Path currPath : pathsWithDelegationToken) {
       if (isChild(currPath, path)) {
         return true;
       }
@@ -322,6 +322,9 @@ public final class PersistHdfs extends Persist {
   private static boolean isChild(Path potentialParent, Path potentialChild) {
     String[] childAbsolute = potentialChild.toUri().getRawPath().split("/");
     String[] parentAbsolute = potentialParent.toUri().getRawPath().split("/");
+    if (childAbsolute.length > parentAbsolute.length) {
+        return false;
+    }
     for (int i = 0; i < childAbsolute.length - 1; i++) {
       if (!childAbsolute[i].equals(parentAbsolute[i])) {
         return false;

@@ -51,13 +51,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             log("Keytab not provided, HDFS tokens will not be refreshed by H2O and their lifespan will be limited", null);
             return;
         }
-        log("authKeytab content:" + authKeytab, null);
         String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
-        log("MY TMP LOGS:", null);
-        log("authPrincipal content:" + authPrincipal, null);
-        log("authKeytabPath content:" + authKeytabPath, null);
-        log("authUser content:" + authUser, null);
-        log("uri content:" + uri, null);
         startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, callback);
     }
     
@@ -91,7 +85,6 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private final long _fallbackIntervalSecs;
     private final String _uri;
     private Runnable _callback;
-    private Token _token;
 
     public HdfsDelegationTokenRefresher(
             Configuration conf,
@@ -242,11 +235,12 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     }
 
     private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials, String uri) throws IOException {
-        log("FETCHING DELEGATION TOKEN WITH URI to " + uri, null);
-        if (uri != null)
+        if (uri != null) {
+            log("Fetching a delegation token for not-null uri: '" + uri, null);
             return FileSystem.get(URI.create(uri), PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
-        else
+        } else {
             return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        }
     } 
     
     private void distribute(Credentials creds) throws IOException {
