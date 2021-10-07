@@ -33,7 +33,6 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public static final String H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS = "h2o.auth.tokenRefresher.maxAttempts";
     public static final String H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS = "h2o.auth.tokenRefresher.retryDelaySecs";
     public static final String H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS = "h2o.auth.tokenRefresher.fallbackIntervalSecs";
-    public static Configuration lastSavedHadoopConfiguration = null;
 
     public static void setup(Configuration conf, String tmpDir, String uri, Runnable callback) throws IOException {
         boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
@@ -92,6 +91,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private final long _fallbackIntervalSecs;
     private final String _uri;
     private Runnable _callback;
+    private Token _token;
 
     public HdfsDelegationTokenRefresher(
             Configuration conf,

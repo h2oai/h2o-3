@@ -5,6 +5,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
+import water.persist.PersistHdfs;
 import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.BinaryFileTransfer;
 import water.hive.DelegationTokenRefresher;
@@ -154,7 +155,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
 
     DelegationTokenRefresher.setup(conf, ice_root);
     HdfsDelegationTokenRefresher.setup(conf, ice_root, null, null);
-    HdfsDelegationTokenRefresher.lastSavedHadoopConfiguration = conf;
+    PersistHdfs.lastSavedHadoopConfiguration = conf;
 
     final String[] args = makeArgs(conf, ice_root);
     try {

@@ -36,6 +36,8 @@ public final class PersistHdfs extends Persist {
   /** Root path of HDFS */
   private final Path _iceRoot;
 
+  public static Configuration lastSavedHadoopConfiguration = null;
+
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
    * Note: This implementation differs from the filter used in Hadoop MR: we do not skip underscore-prefixed files.
@@ -287,7 +289,7 @@ public final class PersistHdfs extends Persist {
     //todo: think of how to check whether a dont have token already for this bucket
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    HdfsDelegationTokenRefresher.setup(HdfsDelegationTokenRefresher.lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
+    HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
     //HdfsDelegationTokenRefresher.startRefresher(PersistHdfs.CONF, tmpPrincipal,  authKeytabPath, tmpUser, p.toString(), countDownLatch::countDown);
 // HdfsDelegationTokenRefresher.startRefresher(conf, H2O.ARGS.principal, H2O.ARGS.keytab_path,p.toString());
     try {
