@@ -8,6 +8,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
@@ -37,6 +38,8 @@ public final class PersistHdfs extends Persist {
   private final Path _iceRoot;
 
   public static Configuration lastSavedHadoopConfiguration = null;
+  
+  private static List<Path> pathsWithToken;
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -284,17 +287,18 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
-    Log.info("Iam in PesistHdfs#addFolder() L1");
-
-    //todo: think of how to check whether a dont have token already for this bucket
-
+    if (pathsWithToken == null)
+      pathsWithToken = new ArrayList();
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
-    //HdfsDelegationTokenRefresher.startRefresher(PersistHdfs.CONF, tmpPrincipal,  authKeytabPath, tmpUser, p.toString(), countDownLatch::countDown);
-// HdfsDelegationTokenRefresher.startRefresher(conf, H2O.ARGS.principal, H2O.ARGS.keytab_path,p.toString());
+    if (!pathsWithToken.contains(p) || !isChildOfBucketWithAlreadyExistingToken(p)) {
+      HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
+      Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
+      pathsWithToken.add(p);
+    } else {
+      countDownLatch.countDown();
+    }
     try {
       countDownLatch.await();
-      Log.info("Iam in PesistHdfs#addFolder() after token reefresher setup");
       FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
       if(!fs.exists(p)){
         failed.add("Path does not exist: '" + p.toString() + "'");
@@ -304,6 +308,26 @@ public final class PersistHdfs extends Persist {
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
+  }
+  
+  private static boolean isChildOfBucketWithAlreadyExistingToken(Path path) {
+    for (Path currPath : pathsWithToken) {
+      if (isChild(currPath, path)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isChild(Path potentialParent, Path potentialChild) {
+    String[] childAbsolute = potentialChild.toUri().getRawPath().split("/");
+    String[] parentAbsolute = potentialParent.toUri().getRawPath().split("/");
+    for (int i = 0; i < childAbsolute.length - 1; i++) {
+      if (!childAbsolute[i].equals(parentAbsolute[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
