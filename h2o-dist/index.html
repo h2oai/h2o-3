@@ -376,7 +376,7 @@
 
       replaceDockerImageTag = function () {
           const versionRegexp = /(\d+\.\d+\.\d+\.\d{4,})/g; // Nightly builds have at least 4 digits at the end
-          var dockerTag = SUBST_PROJECT_VERSION;
+          var dockerTag = "SUBST_PROJECT_VERSION";
           if (dockerTag.match(versionRegexp) != null) {
               dockerTag = "nightly" // If the last number is not 4 or more digits, substitute the version for "nightly"
           }
