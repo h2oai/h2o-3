@@ -174,7 +174,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         }
         for (int i = 0; i < _maxAttempts; i++) {
             try {
-                Credentials creds =_uri != null ? refreshTokens(loginAuthUser(), _uri) : refreshTokens(loginAuthUser());
+                Credentials creds = refreshTokens(loginAuthUser(), _uri);
                 distribute(creds);
                 if (_callback != null) {
                     _callback.run();
@@ -189,18 +189,6 @@ public class HdfsDelegationTokenRefresher implements Runnable {
                 Thread.currentThread().interrupt();
             }
         }
-//        if (_callback != null) {
-//            _callback.run();
-//        }
-    }
-
-    private Credentials refreshTokens(UserGroupInformation tokenUser) throws IOException, InterruptedException {
-        return tokenUser.doAs((PrivilegedExceptionAction<Credentials>) () -> {
-            Credentials creds = new Credentials();
-            Token<?>[] tokens = fetchDelegationTokens(getRenewer(), creds);
-            log("Fetched delegation tokens: " + Arrays.toString(tokens), null);
-            return creds;
-        });
     }
 
     private Credentials refreshTokens(UserGroupInformation tokenUser, String uri) throws IOException, InterruptedException {
@@ -229,7 +217,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     }
     
     private long getTokenRenewalIntervalSecs(UserGroupInformation tokenUser) throws IOException, InterruptedException {
-        Credentials creds = refreshTokens(tokenUser);
+        Credentials creds = refreshTokens(tokenUser, _uri);
         long intervalMillis = tokenUser.doAs((PrivilegedExceptionAction<Long>) () ->
             creds.getAllTokens()
                     .stream()
@@ -252,19 +240,12 @@ public class HdfsDelegationTokenRefresher implements Runnable {
                 intervalMillis / 1000 : 0L;
     }
 
-    private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials) throws IOException {
-        return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
-    }
-
     private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials, String uri) throws IOException {
         log("FETCHING DELEGATION TOKEN WITH URI to " + uri, null);
-//        FileSystem fs = FileSystem.get( URI.create(uri), PersistHdfs.CONF);
-//        if (fs instanceof S3AFileSystem) {
-//            
-//        }
-        
-        
-        return FileSystem.get( URI.create(uri), PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        if (uri != null)
+            return FileSystem.get(URI.create(uri), PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        else
+            return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
     } 
     
     private void distribute(Credentials creds) throws IOException {
