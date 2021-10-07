@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Zizler (3.34.0.2) - 10/6/2021
+### Zizler (3.34.0.3) - 10/7/2021
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/2/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/3/index.html</a>
 
 #### Bug
 
