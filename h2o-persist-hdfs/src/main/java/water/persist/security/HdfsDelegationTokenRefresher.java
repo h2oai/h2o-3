@@ -51,7 +51,13 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             log("Keytab not provided, HDFS tokens will not be refreshed by H2O and their lifespan will be limited", null);
             return;
         }
+        log("authKeytab content:" + authKeytab, null);
         String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
+        log("MY TMP LOGS:", null);
+        log("authPrincipal content:" + authPrincipal, null);
+        log("authKeytabPath content:" + authKeytabPath, null);
+        log("authUser content:" + authUser, null);
+        log("uri content:" + uri, null);
         startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, null);
     }
     
@@ -64,7 +70,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, null).start(renewalIntervalSecs);
     }
 
-    private static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
+    public static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
         FileUtils.makeSureDirExists(tmpDir);
         File keytabFile = new File(tmpDir, "hdfs_auth_keytab");
         byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(authKeytab);
