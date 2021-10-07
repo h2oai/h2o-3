@@ -176,6 +176,9 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             try {
                 Credentials creds =_uri != null ? refreshTokens(loginAuthUser(), _uri) : refreshTokens(loginAuthUser());
                 distribute(creds);
+                if (_callback != null) {
+                    _callback.run();
+                }
                 return;
             } catch (IOException | InterruptedException e) {
                 log("Failed to refresh token (attempt " + i + " out of " + _maxAttempts + "). Will retry in " + _retryDelaySecs + "s.", e);
@@ -186,9 +189,9 @@ public class HdfsDelegationTokenRefresher implements Runnable {
                 Thread.currentThread().interrupt();
             }
         }
-        if (_callback != null) {
-            _callback.run();
-        }
+//        if (_callback != null) {
+//            _callback.run();
+//        }
     }
 
     private Credentials refreshTokens(UserGroupInformation tokenUser) throws IOException, InterruptedException {
