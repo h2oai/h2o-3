@@ -210,11 +210,9 @@ public class XGBoostSteps extends ModelingSteps {
 
             if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
                 double[] dist = aml().getClassDistribution();
-                float imbalanceRatio = (float)(dist[0]/dist[1]);
-                searchParams.put("_scale_pos_weight", new Float[]{1.f, imbalanceRatio});
-                // max_delta_step doesn't care if positive or negative class is underrepresented => correct the imbalance ratio so it is > 1
-                if (imbalanceRatio < 1)
-                    imbalanceRatio = 1 / imbalanceRatio;
+                final float negPosRatio = (float)(dist[0] / dist[1]);
+                final float imbalanceRatio = negPosRatio < 1 ? 1 / negPosRatio : negPosRatio;
+                searchParams.put("_scale_pos_weight", new Float[]{1.f, negPosRatio});
                 searchParams.put("_max_delta_step",  new Float[]{0f, Math.min(5f, imbalanceRatio / 2), Math.min(10f, imbalanceRatio)});
             }
             return searchParams;
