@@ -50,7 +50,12 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         public XGBoostParameters prepareModelParameters() {
-            return XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
+            XGBoostParameters params =  XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
+            if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+                double[] dist = aml().getClassDistribution();
+                params._scale_pos_weight =  (float) (dist[0] / dist[1]);
+            }
+            return params;
         }
     }
 
@@ -115,11 +120,6 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_depth = params._max_depth * 2;
                     }
 
-                    if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
-                        double[] dist = aml().getClassDistribution();
-                        params._scale_pos_weight =  (float) (dist[0] / dist[1]);
-                    }
-
                     return params;
                 }
             },
@@ -137,11 +137,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
-                    }
-
-                    if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
-                        double[] dist = aml().getClassDistribution();
-                        params._scale_pos_weight =  (float) (dist[0] / dist[1]);
                     }
 
                     return params;
@@ -163,11 +158,6 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_depth = params._max_depth * 2;
                     }
 
-                    if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
-                        double[] dist = aml().getClassDistribution();
-                        params._scale_pos_weight =  (float) (dist[0] / dist[1]);
-                    }
-
                     return params;
                 }
             },
@@ -178,6 +168,14 @@ public class XGBoostSteps extends ModelingSteps {
 
         public DefaultXGBoostGridStep(String id, AutoML autoML) {
             super(id, autoML, false);
+        }
+
+        @Override
+        public XGBoostParameters prepareModelParameters() {
+            XGBoostParameters params = super.prepareModelParameters();
+            // Reset scale pos weight so we can grid search the parameter
+            params._scale_pos_weight = (new XGBoostParameters())._scale_pos_weight;
+            return params;
         }
 
         @Override
@@ -213,13 +211,11 @@ public class XGBoostSteps extends ModelingSteps {
             if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
                 double[] dist = aml().getClassDistribution();
                 float imbalanceRatio = (float)(dist[0]/dist[1]);
-                if (imbalanceRatio > 5 || 1 / imbalanceRatio > 5) // both positive and negative class can be underrepresented
-                    searchParams.put("_scale_pos_weight", new Float[]{1.f, imbalanceRatio});
+                searchParams.put("_scale_pos_weight", new Float[]{1.f, imbalanceRatio});
                 // max_delta_step doesn't care if positive or negative class is underrepresented => correct the imbalance ratio so it is > 1
                 if (imbalanceRatio < 1)
                     imbalanceRatio = 1 / imbalanceRatio;
-                if (imbalanceRatio > 3)
-                    searchParams.put("_max_delta_step",  new Float[]{0f, Math.min(5f, imbalanceRatio / 2), Math.min(10f, imbalanceRatio)});
+                searchParams.put("_max_delta_step",  new Float[]{0f, Math.min(5f, imbalanceRatio / 2), Math.min(10f, imbalanceRatio)});
             }
             return searchParams;
         }
