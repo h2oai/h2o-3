@@ -99,6 +99,7 @@ try {
                                 which java
                                 java -version
                                 du -h
+                                pip freeze
 
                                 # Update the build number.
                                 mkdir -p ci
