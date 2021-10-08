@@ -360,8 +360,7 @@ EOF
                                                 cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
                                                 cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main/conda
                                                 # Create conda package for current platform
-                                                conda config --append channels conda-forge
-                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
+                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion} --channel conda-forge
                                                 # Get name of the package
                                                 CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
                                                 PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
