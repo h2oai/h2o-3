@@ -39,7 +39,7 @@ public final class PersistHdfs extends Persist {
 
   public static Configuration lastSavedHadoopConfiguration = null;
   
-  private static List<Path> pathsWithDelegationToken;
+  private static List<String> bucketsWithDelegationToken;
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -287,13 +287,13 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
-    if (pathsWithDelegationToken == null)
-      pathsWithDelegationToken = new ArrayList();
+    if (bucketsWithDelegationToken == null)
+      bucketsWithDelegationToken = new ArrayList();
     final CountDownLatch countDownLatch = new CountDownLatch(1);
-    if (!pathsWithDelegationToken.contains(p) || !isChildOfBucketWithAlreadyExistingToken(p)) {
+    if (!isPathInBucketWithAlreadyExistingToken(p)) {  
       HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
       Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
-      pathsWithDelegationToken.add(p);
+      bucketsWithDelegationToken.add(p.toUri().getHost());
     } else {
       countDownLatch.countDown();
     }
@@ -310,27 +310,19 @@ public final class PersistHdfs extends Persist {
     }
   }
   
-  private static boolean isChildOfBucketWithAlreadyExistingToken(Path path) {
-    for (Path currPath : pathsWithDelegationToken) {
-      if (isChild(currPath, path)) {
+  private static boolean isPathInBucketWithAlreadyExistingToken(Path path) {
+    if (!path.toUri().getScheme().equals("s3a")) {
+      // if it is something else than s3a, return true to fallback to original behaviour and not generate token
+      Log.debug("Scheme is not s3a: " + path.toUri().getScheme());
+      return true;
+    }
+    String bucket = path.toUri().getHost();
+    for (String currBucket : bucketsWithDelegationToken) {
+      if (bucket.equals(currBucket)) {
         return true;
       }
     }
     return false;
-  }
-
-  private static boolean isChild(Path potentialParent, Path potentialChild) {
-    String[] childAbsolute = potentialChild.toUri().getRawPath().split("/");
-    String[] parentAbsolute = potentialParent.toUri().getRawPath().split("/");
-    if (childAbsolute.length > parentAbsolute.length) {
-        return false;
-    }
-    for (int i = 0; i < childAbsolute.length - 1; i++) {
-      if (!childAbsolute[i].equals(parentAbsolute[i])) {
-        return false;
-      }
-    }
-    return true;
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
