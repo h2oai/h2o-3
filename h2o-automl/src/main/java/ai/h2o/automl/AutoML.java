@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
@@ -277,10 +278,38 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+
   private void validateModelValidation(AutoMLBuildSpec buildSpec) {
     if (buildSpec.input_spec.fold_column != null) {
-      eventLog().warn(Stage.Validation, "Fold column "+buildSpec.input_spec.fold_column+" will be used for cross-validation. nfolds parameter will be ignored.");
+      eventLog().warn(Stage.Validation, "Fold column " + buildSpec.input_spec.fold_column + " will be used for cross-validation. nfolds parameter will be ignored.");
       buildSpec.build_control.nfolds = 0;
+    } else if (buildSpec.build_control.nfolds == -1) {
+      Frame trainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
+      long nrows = trainingFrame.numRows();
+      long ncols = trainingFrame.numCols() - (1 + // y +
+              (buildSpec.input_spec.ignored_columns != null ? buildSpec.input_spec.ignored_columns.length : 0) +
+              (buildSpec.input_spec.weights_column != null ? 1 : 0) +
+              /* FIXME: add offset_column if it will get implemented to AutoML */
+              (buildSpec.input_spec.fold_column != null ? 1 : 0));
+
+      double max_runtime = buildSpec.build_control.stopping_criteria.max_runtime_secs();
+      long nthreads = Stream.of(H2O.CLOUD.members())
+              .mapToInt((h2o) -> h2o._heartbeat._nthreads)
+              .sum();
+
+      double r1 = Math.log((ncols * nrows) / (max_runtime * nthreads));
+      double r2 = Math.log((ncols * nrows) / Math.log(max_runtime * nthreads));
+      boolean use_blending = r1 > ((0.72*r2 - 12.86)/(-0.41));  // balanced (more conservative)
+      //boolean use_blending = r1 > ((0.7*r2 - 11.48)/(-0.37));  // unbalanced
+
+      if (max_runtime > 0 && use_blending) {
+        buildSpec.build_control.use_auto_blending = true;
+        buildSpec.build_control.nfolds = 0;
+        eventLog().info(Stage.Validation, "Blending will be used.");
+      } else {
+        buildSpec.build_control.nfolds = 5;
+        eventLog().info(Stage.Validation, "5-fold cross-validation will be used.");
+      }
     } else if (buildSpec.build_control.nfolds <= 1) {
       eventLog().info(Stage.Validation, "Cross-validation disabled by user: no fold column nor nfolds > 1.");
       buildSpec.build_control.nfolds = 0;
@@ -529,27 +558,55 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // then we need to create one out of the original training set.
     if (!isCVEnabled()) {
       double[] splitRatios = null;
-      if (null == _validationFrame && null == _leaderboardFrame) {
-        splitRatios = new double[]{ 0.8, 0.1, 0.1 };
+      double validationRatio = null == _validationFrame ? 0.1 : 0;
+      double leaderboardRatio = null == _leaderboardFrame ? 0.1 : 0;
+      double blendingRatio = (_buildSpec.build_control.use_auto_blending && null == _blendingFrame) ? 0.2 : 0;
+      if (validationRatio + leaderboardRatio + blendingRatio > 0) {
+        splitRatios = new double[]{
+                1 - (validationRatio + leaderboardRatio + blendingRatio),
+                validationRatio,
+                leaderboardRatio,
+                blendingRatio
+        };
+        ArrayList<String> frames = new ArrayList();
+        String ratios = Integer.toString((int)(splitRatios[0] * 100));
+        if (null == _validationFrame) {
+          frames.add("validation frame");
+          ratios += "/" + (int)(100 * validationRatio);
+        }
+        if (null == _leaderboardFrame) {
+          frames.add("leaderboard frame");
+          ratios += "/" + (int)(100 * leaderboardRatio);
+        }
+        if (null == _blendingFrame && _buildSpec.build_control.use_auto_blending) {
+          frames.add("blending frame");
+          ratios += "/" + (int)(100 * blendingRatio);
+        }
+        String framesStr = new String();
+        for (int i = 0; i < frames.size(); i++) {
+          if (i > 0) {
+            framesStr += ", ";
+            if (i == frames.size() - 1)
+              framesStr += "and ";
+          }
+          framesStr += frames.get(i);
+        }
         eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and none of validation frame and leaderboard frame were provided, " +
-                "automatically split the training data into training, validation and leaderboard frames in the ratio 80/10/10");
-      } else if (null == _validationFrame) {
-        splitRatios = new double[]{ 0.9, 0.1, 0 };
-        eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and no validation frame was provided, " +
-                "automatically split the training data into training and validation frames in the ratio 90/10");
-      } else if (null == _leaderboardFrame) {
-        splitRatios = new double[]{ 0.9, 0, 0.1 };
-        eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and no leaderboard frame was provided, " +
-                "automatically split the training data into training and leaderboard frames in the ratio 90/10");
+            "Since cross-validation is disabled, and " +
+                    (frames.size() > 1 ? "none of " : "no ") +
+                    framesStr +
+                    (frames.size() > 1 ? " were " : " was ") +
+                    " provided, " +
+                    " automatically split the training data into training, " +
+                    framesStr +
+                    " in the ratio " + ratios);
       }
       if (splitRatios != null) {
         Key[] keys = new Key[] {
             Key.make(_runId+"_training_"+ _origTrainingFrame._key),
             Key.make(_runId+"_validation_"+ _origTrainingFrame._key),
             Key.make(_runId+"_leaderboard_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_blending_"+ _origTrainingFrame._key),
         };
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
                 _origTrainingFrame, 
@@ -569,6 +626,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           _leaderboardFrame = splits[2];
         } else {
           splits[2].delete();
+        }
+
+        if (_blendingFrame == null && splits[3].numRows() > 0) {
+          _blendingFrame = splits[3];
+        } else {
+          splits[3].delete();
         }
       }
     }
