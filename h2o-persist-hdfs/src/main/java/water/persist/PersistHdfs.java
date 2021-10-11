@@ -287,10 +287,20 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
+      startDelegationTokenRefresher(p);
+      FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
+      if(!fs.exists(p)){
+        failed.add("Path does not exist: '" + p.toString() + "'");
+        return;
+      }
+      addFolder(fs, p, keys, failed);
+  }
+
+  public static void startDelegationTokenRefresher(Path p) throws IOException {
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
     if (bucketsWithDelegationToken == null)
       bucketsWithDelegationToken = new ArrayList();
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
-    if (!isPathInBucketWithAlreadyExistingToken(p)) {  
+    if (!isPathInBucketWithAlreadyExistingToken(p)) {
       HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
       Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
       bucketsWithDelegationToken.add(p.toUri().getHost());
@@ -298,13 +308,7 @@ public final class PersistHdfs extends Persist {
       countDownLatch.countDown();
     }
     try {
-      countDownLatch.await();
-      FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
-      if(!fs.exists(p)){
-        failed.add("Path does not exist: '" + p.toString() + "'");
-        return;
-      }
-      addFolder(fs, p, keys, failed);
+    countDownLatch.await();
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -392,6 +396,7 @@ public final class PersistHdfs extends Persist {
       Path p = new Path(filter);
       Path expand = p;
       if( !filter.endsWith("/") ) expand = p.getParent();
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
       for( FileStatus file : fs.listStatus(expand) ) {
         Path fp = file.getPath();
