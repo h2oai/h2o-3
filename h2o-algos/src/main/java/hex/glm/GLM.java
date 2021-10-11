@@ -30,6 +30,7 @@ import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
+import water.exceptions.H2OFailException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.InteractionWrappedVec;
@@ -74,7 +75,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public static int _betaLenPerClass;
   private boolean _earlyStopEnabled = false;
   private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
-
+  private boolean _betaConstraintsOn = false;
+  BetaConstraint _bc = null;
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -851,12 +853,21 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _state._ymu = new double[]{_parms._intercept ? _train.lastVec().mean() : _parms.linkInv(0)};
         }
       }
-      BetaConstraint bc = (_parms._beta_constraints != null)?new BetaConstraint(_parms._beta_constraints.get()):new BetaConstraint();
-      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
+      boolean betaContsOn = _parms._beta_constraints != null || _parms._non_negative;
+      _betaConstraintsOn = (betaContsOn && (Solver.AUTO.equals(_parms._solver) ||
+              Solver.COORDINATE_DESCENT.equals(_parms._solver) || Solver.IRLSM.equals(_parms._solver )||
+              Solver.L_BFGS.equals(_parms._solver)));
+      _bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
+              : new BetaConstraint();
+      if (betaContsOn && !_betaConstraintsOn) {
+        warn("Beta Constraints", " will be disabled except for solver AUTO, COORDINATE_DESCENT, " +
+                "IRLSM or L_BFGS.  It is not available for ordinal or multinomial families.");
+      }
+      if((_bc.hasBounds() || _bc.hasProximalPenalty()) && _parms._compute_p_values)
         error("_compute_p_values","P-values can not be computed for constrained problems");
-      if (bc.hasBounds() && _parms._early_stopping)
+      if (_bc.hasBounds() && _parms._early_stopping)
         warn("beta constraint and early_stopping", "if both are enabled may degrade model performance.");
-      _state.setBC(bc);
+      _state.setBC(_bc);
       if(hasOffsetCol() && _parms._intercept && !ordinal.equals(_parms._family)) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
                 _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _penaltyMatrix, _gamColIndices) 
@@ -1736,8 +1747,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long t0 = System.currentTimeMillis();
       ComputationState.GramXY gramXY = _state.computeGram(_state.beta(), s);
       Log.info(LogMsg("Gram computed in " + (System.currentTimeMillis() - t0) + "ms"));
+      final BetaConstraint bc = _state.activeBC();
       double[] beta = _parms._solver == Solver.COORDINATE_DESCENT ? COD_solve(gramXY, _state._alpha, _state.lambda())
               : ADMM_solve(gramXY.gram, gramXY.xy);
+      if (_betaConstraintsOn) // apply beta constraints
+        bc.applyAllBounds(beta);
       // compute mse
       double[] x = ArrayUtils.mmul(gramXY.gram.getXX(), beta);
       for (int i = 0; i < x.length; ++i)
@@ -1753,6 +1767,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       LineSearchSolver ls = null;
       int iterCnt = _checkPointFirstIter ? _state._iter : 0;
       boolean firstIter = iterCnt == 0;
+      final BetaConstraint bc = _state.activeBC();
       try {
         while (true) {
           iterCnt++;
@@ -1789,12 +1804,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               return;
             }
             betaCnd = ls.getX();
+            if (_betaConstraintsOn)
+              bc.applyAllBounds(betaCnd);
+
             if (!progress(betaCnd, ls.ginfo()))
               return;
             long t4 = System.currentTimeMillis();
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "+" + (t4 - t3) + "=" + (t4 - t1) + "ms, step = " + ls.step() + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
-          } else
+          } else {
+            if (_betaConstraintsOn) // apply beta constraints without LS
+              bc.applyAllBounds(betaCnd);
             Log.info(LogMsg("computed in " + (t2 - t1) + "+" + (t3 - t2) + "=" + (t3 - t1) + "ms, step = " + 1 + ((_lslvr != null) ? ", l1solver " + _lslvr : "")));
+          }
         }
       } catch (NonSPDMatrixException e) {
         Log.warn(LogMsg("Got Non SPD matrix, stopped."));
@@ -2683,7 +2704,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           submodelCount++;  // updata submodel index count here
         }
       }
-
+      // if beta constraint is enabled, check and make sure coefficients are within bounds
+      if (_betaConstraintsOn && betaConstraintsCheckEnabled())
+        checkCoeffsBounds();
+        
       if (stop_requested() || _earlyStop) {
         if (timeout()) {
           Log.info("Stopping GLM training because of timeout");
@@ -2726,6 +2750,23 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (Submodel sm : _model._output._submodels)
           sm.beta[sm.beta.length - 1] += _iceptAdjust;
         _model.update(_job._key);
+      }
+    }
+
+    private boolean betaConstraintsCheckEnabled() {
+      return Boolean.parseBoolean(getSysProperty("glm.beta.constraints.checkEnabled", "true"));
+    }
+
+    /***
+     * When beta constraints are turned on, verify coefficients are either 0.0 or falls within the 
+     * beta constraints bounds.
+     */
+    private void checkCoeffsBounds() {
+      double[] coeffs = _model._output.getNormBeta();
+      int coeffsLen = _bc._betaLB.length;
+      for (int index=0; index < coeffsLen; index++) {
+        if (!(coeffs[index] == 0 || (coeffs[index] >= _bc._betaLB[index] && coeffs[index] <= _bc._betaUB[index])))
+          throw new H2OFailException("GLM model coefficients do not fall within beta constraint bounds.");
       }
     }
 
@@ -3026,7 +3067,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (maxDiff < betaEpsilon) // stop if beta not changing much
         break;
     }
-    long tend = System.currentTimeMillis();
     return beta;
   }
 
@@ -3480,6 +3520,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
+    public void applyAllBounds(double[] beta) {
+      int betaLength = beta.length;
+      for (int index=0; index<betaLength; index++)
+        beta[index] = applyBounds(beta[index], index);
+    }
+    
     public double applyBounds(double d, int i) {
       if(_betaLB != null && d < _betaLB[i])
         return _betaLB[i];
@@ -3620,7 +3666,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             normUB *= s;
             _betaUB[i] *= d;
           }
-          if (_betaLB != null && !Double.isInfinite(_betaUB[i])) {
+          if (_betaLB != null && !Double.isInfinite(_betaLB[i])) {
             normLB *= s;
             _betaLB[i] *= d;
           }
