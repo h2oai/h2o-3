@@ -170,7 +170,15 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     private GenModel genModel() {
-        return _genModelSource.get();
+        GenericModel self = DKV.getGet(_key); // trick - always use instance cached in DKV to avoid model-reloading
+        return self._genModelSource.get();
+    }
+
+    @Override
+    protected BigScorePredict setupBigScorePredict(Model<GenericModel, GenericModelParameters, GenericModelOutput>.BigScore bs) {
+        GenModel genmodel = genModel();
+        assert genmodel != null;
+        return super.setupBigScorePredict(bs);
     }
 
     private static class MetricBuilderGeneric extends ModelMetrics.MetricBuilder<MetricBuilderGeneric> {
@@ -200,12 +208,24 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     private static abstract class GenModelSource<T extends Iced<T>> extends Iced<T> {
         private final Key<Frame> _source;
+        private transient GenModel _genModel;
 
-        GenModelSource(Key<Frame> source) {
+        GenModelSource(Key<Frame> source, GenModel genModel) {
             _source = source;
+            _genModel = genModel;
         }
 
-        abstract GenModel get();
+        GenModel get() {
+            if (_genModel == null) {
+                synchronized (this) {
+                    if (_genModel == null) {
+                        _genModel = reconstructGenModel(backingByteVec());
+                    }
+                }
+            }
+            assert _genModel != null;
+            return _genModel;
+        }
 
         void remove(Futures fs, boolean cascade) {
             Frame mojoFrame = _source.get();
@@ -214,48 +234,44 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             }
         }
 
+        abstract GenModel reconstructGenModel(ByteVec bv);
+
         ByteVec backingByteVec() {
             return (ByteVec) _source.get().anyVec();
+        }
+
+        Key<Frame> getSourceKey() {
+            return _source;
         }
     }
     
     private static class MojoModelSource extends GenModelSource<MojoModelSource> {
-
-        private transient MojoModel _mojoModel;
-
         MojoModelSource(Key<Frame> mojoSource, MojoModel mojoModel) {
-            super(mojoSource);
-            _mojoModel = mojoModel;
+            super(mojoSource, mojoModel);
         }
 
         @Override
-        public GenModel get() {
-            if (_mojoModel == null) {
-                synchronized (this) {
-                    if (_mojoModel == null) {
-                        _mojoModel = reconstructMojo(backingByteVec());
-                    }
-                }
-            }
-            assert _mojoModel != null;
-            return _mojoModel;
+        GenModel reconstructGenModel(ByteVec bv) {
+            return reconstructMojo(bv);
         }
     }
 
     private static class PojoModelSource extends GenModelSource<PojoModelSource> {
-        private GenModel _pojoModel;
-
         PojoModelSource(Key<Frame> pojoSource, GenModel pojoModel) {
-            super(pojoSource);
-            _pojoModel = pojoModel;
+            super(pojoSource, pojoModel);
         }
 
         @Override
-        public GenModel get() {
-            return _pojoModel;
+        GenModel reconstructGenModel(ByteVec bv) {
+            Key<Frame> pojoKey = getSourceKey();
+            try {
+                return PojoLoader.loadPojoFromSourceCode(bv, pojoKey);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to load POJO source code from Vec " + pojoKey);
+            }
         }
     }
-    
+
     @Override
     public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
         return scoreContributions(frame, destination_key, null);

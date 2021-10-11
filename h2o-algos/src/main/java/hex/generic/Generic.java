@@ -5,18 +5,14 @@ import hex.ModelCategory;
 import hex.genmodel.*;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
-import org.apache.commons.io.IOUtils;
 import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.parser.ZipUtil;
-import water.util.JCodeGen;
 import water.util.Log;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 
 /**
@@ -124,26 +120,11 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             return new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
         }
 
-        static final String POJO_EXT = ".java";
-        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> dataKey) throws IOException {
-            String pojoCode = IOUtils.toString(pojoBytes.openStream());
-            GenModel genmodel;
-            try {
-                String path = URI.create(dataKey.toString()).getPath();
-                String fileName = new File(path).getName();
-                if (fileName.endsWith(POJO_EXT)) {
-                    fileName = fileName.substring(0, fileName.length() - POJO_EXT.length());
-                }
-                Class<?> clz = JCodeGen.compile(fileName, pojoCode);
-                genmodel = (GenModel) clz.newInstance();
-            } catch (Exception e) {
-                throw new IllegalArgumentException(String.format(
-                        "Invalid POJO source code - compilation error. Please make sure key '%s' contains a valid POJO source code. ", dataKey));
-            }
-
+        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> pojoKey) throws IOException {
+            GenModel genmodel = PojoLoader.loadPojoFromSourceCode(pojoBytes, pojoKey);
             ModelDescriptor pojoDescriptor = ModelDescriptorBuilder.makeDescriptor(genmodel);
             final GenericModelOutput genericModelOutput = new GenericModelOutput(pojoDescriptor);
-            return new GenericModel(_result, _parms, genericModelOutput, genmodel, dataKey);
+            return new GenericModel(_result, _parms, genericModelOutput, genmodel, pojoKey);
         }
     }
 
