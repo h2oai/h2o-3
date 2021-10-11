@@ -7,7 +7,7 @@ import water.util.IcedBitSet;
  *
  * Designed for Java code generation.
  */
-public interface JCodeSB<T extends JCodeSB> {
+public interface JCodeSB<T extends JCodeSB<T>> {
 
   // Append primitves
   T ps(String s);

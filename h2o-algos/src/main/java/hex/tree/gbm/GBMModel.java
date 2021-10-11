@@ -7,7 +7,6 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.DKV;
-import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;

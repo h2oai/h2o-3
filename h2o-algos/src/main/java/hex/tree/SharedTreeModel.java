@@ -906,36 +906,33 @@ public abstract class SharedTreeModel<
 
       final int treeIdx = t;
 
-      fileCtx.add(new CodeGenerator() {
-        @Override
-        public void generate(JCodeSB out) {
-          try {
-            // Generate a class implementing a tree
-            out.nl();
-            toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
-            out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-            for (int c = 0; c < nclass; c++) {
-              if (_output._treeKeys[treeIdx][c] == null) continue;
-              if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
-                toJavaTreeName(out.ip("preds[").p(nclass == 1 ? 0 : c + 1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
-            }
-            out.di(1).ip("}").nl(); // end of function
-            out.di(1).ip("}").nl(); // end of forest class
-
-            // Generate the pre-tree classes afterwards
-            for (int c = 0; c < nclass; c++) {
-              if (_output._treeKeys[treeIdx][c] == null) continue;
-              if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
-                String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
-                CompressedTree ct = _output.ctree(treeIdx, c);
-                SB sb = new SB();
-                new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
-                out.p(sb);
-              }
-            }
-          } catch (Exception e) {
-            throw new RuntimeException("Internal error creating the POJO.", e);
+      fileCtx.add(out -> {
+        try {
+          // Generate a class implementing a tree
+          out.nl();
+          toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
+          out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
+          for (int c = 0; c < nclass; c++) {
+            if (_output._treeKeys[treeIdx][c] == null) continue;
+            if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
+              toJavaTreeName(out.ip("preds[").p(nclass == 1 ? 0 : c + 1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
           }
+          out.di(1).ip("}").nl(); // end of function
+          out.di(1).ip("}").nl(); // end of forest class
+
+          // Generate the pre-tree classes afterwards
+          for (int c = 0; c < nclass; c++) {
+            if (_output._treeKeys[treeIdx][c] == null) continue;
+            if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
+              String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
+              CompressedTree ct = _output.ctree(treeIdx, c);
+              SB sb = new SB();
+              new TreeJCodeGen(_output, ct, sb, javaClassName, verboseCode).generate();
+              out.p(sb);
+            }
+          }
+        } catch (Exception e) {
+          throw new RuntimeException("Internal error creating the POJO.", e);
         }
       });
     }
@@ -945,12 +942,12 @@ public abstract class SharedTreeModel<
 
   protected abstract void toJavaUnifyPreds(SBPrintStream body);
 
-  protected <T extends JCodeSB> T toJavaTreeName(T sb, String mname, int t, int c ) {
-    return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
+  private static <T extends JCodeSB<T>> T toJavaTreeName(T sb, String mname, int t, int c ) {
+    return sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
   }
 
-  protected <T extends JCodeSB> T toJavaForestName(T sb, String mname, int t ) {
-    return (T) sb.p(mname).p("_Forest_").p(t);
+  private static <T extends JCodeSB<T>> T toJavaForestName(T sb, String mname, int t ) {
+    return sb.p(mname).p("_Forest_").p(t);
   }
 
   @Override
