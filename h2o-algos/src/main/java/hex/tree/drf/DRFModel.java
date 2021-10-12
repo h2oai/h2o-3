@@ -1,5 +1,7 @@
 package hex.tree.drf;
 
+import hex.tree.CompressedForest;
+import hex.tree.JavaPredictBuilder;
 import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
 import hex.util.EffectiveParametersUtils;
@@ -79,24 +81,44 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     }
     return preds;
   }
-  
-  @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-    if (_output.nclasses() == 1) { // Regression
-      body.ip("preds[0] /= " + _output._ntrees + ";").nl();
-    } else { // Classification
-      if( _output.nclasses()==2 && binomialOpt()) { // Kept the initial prediction for binomial
-        body.ip("preds[1] /= " + _output._ntrees + ";").nl();
-        body.ip("preds[2] = 1.0 - preds[1];").nl();
-      } else {
-        body.ip("double sum = 0;").nl();
-        body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
-        body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
+
+  @Override
+  protected JavaPredictBuilder makeJavaPredictBuilder() {
+    CompressedForest compressedForest = new CompressedForest(_output._treeKeys, _output._domains);
+    CompressedForest.LocalCompressedForest localCompressedForest = compressedForest.fetch();
+    return new DRFJavaPredictBuilder(_key, _parms, _output, binomialOpt(), localCompressedForest);
+  }
+
+  private static class DRFJavaPredictBuilder extends JavaPredictBuilder {
+
+    private final boolean _balance_classes;
+
+    DRFJavaPredictBuilder(Key<?> modelKey, Parameters parms, Output output, boolean binomialOpt,
+                          CompressedForest.LocalCompressedForest localCompressedForest) {
+      super(modelKey, output, binomialOpt, localCompressedForest._trees);
+      _balance_classes = parms._balance_classes;
+    }
+
+    @Override 
+    protected void toJavaUnifyPreds(SBPrintStream body) {
+      if (_output.nclasses() == 1) { // Regression
+        body.ip("preds[0] /= " + _trees.length + ";").nl();
+      } else { // Classification
+        if( _output.nclasses()==2 && _binomialOpt) { // Kept the initial prediction for binomial
+          body.ip("preds[1] /= " + _trees.length + ";").nl();
+          body.ip("preds[2] = 1.0 - preds[1];").nl();
+        } else {
+          body.ip("double sum = 0;").nl();
+          body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
+          body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
+        }
+        if (_balance_classes)
+          body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+        body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + _output.defaultThreshold() + ");").nl();
       }
-      if (_parms._balance_classes)
-        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
     }
   }
+
 
   public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
 

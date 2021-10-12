@@ -16,7 +16,7 @@ public class CompressedForest extends Iced<CompressedTree> {
   public final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
   public final String[][] _domains;
 
-  CompressedForest(Key<CompressedTree>[][] treeKeys, String[][] domains) {
+  public CompressedForest(Key<CompressedTree>[][] treeKeys, String[][] domains) {
     _treeKeys = treeKeys;
     _domains = domains;
   }
