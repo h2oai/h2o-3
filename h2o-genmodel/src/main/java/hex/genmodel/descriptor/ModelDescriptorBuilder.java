@@ -3,6 +3,7 @@ package hex.genmodel.descriptor;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.utils.ArrayUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -191,7 +192,12 @@ public class ModelDescriptorBuilder {
             _offsetColumn = mojoModel.getOffsetName();
             _domains = mojoModel.getDomainValues();
             _origDomains = mojoModel.getOrigDomainValues();
-            _names = mojoModel.getNames();
+            String[] names = mojoModel.getNames();
+            if (names.length == _domains.length - 1 && mojoModel.isSupervised() && 
+                    !names[names.length - 1].equals(mojoModel._responseColumn)) {
+                names = ArrayUtils.append(names, mojoModel._responseColumn);
+            }
+            _names = names;
             _origNames = mojoModel.getOrigNames();
         }
 
