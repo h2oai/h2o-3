@@ -2838,6 +2838,7 @@ public class XGBoostTest extends TestUtil {
       params.put("min_child_weight", 0);
       params.put("colsample_bylevel", 0.3);
       params.put("tree_method", "approx");
+      params.put("seed", 42);
 
       HashMap<String, DMatrix> watches = new HashMap<>();
       watches.put("train", trainMat);
@@ -2853,6 +2854,7 @@ public class XGBoostTest extends TestUtil {
       params.put("min_child_weight", 0);
       params.put("colsample_bylevel", 1);
       params.put("tree_method", "approx");
+      params.put("seed", 42);
 
       Booster booster2 = XGBoost.train(trainMat, params, 1, watches, null, null);
       float[][] preds2 = booster2.predict(trainMat);
@@ -2867,6 +2869,7 @@ public class XGBoostTest extends TestUtil {
       params.put("min_child_weight", 0);
       params.put("colsample_bylevel", 1);
       params.put("tree_method", "hist");
+      params.put("seed", 42);
 
       Booster booster3 = XGBoost.train(trainMat, params, 1, watches, null, null);
       float[][] preds3 = booster3.predict(trainMat);
@@ -2879,6 +2882,7 @@ public class XGBoostTest extends TestUtil {
       params.put("min_child_weight", 0);
       params.put("colsample_bylevel", 0.3);
       params.put("tree_method", "hist");
+      params.put("seed", 42);
 
       Booster booster4 = XGBoost.train(trainMat, params, 1, watches, null, null);
       float[][] preds4 = booster4.predict(trainMat);
