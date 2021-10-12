@@ -33,6 +33,12 @@ def class_extensions():
 
 extensions = dict(
     __class__=class_extensions,
+    __init__model_id="""
+if model_id is None and path is not None:
+    path_split = path.split('/')
+    model_id = path_split[len(path_split)-1].split('.')[0]
+    self._id = self._parms['model_id'] = model_id
+"""
 )
 
 examples = dict(

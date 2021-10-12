@@ -27,6 +27,7 @@ h2o.generic <- function(model_id = NULL,
   # Validate other required args
   # Required args: either model_key or path
   if (is.null(model_key) && is.null(path)) stop("argument 'model_key' or 'path' must be provided")
+  if (!is.null(model_key) && !is.null(path)) stop("argument 'model_key' or 'path' can't be both provided")
 
   # Build parameter list to send to model builder
   parms <- list()

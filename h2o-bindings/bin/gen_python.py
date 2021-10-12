@@ -258,11 +258,11 @@ def gen_module(schema, algo):
     for p in extended_params:
         pname = p.get('pname')
         if pname == 'model_id':
-            if classname == "H2OGenericEstimator": 
-                yield "        if model_id is None and path is not None:"
-                yield "            path_split = path.split('/')"
-                yield "            model_id = path_split[len(path_split)-1].split('.')[0]"
-            yield "        self._id = self._parms['model_id'] = model_id"
+            init_model_id = get_customizations_for(algo, 'extensions.__init__model_id')
+            if init_model_id:
+                yield reformat_block(init_model_id, 8)
+            else:
+                yield "        self._id = self._parms['model_id'] = model_id"
         else:
             yield "        self.%s = %s" % (pname, pname)
             
