@@ -208,7 +208,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     private static abstract class GenModelSource<T extends Iced<T>> extends Iced<T> {
         private final Key<Frame> _source;
-        private transient GenModel _genModel;
+        private transient volatile GenModel _genModel;
 
         GenModelSource(Key<Frame> source, GenModel genModel) {
             _source = source;
