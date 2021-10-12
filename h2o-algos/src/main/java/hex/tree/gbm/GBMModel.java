@@ -1,13 +1,16 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.generic.GenericModel;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.DKV;
-import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -260,37 +263,61 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     return preds;
   }
 
-  // Note: POJO scoring code doesn't support per-row offsets (the scoring API would need to be changed to pass in offsets)
-  @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-    // Preds are filled in from the trees, but need to be adjusted according to
-    // the loss function.
-    if( _parms._distribution == DistributionFamily.bernoulli
-        || _parms._distribution == DistributionFamily.quasibinomial
-        || _parms._distribution == DistributionFamily.modified_huber
-        ) {
-      body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = " + DistributionFactory.getDistribution(_parms).linkInvString("preds[2]") + ";").nl();
-      body.ip("preds[1] = 1.0-preds[2];").nl();
-      if (_parms._balance_classes)
-        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
-      return;
-    }
-    if( _output.nclasses() == 1 ) { // Regression
-      body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-      body.ip("preds[0] = " + DistributionFactory.getDistribution(_parms).linkInvString("preds[0]") + ";").nl();
-      return;
-    }
-    if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-      body.ip("preds[1] += ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = - preds[1];").nl();
-    }
-    body.ip("hex.genmodel.GenModel.GBM_rescale(preds);").nl();
-    if (_parms._balance_classes)
-      body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
+  @Override
+  protected JavaPredictBuilder makeJavaPredictBuilder() {
+    CompressedForest compressedForest = new CompressedForest(_output._treeKeys, _output._domains);
+    CompressedForest.LocalCompressedForest localCompressedForest = compressedForest.fetch();
+    return new GBMJavaPredictBuilder(_key, _parms, _output, binomialOpt(), localCompressedForest, _output._init_f);
   }
 
+  public static class GBMJavaPredictBuilder extends JavaPredictBuilder {
+    
+    private final double _init_f;
+    private final boolean _balance_classes;
+    private final DistributionFamily _distribution_family;
+    private final LinkFunction _link_function;
+
+    private GBMJavaPredictBuilder(Key<?> modelKey, Parameters parms, Output output, boolean binomialOpt,
+                                  CompressedForest.LocalCompressedForest localCompressedForest, double init_f) {
+      super(modelKey, output, binomialOpt, localCompressedForest._trees);
+      _init_f = init_f;
+      _balance_classes = parms._balance_classes;
+      Distribution distribution = DistributionFactory.getDistribution(parms);
+      _distribution_family = distribution._family;
+      _link_function = distribution._linkFunction;
+    }
+
+    // Note: POJO scoring code doesn't support per-row offsets (the scoring API would need to be changed to pass in offsets)
+    @Override protected void toJavaUnifyPreds(SBPrintStream body) {
+      // Preds are filled in from the trees, but need to be adjusted according to
+      // the loss function.
+      if( _distribution_family == DistributionFamily.bernoulli
+          || _distribution_family == DistributionFamily.quasibinomial
+          || _distribution_family == DistributionFamily.modified_huber
+          ) {
+        body.ip("preds[2] = preds[1] + ").p(_init_f).p(";").nl();
+        body.ip("preds[2] = " + _link_function.linkInvString("preds[2]") + ";").nl();
+        body.ip("preds[1] = 1.0-preds[2];").nl();
+        if (_balance_classes)
+          body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+        body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + _output.defaultThreshold() + ");").nl();
+        return;
+      }
+      if( _output.nclasses() == 1 ) { // Regression
+        body.ip("preds[0] += ").p(_init_f).p(";").nl();
+        body.ip("preds[0] = " + _link_function.linkInvString("preds[0]") + ";").nl();
+        return;
+      }
+      if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
+        body.ip("preds[1] += ").p(_init_f).p(";").nl();
+        body.ip("preds[2] = - preds[1];").nl();
+      }
+      body.ip("hex.genmodel.GenModel.GBM_rescale(preds);").nl();
+      if (_balance_classes)
+        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + _output.defaultThreshold() + ");").nl();
+    }
+  }
 
   @Override
   public GbmMojoWriter getMojo() {

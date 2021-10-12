@@ -167,10 +167,6 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     }
   }
 
-  @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-    throw new UnsupportedOperationException("Isolation Forest support only MOJOs.");
-  }
-
   @Override protected CategoricalEncoding getGenModelEncoding() {
     return super.getGenModelEncoding();
   }

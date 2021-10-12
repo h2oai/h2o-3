@@ -2685,9 +2685,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           String java_text = toJava(preview, true);
           Class clz = JCodeGen.compile(modelName,java_text);
           genmodel = (GenModel)clz.newInstance();
-        } catch (IllegalArgumentException e) {
-          e.printStackTrace();
-          return true;
         } catch (Exception e) {
           e.printStackTrace();
           throw new IllegalStateException("Internal POJO compilation failed",e);

@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.Model;
 import water.util.IcedBitSet;
 import water.util.SB;
 
@@ -26,7 +27,7 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
   final int   _staticInit[] = new int[MAX_DEPTH];
 
   final String _javaClassName;
-  final SharedTreeModel _tm;
+  final Model.Output _output;
   SB _sb;
   SB _csb;
   SB _grpsplit;
@@ -38,9 +39,9 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
 
   final private boolean _verboseCode;
 
-  public TreeJCodeGen(SharedTreeModel tm, CompressedTree ct, SB sb, String javaClassName, boolean verboseCode) {
+  public TreeJCodeGen(Model.Output output, CompressedTree ct, SB sb, String javaClassName, boolean verboseCode) {
     super(ct);
-    _tm = tm;
+    _output = output;
     _sb = sb;
     _csb = new SB();
     _grpsplit = new SB();
@@ -97,9 +98,9 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     _sb.ip(" (");
 
     // Generate column names only if necessary
-    String colName = _verboseCode ? " /* " + _tm._output._names[col] + " */" : "";
+    String colName = _verboseCode ? " /* " + _output._names[col] + " */" : "";
 
-    String[][] domains = _tm._output._domains;
+    String[][] domains = _output._domains;
     // size of the training domains (i.e., one larger than the max number of "seen" categorical IDs)
     int limit = (domains != null && domains[col] != null) ? domains[col].length : Integer.MAX_VALUE;
 
