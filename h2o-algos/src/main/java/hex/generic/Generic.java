@@ -2,14 +2,14 @@ package hex.generic;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.genmodel.ModelMojoReader;
-import hex.genmodel.MojoModel;
-import hex.genmodel.MojoReaderBackend;
-import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.*;
+import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import water.H2O;
 import water.Key;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
+import water.parser.ZipUtil;
 import water.util.Log;
 
 import java.io.IOException;
@@ -88,30 +88,46 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             } else {
                 throw new IllegalArgumentException("Either MOJO zip path or key to the uploaded MOJO frame must be specified");
             }
-            final ByteVec mojoBytes = getUploadedMojo(dataKey);
-            final MojoModel mojoModel;
+            final ByteVec modelBytes = readModelData(dataKey);
             try {
-                final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
-                mojoModel = ModelMojoReader.readFrom(readerBackend, true);
-                
-                if(! ALLOWED_MOJO_ALGOS.contains(mojoModel._modelDescriptor.algoName().toLowerCase())) {
-                    if (_parms._disable_algo_check)
-                        Log.warn(String.format("MOJO model '%s' is not supported but user disabled white-list check. Trying to load anyway.", mojoModel._modelDescriptor.algoName()));
-                    else
-                        throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
+                final GenericModel genericModel;
+                if (ZipUtil.isCompressed(modelBytes)) {
+                    genericModel = importMojo(modelBytes, dataKey);
+                } else {
+                    warn("_path", "Trying to import a POJO model - this is currently an experimental feature.");
+                    genericModel = importPojo(modelBytes, dataKey);
                 }
-
-                final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
-                final GenericModel genericModel = new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
-
                 genericModel.write_lock(_job);
                 genericModel.unlock(_job);
             } catch (IOException e) {
-                throw new IllegalStateException("Unreachable MOJO file: " + dataKey, e);
+                throw new IllegalStateException("Unreachable model file: " + dataKey, e);
             }
         }
+
+        private GenericModel importMojo(ByteVec mojoBytes, Key<Frame> dataKey) throws IOException {
+            final MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(
+                    mojoBytes.openStream(_job._key), MojoReaderBackendFactory.CachingStrategy.MEMORY);
+            final MojoModel mojoModel = ModelMojoReader.readFrom(readerBackend, true);
+
+            if(! ALLOWED_MOJO_ALGOS.contains(mojoModel._modelDescriptor.algoName().toLowerCase())) {
+                if (_parms._disable_algo_check)
+                    Log.warn(String.format("MOJO model '%s' is not supported but user disabled white-list check. Trying to load anyway.", mojoModel._modelDescriptor.algoName()));
+                else
+                    throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
+            }
+
+            final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
+            return new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
+        }
+
+        private GenericModel importPojo(ByteVec pojoBytes, Key<Frame> pojoKey) throws IOException {
+            GenModel genmodel = PojoLoader.loadPojoFromSourceCode(pojoBytes, pojoKey);
+            ModelDescriptor pojoDescriptor = ModelDescriptorBuilder.makeDescriptor(genmodel);
+            final GenericModelOutput genericModelOutput = new GenericModelOutput(pojoDescriptor);
+            return new GenericModel(_result, _parms, genericModelOutput, genmodel, pojoKey);
+        }
     }
-    
+
     private Key<Frame> importFile() {
         ArrayList<String> files = new ArrayList<>();
         ArrayList<String> keys = new ArrayList<>();
@@ -132,16 +148,16 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
      * @return An instance of {@link ByteVec} containing the bytes of an uploaded MOJO, if present. Or exception. Never returns null.
      * @throws IllegalArgumentException In case the supplied key is invalid (MOJO missing, empty key etc.)
      */
-    private ByteVec getUploadedMojo(final Key<Frame> key) throws IllegalArgumentException {
+    private ByteVec readModelData(final Key<Frame> key) throws IllegalArgumentException {
         Objects.requireNonNull(key); // Nicer null pointer exception in case null key is accidentally provided
 
         Frame mojoFrame = key.get();
         if (mojoFrame.numCols() > 1)
-            throw new IllegalArgumentException(String.format("Given MOJO frame with key '%s' should contain only 1 column with MOJO bytes. More columns found. Incorrect key provided ?", key));
+            throw new IllegalArgumentException(String.format("Given model frame with key '%s' should contain only 1 column with model bytes. More columns found. Incorrect key provided ?", key));
         ByteVec mojoData = (ByteVec) mojoFrame.anyVec();
 
         if (mojoData.length() < 1)
-            throw new IllegalArgumentException(String.format("Given MOJO frame with key '%s' is empty (0 bytes). Please provide a non-empty MOJO file.", key));
+            throw new IllegalArgumentException(String.format("Given model frame with key '%s' is empty (0 bytes). Please provide a non-empty model file.", key));
 
         return mojoData;
     }

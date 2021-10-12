@@ -21,6 +21,7 @@ import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -76,7 +77,6 @@ public class GenericModelTest extends TestUtil {
             final Generic generic = new Generic(genericModelParameters);
             final GenericModel genericModel = trainAndCheck(generic);
             Scope.track_generic(genericModel);
-
 
             assertNotNull(genericModel._output._training_metrics);
             assertTrue(genericModel._output._training_metrics instanceof ModelMetricsBinomial);
@@ -1315,4 +1315,45 @@ public class GenericModelTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    @Test
+    public void testJavaScoring_gbm_binomial_pojo() throws Exception {
+        try {
+            Scope.enter();
+            // Create new GBM model
+            final Frame trainingFrame = parseTestFile("./smalldata/testng/airlines_train.csv");
+            Scope.track(trainingFrame);
+            final Frame testFrame = parseTestFile("./smalldata/testng/airlines_test.csv");
+            Scope.track(testFrame);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = "IsDepDelayed";
+            parms._ntrees = 1;
+
+            GBM job = new GBM(parms);
+            final GBMModel model = job.trainModel().get();
+            Scope.track_generic(model);
+            assertEquals(model._output.getModelCategory(), ModelCategory.Binomial);
+
+            String pojoCode = model.toJava(false, true);
+            File pojoFile = temporaryFolder.newFile(model._key + ".java");
+            try (FileWriter wr = new FileWriter(pojoFile)) {
+                IOUtils.write(pojoCode, wr);
+            }
+            
+            GenericModel generic = Generic.importMojoModel(pojoFile.getAbsolutePath(), true);
+            Scope.track_generic(generic);
+
+            Frame scoredOriginal = model.score(testFrame);
+            Scope.track(scoredOriginal);
+            Frame scoredGeneric = generic.score(testFrame);
+            Scope.track(scoredGeneric);
+
+            assertFrameEquals(scoredOriginal, scoredGeneric, 0);
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }

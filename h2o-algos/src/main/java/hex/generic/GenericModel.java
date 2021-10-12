@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.*;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
+import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -19,20 +20,27 @@ import java.io.IOException;
 public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> 
         implements Model.Contributions {
 
-    private final MojoModelSource _mojoModelSource;
+    private final GenModelSource _genModelSource;
 
     /**
      * Full constructor
      *
      */
-    public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output, MojoModel mojoModel, Key<Frame> mojoSource) {
+    public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output,
+                        MojoModel mojoModel, Key<Frame> mojoSource) {
         super(selfKey, parms, output);
-        _mojoModelSource = new MojoModelSource(mojoSource, mojoModel);
+        _genModelSource = new MojoModelSource(mojoSource, mojoModel);
         _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
         if(mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
             _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
         }
+    }
 
+    public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output,
+                        GenModel pojoModel, Key<Frame> pojoSource) {
+        super(selfKey, parms, output);
+        _genModelSource = new PojoModelSource(pojoSource, pojoModel);
+        _output = new GenericModelOutput(ModelDescriptorBuilder.makeDescriptor(pojoModel));
     }
 
     private static MojoModel reconstructMojo(ByteVec mojoBytes) {
@@ -57,8 +65,8 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 return new ModelMetricsOrdinal.MetricBuilderOrdinal(_output.nclasses(), domain);
             case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
             case Clustering:
-                if (mojoModel() instanceof KMeansMojoModel) {
-                    KMeansMojoModel kMeansMojoModel = (KMeansMojoModel) mojoModel();
+                if (genModel() instanceof KMeansMojoModel) {
+                    KMeansMojoModel kMeansMojoModel = (KMeansMojoModel) genModel();
                     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(), kMeansMojoModel.getNumClusters());
                 } else {
                     return unsupportedMetricsBuilder();
@@ -82,7 +90,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         if (_parms._disable_algo_check) {
             Log.warn("Model category `" + _output._modelCategory + "` currently doesn't support calculating model metrics. " +
                     "Model metrics will not be available.");
-            return new MetricBuilderGeneric(mojoModel().getPredsSize(_output._modelCategory));
+            return new MetricBuilderGeneric(genModel().getPredsSize(_output._modelCategory));
         } else {
             throw new UnsupportedOperationException(_output._modelCategory + " is not supported.");
         }
@@ -90,7 +98,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        return mojoModel().score0(data, preds);
+        return genModel().score0(data, preds);
     }
 
     @Override
@@ -98,19 +106,19 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         if (offset == 0) // MOJO doesn't like when score0 is called with 0 offset for problems that were trained without offset 
             return score0(data, preds);
         else
-            return mojoModel().score0(data, offset, preds);
+            return genModel().score0(data, offset, preds);
     }
 
     @Override
     protected AdaptFrameParameters makeAdaptFrameParameters() {
-        final MojoModel mojoModel = mojoModel();
-        CategoricalEncoding encoding = mojoModel.getCategoricalEncoding();
+        final GenModel genModel = genModel();
+        CategoricalEncoding encoding = genModel.getCategoricalEncoding();
         if (encoding.isParametrized()) {
             throw new UnsupportedOperationException(
                     "Models with categorical encoding '" + encoding + "' are not currently supported for predicting and/or calculating metrics.");
         }
         final Parameters.CategoricalEncodingScheme encodingScheme = Parameters.CategoricalEncodingScheme.fromGenModel(encoding);
-        final ModelDescriptor descriptor = mojoModel._modelDescriptor;
+        final ModelDescriptor descriptor = genModel instanceof MojoModel ? ((MojoModel) genModel)._modelDescriptor : null;
         return new AdaptFrameParameters() {
             @Override
             public Parameters.CategoricalEncodingScheme getCategoricalEncoding() {
@@ -118,19 +126,19 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             }
             @Override
             public String getWeightsColumn() {
-                return descriptor.weightsColumn();
+                return descriptor != null ? descriptor.weightsColumn() : null;
             }
             @Override
             public String getOffsetColumn() {
-                return descriptor.offsetColumn();
+                return descriptor != null ? descriptor.offsetColumn() : null;
             }
             @Override
             public String getFoldColumn() {
-                return descriptor.foldColumn();
+                return descriptor != null ? descriptor.foldColumn() : null;
             }
             @Override
             public String getResponseColumn() {
-                return mojoModel.isSupervised() ? mojoModel.getResponseName() : null; 
+                return genModel.isSupervised() ? genModel.getResponseName() : null; 
             }
             @Override
             public double missingColumnsType() {
@@ -145,7 +153,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     protected String[] makeScoringNames() {
-        return mojoModel().getOutputNames();
+        return genModel().getOutputNames();
     }
 
     @Override
@@ -155,11 +163,22 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
     @Override
     public GenericModelMojoWriter getMojo() {
-        return new GenericModelMojoWriter(_mojoModelSource.mojoByteVec());
+        if (_genModelSource instanceof MojoModelSource) {
+            return new GenericModelMojoWriter(_genModelSource.backingByteVec());
+        }
+        throw new IllegalStateException("Cannot create a MOJO from a POJO");
     }
 
-    private MojoModel mojoModel() {
-        return _mojoModelSource.get();
+    private GenModel genModel() {
+        GenericModel self = DKV.getGet(_key); // trick - always use instance cached in DKV to avoid model-reloading
+        return self._genModelSource.get();
+    }
+
+    @Override
+    protected BigScorePredict setupBigScorePredict(Model<GenericModel, GenericModelParameters, GenericModelOutput>.BigScore bs) {
+        GenModel genmodel = genModel();
+        assert genmodel != null;
+        return super.setupBigScorePredict(bs);
     }
 
     private static class MetricBuilderGeneric extends ModelMetrics.MetricBuilder<MetricBuilderGeneric> {
@@ -182,38 +201,74 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     protected Futures remove_impl(Futures fs, boolean cascade) {
         if (_parms._path != null) {
             // user loaded the model by providing a path (not a Frame holding MOJO data) => we need to do the clean-up
-            Frame mojoFrame = _mojoModelSource._mojoSource.get();
-            if (mojoFrame != null) {
-                mojoFrame.remove(fs, cascade);
-            }
+            _genModelSource.remove(fs, cascade);
         }
         return super.remove_impl(fs, cascade);
     }
 
-    private static class MojoModelSource extends Iced<MojoModelSource> {
-        private final Key<Frame> _mojoSource;
+    private static abstract class GenModelSource<T extends Iced<T>> extends Iced<T> {
+        private final Key<Frame> _source;
+        private transient volatile GenModel _genModel;
 
-        private transient MojoModel _mojoModel;
-
-        MojoModelSource(Key<Frame> mojoSource, MojoModel mojoModel) {
-            _mojoSource = mojoSource;
-            _mojoModel = mojoModel;
+        GenModelSource(Key<Frame> source, GenModel genModel) {
+            _source = source;
+            _genModel = genModel;
         }
 
-        private ByteVec mojoByteVec() {
-            return (ByteVec) _mojoSource.get().anyVec();
-        }
-
-        MojoModel get() {
-            if (_mojoModel == null) {
+        GenModel get() {
+            if (_genModel == null) {
                 synchronized (this) {
-                    if (_mojoModel == null) {
-                        _mojoModel = reconstructMojo(mojoByteVec());
+                    if (_genModel == null) {
+                        _genModel = reconstructGenModel(backingByteVec());
                     }
                 }
             }
-            assert _mojoModel != null;
-            return _mojoModel;
+            assert _genModel != null;
+            return _genModel;
+        }
+
+        void remove(Futures fs, boolean cascade) {
+            Frame mojoFrame = _source.get();
+            if (mojoFrame != null) {
+                mojoFrame.remove(fs, cascade);
+            }
+        }
+
+        abstract GenModel reconstructGenModel(ByteVec bv);
+
+        ByteVec backingByteVec() {
+            return (ByteVec) _source.get().anyVec();
+        }
+
+        Key<Frame> getSourceKey() {
+            return _source;
+        }
+    }
+    
+    private static class MojoModelSource extends GenModelSource<MojoModelSource> {
+        MojoModelSource(Key<Frame> mojoSource, MojoModel mojoModel) {
+            super(mojoSource, mojoModel);
+        }
+
+        @Override
+        GenModel reconstructGenModel(ByteVec bv) {
+            return reconstructMojo(bv);
+        }
+    }
+
+    private static class PojoModelSource extends GenModelSource<PojoModelSource> {
+        PojoModelSource(Key<Frame> pojoSource, GenModel pojoModel) {
+            super(pojoSource, pojoModel);
+        }
+
+        @Override
+        GenModel reconstructGenModel(ByteVec bv) {
+            Key<Frame> pojoKey = getSourceKey();
+            try {
+                return PojoLoader.loadPojoFromSourceCode(bv, pojoKey);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to load POJO source code from Vec " + pojoKey);
+            }
         }
     }
 
@@ -277,7 +332,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         final EasyPredictModelWrapper.Config config;
         try {
             config = new EasyPredictModelWrapper.Config()
-                    .setModel(mojoModel())
+                    .setModel(genModel())
                     .setConvertUnknownCategoricalLevelsToNa(true)
                     .setEnableContributions(true);
         } catch (IOException e) {

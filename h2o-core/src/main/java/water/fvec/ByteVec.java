@@ -33,6 +33,10 @@ public class ByteVec extends Vec {
     return chunkForChunkIdx(0)._mem;
   }
 
+  public InputStream openStream() {
+    return openStream(null);
+  }
+
   /**
    * Open a stream view over the underlying data
    */
