@@ -3,6 +3,7 @@ package water.persist.security;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -33,6 +34,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public static final String H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS = "h2o.auth.tokenRefresher.maxAttempts";
     public static final String H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS = "h2o.auth.tokenRefresher.retryDelaySecs";
     public static final String H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS = "h2o.auth.tokenRefresher.fallbackIntervalSecs";
+    public final static String H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED = "h2o.auth.dynamicTokenRefresherS3IDbroker.enabled";
 
     public static void setup(Configuration conf, String tmpDir, String uri, Runnable callback) throws IOException {
         boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
@@ -72,9 +74,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         return keytabFile.getAbsolutePath();
     }
 
-    private final ScheduledExecutorService _executor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("hdfs-token-refresher-%d").build()
-    );
+    private final ScheduledExecutorService _executor;
 
     private final String _authPrincipal;
     private final String _authKeytabPath;
@@ -92,14 +92,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             String authKeytabPath,
             String authUser
     ) {
-        _authPrincipal = authPrincipal;
-        _authKeytabPath = authKeytabPath;
-        _authUser = authUser;
-        _intervalRatio = Double.parseDouble(conf.get(H2O_AUTH_TOKEN_REFRESHER_INTERVAL_RATIO, "0.4"));
-        _maxAttempts = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS, 12);
-        _retryDelaySecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS, 10);
-        _fallbackIntervalSecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS, 12 * 3600); // 12h
-        _uri = null;
+        this(conf, authPrincipal, authKeytabPath, authUser, null, null);
     }
 
     public  HdfsDelegationTokenRefresher(
@@ -119,6 +112,19 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         _fallbackIntervalSecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS, 12 * 3600); // 12h
         _uri = uri;
         _callback = callback;
+        _executor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat(getThreadNameFormatForRefresher(
+                        conf.getBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, false),
+                        uri)).build());
+    }
+    
+    private String getThreadNameFormatForRefresher(boolean isDynamicS3IDbrokerTokenRefresherEnabled, String uri) {
+        if (isDynamicS3IDbrokerTokenRefresherEnabled && uri != null) {
+            String bucketIdentifier = new Path(uri).toUri().getHost();
+            return "s3-idbroker-hdfs-token-refresher-" +  bucketIdentifier + "-%d";
+        } else {
+            return "hdfs-token-refresher-%d";
+        }
     }
 
     void start() {
