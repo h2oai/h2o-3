@@ -4914,4 +4914,50 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testPrintPojoWithDoubles()  {
+    final String outputDoublesPropName = H2O.OptArgs.SYSTEM_PROP_PREFIX + "java.output.doubles";
+    try {
+      Scope.enter();
+      double splitPoint = 2841.083;
+      String splitPointStr = splitPoint + "f";
+      Frame frame = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("ColA", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(splitPoint * 2, 0, splitPoint * 2, splitPoint * 2, splitPoint * 2, 0, splitPoint * 2))
+              .withDataForCol(1, ard(1, 0, 1, 1, 1, 0, 1))
+              .build();
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._min_rows = 1;
+
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+      Frame scored = Scope.track(gbm.score(frame));
+      
+      // 1. export POJO as usual - floating values will be represented as floats
+      String pojo_floats = gbm.toJava(false, false);
+      assertTrue(pojo_floats.contains(splitPointStr));
+
+      // 2. force export of floating values as doubles
+      System.setProperty(outputDoublesPropName, "true");
+
+      // 3. export POJO and check it contains doubles instead of floats
+      String pojo_doubles = gbm.toJava(false, false);
+      String splitPointDoubleStr = Double.toString(Float.parseFloat(splitPointStr));
+      assertTrue(pojo_doubles.contains(splitPointDoubleStr));
+      assertFalse(pojo_doubles.contains(splitPointStr));
+
+      // 4. validate scoring with "double" POJO
+      assertTrue(gbm.testJavaScoring(frame, scored, 0));
+    } finally {
+      System.clearProperty(outputDoublesPropName);
+      Scope.exit();
+    }
+  }
+
 }
