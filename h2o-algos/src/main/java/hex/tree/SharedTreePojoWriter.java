@@ -1,29 +1,67 @@
 package hex.tree;
 
 import hex.Model;
+import hex.PojoWriter;
+import hex.genmodel.CategoricalEncoding;
 import water.Key;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.util.JCodeGen;
+import water.util.PojoUtils;
 import water.util.SB;
 import water.util.SBPrintStream;
 
-public abstract class JavaPredictBuilder {
+public abstract class SharedTreePojoWriter implements PojoWriter {
 
+    // common for all models
     protected final Key<?> _modelKey;
     protected final Model.Output _output;
+
+    // specific to tree based models
+    protected final CategoricalEncoding _encoding;
     protected final boolean _binomialOpt;
     protected final CompressedTree[/*_ntrees*/][/*_nclass*/] _trees;
 
-    public JavaPredictBuilder(Key<?> modelKey, Model.Output output, 
-                              boolean binomialOpt, CompressedTree[][] trees) {
+    protected final TreeStats _treeStats; // optional (can be null)
+
+    protected SharedTreePojoWriter(Key<?> modelKey, Model.Output output,
+                                   CategoricalEncoding encoding, boolean binomialOpt, CompressedTree[][] trees,
+                                   TreeStats treeStats) {
         _modelKey = modelKey;
         _output = output;
+
+        _encoding = encoding;
         _binomialOpt = binomialOpt;
         _trees = trees;
+
+        _treeStats = treeStats;
     }
 
-    void toJavaPredictBody(SBPrintStream body, CodeGeneratorPipeline fileCtx, final boolean verboseCode) {
+    @Override
+    public boolean toJavaCheckTooBig() {
+        return _treeStats == null || _treeStats._num_trees * _treeStats._mean_leaves > 1000000;
+    }
+
+    @Override
+    public SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileContext) {
+        sb.nl();
+        sb.ip("public boolean isSupervised() { return true; }").nl();
+        sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
+        sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
+        if (_encoding == CategoricalEncoding.Eigen) {
+            sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
+        }
+        if (_encoding != CategoricalEncoding.AUTO) {
+            sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." +
+                    _encoding.name() + "; }").nl();
+        }
+        return sb;
+    }
+
+    @Override
+    public void toJavaPredictBody(SBPrintStream body, 
+                                  CodeGeneratorPipeline classCtx, CodeGeneratorPipeline fileCtx, 
+                                  final boolean verboseCode) {
         final int nclass = _output.nclasses();
         body.ip("java.util.Arrays.fill(preds,0);").nl();
         final String mname = JCodeGen.toJavaId(_modelKey.toString());

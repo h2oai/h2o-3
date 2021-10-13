@@ -9,7 +9,6 @@ import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import org.apache.log4j.Logger;
 import water.*;
-import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -836,21 +835,23 @@ public abstract class SharedTreeModel<
     return _output._treeKeys[tidx][cls].get().toSharedTreeSubgraph(auxCompressedTree, _output._names, _output._domains);
   }
 
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (featureName.equals(_output.responseName())) return false;
+    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
+    return featureIdx != -1 && (double) _output._varimp._varimp[featureIdx] != 0d;
+  }
+
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into a POJO
   //--------------------------------------------------------------------------------------------------------------------
 
-  // Override in subclasses to provide some top-level model-specific goodness
-  @Override protected boolean toJavaCheckTooBig() {
-    // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
-    return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
-  }
-
-  protected boolean binomialOpt() {
+  public boolean binomialOpt() {
     return true;
   }
 
-  @Override protected CategoricalEncoding getGenModelEncoding() {
+  @Override
+  public CategoricalEncoding getGenModelEncoding() {
     switch (_parms._categorical_encoding) {
       case AUTO:
       case Enum:
@@ -871,31 +872,17 @@ public abstract class SharedTreeModel<
     }
   }
 
-  @Override 
-  protected final SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
-    CategoricalEncoding encoding = getGenModelEncoding();
-    if (encoding == null) {
-      throw new IllegalArgumentException("Only default, SortByResponse, EnumLimited and 1-hot explicit scheme is supported for POJO/MOJO");
-    }
-    return new JavaInitBuilder(_output).toJavaInit(encoding, sb);
-  }
-
-  @Override
-  protected final void toJavaPredictBody(SBPrintStream body,
-                                         CodeGeneratorPipeline classCtx,
-                                         CodeGeneratorPipeline fileCtx,
-                                         final boolean verboseCode) {
-    makeJavaPredictBuilder().toJavaPredictBody(body, fileCtx, verboseCode);
-  }
-
-  protected JavaPredictBuilder makeJavaPredictBuilder() {
+  protected SharedTreePojoWriter makeTreePojoWriter() {
     throw new UnsupportedOperationException("POJO is not supported for model " + _parms.algoName() + ".");
   }
 
   @Override
-  public boolean isFeatureUsedInPredict(String featureName) {
-    if (featureName.equals(_output.responseName())) return false;
-    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
-    return featureIdx != -1 && (double) _output._varimp._varimp[featureIdx] != 0d;
+  protected final PojoWriter makePojoWriter() {
+    CategoricalEncoding encoding = getGenModelEncoding();
+    if (encoding == null) {
+      throw new IllegalArgumentException("Only default, SortByResponse, EnumLimited and 1-hot explicit scheme is supported for POJO/MOJO");
+    }
+    return makeTreePojoWriter();
   }
+
 }
