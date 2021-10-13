@@ -1,10 +1,12 @@
 package hex.ensemble;
 
-import hex.Model.Parameters;
+import water.api.Schema;
 
 public interface MetalearnerProvider<M extends Metalearner> {
 
     String getName();
 
     M newInstance();
+
+    Schema newParametersSchemaInstance();
 }

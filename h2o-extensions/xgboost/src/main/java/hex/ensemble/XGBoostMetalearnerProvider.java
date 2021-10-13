@@ -1,6 +1,7 @@
 package hex.ensemble;
 
 import hex.genmodel.utils.DistributionFamily;
+import hex.schemas.XGBoostV3;
 
 public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMetalearnerProvider.XGBoostMetalearner> {
 
@@ -28,5 +29,10 @@ public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMe
     @Override
     public XGBoostMetalearner newInstance() {
         return new XGBoostMetalearner();
+    }
+
+    @Override
+    public XGBoostV3.XGBoostParametersV3 newParametersSchemaInstance() {
+        return new XGBoostV3.XGBoostParametersV3();
     }
 }
