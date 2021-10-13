@@ -35,6 +35,7 @@ public final class PersistHdfs extends Persist {
   /** Root path of HDFS */
   private final Path _iceRoot;
 
+  final static String H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED = "h2o.auth.dynamicTokenRefresherS3IDbroker.enabled";
   public static Configuration lastSavedHadoopConfiguration = null;
   
   private static final Set<String> bucketsWithDelegationToken = Collections.synchronizedSet(new HashSet<>());
@@ -94,6 +95,7 @@ public final class PersistHdfs extends Persist {
   public PersistHdfs(URI uri) {
     try {
       _iceRoot = new Path(uri + "/ice" + H2O.SELF_ADDRESS.getHostAddress() + "-" + H2O.API_PORT);
+      startDelegationTokenRefresher(_iceRoot);
       // Make the directory as-needed
       FileSystem fs = FileSystem.get(_iceRoot.toUri(), CONF);
       fs.mkdirs(_iceRoot);
@@ -197,6 +199,7 @@ public final class PersistHdfs extends Persist {
     long start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(max);
     run(() -> {
+        startDelegationTokenRefresher(p);
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
         FSDataInputStream s = null;
         try {
@@ -230,6 +233,7 @@ public final class PersistHdfs extends Persist {
 
   public static void store(final Path path, final byte[] data) {
     run(() -> {
+        startDelegationTokenRefresher(path);
         FileSystem fs = FileSystem.get(path.toUri(), CONF);
         fs.mkdirs(path.getParent());
         try (FSDataOutputStream s = fs.create(path)) {
@@ -245,6 +249,7 @@ public final class PersistHdfs extends Persist {
 
     run(() -> {
         Path p = new Path(_iceRoot, getIceName(v));
+        startDelegationTokenRefresher(p);
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
         fs.delete(p, true);
         return null;
@@ -296,6 +301,9 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void startDelegationTokenRefresher(Path p) throws IOException {
+    if (!lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, false)) {
+      return;
+    }
     if (isInBucketWithAlreadyExistingToken(p.toUri())) {
       return;
     }
@@ -358,8 +366,10 @@ public final class PersistHdfs extends Persist {
     assert "hdfs".equals(uri.getScheme()) || "s3".equals(uri.getScheme())
             || "s3n".equals(uri.getScheme()) || "s3a".equals(uri.getScheme()) : "Expected hdfs, s3 s3n, or s3a scheme, but uri is " + uri;
 
+    Path path = new Path(uri);
+    startDelegationTokenRefresher(path);
     FileSystem fs = FileSystem.get(uri, PersistHdfs.CONF);
-    FileStatus[] fstatus = fs.listStatus(new Path(uri));
+    FileStatus[] fstatus = fs.listStatus(path);
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
 
     return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
@@ -444,6 +454,7 @@ public final class PersistHdfs extends Persist {
   @Override
   public String getHomeDirectory() {
     try {
+      // TODO what here?
       FileSystem fs = FileSystem.get(CONF);
       return fs.getHomeDirectory().toString();
     }
@@ -457,6 +468,7 @@ public final class PersistHdfs extends Persist {
     try {
       Path p = new Path(path);
       URI uri = p.toUri();
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       FileStatus[] arr1 = fs.listStatus(p);
       PersistEntry[] arr2 = new PersistEntry[arr1.length];
@@ -475,6 +487,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.exists(p);
     }
@@ -494,6 +507,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.isDirectory(p);
     }
@@ -507,6 +521,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.getFileStatus(p).getLen();
     }
@@ -525,6 +540,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.open(p);
     }
@@ -546,6 +562,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       // Be consistent with Java API and File#mkdirs
       if (fs.exists(p)) {
@@ -565,6 +582,7 @@ public final class PersistHdfs extends Persist {
     Path t = new Path(toPath);
     URI uri = f.toUri();
     try {
+      startDelegationTokenRefresher(f);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.rename(f, t);
     }
@@ -578,6 +596,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.create(p, overwrite);
     }
@@ -591,6 +610,7 @@ public final class PersistHdfs extends Persist {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
+      startDelegationTokenRefresher(p);
       FileSystem fs = FileSystem.get(uri, CONF);
       return fs.delete(p, true);
     }

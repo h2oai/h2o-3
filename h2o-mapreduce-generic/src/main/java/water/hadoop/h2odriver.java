@@ -54,6 +54,7 @@ public class h2odriver extends Configured implements Tool {
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
   final static String DRIVER_JOB_CALL_TIMEOUT_SEC = "ai.h2o.driver.call.timeout";
   final static String H2O_AUTH_TOKEN_REFRESHER_ENABLED = "h2o.auth.tokenRefresher.enabled";
+  final static String H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED = "h2o.auth.dynamicTokenRefresherS3IDbroker.enabled";
   private static final int GEN_PASSWORD_LENGTH = 16;
 
   static {
@@ -143,6 +144,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean disableFlow = false;
   static boolean swExtBackend = false;
   static boolean configureS3UsingS3A = false;
+  static boolean refreshS3IDbrokerTokens = false;
 
   String proxyUrl = null;
 
@@ -853,6 +855,7 @@ public class h2odriver extends Configured implements Tool {
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
                     "          [-refreshHdfsTokens]\n" +
+                    "          [-refreshS3IDbrokerTokens]\n" +
                     "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
                     "          [-hiveJdbcUrlPattern <pattern for constructing hive jdbc url>]\n" +
                     "          [-refreshHiveTokens]\n" +
@@ -1278,6 +1281,8 @@ public class h2odriver extends Configured implements Tool {
         hiveToken = args[i];
       } else if (s.equals("-refreshHdfsTokens")) {
         refreshHdfsTokens = true;
+      } else if (s.equals("-refreshS3IDbrokerTokens")) {
+        refreshS3IDbrokerTokens = true;  
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
         cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase());
@@ -2101,6 +2106,7 @@ public class h2odriver extends Configured implements Tool {
       if (hivePrincipal != null) j.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
     j.getConfiguration().setBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, refreshHdfsTokens);
+    j.getConfiguration().setBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, refreshS3IDbrokerTokens);
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));
