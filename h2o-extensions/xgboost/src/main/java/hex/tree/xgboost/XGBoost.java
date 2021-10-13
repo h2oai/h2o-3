@@ -238,6 +238,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     checkColumnAlias("max_abs_leafnode_pred", _parms._max_abs_leafnode_pred, "max_delta_step", _parms._max_delta_step,0);
     checkColumnAlias("ntrees", _parms._ntrees, "n_estimators", _parms._n_estimators, 0);
     
+    if(_parms._tree_method.equals(XGBoostModel.XGBoostParameters.TreeMethod.approx) && (_parms._col_sample_rate < 1 || _parms._colsample_bylevel < 1)){
+        error("_tree_method", "approx is not supported with _col_sample_rate or _colsample_bylevel, use exact/hist instead or disable column sampling.");
+    }
 
     if (_parms._scale_pos_weight != 1) {
       if (_nclass != 2)

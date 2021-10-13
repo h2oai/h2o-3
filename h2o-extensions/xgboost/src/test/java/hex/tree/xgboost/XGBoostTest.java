@@ -2793,4 +2793,104 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testValidateApproxTreeMethodAndColSampleRate() {
+    Scope.enter();
+    try {
+      final String response = "power (hp)";
+
+      Frame f = parseTestFile("smalldata/junit/cars.csv");
+      Scope.track(f);
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._dmatrix_type = XGBoostModel.XGBoostParameters.DMatrixType.auto;
+      parms._response_column = response;
+      parms._train = f._key;
+      parms._seed = 42;
+      parms._colsample_bylevel = 0.5;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.approx;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+      fail("Model training should fail."); 
+    } catch(H2OModelBuilderIllegalArgumentException ex){ 
+      assertTrue(ex.getMessage().contains("Details: ERRR on field: _tree_method: approx is not supported with _col_sample_rate or _colsample_bylevel, use exact/hist instead or disable column sampling.")); 
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testApproxTreeMethodAndColSampleRateNative() throws XGBoostError {
+    try {
+      Map<String, String> rabitEnv = new HashMap<>();
+      rabitEnv.put("DMLC_TASK_ID", "0");
+      Rabit.init(rabitEnv);
+      DMatrix trainMat = new DMatrix(new float[]{0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1}, 10, 3);
+      trainMat.setLabel(new float[]{0, 1, 0, 1, 1, 1, 1, 0, 0, 1});
+
+      HashMap<String, Object> params = new HashMap<>();
+      params.put("eta", 1.0);
+      params.put("max_depth", 5);
+      params.put("silent", 0);
+      params.put("objective", "binary:logistic");
+      params.put("min_child_weight", 0);
+      params.put("colsample_bylevel", 0.3);
+      params.put("tree_method", "approx");
+      params.put("seed", 42);
+
+      HashMap<String, DMatrix> watches = new HashMap<>();
+      watches.put("train", trainMat);
+
+      Booster booster = XGBoost.train(trainMat, params, 1, watches, null, null);
+      float[][] preds = booster.predict(trainMat);
+      
+      params = new HashMap<>();
+      params.put("eta", 1.0);
+      params.put("max_depth", 5);
+      params.put("silent", 0);
+      params.put("objective", "binary:logistic");
+      params.put("min_child_weight", 0);
+      params.put("colsample_bylevel", 1);
+      params.put("tree_method", "approx");
+      params.put("seed", 42);
+
+      Booster booster2 = XGBoost.train(trainMat, params, 1, watches, null, null);
+      float[][] preds2 = booster2.predict(trainMat);
+      
+      assertArrayEquals(preds, preds2);
+
+      params = new HashMap<>();
+      params.put("eta", 1.0);
+      params.put("max_depth", 5);
+      params.put("silent", 0);
+      params.put("objective", "binary:logistic");
+      params.put("min_child_weight", 0);
+      params.put("colsample_bylevel", 1);
+      params.put("tree_method", "hist");
+      params.put("seed", 42);
+
+      Booster booster3 = XGBoost.train(trainMat, params, 1, watches, null, null);
+      float[][] preds3 = booster3.predict(trainMat);
+
+      params = new HashMap<>();
+      params.put("eta", 1.0);
+      params.put("max_depth", 5);
+      params.put("silent", 0);
+      params.put("objective", "binary:logistic");
+      params.put("min_child_weight", 0);
+      params.put("colsample_bylevel", 0.3);
+      params.put("tree_method", "hist");
+      params.put("seed", 42);
+
+      Booster booster4 = XGBoost.train(trainMat, params, 1, watches, null, null);
+      float[][] preds4 = booster4.predict(trainMat);
+
+      assertFalse(Arrays.equals(preds3, preds4));
+
+    } finally {
+      Rabit.shutdown();
+    }
+  }
 }
