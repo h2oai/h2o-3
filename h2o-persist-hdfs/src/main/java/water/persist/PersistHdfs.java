@@ -6,9 +6,7 @@ import org.apache.hadoop.fs.*;
 import java.io.*;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
@@ -39,7 +37,8 @@ public final class PersistHdfs extends Persist {
 
   public static Configuration lastSavedHadoopConfiguration = null;
   
-  private static List<String> bucketsWithDelegationToken;
+  private static final Set<String> bucketsWithDelegationToken = Collections.synchronizedSet(new HashSet<>());
+  private static final List<String> bucketsWithGenerationInProgress = new ArrayList<>();
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -297,36 +296,39 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void startDelegationTokenRefresher(Path p) throws IOException {
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
-    if (bucketsWithDelegationToken == null)
-      bucketsWithDelegationToken = new ArrayList();
-    if (!isPathInBucketWithAlreadyExistingToken(p)) {
-      HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
-      Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
-      bucketsWithDelegationToken.add(p.toUri().getHost());
-    } else {
-      countDownLatch.countDown();
+    if (isInBucketWithAlreadyExistingToken(p.toUri())) {
+      return;
     }
+
+    final String bucketIdentifier = p.toUri().getHost();
+    synchronized (bucketsWithGenerationInProgress) {
+      if (bucketsWithGenerationInProgress.contains(bucketIdentifier)) {
+        return;
+      }
+      bucketsWithGenerationInProgress.add(bucketIdentifier);
+    }
+
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
+    Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
     try {
-    countDownLatch.await();
+      countDownLatch.await();
+      bucketsWithDelegationToken.add(bucketIdentifier);
+      synchronized (bucketsWithGenerationInProgress) {
+        bucketsWithGenerationInProgress.remove(bucketIdentifier);
+      }
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      Log.err(e);
     }
   }
   
-  private static boolean isPathInBucketWithAlreadyExistingToken(Path path) {
-    if (!path.toUri().getScheme().equals("s3a")) {
+  private static boolean isInBucketWithAlreadyExistingToken(URI uri) {
+    if (!"s3a".equals(uri.getScheme())) {
       // if it is something else than s3a, return true to fallback to original behaviour and not generate token
-      Log.debug("Scheme is not s3a: " + path.toUri().getScheme());
+      Log.debug("Scheme is not s3a: " + uri.getScheme());
       return true;
     }
-    String bucket = path.toUri().getHost();
-    for (String currBucket : bucketsWithDelegationToken) {
-      if (bucket.equals(currBucket)) {
-        return true;
-      }
-    }
-    return false;
+    return bucketsWithDelegationToken.contains(uri.getHost());
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
