@@ -27,7 +27,7 @@ public class GenericModelOutput extends Model.Output {
         _hasOffset = modelDescriptor.offsetColumn() != null;
         _hasWeights = modelDescriptor.weightsColumn() != null;
         _hasFold = modelDescriptor.foldColumn() != null;
-        _distribution = modelDescriptor.modelClassDist();
+        _modelClassDist = modelDescriptor.modelClassDist();
         _priorClassDist = modelDescriptor.priorClassDist();
         _names = modelDescriptor.columnNames();
         _origNames = modelDescriptor.getOrigNames();
