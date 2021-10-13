@@ -2,12 +2,14 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.*;
+import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
+import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.*;
 import water.fvec.*;
@@ -339,6 +341,33 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
             throw new RuntimeException(e);
         }
         return new EasyPredictModelWrapper(config);
+    }
+
+    @Override
+    protected String toJavaModelClassName() {
+        return ModelBuilder.make(_output._original_model_identifier, null, null).getClass()
+                .getSimpleName() + "Model";
+    }
+
+    @Override
+    protected String toJavaAlgo() {
+        return _output._original_model_identifier;
+    }
+
+    @Override
+    protected String toJavaUUID() {
+        return genModel().getUUID();
+    }
+
+    @Override
+    protected PojoWriter makePojoWriter() {
+        GenModel genModel = genModel();
+        if (!(genModel instanceof MojoModel)) {
+            throw new UnsupportedOperationException("Only MOJO models can be converted to POJO.");
+        }
+        MojoModel mojoModel = (MojoModel) genModel;
+        ModelBuilder<?, ?, ?> builder = ModelBuilder.make(mojoModel._algoName, null, null);
+        return builder.makePojoWriter(this, mojoModel);
     }
 
 }

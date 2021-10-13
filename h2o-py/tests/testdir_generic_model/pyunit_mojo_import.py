@@ -2,10 +2,11 @@ import h2o
 import tempfile
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
+import os
+from pandas.testing import assert_frame_equal
 
 # Test of MOJO convenience methods
-def mojo_conveniece():
-    
+def mojo_conveniece():    
     # Train a model
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     model = H2OGradientBoostingEstimator(ntrees = 1)
@@ -38,7 +39,21 @@ def mojo_conveniece():
     predictions = mojo_model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
-    
+
+    #####
+    # MOJO to POJO Conversion test with POJO re-import
+    #####
+
+    pojo_directory = os.path.join(pyunit_utils.locate("results"), model.model_id + ".java")
+    pojo_path = model.download_pojo(path = pojo_directory)
+    mojo2_model = h2o.import_mojo(pojo_path)
+
+    predictions2 = mojo2_model.predict(airlines)
+    assert predictions2 is not None
+    assert predictions2.nrows == 24421
+    assert_frame_equal(predictions.as_data_frame(), predictions2.as_data_frame())
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(mojo_conveniece)
 else:
