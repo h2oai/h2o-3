@@ -2202,11 +2202,12 @@ class {}Wrapper({}, DistributionFunc, object):
     return "python:{}={}".format(dest_key, class_name)
 
 
-def import_mojo(mojo_path):
+def import_mojo(mojo_path, model_id=None):
     """
     Imports an existing MOJO model as an H2O model.
     
     :param mojo_path: Path to the MOJO archive on the H2O's filesystem
+    :param model_id: Model ID, default is None
     :return: An H2OGenericEstimator instance embedding given MOJO
 
     :examples:
@@ -2223,16 +2224,17 @@ def import_mojo(mojo_path):
     """
     if mojo_path is None:
         raise TypeError("MOJO path may not be None")
-    mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
+    mojo_estimator = H2OGenericEstimator.from_file(mojo_path, model_id)
     print(mojo_estimator)
     return mojo_estimator
 
 
-def upload_mojo(mojo_path):
+def upload_mojo(mojo_path, model_id=None):
     """
     Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
 
     :param mojo_path:  Path to the MOJO archive on the user's local filesystem
+    :param model_id: Model ID, default None
     :return: An H2OGenericEstimator instance embedding given MOJO
 
     :examples:
@@ -2249,7 +2251,7 @@ def upload_mojo(mojo_path):
     """
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
-    mojo_estimator = H2OGenericEstimator(model_key = get_frame(frame_key))
+    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), path=mojo_path, model_id=model_id)
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator

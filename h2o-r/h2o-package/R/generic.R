@@ -14,7 +14,7 @@
 #' # library(h2o)
 #' # h2o.init()
 #' 
-#' # generic_model <- h2o.genericModel("/path/to/model.zip")
+#' # generic_model <- h2o.genericModel(path="/path/to/model.zip", model_id="my_model")
 #' # predictions <- h2o.predict(generic_model, dataset)
 #' }
 #' @export
@@ -31,12 +31,18 @@ h2o.generic <- function(model_id = NULL,
   # Build parameter list to send to model builder
   parms <- list()
 
-  if (!missing(model_id))
+
+  if (!is.null(model_id)) {
     parms$model_id <- model_id
-  if (!missing(model_key))
+  } else if(!missing(path)) {
+    splited <- strsplit(path, "/")[[1]]
+    parms$model_id <- strsplit(splited[length(splited)], '\\.')[[1]][1]
+  }
+  if (!missing(model_key)) {
     parms$model_key <- model_key
-  if (!missing(path))
+  } else if (!missing(path)) {
     parms$path <- path
+  }
 
   # Error check and build model
   model <- .h2o.modelJob('generic', parms, h2oRestApiVersion=3, verbose=FALSE)

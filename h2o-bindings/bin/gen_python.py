@@ -258,9 +258,14 @@ def gen_module(schema, algo):
     for p in extended_params:
         pname = p.get('pname')
         if pname == 'model_id':
-            yield "        self._id = self._parms['model_id'] = model_id"
+            init_model_id = get_customizations_for(algo, 'extensions.__init__model_id')
+            if init_model_id:
+                yield reformat_block(init_model_id, 8)
+            else:
+                yield "        self._id = self._parms['model_id'] = model_id"
         else:
             yield "        self.%s = %s" % (pname, pname)
+            
     rest_api_version = get_customizations_for(algo, 'rest_api_version')
     if rest_api_version:
         yield '        self._parms["_rest_version"] = %s' % rest_api_version
