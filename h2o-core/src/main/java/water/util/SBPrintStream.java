@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 
+import water.H2O;
 import water.exceptions.JCodeSB;
 
 /**
@@ -11,6 +12,7 @@ import water.exceptions.JCodeSB;
  */
 public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream> {
 
+  private final boolean _outputDoubles = H2O.getSysBoolProperty("java.output.doubles", false);
   private int _indent = 0;
 
   public SBPrintStream(OutputStream out) {
@@ -43,7 +45,7 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
     return this;
   }
 
-  public SBPrintStream p(float s) {
+  private SBPrintStream p(float s) {
     if (Float.isNaN(s)) {
       append("Float.NaN");
     } else if (Float.isInfinite(s)) {
@@ -126,6 +128,9 @@ public class SBPrintStream extends PrintStream implements JCodeSB<SBPrintStream>
 
   // Java specific append of float
   public SBPrintStream pj(float s) {
+    if (_outputDoubles) {
+      return pj((double) s);
+    }
     if (Float.isInfinite(s)) {
       append("Float.").append(s > 0 ? "POSITIVE_INFINITY" : "NEGATIVE_INFINITY");
     } else if (Float.isNaN(s)) {

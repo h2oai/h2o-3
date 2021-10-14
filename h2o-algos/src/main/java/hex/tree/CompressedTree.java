@@ -130,8 +130,8 @@ public class CompressedTree extends Keyed<CompressedTree> {
           sb.p("!Double.isNaN(" + sb.i().p(names[col]).p(") && "));
         if (naSplitDirInt != DhnasdNaVsRest) {
           sb.i().p(names[col]).p(' ');
-          if (equal == 0) sb.p("< ").p(fcmp);
-          else if (equal == 1) sb.p("!=").p(fcmp);
+          if (equal == 0) sb.p("< ").pj(fcmp);
+          else if (equal == 1) sb.p("!=").pj(fcmp);
           else sb.p("in ").p(gcmp);
         }
         sb.ii(1).nl();
@@ -140,7 +140,7 @@ public class CompressedTree extends Keyed<CompressedTree> {
         sb.di(1);
       }
       @Override protected void leaf(float pred) {
-        sb.i().p("return ").p(pred).nl();
+        sb.i().p("return ").pj(pred).nl();
       }
     }.visit();
     return sb.toString();
