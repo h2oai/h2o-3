@@ -3,7 +3,6 @@ extensions = dict(
     validate_required_params="""
 # Required args: either model_key or path
 if (is.null(model_key) && is.null(path)) stop("argument 'model_key' or 'path' must be provided")
-if (!is.null(model_key) && !is.null(path)) stop("argument 'model_key' or 'path' can't be both provided")
 """,
     set_required_params="",
     skip_default_set_params_for=["model_id", "path", "model_key"],

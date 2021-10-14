@@ -37,7 +37,7 @@ extensions = dict(
 if model_id is None and path is not None:
     path_split = path.split('/')
     model_id = path_split[len(path_split)-1].split('.')[0]
-    self._id = self._parms['model_id'] = model_id
+self._id = self._parms['model_id'] = model_id
 """
 )
 
