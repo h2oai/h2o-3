@@ -987,7 +987,7 @@ final public class H2O {
 
   public static void closeAll() {
     try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
+    try { NetworkInit.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
@@ -1903,8 +1903,7 @@ final public class H2O {
 
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread(NetworkInit._tcpSocket).start();
-
+    NetworkInit.makeReceiverThread().start();
   }
 
   @Deprecated

@@ -2,6 +2,7 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
+import water.TCPReceiverThread;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.StringUtils;
@@ -30,7 +31,7 @@ import java.util.Set;
  */
 public class NetworkInit {
 
-  public static ServerSocketChannel _tcpSocket;
+  private static ServerSocketChannel _tcpSocket;
 
   public static H2OHttpViewImpl h2oHttpView;
 
@@ -176,6 +177,18 @@ public class NetworkInit {
       Log.throwErr(e);
     }
     H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash);
+  }
+
+  public static TCPReceiverThread makeReceiverThread() {
+    return new TCPReceiverThread(NetworkInit._tcpSocket);
+  }
+
+  public static void close() throws IOException {
+    ServerSocketChannel tcpSocket = _tcpSocket;
+    if (tcpSocket != null) {
+      _tcpSocket = null;
+      tcpSocket.close();
+    }
   }
 
   public static H2OHttpConfig webServerConfig(H2O.OptArgs args) {
