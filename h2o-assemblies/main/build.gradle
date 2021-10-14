@@ -100,7 +100,7 @@ artifacts {
 }
 
 //
-// Support make infrastructure by copying the resulting assembly into parent
+// Copying the resulting assembly into parent for convenient scripting
 // project build directory
 //
 

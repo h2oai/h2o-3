@@ -258,8 +258,8 @@ subprojects {
       apply from: "$rootDir/gradle/publish.gradle"
     }
 
-    // Note: this is deprecated and will be removed in the future
-    apply from: "$rootDir/gradle/makeSupport.gradle"
+    // Copy all jars and remove version number from the name
+    apply from: "$rootDir/gradle/copyJars.gradle"
 
     //
     // Early configuration of projects simplifies build resolution
