@@ -28,17 +28,17 @@ dependencies {
     compile project(":h2o-logging-impl-log4j2")
     runtime project(":${defaultWebserverModule}")
     compile project(":h2o-web")
-    compile project(":h2o-avro-parser")
-    compile project(":h2o-persist-gcs")
-    compile project(":h2o-persist-s3")
-    compile project(":h2o-persist-http")
-    compile project(":h2o-persist-hdfs")
-    compile project(":h2o-ext-krbstandalone")
+    //compile project(":h2o-avro-parser")
+    //compile project(":h2o-persist-gcs")
+    //compile project(":h2o-persist-s3")
+    //compile project(":h2o-persist-http")
+    //compile project(":h2o-persist-hdfs")
+    //compile project(":h2o-ext-krbstandalone")
     compile project(":h2o-ext-mojo-pipeline")
     if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
-        compile project(":h2o-orc-parser")
+        //compile project(":h2o-orc-parser")
     }
-    compile project(":h2o-parquet-parser")
+    //compile project(":h2o-parquet-parser")
     compile project(":h2o-k8s")
 }
 
