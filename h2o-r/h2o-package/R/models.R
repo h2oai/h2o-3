@@ -753,7 +753,7 @@ predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Pat
 h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
 h2o.result <- function(model) {
-  if (!is(model, "H2OModel")) stop("h2.result can only be applied to H2OModel instances with constant results")
+  if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
   return(as.data.frame(.newExpr("result", model@model_id)))
 }
 
