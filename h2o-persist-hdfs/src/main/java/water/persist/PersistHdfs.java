@@ -301,7 +301,7 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void startDelegationTokenRefresher(Path p) throws IOException {
-    if (!lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, false)) {
+    if (lastSavedHadoopConfiguration != null && !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, false)) {
       return;
     }
     if (isInBucketWithAlreadyExistingToken(p.toUri())) {
