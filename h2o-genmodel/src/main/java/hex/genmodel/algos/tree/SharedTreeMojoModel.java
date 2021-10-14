@@ -948,6 +948,9 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
         return classIndex * _ntree_groups + groupIndex;
     }
 
+    public final byte[] treeBytes(int groupIndex, int classIndex) {
+        return _compressed_trees[treeIndex(groupIndex, classIndex)];
+    }
 
   // DO NOT CHANGE THE CODE BELOW THIS LINE
   // DO NOT CHANGE THE CODE BELOW THIS LINE

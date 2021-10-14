@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -2070,6 +2071,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     void cleanUp() {
       FrameUtils.cleanUp(_toDelete);
     }
+  }
+
+  public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
+    throw new UnsupportedOperationException("MOJO Model for algorithm '" + mojoModel._algoName +
+            "' doesn't support conversion to POJO.");
   }
 
 }

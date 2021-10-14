@@ -167,10 +167,6 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     }
   }
 
-  @Override protected CategoricalEncoding getGenModelEncoding() {
-    return super.getGenModelEncoding();
-  }
-  
   @Override
   public IsolationForestMojoWriter getMojo() {
     return new IsolationForestMojoWriter(this);

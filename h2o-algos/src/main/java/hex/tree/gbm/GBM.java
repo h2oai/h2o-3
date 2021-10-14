@@ -1,8 +1,9 @@
 package hex.tree.gbm;
 
-import hex.Distribution;
-import hex.DistributionFactory;
-import hex.ModelCategory;
+import hex.*;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
@@ -1477,6 +1478,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     } else {
       return fs[0] = p;
     }
+  }
+
+  @Override
+  public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
+    GbmMojoModel gbmMojoModel = (GbmMojoModel) mojoModel;
+    CompressedTree[][] trees = MojoUtils.extractCompressedTrees(gbmMojoModel);
+    boolean binomialOpt = MojoUtils.isUsingBinomialOpt(gbmMojoModel, trees);
+    return new GbmPojoWriter(genericModel, gbmMojoModel.getCategoricalEncoding(), binomialOpt, trees,
+            gbmMojoModel._init_f, gbmMojoModel._balanceClasses, gbmMojoModel._family,
+            LinkFunctionFactory.getLinkFunction(gbmMojoModel._link_function));
   }
 
 }

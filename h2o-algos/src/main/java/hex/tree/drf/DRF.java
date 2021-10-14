@@ -1,6 +1,10 @@
 package hex.tree.drf;
 
+import hex.Model;
 import hex.ModelCategory;
+import hex.PojoWriter;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -353,5 +357,12 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
     return sum;
   }
 
+  @Override
+  public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
+    DrfMojoModel drfMojoModel = (DrfMojoModel) mojoModel;
+    CompressedTree[][] trees = MojoUtils.extractCompressedTrees(drfMojoModel);
+    boolean binomialOpt = MojoUtils.isUsingBinomialOpt(drfMojoModel, trees);
+    return new DrfPojoWriter(genericModel, drfMojoModel.getCategoricalEncoding(), binomialOpt, trees, drfMojoModel._balanceClasses);
+  }
 
 }
