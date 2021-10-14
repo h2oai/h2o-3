@@ -34,7 +34,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public static final String H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS = "h2o.auth.tokenRefresher.maxAttempts";
     public static final String H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS = "h2o.auth.tokenRefresher.retryDelaySecs";
     public static final String H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS = "h2o.auth.tokenRefresher.fallbackIntervalSecs";
-    public final static String H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED = "h2o.auth.dynamicTokenRefresherS3IDbroker.enabled";
+    public final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
 
     public static void setup(Configuration conf, String tmpDir, String uri, Runnable callback) throws IOException {
         boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
@@ -114,14 +114,14 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         _callback = callback;
         _executor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setDaemon(true).setNameFormat(getThreadNameFormatForRefresher(
-                        conf.getBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, false),
+                        conf.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false),
                         uri)).build());
     }
     
-    private String getThreadNameFormatForRefresher(boolean isDynamicS3IDbrokerTokenRefresherEnabled, String uri) {
-        if (isDynamicS3IDbrokerTokenRefresherEnabled && uri != null) {
+    private String getThreadNameFormatForRefresher(boolean isDynamicS3ATokenRefresherEnabled, String uri) {
+        if (isDynamicS3ATokenRefresherEnabled && uri != null) {
             String bucketIdentifier = new Path(uri).toUri().getHost();
-            return "s3-idbroker-hdfs-token-refresher-" +  bucketIdentifier + "-%d";
+            return "s3a-hdfs-token-refresher-" +  bucketIdentifier + "-%d";
         } else {
             return "hdfs-token-refresher-%d";
         }

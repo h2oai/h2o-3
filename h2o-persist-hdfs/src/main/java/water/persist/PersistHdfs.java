@@ -35,7 +35,7 @@ public final class PersistHdfs extends Persist {
   /** Root path of HDFS */
   private final Path _iceRoot;
 
-  final static String H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED = "h2o.auth.dynamicTokenRefresherS3IDbroker.enabled";
+  public final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
   public static Configuration lastSavedHadoopConfiguration = null;
   
   private static final Set<String> bucketsWithDelegationToken = Collections.synchronizedSet(new HashSet<>());
@@ -301,7 +301,7 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void startDelegationTokenRefresher(Path p) throws IOException {
-    if (lastSavedHadoopConfiguration != null && !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_TOKEN_REFRESHER_S3_IDBROKER_ENABLED, false)) {
+    if (lastSavedHadoopConfiguration != null && !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
       return;
     }
     if (isInBucketWithAlreadyExistingToken(p.toUri())) {
