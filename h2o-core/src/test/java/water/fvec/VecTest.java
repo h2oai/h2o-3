@@ -298,4 +298,63 @@ public class VecTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testIsBinary() {
+    Scope.enter();
+    try {
+      assertTrue(Scope.track(vec(0, 1)).isBinary());
+      // check only 0, 1 cases
+      assertFalse(Scope.track(vec(0, 2)).isBinary());
+      // const vector is ok
+      assertTrue(Scope.track(vec(0)).isBinary());
+      assertTrue(Scope.track(vec(1)).isBinary());
+      // Test NAs
+      assertFalse(Scope.track(dvec(Double.NaN, Double.NaN)).isBinary());
+      // NAs are ignored by default
+      assertTrue(Scope.track(dvec(Double.NaN, 1)).isBinary());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testIsBinaryOnes() {
+    Scope.enter();
+    try {
+      assertTrue(Scope.track(vec(1, -1)).isBinaryOnes());
+      // check only 0, 1 cases
+      assertFalse(Scope.track(vec(1, 2)).isBinaryOnes());
+      // const vector is ok
+      assertTrue(Scope.track(vec(-1)).isBinaryOnes());
+      assertTrue(Scope.track(vec(1)).isBinaryOnes());
+      // Test Nas
+      assertFalse(Scope.track(dvec(Double.NaN, Double.NaN)).isBinaryOnes());
+      // NAs are ignored by default
+      assertTrue(Scope.track(dvec(Double.NaN, 1)).isBinaryOnes());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testIsBinaryStrict() {
+    Scope.enter();
+    try {
+      assertTrue(Scope.track(dvec(0, 1)).isBinary(true));
+      assertTrue(Scope.track(dvec(-1, 1)).isBinary(true));
+      assertFalse(Scope.track(dvec(0, 2)).isBinary(true));
+      // const vector is not ok
+      assertFalse(Scope.track(vec( -1)).isBinary(true));
+      assertFalse(Scope.track(vec(1)).isBinary(true));
+      assertFalse(Scope.track(vec(0)).isBinary(true));
+      // Test Nas
+      assertFalse(Scope.track(dvec(Double.NaN, Double.NaN)).isBinary(true));
+      // NAs are ignored by default
+      assertFalse(Scope.track(dvec(Double.NaN, 1)).isBinary(true));
+      assertTrue(Scope.track(dvec(Double.NaN, 1, 0)).isBinary(true));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }
