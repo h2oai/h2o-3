@@ -1868,8 +1868,8 @@ final public class H2O {
 
     Log.info("H2O cloud name: '" + ARGS.name + "' on " + SELF +
             (H2O.isFlatfileEnabled()
-                    ? (", discovery address " + CLOUD_MULTICAST_GROUP + ":" + CLOUD_MULTICAST_PORT)
-                    : ", static configuration based on -flatfile " + ARGS.flatfile));
+                    ? ", static configuration based on -flatfile " + ARGS.flatfile
+                    : (", discovery address " + CLOUD_MULTICAST_GROUP + ":" + CLOUD_MULTICAST_PORT)));
 
     if (!H2O.ARGS.disable_web) {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
