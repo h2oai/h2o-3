@@ -362,12 +362,18 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     @Override
     protected PojoWriter makePojoWriter() {
         GenModel genModel = genModel();
-        if (!(genModel instanceof MojoModel)) {
+        if (!havePojo()) {
             throw new UnsupportedOperationException("Only MOJO models can be converted to POJO.");
         }
         MojoModel mojoModel = (MojoModel) genModel;
         ModelBuilder<?, ?, ?> builder = ModelBuilder.make(mojoModel._algoName, null, null);
         return builder.makePojoWriter(this, mojoModel);
+    }
+    
+    @Override
+    public boolean havePojo() {
+        GenModel genModel = genModel();
+        return genModel instanceof MojoModel;
     }
 
 }
