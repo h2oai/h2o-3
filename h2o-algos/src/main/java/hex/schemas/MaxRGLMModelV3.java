@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.maxrglm.MaxRGLMModel;
 import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
 import water.api.schemas3.TwoDimTableV3;
@@ -17,6 +18,9 @@ public class MaxRGLMModelV3 extends ModelSchemaV3<MaxRGLMModel, MaxRGLMModelV3, 
         
         @API(help="R2 values of all possible predictor subsets")
         double[] best_r2_values;  // store the best R2 values of the best models with fix number of predictors
+        
+        @API(help="Key of models containing best 1-predictor model, best 2-predictors model, ....")
+        KeyV3.ModelKeyV3[] best_model_ids;
         
         @Override
         public MaxRGLMModelOutputV3 fillFromImpl(MaxRGLMModel.MaxRGLMModelOutput impl) {

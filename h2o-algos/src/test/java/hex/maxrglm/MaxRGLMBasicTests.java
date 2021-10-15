@@ -1,6 +1,7 @@
 package hex.maxrglm;
 
 import hex.SplitFrame;
+import hex.glm.GLMModel;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +19,7 @@ import static hex.gam.GamTestPiping.massageFrame;
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
 import static hex.maxrglm.MaxRGLMUtils.updatePredIndices;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static water.TestUtil.parseTestFile;
 
@@ -46,7 +48,7 @@ public class MaxRGLMBasicTests {
         int[] bounds = IntStream.range(zeroBound, maxPredNum).toArray();   // highest combo value
         int numModels = combinatorial(maxPredNum, predNum);
         for (int index = 0; index < numModels; index++) {    // generate one combo
-            Assert.assertArrayEquals("Array must be equal.", 
+            assertArrayEquals("Array must be equal.", 
                     Arrays.stream(predIndices).boxed().toArray(Integer[]::new), answers[index]);
             updatePredIndices(predIndices, bounds);
         }
@@ -143,4 +145,44 @@ public class MaxRGLMBasicTests {
         }
     }
 
+    @Test
+    public void testProstateResultFrame() {
+        Scope.enter();
+        try {
+            double tol = 1e-6;
+            Frame trainF = parseTestFile("smalldata/logreg/prostate.csv");
+            Scope.track(trainF);
+            MaxRGLMModel.MaxRGLMParameters parms = new MaxRGLMModel.MaxRGLMParameters();
+            parms._response_column = "AGE";
+            parms._family = gaussian;
+            parms._ignored_columns = new String[]{"ID"};
+            parms._max_predictor_number=trainF.numCols()-3;
+            parms._train = trainF._key;
+            MaxRGLMModel model = new MaxRGLM(parms).trainModel().get();
+            Scope.track_generic(model); // best one predictor model
+            Frame resultFrame = model.result();
+            Scope.track(resultFrame);
+
+            double[] bestR2 = model._output._best_r2_values;
+            String[][] bestPredictorSubsets = model._output._best_model_predictors;
+            int numModels = bestR2.length;
+            for (int index = 0; index < numModels; index++) {
+                // check with model summary r2 values
+                assertTrue(Math.abs(bestR2[index] - resultFrame.vec(2).at(index)) < tol);
+                // grab the best model, check model can score and model coefficients agree with what is in the result frame
+                GLMModel oneModel = DKV.getGet(resultFrame.vec(1).stringAt(index));
+                Scope.track_generic(oneModel);
+                Frame scoreFrame = oneModel.score(trainF);  // check it can score
+                assertTrue(scoreFrame.numRows() == trainF.numRows());
+                Scope.track(scoreFrame);
+                String[] coeff = oneModel._output._coefficient_names;   // contains the name intercept as well
+                String[] coeffWOIntercept = new String[coeff.length - 1];
+                System.arraycopy(coeff, 0, coeffWOIntercept, 0, coeffWOIntercept.length);
+                assertArrayEquals("best predictor subset containing different predictors", coeffWOIntercept,
+                        bestPredictorSubsets[index]);
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
 }

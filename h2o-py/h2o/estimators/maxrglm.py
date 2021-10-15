@@ -7,6 +7,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import h2o
+from h2o.base import Keyed
+from h2o.frame import H2OFrame
+from h2o.expr import ExprNode
+from h2o.expr import ASTId
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -1022,6 +1026,15 @@ class H2OMaxRGLMEstimator(H2OEstimator):
         assert_is_type(max_predictor_number, None, int)
         self._parms["max_predictor_number"] = max_predictor_number
 
+
+    def result(self):
+        """
+        Get result frame that contains the model name, model ID, best r2 values and predictors used in building the model.
+
+        :param self: 
+        :return: 
+        """
+        return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
 
     def get_best_R2_values(self):
         """

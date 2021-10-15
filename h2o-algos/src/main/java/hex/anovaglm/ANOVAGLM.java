@@ -172,7 +172,7 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
                 " ANOVAGLM outputs");
         model.update(_job);
       } finally {
-        final List<Key<Vec>> keep = new ArrayList<>();
+        final List<Key> keep = new ArrayList<>();
         int numFrame2Delete = _parms._save_transformed_framekeys ? (_trainingFrames.length - 1) : _trainingFrames.length;
         removeFromDKV(_trainingFrames, numFrame2Delete);
         if (model != null) {
