@@ -369,6 +369,9 @@ final public class H2O {
     /** -disable_web; disable Jetty and REST API interface */
     public boolean disable_web = false;
 
+    /** -disable_net; do not listen to incoming traffic and do not try to discover other nodes, for single node deployments */
+    public boolean disable_net = false;
+
     /** -disable_flow; disable access to H2O Flow, keep REST API interface available to clients */
     public boolean disable_flow = false;
     
@@ -633,6 +636,9 @@ final public class H2O {
       }
       else if (s.matches("disable_web")) {
         trgt.disable_web = true;
+      }
+      else if (s.matches("disable_net")) {
+        trgt.disable_net = true;
       }
       else if (s.matches("disable_flow")) {
         trgt.disable_flow = true;
@@ -987,7 +993,7 @@ final public class H2O {
 
   public static void closeAll() {
     try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
+    try { NetworkInit.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
@@ -1886,6 +1892,15 @@ final public class H2O {
   /** Starts the worker threads, receiver threads, heartbeats and all other
    *  network related services.  */
   private static void startNetworkServices() {
+    // Start the Persistent meta-data cleaner thread, which updates the K/V
+    // mappings periodically to disk. There should be only 1 of these, and it
+    // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
+    // an initial histogram state.
+    Cleaner.THE_CLEANER.start();
+
+    if (H2O.ARGS.disable_net)
+      return;
+
     // We've rebooted the JVM recently. Tell other Nodes they can ignore task
     // prior tasks by us. Do this before we receive any packets
     UDPRebooted.T.reboot.broadcast();
@@ -1895,16 +1910,9 @@ final public class H2O {
     // down. Started soon, so we can start parsing multi-cast UDP packets
     new MultiReceiverThread().start();
 
-    // Start the Persistent meta-data cleaner thread, which updates the K/V
-    // mappings periodically to disk. There should be only 1 of these, and it
-    // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
-    // an initial histogram state.
-    Cleaner.THE_CLEANER.start();
-
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread(NetworkInit._tcpSocket).start();
-
+    NetworkInit.makeReceiverThread().start();
   }
 
   @Deprecated
