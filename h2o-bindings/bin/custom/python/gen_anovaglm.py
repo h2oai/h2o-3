@@ -9,13 +9,9 @@ def class_extensions():
     @Lambda.setter
     def Lambda(self, value):
         self._parms["lambda"] = value
-        
+
     def result(self):
-        key = self._model_json["output"]["result_frame_key"]
-        if key is None:
-            return None
-        else:
-            return h2o.get_frame(key['name'])
+        return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
 
 extensions = dict(
     __imports__="""import h2o""",

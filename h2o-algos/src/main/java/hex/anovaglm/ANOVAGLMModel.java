@@ -56,8 +56,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * @return H2O Frame containing the ANOVA table as in the model summary
    */
   public Frame result() {
-    assert _output._result_frame_key!= null : "ANOVA Table Key is null";
-    return DKV.getGet(_output._result_frame_key);
+    return generateANOVATableFrame();
   }
   
   public static class ANOVAGLMParameters extends Model.Parameters {
@@ -66,7 +65,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     public double[] _lambda = new double[]{0};
     public boolean _standardize = true;
     public Family _family = AUTO;
-    public boolean lambda_search;
+    public boolean _lambda_search;
     public Link _link = Link.family_default;
     public Solver _solver = Solver.IRLSM;
     public String[] _interactions=null;
@@ -137,8 +136,10 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     public String[][] _coefficient_names; // coefficient names of all models
     Family _family;
     public Key<Frame> _transformed_columns_key;
-    public Key<Frame> _result_frame_key;
     public TwoDimTable[] _coefficients_table;
+    public GLMModel[] _glmModels;
+    public String[] _modelNames;
+    public int[] _degreeOfFreedom;
 
     @Override
     public ModelCategory getModelCategory() {
@@ -162,8 +163,9 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     }
   }
   
-  public void fillOutput(String[] modelNames, GLMModel[] glmModels, int[] degreeOfFreedom) {
-    _output._result_frame_key = generateANOVATableFrame(modelNames, glmModels, degreeOfFreedom);
+  public void fillOutput(String[] modelNames, int[] degreeOfFreedom) {
+    _output._modelNames = modelNames;
+    _output._degreeOfFreedom = degreeOfFreedom;
     _output._model_summary = generateSummary();
   }
 
@@ -175,9 +177,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * @return a {@link TwoDimTable} representation of the result frame
    */
   public TwoDimTable generateSummary(){
-    assert _output._result_frame_key != null;
-    Frame result = _output._result_frame_key.get();
-    assert result != null;
+    Frame result = generateANOVATableFrame();
     int ncols = result.numCols();
     int nrows = (int) result.numRows();
     String[] names = result.names();
@@ -197,33 +197,33 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     return table;
   }
 
-  public Key<Frame> generateANOVATableFrame(String[] modelNames, GLMModel[] glmModels, int[] degreeOfFreedom) {
-    int lastModelIndex = glmModels.length - 1;
+  public Frame generateANOVATableFrame() {
+    int lastModelIndex = _output._glmModels.length - 1;
     String[] colNames = new String[]{"predictors_interactions", "family", "link", "ss", "df", "ms", "f", "p_value"};
     String[] rowNames = new String[lastModelIndex];
     String[] familyNames = new String[lastModelIndex];
     String[] linkNames = new String[lastModelIndex];
-    double[] ss = generateGLMSS(glmModels, _parms._family);
-    double[] dof = Arrays.stream(degreeOfFreedom).asDoubleStream().toArray();
+    double[] ss = generateGLMSS(_output._glmModels, _parms._family);
+    double[] dof = Arrays.stream(_output._degreeOfFreedom).asDoubleStream().toArray();
     double[] msA = new double[lastModelIndex];
     double[] fA = new double[lastModelIndex];
     double[] pValues = new double[lastModelIndex];
 
-    System.arraycopy(modelNames, 0, rowNames, 0, lastModelIndex);
-    long dofFullModel = glmModels[lastModelIndex]._output._training_metrics.residual_degrees_of_freedom();
+    System.arraycopy(_output._modelNames, 0, rowNames, 0, lastModelIndex);
+    long dofFullModel = _output._glmModels[lastModelIndex]._output._training_metrics.residual_degrees_of_freedom();
     double mse = ss[lastModelIndex]/dofFullModel;
     double oneOverMse = 1.0/mse;
     for (int rIndex = 0; rIndex < lastModelIndex; rIndex++) {
       familyNames[rIndex] = _parms._family.toString();
       linkNames[rIndex] = _parms._link.toString();
       
-      double ms = ss[rIndex]/degreeOfFreedom[rIndex];
+      double ms = ss[rIndex]/_output._degreeOfFreedom[rIndex];
       msA[rIndex] = ms;
       
-      double f = oneOverMse*ss[rIndex]/degreeOfFreedom[rIndex];
+      double f = oneOverMse*ss[rIndex]/_output._degreeOfFreedom[rIndex];
       fA[rIndex] = f;
 
-      FDistribution fdist = new FDistribution(degreeOfFreedom[rIndex], dofFullModel);
+      FDistribution fdist = new FDistribution(_output._degreeOfFreedom[rIndex], dofFullModel);
       double p_value = 1.0 - fdist.cumulativeProbability(f);
       pValues[rIndex] = p_value;
     }
@@ -237,23 +237,19 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     Vec msV = Vec.makeVec(msA, vg.addVec());
     Vec fV = Vec.makeVec(fA, vg.addVec());
     Vec pValuesV = Vec.makeVec(pValues, vg.addVec());
-    Frame anovaFrame = new Frame(Key.<Frame>make(), colNames, new Vec[]{rNames, fNames, lNames, sumSquares, 
+    return new Frame(Key.<Frame>make(), colNames, new Vec[]{rNames, fNames, lNames, sumSquares,
             degOfFreedom, msV, fV, pValuesV});
-    DKV.put(anovaFrame);
-    return anovaFrame._key;
   }
   
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
-    Keyed.remove(_output._result_frame_key, fs, true);
     Keyed.remove(_output._transformed_columns_key, fs, true);
     return fs;
   }
 
   @Override
   protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    if (_output._result_frame_key != null) ab.putKey(_output._result_frame_key);
     if (_output._transformed_columns_key != null) ab.putKey(_output._transformed_columns_key);
     return super.writeAll_impl(ab);
   }
