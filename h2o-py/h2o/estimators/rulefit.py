@@ -38,6 +38,8 @@ class H2ORuleFitEstimator(H2OEstimator):
                  weights_column=None,  # type: Optional[str]
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  rule_generation_ntrees=50,  # type: int
+                 normalize=True,  # type: bool
+                 winsorising_fraction=0.025,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -88,9 +90,18 @@ class H2ORuleFitEstimator(H2OEstimator):
                Defaults to ``"auto"``.
         :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
                "quantile", "huber"]
-        :param rule_generation_ntrees: specifies the number of trees to build in the tree model. Defaults to 50.
+        :param rule_generation_ntrees: Specifies the number of trees to build in the tree model. Defaults to 50.
                Defaults to ``50``.
         :type rule_generation_ntrees: int
+        :param normalize: Whether to normalize linear variables before estimating the linear model or not. Normalizing
+               gives the linear terms the same a priori influence as a typical rule. Defaults to true.
+               Defaults to ``True``.
+        :type normalize: bool
+        :param winsorising_fraction: Value in between 0 and 0.5 used for winsorising linear terms. Winsorising helps
+               original features to be more robust against outliers, before training linear model. If set to 0, no
+               winsorizing is performed. Defaults to 0.025.
+               Defaults to ``0.025``.
+        :type winsorising_fraction: float
         """
         super(H2ORuleFitEstimator, self).__init__()
         self._parms = {}
@@ -108,6 +119,8 @@ class H2ORuleFitEstimator(H2OEstimator):
         self.weights_column = weights_column
         self.distribution = distribution
         self.rule_generation_ntrees = rule_generation_ntrees
+        self.normalize = normalize
+        self.winsorising_fraction = winsorising_fraction
 
     @property
     def training_frame(self):
@@ -286,7 +299,7 @@ class H2ORuleFitEstimator(H2OEstimator):
     @property
     def rule_generation_ntrees(self):
         """
-        specifies the number of trees to build in the tree model. Defaults to 50.
+        Specifies the number of trees to build in the tree model. Defaults to 50.
 
         Type: ``int``, defaults to ``50``.
         """
@@ -296,6 +309,37 @@ class H2ORuleFitEstimator(H2OEstimator):
     def rule_generation_ntrees(self, rule_generation_ntrees):
         assert_is_type(rule_generation_ntrees, None, int)
         self._parms["rule_generation_ntrees"] = rule_generation_ntrees
+
+    @property
+    def normalize(self):
+        """
+        Whether to normalize linear variables before estimating the linear model or not. Normalizing gives the linear
+        terms the same a priori influence as a typical rule. Defaults to true.
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("normalize")
+
+    @normalize.setter
+    def normalize(self, normalize):
+        assert_is_type(normalize, None, bool)
+        self._parms["normalize"] = normalize
+
+    @property
+    def winsorising_fraction(self):
+        """
+        Value in between 0 and 0.5 used for winsorising linear terms. Winsorising helps original features to be more
+        robust against outliers, before training linear model. If set to 0, no winsorizing is performed. Defaults to
+        0.025.
+
+        Type: ``float``, defaults to ``0.025``.
+        """
+        return self._parms.get("winsorising_fraction")
+
+    @winsorising_fraction.setter
+    def winsorising_fraction(self, winsorising_fraction):
+        assert_is_type(winsorising_fraction, None, numeric)
+        self._parms["winsorising_fraction"] = winsorising_fraction
 
 
     def rule_importance(self):

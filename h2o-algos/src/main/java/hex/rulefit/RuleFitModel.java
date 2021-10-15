@@ -44,22 +44,23 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
 
         // the algorithm to use to generate rules. Options are "DRF" (default), "GBM"
         public Algorithm _algorithm = Algorithm.AUTO;
-
         // minimum length of rules. Defaults to 3.
         public int _min_rule_length = 3;
-
         // maximum length of rules. Defaults to 3.
         public int _max_rule_length = 3;
-
         // the maximum number of rules to return. Defaults to -1 which means the number of rules is selected 
         // by diminishing returns in model deviance.
         public int _max_num_rules = -1;
-
         // specifies type of base learners in the ensemble. Options are RULES_AND_LINEAR (initial ensemble includes both rules and linear terms, default), RULES (prediction rules only), LINEAR (linear terms only)
         public ModelType _model_type = ModelType.RULES_AND_LINEAR;
-        
         // specifies the number of trees to build in the tree model. Defaults to 50.
         public int _rule_generation_ntrees = 50;
+        // whether to normalize linear variables before estimating the linear model or not. Normalizing gives the 
+        // linear terms the same a priori influence as a typical rule.
+        public boolean _normalize = true;
+        // value in between 0 and 0.5 used for winsorizing linear terms. Winsorising helps original features to 
+        // be more robust against outliers, before training linear model. If set to 0, no winsorizing is performed.
+        public double _winsorising_fraction = 0.025;
     }
 
     public static class RuleFitOutput extends Model.Output {

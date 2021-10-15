@@ -23,7 +23,9 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
             "model_type",
             "weights_column", 
             "distribution",
-            "rule_generation_ntrees"
+            "rule_generation_ntrees", 
+            "normalize",
+            "winsorising_fraction"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)
@@ -47,7 +49,15 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
     @API(help = "Specifies type of base learners in the ensemble.", values = {"RULES_AND_LINEAR", "RULES", "LINEAR"})
     public RuleFitModel.ModelType model_type;
 
-    @API(help = "specifies the number of trees to build in the tree model. Defaults to 50.")
+    @API(help = "Specifies the number of trees to build in the tree model. Defaults to 50.")
     public int rule_generation_ntrees;
+
+    @API(help = "Whether to normalize linear variables before estimating the linear model or not. Normalizing gives the" +
+            " linear terms the same a priori influence as a typical rule. Defaults to true.")
+    public boolean normalize;
+
+    @API(help = "Value in between 0 and 0.5 used for winsorising linear terms. Winsorising helps original features to " +
+            "be more robust against outliers, before training linear model. If set to 0, no winsorizing is performed. Defaults to 0.025.")
+    public double winsorising_fraction;
   }
 }

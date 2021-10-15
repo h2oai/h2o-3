@@ -4,6 +4,8 @@ import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
 import hex.tree.TreeStats;
@@ -15,7 +17,10 @@ import hex.tree.gbm.GBMModel;
 import org.apache.log4j.Logger;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
@@ -95,6 +100,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     private void initTreeParameters() {
         if (_parms._algorithm == RuleFitModel.Algorithm.GBM) {
             treeParameters = new GBMModel.GBMParameters();
+            // todo expose learn rate:
+  //          ((GBMModel.GBMParameters) treeParameters)._learn_rate = 0.01;
         } else if (_parms._algorithm == RuleFitModel.Algorithm.DRF) {
             treeParameters = new DRFModel.DRFParameters();
         } else {
@@ -107,6 +114,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         treeParameters._weights_column = _parms._weights_column;
         treeParameters._distribution = _parms._distribution;
         treeParameters._ntrees = _parms._rule_generation_ntrees;
+        // todo expose as a new rfit param
+       // treeParameters._sample_rate = 0.5;
     }
 
     private void initGLMParameters() {
@@ -227,10 +236,21 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 }
 
                 // prepare linear terms
+                Key normalizedTrainKey = Key.make();
+                Key winsorizedTrainKey = Key.make();
+                Key winsorizedValidKey = null, normalizedValidKey = null;
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     String[] names = _train._names;
-                    linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
-                    if (_valid != null) linearValid.add(RuleFitUtils.getLinearNames(names.length, names), _valid.vecs(names));
+                    Vec[] winsorizedVecs = _parms._winsorising_fraction > 0 ? winsorize(_train.vecs(names), winsorizedTrainKey) : _train.vecs(names);
+                    Vec[] linearTermsVecs = _parms._normalize ? normalize(winsorizedVecs, normalizedTrainKey) : winsorizedVecs;
+                    linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), linearTermsVecs);
+                    if (_valid != null) {
+                        winsorizedTrainKey = Key.make();
+                        normalizedValidKey = Key.make();
+                        winsorizedVecs = _parms._winsorising_fraction > 0 ? winsorize(_train.vecs(names), winsorizedTrainKey) : _train.vecs(names);
+                        linearTermsVecs = _parms._normalize ? normalize(winsorizedVecs, normalizedValidKey) : winsorizedVecs;
+                        linearValid.add(RuleFitUtils.getLinearNames(names.length, names), linearTermsVecs);
+                    }
                 } else {
                     linearTrain.add(glmParameters._response_column, _train.vec(_parms._response_column));
                     if (_valid != null) linearValid.add(glmParameters._response_column, _valid.vec(_parms._response_column));
@@ -271,6 +291,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._linear_names = linearTrain.names();
 
                 DKV.remove(linearTrain._key);
+                if (normalizedTrainKey != null) DKV.remove(normalizedTrainKey);
+                if (normalizedValidKey != null) DKV.remove(normalizedValidKey);
+                if (winsorizedTrainKey != null) DKV.remove(winsorizedTrainKey);
+                if (winsorizedValidKey != null) DKV.remove(winsorizedValidKey);
                 if (linearValid != null) DKV.remove(linearValid._key);
                 DKV.remove(trainAdapted._key);
                 
@@ -293,6 +317,106 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             }
         }
         
+        // used on original features, so that they are more robust against outliers, before training linear model
+        private Vec[] winsorize(Vec[] vecs, Key key) {
+            // https://arxiv.org/pdf/1707.07149.pdf, section 2.2, eq. (10)
+            // winsorized_xj = min (d+_j max(d-_j, x_j))
+            // d+  = d+ quantile of the data distribution of feature xj
+            // d-  = d- quantile of the data distribution of feature xj
+            // default d = 0.025 as a rule of thumb
+            Frame quantileTrain = new Frame(key, vecs);
+            DKV.put(quantileTrain);
+            
+            QuantileModel.QuantileParameters quantileParameters = new QuantileModel.QuantileParameters();
+            quantileParameters._train = quantileTrain._key;
+            quantileParameters._probs = new double[] {_parms._winsorising_fraction, 1 - _parms._winsorising_fraction};
+            QuantileModel quantileModel = new Quantile(quantileParameters).trainModel().get();
+            double[][] quantiles = quantileModel._output._quantiles;
+            DKV.remove(quantileModel.getKey());
+
+            Winsorizer winsorizeTask = new Winsorizer(quantiles);
+            byte[] types = new byte[vecs.length];
+            Arrays.fill(types, Vec.T_NUM);
+            Frame winsorizedFrame = winsorizeTask.doAll(types, vecs).outputFrame(key, null, null);
+            DKV.put(winsorizedFrame);
+            
+            int responseId = ArrayUtils.find(_train._names, _parms._response_column);
+            Vec[] result = new Vec[vecs.length];
+            for (int i = 0; i < vecs.length; i++) {
+                if (vecs[i].isNumeric() && (vecs[i].domain() == null) && (i != responseId)) {
+                    result[i] = winsorizedFrame.vec(i);
+                } else {
+                    result[i] = vecs[i];
+                }
+            }
+            return result;
+        }
+
+        class Winsorizer extends MRTask<Winsorizer> {
+            double[][] quantiles;
+
+            Winsorizer(double[][] quantiles) {
+                this.quantiles = quantiles;
+            }
+
+            @Override
+            public void map(Chunk[] cs, NewChunk[] nc) {
+                for (int i = 0; i < cs.length; i++) {
+                    for (int j = 0; j < cs[i].len(); j++) {
+                        if (cs[i].vec().isNumeric()) {
+                            nc[i].addNum( Math.min(quantiles[i][1], Math.max(quantiles[i][0], cs[i].atd(j))));
+                        } else {
+                            nc[i].addNA();
+                        }
+                    }
+                }
+            }
+        }
+        
+        private Vec[] normalize(Vec[] vecs, Key key) {
+            // https://arxiv.org/pdf/1707.07149.pdf, section 2.2, eq. (11)
+            // normalized_xj = 0.4 * [winsorized_]xj/std([winsorized_]xj)
+            // 0.4 is the average standard deviation of rules with a uniform support distribution
+            Normalizer normalizeTask = new Normalizer(Arrays.stream(vecs).mapToDouble(Vec::sigma).toArray());
+            byte[] types = new byte[vecs.length];
+            Arrays.fill(types, Vec.T_NUM);
+            
+            Frame normalizedFrame = normalizeTask.doAll(types, vecs).outputFrame(key, null, null);
+            DKV.put(normalizedFrame);
+
+            int responseId = ArrayUtils.find(_train._names, _parms._response_column);
+            Vec[] result = new Vec[vecs.length];
+            for (int i = 0; i < vecs.length; i++) {
+                if (vecs[i].isNumeric() && (vecs[i].domain() == null) && (i != responseId) && !vecs[i].isConst()) {// constant vecs have sigma = 0 -> in normalization there would be division by zero -> rather leave original const vec
+                    result[i] = normalizedFrame.vec(i);
+                } else {
+                    result[i] = vecs[i];
+                }
+            }
+            return result;
+        }
+
+        class Normalizer extends MRTask<Normalizer> {
+            double[] _sigmas;
+
+            Normalizer(double[] sigmas) {
+                _sigmas = sigmas;
+            }
+
+            @Override
+            public void map(Chunk[] cs, NewChunk[] nc) {
+                for (int i = 0; i < cs.length; i++) {
+                    for (int j = 0; j < cs[i].len(); j++) {
+                        if (cs[i].vec().isNumeric()) {
+                            nc[i].addNum(0.4 * cs[i].atd(j) / _sigmas[i]);
+                        } else {
+                            nc[i].addNA();
+                        }
+                   }
+                }
+            }
+        }
+         
         void fillModelMetrics(RuleFitModel model, GLMModel glmModel) {
             model._output._validation_metrics = glmModel._output._validation_metrics;
             model._output._training_metrics = glmModel._output._training_metrics;

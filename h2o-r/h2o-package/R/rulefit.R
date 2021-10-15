@@ -34,7 +34,12 @@
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
-#' @param rule_generation_ntrees specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
+#' @param rule_generation_ntrees Specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
+#' @param normalize \code{Logical}. Whether to normalize linear variables before estimating the linear model or not. Normalizing
+#'        gives the linear terms the same a priori influence as a typical rule. Defaults to true. Defaults to TRUE.
+#' @param winsorising_fraction Value in between 0 and 0.5 used for winsorising linear terms. Winsorising helps original features to be more
+#'        robust against outliers, before training linear model. If set to 0, no winsorizing is performed. Defaults to
+#'        0.025. Defaults to 0.025.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -82,7 +87,9 @@ h2o.rulefit <- function(x,
                         model_type = c("rules_and_linear", "rules", "linear"),
                         weights_column = NULL,
                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                        rule_generation_ntrees = 50)
+                        rule_generation_ntrees = 50,
+                        normalize = TRUE,
+                        winsorising_fraction = 0.025)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -127,6 +134,10 @@ h2o.rulefit <- function(x,
     parms$distribution <- distribution
   if (!missing(rule_generation_ntrees))
     parms$rule_generation_ntrees <- rule_generation_ntrees
+  if (!missing(normalize))
+    parms$normalize <- normalize
+  if (!missing(winsorising_fraction))
+    parms$winsorising_fraction <- winsorising_fraction
 
   # Error check and build model
   model <- .h2o.modelJob('rulefit', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -145,6 +156,8 @@ h2o.rulefit <- function(x,
                                         weights_column = NULL,
                                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                         rule_generation_ntrees = 50,
+                                        normalize = TRUE,
+                                        winsorising_fraction = 0.025,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -194,6 +207,10 @@ h2o.rulefit <- function(x,
     parms$distribution <- distribution
   if (!missing(rule_generation_ntrees))
     parms$rule_generation_ntrees <- rule_generation_ntrees
+  if (!missing(normalize))
+    parms$normalize <- normalize
+  if (!missing(winsorising_fraction))
+    parms$winsorising_fraction <- winsorising_fraction
 
   # Build segment-models specific parameters
   segment_parms <- list()

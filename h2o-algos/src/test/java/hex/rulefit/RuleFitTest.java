@@ -11,18 +11,14 @@ import org.junit.Test;
 
 import org.junit.runner.RunWith;
 import water.DKV;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.parser.ParseDataset;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -164,6 +160,8 @@ public class RuleFitTest extends TestUtil {
             params._weights_column = "weights";
             params._min_rule_length = 1;
             params._max_rule_length = 7;
+            params._winsorising_fraction = 0.0;
+            params._normalize = false;
 
             rfModel = new RuleFit(params).trainModel().get();
 
@@ -361,6 +359,8 @@ public class RuleFitTest extends TestUtil {
             params._weights_column = "weights";
             params._min_rule_length = 1;
             params._max_rule_length = 10;
+            params._winsorising_fraction = 0.0;
+            params._normalize = false;
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
             Scope.track_generic(rfModel);
@@ -560,6 +560,8 @@ public class RuleFitTest extends TestUtil {
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._distribution = DistributionFamily.gaussian;
             params._min_rule_length = 1;
+            params._winsorising_fraction = 0.0;
+            params._normalize = false;
 
             final RuleFitModel model = new RuleFit(params).trainModel().get();
             Scope.track_generic(model);
@@ -619,6 +621,8 @@ public class RuleFitTest extends TestUtil {
             params._max_rule_length = 10;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
             params._min_rule_length = 1;
+            params._winsorising_fraction = 0.0;
+            params._normalize = false;
 
             final RuleFitModel model = new RuleFit(params).trainModel().get();
             Scope.track_generic(model);
