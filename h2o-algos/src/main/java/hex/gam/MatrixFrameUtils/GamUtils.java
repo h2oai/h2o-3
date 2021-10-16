@@ -167,7 +167,7 @@ public class GamUtils {
     }
   }
 
-  public static void keepFrameKeys(List<Key<Vec>> keep, Key<Frame> ... keyNames) {
+  public static void keepFrameKeys(List<Key> keep, Key<Frame> ... keyNames) {
     for (Key<Frame> keyName:keyNames) {
       Frame loadingFrm = DKV.getGet(keyName);
       if (loadingFrm != null) for (Vec vec : loadingFrm.vecs()) keep.add(vec._key);
