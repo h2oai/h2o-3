@@ -170,20 +170,18 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
      * This method will copy the GLM cofficients from all GLM models and stuff them into a TwoDimTable array for
      * the AnovaGLMModel._output.
      *
-     * @param model: AnovaGLMModel onto which the GLM coefficients will be copied to
      * @param modelNames: string describing each GLM model built in terms of which predictor combo is left out.
      */
     void copyGLMCoeffs(String[] modelNames) {
       int numModels = _glmModels.length;
-      ...
-      model._output._coefficients_table = new TwoDimTable[numModels];
-      model._output._coefficient_names = new String[numModels][];
+      _coefficients_table = new TwoDimTable[numModels];
+      _coefficient_names = new String[numModels][];
       for (int index = 0; index < numModels; index++) {
-        model._output._coefficients_table[index] = genCoefficientTable(new String[]{"coefficients",
-                        "standardized coefficients"}, model._output._glmModels[index]._output.beta(),
-                model._output._glmModels[index]._output.getNormBeta(), model._output._glmModels[index]._output._coefficient_names,
+        _coefficients_table[index] = genCoefficientTable(new String[]{"coefficients",
+                        "standardized coefficients"}, _glmModels[index]._output.beta(),
+                _glmModels[index]._output.getNormBeta(), _glmModels[index]._output._coefficient_names,
                 "Coefficients for " + modelNames[index]);
-        model._output._coefficient_names[index] = model._output._glmModels[index]._output._coefficient_names.clone();
+        _coefficient_names[index] = _glmModels[index]._output._coefficient_names.clone();
       }
     }
     

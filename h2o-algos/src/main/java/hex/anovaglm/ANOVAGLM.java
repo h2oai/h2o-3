@@ -165,7 +165,7 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
         _glmBuilder = buildGLMBuilders(_glmParams);
         _glmResults = ModelBuilderHelper.trainModelsParallel(_glmBuilder, _parms._nparallelism); // set to 4 according to Michalk
         model._output._glmModels = extractGLMModels(_glmResults);
-        model._output.copyGLMCoeffs(model, _modelNames);
+        model._output.copyGLMCoeffs(_modelNames);
         fillModelMetrics(model, model._output._glmModels[_numberOfPredCombo], _trainingFrames[_numberOfPredCombo]); // take full model metrics as our model metrics
         model.fillOutput(combineAndFlat(_predictComboNames), _degreeOfFreedom);
         _job.update(0, "Completed GLM model building.  Extracting metrics from GLM models and building" +
