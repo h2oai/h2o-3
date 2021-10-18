@@ -1,13 +1,13 @@
 def class_extensions():
     def result(self):
         """
-        Get result frame that contains the model name, model ID, best r2 values and predictors used in building the model.
+        Get result frame that contains information about the model building process like for maxrglm and anovaglm.
         
         :param self: 
         :return: 
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
-        
+
     def get_best_R2_values(self):
         """
         Get list of best R2 values of models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors

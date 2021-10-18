@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import static hex.anovaglm.ANOVAGLMUtils.generateGLMSS;
+import static hex.gam.MatrixFrameUtils.GAMModelUtils.genCoefficientTable;
 import static hex.glm.GLMModel.GLMParameters.*;
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
 
@@ -55,8 +56,9 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * Return the ANOVA table as an H2OFrame per seb suggestion
    * @return H2O Frame containing the ANOVA table as in the model summary
    */
+  @Override
   public Frame result() {
-    return generateANOVATableFrame();
+    return _output.generateResultFrame();
   }
   
   public static class ANOVAGLMParameters extends Model.Parameters {
@@ -135,11 +137,12 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
     public long _training_time_ms;
     public String[][] _coefficient_names; // coefficient names of all models
     Family _family;
+    Link _link;
     public Key<Frame> _transformed_columns_key;
     public TwoDimTable[] _coefficients_table;
-    public GLMModel[] _glmModels;
-    public String[] _modelNames;
-    public int[] _degreeOfFreedom;
+    GLMModel[] _glmModels;
+    String[] _modelNames;
+    int[] _degreeOfFreedom;
 
     @Override
     public ModelCategory getModelCategory() {
@@ -160,6 +163,71 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
       _dinfo = dinfo;
       _domains = dinfo._adaptedFrame.domains();
       _family = b._parms._family;
+      _link = b._parms._link;
+    }
+
+    /***
+     * This method will copy the GLM cofficients from all GLM models and stuff them into a TwoDimTable array for
+     * the AnovaGLMModel._output.
+     *
+     * @param model: AnovaGLMModel onto which the GLM coefficients will be copied to
+     * @param modelNames: string describing each GLM model built in terms of which predictor combo is left out.
+     */
+    public static void copyGLMCoeffs(ANOVAGLMModel model, String[] modelNames) {
+      int numModels = model._output._glmModels.length;
+      model._output._coefficients_table = new TwoDimTable[numModels];
+      model._output._coefficient_names = new String[numModels][];
+      for (int index = 0; index < numModels; index++) {
+        model._output._coefficients_table[index] = genCoefficientTable(new String[]{"coefficients",
+                        "standardized coefficients"}, model._output._glmModels[index]._output.beta(),
+                model._output._glmModels[index]._output.getNormBeta(), model._output._glmModels[index]._output._coefficient_names,
+                "Coefficients for " + modelNames[index]);
+        model._output._coefficient_names[index] = model._output._glmModels[index]._output._coefficient_names.clone();
+      }
+    }
+    
+    private Frame generateResultFrame() {
+      int lastModelIndex = _glmModels.length - 1;
+      String[] colNames = new String[]{"predictors_interactions", "family", "link", "ss", "df", "ms", "f", "p_value"};
+      String[] rowNames = new String[lastModelIndex];
+      String[] familyNames = new String[lastModelIndex];
+      String[] linkNames = new String[lastModelIndex];
+      double[] ss = generateGLMSS(_glmModels, _family);
+      double[] dof = Arrays.stream(_degreeOfFreedom).asDoubleStream().toArray();
+      double[] msA = new double[lastModelIndex];
+      double[] fA = new double[lastModelIndex];
+      double[] pValues = new double[lastModelIndex];
+
+      System.arraycopy(_modelNames, 0, rowNames, 0, lastModelIndex);
+      long dofFullModel = _glmModels[lastModelIndex]._output._training_metrics.residual_degrees_of_freedom();
+      double mse = ss[lastModelIndex]/dofFullModel;
+      double oneOverMse = 1.0/mse;
+      for (int rIndex = 0; rIndex < lastModelIndex; rIndex++) {
+        familyNames[rIndex] = _family.toString();
+        linkNames[rIndex] = _link.toString();
+
+        double ms = ss[rIndex]/_degreeOfFreedom[rIndex];
+        msA[rIndex] = ms;
+
+        double f = oneOverMse*ss[rIndex]/_degreeOfFreedom[rIndex];
+        fA[rIndex] = f;
+
+        FDistribution fdist = new FDistribution(_degreeOfFreedom[rIndex], dofFullModel);
+        double p_value = 1.0 - fdist.cumulativeProbability(f);
+        pValues[rIndex] = p_value;
+      }
+
+      Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+      Vec rNames = Vec.makeVec(rowNames, vg.addVec());
+      Vec fNames = Vec.makeVec(familyNames, vg.addVec());
+      Vec lNames = Vec.makeVec(linkNames, vg.addVec());
+      Vec sumSquares = Vec.makeVec(ss, vg.addVec());
+      Vec degOfFreedom = Vec.makeVec(dof, vg.addVec());
+      Vec msV = Vec.makeVec(msA, vg.addVec());
+      Vec fV = Vec.makeVec(fA, vg.addVec());
+      Vec pValuesV = Vec.makeVec(pValues, vg.addVec());
+      return new Frame(Key.<Frame>make(), colNames, new Vec[]{rNames, fNames, lNames, sumSquares,
+              degOfFreedom, msV, fV, pValuesV});
     }
   }
   
@@ -177,7 +245,7 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
    * @return a {@link TwoDimTable} representation of the result frame
    */
   public TwoDimTable generateSummary(){
-    Frame result = generateANOVATableFrame();
+    Frame result = result();
     int ncols = result.numCols();
     int nrows = (int) result.numRows();
     String[] names = result.names();
@@ -194,57 +262,14 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
         if (cIdx == 0) rowHeaders[rIdx] = v.stringAt(rIdx);
       }
     }
+    result.delete();
     return table;
-  }
-
-  public Frame generateANOVATableFrame() {
-    int lastModelIndex = _output._glmModels.length - 1;
-    String[] colNames = new String[]{"predictors_interactions", "family", "link", "ss", "df", "ms", "f", "p_value"};
-    String[] rowNames = new String[lastModelIndex];
-    String[] familyNames = new String[lastModelIndex];
-    String[] linkNames = new String[lastModelIndex];
-    double[] ss = generateGLMSS(_output._glmModels, _parms._family);
-    double[] dof = Arrays.stream(_output._degreeOfFreedom).asDoubleStream().toArray();
-    double[] msA = new double[lastModelIndex];
-    double[] fA = new double[lastModelIndex];
-    double[] pValues = new double[lastModelIndex];
-
-    System.arraycopy(_output._modelNames, 0, rowNames, 0, lastModelIndex);
-    long dofFullModel = _output._glmModels[lastModelIndex]._output._training_metrics.residual_degrees_of_freedom();
-    double mse = ss[lastModelIndex]/dofFullModel;
-    double oneOverMse = 1.0/mse;
-    for (int rIndex = 0; rIndex < lastModelIndex; rIndex++) {
-      familyNames[rIndex] = _parms._family.toString();
-      linkNames[rIndex] = _parms._link.toString();
-      
-      double ms = ss[rIndex]/_output._degreeOfFreedom[rIndex];
-      msA[rIndex] = ms;
-      
-      double f = oneOverMse*ss[rIndex]/_output._degreeOfFreedom[rIndex];
-      fA[rIndex] = f;
-
-      FDistribution fdist = new FDistribution(_output._degreeOfFreedom[rIndex], dofFullModel);
-      double p_value = 1.0 - fdist.cumulativeProbability(f);
-      pValues[rIndex] = p_value;
-    }
-    
-    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
-    Vec rNames = Vec.makeVec(rowNames, vg.addVec());
-    Vec fNames = Vec.makeVec(familyNames, vg.addVec());
-    Vec lNames = Vec.makeVec(linkNames, vg.addVec());
-    Vec sumSquares = Vec.makeVec(ss, vg.addVec());
-    Vec degOfFreedom = Vec.makeVec(dof, vg.addVec());
-    Vec msV = Vec.makeVec(msA, vg.addVec());
-    Vec fV = Vec.makeVec(fA, vg.addVec());
-    Vec pValuesV = Vec.makeVec(pValues, vg.addVec());
-    return new Frame(Key.<Frame>make(), colNames, new Vec[]{rNames, fNames, lNames, sumSquares,
-            degOfFreedom, msV, fV, pValuesV});
   }
   
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
-    Keyed.remove(_output._transformed_columns_key, fs, true);
+    Keyed.remove(_output._transformed_columns_key, fs, cascade);
     return fs;
   }
 
@@ -252,5 +277,12 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
   protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     if (_output._transformed_columns_key != null) ab.putKey(_output._transformed_columns_key);
     return super.writeAll_impl(ab);
+  }
+
+  @Override
+  protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    if (_output._transformed_columns_key != null)
+      ab.getKey(_output._transformed_columns_key, fs);
+    return super.readAll_impl(ab, fs);
   }
 }

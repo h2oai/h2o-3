@@ -11,10 +11,23 @@ def class_extensions():
         self._parms["lambda"] = value
 
     def result(self):
+        """
+        Get result frame that contains information about the model building process like for maxrglm and anovaglm.
+        
+        :param self: 
+        :return: 
+        """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
 
+
 extensions = dict(
-    __imports__="""import h2o""",
+    __imports__="""
+    import h2o
+    from h2o.base import Keyed
+    from h2o.frame import H2OFrame
+    from h2o.expr import ExprNode
+    from h2o.expr import ASTId
+    """,
     __class__=class_extensions,
     __init__validation="""
 if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
