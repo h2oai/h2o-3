@@ -17,24 +17,24 @@ def test_anovaglm_serialization():
     train[y] = train[y].asfactor()
     anovaglm_model = anovaglm(family='binomial', lambda_=0, missing_values_handling="skip")
     anovaglm_model.train(x=x, y=y, training_frame=train)
-    result_frame = anovaglm_model.result()
+
     tmpdir = tempfile.mkdtemp()
-    result_frame_filename = os.path.join(tmpdir, 'result_frame.csv')
-    h2o.download_csv(result_frame, result_frame_filename)
     model_path = anovaglm_model.download_model(tmpdir)
+    result_frame_filename = os.path.join(tmpdir, "result_frame.csv")
+    h2o.download_csv(anovaglm_model.result(), result_frame_filename)
     
     h2o.remove_all()
-    result_frame_original = h2o.import_file(result_frame_filename, header=1)
+    result_frame_original = h2o.import_file(result_frame_filename)
     loaded_anovaglm_model = h2o.load_model(model_path)
     result_frame_loaded = loaded_anovaglm_model.result()
-    for rind in list(range(0, result_frame_original.nrows)):
-        for cind in list(range(0, result_frame_original.ncols)):
+    for cind in list(range(0, result_frame_original.ncols)):
+        for rind in list(range(0, result_frame_original.nrows)):
             if result_frame_original.type(cind) == 'real':
-                assert abs(result_frame_original[rind, cind]-result_frame_loaded[rind, cind])<1e-6, \
-                    "Expected: {0}, Actual: {1}".format(result_frame_original[rind, cind], result_frame_loaded[rind, cind])
+                assert abs(result_frame_original[rind, cind]-result_frame_loaded[rind, cind]) < 1e-6, \
+                    "Expected: {0}. Actual: {1}".format(result_frame_original[rind, cind], result_frame_loaded[rind, cind])
             else:
-                assert result_frame_original[rind, cind] == result_frame_loaded[rind, cind], \
-                    "Expected: {0}, Actual: {1}".format(result_frame_original[rind, cind], result_frame_loaded[rind, cind])
+                assert result_frame_original[rind, cind]==result_frame_loaded[rind, cind], \
+                    "Expected: {0}. Actual: {1}".format(result_frame_original[rind, cind], result_frame_loaded[rind, cind])
             
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_anovaglm_serialization)
