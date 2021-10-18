@@ -173,8 +173,9 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
      * @param model: AnovaGLMModel onto which the GLM coefficients will be copied to
      * @param modelNames: string describing each GLM model built in terms of which predictor combo is left out.
      */
-    public static void copyGLMCoeffs(ANOVAGLMModel model, String[] modelNames) {
-      int numModels = model._output._glmModels.length;
+    void copyGLMCoeffs(String[] modelNames) {
+      int numModels = _glmModels.length;
+      ...
       model._output._coefficients_table = new TwoDimTable[numModels];
       model._output._coefficient_names = new String[numModels][];
       for (int index = 0; index < numModels; index++) {
