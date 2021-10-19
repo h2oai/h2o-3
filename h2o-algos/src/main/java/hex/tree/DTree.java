@@ -709,8 +709,14 @@ public class DTree extends Iced {
         // which might be because all predictor columns are now constant, or
         // because all responses are now constant.
         _splat = Float.NaN;
-        Arrays.fill(_nids,ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
+        Arrays.fill(_nids, ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
         return;
+      }
+      if(cs != null){
+        int constr = cs.getColumnConstraint(_split._col);
+        if(nid() != 0 && constr != 0) {
+          assert constr * _split._tree_p0 <= constr* parentPred() &&  constr * parentPred() <= constr * _split._tree_p1;
+        }
       }
       _splat = _split.splat(hs);
       for(int way = 0; way <2; way++ ) { // left / right
@@ -931,6 +937,18 @@ public class DTree extends Iced {
       assert _size == ab.position()-pos:"reported size = " + _size + " , real size = " + (ab.position()-pos);
       return ab;
     }
+    
+    private boolean isLeftChild(){
+      int[] parentNids = ((DecidedNode) _tree.node(pid()))._nids;
+      int index = ArrayUtils.indexOf(ArrayUtils.toIntegers(parentNids, 0, 2), _nid);
+      return index == 0;
+    }
+    
+    public double parentPred(){
+      Split parentSplit = ((DecidedNode) _tree.node(pid()))._split;
+      return isLeftChild() ? parentSplit._tree_p0 : parentSplit._tree_p1;
+    }
+    
   }
 
   public final static class LeafNode extends Node {
