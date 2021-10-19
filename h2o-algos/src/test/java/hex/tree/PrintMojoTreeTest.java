@@ -219,6 +219,7 @@ public class PrintMojoTreeTest {
             assertTrue(fileNames.get(i).endsWith(expectedFileNames[i]));
         } 
       } else {
+        assertTrue(Files.size(treeOutputPath) > 0);
         assertTrue(treeOutputPath.endsWith(expectedFileNames[0]));
       }
   }
