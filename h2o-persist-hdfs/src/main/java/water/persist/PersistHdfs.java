@@ -8,7 +8,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

@@ -57,7 +57,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri);
     }
     
-    public static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri) {
+    static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri) {
         new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser, uri).start();
     }
 
@@ -66,7 +66,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, null).start(renewalIntervalSecs);
     }
 
-    public static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
+    private static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
         FileUtils.makeSureDirExists(tmpDir);
         File keytabFile = new File(tmpDir, "hdfs_auth_keytab");
         byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(authKeytab);
@@ -176,7 +176,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         }
         for (int i = 0; i < _maxAttempts; i++) {
             try {
-                Credentials creds = refreshTokens(loginAuthUser(), _uri);
+                Credentials creds = refreshTokens(loginAuthUser());
                 distribute(creds);
                 return;
             } catch (IOException | InterruptedException e) {
@@ -190,10 +190,10 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         }
     }
 
-    private Credentials refreshTokens(UserGroupInformation tokenUser, String uri) throws IOException, InterruptedException {
+    private Credentials refreshTokens(UserGroupInformation tokenUser) throws IOException, InterruptedException {
         return tokenUser.doAs((PrivilegedExceptionAction<Credentials>) () -> {
             Credentials creds = new Credentials();
-            Token<?>[] tokens = fetchDelegationTokens(getRenewer(), creds, uri);
+            Token<?>[] tokens = fetchDelegationTokens(getRenewer(), creds, _uri);
             log("Fetched delegation tokens: " + Arrays.toString(tokens), null);
             return creds;
         });
@@ -203,7 +203,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         return _authUser != null ? _authUser : _authPrincipal;
     }
 
-    private UserGroupInformation loginAuthUser() throws IOException, InterruptedException{
+    private UserGroupInformation loginAuthUser() throws IOException {
         log("Log in from keytab as " + _authPrincipal, null);
         UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
         UserGroupInformation tokenUser = realUser;
@@ -216,7 +216,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     }
     
     private long getTokenRenewalIntervalSecs(UserGroupInformation tokenUser) throws IOException, InterruptedException {
-        Credentials creds = refreshTokens(tokenUser, _uri);
+        Credentials creds = refreshTokens(tokenUser);
         long intervalMillis = tokenUser.doAs((PrivilegedExceptionAction<Long>) () ->
             creds.getAllTokens()
                     .stream()
