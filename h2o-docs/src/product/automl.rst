@@ -63,7 +63,7 @@ Optional Data Parameters
 Optional Miscellaneous Parameters
 '''''''''''''''''''''''''''''''''
 
-- `nfolds <data-science/algo-params/nfolds.html>`__:  Specify a value >= 2 for the number of folds for k-fold cross-validation of the models in the AutoML run. This value defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance).
+- `nfolds <data-science/algo-params/nfolds.html>`__:  Specify a value >= 2 for the number of folds for k-fold cross-validation of the models in the AutoML run or specify "AUTO" to let AutoML choose if k-fold cross-validation or blending mode should be used. Blending mode will use part of ``training_frame`` (if no ``blending_frame`` is provided) to train Stacked Ensembles. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance). This value defaults to "AUTO".
 
 - `balance_classes <data-science/algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size calculated using the ``max_after_balance_size parameter``, then the majority classes will be undersampled to satisfy the size limit.
 
