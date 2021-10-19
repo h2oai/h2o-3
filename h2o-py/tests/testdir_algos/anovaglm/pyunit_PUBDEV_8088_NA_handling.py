@@ -11,6 +11,7 @@ def testFrameTransform():
   x = ['AGE','VOL','DCAPS']
   train[10,2] = None
   train[20,7] = None
+  train[y] = train[y].asfactor()
   # build model choosing skip
   model1 = H2OANOVAGLMEstimator(family='binomial', lambda_=0, missing_values_handling="skip")
   model1.train(x=x, y=y, training_frame=train)
