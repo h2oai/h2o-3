@@ -152,9 +152,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         """
         Create a new H2OAutoML instance.
         
-        :param int nfolds: Number of folds for k-fold cross-validation.
+        :param Union[int,str] nfolds: Number of folds for k-fold cross-validation.
             Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
-            Defaults to ``5``.
+            Defaults to ``"AUTO"``.
 
         :param bool balance_classes: Specify whether to oversample the minority classes to balance the class distribution. This option can increase
             the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size
@@ -404,7 +404,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     _extract_params_doc(getdoc(__init__))
     project_name = _aml_property('build_control.project_name', types=(None, str), freezable=True,
                                  validate_fn=__validate_project_name)
-    nfolds = _aml_property('build_control.nfolds', types=(int,), freezable=True,
+    nfolds = _aml_property('build_control.nfolds', types=(int, str), freezable=True,
                            validate_fn=__validate_nfolds)
     balance_classes = _aml_property('build_control.balance_classes', types=(bool,), freezable=True)
     class_sampling_factors = _aml_property('build_control.class_sampling_factors', types=(None, [numeric]), freezable=True)

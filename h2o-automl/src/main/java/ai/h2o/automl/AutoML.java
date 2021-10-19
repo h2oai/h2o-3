@@ -297,10 +297,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               .mapToInt((h2o) -> h2o._heartbeat._nthreads)
               .sum();
 
-      double r1 = Math.log((ncols * nrows) / (max_runtime * nthreads));
-      double r2 = Math.log((ncols * nrows) / Math.log(max_runtime * nthreads));
-      boolean use_blending = r1 > ((0.72*r2 - 12.86)/(-0.41));  // balanced (more conservative)
-      //boolean use_blending = r1 > ((0.7*r2 - 11.48)/(-0.37));  // unbalanced
+      boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2035;
 
       if (max_runtime > 0 && use_blending) {
         buildSpec.build_control.use_auto_blending = true;
