@@ -36,7 +36,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public static final String H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS = "h2o.auth.tokenRefresher.fallbackIntervalSecs";
     public final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
 
-    public static void setup(Configuration conf, String tmpDir, String uri, Runnable callback) throws IOException {
+    public static void setup(Configuration conf, String tmpDir, String uri) throws IOException {
         boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
         if (!enabled) {
             log("HDFS Token renewal is not enabled in configuration", null);
@@ -54,11 +54,11 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             return;
         }
         String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
-        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, callback);
+        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri);
     }
     
-    public static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri, Runnable callback) {
-        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser, uri, callback).start();
+    public static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri) {
+        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser, uri).start();
     }
 
     public static void startRefresher(Configuration conf,
@@ -84,7 +84,6 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private final int _retryDelaySecs;
     private final long _fallbackIntervalSecs;
     private final String _uri;
-    private Runnable _callback;
 
     public HdfsDelegationTokenRefresher(
             Configuration conf,
@@ -92,7 +91,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             String authKeytabPath,
             String authUser
     ) {
-        this(conf, authPrincipal, authKeytabPath, authUser, null, null);
+        this(conf, authPrincipal, authKeytabPath, authUser, null);
     }
 
     public  HdfsDelegationTokenRefresher(
@@ -100,8 +99,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             String authPrincipal,
             String authKeytabPath,
             String authUser,
-            String uri,
-            Runnable callback
+            String uri
     ) {
         _authPrincipal = authPrincipal;
         _authKeytabPath = authKeytabPath;
@@ -111,7 +109,6 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         _retryDelaySecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS, 10);
         _fallbackIntervalSecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS, 12 * 3600); // 12h
         _uri = uri;
-        _callback = callback;
         _executor = Executors.newSingleThreadScheduledExecutor(
                 new ThreadFactoryBuilder().setDaemon(true).setNameFormat(getThreadNameFormatForRefresher(
                         conf.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false),
@@ -136,7 +133,8 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         if (renewalIntervalSecs <= 0) {
             throw new IllegalArgumentException("Renewal interval needs to be a positive number, got " + renewalIntervalSecs);
         }
-        _executor.scheduleAtFixedRate(this, 0, renewalIntervalSecs, TimeUnit.SECONDS);
+        doRefresh();
+        _executor.scheduleAtFixedRate(this, renewalIntervalSecs, renewalIntervalSecs, TimeUnit.SECONDS);
     }
 
     private long autodetectRenewalInterval() {
@@ -167,6 +165,10 @@ public class HdfsDelegationTokenRefresher implements Runnable {
 
     @Override
     public void run() {
+        doRefresh();
+    }
+
+    private void doRefresh() {
         if (Paxos._cloudLocked && !(H2O.CLOUD.leader() == H2O.SELF)) {
             // cloud is formed the leader will take of subsequent refreshes
             _executor.shutdown();
@@ -176,9 +178,6 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             try {
                 Credentials creds = refreshTokens(loginAuthUser(), _uri);
                 distribute(creds);
-                if (_callback != null) {
-                    _callback.run();
-                }
                 return;
             } catch (IOException | InterruptedException e) {
                 log("Failed to refresh token (attempt " + i + " out of " + _maxAttempts + "). Will retry in " + _retryDelaySecs + "s.", e);

@@ -35,11 +35,11 @@ public final class PersistHdfs extends Persist {
   /** Root path of HDFS */
   private final Path _iceRoot;
 
-  public final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
   public static Configuration lastSavedHadoopConfiguration = null;
   
+  private static final String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
   private static final Set<String> bucketsWithDelegationToken = Collections.synchronizedSet(new HashSet<>());
-  private static final List<String> bucketsWithGenerationInProgress = new ArrayList<>();
+  private static final Object GENERATION_LOCK = new Object();
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -304,29 +304,15 @@ public final class PersistHdfs extends Persist {
     if (lastSavedHadoopConfiguration == null || !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
       return;
     }
-    if (isInBucketWithAlreadyExistingToken(p.toUri())) {
-      return;
-    }
 
-    final String bucketIdentifier = p.toUri().getHost();
-    synchronized (bucketsWithGenerationInProgress) {
-      if (bucketsWithGenerationInProgress.contains(bucketIdentifier)) {
+    synchronized (GENERATION_LOCK) {
+      if (isInBucketWithAlreadyExistingToken(p.toUri())) {
         return;
       }
-      bucketsWithGenerationInProgress.add(bucketIdentifier);
-    }
-
-    final CountDownLatch countDownLatch = new CountDownLatch(1);
-    HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString(), countDownLatch::countDown);
-    Log.debug("Path added to pathsWithToken: '" + p.toString() + "'");
-    try {
-      countDownLatch.await();
+      final String bucketIdentifier = p.toUri().getHost();
+      HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString());
+      Log.debug("Bucket added to bucketsWithDelegationToken: '" + bucketIdentifier + "'");
       bucketsWithDelegationToken.add(bucketIdentifier);
-      synchronized (bucketsWithGenerationInProgress) {
-        bucketsWithGenerationInProgress.remove(bucketIdentifier);
-      }
-    } catch (InterruptedException e) {
-      Log.err(e);
     }
   }
   
