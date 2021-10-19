@@ -400,14 +400,13 @@ Example **kerb.conf**:
          com.sun.security.auth.module.Krb5LoginModule required
     };
 
-If the default realm and/or KDC cannot be automatically detected (eg.: by resolving KDC using DNS) you might need to
-specify additional system properties `java.security.krb5.realm` and/or `java.security.krb5.kdc` when starting H2O
-(see example in Standalone H2O section).
+If the default realm and/or KDC cannot be automatically detected (e.g. by resolving KDC using DNS) you might need to
+specify additional system properties ``java.security.krb5.realm`` and/or ``java.security.krb5.kdc`` when starting H2O
+(see example in the **Standalone H2O** section).
 
 For more detail about Kerberos configuration:
 `Krb5LoginModule <https://docs.oracle.com/javase/8/docs/jre/api/security/jaas/spec/com/sun/security/auth/module/Krb5LoginModule.html>`__,
-`Jaas
-note <http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/AcnOnly.html>`__
+`Jaas note <http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/AcnOnly.html>`__
 
 Standalone H2O
 ''''''''''''''
