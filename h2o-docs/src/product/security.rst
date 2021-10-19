@@ -398,14 +398,16 @@ Example **kerb.conf**:
 
     krb5loginmodule {
          com.sun.security.auth.module.Krb5LoginModule required
-         java.security.krb5.realm="0XDATA.LOC"
-         java.security.krb5.kdc="ldap.0xdata.loc";
     };
 
+If the default realm and/or KDC cannot be automatically detected (eg.: by resolving KDC using DNS) you might need to
+specify additional system properties `java.security.krb5.realm` and/or `java.security.krb5.kdc` when starting H2O
+(see example in Standalone H2O section).
+
 For more detail about Kerberos configuration:
-`Krb5LoginModule <https://docs.oracle.com/javase/7/docs/jre/api/security/jaas/spec/com/sun/security/auth/module/Krb5LoginModule.html>`__,
+`Krb5LoginModule <https://docs.oracle.com/javase/8/docs/jre/api/security/jaas/spec/com/sun/security/auth/module/Krb5LoginModule.html>`__,
 `Jaas
-note <http://docs.oracle.com/javase/7/docs/technotes/guides/security/jgss/tutorials/AcnOnly.html>`__
+note <http://docs.oracle.com/javase/8/docs/technotes/guides/security/jgss/tutorials/AcnOnly.html>`__
 
 Standalone H2O
 ''''''''''''''
@@ -430,7 +432,7 @@ Example:
 
     java -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
 
-Example (on MacOS):
+Example (with realm and KDC explicitly specified):
 
 .. code-block:: bash
 
