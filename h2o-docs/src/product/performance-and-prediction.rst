@@ -2004,6 +2004,93 @@ Examples:
         # build the standardized coefficient magnitudes plot:
         glm.std_coef_plot()
 
+
+Gains/Lift 
+''''''''''
+
+Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used. The Gains/Lift chart shoes the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
+
+To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. For binning, H2O uses the following probabilities vector to create cut points:
+
+.. math::
+
+  (0.99, 0.98, 0.97, 0.96, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0)
+
+For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets).
+
+Example:
+
+.. tabs::
+    .. code-tab:: r R
+
+        # Import the airlines dataset:
+        airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+         model <- h2o.gbm(x = c("Origin", "Distance"), 
+                          y = "IsDepDelayed", 
+                          training_frame = airlines, 
+                          ntrees = 1, 
+                          gainslift_bins = 20)
+
+         # Plot the Gains/Lift chart:
+         gain_table = model@model$training_metrics@metrics$gains_lift_table
+         plot(gain_table$cumulative_data_fraction,
+              gain_table$cumulative_capture_rate,'l')
+
+.. figure:: images/gainslift_plot.png
+    :alt: Gains/Lift Plot
+    :scale: 30%
+
+In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
+
+- Cumulative data fractions
+- Threshold probability value
+- Lift (rate of lift)
+- Cumulative lift (percentage of increase in response based on the lift)
+- Response rates (proportion of observations that are events in a group)
+- Score
+- Cumulative response rate
+- Cumulative score
+- Event capture rate
+- Cumulative capture rate
+- Gain (difference in percentages between the overall proportion of events and the observed proportion of observations that are events in the group)
+- Cumulative gain
+- `Kolmogorov-Smirnov (KS) Metric`_
+
+Examples:
+
+.. tabs::
+      .. code-tab:: r R
+
+          # Import the airlines dataset:
+          airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+          # Build and train the model:
+          model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = airlines, ntrees = 1, gainslift_bins = 20)
+
+          # Print the Gains/Lift table:
+          print(h2o.gainsLift(model))
+
+      .. code-tab:: python
+
+        from h2o.estimators import H2OGradientBoostingEstimator
+
+        # Import the airlines dataset:
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
+
+        # Print the Gains/Lift table for the model:
+        print(model.gains_lift())
+
+.. figure:: images/gainslift_table.png
+  :alt: Gains/Lift Table
+  :scale: 150%
+
+
 Partial Dependence Plots
 ''''''''''''''''''''''''
 
