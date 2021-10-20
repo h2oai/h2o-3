@@ -177,10 +177,10 @@ ext {
     //
     // Optional H2O modules which can be included h2o.jar assembly
     // They can be enabled by passing parameter "-Pwith{componentName}=true"
-    // For example, `-PwithVisDataServer=true -PvisDataServerVersion=3.14.27`
+    // For example, `-PwithXgboost=true -PxgboostVersion=1.2.0.16`
+    //
     optionalComponents = [
             // NAME | VERSION | IS ENABLED? | HAS GENMODEL PART ?
-            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false, genmodel: false ],
             [name: "xgboost", version: "$version", enabled: true, genmodel: true ],
             [name: "jython-cfunc", version: "$version", enabled: true, genmodel: false],
             [name: "jgrapht", version: "$version", enabled: true, genmodel: true],
