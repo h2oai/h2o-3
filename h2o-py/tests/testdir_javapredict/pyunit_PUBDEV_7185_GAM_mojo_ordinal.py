@@ -10,7 +10,7 @@ def gam_ordinal_mojo():
     NTESTROWS = 200    # number of test dataset rows
     PROBLEM="multinomial"
     params = set_params()   # set deeplearning model parameters
-    df = pyunit_utils.random_dataset(PROBLEM, missing_fraction=0.001)   # generate random dataset
+    df = pyunit_utils.random_dataset(PROBLEM, missing_fraction=0.001, seed=12345)   # generate random dataset
     dfnames = df.names
     # add GAM specific parameters
     params["gam_columns"] = []
