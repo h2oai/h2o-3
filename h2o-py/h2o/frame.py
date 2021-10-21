@@ -4503,13 +4503,17 @@ class H2OFrame(Keyed):
     def asnumeric(self):
         """
         Create a new frame with all columns converted to numeric.
+
+        If you want to convert a column that is "enum" type to "numeric"
+        type, convert the column to "character" type first, then to "numeric". Otherwise, the values may be converted to underlying
+        factor values, not the expected mapped values.
         
         :returns: New frame with all columns converted to numeric.
 
         :examples:
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars.asnumeric()
+        >>> cars.ascharacter().asnumeric()
         """
         fr = H2OFrame._expr(expr=ExprNode("as.numeric", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
