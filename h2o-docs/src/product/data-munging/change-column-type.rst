@@ -3,7 +3,7 @@
 Changing the Column Type
 ------------------------
 
-H2O algorithms will treat a problem as a classification problem if the column type is ``factor`` and a regression problem if the column type is ``numeric``. You can force H2O to use either classification or regression by changing the column type. 
+H2O algorithms will treat a problem as a classification problem if the column type is ``factor`` and a regression problem if the column type is ``numeric``. You can force H2O to use either classification or regression by changing the column type.
 
 .. tabs::
    .. code-tab:: r R
