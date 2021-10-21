@@ -34,6 +34,6 @@ test.pvalue.syn.tweedie <- function(conn){
 	print(r_pval)
 	print("p vaule differences: ")
 	print(diff)
-	expect_equal(r_pval,h_pval,tolerance = 1e-4)
+	expect_equal(r_pval,h_pval,tolerance = 2e-4)
 }
 doTest("Test p-values with offset on synthetic data for Tweedie", test.pvalue.syn.tweedie)
