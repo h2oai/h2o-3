@@ -6,8 +6,7 @@ import org.apache.hadoop.fs.*;
 import java.io.*;
 import java.net.SocketTimeoutException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,6 +19,7 @@ import water.Value;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
+import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -33,6 +33,12 @@ public final class PersistHdfs extends Persist {
   public static final Configuration CONF;
   /** Root path of HDFS */
   private final Path _iceRoot;
+
+  public static Configuration lastSavedHadoopConfiguration = null;
+  
+  private static final String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
+  private static final Set<String> bucketsWithDelegationToken = Collections.synchronizedSet(new HashSet<>());
+  private static final Object GENERATION_LOCK = new Object();
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -89,7 +95,7 @@ public final class PersistHdfs extends Persist {
     try {
       _iceRoot = new Path(uri + "/ice" + H2O.SELF_ADDRESS.getHostAddress() + "-" + H2O.API_PORT);
       // Make the directory as-needed
-      FileSystem fs = FileSystem.get(_iceRoot.toUri(), CONF);
+      FileSystem fs = getFileSystem(_iceRoot, CONF);
       fs.mkdirs(_iceRoot);
     } catch( Exception e ) {
       throw Log.throwErr(e);
@@ -191,7 +197,7 @@ public final class PersistHdfs extends Persist {
     long start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(max);
     run(() -> {
-        FileSystem fs = FileSystem.get(p.toUri(), CONF);
+        FileSystem fs = getFileSystem(p, CONF);
         FSDataInputStream s = null;
         try {
           s = fs.open(p);
@@ -224,7 +230,7 @@ public final class PersistHdfs extends Persist {
 
   public static void store(final Path path, final byte[] data) {
     run(() -> {
-        FileSystem fs = FileSystem.get(path.toUri(), CONF);
+        FileSystem fs = getFileSystem(path, CONF);
         fs.mkdirs(path.getParent());
         try (FSDataOutputStream s = fs.create(path)) {
           s.write(data);
@@ -239,7 +245,7 @@ public final class PersistHdfs extends Persist {
 
     run(() -> {
         Path p = new Path(_iceRoot, getIceName(v));
-        FileSystem fs = FileSystem.get(p.toUri(), CONF);
+        FileSystem fs = getFileSystem(p, CONF);
         fs.delete(p, true);
         return null;
     });
@@ -279,13 +285,38 @@ public final class PersistHdfs extends Persist {
     } catch( InterruptedException ie ) {}
   }
 
-  public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException {
-    FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
-    if(!fs.exists(p)){
-      failed.add("Path does not exist: '" + p.toString() + "'");
+  public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
+      FileSystem fs = getFileSystem(p, PersistHdfs.CONF);
+      if(!fs.exists(p)){
+        failed.add("Path does not exist: '" + p.toString() + "'");
+        return;
+      }
+      addFolder(fs, p, keys, failed);
+  }
+
+  public static void startDelegationTokenRefresher(Path p) throws IOException {
+    if (lastSavedHadoopConfiguration == null || !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
       return;
     }
-    addFolder(fs, p, keys, failed);
+
+    synchronized (GENERATION_LOCK) {
+      if (isInBucketWithAlreadyExistingToken(p.toUri())) {
+        return;
+      }
+      final String bucketIdentifier = p.toUri().getHost();
+      HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString());
+      Log.debug("Bucket added to bucketsWithDelegationToken: '" + bucketIdentifier + "'");
+      bucketsWithDelegationToken.add(bucketIdentifier);
+    }
+  }
+  
+  private static boolean isInBucketWithAlreadyExistingToken(URI uri) {
+    if (!"s3a".equals(uri.getScheme())) {
+      // if it is something else than s3a, return true to fallback to original behaviour and not generate token
+      Log.debug("Scheme is not s3a: " + uri.getScheme());
+      return true;
+    }
+    return bucketsWithDelegationToken.contains(uri.getHost());
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
@@ -315,8 +346,9 @@ public final class PersistHdfs extends Persist {
     assert "hdfs".equals(uri.getScheme()) || "s3".equals(uri.getScheme())
             || "s3n".equals(uri.getScheme()) || "s3a".equals(uri.getScheme()) : "Expected hdfs, s3 s3n, or s3a scheme, but uri is " + uri;
 
-    FileSystem fs = FileSystem.get(uri, PersistHdfs.CONF);
-    FileStatus[] fstatus = fs.listStatus(new Path(uri));
+    Path path = new Path(uri);
+    FileSystem fs = getFileSystem(path, PersistHdfs.CONF);
+    FileStatus[] fstatus = fs.listStatus(path);
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
 
     return HDFSFileVec.make(fstatus[0].getPath().toString(), fstatus[0].getLen());
@@ -355,7 +387,7 @@ public final class PersistHdfs extends Persist {
       Path p = new Path(filter);
       Path expand = p;
       if( !filter.endsWith("/") ) expand = p.getParent();
-      FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
+      FileSystem fs = getFileSystem(p, PersistHdfs.CONF);
       for( FileStatus file : fs.listStatus(expand) ) {
         Path fp = file.getPath();
         if( fp.toString().startsWith(p.toString()) ) {
@@ -412,8 +444,7 @@ public final class PersistHdfs extends Persist {
   public PersistEntry[] list(String path) {
     try {
       Path p = new Path(path);
-      URI uri = p.toUri();
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       FileStatus[] arr1 = fs.listStatus(p);
       PersistEntry[] arr2 = new PersistEntry[arr1.length];
       for (int i = 0; i < arr1.length; i++) {
@@ -429,9 +460,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public boolean exists(String path) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       return fs.exists(p);
     }
     catch (IOException e) {
@@ -448,9 +478,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public boolean isDirectory(String path) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       return fs.isDirectory(p);
     }
     catch (IOException e) {
@@ -461,9 +490,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public long length(String path) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       return fs.getFileStatus(p).getLen();
     }
     catch (IOException e) {
@@ -479,9 +507,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public InputStream openSeekable(String path) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       return fs.open(p);
     }
     catch (IOException e) {
@@ -500,9 +527,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public boolean mkdirs(String path) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       // Be consistent with Java API and File#mkdirs
       if (fs.exists(p)) {
         return false;
@@ -519,9 +545,8 @@ public final class PersistHdfs extends Persist {
   public boolean rename(String fromPath, String toPath) {
     Path f = new Path(fromPath);
     Path t = new Path(toPath);
-    URI uri = f.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(f, CONF);
       return fs.rename(f, t);
     }
     catch (IOException e) {
@@ -532,9 +557,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public OutputStream create(String path, boolean overwrite) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       return fs.create(p, overwrite);
     }
     catch (IOException e) {
@@ -545,9 +569,8 @@ public final class PersistHdfs extends Persist {
   @Override
   public boolean delete(String path) {
     Path p = new Path(path);
-    URI uri = p.toUri();
     try {
-      FileSystem fs = FileSystem.get(uri, CONF);
+      FileSystem fs = getFileSystem(p, CONF);
       return fs.delete(p, true);
     }
     catch (IOException e) {
@@ -564,5 +587,10 @@ public final class PersistHdfs extends Persist {
     } catch (IOException e) {
       return false;
     }
+  }
+  
+  private static FileSystem getFileSystem(Path path, Configuration configuration) throws IOException {
+    startDelegationTokenRefresher(path);
+    return FileSystem.get(path.toUri(), configuration);
   }
 }

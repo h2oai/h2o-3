@@ -3,6 +3,7 @@ package water.persist.security;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -16,6 +17,7 @@ import water.util.BinaryFileTransfer;
 import water.util.FileUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
@@ -32,8 +34,9 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public static final String H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS = "h2o.auth.tokenRefresher.maxAttempts";
     public static final String H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS = "h2o.auth.tokenRefresher.retryDelaySecs";
     public static final String H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS = "h2o.auth.tokenRefresher.fallbackIntervalSecs";
+    public final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
 
-    public static void setup(Configuration conf, String tmpDir) throws IOException {
+    public static void setup(Configuration conf, String tmpDir, String uri) throws IOException {
         boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
         if (!enabled) {
             log("HDFS Token renewal is not enabled in configuration", null);
@@ -51,12 +54,11 @@ public class HdfsDelegationTokenRefresher implements Runnable {
             return;
         }
         String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
-        startRefresher(conf, authPrincipal, authKeytabPath, authUser);
+        startRefresher(conf, authPrincipal, authKeytabPath, authUser, uri);
     }
-
-    static void startRefresher(Configuration conf,
-                               String authPrincipal, String authKeytabPath, String authUser) {
-        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser).start();
+    
+    static void startRefresher(Configuration conf, String authPrincipal, String authKeytabPath, String authUser, String uri) {
+        new HdfsDelegationTokenRefresher(conf, authPrincipal, authKeytabPath, authUser, uri).start();
     }
 
     public static void startRefresher(Configuration conf,
@@ -72,9 +74,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         return keytabFile.getAbsolutePath();
     }
 
-    private final ScheduledExecutorService _executor = Executors.newSingleThreadScheduledExecutor(
-            new ThreadFactoryBuilder().setDaemon(true).setNameFormat("hdfs-token-refresher-%d").build()
-    );
+    private final ScheduledExecutorService _executor;
 
     private final String _authPrincipal;
     private final String _authKeytabPath;
@@ -83,12 +83,23 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private final int _maxAttempts;
     private final int _retryDelaySecs;
     private final long _fallbackIntervalSecs;
+    private final String _uri;
 
     public HdfsDelegationTokenRefresher(
             Configuration conf,
             String authPrincipal,
             String authKeytabPath,
             String authUser
+    ) {
+        this(conf, authPrincipal, authKeytabPath, authUser, null);
+    }
+
+    public  HdfsDelegationTokenRefresher(
+            Configuration conf,
+            String authPrincipal,
+            String authKeytabPath,
+            String authUser,
+            String uri
     ) {
         _authPrincipal = authPrincipal;
         _authKeytabPath = authKeytabPath;
@@ -97,6 +108,20 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         _maxAttempts = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_MAX_ATTEMPTS, 12);
         _retryDelaySecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_RETRY_DELAY_SECS, 10);
         _fallbackIntervalSecs = conf.getInt(H2O_AUTH_TOKEN_REFRESHER_FALLBACK_INTERVAL_SECS, 12 * 3600); // 12h
+        _uri = uri;
+        _executor = Executors.newSingleThreadScheduledExecutor(
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat(getThreadNameFormatForRefresher(
+                        conf.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false),
+                        uri)).build());
+    }
+    
+    private String getThreadNameFormatForRefresher(boolean isDynamicS3ATokenRefresherEnabled, String uri) {
+        if (isDynamicS3ATokenRefresherEnabled && uri != null) {
+            String bucketIdentifier = new Path(uri).toUri().getHost();
+            return "s3a-hdfs-token-refresher-" +  bucketIdentifier + "-%d";
+        } else {
+            return "hdfs-token-refresher-%d";
+        }
     }
 
     void start() {
@@ -108,7 +133,8 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         if (renewalIntervalSecs <= 0) {
             throw new IllegalArgumentException("Renewal interval needs to be a positive number, got " + renewalIntervalSecs);
         }
-        _executor.scheduleAtFixedRate(this, 0, renewalIntervalSecs, TimeUnit.SECONDS);
+        doRefresh();
+        _executor.scheduleAtFixedRate(this, renewalIntervalSecs, renewalIntervalSecs, TimeUnit.SECONDS);
     }
 
     private long autodetectRenewalInterval() {
@@ -139,6 +165,10 @@ public class HdfsDelegationTokenRefresher implements Runnable {
 
     @Override
     public void run() {
+        doRefresh();
+    }
+
+    private void doRefresh() {
         if (Paxos._cloudLocked && !(H2O.CLOUD.leader() == H2O.SELF)) {
             // cloud is formed the leader will take of subsequent refreshes
             _executor.shutdown();
@@ -163,7 +193,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     private Credentials refreshTokens(UserGroupInformation tokenUser) throws IOException, InterruptedException {
         return tokenUser.doAs((PrivilegedExceptionAction<Credentials>) () -> {
             Credentials creds = new Credentials();
-            Token<?>[] tokens = fetchDelegationTokens(getRenewer(), creds);
+            Token<?>[] tokens = fetchDelegationTokens(getRenewer(), creds, _uri);
             log("Fetched delegation tokens: " + Arrays.toString(tokens), null);
             return creds;
         });
@@ -173,7 +203,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         return _authUser != null ? _authUser : _authPrincipal;
     }
 
-    private UserGroupInformation loginAuthUser() throws IOException, InterruptedException{
+    private UserGroupInformation loginAuthUser() throws IOException {
         log("Log in from keytab as " + _authPrincipal, null);
         UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
         UserGroupInformation tokenUser = realUser;
@@ -209,8 +239,13 @@ public class HdfsDelegationTokenRefresher implements Runnable {
                 intervalMillis / 1000 : 0L;
     }
 
-    private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials) throws IOException {
-        return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+    private static Token<?>[] fetchDelegationTokens(String renewer, Credentials credentials, String uri) throws IOException {
+        if (uri != null) {
+            log("Fetching a delegation token for not-null uri: '" + uri, null);
+            return FileSystem.get(URI.create(uri), PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        } else {
+            return FileSystem.get(PersistHdfs.CONF).addDelegationTokens(renewer, credentials);
+        }
     } 
     
     private void distribute(Credentials creds) throws IOException {
