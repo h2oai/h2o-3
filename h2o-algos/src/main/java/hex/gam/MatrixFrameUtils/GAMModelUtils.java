@@ -189,6 +189,8 @@ public class GAMModelUtils {
     String[] glmColNames = glm._output.coefficientNames();
     int lastGLMCoeffIndex = glmColNames.length-1;
     int lastGAMCoeffIndex = lastGLMCoeffIndex+gamNoCenterCoeffLength(model._parms);
+    if (model._gamColNames == null) 
+      System.out.println("Gam columnnames are null");
     int gamNumColStart = find(glmColNames, model._gamColNames[0][0]);
     int gamLengthCopied = gamNumColStart;
     System.arraycopy(glmColNames, 0, model._output._coefficient_names_no_centering, 0, gamLengthCopied); // copy coeff names before gam columns
