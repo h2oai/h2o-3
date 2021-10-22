@@ -13,6 +13,7 @@ import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
+import hex.ensemble.StackedEnsembleModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -297,8 +298,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               .mapToInt((h2o) -> h2o._heartbeat._nthreads)
               .sum();
 
-      boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2035;
-
+      boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2064;
+      Log.warn("R coefficient = " + ((ncols * nrows) / (max_runtime * nthreads)));
       if (max_runtime > 0 && use_blending) {
         buildSpec.build_control.use_auto_blending = true;
         buildSpec.build_control.nfolds = 0;
@@ -492,6 +493,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (!_buildSpec.build_control.keep_cross_validation_predictions) {
       cleanUpModelsCVPreds();
     }
+
+    // Delete base model predictions
+    Arrays.stream(leaderboard().getModels())
+            .filter(model -> model instanceof StackedEnsembleModel)
+            .forEach(model -> ((StackedEnsembleModel) model).deleteBaseModelPredictions());
   }
 
   /**
