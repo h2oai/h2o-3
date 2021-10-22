@@ -79,4 +79,18 @@ H2O algorithms will treat a problem as a classification problem if the column ty
 		# [True, True]
 
 
+If the column type is ``enum`` and you want to convert it to ``numeric``, you should first convert it to ``character`` then convert it to ``numeric``. Otherwise, the values may be converted to underlying factor values, not the expected mapped values.
+
+.. tabs::
+	.. code-tab:: r R
+
+		# Using the data from the above example, convert the 'name' column  to numeric:
+		cars_df["name"] <- as.character(cars_df["name"])
+		cars_df["name"] <- as.numeric(cars_df["name"])
+
+
+	.. code-tab:: python
+
+		# Using the data from the above example, convert the 'name' column  to numeric:
+		cars_df['name'] = cars_df['name'].ascharacter().asnumeric()
 		

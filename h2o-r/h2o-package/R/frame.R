@@ -3372,8 +3372,10 @@ h2o.asfactor <- function(x) {
   as.factor(x)
 }
 
-#'
 #' Convert H2O Data to Numerics
+#' 
+#' If the column type is enum and you want to convert it to numeric, you should first convert it to character then convert it to numeric. 
+#' Otherwise, the values may be converted to underlying factor values, not the expected mapped values.
 #'
 #' @name h2o.asnumeric
 #' @param x An H2OFrame object.
@@ -3385,6 +3387,7 @@ h2o.asfactor <- function(x) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
+#' h2o.ascharacter(cars)
 #' h2o.asnumeric(cars)
 #' }
 #' @export
@@ -4506,7 +4509,8 @@ as.character.H2OFrame <- function(x, ...) {
 
 #' Convert H2O Data to Numeric
 #'
-#' Converts an H2O column into a numeric value column.
+#' Converts an H2O column into a numeric value column. If the column type is enum and you want to convert it to numeric, you should first convert it 
+#' to character then convert it to numeric. Otherwise, the values may be converted to underlying factor values, not the expected mapped values.
 #' @param x a column from an H2OFrame data set.
 #' @examples
 #' \dontrun{
