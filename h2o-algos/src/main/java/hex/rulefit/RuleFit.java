@@ -164,6 +164,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         if (_parms._weights_column != null) {
             glmParameters._weights_column = "linear." + _parms._weights_column;
         }
+        glmParameters._auc_type = _parms._auc_type;
     }
 
 
