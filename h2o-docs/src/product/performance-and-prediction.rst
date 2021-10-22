@@ -2008,7 +2008,7 @@ Examples:
 Gains/Lift 
 ''''''''''
 
-Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used. The Gains/Lift chart shoes the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
+Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used. The Gains/Lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
 
 To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. For binning, H2O uses the following probabilities vector to create cut points:
 
@@ -2017,6 +2017,13 @@ To compute Gains/Lift, H2O applies the model to the original dataset to find the
   (0.99, 0.98, 0.97, 0.96, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0)
 
 For each group, the lift is calculated as the proportion of observations that are events (targets) in the group to the overall proportion of events (targets).
+
+**An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100000 customers and predict the results of contacting only the top 10000 customers, the top 20000 customers, and so on. You do this by:
+
+- taking the dataset, sending it through your model, and obtaining a list of predicted output which is the probability of positive response;
+- sorting your dataset according to the output of your model which is the probability of positive response (this probability can also be called the **score**)
+
+**Cumulative gains and lift charts** are a graphical representation of the advantage of using a predictive model to choose which customers to target/contact. On the cumulative gains chart, the y-axis shows the percentage of positive responses out of a total possible positive responses. The x-axis shows the percentage of customers contacted. The lift chart shows how much more likely you are to receive responses than if you contacted a random sample of customers.
 
 Example:
 
@@ -2044,18 +2051,47 @@ Example:
 
 In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
 
-- Cumulative data fractions
-- Threshold probability value
-- Lift (rate of lift)
-- Cumulative lift (percentage of increase in response based on the lift)
-- Response rates (proportion of observations that are events in a group)
-- Score
-- Cumulative response rate
-- Cumulative score
-- Event capture rate
-- Cumulative capture rate
-- Gain (difference in percentages between the overall proportion of events and the observed proportion of observations that are events in the group)
-- Cumulative gain
+- **Cumulative data fractions**: fraction of data used to calculate gain and lift at
+- **Lower threshold**: the lowest score output of the dataset in the data fraction bin
+- **Lift and Cumulative lift**: ratio of cumulative response rate and average response rate.
+- **Response rate**: total number of positive classes / total number of data rows in the dataset
+- **Score and Cumulative score**: the average of all the classifier output probabilities for each individual data fraction bin
+- **Cumulative response rate**: (based on the above written example) for the first bin, it is the number of positive response over 10000; for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
+- **Capture rate**: for each bin it is the ratio of positive classes in each bin divided by the total number of positive classes in your dataset
+- **Cumulative capture rate**: for the first bin, it is just the capture rate; the second bin is the ratio of (sum of number of positive classes for the first two bins) and the total number of positive classes in your dataset
+- **Gain and Cumulative gain**: calculated for each bin in a cumulative manner; 
+
+    - for the first bin:
+
+    .. math::
+
+        (\text{number of positive response in first bin})/
+
+    .. math::
+
+        (\text{number of data in first bin}\times \text{average response rate})-1
+
+    - for the second bin:
+
+    .. math::
+
+        (\text{number of positive response in the first and second bins})/
+
+    .. math::
+
+        (\text{number of data in first and second bins}\times \text{average response rate})-1
+
+    - for the third bin:
+
+    .. math::
+
+        (\text{number of positive response in the first, second, and third bins})/
+
+    .. math::
+
+        (\text{number of data in first, second, and third bins}\times \text{average response rate})-1
+
+    - and so on
 - `Kolmogorov-Smirnov (KS) Metric`_
 
 Examples:
