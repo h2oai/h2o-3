@@ -36,7 +36,8 @@ class BuildConfig {
   // always run
   public static final String COMPONENT_ANY = 'any'
   public static final String COMPONENT_HADOOP = 'hadoop'
-  public static final List<String> TEST_PACKAGES_COMPONENTS = [COMPONENT_PY, COMPONENT_R, COMPONENT_JS, COMPONENT_JAVA, COMPONENT_HADOOP]
+  public static final String COMPONENT_MINIMAL = 'minimal' 
+  public static final List<String> TEST_PACKAGES_COMPONENTS = [COMPONENT_PY, COMPONENT_R, COMPONENT_JS, COMPONENT_JAVA, COMPONENT_HADOOP, COMPONENT_MINIMAL]
 
   public static final String H2O_JAR_STASH_NAME = 'h2o-3-stash-jar'
   private static final String TEST_PACKAGE_STASH_NAME_PREFIX = 'h2o-3-stash'
@@ -54,7 +55,7 @@ class BuildConfig {
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
 
-  private static final List<String> STASH_ALWAYS_COMPONENTS = [COMPONENT_R]
+  private static final List<String> STASH_ALWAYS_COMPONENTS = [COMPONENT_R, COMPONENT_MINIMAL]
 
   private static final String JACOCO_GRADLE_OPT = 'jacocoCoverage'
 

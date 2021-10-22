@@ -70,6 +70,9 @@ lookup-demos-tests: init-lookup
 test-py-smoke:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g
 
+test-py-smoke-minimal:
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testlist ../../tests/pyunitSmokeTestList --numclouds 6 --jvm.xmx 3g --h2ojar ../../h2o-assemblies/minimal/build/libs/minimal.jar 
+
 test-py-init:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/testdir_apis/H2O_Init \
 	 && python h2o.init_test.py \
@@ -230,6 +233,11 @@ test-package-gradle:
 	    -x h2o-web/* \
 	    -x h2o-bindings/* \
 	    -@
+
+test-package-minimal:
+	zip -q -r test-package-minimal \
+	    h2o-assemblies/minimal/build/libs/minimal.jar \
+		tests/leakCheckKeywords
 
 test-package-java:
 	zip -q -r test-package-java \
