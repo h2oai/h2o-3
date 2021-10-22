@@ -687,13 +687,14 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.34.0.1 - Summer 2021
+### H2O 3.36.01 - Fall 2021
 
-* [[PUBDEV-7138]](https://h2oai.atlassian.net/browse/PUBDEV-7138) Extended Isolation Forest Algorithm
 * [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) Uplift Trees
-* [[PUBDEV-8088]](https://h2oai.atlassian.net/browse/PUBDEV-8088) ANOVA Type III test for GLM
-* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML
-* [[PUBDEV-8113]](https://h2oai.atlassian.net/browse/PUBDEV-8113) RuleFit MOJO
+* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML (Infogram, ...)
+* Data Ingest Improvements (Secured Hive in Standalone, IDBroker on CDP)
+* Extended Isolation Forest MOJO
+* New features ICE plots (including ability to run on MOJO/POJO)
+* Improvements in RuleFit (including multinomial support)
 
 <a name="Community"></a>
 ## 11. Community
