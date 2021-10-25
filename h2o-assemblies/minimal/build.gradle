@@ -21,15 +21,16 @@ configurations {
     compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
     compile.exclude group: 'org.openjdk.jmh'
     compile.exclude group: 'log4j'
+    compile.exclude module: 'h2o-logging-impl-classic'
 }
 
 // Dependencies
 dependencies {
     compile(project(":h2o-app")) {
-        exclude module: ":h2o-logging-impl-classic"
+        exclude module: "${defaultWebserverModule}"
     }
     compile project(":h2o-logging-impl-log4j2")
-    runtime project(":${defaultWebserverModule}")
+    runtime project(":h2o-jetty-9-minimal")
     compile project(":h2o-web")
     compile project(":h2o-persist-http")
     compile project(":h2o-ext-mojo-pipeline")

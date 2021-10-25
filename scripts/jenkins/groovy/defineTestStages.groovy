@@ -67,6 +67,11 @@ def call(final pipelineContext) {
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
     [
+      stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_MINIMAL]
+    ],
+    [
       stageName: 'Java 8 RuleFit', target: 'test-junit-rulefit-jenkins', pythonVersion: '2.7', javaVersion: 8,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
