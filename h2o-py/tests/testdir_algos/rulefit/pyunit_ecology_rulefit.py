@@ -19,28 +19,35 @@ def ecology():
     rfit = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
     rfit.train(training_frame=train, x=x, y=y, validation_frame=test)
 
-    assert rfit.rmse(valid=True) is not None, "validation metrics should be present"
 
+    # add a new class into the response column to get multinomial model similar to previous binomial one
+    python_lists=[[0, 2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1, 0.0]]
+    h2oframe = h2o.H2OFrame(python_obj=python_lists, column_names=df.names, column_types=df.types, na_strings=['NA'])
+    df = df.concat(h2oframe,0)
+    
+    # Split the dataset into train and test
+    train, test = df.split_frame(ratios=[.8], seed=1234)
 
+    rfit_multi = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=10, max_num_rules=100, seed=1234, model_type="rules")
+    rfit_multi.train(training_frame=train, x=x, y=y, validation_frame=test)
+
+    # Print rules and metrics for comparision:
+    print("Binomial model rules:")
     print(rfit.rule_importance())
-    assert rfit._model_json["output"]["model_summary"] is not None, "model_summary should be present"
-    assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0, "model_summary's content should be present"
 
-    rfit_predictions = rfit.predict(test)
+    print("Multinomial model rules:")
+    print(rfit_multi.rule_importance())
+    
+    print("Binomial train RMSE vs. multinomial train RMSE:")
+    print(str(rfit.rmse()) + " vs. " + str(rfit_multi.rmse()))
+    print("Binomial train MSE vs. multinomial train MSE: ")
+    print(str(rfit.mse()) + " vs. " + str(rfit_multi.mse()))
+    print("Binomial valid RMSE vs. multinomial valid RMSE: ")
+    print(str(rfit.rmse(valid=True)) + " vs. " + str(rfit_multi.rmse(valid=True)))
+    print("Binomial valid MSE vs. multinomial valid MSE: ")
+    print(str(rfit.mse(valid=True)) + " vs. " + str(rfit_multi.mse(valid=True)))
 
-    import tempfile
-    tmpdir = tempfile.mkdtemp()
 
-    try:
-        mojo_path = rfit.save_mojo(tmpdir)
-        mojo_model = h2o.upload_mojo(mojo_path)
-    finally:
-        import shutil
-        shutil.rmtree(tmpdir)
-
-    mojo_predictions = mojo_model.predict(test)
-
-    assert pyunit_utils.compare_frames(rfit_predictions, mojo_predictions, 0)
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(ecology)
