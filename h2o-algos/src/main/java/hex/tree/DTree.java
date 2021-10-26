@@ -712,10 +712,12 @@ public class DTree extends Iced {
         Arrays.fill(_nids, ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
         return;
       }
-      if(cs != null){
+      if(cs != null) {
         int constr = cs.getColumnConstraint(_split._col);
-        if(nid() != 0 && constr != 0) {
-          assert constr * _split._tree_p0 <= constr* parentPred() &&  constr * parentPred() <= constr * _split._tree_p1;
+        if (!cs._dist._family.equals(DistributionFamily.quantile) && nid() != 0 && constr != 0) {
+            assert constr * _split._tree_p0 <= constr * parentPred() && constr * parentPred() <= constr * _split._tree_p1 :
+                    "Parent prediction and children prediction is not consistent. Parent prediction " + constr * parentPred() +
+                            " should be in interval of the children: " + constr * _split._tree_p0 + " " + constr * _split._tree_p1;
         }
       }
       _splat = _split.splat(hs);
