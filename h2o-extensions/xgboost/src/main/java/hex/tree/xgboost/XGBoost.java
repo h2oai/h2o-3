@@ -281,8 +281,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private void checkColumnAlias(String paramName, double paramValue, String aliasName, double aliasValue, double defaultValue) {
     if (paramValue != defaultValue && aliasValue != defaultValue && paramValue != aliasValue) {
       error("_" + paramName, paramName + " and its alias " + aliasName + " are both set to different value than default value. Set " + aliasName + " to default value (" + defaultValue + "), to use " + paramName + " actual value.");
-    }
-    if (aliasValue != defaultValue){
+    } else if (aliasValue != defaultValue){
       warn("_"+paramName, "Using user-provided parameter "+aliasName+" instead of "+paramName+".\"");
     }
   }

@@ -232,6 +232,7 @@ public class XGBoostSteps extends ModelingSteps {
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
                     XGBoostParameters params = (XGBoostParameters) bestXGB._parms.clone();
                     params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    params._n_estimators = params._ntrees; // during training, XGBoost model was set with n_estimators=n_trees, and now we have to sync this old alias!
                     params._max_runtime_secs = 0; // reset max runtime
                     params._learn_rate_annealing = 0.99;
                     initTimeConstraints(params, maxRuntimeSecs);
@@ -271,6 +272,8 @@ public class XGBoostSteps extends ModelingSteps {
                     setStoppingCriteria(params, defaults); // keep the same seed as the bestXGB
                     // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
                     params._eta = defaults._eta;
+                    // during training, XGBoost model was set with n_estimators=n_trees, and now we have to sync or reset this old alias, also annoying!
+                    params._n_estimators = defaults._n_estimators; 
 //                    params._learn_rate = defaults._learn_rate;
 
                     // keep stopping_rounds fixed, but increases score_tree_interval when lowering learn rate
