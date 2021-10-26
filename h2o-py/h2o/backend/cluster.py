@@ -4,6 +4,7 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 import json
+import re
 import sys
 import time
 
@@ -261,19 +262,8 @@ class H2OCluster(H2OSchema):
     def _translate_job_type(self, type):
         if type is None:
             return ('Removed')
-        type_mapping = dict([
-            ('Key<Frame>', 'Frame'),
-            ('Key<Model>', 'Model'),
-            ('Key<Grid>', 'Grid'),
-            ('Key<PartialDependence>', 'PartialDependence'),
-            ('Key<AutoML>', 'Auto Model'),
-            ('Key<ScalaCodeResult>', 'Scala Code Execution'),
-            ('Key<KeyedVoid>', 'Void')
-        ])
-        if type in type_mapping:
-            return type_mapping[type]
-        else:
-            return 'Unknown'
+        m = re.match(r"^Key<(\w+)>", type)
+        return m.group(1) if m else type
 
     def _get_cluster_status_info_values(self):
         if self._retrieved_at + self.REFRESH_INTERVAL < time.time():

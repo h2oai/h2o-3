@@ -770,16 +770,7 @@ h2o.clusterInfo <- function() {
     if (is.null(type)) {
       return('Removed')
     }
-    switch (type,
-      'Key<Frame>' = 'Frame',
-      'Key<Model>' = 'Model',
-      'Key<Grid>' = 'Grid',
-      'Key<PartialDependence>' = 'PartialDependence',
-      'Key<AutoML>' = 'Auto Model',
-      'Key<ScalaCodeResult>' = 'Scala Code Execution',
-      'Key<KeyedVoid>' = 'Void',
-      'Unknown'
-    )
+    sub("^Key<(\\w+)>", "\\1", type)
 }
 
 #' Return list of jobs performed by the H2O cluster
