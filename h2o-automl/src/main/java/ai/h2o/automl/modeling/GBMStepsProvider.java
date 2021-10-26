@@ -177,8 +177,7 @@ public class GBMStepsProvider
                         resultKey = result;
                         GBMModel bestGBM = getBestGBM();
                         aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best GBM with learning rate annealing: "+bestGBM._key);
-                        GBMParameters params = (GBMParameters) bestGBM._parms.clone();
-                        params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                        GBMParameters params = (GBMParameters) bestGBM._input_parms.clone();
                         params._max_runtime_secs = 0; // reset max runtime
                         params._learn_rate_annealing = 0.99;
                         initTimeConstraints(params, maxRuntimeSecs);
