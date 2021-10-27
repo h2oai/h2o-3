@@ -168,5 +168,25 @@ public class RuleFitUtilsTest extends TestUtil {
             Scope.exit();
         }
     }
+    
+    @Test
+    public void consolidateRulesTest() {
+        try {
+            Scope.enter();
+            Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
+            Condition condition2 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
+            Condition condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions = new Condition[] {condition1, condition2, condition3};
+
+            Rule rule = new Rule(conditions, 0.032236840575933456, "somevarname");
+            
+            Rule consolidatedRule = RuleFit.consolidateRule(rule);
+            
+            assertEquals("(PSA < 14.730077743530273 or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
+            
+        } finally {
+            Scope.exit();
+        }
+    }
 
 }
