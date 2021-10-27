@@ -1014,6 +1014,7 @@ public class RuleFitTest extends TestUtil {
             parms._model_type = RuleFitModel.ModelType.RULES;
             parms._min_rule_length = 1;
             parms._max_rule_length = 10;
+            parms._seed = 1234;
 
             RuleFitModel rfit = new RuleFit(parms).trainModel().get();
             Scope.track_generic(rfit);
