@@ -694,14 +694,14 @@ h2o.list_api_extensions <- function() {
 #' Print H2O cluster info
 #' @export
 h2o.clusterInfo <- function() {
-  conn = h2o.getConnection()
+  conn <- h2o.getConnection()
   if(! h2o.clusterIsUp(conn)) {
     stop(sprintf("Cannot connect to H2O instance at %s", h2o.getBaseURL(conn)))
   }
 
-  ip = conn@ip
-  port = conn@port
-  proxy = conn@proxy
+  ip <- conn@ip
+  port <- conn@port
+  proxy <- conn@proxy
 
   res <- .h2o.fromJSON(jsonlite::fromJSON(.h2o.doSafeGET(urlSuffix = .h2o.__CLOUD), simplifyDataFrame=FALSE))
   nodeInfo <- res$nodes
@@ -721,7 +721,7 @@ h2o.clusterInfo <- function() {
   nodeInfo <- res$nodes
   freeMem  <- sum(sapply(nodeInfo,function(x) as.numeric(x['free_mem']))) / (1024 * 1024 * 1024)
   numCPU   <- sum(sapply(nodeInfo,function(x) as.numeric(x['num_cpus'])))
-  allowedCPU = sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
+  allowedCPU <- sum(sapply(nodeInfo,function(x) as.numeric(x['cpus_allowed'])))
   clusterHealth <- all(sapply(nodeInfo,function(x) as.logical(x['healthy'])))
 
   is_client <- res$is_client
@@ -757,7 +757,7 @@ h2o.clusterInfo <- function() {
   cat("    H2O API Extensions:        ", paste(extensions, collapse = ", "), "\n")
   cat("    R Version:                 ", R.version.string, "\n")
 
-  cpusLimited = sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
+  cpusLimited <- sapply(nodeInfo, function(x) x[['num_cpus']] > 1L && x[['nthreads']] != 1L && x[['cpus_allowed']] == 1L)
   if(any(cpusLimited))
     warning("Number of CPU cores allowed is limited to 1 on some nodes.\n",
             "To remove this limit, set environment variable 'OPENBLAS_MAIN_FREE=1' before starting R.")
@@ -770,7 +770,11 @@ h2o.clusterInfo <- function() {
     if (is.null(type)) {
       return('Removed')
     }
-    sub("^Key<(\\w+)>", "\\1", type)
+    pat <- "^Key<(\\w+)>"
+    if (grepl(pat, type)) {
+        return(sub(pat, "\\1", type))
+    }
+    "Unknown"
 }
 
 #' Return list of jobs performed by the H2O cluster

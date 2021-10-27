@@ -262,7 +262,8 @@ class H2OCluster(H2OSchema):
     def _translate_job_type(self, type):
         if type is None:
             return ('Removed')
-        return re.sub(r"^Key<(\w+)>", r"\1", type)
+        m = re.match(r"^Key<(\w+)>", type)
+        return m.group(1) if m else "Unknown"
 
     def _get_cluster_status_info_values(self):
         if self._retrieved_at + self.REFRESH_INTERVAL < time.time():
