@@ -16,7 +16,7 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile 'com.github.stefanbirkner:system-rules:1.19.0'
     testCompile project(":h2o-test-support")
-    testCompile "commons-io:commons-io:2.4"
+    testCompile "commons-io:commons-io:2.7"
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

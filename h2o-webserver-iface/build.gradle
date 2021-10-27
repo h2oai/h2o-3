@@ -1,6 +1,6 @@
 description = "Interface module isolating H2O functionality from specific HTTP server implementation. Exposes facade that needs to have exactly one implementation on runtime classpath."
 
 dependencies {
-    compile "commons-codec:commons-codec:1.9"
+    compile "commons-codec:commons-codec:1.13"
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 }
