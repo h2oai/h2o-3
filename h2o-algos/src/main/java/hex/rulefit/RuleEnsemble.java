@@ -27,7 +27,7 @@ public class RuleEnsemble extends Iced {
             for (int j = 0; j < ntrees; j++) {
                 for (int k = 0; k < nclasses; k++) {
                     // filter rules according to varname
-                    // varname is of structue "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()
+                    // varname is of structure "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()
                     String regex = "M" + i + "T" + j + "N" + "\\d+";
                     if (isMultinomial) {
                         regex +=  "_" + classNames[k];
@@ -36,7 +36,8 @@ public class RuleEnsemble extends Iced {
                     List<Rule> filteredRules = Arrays.stream(rules)
                             .filter(rule -> rule.varName.matches(finalRegex))
                             .collect(Collectors.toList());
-
+                    if (filteredRules.size() == 0)
+                        continue;
                     RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[]{}));
                     Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
                     try {

@@ -19,16 +19,13 @@ def football():
     rfit = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=3, max_num_rules=10, seed=1234, model_type="rules_and_linear")
     rfit.train(training_frame=train, x=x, y=y, validation_frame=test)
 
+    df[y] = df[y].append_levels(["extra_level"])
 
-    # add a new class into the response column to get multinomial model similar to previous binomial one
-    python_lists=[[0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0,0,0,0,0,0,0,0,0,0,2]]
-    h2oframe = h2o.H2OFrame(python_obj=python_lists, column_names=df.names, column_types=df.types, na_strings=['NA'])
-    df = df.concat(h2oframe,0)
-    
     # Split the dataset into train and test
     train, test = df.split_frame(ratios=[.8], seed=1234)
 
-    rfit_multi = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=3, max_num_rules=10, seed=1234, model_type="rules_and_linear")
+    rfit_multi = H2ORuleFitEstimator(min_rule_length=1, max_rule_length=3, max_num_rules=10, seed=1234, 
+                                     model_type="rules_and_linear", distribution="multinomial")
     rfit_multi.train(training_frame=train, x=x, y=y, validation_frame=test)
 
     # Print rules and metrics for comparision:

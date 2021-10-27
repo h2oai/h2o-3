@@ -65,6 +65,8 @@ public class Rule extends Iced {
         for (int i = 0; i < ((SharedTreeModel.SharedTreeParameters) model._parms)._ntrees; i++) {
             for (int treeClass = 0; treeClass < nclasses; treeClass++) {
                 SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
+                if (sharedTreeSubgraph == null)
+                    continue;
                 String classString = nclasses > 2 ? "_" + model._output.classNames()[treeClass] : null;
                 rules.addAll(extractRulesFromTree(sharedTreeSubgraph, modelId, classString));
             }
