@@ -89,6 +89,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>> h2o.init()
@@ -497,6 +498,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :returns: An H2OAutoML object.
 
         :examples:
+        
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run
