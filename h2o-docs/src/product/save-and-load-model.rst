@@ -140,7 +140,7 @@ Supported MOJOs
 | Isolation     | Y          | Y          |
 | Forest        |            |            |
 +---------------+------------+------------+
-| Extended      | ?          | N          |
+| Extended      | N          | N          |
 | Isolation     |            |            |
 | Forest        |            |            |
 +---------------+------------+------------+
