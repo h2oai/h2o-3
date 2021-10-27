@@ -279,7 +279,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(getRules(glmModel.coefficients(), ruleEnsemble, model._output.classNames()), isClassifier() && nclasses() > 2);
+               // here consolidateRules
+                model._output._rule_importance = convertRulesToTable(consolidateRules( getRules(glmModel.coefficients(), ruleEnsemble, model._output.classNames())), isClassifier() && nclasses() > 2);
                 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 
@@ -566,8 +567,89 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         return summary;
     }
+    
     @Override
     public boolean haveMojo() { return true; }
+
+    static Rule[] consolidateRules(Rule[] rules) {
+        //not sure whether I want to overide existing rules or just create new array jut to write to output table
+        //maybe it doesnt matter will solve later when logic will be done
+        for (int i=0; i < rules.length; i++) {
+            rules[i] = consolidateRule(rules[i]);
+        }
+        return rules;
+    }
+    
+    static Rule consolidateRule(Rule rule) {
+        List<Condition> consolidatedConditions = new ArrayList<>();
+        
+        Condition[] conditions = rule.conditions;
+        List<String> varNames = new ArrayList<>();
+        for (int i = 0; i < conditions.length; i++) {
+            if (!varNames.contains(conditions[i].featureName)) {
+                varNames.add(conditions[i].featureName);
+            }
+        }
+        for (int i = 0; i < varNames.size(); i++) {
+            consolidatedConditions.addAll(consolidateConditionsByVar(conditions, varNames.get(i)));
+        }
+        
+        rule.conditions = consolidatedConditions.toArray(new Condition[0]);
+        rule.languageRule = rule.generateLanguageRule();
+        return rule;
+    }
+
+    static List<Condition>  consolidateConditionsByVar(Condition[] conditions, String varname) {
+        List<Condition> currVarConditions = new ArrayList<>();
+        for (int i = 0; i < conditions.length; i++) {
+            if (varname.equals(conditions[i].featureName))
+                currVarConditions.add(conditions[i]);
+        }
+        if (currVarConditions.size() == 1) {
+            return currVarConditions;
+        } else {
+            Condition potentialLessThan = null;
+            Condition potentialGreaterThanOrEqual = null;
+            Condition potentialIn = null;
+
+
+            for (int i = 0; i < currVarConditions.size(); i++) {
+                Condition currCondition = currVarConditions.get(i);
+                if (Condition.Operator.LessThan.equals(currCondition.operator)) {
+                    if (potentialLessThan == null) {
+                        potentialLessThan = currCondition;
+                    } else {
+                        potentialLessThan = potentialLessThan.expandBy(currCondition);
+                    }
+                } else if (Condition.Operator.GreaterThanOrEqual.equals(currCondition.operator)) {
+                    if (potentialGreaterThanOrEqual == null) {
+                        potentialGreaterThanOrEqual = currCondition;
+                    } else {
+                        potentialGreaterThanOrEqual = potentialGreaterThanOrEqual.expandBy(currCondition);
+                    }
+                } else {
+                    assert Condition.Operator.In.equals(currCondition.operator);
+                    if (potentialIn == null) {
+                        potentialIn = currCondition;
+                    } else {
+                        potentialIn = potentialIn.expandBy(currCondition);
+                    }
+                }
+            }
+
+            List<Condition> currVarConsolidatedConditions = new ArrayList<>();
+
+            if (potentialLessThan != null)
+                currVarConsolidatedConditions.add(potentialLessThan);
+            if (potentialGreaterThanOrEqual != null)
+                currVarConsolidatedConditions.add(potentialGreaterThanOrEqual);
+            if (potentialIn != null)
+                currVarConsolidatedConditions.add(potentialIn);
+            
+            return currVarConsolidatedConditions;
+        }
+    }
+    
 }
 
 
