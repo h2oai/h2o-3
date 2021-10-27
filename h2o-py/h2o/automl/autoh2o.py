@@ -31,7 +31,9 @@ def get_leaderboard(aml, extra_columns=None):
         - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
         - 'algo': column providing the algorithm name for each model.
     :return: An H2OFrame representing the leaderboard.
+    
     :examples:
+    
     >>> aml = H2OAutoML(max_runtime_secs=30)
     >>> aml.train(y=y, training_frame=train)
     >>> lb_all = h2o.automl.get_leaderboard(aml, 'ALL')

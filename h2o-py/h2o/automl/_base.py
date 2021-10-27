@@ -17,6 +17,7 @@ class H2OAutoMLBaseMixin:
         :returns: A new H2OFrame of predictions.
 
         :examples:
+        
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an H2OAutoML run
@@ -75,6 +76,7 @@ class H2OAutoMLBaseMixin:
         :return: an H2O model
 
         :examples:
+        
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run
@@ -98,6 +100,7 @@ class H2OAutoMLBaseMixin:
                  by the evaluation metric
 
         :examples:
+        
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run
@@ -142,7 +145,9 @@ class H2OAutoMLBaseMixin:
             - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
             - 'algo': column providing the algorithm name for each model.
         :return: An H2OFrame representing the leaderboard.
+        
         :examples:
+        
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> aml.train(y=y, training_frame=train)
         >>> lb_all = aml.get_leaderboard('ALL')
@@ -168,7 +173,9 @@ class H2OAutoMLBaseMixin:
                             - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
                             - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
         :return: An H2OModel or None if no model of a given family is present
+        
         :examples:
+        
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run

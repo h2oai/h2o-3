@@ -250,6 +250,7 @@ class MetricsBase(h2o_meta()):
         The number of observations.
 
         :examples:
+        
         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
@@ -1390,9 +1391,9 @@ class H2OBinomialModelMetrics(MetricsBase):
 
         :param type: the type of metric plot (currently, only ROC curve ('roc') and Precision Recall curve ('pr') are supported).
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :param save_to_file filename to save the plot to
-        :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
-                (tprs and fprs for AUC, recall and precision for PR)
+        :param save_to_file: filename to save the plot to
+        :param plot: True to plot curve, False to get a tuple of values at axis x and y of the plot 
+            (tprs and fprs for AUC, recall and precision for PR)
         
         :returns: None or values of x and y axis of the plot 
 
