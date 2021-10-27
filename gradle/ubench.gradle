@@ -53,7 +53,7 @@ jmh {
 }
 
 dependencies {
-    jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
+    jmh group: 'commons-io' , name: 'commons-io', version: '2.7'
     compile group: 'org.openjdk.jmh', name:'jmh-core', version: project.jmhVersion
     compile group: 'org.openjdk.jmh', name:'jmh-generator-annprocess', version: project.jmhVersion
 }
