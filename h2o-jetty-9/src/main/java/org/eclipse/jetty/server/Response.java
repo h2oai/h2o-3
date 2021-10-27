@@ -62,6 +62,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import water.webserver.jetty9.H2OHttpConfiguration;
 
 /**
  * <p>{@link Response} provides the implementation for {@link HttpServletResponse}.</p>
@@ -694,7 +695,9 @@ public class Response implements HttpServletResponse
 
         if (!URIUtil.hasScheme(location))
         {
-            StringBuilder buf = _channel.getRequest().getRootURL();
+            StringBuilder buf = ((H2OHttpConfiguration) _channel.getHttpConfiguration()).isRelativeRedirectAllowed()
+                ? new StringBuilder()
+                : _channel.getRequest().getRootURL();
             if (location.startsWith("/"))
             {
                 // absolute in context

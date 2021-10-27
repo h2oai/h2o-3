@@ -17,6 +17,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -82,17 +83,24 @@ class Jetty9Helper {
     private HttpConnectionFactory buildHttpConnectionFactory(boolean isSecured) {
         final String proto = isSecured ? "https" : "http";
 
-        final HttpConfiguration httpConfiguration = new HttpConfiguration();
+        final H2OHttpConfiguration httpConfiguration = new H2OHttpConfiguration();
         httpConfiguration.setSendServerVersion(false);
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
+        httpConfiguration.setRelativeRedirectAllowed(getSysPropBool(proto + ".relativeRedirectAllowed", true));
 
         return new HttpConnectionFactory(httpConfiguration);
     }
 
     private static int getSysPropInt(String suffix, int defaultValue) {
         return Integer.getInteger(H2OHttpConfig.SYSTEM_PROP_PREFIX + suffix, defaultValue);
+    }
+
+    private static boolean getSysPropBool(String suffix, boolean defaultValue) {
+        return Boolean.parseBoolean(
+                System.getProperty(H2OHttpConfig.SYSTEM_PROP_PREFIX + suffix, String.valueOf(defaultValue))
+        );
     }
 
     HandlerWrapper authWrapper(Server jettyServer) {
