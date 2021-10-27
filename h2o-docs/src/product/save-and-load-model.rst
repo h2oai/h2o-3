@@ -107,7 +107,7 @@ Supported MOJOs
 +---------------+------------+------------+
 | Algorithm     | Importable | Exportable |
 +===============+============+============+
-| AutoML        | ?          | ?          |
+| *AutoML       | Y          | Y          |
 +---------------+------------+------------+
 | GAM           | Y          | N          |
 +---------------+------------+------------+
@@ -151,9 +151,7 @@ Supported MOJOs
 | PCA           | ?          | N          |
 +---------------+------------+------------+
 
-+-------+---------------------------------+
-| Test  | .. figure:: /images/redx.png    |
-+=======+=================================+
+**Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble.
 
 
 Saving and Importing MOJOs
