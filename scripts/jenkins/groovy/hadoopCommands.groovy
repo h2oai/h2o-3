@@ -31,6 +31,7 @@ private GString getCommandHadoop(final stageConfig) {
                 -flatfile flatfile.lst \\
                 -JJ -Daws.accessKeyId=\$AWS_ACCESS_KEY_ID -JJ -Daws.secretKey=\$AWS_SECRET_ACCESS_KEY \\
                 -ea -proxy \\
+                -form_auth \\
                 -jks mykeystore.jks \\
                 ${authConf} \\
                 > h2odriver.log 2>&1 &
@@ -60,6 +61,7 @@ private GString getCommandStandalone(final stageConfig) {
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -login_conf ${stageConfig.customData.ldapConfigPathStandalone} -ldap_login \\
+                -form_auth \\
                 > standalone_h2o.log 2>&1 & 
             for i in \$(seq 4); do
               if grep "Open H2O Flow in your web browser" standalone_h2o.log
