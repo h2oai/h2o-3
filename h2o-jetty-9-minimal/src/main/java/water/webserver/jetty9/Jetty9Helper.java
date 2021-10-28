@@ -73,6 +73,7 @@ class Jetty9Helper {
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
+        httpConfiguration.setRelativeRedirectAllowed(true);
 
         return new HttpConnectionFactory(httpConfiguration);
     }
