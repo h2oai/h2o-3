@@ -7,17 +7,25 @@ import os
 import re
 import sys
 
-try:
-    import pip
-    pip_maj_version = int(pip.__version__.split('.', 1)[0])
-    if pip_maj_version >= 10:
-        from pip._internal.utils.misc import get_installed_distributions
-    else:
-        from pip import get_installed_distributions
-except ImportError:
-    pip = None
-    print("Module pip is not installed", file=sys.stderr)
-    sys.exit(2)
+
+def _installed_packages():
+    try:
+        import pkg_resources
+        return pkg_resources.working_set
+    except ImportError:
+        print("Module pkg_resources from setuptools is not installed", file=sys.stderr)
+        
+    try:
+        import pip
+        pip_maj_version = int(pip.__version__.split('.', 1)[0])
+        if pip_maj_version >= 10:
+            from pip._internal.utils.misc import get_installed_distributions
+        else:
+            from pip import get_installed_distributions
+        return get_installed_distributions(skip=(), local_only=False)
+    except ImportError:
+        print("Module pip is not installed", file=sys.stderr)
+        sys.exit(2)
 
 
 def get_requirements(kind, metayaml_file):
@@ -86,8 +94,9 @@ def parse_yaml(yaml_text):
     return consume_object(tokenize(yaml_text))
 
 
-def test_requirements(kind, metayaml_file, installed):
+def test_requirements(kind, metayaml_file):
     assert kind in {"build", "test"}
+    installed = _installed_packages()
     requirements = get_requirements(kind, metayaml_file)
     messages = []
     for req in requirements:
@@ -130,8 +139,7 @@ def test_module(mod, min_version, installed_modules):
 
 
 def main(kind, metayaml_file):
-    installed = get_installed_distributions(skip=(), local_only=False)
-    msgs = test_requirements(kind, metayaml_file, installed)
+    msgs = test_requirements(kind, metayaml_file)
     if msgs:
         print("\n    ERRORS:\n", file=sys.stderr)
         for msg in msgs:
