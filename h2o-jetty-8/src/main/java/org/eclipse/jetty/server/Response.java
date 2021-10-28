@@ -446,6 +446,16 @@ public class Response implements HttpServletResponse
             ((HttpGenerator)_connection.getGenerator()).send1xx(HttpStatus.PROCESSING_102);
     }
 
+    private static boolean isRelativeRedirectAllowed(Request request) {
+        return getSysPropBool(request.getScheme() + ".relativeRedirectAllowed", true);
+    }
+
+    private static boolean getSysPropBool(String suffix, boolean defaultValue) {
+        return Boolean.parseBoolean(
+                System.getProperty("sys.ai.h2o." + suffix, String.valueOf(defaultValue))
+        );
+    }
+
     /* ------------------------------------------------------------ */
     /*
      * @see javax.servlet.http.HttpServletResponse#sendRedirect(java.lang.String)
@@ -460,7 +470,9 @@ public class Response implements HttpServletResponse
 
         if (!URIUtil.hasScheme(location))
         {
-            StringBuilder buf = _connection.getRequest().getRootURL();
+            StringBuilder buf = isRelativeRedirectAllowed(_connection.getRequest())
+                    ? new StringBuilder()
+                    : _connection.getRequest().getRootURL();
             if (location.startsWith("/"))
             {
                 // absolute in context
