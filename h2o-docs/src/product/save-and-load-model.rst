@@ -104,54 +104,62 @@ The MOJO import functionality provides a means to use external, pre-trained mode
 Supported MOJOs
 ~~~~~~~~~~~~~~~
 
+.. |yes| image:: /images/checkmark.png
+   :scale: 3%
+   :align: middle
+
+.. |no| image:: /images/xmark.png
+  :scale: 3%
+  :align: middle
+
 +---------------+------------+------------+
 | Algorithm     | Importable | Exportable |
 +===============+============+============+
-| *AutoML       | Y          | Y          |
+| AutoML**      | |yes|      | |yes|      |
 +---------------+------------+------------+
-| GAM           | Y          | N          |
+| GAM           | |yes|      | |no|       |
 +---------------+------------+------------+
-| GBM           | Y          | Y          |
+| GBM           | |yes|      | |yes|      |
 +---------------+------------+------------+
-| GLM           | Y          | Y          |
+| GLM           | |yes|      | |yes|      |
 +---------------+------------+------------+
-| MAXR          | N          | N          |
+| MAXR          | |no|       | |no|       |
 +---------------+------------+------------+
-| XGBoost       | Y          | Y          |
+| XGBoost       | |yes|      | |yes|      |
 +---------------+------------+------------+
-| DRF           | Y          | Y          |
+| DRF           | |yes|      | |yes|      |
 +---------------+------------+------------+
-| Deep Learning | Y          | Y          |
+| Deep Learning | |yes|      | |yes|      |
 +---------------+------------+------------+
-| Stacked       | Y          | Y          |
+| Stacked       | |yes|      | |yes|      |
 | Ensemble      |            |            |
 +---------------+------------+------------+
-| CoxPH         | Y          | Y          |
+| CoxPH         | |yes|      | |yes|      |
 +---------------+------------+------------+
-| RuleFit       | Y          | Y          |
+| RuleFit       | |yes|      | |yes|      |
 +---------------+------------+------------+
-| Naive Bayes   | N          | N          |
+| Naive Bayes   | |no|       | |no|       |
 | Classifier    |            |            |
 +---------------+------------+------------+
-| SVM           | N          | N          |
+| SVM           | |no|       | |no|       |
 +---------------+------------+------------+
-| K-Means       | Y          | N          |
+| K-Means       | |yes|      | |no|       |
 +---------------+------------+------------+
-| Isolation     | Y          | Y          |
+| Isolation     | |yes|      | |yes|      |
 | Forest        |            |            |
 +---------------+------------+------------+
-| Extended      | N          | N          |
+| Extended      | |no|       | |no|       |
 | Isolation     |            |            |
 | Forest        |            |            |
 +---------------+------------+------------+
-| Aggregator    | ?          | N          |
+| Aggregator    | |no|       | |no|       |
 +---------------+------------+------------+
-| GLRM          | Y          | N          |
+| GLRM          | |yes|      | |no|       |
 +---------------+------------+------------+
-| PCA           | ?          | N          |
+| PCA           | |yes|      | |no|       |
 +---------------+------------+------------+
 
-**Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble.
+**Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
 
 
 Saving and Importing MOJOs
