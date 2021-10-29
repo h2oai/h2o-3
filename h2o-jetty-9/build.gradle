@@ -10,3 +10,10 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: "4.12"
     testImplementation "org.mockito:mockito-core:2.23.0"
 }
+
+if ("${jetty9version}" != "9.4.11.v20180605") {
+    throw new IllegalStateException(
+            "This module expects Jetty version 9.4.11.v20180605, configured version is ${jetty9version}. " +
+            "Please locate Response class (modified from Jetty 9.4.11), upgrade it to your version, port our custom changes." +
+            "Once you've done that you can modify this check.")
+}
