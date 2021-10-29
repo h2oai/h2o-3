@@ -1,9 +1,6 @@
 package water.webserver.jetty9;
 
-import org.eclipse.jetty.server.ConnectionFactory;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
@@ -11,6 +8,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+import water.webserver.config.ConnectionConfiguration;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 
@@ -18,6 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class Jetty9HelperTest {
@@ -64,5 +64,28 @@ public class Jetty9HelperTest {
     assertTrue(s.getThreadPool() instanceof QueuedThreadPool);
     assertTrue(((QueuedThreadPool) s.getThreadPool()).isDaemon());
   }
-  
+
+  @Test
+  public void testMakeHttpConfiguration() {
+    HttpConfiguration defaultCfg = Jetty9Helper.makeHttpConfiguration(new ConnectionConfiguration(false));
+    assertFalse(defaultCfg.getSendServerVersion());
+    assertEquals(defaultCfg.getRequestHeaderSize(), 32 * 1024);
+    assertEquals(defaultCfg.getResponseHeaderSize(), 32 * 1024);
+    assertEquals(defaultCfg.getOutputBufferSize(), new HttpConfiguration().getOutputBufferSize());
+    assertTrue(defaultCfg.isRelativeRedirectAllowed());
+    
+    ConnectionConfiguration ccMock = mock(ConnectionConfiguration.class);
+    when(ccMock.getRequestHeaderSize()).thenReturn(42);
+    when(ccMock.getResponseHeaderSize()).thenReturn(43);
+    when(ccMock.getOutputBufferSize(anyInt())).thenReturn(44);
+    when(ccMock.isRelativeRedirectAllowed()).thenReturn(false);
+
+    HttpConfiguration customCfg = Jetty9Helper.makeHttpConfiguration(ccMock);
+    assertFalse(customCfg.getSendServerVersion());
+    assertEquals(customCfg.getRequestHeaderSize(), 42);
+    assertEquals(customCfg.getResponseHeaderSize(), 43);
+    assertEquals(customCfg.getOutputBufferSize(), 44);
+    assertFalse(customCfg.isRelativeRedirectAllowed());
+  }
+
 }

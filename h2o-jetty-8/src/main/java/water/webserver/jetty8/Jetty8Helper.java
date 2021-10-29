@@ -5,10 +5,7 @@ import org.eclipse.jetty.plus.jaas.JAASLoginService;
 import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.nio.SelectChannelConnector;
@@ -20,6 +17,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import water.webserver.config.ConnectionConfiguration;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
@@ -51,9 +49,8 @@ class Jetty8Helper {
     jettyServer.setSendServerVersion(false);
 
     final Connector connector;
-    final String proto;
-    if (config.jks != null) {
-      proto = "https";
+    final boolean isSecure = config.jks != null;
+    if (isSecure) {
       final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
       sslContextFactory.setKeyStorePassword(config.jks_pass);
       if (config.jks_alias != null) {
@@ -61,14 +58,13 @@ class Jetty8Helper {
       }
       connector = new SslSelectChannelConnector(sslContextFactory);
     } else {
-      proto = "http";
       connector = new SelectChannelConnector();
     }
     if (ip != null) {
       connector.setHost(ip);
     }
     connector.setPort(port);
-    configureConnector(proto, connector);
+    configureConnector(connector, new ConnectionConfiguration(isSecure));
     jettyServer.setConnectors(new Connector[]{connector});
     return jettyServer;
   }
@@ -77,15 +73,12 @@ class Jetty8Helper {
   // Also increase request header size and buffer size from default values
   // located in org.eclipse.jetty.http.HttpBuffersImpl
   // see PUBDEV-5939 for details
-  private void configureConnector(String proto, Connector connector) {
-    connector.setRequestHeaderSize(getSysPropInt(proto+".requestHeaderSize", 32*1024));
-    connector.setRequestBufferSize(getSysPropInt(proto+".requestBufferSize", 32*1024));
-    connector.setResponseHeaderSize(getSysPropInt(proto+".responseHeaderSize", connector.getResponseHeaderSize()));
-    connector.setResponseBufferSize(getSysPropInt(proto+".responseBufferSize", connector.getResponseBufferSize()));
-  }
-
-  private static int getSysPropInt(String suffix, int defaultValue) {
-    return Integer.getInteger(H2OHttpConfig.SYSTEM_PROP_PREFIX + suffix, defaultValue);
+  static void configureConnector(Connector connector, ConnectionConfiguration cfg) {
+    connector.setRequestHeaderSize(cfg.getRequestHeaderSize());
+    connector.setRequestBufferSize(cfg.getRequestBufferSize());
+    connector.setResponseHeaderSize(cfg.getResponseHeaderSize());
+    connector.setResponseBufferSize(cfg.getOutputBufferSize(connector.getResponseBufferSize()));
+    Response.RELATIVE_REDIRECT_ALLOWED = cfg.isRelativeRedirectAllowed();
   }
 
   HandlerWrapper authWrapper(Server jettyServer) {

@@ -8,6 +8,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import water.webserver.config.ConnectionConfiguration;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
@@ -41,7 +42,8 @@ class Jetty9Helper {
             jettyServer = new Server();
 
         final boolean isSecured = config.jks != null;
-        final HttpConnectionFactory httpConnectionFactory = buildHttpConnectionFactory(isSecured);
+        final HttpConfiguration httpConfiguration = makeHttpConfiguration(new ConnectionConfiguration(isSecured));
+        final HttpConnectionFactory httpConnectionFactory = new HttpConnectionFactory(httpConfiguration);
 
         final ServerConnector connector;
         if (isSecured) {
@@ -64,22 +66,14 @@ class Jetty9Helper {
         return jettyServer;
     }
 
-
-    private HttpConnectionFactory buildHttpConnectionFactory(boolean isSecured) {
-        final String proto = isSecured ? "https" : "http";
-
+    static HttpConfiguration makeHttpConfiguration(ConnectionConfiguration cfg) {
         final HttpConfiguration httpConfiguration = new HttpConfiguration();
         httpConfiguration.setSendServerVersion(false);
-        httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
-        httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
-        httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
-        httpConfiguration.setRelativeRedirectAllowed(true);
-
-        return new HttpConnectionFactory(httpConfiguration);
-    }
-
-    private static int getSysPropInt(String suffix, int defaultValue) {
-        return Integer.getInteger(H2OHttpConfig.SYSTEM_PROP_PREFIX + suffix, defaultValue);
+        httpConfiguration.setRequestHeaderSize(cfg.getRequestHeaderSize());
+        httpConfiguration.setResponseHeaderSize(cfg.getResponseHeaderSize());
+        httpConfiguration.setOutputBufferSize(cfg.getOutputBufferSize(httpConfiguration.getOutputBufferSize()));
+        httpConfiguration.setRelativeRedirectAllowed(cfg.isRelativeRedirectAllowed());
+        return httpConfiguration;
     }
 
     HandlerWrapper authWrapper(Server jettyServer) {
