@@ -1,7 +1,7 @@
 description = "H2O Python Package"
 
 dependencies {
-    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
+    api project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
 def buildVersion = new H2OBuildVersion(rootDir, version)
@@ -49,8 +49,11 @@ task verifyTestDependencies(type: Exec) {
     ])
 }
 
-task copyH2OJar(type: Copy, dependsOn: [configurations.compile]) {
+task copyH2OJar(type: Copy, dependsOn: [configurations.compileClasspath]) {
     from "${rootDir}/build/h2o.jar"
+    rename { filename ->
+        return 'h2o.jar'
+    }
     into "${buildDir}/main/h2o/backend/bin/"
 }
 
@@ -151,4 +154,5 @@ task cleanBuild(type: Delete) {
 //
 clean.dependsOn cleanBuild, cleanUpSmokeTest, cleanCoverageData
 buildDist.dependsOn buildClientDist // to have a predictable order of these 2 
+copyH2OJar.dependsOn ":h2o-assemblies:main:copyJar"
 build.dependsOn copyMainDist

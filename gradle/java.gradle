@@ -1,6 +1,6 @@
 // Gradle file for java-based project
 //
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8

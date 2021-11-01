@@ -4,15 +4,15 @@
 description = "H2O Application Runner"
 
 dependencies {
-  compile project(":h2o-genmodel")
-  compile project(":h2o-core")
-  compile project(":h2o-algos")
-  compile project(":h2o-automl")
-  compile project(":h2o-admissibleml")
-  compile project(":h2o-ext-target-encoder")
-  runtime project(":${defaultWebserverModule}")
+  api project(":h2o-genmodel")
+  api project(":h2o-core")
+  api project(":h2o-algos")
+  api project(":h2o-automl")
+  api project(":h2o-admissibleml")
+  api project(":h2o-ext-target-encoder")
+  runtimeOnly project(":${defaultWebserverModule}")
   if (project.hasProperty("doIncludeMojoPipeline") && project.doIncludeMojoPipeline == "true") {
-    compile project(":h2o-ext-mojo-pipeline")
+    api project(":h2o-ext-mojo-pipeline")
   }
   // Note: orc parser is included at the assembly level for each
   // Hadoop distribution

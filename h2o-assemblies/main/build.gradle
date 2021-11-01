@@ -1,5 +1,5 @@
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
@@ -10,35 +10,35 @@ targetCompatibility = 1.8
 
 // Exclude unwanted dependencies
 configurations {
-    compile.exclude module: 'junit'
-    compile.exclude module: 'mockito-all'
-    compile.exclude module: 'zookeeper'
-    compile.exclude module: 'javax.mail.glassfish'
-    compile.exclude module: 'servlet-api'
-    compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
-    compile.exclude group: 'org.openjdk.jmh'
-    compile.exclude group: 'log4j'
-    compile.exclude module: 'h2o-logging-impl-classic'
+    api.exclude module: 'junit'
+    api.exclude module: 'mockito-all'
+    api.exclude module: 'zookeeper'
+    api.exclude module: 'javax.mail.glassfish'
+    api.exclude module: 'servlet-api'
+    api.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
+    api.exclude group: 'org.openjdk.jmh'
+    api.exclude group: 'log4j'
+    api.exclude module: 'h2o-logging-impl-classic'
 }
 
 // Dependencies
 dependencies {
-    compile project(":h2o-app")
-    compile project(":h2o-logging-impl-log4j2")
-    runtime project(":${defaultWebserverModule}")
-    compile project(":h2o-web")
-    compile project(":h2o-avro-parser")
-    compile project(":h2o-persist-gcs")
-    compile project(":h2o-persist-s3")
-    compile project(":h2o-persist-http")
-    compile project(":h2o-persist-hdfs")
-    compile project(":h2o-ext-krbstandalone")
-    compile project(":h2o-ext-mojo-pipeline")
+    api project(":h2o-app")
+    api project(":h2o-logging-impl-log4j2")
+    runtimeOnly project(":${defaultWebserverModule}")
+    api project(":h2o-web")
+    api project(":h2o-avro-parser")
+    api project(":h2o-persist-gcs")
+    api project(":h2o-persist-s3")
+    api project(":h2o-persist-http")
+    api project(":h2o-persist-hdfs")
+    api project(":h2o-ext-krbstandalone")
+    api project(":h2o-ext-mojo-pipeline")
     if (project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true") {
-        compile project(":h2o-orc-parser")
+        api project(":h2o-orc-parser")
     }
-    compile project(":h2o-parquet-parser")
-    compile project(":h2o-k8s-int")
+    api project(":h2o-parquet-parser")
+    api project(":h2o-k8s")
 }
 
 jar {

@@ -1,15 +1,15 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 description = "H2O Target Encoder plugin"
 
 dependencies {
-    compile project(":h2o-core")
-    compile project(":h2o-algos")
-    compile project(":h2o-genmodel")
+    api project(":h2o-core")
+    api project(":h2o-algos")
+    api project(":h2o-genmodel")
 
-    testCompile project(":h2o-test-support")
-    testCompile "com.pholser:junit-quickcheck-core:0.9"
-    testCompile 'com.pholser:junit-quickcheck-generators:0.9'
+    testImplementation project(":h2o-test-support")
+    testImplementation "com.pholser:junit-quickcheck-core:0.9"
+    testImplementation 'com.pholser:junit-quickcheck-generators:0.9'
     testRuntimeOnly project(":${defaultWebserverModule}")
     
     jmh project(":${defaultWebserverModule}") 

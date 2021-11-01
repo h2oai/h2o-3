@@ -1,7 +1,7 @@
 dependencies {
-    compile project(":h2o-webserver-iface")
-    compile "org.eclipse.jetty:jetty-server:${jetty9MinimalVersion}"
-    compile "org.eclipse.jetty:jetty-servlet:${jetty9MinimalVersion}"
-    testCompile group: "junit", name: "junit", version: "4.12"
-    testCompile "org.mockito:mockito-core:2.23.0"
+    api project(":h2o-webserver-iface")
+    api "org.eclipse.jetty:jetty-server:${jetty9MinimalVersion}"
+    api "org.eclipse.jetty:jetty-servlet:${jetty9MinimalVersion}"
+    testImplementation group: "junit", name: "junit", version: "4.12"
+    testImplementation "org.mockito:mockito-core:2.23.0"
 }

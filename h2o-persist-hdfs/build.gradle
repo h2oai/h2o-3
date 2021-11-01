@@ -7,16 +7,16 @@ configurations {
 }
 
 dependencies {
-    compile project(":h2o-core")
-    compile('net.java.dev.jets3t:jets3t:0.9.0')
-    compile("org.apache.hadoop:$defaultHdfsDependency:$defaultHadoopVersion") {
+    api project(":h2o-core")
+    api('net.java.dev.jets3t:jets3t:0.9.0')
+    api("org.apache.hadoop:$defaultHdfsDependency:$defaultHadoopVersion") {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
-    compile("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
-    compile("com.nimbusds:nimbus-jose-jwt:9.11.3")
+    api("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
+    api("com.nimbusds:nimbus-jose-jwt:9.11.3")
 
-    testCompile project(":h2o-test-support")
+    testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

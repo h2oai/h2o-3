@@ -11,7 +11,10 @@ buildscript {
 
     repositories {
         if (isCi) {
-            maven { url "${localNexusLocation}/public" }
+            maven {
+                allowInsecureProtocol = true
+                url "${localNexusLocation}/public"
+            }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
@@ -21,7 +24,7 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
+        classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
@@ -33,8 +36,8 @@ buildscript {
 }
 
 plugins {
-    id "java"
-    id "com.github.hierynomus.license" version "0.14.0"
+    id "java-library"
+    id "com.github.hierynomus.license" version "0.16.1"
 }
 
 //
@@ -232,6 +235,7 @@ subprojects {
         }
         if (isCi) {
             maven {
+                allowInsecureProtocol = true
                 url "${localNexusLocation}/public"
             }
         } else {
@@ -240,13 +244,13 @@ subprojects {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
             maven {
-                url "http://repo.hortonworks.com/content/repositories/releases/"
+                url "https://repo.hortonworks.com/content/repositories/releases/"
             }
             maven {
-                url "http://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+                url "https://repo.hortonworks.com/content/repositories/jetty-hadoop/"
             }
             maven {
-                url "http://repository.mapr.com/maven/"
+                url "https://repository.mapr.com/maven/"
             }
             maven {
                 url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"

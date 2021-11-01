@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 description = 'H2O Generic MapReduce Driver for Hadoop'
 
@@ -11,22 +11,22 @@ compileJava {
 
 dependencies {
   // the versions here are not important - user will provide the correct versions at runtime
-  compile "org.apache.hive:hive-jdbc:1.1.0-cdh5.10.0"
-  compile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
-  compile("org.apache.hive:hive-exec:1.1.0-cdh5.10.0") {
+  api "org.apache.hive:hive-jdbc:1.1.0-cdh5.10.0"
+  api "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
+  api("org.apache.hive:hive-exec:1.1.0-cdh5.10.0") {
     transitive = false
   }
-  compile("org.apache.hive:hive-metastore:1.1.0-cdh5.10.0") {
+  api("org.apache.hive:hive-metastore:1.1.0-cdh5.10.0") {
     transitive = false
   }
-  compile(project(':h2o-persist-hdfs')) {
+  api(project(':h2o-persist-hdfs')) {
     transitive = false
   }
-  compile("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
-  compile project(":h2o-core")
+  api("org.apache.parquet:parquet-avro:${defaultParquetVersion}")
+  api project(":h2o-core")
 
-  testCompile "junit:junit:${junitVersion}"
-  testCompile project(':h2o-test-support')
+  testImplementation "junit:junit:${junitVersion}"
+  testImplementation project(':h2o-test-support')
   testRuntimeOnly project(":h2o-parquet-parser")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }

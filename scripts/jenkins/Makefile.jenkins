@@ -288,7 +288,7 @@ test-package-java:
 		h2o-genmodel-extensions/xgboost/src/ \
 		h2o-genmodel-extensions/xgboost/build/libs/h2o-genmodel-ext-xgboost*.jar \
 		h2o-genmodel-extensions/jgrapht/src/ \
-		h2o-genmodel-extensions/jgrapht/build/libs/jgrapht*.jar \
+		h2o-genmodel-extensions/jgrapht/build/libs/h2o-genmodel-ext-jgrapht*.jar \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-webserver-iface/src/ \
 		h2o-webserver-iface/build/libs/h2o-webserver-iface-*.jar \

@@ -1,12 +1,12 @@
 dependencies {
-    compile project(":h2o-webserver-iface")
-    compile "org.eclipse.jetty:jetty-server:${jetty9version}"
-    compile "org.eclipse.jetty:jetty-servlets:${jetty9version}"
-    compile "org.eclipse.jetty:jetty-jaas:${jetty9version}"
-    compile "org.eclipse.jetty:jetty-proxy:${jetty9version}"
-    compile "org.eclipse.jetty:jetty-servlet:${jetty9version}"
-    compile "org.eclipse.jetty.websocket:websocket-api:${jetty9version}"
-    compile "org.eclipse.jetty.websocket:websocket-server:${jetty9version}"
-    testCompile group: "junit", name: "junit", version: "4.12"
-    testCompile "org.mockito:mockito-core:2.23.0"
+    api project(":h2o-webserver-iface")
+    api "org.eclipse.jetty:jetty-server:${jetty9version}"
+    api "org.eclipse.jetty:jetty-servlets:${jetty9version}"
+    api "org.eclipse.jetty:jetty-jaas:${jetty9version}"
+    api "org.eclipse.jetty:jetty-proxy:${jetty9version}"
+    api "org.eclipse.jetty:jetty-servlet:${jetty9version}"
+    api "org.eclipse.jetty.websocket:websocket-api:${jetty9version}"
+    api "org.eclipse.jetty.websocket:websocket-server:${jetty9version}"
+    testImplementation group: "junit", name: "junit", version: "4.12"
+    testImplementation "org.mockito:mockito-core:2.23.0"
 }

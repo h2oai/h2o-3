@@ -2,7 +2,7 @@
 // TODO: refactor the build script to avoid code duplication
 
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.github.hierynomus.license'
 
 description = "Minimal H2O Application Assembly - includes all algos, but has only limited support for data sources"
@@ -26,14 +26,14 @@ configurations {
 
 // Dependencies
 dependencies {
-    compile(project(":h2o-app")) {
+    api(project(":h2o-app")) {
         exclude module: "${defaultWebserverModule}"
     }
-    compile project(":h2o-logging-impl-log4j2")
-    runtime project(":h2o-jetty-9-minimal")
-    compile project(":h2o-web")
-    compile project(":h2o-persist-http")
-    compile project(":h2o-ext-mojo-pipeline")
+    api project(":h2o-logging-impl-log4j2")
+    runtimeOnly project(":h2o-jetty-9-minimal")
+    api project(":h2o-web")
+    api project(":h2o-persist-http")
+    api project(":h2o-ext-mojo-pipeline")
 }
 
 jar {

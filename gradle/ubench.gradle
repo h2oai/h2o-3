@@ -12,7 +12,8 @@ buildscript {
     }
 }
 
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.gradle.jmh' // This plugin is not compatible with Gradle 8, upgrade to Gradle 8 friendly
+                                       // version of the plugin should help in the future
 apply plugin: "com.github.johnrengelman.shadow"
 
 
@@ -54,8 +55,8 @@ jmh {
 
 dependencies {
     jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
-    compile group: 'org.openjdk.jmh', name:'jmh-core', version: project.jmhVersion
-    compile group: 'org.openjdk.jmh', name:'jmh-generator-annprocess', version: project.jmhVersion
+    api group: 'org.openjdk.jmh', name:'jmh-core', version: project.jmhVersion
+    api group: 'org.openjdk.jmh', name:'jmh-generator-annprocess', version: project.jmhVersion
 }
 
 task jmhPostProcess(dependsOn: "jmh") {
@@ -79,7 +80,7 @@ task jmhFatJar(type: ShadowJar) {
     manifest {
         attributes "Main-Class": "org.openjdk.jmh.Main"
     }
-    configurations = [project.configurations.runtime, project.configurations.jmh]
+    configurations = [project.configurations.runtimeOnly, project.configurations.jmh]
     from sourceSets.main.output
     from sourceSets.jmh.output
     from tasks.jmhRunBytecodeGenerator.outputs

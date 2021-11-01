@@ -26,13 +26,13 @@ javadoc {
 //
 
 dependencies {
-  compile project(":h2o-logger")
-  testCompile "com.google.guava:guava:16.0.1"
-  testCompile 'org.mockito:mockito-core:2.18.3'
-  testCompile "junit:junit:${junitVersion}"
-  compile "net.sf.opencsv:opencsv:2.3"
-  compile "com.google.code.gson:gson:2.6.2"
-  compile "ai.h2o:h2o-tree-api:0.3.17"
+  api project(":h2o-logger")
+  testImplementation "com.google.guava:guava:16.0.1"
+  testImplementation 'org.mockito:mockito-core:2.18.3'
+  testImplementation "junit:junit:${junitVersion}"
+  api "net.sf.opencsv:opencsv:2.3"
+  api "com.google.code.gson:gson:2.6.2"
+  api "ai.h2o:h2o-tree-api:0.3.17"
 }
 
 def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java")
