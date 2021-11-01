@@ -230,8 +230,7 @@ public class XGBoostSteps extends ModelingSteps {
                     resultKey = result;
                     XGBoostModel bestXGB = getBestXGB();
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
-                    XGBoostParameters params = (XGBoostParameters) bestXGB._parms.clone();
-                    params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    XGBoostParameters params = (XGBoostParameters) bestXGB._input_parms.clone();
                     params._max_runtime_secs = 0; // reset max runtime
                     params._learn_rate_annealing = 0.99;
                     initTimeConstraints(params, maxRuntimeSecs);
@@ -263,15 +262,11 @@ public class XGBoostSteps extends ModelingSteps {
                     resultKey = result;
                     XGBoostModel bestXGB = getBestXGBs(1).get(0);
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Applying learning rate search on best XGBoost: "+bestXGB._key);
-                    XGBoostParameters params = (XGBoostParameters) bestXGB._parms.clone();
+                    XGBoostParameters params = (XGBoostParameters) bestXGB._input_parms.clone();
                     XGBoostParameters defaults = new XGBoostParameters();
-                    params._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
                     params._max_runtime_secs = 0; // reset max runtime
                     initTimeConstraints(params, 0); // ensure we have a max runtime per model in the grid
                     setStoppingCriteria(params, defaults); // keep the same seed as the bestXGB
-                    // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
-                    params._eta = defaults._eta;
-//                    params._learn_rate = defaults._learn_rate;
 
                     // keep stopping_rounds fixed, but increases score_tree_interval when lowering learn rate
                     int sti = params._score_tree_interval;
