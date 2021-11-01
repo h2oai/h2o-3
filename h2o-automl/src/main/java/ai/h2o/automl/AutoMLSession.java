@@ -50,6 +50,7 @@ public class AutoMLSession extends Lockable<AutoMLSession> {
     }
     
     void detach() {
+        for (ModelingSteps steps : _availableStepsByProviderName.values()) steps.cleanup();
         _aml = null;
         DKV.put(this);
     }

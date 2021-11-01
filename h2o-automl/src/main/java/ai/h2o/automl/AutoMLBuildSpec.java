@@ -12,14 +12,12 @@ import water.fvec.Frame;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  * Parameters which specify the build (or extension) of an AutoML build job.
@@ -46,7 +44,6 @@ public class AutoMLBuildSpec extends Iced {
     public float max_after_balance_size = 5.0f;
 
     public int nfolds = -1;
-    public boolean use_auto_blending = false;
     public boolean keep_cross_validation_predictions = false;
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;
@@ -368,4 +365,9 @@ public class AutoMLBuildSpec extends Iced {
     return Key.make(project() + AutoML.keySeparator + StringUtils.sanitizeIdentifier(input_spec.response_column));
   }
 
+  public String[] getNonPredictors() {
+    return Arrays.stream(new String[]{input_spec.weights_column, input_spec.fold_column, input_spec.response_column})
+            .filter(Objects::nonNull)
+            .toArray(String[]::new);
+  }
 }

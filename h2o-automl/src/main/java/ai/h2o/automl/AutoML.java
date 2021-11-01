@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
@@ -160,6 +161,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
 
+  private boolean _useAutoBlending;
   /**
    * DO NOT USE explicitly: for schema/reflection only.
    */
@@ -287,11 +289,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else if (buildSpec.build_control.nfolds == -1) {
       Frame trainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
       long nrows = trainingFrame.numRows();
-      long ncols = trainingFrame.numCols() - (1 + // y +
-              (buildSpec.input_spec.ignored_columns != null ? buildSpec.input_spec.ignored_columns.length : 0) +
-              (buildSpec.input_spec.weights_column != null ? 1 : 0) +
-              /* FIXME: add offset_column if it will get implemented to AutoML */
-              (buildSpec.input_spec.fold_column != null ? 1 : 0));
+      long ncols = trainingFrame.numCols() - (buildSpec.getNonPredictors().length +
+              (buildSpec.input_spec.ignored_columns != null ? buildSpec.input_spec.ignored_columns.length : 0));
 
       double max_runtime = buildSpec.build_control.stopping_criteria.max_runtime_secs();
       long nthreads = Stream.of(H2O.CLOUD.members())
@@ -301,7 +300,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2064;
       Log.warn("R coefficient = " + ((ncols * nrows) / (max_runtime * nthreads)));
       if (max_runtime > 0 && use_blending) {
-        buildSpec.build_control.use_auto_blending = true;
+        _useAutoBlending = true;
         buildSpec.build_control.nfolds = 0;
         eventLog().info(Stage.Validation, "Blending will be used.");
       } else {
@@ -493,11 +492,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (!_buildSpec.build_control.keep_cross_validation_predictions) {
       cleanUpModelsCVPreds();
     }
-
-    // Delete base model predictions
-    Arrays.stream(leaderboard().getModels())
-            .filter(model -> model instanceof StackedEnsembleModel)
-            .forEach(model -> ((StackedEnsembleModel) model).deleteBaseModelPredictions());
   }
 
   /**
@@ -563,7 +557,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       double[] splitRatios = null;
       double validationRatio = null == _validationFrame ? 0.1 : 0;
       double leaderboardRatio = null == _leaderboardFrame ? 0.1 : 0;
-      double blendingRatio = (_buildSpec.build_control.use_auto_blending && null == _blendingFrame) ? 0.2 : 0;
+      double blendingRatio = (_useAutoBlending && null == _blendingFrame) ? 0.2 : 0;
       if (validationRatio + leaderboardRatio + blendingRatio > 0) {
         splitRatios = new double[]{
                 1 - (validationRatio + leaderboardRatio + blendingRatio),
@@ -572,37 +566,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                 blendingRatio
         };
         ArrayList<String> frames = new ArrayList();
-        String ratios = Integer.toString((int)(splitRatios[0] * 100));
-        if (null == _validationFrame) {
-          frames.add("validation frame");
-          ratios += "/" + (int)(100 * validationRatio);
-        }
-        if (null == _leaderboardFrame) {
-          frames.add("leaderboard frame");
-          ratios += "/" + (int)(100 * leaderboardRatio);
-        }
-        if (null == _blendingFrame && _buildSpec.build_control.use_auto_blending) {
-          frames.add("blending frame");
-          ratios += "/" + (int)(100 * blendingRatio);
-        }
-        String framesStr = new String();
-        for (int i = 0; i < frames.size(); i++) {
-          if (i > 0) {
-            framesStr += ", ";
-            if (i == frames.size() - 1)
-              framesStr += "and ";
-          }
-          framesStr += frames.get(i);
-        }
-        eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and " +
-                    (frames.size() > 1 ? "none of " : "no ") +
-                    framesStr +
-                    (frames.size() > 1 ? " were " : " was ") +
-                    " provided, " +
-                    " automatically split the training data into training, " +
-                    framesStr +
-                    " in the ratio " + ratios);
+        if (null == _validationFrame) frames.add("validation");
+        if (null == _leaderboardFrame) frames.add("leaderboard");
+        if (null == _blendingFrame && _useAutoBlending) frames.add("blending");
+
+        String framesStr = String.join(", ", frames);
+        String ratioStr = Arrays.stream(splitRatios)
+                .mapToObj(d -> Integer.toString((int) (d * 100)))
+                .collect(Collectors.joining("/"));
+        eventLog().info(Stage.DataImport, "Since cross-validation is disabled, and " + framesStr + " frame(s) were not provided, " +
+                "automatically split the training data into training, " + framesStr + " frame(s) in the ratio " + ratioStr + ".");
       }
       if (splitRatios != null) {
         Key[] keys = new Key[] {
