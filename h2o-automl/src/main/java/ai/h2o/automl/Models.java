@@ -3,6 +3,8 @@ package ai.h2o.automl;
 import hex.Model;
 import hex.ModelContainer;
 import water.*;
+import water.api.schemas3.KeyV3;
+import water.automl.api.schemas3.SchemaExtensions;
 import water.util.ArrayUtils;
 
 import java.lang.reflect.Array;
@@ -64,5 +66,10 @@ public class Models<M extends Model> extends Lockable<Models<M>> implements Mode
         }
         _modelKeys = new Key[0];
         return super.remove_impl(fs, cascade);
+    }
+
+    @Override
+    public Class<SchemaExtensions.ModelsKeyV3> makeSchema() {
+        return SchemaExtensions.ModelsKeyV3.class;
     }
 }
