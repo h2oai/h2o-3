@@ -556,18 +556,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (!isCVEnabled()) {
       double[] splitRatios = null;
       double validationRatio = null == _validationFrame ? 0.1 : 0;
-      double leaderboardRatio = null == _leaderboardFrame ? 0.1 : 0;
       double blendingRatio = (_useAutoBlending && null == _blendingFrame) ? 0.2 : 0;
-      if (validationRatio + leaderboardRatio + blendingRatio > 0) {
+      if (validationRatio + blendingRatio > 0) {
         splitRatios = new double[]{
-                1 - (validationRatio + leaderboardRatio + blendingRatio),
+                1 - (validationRatio + blendingRatio),
                 validationRatio,
-                leaderboardRatio,
                 blendingRatio
         };
         ArrayList<String> frames = new ArrayList();
         if (null == _validationFrame) frames.add("validation");
-        if (null == _leaderboardFrame) frames.add("leaderboard");
         if (null == _blendingFrame && _useAutoBlending) frames.add("blending");
 
         String framesStr = String.join(", ", frames);
@@ -581,7 +578,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         Key[] keys = new Key[] {
             Key.make(_runId+"_training_"+ _origTrainingFrame._key),
             Key.make(_runId+"_validation_"+ _origTrainingFrame._key),
-            Key.make(_runId+"_leaderboard_"+ _origTrainingFrame._key),
             Key.make(_runId+"_blending_"+ _origTrainingFrame._key),
         };
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
@@ -598,16 +594,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           splits[1].delete();
         }
 
-        if (_leaderboardFrame == null && splits[2].numRows() > 0) {
-          _leaderboardFrame = splits[2];
+        if (_leaderboardFrame == null)
+          _leaderboardFrame = _validationFrame;
+
+        if (_blendingFrame == null && splits[2].numRows() > 0) {
+          _blendingFrame = splits[2];
         } else {
           splits[2].delete();
-        }
-
-        if (_blendingFrame == null && splits[3].numRows() > 0) {
-          _blendingFrame = splits[3];
-        } else {
-          splits[3].delete();
         }
       }
     }
