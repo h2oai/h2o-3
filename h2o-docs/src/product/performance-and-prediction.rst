@@ -2008,14 +2008,17 @@ Examples:
 Gains/Lift 
 ''''''''''
 
-Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The accuracy of the classification model for a random sample is evaluated according to the results when the model is and is not used. The Gains/Lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
+Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The Gains/Lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
+
+The accuracy of the baseline is evaluated when no model is used. For instance, if there are :math:`x\%` positive responses in the dataset, when you grab :math:`10\%` of the dataset, you can assume that there are :math:`10\%` of the :math:`x\%` positive responses in the :math:`10\%` of the dataset that you chose. If :math:`x=10` and there are :math:`10\%` positive responses in the dataset, when you choose :math:`10\%` of a dataset, you can expect there to be :math:`1\%` of the positive responses in the :math:`10\%` of the dataset you chose.
+
 
 To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. 
 
 **An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100000 customers and predict the results of contacting only the top 10000 customers, the top 20000 customers, and so on. You do this by:
 
 - taking the dataset, sending it through your model, and obtaining a list of predicted output which is the probability of positive response;
-- sorting your dataset according to the output of your model which is the probability of positive response (this probability can also be called the **score**)
+- sorting your dataset according to the output of your model which is the probability of positive response (this probability can also be called the **score**) from highest to lowest;
     
     - In this case, the first bin contains the top 10000 customers with the highest response probability, the second bin contains the next 10000 customers with the highest response probability, and so on.
 
@@ -2052,7 +2055,7 @@ In addition to the chart, a **Gains/Lift table** is also available. This table r
 - **Average response rate**: total number of positive classes / total number of data rows in the dataset
 - **Lift and Cumulative lift**: ratio of cumulative response rate and average response rate.
 - **Score**: the average of all the classifier output probabilities for each individual data fraction bin
-- **Cumulative response rate**: (based on the above written example) for the first bin, it is the number of positive response over 10000; for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
+- **Cumulative response rate**: for the first bin, it is the number of positive response over 10000 (assume each bin contains 100000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
 - **Capture rate**: for each bin it is the ratio of positive classes in each bin divided by the total number of positive classes in your dataset
 - **Cumulative capture rate**: for the first bin, it is just the capture rate; the second bin is the ratio of (sum of number of positive classes for the first two bins) and the total number of positive classes in your dataset
 - `Kolmogorov-Smirnov (KS) Metric`_
