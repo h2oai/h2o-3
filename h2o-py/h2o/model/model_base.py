@@ -471,6 +471,7 @@ class ModelBase(h2o_meta(Keyed)):
 
 
         :examples:
+        
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
