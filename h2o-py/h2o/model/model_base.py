@@ -1466,21 +1466,21 @@ class ModelBase(h2o_meta(Keyed)):
             return self._varimp_plot(num_of_features=num_of_features, server=server)
         raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
 
-    def std_coef_plot(self, num_of_features=None, server=False, save_plot_path:str=None, **kwargs):
+    def std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None, **savefig):
         """
         Plot a model's standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
         :param server: if true set server settings to matplotlib and show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-        :param **kwargs: can be used to pass in additional savefig configuration
+        :param **savefig: can be used to pass in additional savefig configuration
 
         :returns: None.
         """
         # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'StandardCoef'):
-            return self._std_coef_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path, **kwargs)
+            return self._std_coef_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path, **savefig)
         raise H2OValueError("Standardized coefficient plot is not available for this type of model (%s)." % self.algo)
 
     @staticmethod
