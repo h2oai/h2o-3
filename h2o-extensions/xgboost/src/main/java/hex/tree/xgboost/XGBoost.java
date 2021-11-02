@@ -234,7 +234,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     checkColumnAlias("col_sample_rate", _parms._col_sample_rate, "colsample_bylevel", _parms._colsample_bylevel, 1);
     checkColumnAlias("col_sample_rate_per_tree", _parms._col_sample_rate_per_tree, "colsample_bytree", _parms._colsample_bytree, 1);
     checkColumnAlias("sample_rate", _parms._sample_rate, "subsample", _parms._subsample, 1);
-    checkColumnAlias("learn_rate", _parms._learn_rate, "subsample", _parms._eta, 0.3);
+    checkColumnAlias("learn_rate", _parms._learn_rate, "eta", _parms._eta, 0.3);
     checkColumnAlias("max_abs_leafnode_pred", _parms._max_abs_leafnode_pred, "max_delta_step", _parms._max_delta_step,0);
     checkColumnAlias("ntrees", _parms._ntrees, "n_estimators", _parms._n_estimators, 0);
     
@@ -281,8 +281,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private void checkColumnAlias(String paramName, double paramValue, String aliasName, double aliasValue, double defaultValue) {
     if (paramValue != defaultValue && aliasValue != defaultValue && paramValue != aliasValue) {
       error("_" + paramName, paramName + " and its alias " + aliasName + " are both set to different value than default value. Set " + aliasName + " to default value (" + defaultValue + "), to use " + paramName + " actual value.");
-    }
-    if (aliasValue != defaultValue){
+    } else if (aliasValue != defaultValue){
       warn("_"+paramName, "Using user-provided parameter "+aliasName+" instead of "+paramName+".\"");
     }
   }

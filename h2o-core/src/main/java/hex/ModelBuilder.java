@@ -1298,6 +1298,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Log.log(log_level,field_name + ": " + message);
     }
     public int log_level() { return _log_level; }
+    public String field() { return _field_name; }
+    public String message() { return _message; }
     @Override public String toString() { return Log.LVLS[_log_level] + " on field: " + _field_name + ": " + _message; }
   }
 
