@@ -124,17 +124,17 @@ public class Condition extends Iced {
         if (this.type.equals(Type.Categorical)) {
             expandedNumThreshold = -1;
             
-            List<String> expandedlanguageCatTresholdList = new ArrayList<>();
+            List<String> expandedLanguageCatTresholdList = new ArrayList<>();
             List<Integer> expandedCatTresholdList = new ArrayList<>();
-            expandedlanguageCatTresholdList.addAll(Arrays.asList(this.languageCatTreshold));
+            expandedLanguageCatTresholdList.addAll(Arrays.asList(this.languageCatTreshold));
             expandedCatTresholdList.addAll(Arrays.stream(this.catTreshold).boxed().collect(Collectors.toList()));
             for (int i = 0; i < otherCondition.catTreshold.length; i++) {
                 if (!expandedCatTresholdList.contains(otherCondition.catTreshold[i])) {
                     expandedCatTresholdList.add(otherCondition.catTreshold[i]);
-                    expandedlanguageCatTresholdList.add(otherCondition.languageCatTreshold[i]);
+                    expandedLanguageCatTresholdList.add(otherCondition.languageCatTreshold[i]);
                 }
             }
-            expandedlanguageCatTreshold = expandedCatTresholdList.toArray(new String[0]);
+            expandedlanguageCatTreshold = expandedLanguageCatTresholdList.toArray(new String[0]);
             expandedCatTreshold = expandedCatTresholdList.stream().mapToInt(i->i).toArray();
 
         } else {
