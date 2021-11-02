@@ -35,5 +35,6 @@ public class KMeansMojoModel extends MojoModel implements IClusteringModel {
   public int getNumClusters() {
     return _centers.length;
   }
-
+  
+  public double[][] getCenters() { return _centers; }
 }
