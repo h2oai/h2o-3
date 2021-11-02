@@ -78,7 +78,12 @@ class Jetty8Helper {
     connector.setRequestBufferSize(cfg.getRequestBufferSize());
     connector.setResponseHeaderSize(cfg.getResponseHeaderSize());
     connector.setResponseBufferSize(cfg.getOutputBufferSize(connector.getResponseBufferSize()));
-    Response.RELATIVE_REDIRECT_ALLOWED = cfg.isRelativeRedirectAllowed();
+    if (!cfg.isRelativeRedirectAllowed()) {
+      // trick: the default value is enabled -> we need to touch the field only if the relative-redirects are disabled
+      //        this means we don't have to worry about deployments where someone substituted our implementation for
+      //        something else at assembly time
+      Response.RELATIVE_REDIRECT_ALLOWED = false;
+    }
   }
 
   HandlerWrapper authWrapper(Server jettyServer) {
