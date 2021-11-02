@@ -190,6 +190,26 @@ public class RuleFitUtilsTest extends TestUtil {
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
             consolidatedRule = RuleFitUtils.consolidateRule(rule);
             assertEquals("(PSA in {ABC, AAA, CCC, BBB} or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
+
+            condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
+            condition2 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 14.730077743530273, null, null, "PSA", false);
+            condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.LessThan, 2.5, null, null,"DPROS", false);
+            conditions = new Condition[] {condition1, condition2, condition3};
+
+            rule = new Rule(conditions, 0.032236840575933456, "somevarname");
+            consolidatedRule = RuleFitUtils.consolidateRule(rule);
+            assertEquals("(PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
+
+            condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
+            condition2 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 14.730077743530273, null, null, "PSA", false);
+            condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.LessThan, 2.5, null, null,"DPROS", false);
+            Condition condition4 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 10.0, null, null, "PSA", false);
+
+            conditions = new Condition[] {condition1, condition2, condition3, condition4};
+
+            rule = new Rule(conditions, 0.032236840575933456, "somevarname");
+            consolidatedRule = RuleFitUtils.consolidateRule(rule);
+            assertEquals("(PSA < 10.0) & (PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
             
         } finally {
             Scope.exit();
