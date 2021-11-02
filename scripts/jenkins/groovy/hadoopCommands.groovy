@@ -46,6 +46,7 @@ private GString getCommandHadoop(final stageConfig) {
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'
               cat h2odriver.log
+              \$(grep -F 'yarn logs -applicationId' h2odriver.log | head -1 | cut -d"'" -f2)
               exit 1
             fi
             IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
