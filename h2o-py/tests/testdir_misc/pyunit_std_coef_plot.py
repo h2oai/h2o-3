@@ -3,6 +3,8 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+import tempfile
+import os.path
 
 def std_coef_plot_test():
   kwargs = {}
@@ -29,6 +31,14 @@ def std_coef_plot_test():
   cars_glm.std_coef_plot(server=True)
   cars_glm.std_coef_plot(num_of_features=2, server=True)
 
+  # Save a plot to tmpdir:
+  tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+  kwargs = {'dpi': 30}
+  path = "{}/plot.png".format(tmpdir)
+  cars_glm.std_coef_plot(server=True, save_plot_path=path, **kwargs)
+  
+  # Check that plot was saved
+  assert os.path.isfile(path)
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(std_coef_plot_test)
