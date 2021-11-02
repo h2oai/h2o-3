@@ -1181,17 +1181,17 @@ Certain metrics are more sensitive to outliers. When a metric is sensitive to ou
 
 Usually our model is very good. We have an absolute error less than 1 day about 70% of the time. There is one instance, however, where our model did very poorly. We have one prediction that was 30 days off.
 
-Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: ``MSE`` and ``RMSE``.
+Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: ``MAE`` and ``RMSE``.
 
 +--------------+--------+--------+
-|              | MSE    | RMSE   |
+|              | MAE    | RMSE   |
 +==============+========+========+
 | Outlier      | 0.99   | 2.64   |
 +--------------+--------+--------+
 | No Outlier   | 0.80   | 1.0    |
 +--------------+--------+--------+
 
-Calculating the ``RMSE`` and ``MSE`` on our error data, the ``RMSE`` is more than twice as large as the ``MSE`` because ``RMSE`` is sensitive to outliers. If you remove the one outlier record from our calculation, ``RMSE`` drops down significantly.
+Calculating the ``RMSE`` and ``MAE`` on our error data, the ``RMSE`` is more than twice as large as the ``MAE`` because ``RMSE`` is sensitive to outliers. If you remove the one outlier record from our calculation, ``RMSE`` drops down significantly.
 
 Performance Units
 #################
