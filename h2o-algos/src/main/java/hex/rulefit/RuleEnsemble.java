@@ -104,8 +104,8 @@ public class RuleEnsemble extends Iced {
         }
 
         @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-            int newValue = -1;
             for (int iRow = 0; iRow < cs[0].len(); iRow++) {
+                int newValue = -1;
                 for (int iCol = 0; iCol < cs.length; iCol++) {
                     if (cs[iCol].at8(iRow) == 1) {
                         newValue = iCol;
