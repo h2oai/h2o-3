@@ -3,5 +3,5 @@ description = "Interface module isolating H2O functionality from specific HTTP s
 dependencies {
     api "commons-codec:commons-codec:1.9"
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
-    testCompile "junit:junit:${junitVersion}"
+    testImplementation "junit:junit:${junitVersion}"
 }
