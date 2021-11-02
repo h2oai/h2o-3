@@ -50,7 +50,12 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         public XGBoostParameters prepareModelParameters() {
-            return XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
+            XGBoostParameters params =  XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
+            if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+                double[] dist = aml().getClassDistribution();
+                params._scale_pos_weight =  (float) (dist[0] / dist[1]);
+            }
+            return params;
         }
     }
 
@@ -166,26 +171,34 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         @Override
+        public XGBoostParameters prepareModelParameters() {
+            XGBoostParameters params = super.prepareModelParameters();
+            // Reset scale pos weight so we can grid search the parameter
+            params._scale_pos_weight = (new XGBoostParameters())._scale_pos_weight;
+            return params;
+        }
+
+        @Override
         public Map<String, Object[]> prepareSearchParameters() {
             Map<String, Object[]> searchParams = new HashMap<>();
-//                    searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators
+//            searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators
 
-                    if (_emulateLightGBM) {
-                        searchParams.put("_max_leaves", new Integer[]{1<<5, 1<<10, 1<<15, 1<<20});
-                        searchParams.put("_max_depth", new Integer[]{10, 20, 50});
-                    } else {
-                        searchParams.put("_max_depth", new Integer[]{3, 6, 9, 12, 15});
-                        if (aml().getWeightsColumn() == null || aml().getWeightsColumn().isInt()) {
-                            searchParams.put("_min_rows", new Double[]{1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
-                        } else {
-                            searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
-                        }
-                    }
-                    searchParams.put("_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _subsample
-                    searchParams.put("_col_sample_rate" , new Double[]{ 0.6, 0.8, 1.0}); // = _colsample_bylevel"
-                    searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
-//                    searchParams.put("_min_split_improvement", new Float[]{0.01f, 0.05f, 0.1f, 0.5f, 1f, 5f, 10f, 50f}); // = _gamma
-//                    searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
+            if (_emulateLightGBM) {
+                searchParams.put("_max_leaves", new Integer[]{1 << 5, 1 << 10, 1 << 15, 1 << 20});
+                searchParams.put("_max_depth", new Integer[]{10, 20, 50});
+            } else {
+                searchParams.put("_max_depth", new Integer[]{3, 6, 9, 12, 15});
+                if (aml().getWeightsColumn() == null || aml().getWeightsColumn().isInt()) {
+                    searchParams.put("_min_rows", new Double[]{1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                } else {
+                    searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight
+                }
+            }
+            searchParams.put("_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _subsample
+            searchParams.put("_col_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _colsample_bylevel"
+            searchParams.put("_col_sample_rate_per_tree", new Double[]{0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
+//            searchParams.put("_min_split_improvement", new Float[]{0.01f, 0.05f, 0.1f, 0.5f, 1f, 5f, 10f, 50f}); // = _gamma
+//            searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
             searchParams.put("_booster", new XGBoostParameters.Booster[]{ // include gblinear? cf. https://0xdata.atlassian.net/browse/PUBDEV-7254
                     XGBoostParameters.Booster.gbtree, //default, let's use it more often: note that some combinations may be trained multiple time by the RGS then.
                     XGBoostParameters.Booster.gbtree,
@@ -194,6 +207,14 @@ public class XGBoostSteps extends ModelingSteps {
 
             searchParams.put("_reg_lambda", new Float[]{0.001f, 0.01f, 0.1f, 1f, 10f, 100f});
             searchParams.put("_reg_alpha", new Float[]{0.001f, 0.01f, 0.1f, 0.5f, 1f});
+
+            if (aml().getBuildSpec().build_control.balance_classes && aml().getDistributionFamily().equals(DistributionFamily.bernoulli)) {
+                double[] dist = aml().getClassDistribution();
+                final float negPosRatio = (float)(dist[0] / dist[1]);
+                final float imbalanceRatio = negPosRatio < 1 ? 1 / negPosRatio : negPosRatio;
+                searchParams.put("_scale_pos_weight", new Float[]{1.f, negPosRatio});
+                searchParams.put("_max_delta_step",  new Float[]{0f, Math.min(5f, imbalanceRatio / 2), Math.min(10f, imbalanceRatio)});
+            }
             return searchParams;
         }
 
