@@ -1,7 +1,6 @@
 package water.webserver.jetty9;
 
 import ai.h2o.org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
-import javafx.util.Callback;
 import org.eclipse.jetty.jaas.JAASLoginService;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
