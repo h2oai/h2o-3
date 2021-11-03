@@ -402,21 +402,19 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
 .automl.poll_updates <- function(job, verbosity=NULL, state=NULL) {
   levels <- c('Debug', 'Info', 'Warn')
-  idx = ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
+  idx <- ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
   if (is.na(idx)) return()
 
-  levels <- levels[idx:length(levels)]
   try({
       if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
         project_name <- job$dest$name
-        events <- .automl.fetch_state(project_name, properties=c('event_log'))$event_log
-        events <- events[events['level'] %in% levels,]
+        events <- .automl.fetch_state(project_name, properties=list())$json$event_log_table
         last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
-        if (h2o.nrow(events) > last_nrows) {
+        if (nrow(events) > last_nrows) {
           for (row in (last_nrows+1):nrow(events)) {
             cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
           }
-          state$last_events_nrows <- h2o.nrow(events)
+          state$last_events_nrows <- nrow(events)
         }
       }
       state$last_job_progress <- job$progress
@@ -451,28 +449,26 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
 .automl.fetch_state <- function(run_id, properties=NULL) {
   # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
-  project_name <- automl_job$project_name
-  automl_id <- automl_job$automl_id$name
-
-  leaderboard <- as.data.frame(automl_job$leaderboard_table)
-  row.names(leaderboard) <- seq(nrow(leaderboard))
+  state_json <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
+  project_name <- state_json$project_name
+  automl_id <- state_json$automl_id$name
 
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
-  if (should_fetch('leaderboard')) {
-    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
-    # leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
+  if (should_fetch('leaderboard')) { 
+    leaderboard <- .automl.fetch_table(state_json$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (leaderboard$model_id[1,1] == "") {
       leaderboard <- leaderboard[-1,]
       warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
     }
+  } else {
+    leaderboard <- NULL
   }
 
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
-  if (should_fetch('leader') & nrow(leaderboard) > 0) {
-    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  if (should_fetch('leader') & nrow(state_json$leaderboard_table) > 0) {
+    leader <- h2o.getModel(state_json$leaderboard$models[[1]]$name)
   } else {
     # create a phony leader
     Class <- paste0("H2OBinomialModel")
@@ -480,15 +476,13 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   if (should_fetch('event_log')) {
-    event_log <- as.data.frame(automl_job$event_log_table)
-    event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
-    # row.names(event_log) <- seq(nrow(event_log))
+    event_log <- .automl.fetch_table(state_json$event_log_table, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
   } else {
     event_log <- NULL
   }
 
   if (should_fetch('modeling_steps')) {
-    modeling_steps <- lapply(automl_job$modeling_steps, function(sdef) {
+    modeling_steps <- lapply(state_json$modeling_steps, function(sdef) {
       list(name=sdef$name, steps=sdef$steps)
     })
   } else {
@@ -501,7 +495,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     leaderboard=leaderboard,
     leader=leader,
     event_log=event_log,
-    modeling_steps=modeling_steps
+    modeling_steps=modeling_steps,
+    json=state_json
   ))
 }
 
