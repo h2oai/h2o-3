@@ -11,6 +11,7 @@ from tests import pyunit_utils
 from h2o.automl import H2OAutoML
 from h2o.estimators import *
 from h2o.explanation._explain import H2OExplanation
+import tempfile
 
 
 def test_get_xy():
@@ -78,10 +79,20 @@ def test_explanation_single_model_regression():
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     for metric in ["auto", "deviance", "rmse"]:
-        assert isinstance(gbm.learning_curve_plot(metric=metric.upper()), matplotlib.pyplot.Figure)
-        assert isinstance(gbm.learning_curve_plot(metric), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.learning_curve_plot(metric=metric.upper()).figure, matplotlib.pyplot.Figure)
+        assert isinstance(gbm.learning_curve_plot(metric).figure, matplotlib.pyplot.Figure)
+        # test saving with parameter:
+        tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+        path = "{}/plot1".format(tmpdir) + metric + ".png"
+        gbm.learning_curve_plot(metric=metric.upper(), save_plot_path=path)
+        assert os.path.isfile(path)
+        # test saving through H2OPlotResult:
+        path = "{}/plot2".format(tmpdir) + metric + ".png"
+        plot_result = gbm.learning_curve_plot(metric)
+        plot_result.figure.savefig(fname=path)
+        assert os.path.isfile(path)       
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -197,7 +208,19 @@ def test_explanation_list_of_models_regression():
 
     # test learning curve
     for model in models:
-        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+        assert isinstance(model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
+        # test saving with parameter:
+        tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+        path = "{}/plot1.png".format(tmpdir)
+        gbm.learning_curve_plot(save_plot_path=path)
+        assert os.path.isfile(path)
+        os.remove(path)
+        # test saving through H2OPlotResult:
+        path = "{}/plot2.png".format(tmpdir)
+        plot_result = gbm.learning_curve_plot()
+        plot_result.figure.savefig(fname=path)
+        assert os.path.isfile(path)
+        os.remove(path)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -241,7 +264,17 @@ def test_explanation_single_model_binomial_classification():
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.learning_curve_plot().figure, matplotlib.pyplot.Figure)
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    gbm.learning_curve_plot(save_plot_path=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = gbm.learning_curve_plot()
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
     matplotlib.pyplot.close()
 
     # test explain
@@ -365,7 +398,7 @@ def test_explanation_list_of_models_binomial_classification():
 
     # test learning curve
     for model in models:
-        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+        assert isinstance(model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -417,7 +450,17 @@ def test_explanation_single_model_multinomial_classification():
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.learning_curve_plot().figure, matplotlib.pyplot.Figure)
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    gbm.learning_curve_plot(save_plot_path=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = gbm.learning_curve_plot()
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
     matplotlib.pyplot.close()
 
     # test explain
@@ -515,7 +558,7 @@ def test_explanation_list_of_models_multinomial_classification():
 
     # test learning curve
     for model in models:
-        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+        assert isinstance(model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -540,7 +583,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                               lambda_=0,
                                               compute_p_values=True)
     glm_model.train(predictors, response_col, training_frame=prostate)
-    assert isinstance(glm_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(glm_model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # HGLM
@@ -556,7 +599,17 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                                rand_link=["identity"],
                                                calc_like=True)
     hglm_model.train(x=x, y=y, training_frame=h2o_data)
-    assert isinstance(hglm_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(hglm_model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    hglm_model.learning_curve_plot(save_plot_path=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = hglm_model.learning_curve_plot()
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
     matplotlib.pyplot.close()
 
     # GAM
@@ -581,7 +634,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                                 num_knots=numKnots,
                                                 knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
     gam_model.train(x=x, y=y, training_frame=train, validation_frame=test)
-    assert isinstance(gam_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(gam_model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # GLRM
@@ -595,7 +648,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                                 init="SVD",
                                                 transform="standardize")
     glrm_model.train(training_frame=arrestsH2O)
-    assert isinstance(glrm_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(glrm_model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # CoxPH
@@ -606,7 +659,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
     coxph_model.train(x="age",
                       y="event",
                       training_frame=heart)
-    assert isinstance(coxph_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(coxph_model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # IsolationForest
@@ -614,7 +667,17 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                            max_depth=20,
                                            ntrees=50)
     if_model.train(training_frame=prostate)
-    assert isinstance(if_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(if_model.learning_curve_plot().figure, matplotlib.pyplot.Figure)
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    if_model.learning_curve_plot(save_plot_path=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = if_model.learning_curve_plot()
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
     matplotlib.pyplot.close()
 
 

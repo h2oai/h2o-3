@@ -4,6 +4,7 @@ import random
 import warnings
 from contextlib import contextmanager
 from collections import OrderedDict, Counter, defaultdict
+from h2o.plot import H2OPlotResult
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
 except:
@@ -1887,7 +1888,8 @@ def learning_curve_plot(
         cv_ribbon=None,  # type: Optional[bool]
         cv_lines=None,  # type: Optional[bool]
         figsize=(16,9),  # type: Tuple[float]
-        colormap=None  # type: Optional[str]
+        colormap=None,  # type: Optional[str]
+        save_plot_path=None # type: Optional[str]
 ):
     # type: (...) -> plt.Figure
     """
@@ -1905,7 +1907,8 @@ def learning_curve_plot(
                      automatically determine if this is suitable visualisation
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :return: a matplotlib figure
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :return: H2OPlotResult
 
     :examples:
     >>> import h2o
@@ -2141,8 +2144,11 @@ def learning_curve_plot(
         if lbl in labels_and_handles:
             labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
     plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
+    
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
 
-    return plt.gcf()
+    return H2OPlotResult(figure=plt.gcf())
 
 
 def _preprocess_scoring_history(model, scoring_history, training_metric=None):
