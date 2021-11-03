@@ -104,13 +104,63 @@ The MOJO import functionality provides a means to use external, pre-trained mode
 Supported MOJOs
 ~~~~~~~~~~~~~~~
 
-Only a subset of H2O MOJO models is supported in this version. 
+.. |yes| image:: /images/checkmark.png
+   :scale: 3%
+   :align: middle
 
--  GBM (Gradient Boosting Machines)
--  DRF (Distributed Random Forest)
--  IRF (Isolation Random Forest)
--  GLM (Generalized Linear Model)
--  XGBoost
+.. |no| image:: /images/xmark.png
+  :scale: 3%
+  :align: middle
+
++---------------+------------+------------+
+| Algorithm     | Importable | Exportable |
++===============+============+============+
+| AutoML**      | |yes|      | |yes|      |
++---------------+------------+------------+
+| GAM           | |yes|      | |no|       |
++---------------+------------+------------+
+| GBM           | |yes|      | |yes|      |
++---------------+------------+------------+
+| GLM           | |yes|      | |yes|      |
++---------------+------------+------------+
+| MAXR          | |no|       | |no|       |
++---------------+------------+------------+
+| XGBoost       | |yes|      | |yes|      |
++---------------+------------+------------+
+| DRF           | |yes|      | |yes|      |
++---------------+------------+------------+
+| Deep Learning | |yes|      | |yes|      |
++---------------+------------+------------+
+| Stacked       | |yes|      | |yes|      |
+| Ensemble      |            |            |
++---------------+------------+------------+
+| CoxPH         | |yes|      | |yes|      |
++---------------+------------+------------+
+| RuleFit       | |yes|      | |yes|      |
++---------------+------------+------------+
+| Naive Bayes   | |no|       | |no|       |
+| Classifier    |            |            |
++---------------+------------+------------+
+| SVM           | |no|       | |no|       |
++---------------+------------+------------+
+| K-Means       | |yes|      | |no|       |
++---------------+------------+------------+
+| Isolation     | |yes|      | |yes|      |
+| Forest        |            |            |
++---------------+------------+------------+
+| Extended      | |no|       | |no|       |
+| Isolation     |            |            |
+| Forest        |            |            |
++---------------+------------+------------+
+| Aggregator    | |no|       | |no|       |
++---------------+------------+------------+
+| GLRM          | |yes|      | |no|       |
++---------------+------------+------------+
+| PCA           | |yes|      | |no|       |
++---------------+------------+------------+
+
+**Note**: AutoML will always produce a model which has a MOJO. Though it depends on the run, you are most likely to get a Stacked Ensemble. While all models are importable, only individual models are exportable.
+
 
 Saving and Importing MOJOs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
