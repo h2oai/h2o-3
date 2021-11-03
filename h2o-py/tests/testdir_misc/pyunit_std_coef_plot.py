@@ -31,13 +31,18 @@ def std_coef_plot_test():
   cars_glm.std_coef_plot(server=True)
   cars_glm.std_coef_plot(num_of_features=2, server=True)
 
-  # Save a plot to tmpdir:
+  # Save a plot to tmpdir by save_plot_path parameter:
   tmpdir = tempfile.mkdtemp(prefix="h2o-func")
   kwargs = {'dpi': 30}
-  path = "{}/plot.png".format(tmpdir)
+  path = "{}/plot1.png".format(tmpdir)
   cars_glm.std_coef_plot(server=True, save_plot_path=path, **kwargs)
-  
   # Check that plot was saved
+  assert os.path.isfile(path)
+
+  # Save a plot to tmpdir by handling returned H2OPlotResult:
+  path = "{}/plot2.png".format(tmpdir)
+  plt = cars_glm.std_coef_plot(server=True)
+  plt._figure.savefig(fname=path)
   assert os.path.isfile(path)
 
 if __name__ == "__main__":

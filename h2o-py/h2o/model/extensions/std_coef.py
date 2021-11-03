@@ -1,3 +1,4 @@
+from h2o.plot_result import H2OPlotResult
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type, I
 
@@ -13,7 +14,7 @@ class StandardCoef:
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
         :param **savefig: can be used to pass in additional savefig configuration
 
-        :returns: None.
+        :returns: H2OPlotResult
         """
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
 
@@ -117,3 +118,4 @@ class StandardCoef:
         # show plot
         if server:
             plt.show()
+        return H2OPlotResult(figure=plt)    

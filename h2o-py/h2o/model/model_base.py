@@ -1475,7 +1475,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
         :param **savefig: can be used to pass in additional savefig configuration
 
-        :returns: None.
+        :returns: H2OPlotResult.
         """
         # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
