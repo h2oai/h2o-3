@@ -11,6 +11,4 @@ class H2OPlotResult(object):
 
     def __getitem__(self, idx):
         return self._tuple[idx]
-    
-    def tuple(self):
-        return self._tuple
+

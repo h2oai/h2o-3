@@ -745,7 +745,7 @@ class H2OBinomialModel(ModelBase):
                 m[k] = v.metric(metric, thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
-    def plot(self, timestep="AUTO", metric="AUTO", server=False, save_plot_path=None, **savefig):
+    def plot(self, timestep="AUTO", metric="AUTO", server=False, save_plot_path=None):
         """
         Plot training set (and validation set if available) scoring history for an H2OBinomialModel.
 
@@ -775,7 +775,7 @@ class H2OBinomialModel(ModelBase):
             assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2OBinomialModel must be one of %s" % valid_metrics
         if metric == "AUTO":
             metric = self._default_metric('binomial') or 'AUTO'
-        return self.scoring_history_plot(timestep=timestep, metric=metric, server=server, save_plot_path=save_plot_path,  **savefig)
+        return self.scoring_history_plot(timestep=timestep, metric=metric, server=server, save_plot_path=save_plot_path)
 
     def roc(self, train=False, valid=False, xval=False):
         """

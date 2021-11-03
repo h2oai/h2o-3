@@ -29,7 +29,7 @@ def glm_pr_plot_test():
     if os.path.isfile(fn):
         os.remove(fn)
 
-    (recall, precision) = perf.plot(type="pr", server=True, plot=False).tuple()
+    (recall, precision) = perf.plot(type="pr", server=True, plot=False)
     assert len(precision) == len(recall), "Expected precision and recall to have the same shape but they are not."
 
 

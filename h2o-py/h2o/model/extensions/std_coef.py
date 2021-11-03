@@ -1,18 +1,17 @@
-from h2o.plot_result import H2OPlotResult
+from h2o.plot.plot_result import H2OPlotResult
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type, I
 
 
 class StandardCoef:
 
-    def _std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None, **savefig):
+    def _std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot a GLM model"s standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
         :param server: if true set server settings to matplotlib and show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-        :param **savefig: can be used to pass in additional savefig configuration
 
         :returns: H2OPlotResult
         """
@@ -114,7 +113,7 @@ class StandardCoef:
         plt.tick_params(axis="x", which="minor", bottom="off", top="off",  labelbottom="off")
         plt.title("Standardized Coef. Magnitudes: H2O GLM", fontsize=20)
         if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path, **savefig)
+            plt.savefig(fname=save_plot_path)
         # show plot
         if server:
             plt.show()

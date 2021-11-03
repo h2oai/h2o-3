@@ -55,9 +55,9 @@ def plot_test():
  
         
      # Test no plot parameter
-    (fprs, tprs) = perf_test.plot(type="roc", server=True, plot=False).tuple()
+    (fprs, tprs) = perf_test.plot(type="roc", server=True, plot=False)
     assert len(fprs) == len(tprs), "Expected fprs and tprs to have the same shape but they are not."
-    (recalls, precisions) = perf_test.plot(type="pr", server=True, plot=False).tuple()
+    (recalls, precisions) = perf_test.plot(type="pr", server=True, plot=False)
     assert len(recalls) == len(precisions), "Expected recall and precision to have the same shape but they are not."
 
 
