@@ -44,11 +44,20 @@ def plot_test():
     perf_test.plot(type="pr", server=False, save_to_file=fn)
     if os.path.isfile(fn):
         os.remove(fn)
+    plot_result = perf_test.plot(type="roc", server=False)
+    plot_result.figure.savefig(fn)
+    if os.path.isfile(fn):
+        os.remove(fn)
+    plot_result = perf_test.plot(type="pr", server=False)
+    plot_result.figure.savefig(fn)
+    if os.path.isfile(fn):
+        os.remove(fn)
+ 
         
      # Test no plot parameter
-    (fprs, tprs) = perf_test.plot(type="roc", server=True, plot=False)
+    (fprs, tprs) = perf_test.plot(type="roc", server=True, plot=False).tuple()
     assert len(fprs) == len(tprs), "Expected fprs and tprs to have the same shape but they are not."
-    (recalls, precisions) = perf_test.plot(type="pr", server=True, plot=False)
+    (recalls, precisions) = perf_test.plot(type="pr", server=True, plot=False).tuple()
     assert len(recalls) == len(precisions), "Expected recall and precision to have the same shape but they are not."
 
 

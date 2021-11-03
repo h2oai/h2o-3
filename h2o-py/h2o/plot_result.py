@@ -3,7 +3,7 @@
 class H2OPlotResult(object):
 
     def __init__(self, *args, figure=None):
-        self._figure = figure
+        self.figure = figure
         self._tuple = args
 
     def __iter__(self):
@@ -11,3 +11,6 @@ class H2OPlotResult(object):
 
     def __getitem__(self, idx):
         return self._tuple[idx]
+    
+    def tuple(self):
+        return self._tuple

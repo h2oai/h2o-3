@@ -8,6 +8,7 @@ Regression model.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.model.confusion_matrix import ConfusionMatrix
+from h2o.plot_result import H2OPlotResult
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
@@ -1419,11 +1420,12 @@ class H2OBinomialModelMetrics(MetricsBase):
         elif type == "pr":
             return self._plot_pr(server, save_to_file, plot)
     
-    def _plot_roc(self, server=False, save_to_file=None, plot=True):
+    def _plot_roc(self, server=False, save_to_file=None, plot=True, **savefig):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
                 return
+            fig = plt.figure()
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
             plt.title('Receiver Operating Characteristic Curve')
@@ -1435,11 +1437,12 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(save_to_file)
+                plt.savefig(fname=save_to_file, **savefig)
+            return H2OPlotResult(self.fprs, self.tprs, figure=fig)   
         else:
-            return self.fprs, self.tprs
+            return H2OPlotResult(self.fprs, self.tprs, figure=None)
 
-    def _plot_pr(self, server=False, save_to_file=None, plot=True):
+    def _plot_pr(self, server=False, save_to_file=None, plot=True, **savefig):
         recalls = [x[0] for x in self.recall(thresholds='all')]
         precisions = self.tprs
         assert len(precisions) == len(recalls), "Precision and recall arrays must have the same length"
@@ -1447,6 +1450,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             plt = get_matplotlib_pyplot(server)
             if plt is None:
                 return
+            fig = plt.figure()
             plt.xlabel('Recall (TP/(TP+FP))')
             plt.ylabel('Precision (TPR)')
             plt.title('Precision Recall Curve')
@@ -1458,9 +1462,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(save_to_file)
+                plt.savefig(fname=save_to_file, **savefig)
+            return H2OPlotResult(recalls, precisions, figure=fig)
         else:
-            return recalls, precisions
+            return H2OPlotResult(recalls, precisions, figure=None)
 
 
     @property
