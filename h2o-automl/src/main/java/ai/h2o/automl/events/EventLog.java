@@ -1,12 +1,13 @@
 package ai.h2o.automl.events;
 
-import ai.h2o.automl.events.EventLogEntry.Level;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import water.DKV;
 import water.Futures;
 import water.Key;
 import water.Keyed;
-import water.util.Log;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
+import water.logging.LoggingLevel;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
@@ -19,6 +20,8 @@ import java.util.stream.Stream;
  * Events are formatted with the intent of rendering on client side.
  */
 public class EventLog extends Keyed<EventLog> {
+  
+  private static final Logger log = LoggerFactory.getLogger(EventLog.class);
 
   public final Key _runner_id;
   public EventLogEntry[] _events;
@@ -46,24 +49,30 @@ public class EventLog extends Keyed<EventLog> {
 
   /** Add a Debug EventLogEntry and log. */
   public <V extends Serializable> EventLogEntry<V> debug(Stage stage, String message) {
-    Log.debug(stage+": "+message);
-    return addEvent(Level.Debug, stage, message);
+    log.debug(stage+": "+message);
+    return addEvent(LoggingLevel.DEBUG, stage, message);
   }
 
   /** Add a Info EventLogEntry and log. */
   public <V extends Serializable> EventLogEntry<V> info(Stage stage, String message) {
-    Log.info(stage+": "+message);
-    return addEvent(Level.Info, stage, message);
+    log.info(stage+": "+message);
+    return addEvent(LoggingLevel.INFO, stage, message);
   }
 
   /** Add a Warn EventLogEntry and log. */
   public <V extends Serializable> EventLogEntry<V> warn(Stage stage, String message) {
-    Log.warn(stage+": "+message);
-    return addEvent(Level.Warn, stage, message);
+    log.warn(stage+": "+message);
+    return addEvent(LoggingLevel.WARN, stage, message);
+  }
+
+  /** Add an Error EventLogEntry and log. */
+  public <V extends Serializable> EventLogEntry<V> error(Stage stage, String message) {
+    log.error(stage+": "+message);
+    return addEvent(LoggingLevel.ERROR, stage, message);
   }
 
   /** Add a EventLogEntry, but don't log. */
-  public <V extends Serializable> EventLogEntry<V> addEvent(Level level, Stage stage, String message) {
+  public <V extends Serializable> EventLogEntry<V> addEvent(LoggingLevel level, Stage stage, String message) {
     EventLogEntry<V> entry = new EventLogEntry<>(_runner_id, level, stage, message);
     addEvent(entry);
     return entry;

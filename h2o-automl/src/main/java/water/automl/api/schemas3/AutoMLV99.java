@@ -2,16 +2,15 @@ package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.StepDefinition;
 import water.Iced;
 import water.Key;
 import water.api.API;
-import water.api.EnumValuesProvider;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
 import water.api.schemas3.TwoDimTableV3;
+import water.logging.LoggingLevel;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
@@ -28,8 +27,8 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   public AutoMLKeyV3 automl_id;
 
   @API(help="Verbosity level of the returned event log", direction=API.Direction.INOUT,
-          valuesProvider= EventLogV99.VerbosityProvider.class)
-  public EventLogEntry.Level verbosity;
+          valuesProvider= EventLogEntryV99.LevelProvider.class)
+  public LoggingLevel verbosity;
 
   @API(help="ID of the actual training frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 training_frame;

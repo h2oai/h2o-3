@@ -3,21 +3,15 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import water.api.API;
-import water.api.EnumValuesProvider;
 import water.api.Schema;
 import water.api.schemas3.TwoDimTableV3;
+import water.logging.LoggingLevel;
 
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class EventLogV99 extends Schema<EventLog, EventLogV99> {
   
-  public static final class VerbosityProvider extends EnumValuesProvider<EventLogEntry.Level> {
-    public VerbosityProvider() {
-      super(EventLogEntry.Level.class);
-    }
-  }
-
   @API(help="ID of the AutoML run for which the event log was recorded", direction=API.Direction.INOUT)
   public AutoMLV99.AutoMLKeyV3 automl_id;
 
@@ -28,8 +22,8 @@ public class EventLogV99 extends Schema<EventLog, EventLogV99> {
   public TwoDimTableV3 table;
 
   @API(help="Verbosity level of the returned event log", direction=API.Direction.INOUT,
-          valuesProvider= EventLogV99.VerbosityProvider.class)
-  public EventLogEntry.Level verbosity;
+          valuesProvider= EventLogEntryV99.LevelProvider.class)
+  public LoggingLevel verbosity;
 
   @Override public EventLogV99 fillFromImpl(EventLog eventLog) {
     super.fillFromImpl(eventLog, new String[] { "events" });

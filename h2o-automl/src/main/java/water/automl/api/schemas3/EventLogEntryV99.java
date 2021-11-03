@@ -1,11 +1,11 @@
 package water.automl.api.schemas3;
 
 import ai.h2o.automl.events.EventLogEntry;
-import ai.h2o.automl.events.EventLogEntry.Level;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.schemas3.SchemaV3;
+import water.logging.LoggingLevel;
 
 import java.util.Objects;
 
@@ -15,7 +15,7 @@ public class EventLogEntryV99 extends SchemaV3<EventLogEntry, EventLogEntryV99> 
   public long timestamp;
 
   @API(help="Importance of this log event", valuesProvider = LevelProvider.class, direction=API.Direction.OUTPUT)
-  public Level level;
+  public LoggingLevel level;
 
   @API(help="Stage of the AutoML process for this log event", valuesProvider = StageProvider.class, direction=API.Direction.OUTPUT)
   public Stage stage;
@@ -30,8 +30,8 @@ public class EventLogEntryV99 extends SchemaV3<EventLogEntry, EventLogEntryV99> 
   public String value;
 
 
-  public static final class LevelProvider extends EnumValuesProvider<Level> {
-    public LevelProvider() { super(Level.class); }
+  public static final class LevelProvider extends EnumValuesProvider<LoggingLevel> {
+    public LevelProvider() { super(LoggingLevel.class); }
   }
 
   public static final class StageProvider extends EnumValuesProvider<Stage> {
