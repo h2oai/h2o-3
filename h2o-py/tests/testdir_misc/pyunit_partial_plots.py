@@ -1,4 +1,7 @@
+import os
 import sys
+import tempfile
+
 sys.path.insert(1,"../../")
 import h2o
 import math
@@ -66,6 +69,18 @@ def partial_plot_test():
     assert h2o_mean_response_pdp_row == pdp_row_manual[0]
     assert h2o_stddev_response_pdp_row == pdp_row_manual[1]
     assert h2o_std_error_mean_response_pdp_row == pdp_row_manual[2]
+
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1, save_to_file=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1)
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
+
     
     
 def partial_dependence(object, pred_data, xname, h2o_pp, pdp_name_idx):

@@ -1,4 +1,7 @@
+import os
 import sys
+import tempfile
+
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
@@ -83,6 +86,19 @@ def partial_plot_test():
     pdp_petal_len_cat_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True, 
                                                server=True)
     print(pdp_petal_len_cat_std)
+
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
+                       server=True, save_to_file=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
+                                     server=True)
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
 
 
 if __name__ == "__main__":

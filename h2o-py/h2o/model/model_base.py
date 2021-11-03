@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.plot import H2OPlotResult
 from h2o.utils.compatibility import *  # NOQA
 
 import os
@@ -1086,7 +1087,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
-        :returns: Plot and list of calculated mean response tables for each feature requested.
+        :returns: H2OPlotResult (plot and list of calculated mean response tables for each feature requested).
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0
@@ -1163,9 +1164,9 @@ class ModelBase(h2o_meta(Keyed)):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+        plot_result = self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
                                       kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets, include_na)
-        return pps
+        return H2OPlotResult(pps, figure=plot_result.figure if plot else None)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
         # extract user defined split points from dict user_splits into an integer array of column indices
@@ -1257,6 +1258,7 @@ class ModelBase(h2o_meta(Keyed)):
                       "mpl_toolkits.mplot3d or matplotlib.")
             if (save_to_file is not None) and fig_plotted:  # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
+            return H2OPlotResult(figure=fig)   
 
     def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
                       plot_stddev, cm, i, row_index):
