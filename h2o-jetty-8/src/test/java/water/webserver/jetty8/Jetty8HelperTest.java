@@ -1,6 +1,7 @@
 package water.webserver.jetty8;
 
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -10,12 +11,14 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+import water.webserver.config.ConnectionConfiguration;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.*;
 
 public class Jetty8HelperTest {
 
@@ -55,6 +58,24 @@ public class Jetty8HelperTest {
     Server s = new Jetty8Helper(_hhView).createJettyServer("127.0.0.1", 0);
     assertTrue(s.getThreadPool() instanceof QueuedThreadPool);
     assertTrue(((QueuedThreadPool) s.getThreadPool()).isDaemon());
+  }
+
+  @Test
+  public void testConfigureConnector() {
+    boolean origRedirects = Response.RELATIVE_REDIRECT_ALLOWED;
+    try {
+      Response.RELATIVE_REDIRECT_ALLOWED = false;
+      Connector defaultConnectorMock = mock(Connector.class);
+
+      ConnectionConfiguration cfg = new ConnectionConfiguration(false);
+      Jetty8Helper.configureConnector(defaultConnectorMock, cfg);
+
+      verify(defaultConnectorMock).setRequestHeaderSize(32 * 1024);
+      verify(defaultConnectorMock).setRequestBufferSize(32 * 1024);
+      assertTrue(Response.RELATIVE_REDIRECT_ALLOWED);
+    } finally {
+      Response.RELATIVE_REDIRECT_ALLOWED = origRedirects;
+    }
   }
 
 }

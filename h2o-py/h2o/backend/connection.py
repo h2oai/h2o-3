@@ -466,15 +466,10 @@ class H2OConnection(h2o_meta()):
         # Make the request
         start_time = time.time()
         try:
-            self._log_start_transaction(endpoint, data, json, files, params)
-
-            headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
-                       "X-Cluster": self._cluster_id,
-                       "Cookie": self._cookies}
-            verify = self._cacert if self._verify_ssl_cert and self._cacert else self._verify_ssl_cert
+            self._log_start_transaction(endpoint, data, json, files, params)            
+            args = self._request_args()
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
-                                    headers=headers, timeout=self._timeout, stream=stream,
-                                    auth=self._auth, verify=verify, proxies=self._proxies)
+                                    stream=stream, **args)
             if isinstance(save_to, types.FunctionType):
                 save_to = save_to(resp)
             self._log_end_transaction(start_time, resp)
@@ -497,6 +492,19 @@ class H2OConnection(h2o_meta()):
                 err.endpoint = endpoint
                 err.payload = (data, json, files, params)
             raise
+
+    def _request_args(self):
+        headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
+                   "X-Cluster": self._cluster_id,
+                   "Cookie": self._cookies}
+        verify = self._cacert if self._verify_ssl_cert and self._cacert else self._verify_ssl_cert
+        return {
+            'headers': headers,
+            'timeout': self._timeout,
+            'auth': self._auth,
+            'verify': verify,
+            'proxies': self._proxies
+        }
 
     @staticmethod
     def save_to_detect(resp):
