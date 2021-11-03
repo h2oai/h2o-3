@@ -1,15 +1,9 @@
 #' Automatic Machine Learning
-#'
+#' 
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-#' The current version of AutoML trains and cross-validates the following algorithms:
-#' three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs,
-#' a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net,
-#' an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs,
-#' and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms,
-#' so some may be missing from the leaderboard. AutoML trains several Stacked Ensemble models during the run.
-#' Two kinds of Stacked Ensemble models are trained one of all available models, and one of only the best models of each kind.
-#' Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
-#'
+#' AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
+#' which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
+#' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or index of the response variable in the model. For classification, the y column must be a
@@ -69,11 +63,31 @@
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
-#'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
+#'        Must be one of NULL (live log disabled), "debug", "info", "warn", "error". Defaults to "warn".
 #' @param ... Additional (experimental) arguments to be passed through; Optional.        
-#' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
+#' @details AutoML trains several models, cross-validated by default, by using the following available algorithms:
+#'  * XGBoost
+#'  * GBM (Gradient Boosting Machine)
+#'  * GLM (Generalized Linear Model)
+#'  * DRF (Distributed Random Forest)
+#'  * XRT (eXtremely Randomized Trees)
+#'  * DeepLearning
+#' 
+#'  It also applies HPO on the following algorithms:
+#'  * XGBoost
+#'  * GBM
+#'  * DeepLearning
+#' 
+#'  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.
+#' 
+#'  Finally, AutoML also trains several Stacked Ensemble models at various stages during the run.
+#'  Mainly two kinds of Stacked Ensemble models are trained:
+#'  * one of all available models at time t.
+#'  * one of only the best models of each kind at time t.
+#' 
+#'  Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
+#'
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -87,6 +101,7 @@
 #' head(lb)
 #' }
 #' @export
+#' @md
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
@@ -401,7 +416,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 }
 
 .automl.poll_updates <- function(job, verbosity=NULL, state=NULL) {
-  levels <- c('Debug', 'Info', 'Warn')
+  levels <- c('debug', 'info', 'warn', 'error')
   idx <- ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
   if (is.na(idx)) return()
 

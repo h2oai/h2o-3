@@ -73,19 +73,29 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     Automatic Machine Learning
 
     The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-    The current version of AutoML trains and cross-validates the following algorithms (in the following order):
-    three pre-specified XGBoost GBM (Gradient Boosting Machine) models,
-    a fixed grid of GLMs,
-    a default Random Forest (DRF),
-    five pre-specified H2O GBMs,
-    a near-default Deep Neural Net,
-    an Extremely Randomized Forest (XRT),
-    a random grid of XGBoost GBMs,
-    a random grid of H2O GBMs,
-    and a random grid of Deep Neural Nets.
+    It trains several models, cross-validated by default, by using the following available algorithms:
+    
+    - XGBoost
+    - GBM (Gradient Boosting Machine)
+    - GLM (Generalized Linear Model)
+    - DRF (Distributed Random Forest)
+    - XRT (eXtremely Randomized Trees)
+    - DeepLearning
+    
+    It also applies HPO on the following algorithms:
+    
+    - XGBoost
+    - GBM
+    - DeepLearning
+    
     In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the
-    leaderboard.  AutoML trains several Stacked Ensemble models during the run.
-    Two kinds of Stacked Ensemble models are trained one of all available models, and one of only the best models of each kind.
+    leaderboard. 
+    Finally, AutoML also trains several Stacked Ensemble models at various stages during the run.
+    Mainly two kinds of Stacked Ensemble models are trained:
+    
+    - one of all available models at time t
+    - one of only the best models of each kind at time t.
+    
     Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
 
     :examples:
@@ -224,7 +234,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are ``None`` (live log disabled), ``"debug"``, ``"info"`` or ``"warn"``.
+            Available options are ``None`` (live log disabled), ``"debug"``, ``"info"``, ``"warn"`` or ``"error"``.
             Defaults to ``"warn"``.
         """
 
@@ -617,8 +627,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         """
         the callback function used to print verbose info when polling AutoML job.
         """
-        levels = ['Debug', 'Info', 'Warn']
-        if verbosity is None or verbosity.capitalize() not in levels:
+        levels = ['debug', 'info', 'warn', 'error']
+        if verbosity is None or verbosity.lower() not in levels:
             return
 
         try:
