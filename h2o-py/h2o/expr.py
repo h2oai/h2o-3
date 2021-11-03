@@ -114,9 +114,17 @@ class ExprNode(object):
         res = ExprNode.rapids(exec_str)
         if 'scalar' in res:
             if isinstance(res['scalar'], list):
-                self._cache._data = [float(x) for x in res['scalar']]
+                data_f = [float(x) for x in res['scalar']]
+                data_i = [None if math.isnan(f) else int(f) for f in data_f]
+                # return the int version only if all the items are ints
+                self._cache._data = data_i if data_i == data_f else data_f
             else:
-                self._cache._data = None if res['scalar'] is None else float(res['scalar'])
+                data = res['scalar']
+                data_f = float(data) if data is not None else None
+                data_i = int(data_f) if data_f is not None and not math.isnan(data_f) else None
+                self._cache._data = (None if data is None 
+                                     else data_i if data_i == data_f 
+                                     else data_f)
         if 'string' in res: self._cache._data = res['string']
         if 'funstr' in res: raise NotImplementedError
         if 'key' in res:

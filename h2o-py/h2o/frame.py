@@ -81,12 +81,13 @@ class H2OFrame(Keyed):
     >>> frame
     """
 
-    # Temp flag: set this to false for now if encountering path conversion/expansion issues when import files to remote server
+    # Temp flag: set this to false
+    # for now if encountering path conversion/expansion issues when import files to remote server
     __LOCAL_EXPANSION_ON_SINGLE_IMPORT__ = True
 
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Construction
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
                  column_names=None, column_types=None, na_strings=None, skipped_columns=None):
@@ -117,7 +118,6 @@ class H2OFrame(Keyed):
         if cache is not None:
             fr._ex._cache.fill_from(cache)
         return fr
-
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
                               column_names=None, column_types=None, na_strings=None, skipped_columns=None):
@@ -150,7 +150,6 @@ class H2OFrame(Keyed):
         tmp_file.close()  # close the streams
         self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings, skipped_columns)
         os.remove(tmp_path)  # delete the tmp file
-
 
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
         import scipy.sparse as sp
@@ -192,7 +191,6 @@ class H2OFrame(Keyed):
         H2OJob(h2o.api("POST /3/ParseSVMLight", data=p), "Parse").poll()
         self._ex._cache._id = destination_frame
         self._ex._cache.fill()
-
 
     @staticmethod
     def get_frame(frame_id, rows=10, rows_offset=0, cols=-1, full_cols=-1, cols_offset=0, light=False):
@@ -238,7 +236,6 @@ class H2OFrame(Keyed):
                 return fr
             return param
 
-
     def refresh(self):
         """
         Reload frame information from the backend H2O server.
@@ -263,11 +260,9 @@ class H2OFrame(Keyed):
         self._ex._cache.flush()
         self._frame(fill_cache=True)
 
-
-
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Frame properties
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
 
     @property
     def key(self):
@@ -282,7 +277,6 @@ class H2OFrame(Keyed):
         >>> frame.key
         """
         return None if self._ex is None else self.frame_id
-
 
     @property
     def names(self):
@@ -305,7 +299,6 @@ class H2OFrame(Keyed):
     def names(self, value):
         self.set_names(value)
 
-
     @property
     def nrows(self):
         """
@@ -320,7 +313,6 @@ class H2OFrame(Keyed):
             self._ex._cache.flush()
             self._frame(fill_cache=True)
         return self._ex._cache.nrows
-
 
     @property
     def ncols(self):
@@ -339,7 +331,6 @@ class H2OFrame(Keyed):
             self._frame(fill_cache=True)
         return self._ex._cache.ncols
 
-
     @property
     def shape(self):
         """
@@ -354,7 +345,6 @@ class H2OFrame(Keyed):
         >>> iris.shape
         """
         return self.nrows, self.ncols
-
 
     @property
     def types(self):
@@ -420,7 +410,6 @@ class H2OFrame(Keyed):
             self._ex._cache._id = newid
             h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, newid))
 
-
     def type(self, col):
         """
         The type for the given column.
@@ -448,7 +437,6 @@ class H2OFrame(Keyed):
                 return types[names[col]]
         raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
-
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
                       skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
@@ -458,7 +446,6 @@ class H2OFrame(Keyed):
                     skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self
 
-
     def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
                       quotechar=None, escapechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
@@ -467,14 +454,12 @@ class H2OFrame(Keyed):
                     quotechar=quotechar, escapechar=escapechar)
         return self
 
-
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
                na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
                escapechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
                                 skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self._parse_raw(setup)
-
 
     def _parse_raw(self, setup):
         # Parse parameters (None values provided by setup)
@@ -508,7 +493,6 @@ class H2OFrame(Keyed):
         self._ex._cache._id = p["destination_frame"]
         self._ex._cache.fill()
 
-
     def filter_na_cols(self, frac=0.2):
         """
         Filter columns with proportion of NAs greater or equals than ``frac``.
@@ -527,7 +511,6 @@ class H2OFrame(Keyed):
         >>> include_cols2
         """
         return ExprNode("filterNACols", self, frac)._eager_scalar()
-
 
     def columns_by_type(self, coltype="numeric"):
         """
@@ -559,7 +542,6 @@ class H2OFrame(Keyed):
         assert_is_type(coltype, "numeric", "categorical", "string", "time", "uuid", "bad")
         assert_is_type(self, H2OFrame)
         return ExprNode("columnsByType", self, coltype)._eager_scalar()
-
 
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
@@ -634,7 +616,6 @@ class H2OFrame(Keyed):
                 except UnicodeEncodeError:
                     print(s.encode("ascii", "replace"))
 
-
     def summary(self, return_data=False):
         """
         Display summary information about the frame.
@@ -665,7 +646,6 @@ class H2OFrame(Keyed):
                 print(self._ex._cache._tabulate("simple", True))
         else:
             return self._ex._cache._data
-
 
     def describe(self, chunk_summary=False):
         """
@@ -726,13 +706,11 @@ class H2OFrame(Keyed):
         """
         self._ex = None
 
-
     def _frame(self, rows=10, rows_offset=0, cols=-1, cols_offset=0, fill_cache=False):
         self._ex._eager_frame()
         if fill_cache:
             self._ex._cache.fill(rows=rows, rows_offset=rows_offset, cols=cols, cols_offset=cols_offset)
         return self
-
 
     def head(self, rows=10, cols=200):
         """
@@ -759,7 +737,6 @@ class H2OFrame(Keyed):
         ncols = min(self.ncols, cols)
         newdt = self[:nrows, :ncols]
         return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
-
 
     def tail(self, rows=10, cols=200):
         """
@@ -791,7 +768,6 @@ class H2OFrame(Keyed):
         newdt = self[start_idx:start_idx + nrows, :ncols]
         return newdt._frame(rows=nrows, cols=cols, fill_cache=True)
 
-
     def logical_negation(self):
         """
         Create a new H2OFrame equal to elementwise Logical NOT applied to the current frame.
@@ -805,7 +781,6 @@ class H2OFrame(Keyed):
         >>> frame.logical_negation()
         """
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
-
 
     def _unop(self, op, rtype="real"):
         if self._is_frame:
@@ -923,7 +898,6 @@ class H2OFrame(Keyed):
     def __float__(self):
         return float(self.flatten())
 
-
     def flatten(self):
         """
         Convert a 1x1 frame into a scalar.
@@ -942,7 +916,6 @@ class H2OFrame(Keyed):
         """
         if self.shape != (1, 1): raise H2OValueError("Not a 1x1 Frame")
         return ExprNode("flatten", self)._eager_scalar()
-
 
     def getrow(self):
         """
@@ -975,7 +948,6 @@ class H2OFrame(Keyed):
             raise H2OValueError("This method can only be applied to single-row frames")
         return ExprNode("getrow", self)._eager_scalar()
 
-
     def mult(self, matrix):
         """
         Multiply this frame, viewed as a matrix, by another matrix.
@@ -994,7 +966,6 @@ class H2OFrame(Keyed):
             raise H2OValueError("Matrix is not compatible for multiplication with the current frame")
         return H2OFrame._expr(expr=ExprNode("x", self, matrix))
 
-
     def cos(self):
         """
         Create a new H2OFrame equal to elementwise cosine of the current frame.
@@ -1008,7 +979,6 @@ class H2OFrame(Keyed):
         >>> frame.cos()
         """
         return self._unop("cos")
-
 
     def sin(self):
         """
@@ -1024,7 +994,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("sin")
 
-
     def tan(self):
         """
         Create a new H2OFrame equal to elementwise tangent of the current frame.
@@ -1038,7 +1007,6 @@ class H2OFrame(Keyed):
         >>> frame.tan()
         """
         return self._unop("tan")
-
 
     def acos(self):
         """
@@ -1054,7 +1022,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("acos")
 
-
     def asin(self):
         """
         Create a new H2OFrame equal to elementwise arc sine of the current frame.
@@ -1068,7 +1035,6 @@ class H2OFrame(Keyed):
         >>> frame.asin()
         """
         return self._unop("asin")
-
 
     def atan(self):
         """
@@ -1084,7 +1050,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("atan")
 
-
     def cosh(self):
         """
         Create a new H2OFrame with values equal to the hyperbolic cosines of the values in the current frame.
@@ -1098,7 +1063,6 @@ class H2OFrame(Keyed):
         >>> frame.cosh()
         """
         return self._unop("cosh")
-
 
     def sinh(self):
         """
@@ -1114,7 +1078,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("sinh")
 
-
     def tanh(self):
         """
         Create a new H2OFrame equal to elementwise hyperbolic tangent of the current frame.
@@ -1128,7 +1091,6 @@ class H2OFrame(Keyed):
         >>> frame.tanh()
         """
         return self._unop("tanh")
-
 
     def acosh(self):
         """
@@ -1144,7 +1106,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("acosh")
 
-
     def asinh(self):
         """
         Create a new H2OFrame equal to elementwise inverse hyperbolic sine of the current frame.
@@ -1158,7 +1119,6 @@ class H2OFrame(Keyed):
         >>> frame.asinh()
         """
         return self._unop("asinh")
-
 
     def atanh(self):
         """
@@ -1174,7 +1134,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("atanh")
 
-
     def cospi(self):
         """
         Create a new H2OFrame equal to elementwise cosine of the current frame multiplied by Pi.
@@ -1188,7 +1147,6 @@ class H2OFrame(Keyed):
         >>> frame.cospi()
         """
         return self._unop("cospi")
-
 
     def sinpi(self):
         """
@@ -1204,7 +1162,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("sinpi")
 
-
     def tanpi(self):
         """
         Create a new H2OFrame equal to elementwise tangent of the current frame multiplied by Pi.
@@ -1218,7 +1175,6 @@ class H2OFrame(Keyed):
         >>> frame.tanpi()
         """
         return self._unop("tanpi")
-
 
     def abs(self):
         """
@@ -1234,7 +1190,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("abs")
 
-
     def sign(self):
         """
         Return new H2OFrame equal to signs of the values in the frame: -1 , +1, or 0.
@@ -1247,7 +1202,6 @@ class H2OFrame(Keyed):
         >>> iris.sign()
         """
         return self._unop("sign", rtype="int")
-
 
     def sqrt(self):
         """
@@ -1262,7 +1216,6 @@ class H2OFrame(Keyed):
         >>> frame.sqrt()
         """
         return self._unop("sqrt")
-
 
     def trunc(self):
         """
@@ -1288,7 +1241,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("trunc", rtype="int")
 
-
     def ceil(self):
         """
         Apply the ceiling function to the current frame.
@@ -1311,7 +1263,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("ceiling", rtype="int")
 
-
     def floor(self):
         """
         Apply the floor function to the current frame. ``floor(x)`` is the largest integer smaller or equal to ``x``.
@@ -1327,7 +1278,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("floor", rtype="int")
 
-
     def log(self):
         """
         Create a new H2OFrame equal to elementwise natural logarithm of the current frame.
@@ -1341,7 +1291,6 @@ class H2OFrame(Keyed):
         >>> frame.log()
         """
         return self._unop("log")
-
 
     def log10(self):
         """
@@ -1357,7 +1306,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("log10")
 
-
     def log1p(self):
         """
         Create a new H2Oframe equal to elementwise ``ln(1 + x)`` for each ``x`` in the current frame.
@@ -1371,7 +1319,6 @@ class H2OFrame(Keyed):
         >>> frame.log1p()
         """
         return self._unop("log1p")
-
 
     def log2(self):
         """
@@ -1387,7 +1334,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("log2")
 
-
     def exp(self):
         """
         Create a new H2OFrame equal to elementwise exponent (i.e. ``e^x``) of the current frame.
@@ -1401,7 +1347,6 @@ class H2OFrame(Keyed):
         >>> frame.exp()
         """
         return self._unop("exp")
-
 
     def expm1(self):
         """
@@ -1417,7 +1362,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("expm1")
 
-
     def gamma(self):
         """
         Create a new H2OFrame equal to elementwise gamma function of the current frame.
@@ -1431,7 +1375,6 @@ class H2OFrame(Keyed):
         >>> frame.gamma()
         """
         return self._unop("gamma")
-
 
     def lgamma(self):
         """
@@ -1447,7 +1390,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("lgamma")
 
-
     def digamma(self):
         """
         Create a new H2OFrame equal to elementwise digamma function of the current frame.
@@ -1462,7 +1404,6 @@ class H2OFrame(Keyed):
         """
         return self._unop("digamma")
 
-
     def trigamma(self):
         """
         Create a new H2OFrame equal to the elementwise trigamma function of the current frame.
@@ -1476,7 +1417,6 @@ class H2OFrame(Keyed):
         >>> frame.trigamma()
         """
         return self._unop("trigamma")
-
 
     @staticmethod
     def moment(year=None, month=None, day=None, hour=None, minute=None, second=None, msec=None, date=None, time=None):
@@ -1590,7 +1530,6 @@ class H2OFrame(Keyed):
         res._ex._cache._ncols = 1
         return res
 
-
     def unique(self, include_nas=False):
         """
         Extract the unique values in the column.
@@ -1606,7 +1545,6 @@ class H2OFrame(Keyed):
         >>> h2oframe.unique()
         """
         return H2OFrame._expr(expr=ExprNode("unique", self, include_nas))
-
 
     def levels(self):
         """
@@ -1628,7 +1566,6 @@ class H2OFrame(Keyed):
         lol = list(zip(*lol))
         return [[ll for ll in l if ll != ''] for l in lol]
 
-
     def nlevels(self):
         """
         Get the number of factor levels for each categorical column.
@@ -1644,7 +1581,6 @@ class H2OFrame(Keyed):
         """
         levels = self.levels()
         return [len(l) for l in levels] if levels else 0
-
 
     def set_level(self, level):
         """
@@ -1669,7 +1605,6 @@ class H2OFrame(Keyed):
         >>> newFrame
         """
         return H2OFrame._expr(expr=ExprNode("setLevel", self, level), cache=self._ex._cache)
-
 
     def set_levels(self, levels):
         """
@@ -1697,7 +1632,6 @@ class H2OFrame(Keyed):
         """
         assert_is_type(levels, [str])
         return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
-
 
     def rename(self, columns=None):
         """
@@ -1736,7 +1670,6 @@ class H2OFrame(Keyed):
 
         return self.set_names(new_names)
 
-
     def set_names(self, names):
         """
         Change names of all columns in the frame.
@@ -1759,7 +1692,6 @@ class H2OFrame(Keyed):
         assert_satisfies(names, len(names) == self.ncol)
         self._ex = ExprNode("colnames=", self, range(self.ncol), names)  # Update-in-place, but still lazy
         return self
-
 
     def set_name(self, col=None, name=None):
         """
@@ -1815,7 +1747,6 @@ class H2OFrame(Keyed):
             self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
         return
 
-
     def as_date(self, format):
         """
         Convert the frame (containing strings / categoricals) into the ``date`` format.
@@ -1832,7 +1763,6 @@ class H2OFrame(Keyed):
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
-
 
     def cumsum(self,  axis=0):
         """
@@ -1851,7 +1781,6 @@ class H2OFrame(Keyed):
         >>> cumsum2 = foo[1].cumsum()
         """
         return H2OFrame._expr(expr=ExprNode("cumsum", self, axis), cache=self._ex._cache)
-
 
     def cumprod(self, axis=0):
         """
@@ -1872,7 +1801,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("cumprod", self, axis), cache=self._ex._cache)
 
-
     def cummin(self, axis=0):
         """
         Compute cumulative minimum over rows / columns of the frame.
@@ -1892,7 +1820,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("cummin", self, axis), cache=self._ex._cache)
 
-
     def cummax(self, axis=0):
         """
         Compute cumulative maximum over rows / columns of the frame.
@@ -1911,7 +1838,6 @@ class H2OFrame(Keyed):
         >>> cummax2
         """
         return H2OFrame._expr(expr=ExprNode("cummax", self, axis), cache=self._ex._cache)
-
 
     def prod(self, na_rm=False):
         """
@@ -1933,7 +1859,6 @@ class H2OFrame(Keyed):
         """
         return ExprNode("prod.na" if na_rm else "prod", self)._eager_scalar()
 
-
     def any(self):
         """
         Determine whether any element in the frame is either True, non-zero, or NA.
@@ -1947,7 +1872,6 @@ class H2OFrame(Keyed):
         >>> frame.any()
         """
         return bool(ExprNode("any", self)._eager_scalar())
-
 
     def any_na_rm(self):
         """
@@ -1963,7 +1887,6 @@ class H2OFrame(Keyed):
         """
         return bool(ExprNode("any.na", self)._eager_scalar())
 
-
     def all(self):
         """
         Determine whether every element in the frame is either True, non-zero, or NA.
@@ -1977,7 +1900,6 @@ class H2OFrame(Keyed):
         >>> frame.all()
         """
         return bool(ExprNode("all", self)._eager_scalar())
-
 
     def isnumeric(self):
         """
@@ -1996,7 +1918,6 @@ class H2OFrame(Keyed):
         # Return as False
         """
         return [bool(o) for o in ExprNode("is.numeric", self)._eager_scalar()]
-
 
     def isstring(self):
         """
@@ -2017,7 +1938,6 @@ class H2OFrame(Keyed):
         >>> newFrame.isstring()
         """
         return [bool(o) for o in ExprNode("is.character", self)._eager_scalar()]
-
 
     def isin(self, item):
         """
@@ -2040,7 +1960,6 @@ class H2OFrame(Keyed):
                 return functools.reduce(H2OFrame.__or__, (self == i for i in item))
         else:
             return self == item
-
 
     def kfold_column(self, n_folds=3, seed=-1):
         """
@@ -2065,7 +1984,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("kfold_column", self, n_folds, seed))._frame()  # want this to be eager!
 
-
     def modulo_kfold_column(self, n_folds=3):
         """
         Build a fold assignments column for cross-validation.
@@ -2086,7 +2004,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("modulo_kfold_column", self, n_folds))._frame()  # want this to be eager!
 
-
     def stratified_kfold_column(self, n_folds=3, seed=-1):
         """
         Build a fold assignment column with the constraint that each fold has the same class
@@ -2106,7 +2023,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(
             expr=ExprNode("stratified_kfold_column", self, n_folds, seed))._frame()  # want this to be eager!
-
 
     def structure(self):
         """
@@ -2364,7 +2280,6 @@ class H2OFrame(Keyed):
             raise ValueError("Unexpected type: " + str(type(item)))
         return (new_ncols, new_names, new_types, item)
 
-
     def _compute_nrow_update(self, item):
         if isinstance(item, list):
             new_nrows = len(item)
@@ -2376,7 +2291,6 @@ class H2OFrame(Keyed):
         else:
             new_nrows = 1
         return [new_nrows, item]
-
 
     def __setitem__(self, item, value):
         """
@@ -2462,7 +2376,6 @@ class H2OFrame(Keyed):
         if value_is_own_subframe:
             value._ex = None  # wipe out to keep ref counts correct
 
-
     def _is_frame_in_self(self, frame):
         if self._ex is frame._ex: return True
         if frame._ex._children is None: return False
@@ -2499,15 +2412,15 @@ class H2OFrame(Keyed):
         """
         if axis == 1:
             if not isinstance(index, list):
-                #If input is a string, i.e., "C1":
+                # If input is a string, i.e., "C1":
                 if is_type(index, str):
-                    #Check if index is an actual column(s) in the frame
+                    # Check if index is an actual column(s) in the frame
                     if index not in self.names:
                         raise H2OValueError("Column(s) selected to drop are not in original frame: %r" % index)
                     index = self.names.index(index)
-                #If input is an int indicating a column index, i.e., 3:
+                # If input is an int indicating a column index, i.e., 3:
                 elif is_type(index, int):
-                    #Check if index is an actual column index in the frame
+                    # Check if index is an actual column index in the frame
                     if index > self.ncol:
                         raise H2OValueError("Column index selected to drop is not part of the frame: %r" % index)
                     if index < 0:
@@ -2520,16 +2433,16 @@ class H2OFrame(Keyed):
                 return fr
 
             elif isinstance(index, list):
-                #If input is an int array indicating a column index, i.e., [3] or [1,2,3]:
+                # If input is an int array indicating a column index, i.e., [3] or [1,2,3]:
                 if is_type(index, [int]):
                     if max(index) > self.ncol:
                         raise H2OValueError("Column index selected to drop is not part of the frame: %r" % index)
                     if min(index) < 0:
                         raise H2OValueError("Column index selected to drop is not positive: %r" % index)
                     index = [-(i + 1) for i in index]
-                #If index is a string array, i.e., ["C1", "C2"]
+                # If index is a string array, i.e., ["C1", "C2"]
                 elif is_type(index, [str]):
-                    #Check if index is an actual column(s) in the frame
+                    # Check if index is an actual column(s) in the frame
                     if not set(index).issubset(self.names):
                         raise H2OValueError("Column(s) selected to drop are not in original frame: %r" % index)
                     index = [-(self.names.index(i) + 1) for i in index]
@@ -2546,7 +2459,7 @@ class H2OFrame(Keyed):
             return fr
         elif axis == 0:
             if is_type(index, [int]):
-                #Check if index is an actual column index in the frame
+                # Check if index is an actual column index in the frame
                 if max(index) > self.nrow:
                     raise H2OValueError("Row index selected to drop is not part of the frame: %r" % index)
                 if min(index) < 0:
@@ -2557,7 +2470,6 @@ class H2OFrame(Keyed):
             else:
                 raise ValueError("Invalid row indexes. Must be a list of int row indexes to drop from the H2OFrame.")
         return fr
-
 
     def pop(self, i):
         """
@@ -2587,7 +2499,6 @@ class H2OFrame(Keyed):
         col._ex._cache.ncols = 1
         col._ex._cache.names = [old_cache.names[i]]
         return col
-
 
     def quantile(self, prob=None, combine_method="interpolate", weights_column=None):
         """
@@ -2623,7 +2534,6 @@ class H2OFrame(Keyed):
                 return H2OFrame._expr(expr=ExprNode("quantile", merged, prob, combine_method, weights_column))
         return H2OFrame._expr(expr=ExprNode("quantile", self, prob, combine_method, weights_column))
 
-
     def concat(self, frames, axis=1):
         """
         Append multiple H2OFrames to this frame, column-wise or row-wise.
@@ -2651,7 +2561,6 @@ class H2OFrame(Keyed):
         else:
             df = self.rbind(frames)
         return df
-
 
     def cbind(self, data):
         """
@@ -2698,7 +2607,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = None
         return fr
 
-
     def rbind(self, data):
         """
         Append data to this frame row-wise.
@@ -2734,7 +2642,6 @@ class H2OFrame(Keyed):
         fr = H2OFrame._expr(expr=ExprNode("rbind", self, *frames), cache=self._ex._cache)
         fr._ex._cache.nrows = self.nrow + sum(frame.nrow for frame in frames)
         return fr
-
 
     def split_frame(self, ratios=None, destination_frames=None, seed=None):
         """
@@ -2823,7 +2730,6 @@ class H2OFrame(Keyed):
         h2o.remove(tmp_runif)
         del tmp_runif
         return splits
-
 
     def group_by(self, by):
         """
@@ -2958,23 +2864,21 @@ class H2OFrame(Keyed):
             values = values2
         if group_by_frame is None: group_by_frame = "_"
 
-
         # This code below is needed to ensure the frame (self) exists on the server. Without it, self._ex._cache.fill()
         # fails with an assertion that ._id is None.
         # This code should be removed / reworked once we have a more consistent strategy of dealing with frames.
         self._ex._eager_frame()
 
         if by is not None or group_by_frame != "_":
-            res = H2OFrame._expr(
-                expr=ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values))._frame()
+            res = H2OFrame._expr(expr=ExprNode("h2o.impute", self, 
+                                               column, method, combine_method, by, group_by_frame, values))._frame()
         else:
-            res = ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame,
-                           values)._eager_scalar()
+            res = ExprNode("h2o.impute", self, 
+                           column, method, combine_method, by, group_by_frame, values)._eager_scalar()
 
         self._ex._cache.flush()
         self._ex._cache.fill(10)
         return res
-
 
     def merge(self, other, all_x=False, all_y=False, by_x=None, by_y=None, method="auto"):
         """
@@ -3029,9 +2933,7 @@ class H2OFrame(Keyed):
         else:
             by_y = _getValidCols(by_y,other)
 
-
         return H2OFrame._expr(expr=ExprNode("merge", self, other, all_x, all_y, by_x, by_y, method))
-
 
     def relevel(self, y):
         """
@@ -3058,7 +2960,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("relevel", self, quote(y)))
 
-
     def insert_missing_values(self, fraction=0.1, seed=None):
         """
         Insert missing values into the current frame, modifying it in-place.
@@ -3082,16 +2983,13 @@ class H2OFrame(Keyed):
         >>> h2o_data = h2o.H2OFrame(data)
         >>> h2o_data.insert_missing_values(fraction = 0.0)
         """
-        kwargs = {}
-        kwargs['dataset'] = self.frame_id  # Eager; forces eval now for following REST call
-        kwargs['fraction'] = fraction
+        kwargs = dict(dataset=self.frame_id, 
+                      fraction=fraction)
         if seed is not None: kwargs['seed'] = seed
-        job = {}
-        job['job'] = h2o.api("POST /3/MissingInserter", data=kwargs)
+        job = dict(job=h2o.api("POST /3/MissingInserter", data=kwargs))
         H2OJob(job, job_type=("Insert Missing Values")).poll()
         self._ex._cache.flush()
         return self
-
 
     def min(self):
         """
@@ -3110,7 +3008,6 @@ class H2OFrame(Keyed):
         """
         return ExprNode("min", self)._eager_scalar()
 
-
     def max(self):
         """
         Show the maximum value of all frame entries.
@@ -3127,7 +3024,6 @@ class H2OFrame(Keyed):
         >>> iris["C4"].max()
         """
         return ExprNode("max", self)._eager_scalar()
-
 
     def sum(self, skipna=True, axis=0, **kwargs):
         """
@@ -3176,7 +3072,6 @@ class H2OFrame(Keyed):
         else:
             return ExprNode("sumNA" if skipna else "sum", self)._eager_scalar()
 
-
     def mean(self, skipna=True, axis=0, **kwargs):
         """
         Compute the frame's means by-column (or by-row).
@@ -3219,7 +3114,6 @@ class H2OFrame(Keyed):
         else:
             return new_frame.getrow()
 
-
     def skewness(self, na_rm=False):
         """
         Compute the skewness of each column in the frame.
@@ -3235,7 +3129,6 @@ class H2OFrame(Keyed):
         >>> h2oframe.skewness()
         """
         return ExprNode("skewness", self, na_rm)._eager_scalar()
-
 
     def kurtosis(self, na_rm=False):
         """
@@ -3256,7 +3149,6 @@ class H2OFrame(Keyed):
         """
         return ExprNode("kurtosis", self, na_rm)._eager_scalar()
 
-
     def nacnt(self):
         """
         Count of NAs for each column in this H2OFrame.
@@ -3269,7 +3161,6 @@ class H2OFrame(Keyed):
         >>> iris.nacnt()
         """
         return ExprNode("naCnt", self)._eager_scalar()
-
 
     def median(self, na_rm=False):
         """
@@ -3284,7 +3175,6 @@ class H2OFrame(Keyed):
         >>> iris.median()
         """
         return ExprNode("median", self, na_rm)._eager_scalar()
-
 
     def var(self, y=None, na_rm=False, use=None):
         """
@@ -3322,7 +3212,6 @@ class H2OFrame(Keyed):
             return ExprNode("var", self, y, use, symmetric)._eager_scalar()
         return H2OFrame._expr(expr=ExprNode("var", self, y, use, symmetric))._frame()
 
-
     def sd(self, na_rm=False):
         """
         Compute the standard deviation for each column in the frame.
@@ -3340,7 +3229,6 @@ class H2OFrame(Keyed):
         >>> newframe.sd()
         """
         return ExprNode("sd", self, na_rm)._eager_scalar()
-
 
     def cor(self, y=None, na_rm=False, use=None, method="Pearson"):
         """
@@ -3382,7 +3270,6 @@ class H2OFrame(Keyed):
         if use is None: use = "complete.obs" if na_rm else "everything"
         if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use, method)._eager_scalar()
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use, method))._frame()
-
 
     def distance(self, y, measure=None):
         """
@@ -3459,8 +3346,6 @@ class H2OFrame(Keyed):
         assert_is_type(compare_empty, bool)
         return H2OFrame._expr(expr=ExprNode("strDistance", self, y, measure, compare_empty))._frame()
 
-       
-
     def asfactor(self):
         """
         Convert column/columns in the current frame to categoricals.
@@ -3492,7 +3377,6 @@ class H2OFrame(Keyed):
         
         return fr
 
-
     def isfactor(self):
         """
         Test which columns in the current frame are categorical.
@@ -3511,7 +3395,6 @@ class H2OFrame(Keyed):
         """
         return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
-
     def anyfactor(self):
         """
         Determine if there are any categorical columns in the frame.
@@ -3525,7 +3408,6 @@ class H2OFrame(Keyed):
         >>> frame.anyfactor()
         """
         return bool(ExprNode("any.factor", self)._eager_scalar())
-
 
     def categories(self):
         """
@@ -3545,7 +3427,6 @@ class H2OFrame(Keyed):
             raise H2OValueError("Input is not a factor. This operation only applies to a single factor column")
         return self.levels()[0]
 
-
     def transpose(self):
         """
         Transpose rows and columns of this frame.
@@ -3563,7 +3444,6 @@ class H2OFrame(Keyed):
         >>> h2oframe.transpose()
         """
         return H2OFrame._expr(expr=ExprNode("t", self))
-
 
     def strsplit(self, pattern):
         """
@@ -3642,7 +3522,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.ncols = self.ncol
         return fr
 
-
     def trim(self):
         """
         Trim white space on the left and right of strings in a single-column H2OFrame.
@@ -3662,7 +3541,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.nrows = self.nrow
         fr._ex._cache.ncol = self.ncol
         return fr
-
 
     def substring(self, start_index, end_index=None):
         """
@@ -3685,7 +3563,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.nrows = self.nrow
         fr._ex._cache.ncol = self.ncol
         return fr
-
 
     def lstrip(self, set=" "):
         """
@@ -3710,7 +3587,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.nrows = self.nrow
         fr._ex._cache.ncol = self.ncol
         return fr
-
 
     def rstrip(self, set=" "):
         """
@@ -3738,7 +3614,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.ncol = self.ncol
         return fr
 
-
     def entropy(self):
         """
         For each string compute its Shannon entropy, if the string is empty the entropy is 0.
@@ -3754,7 +3629,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.nrows = self.nrow
         fr._ex._cache.ncol = self.ncol
         return fr
-
 
     def num_valid_substrings(self, path_to_words):
         """
@@ -3781,7 +3655,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.ncol = self.ncol
         return fr
 
-
     def nchar(self):
         """
         Count the length of each string in a single-column H2OFrame of string type.
@@ -3794,7 +3667,6 @@ class H2OFrame(Keyed):
         >>> iris[4].nchar()
         """
         return H2OFrame._expr(expr=ExprNode("strlen", self))
-
 
     def table(self, data2=None, dense=True):
         """
@@ -3812,7 +3684,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("table", self, data2, dense)) if data2 is not None else H2OFrame._expr(
             expr=ExprNode("table", self, dense))
-
 
     def hist(self, breaks="sturges", plot=True, **kwargs):
         """
@@ -3872,7 +3743,6 @@ class H2OFrame(Keyed):
         else:
             hist["density"] = hist["counts"] / (hist["breaks"].difflag1() * hist["counts"].sum())
             return hist
-
 
     def isax(self, num_words, max_cardinality, optimize_card=False, **kwargs):
         """
@@ -4299,7 +4169,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("replacefirst", self, pattern, replacement, ignore_case))
 
-
     def gsub(self, pattern, replacement, ignore_case=False):
         """
         Globally substitute occurrences of pattern in a string with replacement.
@@ -4318,7 +4187,6 @@ class H2OFrame(Keyed):
         >>> iris["C5"].gsub("s","z",ignore_case=False)
         """
         return H2OFrame._expr(expr=ExprNode("replaceall", self, pattern, replacement, ignore_case))
-
 
     def interaction(self, factors, pairwise, max_factors, min_occurrence, destination_frame=None):
         """
@@ -4355,7 +4223,6 @@ class H2OFrame(Keyed):
         """
         return h2o.interaction(data=self, factors=factors, pairwise=pairwise, max_factors=max_factors,
                                min_occurrence=min_occurrence, destination_frame=destination_frame)
-
 
     def toupper(self):
         """
@@ -4408,7 +4275,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("tolower", self), cache=self._ex._cache)
 
-
     def rep_len(self, length_out):
         """
         Create a new frame replicating the current frame.
@@ -4439,7 +4305,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("rep_len", self, length_out))
 
-
     def scale(self, center=True, scale=True):
         """
         Center and/or scale the columns of the current frame.
@@ -4461,7 +4326,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("scale", self, center, scale), cache=self._ex._cache)
 
-
     def signif(self, digits=6):
         """
         Round doubles/floats to the given number of significant digits.
@@ -4478,7 +4342,6 @@ class H2OFrame(Keyed):
         >>> h2o_data.signif(digits = 2)
         """
         return H2OFrame._expr(expr=ExprNode("signif", self, digits), cache=self._ex._cache)
-
 
     def round(self, digits=0):
         """
@@ -4498,7 +4361,6 @@ class H2OFrame(Keyed):
         >>> h2o_data.round(digits = 0)
         """
         return H2OFrame._expr(expr=ExprNode("round", self, digits), cache=self._ex._cache)
-
 
     def asnumeric(self):
         """
@@ -4520,7 +4382,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {k: "real" for k in fr._ex._cache.types.keys()}
         return fr
 
-
     def ascharacter(self):
         """
         Convert all columns in the frame into strings.
@@ -4538,7 +4399,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {k: "string" for k in fr._ex._cache.types.keys()}
         return fr
 
-
     def na_omit(self):
         """
         Remove rows with NAs from the H2OFrame.
@@ -4555,7 +4415,6 @@ class H2OFrame(Keyed):
         fr = H2OFrame._expr(expr=ExprNode("na.omit", self), cache=self._ex._cache)
         fr._ex._cache.nrows = -1
         return fr
-
 
     def difflag1(self):
         """
@@ -4583,7 +4442,6 @@ class H2OFrame(Keyed):
         fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr
 
-
     def isna(self):
         """
         For each element in an H2OFrame, determine if it is NA or not.
@@ -4610,7 +4468,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {"isNA(%s)" % n: "int" for n in self._ex._cache.names}
         return fr
 
-
     def year(self):
         """
         Extract the "year" part from a date column.
@@ -4634,7 +4491,6 @@ class H2OFrame(Keyed):
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
-
 
     def month(self):
         """
@@ -4660,7 +4516,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-
     def week(self):
         """
         Extract the "week" part from a date column.
@@ -4684,7 +4539,6 @@ class H2OFrame(Keyed):
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
-
 
     def day(self):
         """
@@ -4710,7 +4564,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-
     def dayOfWeek(self):
         """
         Extract the "day-of-week" part from a date column.
@@ -4734,7 +4587,6 @@ class H2OFrame(Keyed):
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
-
 
     def hour(self):
         """
@@ -4760,7 +4612,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-
     def minute(self):
         """
         Extract the "minute" part from a date column.
@@ -4784,7 +4635,6 @@ class H2OFrame(Keyed):
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
-
 
     def second(self):
         """
@@ -4810,7 +4660,6 @@ class H2OFrame(Keyed):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-
     def runif(self, seed=None):
         """
         Generate a column of random numbers drawn from a uniform distribution [0,1) and
@@ -4832,7 +4681,6 @@ class H2OFrame(Keyed):
         fr._ex._cache.nrows = self.nrow
         return fr
 
-
     def stratified_split(self, test_frac=0.2, seed=-1):
         """
         Construct a column that can be used to perform a random stratified split.
@@ -4850,7 +4698,6 @@ class H2OFrame(Keyed):
         >>> h2oframe[1].stratified_split(test_frac=0.2, seed=-1)
         """
         return H2OFrame._expr(expr=ExprNode('h2o.random_stratified_split', self, test_frac, seed))
-
 
     def match(self, table, nomatch=0):
         """
@@ -4872,7 +4719,6 @@ class H2OFrame(Keyed):
         >>> matchFrame
         """
         return H2OFrame._expr(expr=ExprNode("match", self, table, nomatch, None))
-
 
     def cut(self, breaks, labels=None, include_lowest=False, right=True, dig_lab=3):
         """
@@ -4910,7 +4756,6 @@ class H2OFrame(Keyed):
                             cache=self._ex._cache)
         fr._ex._cache.types = {k: "enum" for k in self.names}
         return fr
-
 
     def which(self):
         """
@@ -4977,7 +4822,6 @@ class H2OFrame(Keyed):
         """
         return H2OFrame._expr(expr=ExprNode("which.min", self, skipna, axis))
 
-
     def ifelse(self, yes, no):
         """
         Equivalent to ``[y if t else n for t,y,n in zip(self,yes,no)]``.
@@ -5002,7 +4846,6 @@ class H2OFrame(Keyed):
         >>> newFrame
         """
         return H2OFrame._expr(expr=ExprNode("ifelse", self, yes, no))
-
 
     def apply(self, fun=None, axis=0):
         """
@@ -5029,10 +4872,9 @@ class H2OFrame(Keyed):
         res = lambda_to_expr(fun)
         return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
 
-
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Synonyms + Deprecated
-    #-------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Here we have all methods that are provided as alternative names to some other names defined above. This also
     # includes methods that we rename as part of the deprecation process (but keeping the old name for the sake of
     # backward compatibility). We gather them all down here to have a slightly cleaner code.
@@ -5132,15 +4974,6 @@ class H2OFrame(Keyed):
         """
         return [self.nrow, self.ncol]
 
-    #@property
-    #def frame_id(self):
-    #    """Same as ``frame.id``."""
-    #    return self.id
-
-    #@frame_id.setter
-    #def frame_id(self, value):
-    #    self.id = value
-
     @staticmethod
     def from_python(python_obj, destination_frame=None, header=0, separator=",", column_names=None,
                     column_types=None, na_strings=None):
@@ -5148,16 +4981,14 @@ class H2OFrame(Keyed):
         return H2OFrame(python_obj, destination_frame, header, separator, column_names, column_types,
                         na_strings)
 
-
     def ischaracter(self):
         """[DEPRECATED] Use ``frame.isstring()``."""
         return self.isstring()
 
 
-
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 # Helpers
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def _getValidCols(by_idx, fr):  # so user can input names of the columns as well is idx num
     tmp = []
@@ -5171,6 +5002,7 @@ def _getValidCols(by_idx, fr):  # so user can input names of the columns as well
         else:
             tmp.append(i)
     return list(set(tmp))
+
 
 def _binop(lhs, op, rhs, rtype=None):
     assert_is_type(lhs, str, numeric, datetime.date, pandas_timestamp, numpy_datetime, H2OFrame)
@@ -5200,8 +5032,6 @@ def _binop(lhs, op, rhs, rtype=None):
     if rtype is not None and res._ex._cache._names is not None:
         res._ex._cache._types = {name: rtype for name in res._ex._cache._names}
     return res
-
-
 
 
 def generatePandaEnumCols(pandaFtrain, cname, nrows, domainL):

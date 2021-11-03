@@ -1,24 +1,22 @@
 from __future__ import print_function
 import sys
 sys.path.insert(1,"../../")
+
 import h2o
 from tests import pyunit_utils
-
-
 
 
 def impute():
     # Connect to a pre-existing cluster
     
-
     prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
     prostate.dim
 
-    #print "Summary of the data in iris_missing.csv"
-    #print "Each column has 50 missing observations (at random)"
-    #prostate.summary()
+    # print "Summary of the data in iris_missing.csv"
+    # print "Each column has 50 missing observations (at random)"
+    # prostate.summary()
 
-    #print "Make a copy of the original dataset to play with."
+    # print "Make a copy of the original dataset to play with."
 
     print("Impute a numeric column with the mean")
     nas = prostate["DPROS"].isna().sum()
@@ -46,7 +44,6 @@ def impute():
 
     prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
     prostate.impute("VOL", method="median")
-
 
 
 if __name__ == "__main__":
