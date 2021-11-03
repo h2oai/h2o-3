@@ -38,7 +38,7 @@ dependencies {
         api project(":h2o-orc-parser")
     }
     api project(":h2o-parquet-parser")
-    api project(":h2o-k8s")
+    api project(":h2o-k8s-int")
 }
 
 jar {
