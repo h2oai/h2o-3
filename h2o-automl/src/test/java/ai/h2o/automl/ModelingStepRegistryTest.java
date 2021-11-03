@@ -1,14 +1,13 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.StepDefinition.Step;
-import ai.h2o.automl.events.EventLogEntry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.TestUtil;
 import water.fvec.Frame;
+import water.logging.LoggingLevel;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
@@ -260,7 +259,7 @@ public class ModelingStepRegistryTest {
         assertEquals(0, modelingSteps.length);
         assertTrue(Stream.of(aml.eventLog()._events)
                 .anyMatch(e ->
-                        e.getLevel() == EventLogEntry.Level.Warn
+                        e.getLevel() == LoggingLevel.WARN
                         && e.getMessage().equals("Step 'dummy' not defined in provider 'GBM': skipping it.")));
     }
 

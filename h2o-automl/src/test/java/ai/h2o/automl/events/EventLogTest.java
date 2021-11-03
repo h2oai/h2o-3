@@ -1,13 +1,12 @@
 package ai.h2o.automl.events;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.events.EventLogEntry.Level;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import org.joda.time.DateTime;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
+import water.logging.LoggingLevel;
 import water.util.TwoDimTable;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -45,7 +44,7 @@ public class EventLogTest extends water.TestUtil {
             assertEquals(now.getMinuteOfHour(), entry_time.getMinuteOfHour());
             assertEquals(now.getSecondOfMinute(), entry_time.getSecondOfMinute(), 1.0);
 
-            assertEquals(Level.Debug.toString(), events.get(0, 1));
+            assertEquals(LoggingLevel.DEBUG.toString(), events.get(0, 1));
             assertEquals(Stage.Workflow.toString(), events.get(1, 2));
             assertEquals("warn training", events.get(2, 3));
             assertEquals("foo", events.get(3, 4));
@@ -66,7 +65,7 @@ public class EventLogTest extends water.TestUtil {
         TwoDimTable events = eventLog.toTwoDimTable();
         assertEquals(5, events.getRowDim());
         
-        events = eventLog.toTwoDimTable(e -> e.getLevel() == Level.Info);
+        events = eventLog.toTwoDimTable(e -> e.getLevel() == LoggingLevel.INFO);
         assertEquals(3, events.getRowDim());
 
         events = eventLog.toTwoDimTable(e -> e.getStage() == Stage.Workflow);
