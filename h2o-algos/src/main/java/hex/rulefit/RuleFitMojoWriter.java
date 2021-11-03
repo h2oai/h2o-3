@@ -35,7 +35,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
     protected void writeParentModelData() throws IOException {
         writekv("linear_model", model._output.glmModelKey);
         if (!model._parms._model_type.equals(RuleFitModel.ModelType.LINEAR)) {
-            writeOrderedRuleEnsemble(model.ruleEnsemble, model._parms._max_rule_length - model._parms._min_rule_length + 1, model._parms._rule_generation_ntrees);
+            writeOrderedRuleEnsemble(model.ruleEnsemble, model._parms._max_rule_length - model._parms._min_rule_length + 1, model._parms._rule_generation_ntrees, model._output.classNames());
         }
         if (model._parms._model_type.equals(RuleFitModel.ModelType.LINEAR)) {
             writekv("model_type", 0);
@@ -62,18 +62,36 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
         }
     }
 
-    void writeOrderedRuleEnsemble(RuleEnsemble ruleEnsemble, int depth, int ntrees) throws IOException {
+    void writeOrderedRuleEnsemble(RuleEnsemble ruleEnsemble, int depth, int ntrees, String[] classes) throws IOException {
         for (int i = 0; i < depth; i++) {
             for (int j = 0; j < ntrees; j++) {
                 // filter rules according to varname
                 // varname is of structue "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()
                 String regex = "M" + i + "T" + j + "N" + "\\d+";
+                int nclasses = classes != null && classes.length > 2 ? classes.length : 1;
+                String[] classRegex = new String[nclasses];
+                List<Rule>[] filteredClassRules = new ArrayList[nclasses];
                 List<Rule> filteredRules = new ArrayList<>();
-                for (int k = 0; k < ruleEnsemble.rules.length; k++) {
-                    if (ruleEnsemble.rules[k].varName.matches(regex)) {
-                        filteredRules.add(ruleEnsemble.rules[k]);
+                for (int k = 0; k < nclasses; k++) {
+                    if (nclasses > 2) {
+                        classRegex[k] = regex + "_" + classes[k];
+                    } else {
+                        classRegex[k] = regex;
                     }
                 }
+                for (int k = 0; k < nclasses; k++) {
+                    for (int l = 0; l < ruleEnsemble.rules.length; l++) {
+                        if (ruleEnsemble.rules[l].varName.matches(classRegex[k])) {
+                            if (filteredClassRules[k] == null) {
+                                filteredClassRules[k] = new ArrayList<>();
+                            }
+                            filteredClassRules[k].add(ruleEnsemble.rules[l]);
+                        }
+                    }
+                    // filtered ordered rules // class 0 ... class k
+                    filteredRules.addAll(filteredClassRules[k]);
+                }
+                
                 int currNumRules = filteredRules.size();
                 writekv("num_rules_M".concat(String.valueOf(i)).concat("T").concat(String.valueOf(j)), currNumRules);
                 String currIdPrefix = i + "_" + j + "_";

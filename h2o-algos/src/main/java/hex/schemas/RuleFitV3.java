@@ -23,7 +23,8 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
             "model_type",
             "weights_column", 
             "distribution",
-            "rule_generation_ntrees"
+            "rule_generation_ntrees",
+            "auc_type"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)
