@@ -298,7 +298,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               .sum();
 
       boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2064;
-      Log.warn("R coefficient = " + ((ncols * nrows) / (max_runtime * nthreads)));
       if (max_runtime > 0 && use_blending) {
         _useAutoBlending = true;
         buildSpec.build_control.nfolds = 0;
