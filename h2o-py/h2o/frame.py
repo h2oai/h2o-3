@@ -2281,6 +2281,7 @@ class H2OFrame(Keyed):
         :examples:
         >>> fr[2]              # All rows, 3rd column
         >>> fr[-2]             # All rows, 2nd column from end
+        >>> fr[2:]             # All rows, all columns from the 3rd one
         >>> fr[:, -1]          # All rows, last column
         >>> fr[0:5, :]         # First 5 rows, all columns
         >>> fr[fr[0] > 1, :]   # Only rows where first cell is greater than 1, all columns

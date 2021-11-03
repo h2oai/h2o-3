@@ -621,20 +621,17 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         if verbosity is None or verbosity.capitalize() not in levels:
             return
 
-        levels = levels[levels.index(verbosity.capitalize()):]
         try:
             if job.progress > state.get('last_job_progress', 0):
-                # print("\nbar_progress={}, job_progress={}".format(bar_progress, job.progress))
-                events = _fetch_state(job.dest_key, properties=['event_log'])['event_log']
-                events = events[events['level'].isin(levels), :]
+                events_table = _fetch_state(job.dest_key, properties=[], verbosity=verbosity)['json']['event_log_table']
                 last_nrows = state.get('last_events_nrows', 0)
-                if events.nrows > last_nrows:
-                    fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
+                if len(events_table.cell_values) > last_nrows:
+                    events = zip(*events_table[last_nrows:][['timestamp', 'message']])
                     print('')
-                    for r in fr:
+                    for r in events:
                         print("{}: {}".format(r[0], r[1]))
                     print('')
-                    state['last_events_nrows'] = events.nrows
+                    state['last_events_nrows'] = len(events_table.cell_values)
             state['last_job_progress'] = job.progress
         except Exception as e:
             print("Failed polling AutoML progress log: {}".format(e))

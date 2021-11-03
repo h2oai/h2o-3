@@ -28,7 +28,7 @@ public class EventLogTest extends water.TestUtil {
             eventLog.info(Stage.ModelTraining, "this means what it is").setNamedValue("foo", "bar");
             eventLog.info(Stage.ModelTraining, "this doesn't mean what it looks").setNamedValue("bar", 777);
 
-            TwoDimTable events = eventLog.toTwoDimTable("Test header");
+            TwoDimTable events = eventLog.toTwoDimTable("Test header", null);
             Assert.assertEquals(6, events.getColDim());
             Assert.assertEquals(5, events.getRowDim());
 

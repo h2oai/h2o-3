@@ -10,6 +10,8 @@ import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 
 /**
@@ -86,21 +88,24 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   public TwoDimTable toTwoDimTable() {
+    return toTwoDimTable(null);
+  }
+  
+  public TwoDimTable toTwoDimTable(Predicate<EventLogEntry> predicate) {
     String name = _runner_id == null ? "(new)" : _runner_id.toString();
-    return toTwoDimTable("Event Log for:" + name);
+    return toTwoDimTable("Event Log for:" + name, predicate);
   }
 
-  public TwoDimTable toTwoDimTable(String tableHeader) {
-    final EventLogEntry[] events = _events.clone();
+  public TwoDimTable toTwoDimTable(String tableHeader, Predicate<EventLogEntry> predicate) {
+    final EventLogEntry[] events = predicate == null 
+            ? _events.clone() 
+            : Stream.of(_events.clone())
+                    .filter(predicate)
+                    .toArray(EventLogEntry[]::new);
     TwoDimTable table = EventLogEntry.makeTwoDimTable(tableHeader, events.length);
-
     for (int i = 0; i < events.length; i++)
       events[i].addTwoDimTableRow(table, i);
     return table;
-  }
-
-  public String toString(String tableHeader) {
-    return this.toTwoDimTable(tableHeader).toString();
   }
 
   @Override
