@@ -253,6 +253,13 @@ public class TypeMap {
   }
   static Iced newInstance(int id) { return (Iced) newFreezable(id); }
 
+  static <T extends Freezable> T newFreezable(int id, Class<T> tc) {
+    @SuppressWarnings("unchecked")
+    T iced = (T) newFreezable(id);
+    assert tc == null || tc.isInstance(iced) : tc.getName() + " != " + iced.getClass().getName() + ", id = " + id;
+    return iced;
+  }
+
   /** Create a new freezable object based on its unique ID.
    *
    * @param id  freezable unique id (provided by TypeMap)
