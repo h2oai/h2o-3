@@ -1,11 +1,9 @@
 from __future__ import print_function
-
-import os
 from builtins import range
 import sys
 sys.path.insert(1,"../../../")
 import h2o
-from tests import pyunit_utils
+from tests import pyunit_utils, test_plot_result_saving
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def iris_gbm():
@@ -27,12 +25,9 @@ def iris_gbm():
 
   fn = "plot.png"
   my_gbm.plot(save_plot_path=fn)
-  if os.path.isfile(fn):
-    os.remove(fn)
-  plot_result = my_gbm.plot()
-  plot_result.figure.savefig(fn)
-  if os.path.isfile(fn):
-    os.remove(fn)
+
+  # test saving:
+  test_plot_result_saving(my_gbm.plot(), fn, my_gbm.plot(save_plot_path=fn), fn)
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(iris_gbm)

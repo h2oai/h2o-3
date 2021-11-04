@@ -1087,7 +1087,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
-        :returns: plot and list of calculated mean response tables for each feature requested.
+        :returns: Plot and list of calculated mean response tables for each feature requested.
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0

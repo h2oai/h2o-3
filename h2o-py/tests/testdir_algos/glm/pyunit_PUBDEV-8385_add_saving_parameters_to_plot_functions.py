@@ -1,8 +1,7 @@
 import sys
 sys.path.insert(1,"../../../")
 import h2o
-import os
-from tests import pyunit_utils
+from tests import pyunit_utils, test_plot_result_saving
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm
 import tempfile
 
@@ -14,17 +13,12 @@ def binomial_plot_test():
     model = glm(family="binomial")
     model.train(x=predictors, y=response, training_frame=benign)
 
-    # Save a plot to tmpdir by handling returned H2OPlotResult:
-    plt = model.plot(timestep="AUTO", metric="objective", server=True)
+    # test saving:
     tmpdir = tempfile.mkdtemp(prefix="h2o-func")
-    path = "{}/plot1.png".format(tmpdir)
-    plt.figure.savefig(path)
-    assert os.path.isfile(path)
-
-    # Save a plot to tmpdir by save_plot_path parameter:
-    path = "{}/plot2.png".format(tmpdir)
-    model.plot(timestep="AUTO", metric="objective", server=True, save_plot_path=path)
-    assert os.path.isfile(path)
+    path1 = "{}/plot1.png".format(tmpdir)
+    path2 = "{}/plot2.png".format(tmpdir)
+    test_plot_result_saving(model.plot(timestep="AUTO", metric="objective", server=True), path2,
+                            model.plot(timestep="AUTO", metric="objective", server=True, save_plot_path=path1), path1)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(binomial_plot_test)

@@ -1,10 +1,8 @@
-import os
 import sys
 import tempfile
-
 sys.path.insert(1,"../../")
 import h2o
-from tests import pyunit_utils
+from tests import pyunit_utils, test_plot_result_saving
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.deeplearning import H2ODeepLearningEstimator
@@ -35,16 +33,11 @@ def varimp_plot_test():
   #Plot DRF Variable Importances, check that num_of_features accepts input
   cars_rf.varimp_plot(server=True)
   cars_rf.varimp_plot(num_of_features=2, server=True)
-  # test saving with parameter:
+
+  # test saving:
   tmpdir = tempfile.mkdtemp(prefix="h2o-func")
-  path = "{}/plot1.png".format(tmpdir)
-  cars_rf.varimp_plot(server=True, save_plot_path=path)
-  assert os.path.isfile(path)
-  # test saving through H2OPlotResult:
-  path = "{}/plot2.png".format(tmpdir)
-  plot_result = cars_rf.varimp_plot(server=True)
-  plot_result.figure.savefig(fname=path)
-  assert os.path.isfile(path)
+  path="{}/plot1.png".format(tmpdir)
+  test_plot_result_saving(cars_rf.varimp_plot(server=True), "{}/plot2.png".format(tmpdir), cars_rf.varimp_plot(server=True, save_plot_path=path), path)
 
   # Build and train a GBM model
   cars_gbm = H2OGradientBoostingEstimator()
