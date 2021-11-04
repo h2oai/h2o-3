@@ -14,14 +14,16 @@ class H2ORegressionModel(ModelBase):
     def _make_model(self):
         return H2ORegressionModel()
 
-    def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+    def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """
         Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
-        :returns: A scoring history plot.
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+
+        :returns: Object that contains the resulting scoring history plot (can be accessed like result.figure).
 
         :examples:
 
@@ -49,7 +51,7 @@ class H2ORegressionModel(ModelBase):
             assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2ORegressionModel must be one of %s" % valid_metrics
         if metric == "AUTO":
             metric = self._default_metric('regression') or 'AUTO'
-        self.scoring_history_plot(timestep=timestep, metric=metric, **kwargs)
+        self.scoring_history_plot(timestep=timestep, metric=metric, save_plot_path=save_plot_path, **kwargs)
 
 
 def _mean_var(frame, weights=None):
