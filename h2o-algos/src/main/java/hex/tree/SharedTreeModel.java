@@ -831,7 +831,10 @@ public abstract class SharedTreeModel<
       throw new IllegalArgumentException("Invalid tree index: " + tidx +
               ". Tree index must be in range [0, " + (_output._ntrees -1) + "].");
     }
-    final CompressedTree auxCompressedTree = _output._treeKeysAux[tidx][cls].get();
+    Key<CompressedTree> treeKey = _output._treeKeysAux[tidx][cls];
+    if (treeKey == null)
+      return null;
+    final CompressedTree auxCompressedTree = treeKey.get();
     return _output._treeKeys[tidx][cls].get().toSharedTreeSubgraph(auxCompressedTree, _output._names, _output._domains);
   }
 

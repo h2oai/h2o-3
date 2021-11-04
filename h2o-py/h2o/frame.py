@@ -1698,6 +1698,23 @@ class H2OFrame(Keyed):
         assert_is_type(levels, [str])
         return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
+    def append_levels(self, levels):
+        """
+        Appends new levels to a domain of a categorical column.
+
+        :param List[str] levels: A list of strings specifying the additional levels.
+        :returns: A single-column H2OFrame with the desired levels.
+
+        :examples:
+
+        >>> import numpy as np
+        >>> import random
+        >>> python_lists = np.random.randint(-5,5, (10000, 1))
+        >>> frame = h2o.H2OFrame(python_obj=python_lists).asfactor()
+        >>> extra_levels = frame.append_levels(["A", "B"])
+        >>> extra_levels
+        """
+        return H2OFrame._expr(expr=ExprNode("appendLevels", self, False, levels), cache=self._ex._cache)
 
     def rename(self, columns=None):
         """
