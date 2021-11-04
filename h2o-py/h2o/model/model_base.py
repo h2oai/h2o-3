@@ -1646,7 +1646,7 @@ class ModelBase(h2o_meta(Keyed)):
             return varimp
 
     def permutation_importance_plot(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1,
-                                    num_of_features=10, server=False):
+                                    num_of_features=10, server=False, save_plot_path=None):
         """
         Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
         returns the variable importance table.
@@ -1660,7 +1660,8 @@ class ModelBase(h2o_meta(Keyed)):
         :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
         :param num_of_features: number of features to plot. Defaults to 10.
         :param server: if true set server settings to matplotlib and do not show the plot
-        :return: H2OTwoDimTable with variable importance
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed like result.figure)
         """
         plt = get_matplotlib_pyplot(server)
         if not plt:
@@ -1694,7 +1695,9 @@ class ModelBase(h2o_meta(Keyed)):
                   (" (" + metric.lower() + ")" if metric.lower() != "auto" else ""), fontsize=20)
         if not server:
             plt.show()
-        return importance
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)    
+        return decorate_plot_result(res=importance, figure=plt.gcf())
 
 
 def _get_mplot3d_pyplot(function_name):

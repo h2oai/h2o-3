@@ -1,4 +1,5 @@
 import sys, os
+import tempfile
 sys.path.insert(1, os.path.join("..", ".."))
 import h2o
 from h2o.utils.typechecks import is_type
@@ -149,6 +150,18 @@ def test_permutation_importance_plot_works():
     # boxplot
     model.permutation_importance_plot(fr, n_repeats=5)
     plt.close("all")
+
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    model.permutation_importance_plot(fr, save_plot_path=path)
+    assert os.path.isfile(path)
+    
+    # test saving through plot result:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result =  model.permutation_importance_plot(fr)
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
 
 
 pyunit_utils.run_tests([
