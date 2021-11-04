@@ -27,8 +27,8 @@ def test_params_are_validated_in_setter():
         aml.nfolds = 1
         assert False, "should have raised"
     except AssertionError as e:
-        assert aml.nfolds == 5, "nfolds should have remained to default value"
-        assert "nfolds set to 1; use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable." == str(e)
+        assert aml.nfolds == -1, "nfolds should have remained to default value"
+        assert "nfolds set to 1; use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable or nfolds = -1 to let h2o choose automatically." == str(e)
     aml.nfolds = 3
     assert aml.nfolds == 3
     
