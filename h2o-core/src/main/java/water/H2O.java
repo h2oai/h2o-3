@@ -2622,5 +2622,18 @@ final public class H2O {
   public static URI downloadLogs(String destinationDir, String logContainer) {
     return LogsHandler.downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
   }
-  
+
+  /**
+   * Is this H2O cluster running in our continuous integration environment?
+   * 
+   * This information can be used to enable extended error output or force shutdown in case
+   * an error is encountered. Use responsibly.
+   * 
+   * @return true, if running in CI
+   */
+  static boolean isCI() {
+    return AbstractBuildVersion.getBuildVersion().isDevVersion() 
+            && "jenkins".equals(System.getProperty("user.name"));
+  }
+
 }
