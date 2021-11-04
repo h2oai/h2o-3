@@ -676,7 +676,8 @@ def shap_explain_row_plot(
         top_n_features=10,  # type: int
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
-        contribution_type="both"  # type: str
+        contribution_type="both",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP local explanation
@@ -698,7 +699,8 @@ def shap_explain_row_plot(
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
     >>> import h2o
@@ -797,7 +799,9 @@ def shap_explain_row_plot(
         plt.gca().set_axisbelow(True)
         plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(res=None, figure=fig)
 
     elif plot_type == "breakdown":
         if columns is None:
@@ -850,7 +854,9 @@ def shap_explain_row_plot(
         plt.gca().set_axisbelow(True)
         plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(res=None, figure=fig)
 
 
 def _get_top_n_levels(column, top_n):

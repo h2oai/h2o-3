@@ -56,7 +56,7 @@ def test_explanation_single_model_regression():
     matplotlib.pyplot.close()
 
     # test shap explain row
-    assert isinstance(gbm.shap_explain_row_plot(train, 1), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_explain_row_plot(train, 1).figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test residual analysis
@@ -263,7 +263,17 @@ def test_explanation_single_model_binomial_classification():
     matplotlib.pyplot.close()
 
     # test shap explain row
-    assert isinstance(gbm.shap_explain_row_plot(train, 1), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_explain_row_plot(train, 1).figure, matplotlib.pyplot.Figure)
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    gbm.pd_plot(train, col, save_plot_path=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    plot_result = gbm.pd_plot(train, col)
+    plot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
     matplotlib.pyplot.close()
 
     # test pd_plot
