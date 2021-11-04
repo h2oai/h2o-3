@@ -1,5 +1,4 @@
-from h2o.plot.plot_result import decorate_plot_result
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type, I
 
 
@@ -117,4 +116,4 @@ class StandardCoef:
         # show plot
         if server:
             plt.show()
-        return decorate_plot_result(res=None, figure=fig) 
+        return decorate_plot_result(figure=fig) 

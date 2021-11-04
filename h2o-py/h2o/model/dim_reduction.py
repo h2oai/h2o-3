@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from h2o.utils.compatibility import *  # NOQA
 
 import h2o
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 from .model_base import ModelBase
 from .metrics_base import *  # NOQA
@@ -126,4 +125,4 @@ class H2ODimReductionModel(ModelBase):
             plt.savefig(fname=save_plot_path)
         if not server:
             plt.show()
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)

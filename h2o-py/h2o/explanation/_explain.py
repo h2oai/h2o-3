@@ -4,7 +4,7 @@ import random
 import warnings
 from contextlib import contextmanager
 from collections import OrderedDict, Counter, defaultdict
-from h2o.plot.plot_result import decorate_plot_result
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
 except:
@@ -12,7 +12,6 @@ except:
 
 import h2o
 import numpy as np
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.exceptions import H2OValueError
 
 
@@ -669,7 +668,7 @@ def shap_summary_plot(
     fig = plt.gcf()
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path)
-    return decorate_plot_result(res=None, figure=fig)
+    return decorate_plot_result(figure=fig)
 
 
 def shap_explain_row_plot(
@@ -805,7 +804,7 @@ def shap_explain_row_plot(
         fig = plt.gcf()
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
 
     elif plot_type == "breakdown":
         if columns is None:
@@ -860,7 +859,7 @@ def shap_explain_row_plot(
         fig = plt.gcf()
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
 
 
 def _get_top_n_levels(column, top_n):
@@ -1065,7 +1064,7 @@ def pd_plot(
         fig = plt.gcf()
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
 
 
 def pd_multi_plot(
@@ -1214,7 +1213,7 @@ def pd_multi_plot(
         fig = plt.gcf()
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
 
 
 def ice_plot(
@@ -1349,7 +1348,7 @@ def ice_plot(
         fig = plt.gcf()
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
 
 
 def _has_varimp(model):
@@ -1513,7 +1512,7 @@ def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     fig = plt.gcf()
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path, fig=fig)
-    return decorate_plot_result(res=None, figure=fig)
+    return decorate_plot_result(figure=fig)
 
 
 def _interpretable(model):
@@ -1908,7 +1907,7 @@ def residual_analysis_plot(
     fig = plt.gcf()
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path)
-    return decorate_plot_result(res=None, figure=fig)
+    return decorate_plot_result(figure=fig)
 
 
 def learning_curve_plot(
@@ -2177,7 +2176,7 @@ def learning_curve_plot(
     if save_plot_path is not None:
         plt.savefig(fname=save_plot_path)
 
-    return decorate_plot_result(res=None, figure=plt.gcf())
+    return decorate_plot_result(figure=plt.gcf())
 
 
 def _preprocess_scoring_history(model, scoring_history, training_metric=None):

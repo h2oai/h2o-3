@@ -1,5 +1,4 @@
-from h2o.plot.plot_result import decorate_plot_result
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type
 
 
@@ -77,4 +76,4 @@ class VariableImportance:
         if save_plot_path is not None:
             plt.savefig(fname=save_plot_path)
 
-        return decorate_plot_result(res=None, figure=plt.gcf())    
+        return decorate_plot_result(figure=plt.gcf())    

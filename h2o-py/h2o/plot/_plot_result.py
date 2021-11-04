@@ -6,7 +6,7 @@ class _MList(list): pass
 class _MDict(dict): pass
 class _MStr(str): pass
 
-def decorate_plot_result(res, figure=None):
+def decorate_plot_result(res=None, figure=None):
     # list all special/immutable types that we need first
     if res is None:
         dec = _MObject()

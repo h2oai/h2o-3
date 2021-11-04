@@ -1,6 +1,5 @@
 from h2o.exceptions import H2OValueError
-from h2o.plot.plot_result import decorate_plot_result
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import assert_is_type
 
@@ -75,7 +74,7 @@ class ScoringHistory:
             plt.savefig(fname=save_plot_path)    
         if not server:
             plt.show()
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
 
 
 class ScoringHistoryTrees(ScoringHistory):
@@ -149,4 +148,4 @@ class ScoringHistoryGLM(ScoringHistory):
             plt.savefig(fname=save_plot_path, fig=fig)
         if not server:
             plt.show()
-        return decorate_plot_result(res=None, figure=fig)
+        return decorate_plot_result(figure=fig)
