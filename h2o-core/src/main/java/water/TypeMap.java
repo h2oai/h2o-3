@@ -177,17 +177,29 @@ public class TypeMap {
     return id < gold.length ? gold[id] : null;
   }
 
-  // Reverse: convert an ID to a className possibly fetching it from leader.
-  public static String className(int id) {
+  static String classNameLocal(final int id) {
     if( id == PRIM_B ) return "[B";
-    String clazs[] = CLAZZES;   // Read once, in case resizing
+    String[] clazs = CLAZZES;   // Read once, in case resizing
     if( id < clazs.length ) { // Might be installed as a className mapping no Icer (yet)
-      String s = clazs[id];   // Racily read the CLAZZES array
-      if( s != null ) return s; // Has the className already
+      return clazs[id];   // Racily read the CLAZZES array
     }
-    assert H2O.CLOUD.leader() != H2O.SELF : "Leader has no mapping for id "+id; // Leaders always have the latest mapping already
-    String s = FetchClazz.fetchClazz(id); // Fetch class name string from leader
-    Paxos.lockCloud(s); // If the leader is already selected, then the cloud is already locked but maybe we dont know; lock now
+    return null;
+  }
+
+  // Reverse: convert an ID to a className possibly fetching it from leader.
+  public static String className(final int id) {
+    String s = classNameLocal(id);
+    if (s != null)
+      return s; // Has the className already
+
+    Paxos.lockCloud("Class Id="+id); // If the leader is already selected, then the cloud is already locked; but we don't know -> lock now
+    s = FetchClazz.fetchClazz(id); // Fetch class name string from leader
+
+    if (s == null) {
+      // this is bad - we are missing the mapping and cannot get it from anywhere
+      throw new IllegalStateException("Leader has no mapping for id " + id);
+    }
+
     install( s, id );                     // Install name<->id mapping
     return s;
   }
@@ -203,6 +215,17 @@ public class TypeMap {
       Integer i = MAP.get(className);
       if( i != null ) return i; // Check again under lock for already having an ID
       id = IDS++;               // Leader gets an ID under lock
+    } else {
+      String localClassName = classNameLocal(id);
+      if (localClassName != null) {
+        if (localClassName.equals(className)) {
+          return id; // Nothing to do - we already got the mapping
+        } else {
+          throw new IllegalStateException(
+                  "Inconsistent mapping: id=" + id + " is already mapped to " + localClassName + 
+                  "; was requested to be mapped to " + className + "!");
+        }
+      }
     }
     MAP.put(className,id);      // No race on insert, since under lock
     // Expand lists to handle new ID, as needed
