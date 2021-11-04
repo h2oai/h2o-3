@@ -544,7 +544,8 @@ def shap_summary_plot(
         alpha=1,  # type: float
         colormap=None,  # type: str
         figsize=(12, 12),  # type: Union[Tuple[float], List[float]]
-        jitter=0.35  # type: float
+        jitter=0.35,  # type: float
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP summary plot
@@ -566,7 +567,8 @@ def shap_summary_plot(
     :param colormap: colormap to use instead of the default blue to red colormap
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
     >>> import h2o
@@ -665,7 +667,9 @@ def shap_summary_plot(
     plt.title("SHAP Summary plot for \"{}\"".format(model.model_id))
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(res=None, figure=fig)
 
 
 def shap_explain_row_plot(
