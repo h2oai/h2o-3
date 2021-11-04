@@ -1,4 +1,4 @@
-from h2o.plot.plot_result import H2OPlotResult
+from h2o.plot.plot_result import decorate_plot_result
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type, I
 
@@ -13,7 +13,7 @@ class StandardCoef:
         :param server: if true set server settings to matplotlib and show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: H2OPlotResult
+        :returns: object that contains the resulting figure (can be accessed like result.figure)
         """
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
 
@@ -117,4 +117,4 @@ class StandardCoef:
         # show plot
         if server:
             plt.show()
-        return H2OPlotResult(figure=plt)    
+        return decorate_plot_result(res=None, figure=fig) 

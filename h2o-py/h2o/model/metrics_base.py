@@ -8,7 +8,7 @@ Regression model.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.plot.plot_result import H2OPlotResult
+from h2o.plot.plot_result import decorate_plot_result
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
@@ -1438,9 +1438,9 @@ class H2OBinomialModelMetrics(MetricsBase):
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
                 plt.savefig(fname=save_to_file)
-            return H2OPlotResult(self.fprs, self.tprs, figure=fig)   
+            return decorate_plot_result(res=(self.fprs, self.tprs), figure=fig) 
         else:
-            return H2OPlotResult(self.fprs, self.tprs, figure=None)
+            return decorate_plot_result(res=(self.fprs, self.tprs))
 
     def _plot_pr(self, server=False, save_to_file=None, plot=True):
         recalls = [x[0] for x in self.recall(thresholds='all')]
@@ -1463,9 +1463,9 @@ class H2OBinomialModelMetrics(MetricsBase):
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
                 plt.savefig(fname=save_to_file)
-            return H2OPlotResult(recalls, precisions, figure=fig)
+            return decorate_plot_result(res=(recalls, precisions), figure=fig)
         else:
-            return H2OPlotResult(recalls, precisions, figure=None)
+            return decorate_plot_result(res=(recalls, precisions))
 
 
     @property

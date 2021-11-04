@@ -18,7 +18,7 @@ def binomial_plot_test():
     plt = model.plot(timestep="AUTO", metric="objective", server=True)
     tmpdir = tempfile.mkdtemp(prefix="h2o-func")
     path = "{}/plot1.png".format(tmpdir)
-    plt._figure.savefig(path)
+    plt.figure.savefig(path)
     assert os.path.isfile(path)
 
     # Save a plot to tmpdir by save_plot_path parameter:

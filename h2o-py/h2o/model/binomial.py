@@ -755,7 +755,7 @@ class H2OBinomialModel(ModelBase):
         :param str metric: A unit of measurement for the y-axis.
         :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
         
-        :returns: H2OPlotResult
+        :returns: object that contains the resulting figure (can be accessed like result.figure)
 
         :examples:
 
