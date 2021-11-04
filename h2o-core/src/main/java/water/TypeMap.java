@@ -271,14 +271,6 @@ public class TypeMap {
       }
     }
   }
-  static void drop(String ice_clz) {
-    Integer I = MAP.get(ice_clz);
-    if( I==null ) return; // no icer, no problem
-    synchronized( TypeMap.class ) {  // install null
-      GOLD[I] = null;
-    }
-
-  }
   static Iced newInstance(int id) { return (Iced) newFreezable(id); }
 
   static <T extends Freezable> T newFreezable(int id, Class<T> tc) {
