@@ -64,15 +64,20 @@ public class Jetty8HelperTest {
   public void testConfigureConnector() {
     boolean origRedirects = Response.RELATIVE_REDIRECT_ALLOWED;
     try {
-      Response.RELATIVE_REDIRECT_ALLOWED = false;
+      Response.RELATIVE_REDIRECT_ALLOWED = true;
       Connector defaultConnectorMock = mock(Connector.class);
 
-      ConnectionConfiguration cfg = new ConnectionConfiguration(false);
+      ConnectionConfiguration cfg = new ConnectionConfiguration(false) {
+        @Override
+        public boolean isRelativeRedirectAllowed() {
+          return false;
+        }
+      };
       Jetty8Helper.configureConnector(defaultConnectorMock, cfg);
 
       verify(defaultConnectorMock).setRequestHeaderSize(32 * 1024);
       verify(defaultConnectorMock).setRequestBufferSize(32 * 1024);
-      assertTrue(Response.RELATIVE_REDIRECT_ALLOWED);
+      assertFalse(Response.RELATIVE_REDIRECT_ALLOWED);
     } finally {
       Response.RELATIVE_REDIRECT_ALLOWED = origRedirects;
     }
