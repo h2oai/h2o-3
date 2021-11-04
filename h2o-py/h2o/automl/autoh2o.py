@@ -23,6 +23,7 @@ def get_leaderboard(aml, extra_columns=None):
     """
     Retrieve the leaderboard from the AutoML instance.
     Contrary to the default leaderboard attached to the automl instance, this one can return columns other than the metrics.
+    
     :param H2OAutoML aml: the instance for which to return the leaderboard.
     :param extra_columns: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
         Currently supported extensions are:

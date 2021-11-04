@@ -138,6 +138,7 @@ class H2OAutoMLBaseMixin:
         """
         Retrieve the leaderboard.
         Contrary to the default leaderboard attached to the instance, this one can return columns other than the metrics.
+
         :param extra_columns: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
             Currently supported extensions are:
             - 'ALL': adds all columns below.
