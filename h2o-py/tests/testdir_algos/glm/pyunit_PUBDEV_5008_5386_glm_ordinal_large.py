@@ -23,7 +23,7 @@ def testOrdinalLogit():
         for lAmbda in lambdaL:
             for alpha in alphaL:
                 model = H2OGeneralizedLinearEstimator(family="ordinal", alpha=alpha, lambda_=lAmbda, obj_reg = reg,
-                                          max_iterations=1000, beta_epsilon=1e-8, objective_epsilon=1e-8)
+                                          max_iterations=1000, beta_epsilon=1e-8, objective_epsilon=1e-8, seed=12345)
                 model.train(x=list(range(0,20)), y="C21", training_frame=Dtrain)
                 predH2O = model.predict(Dtest)
                 acc = calAcc(predH2O["predict"].as_data_frame(use_pandas=False), Dtest["C21"].as_data_frame(use_pandas=False))
@@ -32,12 +32,12 @@ def testOrdinalLogit():
 
                 model2 = H2OGeneralizedLinearEstimator(family="ordinal", alpha=alpha, lambda_=lAmbda,
                                                        obj_reg = reg, max_iterations=1000, beta_epsilon=1e-8,
-                                                       solver="GRADIENT_DESCENT_SQERR", objective_epsilon=1e-8)
+                                                       solver="GRADIENT_DESCENT_SQERR", objective_epsilon=1e-8, seed=12345)
                 model2.train(x=list(range(0,20)), y="C21", training_frame=Dtrain)
                 predH2O2 = model2.predict(Dtest)
                 acc = calAcc(Dtest["C21"].as_data_frame(use_pandas=False), predH2O2['predict'].as_data_frame(use_pandas=False))
                 if (bestAccSQERR < acc):
-                    bestAccSQERR = acc;
+                    bestAccSQERR = acc
 
 
     print("Best accuracy for GRADIENT_DESCENT_LH is {0} and best accuracy for GRADIENT_DESCENT_SQERR is {1}".format(bestAccLH, bestAccSQERR))
