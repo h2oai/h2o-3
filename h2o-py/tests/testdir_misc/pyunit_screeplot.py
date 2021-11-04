@@ -1,4 +1,7 @@
+import os
 import sys
+import tempfile
+
 sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
@@ -12,7 +15,17 @@ def screeplot_test():
     australia_pca = H2OPCA(k=4,transform="STANDARDIZE")
     australia_pca.train(x=list(range(8)), training_frame=australia)
     australia_pca.screeplot(type="barplot", **kwargs)
-    australia_pca.screeplot(type="lines", **kwargs)
+    screeplot_result = australia_pca.screeplot(type="lines", **kwargs)
+
+    # test saving with parameter:
+    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+    path = "{}/plot1.png".format(tmpdir)
+    australia_pca.screeplot(type="barplot", **kwargs, save_plot_path=path)
+    assert os.path.isfile(path)
+    # test saving through H2OPlotResult:
+    path = "{}/plot2.png".format(tmpdir)
+    screeplot_result.figure.savefig(fname=path)
+    assert os.path.isfile(path)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(screeplot_test)
