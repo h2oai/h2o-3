@@ -4,6 +4,7 @@ import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.ServiceLoader;
 
@@ -197,6 +198,10 @@ public class TypeMap {
 
     if (s == null) {
       // this is bad - we are missing the mapping and cannot get it from anywhere
+      if (H2O.isCI()) {
+        // when running on CI - dump all local TypeMaps to get some idea of what happened
+        new PrintTypeMap().doAllNodes();
+      }
       throw new IllegalStateException("Leader has no mapping for id " + id);
     }
 
@@ -315,4 +320,21 @@ public class TypeMap {
     Icer f = goForGold(id);
     return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
   }
+
+  static void printTypeMap(PrintStream ps) {
+    final String[] clazzes = CLAZZES;
+    for (int i = 0; i < clazzes.length; i++) {
+      final String className = CLAZZES[i];
+      ps.println(i + " -> " + className + " (map: " + (className != null ? MAP.get(className) : null) + ")");
+    }
+  }
+
+  private static class PrintTypeMap extends MRTask<PrintTypeMap> {
+    @Override
+    protected void setupLocal() {
+      System.err.println("TypeMap dump on node " + H2O.SELF);
+      printTypeMap(System.err);
+    }
+  }
+
 }
