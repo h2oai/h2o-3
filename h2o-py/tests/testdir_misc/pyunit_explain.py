@@ -66,7 +66,19 @@ def test_explanation_single_model_regression():
     # test pd_plot
     for col in cols_to_test:
         try:
-            assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
+            assert isinstance(gbm.pd_plot(train, col).figure, matplotlib.pyplot.Figure)
+            # test saving with parameter:
+            tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+            path = "{}/plot1.png".format(tmpdir)
+            gbm.pd_plot(train, col, save_plot_path=path)
+            assert os.path.isfile(path)
+            os.remove(path)
+            # test saving through H2OPlotResult:
+            path = "{}/plot2.png".format(tmpdir) 
+            plot_result = gbm.pd_plot(train, col)
+            plot_result.figure.savefig(fname=path)
+            assert os.path.isfile(path)
+            os.remove(path)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
 
@@ -256,7 +268,19 @@ def test_explanation_single_model_binomial_classification():
 
     # test pd_plot
     for col in cols_to_test:
-        assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.pd_plot(train, col).figure, matplotlib.pyplot.Figure)
+        # test saving with parameter:
+        tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+        path = "{}/plot1.png".format(tmpdir)
+        gbm.pd_plot(train, col, save_plot_path=path)
+        assert os.path.isfile(path)
+        os.remove(path)
+        # test saving through H2OPlotResult:
+        path = "{}/plot2.png".format(tmpdir)
+        plot_result = gbm.pd_plot(train, col)
+        plot_result.figure.savefig(fname=path)
+        assert os.path.isfile(path)
+        os.remove(path)
 
     # test ICE plot
     for col in cols_to_test:
@@ -442,7 +466,7 @@ def test_explanation_single_model_multinomial_classification():
 
     # test pd_plot
     for col in cols_to_test:
-        assert isinstance(gbm.pd_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.pd_plot(train, col, target="setosa").figure, matplotlib.pyplot.Figure)
 
     # test ICE plot
     for col in cols_to_test:

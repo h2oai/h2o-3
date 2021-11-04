@@ -941,6 +941,7 @@ def pd_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):
     """
     Plot partial dependence plot.
@@ -959,7 +960,7 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
-    :returns: a matplotlib figure object
+    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
     >>> import h2o
@@ -1051,7 +1052,9 @@ def pd_plot(
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
         plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(res=None, figure=fig)
 
 
 def pd_multi_plot(
@@ -1459,14 +1462,15 @@ def _consolidate_varimps(model):
 # It provides the same capabilities as `model.varimp_plot` but without
 # either forcing "Agg" backend or showing the plot.
 # It also mimics the look and feel of the rest of the explain plots.
-def _varimp_plot(model, figsize, num_of_features=None):
+def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     # type: (h2o.model.ModelBase, Tuple[Float, Float], Optional[int]) -> matplotlib.pyplot.Figure
     """
     Variable importance plot.
     :param model: H2O model
     :param figsize: Figure size
     :param num_of_features: Maximum number of variables to plot. Defaults to 10.
-    :return:
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :return: object that contains the resulting figure (can be accessed like result.figure)
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     importances = model.varimp(use_pandas=False)
@@ -1488,7 +1492,9 @@ def _varimp_plot(model, figsize, num_of_features=None):
     plt.gca().set_axisbelow(True)
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path, fig=fig)
+    return decorate_plot_result(res=None, figure=fig)
 
 
 def _interpretable(model):

@@ -1453,19 +1453,20 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def varimp_plot(self, num_of_features=None, server=False):
+    def varimp_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot the variable importance for a trained model.
 
         :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
         :param server: if true set server settings to matplotlib and do not show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: None.
+        :returns: object that contains the resulting figure (can be accessed like result.figure)
         """
         # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'VariableImportance'):
-            return self._varimp_plot(num_of_features=num_of_features, server=server)
+            return self._varimp_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path)
         raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
 
     def std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None):

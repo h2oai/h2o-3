@@ -1,15 +1,18 @@
+from h2o.plot.plot_result import decorate_plot_result
 from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.typechecks import assert_is_type
 
 
 class VariableImportance:
 
-    def _varimp_plot(self, num_of_features=None, server=False):
+    def _varimp_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot the variable importance for a trained model.
 
         :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
         :param server: if true set server settings to matplotlib and show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        :return: object that contains the resulting figure (can be accessed like result.figure)
 
         :returns: None.
         """
@@ -70,3 +73,8 @@ class VariableImportance:
         plt.title("Variable Importance: H2O %s" % self._model_json["algo_full_name"], fontsize=20)
         if not server:
             plt.show()
+            
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+
+        return decorate_plot_result(res=None, figure=plt.gcf())    
