@@ -567,7 +567,7 @@ def shap_summary_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure)
 
     :examples:
     >>> import h2o
