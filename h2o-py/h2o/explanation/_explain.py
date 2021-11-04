@@ -2,9 +2,9 @@
 
 import random
 import warnings
-from contextlib import contextmanager
 from collections import OrderedDict, Counter, defaultdict
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from contextlib import contextmanager
+
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
 except:
@@ -13,6 +13,7 @@ except:
 import h2o
 import numpy as np
 from h2o.exceptions import H2OValueError
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
 
 
 def _display(object):

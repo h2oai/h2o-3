@@ -1,12 +1,12 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-# noinspection PyUnresolvedReferences
-from h2o.utils.compatibility import *  # NOQA
 
 import h2o
+# noinspection PyUnresolvedReferences
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import can_use_pandas
-from .model_base import ModelBase
 from .metrics_base import *  # NOQA
+from .model_base import ModelBase
 
 
 class H2ODimReductionModel(ModelBase):

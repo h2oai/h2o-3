@@ -1,5 +1,7 @@
-import sys, os
+import os
+import sys
 import tempfile
+
 sys.path.insert(1, os.path.join("..", ".."))
 import h2o
 from h2o.utils.typechecks import is_type

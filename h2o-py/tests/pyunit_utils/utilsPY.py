@@ -1,7 +1,9 @@
 # Py2 compat
 from __future__ import print_function
+
 import matplotlib
 from future import standard_library
+
 standard_library.install_aliases()
 from past.builtins import basestring
 
