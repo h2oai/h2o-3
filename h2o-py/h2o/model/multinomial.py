@@ -211,7 +211,7 @@ class H2OMultinomialModel(ModelBase):
         for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.multinomial_aucpr_table()
         return list(m.values())[0] if len(m) == 1 else m
 
-    def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+    def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """
         Plots training set (and validation set if available) scoring history for an H2OMultinomialModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
@@ -219,7 +219,7 @@ class H2OMultinomialModel(ModelBase):
         :param timestep: A unit of measurement for the x-axis. This can be AUTO, duration, or number_of_trees.
         :param metric: A unit of measurement for the y-axis. This can be AUTO, logloss, classification_error, or rmse.
 
-        :returns: A scoring history plot.
+        :returns: Object that contains the resulting scoring history plot (can be accessed like result.figure).
 
         :examples:
 
@@ -248,4 +248,4 @@ class H2OMultinomialModel(ModelBase):
             assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2OMultinomialModel must be one of %s" % valid_metrics
         if metric == "AUTO":
             metric = self._default_metric('multinomial') or 'AUTO'
-        self.scoring_history_plot(timestep=timestep, metric=metric, **kwargs)
+        return self.scoring_history_plot(timestep=timestep, metric=metric, save_plot_path=save_plot_path, **kwargs)

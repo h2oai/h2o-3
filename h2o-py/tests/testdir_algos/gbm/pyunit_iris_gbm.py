@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+import os
 from builtins import range
 import sys
 sys.path.insert(1,"../../../")
@@ -23,7 +25,14 @@ def iris_gbm():
 
   print(my_gbm_metrics)  #.show(criterion=my_gbm_metrics.theCriteria.PRECISION)
 
-
+  fn = "plot.png"
+  my_gbm.plot(save_plot_path=fn)
+  if os.path.isfile(fn):
+    os.remove(fn)
+  plot_result = my_gbm.plot()
+  plot_result.figure.savefig(fn)
+  if os.path.isfile(fn):
+    os.remove(fn)
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(iris_gbm)

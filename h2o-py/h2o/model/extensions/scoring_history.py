@@ -72,7 +72,7 @@ class ScoringHistory:
             plt.ylim(ylim)
             plt.plot(scoring_history[timestep], scoring_history[training_metric])
         if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path, fig=fig)    
+            plt.savefig(fname=save_plot_path)    
         if not server:
             plt.show()
         return decorate_plot_result(res=None, figure=fig)
