@@ -359,7 +359,7 @@ h2o.automl <- function(x, y, training_frame,
   }
 
   # POST call to AutoMLBuilder (executes the AutoML job)
-  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
+  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", parms_as_payload = TRUE, .params = params)
 
   poll_state <- list()
   poll_updates <- function(job) {
@@ -467,13 +467,14 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   state_json <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
   project_name <- state_json$project_name
   automl_id <- state_json$automl_id$name
-
+  is_leaderboard_empty <- all(dim(state_json$leaderboard_table) == c(1, 1)) && state_json$leaderboard_table[1, 1] == ""
+    
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
   if (should_fetch('leaderboard')) { 
-    leaderboard <- .automl.fetch_table(state_json$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
+    leaderboard <- .automl.fetch_table(state_jso$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
     # If the leaderboard is empty, it creates a dummy row so let's remove it
-    if (leaderboard$model_id[1,1] == "") {
+    if (is_leaderboard_empty) {
       leaderboard <- leaderboard[-1,]
       warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
     }
@@ -482,7 +483,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
-  if (should_fetch('leader') & nrow(state_json$leaderboard_table) > 0) {
+  if (should_fetch('leader') && !is_leaderboard_empty) {
     leader <- h2o.getModel(state_json$leaderboard$models[[1]]$name)
   } else {
     # create a phony leader

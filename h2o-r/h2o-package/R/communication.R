@@ -46,7 +46,7 @@
       sprintf("%s://%s:%s/%s/%s/%s", scheme, conn@ip, as.character(conn@port), conn@context_path, h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, autoML = FALSE, ...) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, parms_as_payload = FALSE, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
@@ -69,7 +69,6 @@
     # ok got some extra args -- ignore things that aren't timeout...
     if( !is.null(l$timeout) )
       timeout_secs <- l$timeout
-    print(timeout_secs)
   }
 
   url = .h2o.calcBaseURL(conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
@@ -122,8 +121,8 @@
         url = sprintf("%s?%s", url, queryString)
       }
     }
-    #For AutoML
-    if(autoML == TRUE){
+    #For parms_as_payload
+    if(parms_as_payload == TRUE){
       postBody <- jsonlite::toJSON(parms,auto_unbox=TRUE,pretty=TRUE)
       postBody <- sub('\"\\{', '\\{',postBody)
       postBody <- sub('\\}\"', '\\}',postBody)
@@ -209,7 +208,7 @@
   } else if (method == "POST") {
     h = basicHeaderGatherer()
     t = basicTextGatherer(.mapUnicode = FALSE)
-    if(!autoML){
+    if(!parms_as_payload){
       header['Expect'] = ''
     }else{
       header["Content-Type"] <- "application/json"
@@ -312,7 +311,7 @@
                  parms = parms, method = "POST", fileUploadInfo = fileUploadInfo, ...)
 }
 
-.h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,autoML=FALSE, ...) {
+.h2o.doREST <- function(conn = h2o.getConnection(), h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, parms_as_payload=FALSE, ...) {
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
@@ -321,7 +320,7 @@
     h2oRestApiVersion = .h2o.__REST_API_VERSION
   }
   .h2o.doRawREST(conn = conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                 parms = parms, method = method, fileUploadInfo,autoML=autoML, ...)
+                 parms = parms, method = method, fileUploadInfo, parms_as_payload=parms_as_payload, ...)
 }
 
 #' Just like doRawGET but fills in the default h2oRestApiVersion if none is provided
@@ -348,14 +347,14 @@
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, autoML=FALSE, doValidation=TRUE, ...) {
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, parms_as_payload=FALSE, doValidation=TRUE, ...) {
   if (doValidation) {
     stopifnot(is.character(urlSuffix))
     stopifnot(is.character(method))
     if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
   }
   rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                   parms = parms, method = method, fileUploadInfo = fileUploadInfo,autoML=autoML, ...)
+                   parms = parms, method = method, fileUploadInfo = fileUploadInfo, parms_as_payload=parms_as_payload, ...)
 
   if (rv$curlError) {
 
@@ -581,7 +580,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 # Error checking is performed.
 #
 # @return JSON object converted from the response payload
-.h2o.__remoteSend <- function(page, method = "GET", ..., autoML = FALSE, .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+.h2o.__remoteSend <- function(page, method = "GET", ..., parms_as_payload = FALSE, .params = list(), raw=FALSE, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
   stopifnot(is.character(method))
   stopifnot(is.list(.params))
 
@@ -589,7 +588,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
   timeout <- NULL
   if (length(.params) == 0L) {
     l <- list(...)
-    if( "timeout" %in% names(l) ) {
+    if( "timeout" %in% names(l) && !is.null(l$timeout)) {
       timeout <- l$timeout
       l$timeout <- NULL
       .params <- l
@@ -598,14 +597,8 @@ print.H2OTable <- function(x, header=TRUE, ...) {
     }
   }
 
-  rawREST <- ""
-  if( !is.null(timeout) ){
-    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, timeout = timeout)
-  }else if(autoML == TRUE){
-    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method,autoML=autoML)
-  }else{
-    rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method)
-  }
+  rawREST <- .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = page, parms = .params, method = method, 
+                             parms_as_payload=parms_as_payload, timeout=timeout)
   if( raw ) rawREST
   else {
     res <- .h2o.fromJSON(jsonlite::fromJSON(rawREST,simplifyDataFrame=FALSE, bigint_as_char=TRUE))
@@ -617,6 +610,41 @@ print.H2OTable <- function(x, header=TRUE, ...) {
     }
     res
   }
+}
+
+#' Perform a REST API request to a previously connected server.
+#' 
+#' This function is mostly for internal purposes, but may occasionally be useful for direct access to the backend H2O server.
+#' It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
+#' @param endpoint. A H2O REST API endpoint as listed by `lapply(h2o.api("GET /3/Metadata/endpoints")$routes, function(r) r$url_pattern)`
+#' @param params. A list of params passed in the url.
+#' @param json. A list of params passed as a json payload.
+#' @return the parsed response
+#' @examples
+#' \dontrun{
+#' res <- h2o.api("GET /3/NetworkTest")
+#' res$table
+#' }
+#' @export
+h2o.api <- function(endpoint, params=NULL, json=NULL) {
+    endpoint_pat <- "^(GET|POST|PUT|DELETE|PATCH|HEAD|TRACE) /(\\d+)/(.*)$"
+    match <- unlist(regmatches(endpoint, regexec(endpoint_pat, endpoint)))
+    if (length(match) < 4) 
+        stop("endpoint should be in the format 'GET /3/Resource/subRes'")
+    if (!is.null(params) && !is.null(json)) 
+        stop("data can be passed either as URL params (using `params` list argument) or as a JSON payload (using `json` list argument), not both")
+    method <- match[2]
+    api_version <- match[3]
+    page <- match[4]
+    params <- if (is.null(params)) list() else params
+    params_as_payload <- FALSE
+    if (!is.null(json)) {
+        params <- json
+        params_as_payload <- TRUE
+    }
+    
+    .h2o.__remoteSend(page, method=method, h2oRestApiVersion=api_version,
+                      .params=params, parms_as_payload=params_as_payload)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
