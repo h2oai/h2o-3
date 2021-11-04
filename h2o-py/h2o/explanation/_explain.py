@@ -960,6 +960,7 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                   
     :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
@@ -1067,7 +1068,8 @@ def pd_multi_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
-        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."]  # type: List[str]
+        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."],  # type: List[str]
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     Plot partial dependencies of a variable across multiple models.
@@ -1088,7 +1090,8 @@ def pd_multi_plot(
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                
+    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
     >>> import h2o
@@ -1199,7 +1202,9 @@ def pd_multi_plot(
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
         plt.tight_layout(rect=[0, 0, 0.8, 1])
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(res=None, figure=fig)
 
 
 def ice_plot(
@@ -1210,6 +1215,7 @@ def ice_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1227,7 +1233,8 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
     >>> import h2o
@@ -1330,7 +1337,9 @@ def ice_plot(
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
         plt.tight_layout(rect=[0, 0, 0.85, 1])
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(res=None, figure=fig)
 
 
 def _has_varimp(model):
@@ -1808,7 +1817,8 @@ def model_correlation(
 def residual_analysis_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
-        figsize=(16, 9)  # type: Tuple[float]
+        figsize=(16, 9),  # type: Tuple[float]
+        save_plot_path=None # type: Optional[str]
 ):
     # type: (...) -> plt.Figure
     """
@@ -1824,7 +1834,8 @@ def residual_analysis_plot(
     :param model: H2OModel
     :param frame: H2OFrame
     :param figsize: figure size; passed directly to matplotlib
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
 
     :examples:
     >>> import h2o
@@ -1885,7 +1896,9 @@ def residual_analysis_plot(
 
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(res=None, figure=fig)
 
 
 def learning_curve_plot(

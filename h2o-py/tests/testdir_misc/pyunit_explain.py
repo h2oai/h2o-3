@@ -60,7 +60,7 @@ def test_explanation_single_model_regression():
     matplotlib.pyplot.close()
 
     # test residual analysis
-    assert isinstance(gbm.residual_analysis_plot(train), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.residual_analysis_plot(train).figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test pd_plot
@@ -85,7 +85,7 @@ def test_explanation_single_model_regression():
     # test ICE plot
     for col in cols_to_test:
         try:
-            assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+            assert isinstance(gbm.ice_plot(train, col).figure, matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
@@ -149,7 +149,7 @@ def test_explanation_automl_regression():
     # test partial dependences
     for col in cols_to_test:
         try:
-            assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+            assert isinstance(aml.pd_multi_plot(train, col).figure, matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
@@ -213,7 +213,7 @@ def test_explanation_list_of_models_regression():
     # test partial dependences
     for col in cols_to_test:
         try:
-            assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+            assert isinstance(h2o.pd_multi_plot(models, train, col).figure, matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
@@ -284,7 +284,7 @@ def test_explanation_single_model_binomial_classification():
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.ice_plot(train, col).figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test learning curve
@@ -347,7 +347,19 @@ def test_explanation_automl_binomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(aml.pd_multi_plot(train, col).figure, matplotlib.pyplot.Figure)
+        # test saving with parameter:
+        tmpdir = tempfile.mkdtemp(prefix="h2o-func")
+        path = "{}/plot1.png".format(tmpdir)
+        aml.pd_multi_plot(train, col, save_plot_path=path)
+        assert os.path.isfile(path)
+        os.remove(path)
+        # test saving through H2OPlotResult:
+        path = "{}/plot2.png".format(tmpdir)
+        plot_result = aml.pd_multi_plot(train, col)
+        plot_result.figure.savefig(fname=path)
+        assert os.path.isfile(path)
+        os.remove(path)
         matplotlib.pyplot.close()
 
     # test explain
@@ -373,7 +385,7 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=True), pandas.DataFrame)
 
     # test partial dependences
-    assert isinstance(h2o.pd_multi_plot(leaderboard_without_SE, train, cols_to_test[0]), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.pd_multi_plot(leaderboard_without_SE, train, cols_to_test[0]).figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test explain
@@ -417,7 +429,7 @@ def test_explanation_list_of_models_binomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+        assert isinstance(h2o.pd_multi_plot(models, train, col).figure, matplotlib.pyplot.Figure)
         matplotlib.pyplot.close()
 
     # test learning curve
@@ -470,7 +482,7 @@ def test_explanation_single_model_multinomial_classification():
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.ice_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.ice_plot(train, col, target="setosa").figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test learning curve
@@ -485,7 +497,7 @@ def test_explanation_single_model_multinomial_classification():
     plot_result = gbm.learning_curve_plot()
     plot_result.figure.savefig(fname=path)
     assert os.path.isfile(path)
-    matplotlib.pyplot.close()
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -526,7 +538,7 @@ def test_explanation_automl_multinomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.pd_multi_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(aml.pd_multi_plot(train, col, target="setosa").figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -577,7 +589,7 @@ def test_explanation_list_of_models_multinomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.pd_multi_plot(models, train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(h2o.pd_multi_plot(models, train, col, target="setosa").figure, matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test learning curve
