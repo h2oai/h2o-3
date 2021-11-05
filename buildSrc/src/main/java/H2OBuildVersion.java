@@ -19,6 +19,7 @@ public class H2OBuildVersion {
   // Passed in by caller.
   File _rootDir;
   String _versionFromGradle;
+  String _targetPackage;
 
   // Calculated.
   String _branch;
@@ -39,8 +40,13 @@ public class H2OBuildVersion {
   }
 
   H2OBuildVersion(File rootDir, String versionFromGradle) {
+    this(rootDir, versionFromGradle, "water.init");
+  }
+
+  H2OBuildVersion(File rootDir, String versionFromGradle, String targetPackage) {
     _rootDir = rootDir;
     _versionFromGradle = versionFromGradle;
+    _targetPackage = targetPackage;
     calc();
   }
 
@@ -249,7 +255,7 @@ public class H2OBuildVersion {
       }
 
       PrintWriter writer = new PrintWriter(fileName);
-      writer.println("package water.init;");
+      writer.print("package "); writer.print(_targetPackage); writer.println(";");
       writer.println("");
       writer.println("public class BuildVersion extends AbstractBuildVersion {");
       writer.println("    public String branchName()     { return \"" + branchName     + "\"; }");

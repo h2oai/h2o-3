@@ -52,7 +52,7 @@ def call(final pipelineContext, final stageConfig) {
 }
 
 private GString downloadConfigsScript(Map config) {
-    def apiBase = "http://${config.nameNode}.0xdata.loc:8080/api/v1/clusters/${config.hdpName}/services"
+    def apiBase = "http://${config.configSource}.0xdata.loc:8080/api/v1/clusters/${config.hdpName}/services"
     return """
         echo "Downloading hadoop configuration from ${apiBase}"
         cd \$HADOOP_CONF_DIR

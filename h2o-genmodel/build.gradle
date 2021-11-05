@@ -35,11 +35,11 @@ dependencies {
   api "ai.h2o:h2o-tree-api:0.3.17"
 }
 
-def buildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java")
+def buildVersionFile = new File(projectDir, "/src/main/java/water/genmodel/BuildVersion.java")
 
 task generateBuildVersionJava {
   doLast {
-    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version, "water.genmodel")
     bv.emitBuildVersionJavaFileIfNecessary(buildVersionFile)
   }
 }

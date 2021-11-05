@@ -34,6 +34,7 @@ h2o-r/h2o-package/DESCRIPTION
 gradle-app.setting
 .gradle
 src/main/java/water/BuildVersion.java
+h2o-genmodel/src/main/java/water/genmodel/BuildVersion.java
 .Rproj.user
 .RData
 .Rhistory
