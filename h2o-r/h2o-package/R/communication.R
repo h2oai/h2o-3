@@ -616,15 +616,25 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #' 
 #' This function is mostly for internal purposes, but may occasionally be useful for direct access to the backend H2O server.
 #' It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
-#' @param endpoint. A H2O REST API endpoint as listed by `lapply(h2o.api("GET /3/Metadata/endpoints")$routes, function(r) r$url_pattern)`
+#' @param endpoint. A H2O REST API endpoint.
 #' @param params. A list of params passed in the url.
 #' @param json. A list of params passed as a json payload.
 #' @return the parsed response
+#' @details
+#' REST API endpoints can be obtained using:
+#' ```
+#' endpoints <- sapply(h2o.api("GET /3/Metadata/endpoints")$routes, function(r) paste(r$http_method, r$url_pattern))
+#' ```
+#' For a given route, the supported params can be otained using:
+#' ```
+#' parameters <- sapply(h2o.api("GET /3/Metadata/schemas/{route$input_schema}")$schemas[[1]]$fields, function(f) { l <-list(); l[f$name] <- f$help; l })
+#' ```
 #' @examples
 #' \dontrun{
 #' res <- h2o.api("GET /3/NetworkTest")
 #' res$table
 #' }
+#' @md
 #' @export
 h2o.api <- function(endpoint, params=NULL, json=NULL) {
     endpoint_pat <- "^(GET|POST|PUT|DELETE|PATCH|HEAD|TRACE) /(\\d+)/(.*)$"
