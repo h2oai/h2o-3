@@ -42,12 +42,6 @@ def test_decorate_plot_result():
     assert res == [3, 5, 6]
     assert res.figure == figure
 
-    somedict = {
-        "brand": "Ford",
-        "model": "Mustang",
-        "year": 1964
-    }
-
     res = decorate_plot_result({"brand": "Ford", "model": "Mustang", "year": 1964}, figure=figure)
     assert isinstance(res, dict)
     assert res == {"brand": "Ford", "model": "Mustang", "year": 1964}
