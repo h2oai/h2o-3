@@ -145,7 +145,7 @@ class ScoringHistoryGLM(ScoringHistory):
         style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
         plt.plot(scoring_history[timestep], scoring_history[metric], style)
         if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path, fig=fig)
+            plt.savefig(fname=save_plot_path)
         if not server:
             plt.show()
         return decorate_plot_result(figure=fig)

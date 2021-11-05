@@ -1512,7 +1512,7 @@ def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     plt.tight_layout()
     fig = plt.gcf()
     if save_plot_path is not None:
-        plt.savefig(fname=save_plot_path, fig=fig)
+        plt.savefig(fname=save_plot_path)
     return decorate_plot_result(figure=fig)
 
 
