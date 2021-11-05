@@ -570,7 +570,7 @@ Example command:
 
 **Note on refreshHiveTokens:** The provided keytab will be copied over to the machine running the H2O Cluster leader node. For this reason, we strongly recommended that both YARN and HDFS be secured with encryption.
 
-**Note on generating the refreshing HDFS delegation tokens:** In case generation of the refreshing HDFS delegation tokens is required, the ``-refreshHdfsTokens`` argument has to be present. In case S3A filesystem is used, additionally, the ``refreshS3ATokens`` argument has to be present.
+**Note on generating the refreshing HDFS delegation tokens:** In case generation of the refreshing HDFS delegation tokens is required, the ``-refreshHdfsTokens`` argument has to be present. In specific deployments (eg. on CDP with IDbroker security) you might need to enable S3A token refresh to acquire (and keep refreshing) delegation tokens to access S3 buckets. This option is being enabled by the ``refreshS3ATokens`` argument.
 
 Generating the Token in the Driver with Refresh in the Mapper
 #############################################################
