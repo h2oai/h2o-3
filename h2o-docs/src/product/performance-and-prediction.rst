@@ -2012,7 +2012,6 @@ Gains/Lift evaluates the prediction ability of a binary classification model. Th
 
 The accuracy of the baseline is evaluated when no model is used. For instance, if there are :math:`x\%` positive responses in the dataset, when you grab :math:`10\%` of the dataset, you can assume that there are :math:`10\%` of the :math:`x\%` positive responses in the :math:`10\%` of the dataset that you chose. If :math:`x=10` and there are :math:`10\%` positive responses in the dataset, when you choose :math:`10\%` of a dataset, you can expect there to be :math:`1\%` of the positive responses in the :math:`10\%` of the dataset you chose.
 
-
 To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. 
 
 **An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100000 customers and predict the results of contacting only the top 10000 customers, the top 20000 customers, and so on. You do this by:
@@ -2052,29 +2051,17 @@ In addition to the chart, a **Gains/Lift table** is also available. This table r
 
 - **Cumulative data fractions**: fraction of data used to calculate gain and lift at
 - **Lower threshold**: the lowest score output of the dataset in the data fraction bin
-- **Average response rate**: total number of positive classes / total number of data rows in the dataset
-- **Lift and Cumulative lift**: ratio of cumulative response rate and average response rate.
+- **Response rate**: ratio of the number of the positive classes and the number of data in the current data fraction
+- **Average response rate**: ratio of the total number of positive classes and the total number of data rows in the dataset
+- **Lift**: ratio of response rate of the current data fraction and average response rate
+- **Cumulative lift**: ratio of cumulative response rate and average response rate
 - **Score**: the average of all the classifier output probabilities for each individual data fraction bin
 - **Cumulative response rate**: for the first bin, it is the number of positive response over 10000 (assume each bin contains 100000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
-- **Capture rate**: for each bin it is the ratio of positive classes in each bin divided by the total number of positive classes in your dataset
+- **Capture rate**: for each data fraction it is the ratio of positive classes in each bin divided by the total number of positive classes in the dataset
 - **Cumulative capture rate**: for the first bin, it is just the capture rate; the second bin is the ratio of (sum of number of positive classes for the first two bins) and the total number of positive classes in your dataset
+- **Gain**: :math:`100\times(\text{lift for current data fraction}-1)`
+- **Cumulative Gain**: :math:`100\times(\text{cumulative lift for current data fraction}-1)`
 - `Kolmogorov-Smirnov (KS) Metric`_
-- **Gain and Cumulative gain**: calculated for each bin in a cumulative manner: 
-
-+---------------+-----------------------------------------------------------------------------------------------+
-| Bin           | How each bin is calculated:                                                                   |
-+===============+===============================================================================================+
-| First Bin     | :math:`(\text{number of positive response in first bin})/                                     |
-|               | (\text{number of data in first bin}\times \text{average response rate})-1`                    |
-+---------------+-----------------------------------------------------------------------------------------------+
-| Second Bin    | :math:`(\text{number of positive response in the first and second bins})/                     |
-|               | (\text{number of data in first and second bins}\times \text{average response rate})-1`        |
-+---------------+-----------------------------------------------------------------------------------------------+
-| Third Bin     | :math:`(\text{number of positive response in the first, second, and third bins})/             |
-|               | (\text{number of data in first, second, and third bins}\times \text{average response rate})-1`|
-+---------------+-----------------------------------------------------------------------------------------------+
-| Fourth Bin+   | Continue similarly                                                                            |
-+---------------+-----------------------------------------------------------------------------------------------+
 
 Examples:
 
