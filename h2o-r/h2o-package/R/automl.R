@@ -472,7 +472,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
   if (should_fetch('leaderboard')) { 
-    leaderboard <- .automl.fetch_table(state_jso$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
+    leaderboard <- .automl.fetch_table(state_json$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (is_leaderboard_empty) {
       leaderboard <- leaderboard[-1,]
