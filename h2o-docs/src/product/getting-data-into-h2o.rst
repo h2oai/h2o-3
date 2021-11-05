@@ -556,7 +556,7 @@ Requirements:
 - The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. (See above for details.)  
 - The ``principal`` argument is set with the value of the users's Kerberos principal.
 - The ``keytab`` argument set pointing to the file with the user's Kerberos keytab file.
-- The ``refreshTokens`` argument is present.
+- The ``refreshHiveTokens`` argument is present.
 
 Example command:
 
@@ -566,9 +566,11 @@ Example command:
           -nodes 1 -mapperXmx 4G \
           -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
           -pricipal user/host@DOMAIN.COM -keytab path/to/user.keytab \
-          -refreshTokens
+          -refreshHiveTokens
 
-**Note on refreshTokens:** The provided keytab will be copied over to the machine running the H2O Cluster leader node. For this reason, we strongly recommended that both YARN and HDFS be secured with encryption.
+**Note on refreshHiveTokens:** The provided keytab will be copied over to the machine running the H2O Cluster leader node. For this reason, we strongly recommended that both YARN and HDFS be secured with encryption.
+
+**Note on generating the refreshing HDFS delegation tokens:** In case generation of the refreshing HDFS delegation tokens is required, the ``-refreshHdfsTokens`` argument has to be present. In case S3A filesystem is used, additionally, the ``refreshS3ATokens`` argument has to be present.
 
 Generating the Token in the Driver with Refresh in the Mapper
 #############################################################
@@ -581,7 +583,7 @@ Requirements:
 
 - The Hive JDBC driver is on the h2o driver and mapper classpaths.
 - The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. (See above for details.)  
-- The ``refreshTokens`` argument is present.
+- The ``refreshHiveTokens`` argument is present.
 
 Example command:
 
@@ -591,7 +593,7 @@ Example command:
       hadoop jar h2odriver.jar [-libjars /path/to/hive-jdbc-standalone.jar] \
           -nodes 1 -mapperXmx 4G \
           -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
-          -refreshTokens
+          -refreshHiveTokens
 
 
 Using a Delegation Token when Connecting to Hive via JDBC
