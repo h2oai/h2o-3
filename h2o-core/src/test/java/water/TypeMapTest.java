@@ -23,7 +23,7 @@ public class TypeMapTest extends TestUtil {
         String output = os.toString();
         String[] lines = output.split("\n");
         String[] bootstrapClasses = TypeMap.bootstrapClasses();
-        assertTrue(bootstrapClasses.length >= lines.length);
+        assertTrue(bootstrapClasses.length <= lines.length);
         for (int i = 0; i < bootstrapClasses.length; i++) {
             assertEquals(i + " -> " + bootstrapClasses[i] + " (map: " + i + ")", lines[i]);
         }
