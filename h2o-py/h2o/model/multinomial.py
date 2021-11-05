@@ -219,7 +219,7 @@ class H2OMultinomialModel(ModelBase):
         :param timestep: A unit of measurement for the x-axis. This can be AUTO, duration, or number_of_trees.
         :param metric: A unit of measurement for the y-axis. This can be AUTO, logloss, classification_error, or rmse.
 
-        :returns: Object that contains the resulting scoring history plot (can be accessed like result.figure).
+        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure).
 
         :examples:
 
