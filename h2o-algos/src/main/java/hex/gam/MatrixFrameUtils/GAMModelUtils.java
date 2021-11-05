@@ -1,12 +1,8 @@
 package hex.gam.MatrixFrameUtils;
 
-import hex.DataInfo;
 import hex.VarImp;
-import hex.gam.GAM;
 import hex.gam.GAMModel;
 import hex.glm.GLMModel;
-import water.Key;
-import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
