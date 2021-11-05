@@ -2052,11 +2052,11 @@ In addition to the chart, a **Gains/Lift table** is also available. This table r
 - **Cumulative data fractions**: fraction of data used to calculate gain and lift at
 - **Lower threshold**: the lowest score output of the dataset in the data fraction bin
 - **Response rate**: ratio of the number of the positive classes and the number of data in the current data fraction
+- **Cumulative response rate**: for the first bin, it is the number of positive response over 10000 (assume each bin contains 100000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
 - **Average response rate**: ratio of the total number of positive classes and the total number of data rows in the dataset
 - **Lift**: ratio of response rate of the current data fraction and average response rate
 - **Cumulative lift**: ratio of cumulative response rate and average response rate
 - **Score**: the average of all the classifier output probabilities for each individual data fraction bin
-- **Cumulative response rate**: for the first bin, it is the number of positive response over 10000 (assume each bin contains 100000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
 - **Capture rate**: for each data fraction it is the ratio of positive classes in each bin divided by the total number of positive classes in the dataset
 - **Cumulative capture rate**: for the first bin, it is just the capture rate; the second bin is the ratio of (sum of number of positive classes for the first two bins) and the total number of positive classes in your dataset
 - **Gain**: :math:`100\times(\text{lift for current data fraction}-1)`
