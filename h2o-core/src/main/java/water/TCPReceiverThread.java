@@ -163,6 +163,10 @@ public class TCPReceiverThread extends Thread {
           // On any error from anybody, close everything
           System.err.println("IO error");
           Log.err("IO error on TCP port " + H2O.H2O_PORT + ": ", e);
+          if (e instanceof Error && H2O.isCI()) {
+            // could be AssertionError, OOM...
+            throw H2O.fail("Encountered an error while running in CI - will terminate to prevent deadlocks", e);
+          }
           break;
         }
         // Reuse open sockets for the next task

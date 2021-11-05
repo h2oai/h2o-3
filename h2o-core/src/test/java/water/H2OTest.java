@@ -1,5 +1,6 @@
 package water;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,5 +53,11 @@ public class H2OTest {
     public void testLeaderNodeOrNullReturnsNullForEmptyCloud() {
       H2O h2o = new H2O(new H2ONode[0], -1, -1);
       assertNull(h2o.leaderOrNull());
+    }
+
+    @Test
+    public void testIsCI() {
+      Assume.assumeTrue(TestUtil.isCI());
+      assertTrue(H2O.isCI());
     }
 }

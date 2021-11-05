@@ -782,21 +782,25 @@ public final class AutoBuffer implements AutoCloseable {
   }
 
   public <T extends Freezable> T get() {
-    int id = getInt();
-    if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) {
-      id = remapFrozenId(id);
-    }
-    return (T)TypeMap.newFreezable(id).read(this);
+    return getFreezable(null);
   }
+
   public <T extends Freezable> T get(Class<T> tc) {
+    if (tc == null)
+      throw new IllegalArgumentException("Class argument cannot be null");
+    return getFreezable(tc);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends Freezable> T getFreezable(Class<T> tc) {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
     if( _is!=null ) {
       id = remapFrozenId(id);
     }
-    assert tc.isInstance(TypeMap.theFreezable(id)):tc.getName() + " != " + TypeMap.theFreezable(id).getClass().getName() + ", id = " + id;
-    return (T)TypeMap.newFreezable(id).read(this);
+    return (T) TypeMap
+            .newFreezable(id, tc)
+            .read(this);
   }
 
   private int remapFrozenId(int id) {

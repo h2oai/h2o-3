@@ -4,6 +4,7 @@ import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.ServiceLoader;
 
@@ -177,17 +178,33 @@ public class TypeMap {
     return id < gold.length ? gold[id] : null;
   }
 
-  // Reverse: convert an ID to a className possibly fetching it from leader.
-  public static String className(int id) {
+  static String classNameLocal(final int id) {
     if( id == PRIM_B ) return "[B";
-    String clazs[] = CLAZZES;   // Read once, in case resizing
+    String[] clazs = CLAZZES;   // Read once, in case resizing
     if( id < clazs.length ) { // Might be installed as a className mapping no Icer (yet)
-      String s = clazs[id];   // Racily read the CLAZZES array
-      if( s != null ) return s; // Has the className already
+      return clazs[id];   // Racily read the CLAZZES array
     }
-    assert H2O.CLOUD.leader() != H2O.SELF : "Leader has no mapping for id "+id; // Leaders always have the latest mapping already
-    String s = FetchClazz.fetchClazz(id); // Fetch class name string from leader
-    Paxos.lockCloud(s); // If the leader is already selected, then the cloud is already locked but maybe we dont know; lock now
+    return null;
+  }
+
+  // Reverse: convert an ID to a className possibly fetching it from leader.
+  public static String className(final int id) {
+    String s = classNameLocal(id);
+    if (s != null)
+      return s; // Has the className already
+
+    Paxos.lockCloud("Class Id="+id); // If the leader is already selected, then the cloud is already locked; but we don't know -> lock now
+    s = FetchClazz.fetchClazz(id); // Fetch class name string from leader
+
+    if (s == null) {
+      // this is bad - we are missing the mapping and cannot get it from anywhere
+      if (H2O.isCI()) {
+        // when running on CI - dump all local TypeMaps to get some idea of what happened
+        new PrintTypeMap().doAllNodes();
+      }
+      throw new IllegalStateException("Leader has no mapping for id " + id);
+    }
+
     install( s, id );                     // Install name<->id mapping
     return s;
   }
@@ -203,6 +220,17 @@ public class TypeMap {
       Integer i = MAP.get(className);
       if( i != null ) return i; // Check again under lock for already having an ID
       id = IDS++;               // Leader gets an ID under lock
+    } else {
+      String localClassName = classNameLocal(id);
+      if (localClassName != null) {
+        if (localClassName.equals(className)) {
+          return id; // Nothing to do - we already got the mapping
+        } else {
+          throw new IllegalStateException(
+                  "Inconsistent mapping: id=" + id + " is already mapped to " + localClassName + 
+                  "; was requested to be mapped to " + className + "!");
+        }
+      }
     }
     MAP.put(className,id);      // No race on insert, since under lock
     // Expand lists to handle new ID, as needed
@@ -243,15 +271,14 @@ public class TypeMap {
       }
     }
   }
-  static void drop(String ice_clz) {
-    Integer I = MAP.get(ice_clz);
-    if( I==null ) return; // no icer, no problem
-    synchronized( TypeMap.class ) {  // install null
-      GOLD[I] = null;
-    }
-
-  }
   static Iced newInstance(int id) { return (Iced) newFreezable(id); }
+
+  static <T extends Freezable> T newFreezable(int id, Class<T> tc) {
+    @SuppressWarnings("unchecked")
+    T iced = (T) newFreezable(id);
+    assert tc == null || tc.isInstance(iced) : tc.getName() + " != " + iced.getClass().getName() + ", id = " + id;
+    return iced;
+  }
 
   /** Create a new freezable object based on its unique ID.
    *
@@ -285,4 +312,21 @@ public class TypeMap {
     Icer f = goForGold(id);
     return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
   }
+
+  static void printTypeMap(PrintStream ps) {
+    final String[] clazzes = CLAZZES;
+    for (int i = 0; i < clazzes.length; i++) {
+      final String className = CLAZZES[i];
+      ps.println(i + " -> " + className + " (map: " + (className != null ? MAP.get(className) : null) + ")");
+    }
+  }
+
+  private static class PrintTypeMap extends MRTask<PrintTypeMap> {
+    @Override
+    protected void setupLocal() {
+      System.err.println("TypeMap dump on node " + H2O.SELF);
+      printTypeMap(System.err);
+    }
+  }
+
 }
