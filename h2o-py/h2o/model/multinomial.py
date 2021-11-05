@@ -4,10 +4,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import h2o
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type
-from .extensions import has_extension
-from .model_base import ModelBase
 from ..exceptions import H2OValueError
 from ..frame import H2OFrame
+from .extensions import has_extension
+from .model_base import ModelBase
 
 
 class H2OMultinomialModel(ModelBase):
