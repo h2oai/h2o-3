@@ -619,7 +619,7 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #' @param endpoint A H2O REST API endpoint.
 #' @param params A list of params passed in the url.
 #' @param json A list of params passed as a json payload.
-#' @return the parsed response
+#' @return The parsed response.
 #' @details
 #' REST API endpoints can be obtained using:
 #' ```
