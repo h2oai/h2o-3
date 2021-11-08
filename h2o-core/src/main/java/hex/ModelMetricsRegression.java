@@ -198,6 +198,21 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
       return mm;
     }
+
+    // Having computed a MetricBuilder, this method fills in a ModelMetrics
+    public ModelMetricsRegression makeModelMetricsWithoutRuntime(Model m) {
+      double mse = _sumsqe / _wcount;
+      double mae = _abserror/_wcount; //Mean Absolute Error
+      double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
+      double meanResDeviance = 0;
+      if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist._family != DistributionFamily.custom) ) {
+        meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
+      } else {
+        meanResDeviance = Double.NaN;
+      }
+      ModelMetricsRegression mm = new ModelMetricsRegression(m, null, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance, _customMetric);
+      return mm;
+    }
   }
 
   public static double computeHuberDelta(Vec actual, Vec preds, Vec weight, double huberAlpha) {

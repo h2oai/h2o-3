@@ -154,5 +154,13 @@ public class ModelMetricsHGLM extends ModelMetricsSupervised {
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
+
+    @Override
+    public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
+      ModelMetricsHGLM mm = new ModelMetricsHGLM(m, null, _nobs, 0, _domain, 0, _customMetric, _sefe, _sere,
+              _varfix, _varranef, _converge, _dfrefe, _summvc1, _summvc2, _hlik, _pvh, _pbvh, _caic, _bad,
+              _sumetadiffsquare, _convergence, _randc, _fixef, _ranef, _iterations);
+      return mm;
+    }
   }
 }

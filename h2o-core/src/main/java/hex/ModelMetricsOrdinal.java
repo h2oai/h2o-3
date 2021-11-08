@@ -240,5 +240,24 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
+
+    @Override public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
+      double mse = Double.NaN;
+      double logloss = Double.NaN;
+      float[] hr = new float[_K];
+      ConfusionMatrix cm = new ConfusionMatrix(_cm, _domain);
+      double sigma = weightedSigma();
+      if (_wcount > 0) {
+        if (_hits != null) {
+          for (int i = 0; i < hr.length; i++) hr[i] = (float) (_hits[i] / _wcount);
+          for (int i = 1; i < hr.length; i++) hr[i] += hr[i - 1];
+        }
+        mse = _sumsqe / _wcount;
+        logloss = _logloss / _wcount;
+      }
+      ModelMetricsOrdinal mm = new ModelMetricsOrdinal(m, null, _count, mse, _domain, sigma, cm,
+              hr, logloss, _customMetric);
+      return mm;
+    }
   }
 }

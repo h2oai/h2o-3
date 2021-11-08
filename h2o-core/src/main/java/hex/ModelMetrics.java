@@ -452,7 +452,13 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
      *@param preds Predictions of m on f (optional)  @return Filled Model Metrics object
      */
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);
-
+    
+    /**
+     * Having computed a MetricBuilder, this method fills in a ModelMetrics
+     * @param m Model
+     */
+    public abstract ModelMetrics makeModelMetricsWithoutRuntime(Model m);
+    
     /**
      * Set value of custom metric.
      * @param customMetric  computed custom metric outside of this default builder

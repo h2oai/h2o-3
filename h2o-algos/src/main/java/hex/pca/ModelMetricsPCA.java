@@ -24,5 +24,10 @@ public class ModelMetricsPCA extends ModelMetricsUnsupervised {
     public ModelMetrics makeModelMetrics(Model m, Frame f) {
       return m.addModelMetrics(new ModelMetricsPCA(m, f, _customMetric));
     }
+
+    @Override
+    public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
+      return new ModelMetricsPCA(m, null, _customMetric);
+    }
   }
 }

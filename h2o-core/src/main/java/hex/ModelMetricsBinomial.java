@@ -293,6 +293,23 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return Optional.of(gl);
     }
 
+    @Override public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
+      double mse = Double.NaN;
+      double logloss = Double.NaN;
+      double sigma = Double.NaN;
+      final AUC2 auc;
+      if (_wcount > 0) {
+        sigma = weightedSigma();
+        mse = _sumsqe / _wcount;
+        logloss = _logloss / _wcount;
+        auc = new AUC2(_auc);
+      } else {
+        auc = new AUC2();
+      }
+      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, null, _count, mse, _domain, sigma, auc,  logloss, null, _customMetric);
+      return mm;
+    }
+
     @Override
     public Frame makePredictionCache(Model m, Vec response) {
       return new Frame(response.makeVolatileDoubles(1));
