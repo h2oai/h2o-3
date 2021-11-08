@@ -2763,6 +2763,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      */
     private void checkCoeffsBounds() {
       double[] coeffs = _model._output.getNormBeta();
+      if (_bc._betaLB == null)
+        return;
       int coeffsLen = _bc._betaLB.length;
       for (int index=0; index < coeffsLen; index++) {
         if (!(coeffs[index] == 0 || (coeffs[index] >= _bc._betaLB[index] && coeffs[index] <= _bc._betaUB[index])))
