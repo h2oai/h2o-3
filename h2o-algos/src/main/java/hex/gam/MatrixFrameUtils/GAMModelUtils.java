@@ -3,7 +3,6 @@ package hex.gam.MatrixFrameUtils;
 import hex.VarImp;
 import hex.gam.GAMModel;
 import hex.glm.GLMModel;
-import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -68,11 +67,11 @@ public class GAMModelUtils {
     }
     return gamifiedColCount;
   }
-
-  public static void copyGLMtoGAMModel(GAMModel model, GLMModel glmModel, GAMParameters parms, Frame valid) {
+  
+  public static void copyGLMtoGAMModel(GAMModel model, GLMModel glmModel, GAMParameters parms, boolean validNotNull) {
     model._output._glm_best_lamda_value = glmModel._output.bestSubmodel().lambda_value; // exposed best lambda used
     model._output._glm_training_metrics = glmModel._output._training_metrics;
-    if (valid != null)
+    if (validNotNull)
       model._output._glm_validation_metrics = glmModel._output._validation_metrics;
     model._output._glm_model_summary = copyTwoDimTable(glmModel._output._model_summary, "glm model summary");
     model._output._glm_scoring_history = copyTwoDimTable(glmModel._output._scoring_history, "glm scoring history");
