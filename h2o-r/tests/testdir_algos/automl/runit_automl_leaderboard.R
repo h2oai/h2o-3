@@ -83,7 +83,7 @@ automl.leaderboard.suite <- function() {
         aml@leaderboard
         expect_equal(nrow(aml@leaderboard), 0)
 
-        warnings <- aml@event_log[aml@event_log['level'] == 'Warn','message']
+        warnings <- aml@event_log[aml@event_log['level'] == 'WARN','message']
         last_warning <- warnings[nrow(warnings), 1]
         expect_true(grepl("Empty leaderboard", last_warning))
     }
