@@ -36,6 +36,8 @@ import static hex.tree.SharedTreeModel.SharedTreeParameters.HistogramType;
 public class DTree extends Iced {
 
   private static final Logger LOG = Logger.getLogger(DTree.class);
+  private static final String CONSTRAINT_CONSISTENCY_CHECK = H2O.OptArgs.SYSTEM_PROP_PREFIX + "tree.constraintConsistencyCheck";
+  private static final boolean DEFAULT_CONSTRAINT_CONSISTENCY_CHECK = false;
 
   final String[] _names; // Column names
   final int _ncols;      // Active training columns
@@ -50,8 +52,17 @@ public class DTree extends Iced {
   public final transient Random _rand; // RNG for split decisions & sampling
   public final transient int[] _cols; // Per-tree selection of columns to consider for splits
   public transient SharedTreeModel.SharedTreeParameters _parms;
+  public boolean _checkConstraintConsistency;
 
 
+  private boolean checkConstraintConsistency(){
+    String check = System.getProperty(CONSTRAINT_CONSISTENCY_CHECK);
+    if(check == null){
+      return DEFAULT_CONSTRAINT_CONSISTENCY_CHECK;
+    }
+    return Boolean.parseBoolean(check);
+  }
+  
   // compute the effective number of columns to sample
   public int actual_mtries() {
     return Math.min(Math.max(1,(int)((double)_mtrys * Math.pow(_parms._col_sample_rate_change_per_level, _depth))),_ncols);
@@ -83,6 +94,7 @@ public class DTree extends Iced {
       activeCols = Arrays.copyOfRange(activeCols,len,activeCols.length);
     }
     _cols = activeCols;
+    _checkConstraintConsistency = checkConstraintConsistency();
   }
 
   /**
@@ -714,7 +726,7 @@ public class DTree extends Iced {
       }
       if(cs != null) {
         int constr = cs.getColumnConstraint(_split._col);
-        if (!cs._dist._family.equals(DistributionFamily.quantile) && nid() != 0 && constr != 0) {
+        if (_tree._checkConstraintConsistency && !cs._dist._family.equals(DistributionFamily.quantile) && nid() != 0 && constr != 0) {
             assert constr * _split._tree_p0 <= constr * parentPred() && constr * parentPred() <= constr * _split._tree_p1 :
                     "Parent prediction and children prediction is not consistent. Parent prediction " + constr * parentPred() +
                             " should be in interval of the children: " + constr * _split._tree_p0 + " " + constr * _split._tree_p1;
