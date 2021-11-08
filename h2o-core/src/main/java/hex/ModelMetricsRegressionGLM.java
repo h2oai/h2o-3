@@ -1,6 +1,7 @@
 package hex;
 
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 /**
  * Created by tomasnykodym on 4/20/15.
@@ -50,4 +51,12 @@ public class ModelMetricsRegressionGLM extends ModelMetricsRegression implements
     return sb.toString();
   }
 
+  @Override
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsRegressionGLM specificOther = (ModelMetricsRegressionGLM) other;
+
+    result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
+    return result;
+  }
 }

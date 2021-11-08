@@ -2,6 +2,7 @@ package hex.tree.isofor;
 
 import hex.*;
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements ScoreKeeper.ScoreKeeperAware {
 
@@ -41,6 +42,17 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
     sb.append(" Mean Score: ").append(_mean_score).append("\n");
     sb.append(" Mean Normalized Anomaly Score: ").append(_mean_normalized_score).append("\n");
     return sb;
+  }
+
+  @Override
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsAnomaly specificOther = (ModelMetricsAnomaly) other;
+    
+    result.compareValuesUpToTolerance("mean_score", this._mean_score, specificOther._mean_score, proportionalTolerance);
+    result.compareValuesUpToTolerance("mean_normalized_score", this._mean_normalized_score, specificOther._mean_normalized_score, proportionalTolerance);
+    
+    return result;
   }
 
   public static class MetricBuilderAnomaly extends MetricBuilderUnsupervised<MetricBuilderAnomaly> {

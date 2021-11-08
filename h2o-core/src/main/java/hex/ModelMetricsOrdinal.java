@@ -8,6 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.ComparisonUtils;
 import water.util.MathUtils;
 import water.util.TwoDimTable;
 
@@ -47,6 +48,18 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
   public double mean_per_class_error() { return _mean_per_class_error; }
   @Override public ConfusionMatrix cm() { return _cm; }
   @Override public float[] hr() { return _hit_ratios; }
+
+  @Override
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsOrdinal specificOther = (ModelMetricsOrdinal) other;
+    
+    result.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss(), proportionalTolerance);
+    result.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance);
+    result.compareValuesUpToTolerance("hr", this.hr(), specificOther.hr(), proportionalTolerance);
+    // CM not supported yet.
+    return result;
+  }
 
   public static ModelMetricsOrdinal getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);

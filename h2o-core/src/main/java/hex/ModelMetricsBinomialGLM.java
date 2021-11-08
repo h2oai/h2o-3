@@ -1,6 +1,7 @@
 package hex;
 
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLMMetrics {
   public final long _nullDegressOfFreedom;
@@ -56,6 +57,15 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
       Math.abs(_resDev - mm._resDev) < 1e-8;
   }
 
+  @Override
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsBinomialGLM specificOther = (ModelMetricsBinomialGLM) other;
+    
+    result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
+    return result;
+  }
+  
   public static class ModelMetricsMultinomialGLM extends ModelMetricsMultinomial implements GLMMetrics {
     public final long _nullDegressOfFreedom;
     public final long _residualDegressOfFreedom;
@@ -108,6 +118,15 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
         _residualDegressOfFreedom == mm._residualDegressOfFreedom &&
           _nullDegressOfFreedom     == mm._nullDegressOfFreedom     &&
           Math.abs(_resDev - mm._resDev) < 1e-8;
+    }
+
+    @Override
+    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+      ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+      ModelMetricsMultinomialGLM specificOther = (ModelMetricsMultinomialGLM) other;
+      
+      result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
+      return result;
     }
   }
 
@@ -163,6 +182,15 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
               _residualDegressOfFreedom == mm._residualDegressOfFreedom &&
                       _nullDegressOfFreedom     == mm._nullDegressOfFreedom     &&
                       Math.abs(_resDev - mm._resDev) < 1e-8;
+    }
+
+    @Override
+    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+      ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+      ModelMetricsOrdinalGLM specificOther = (ModelMetricsOrdinalGLM) other;
+      
+      result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
+      return result;
     }
   }
 

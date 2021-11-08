@@ -9,6 +9,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.ComparisonUtils;
 import water.util.MathUtils;
 
 public class ModelMetricsRegression extends ModelMetricsSupervised {
@@ -28,6 +29,18 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     _mean_residual_deviance = meanResidualDeviance;
     _mean_absolute_error = mae;
     _root_mean_squared_log_error = rmsle;
+  }
+
+  @Override
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsRegression specificOther = (ModelMetricsRegression) other;
+
+    result.compareValuesUpToTolerance("residual_deviance", this.residual_deviance(), specificOther.residual_deviance(), proportionalTolerance);
+    result.compareValuesUpToTolerance("mean_residual_deviance", this.mean_residual_deviance(), specificOther.mean_residual_deviance(), proportionalTolerance);
+    result.compareValuesUpToTolerance("mae", this.mae(), specificOther.mae(), proportionalTolerance);
+    result.compareValuesUpToTolerance("rmsle", this.rmsle(), specificOther.rmsle(), proportionalTolerance);
+    return result;
   }
 
   public static ModelMetricsRegression getFromDKV(Model model, Frame frame) {
