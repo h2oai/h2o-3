@@ -616,9 +616,9 @@ print.H2OTable <- function(x, header=TRUE, ...) {
 #' 
 #' This function is mostly for internal purposes, but may occasionally be useful for direct access to the backend H2O server.
 #' It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
-#' @param endpoint. A H2O REST API endpoint.
-#' @param params. A list of params passed in the url.
-#' @param json. A list of params passed as a json payload.
+#' @param endpoint A H2O REST API endpoint.
+#' @param params A list of params passed in the url.
+#' @param json A list of params passed as a json payload.
 #' @return the parsed response
 #' @details
 #' REST API endpoints can be obtained using:
