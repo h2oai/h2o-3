@@ -128,11 +128,11 @@ class MetricsBase(h2o_meta()):
             print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
-        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric']:
+        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric'] or \
+            metric_type in types_w_mult or \
+            metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
             # second element for first threshold is the actual mean per class error
-            print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
-        if metric_type in types_w_mult or metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
-            print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
+            print("Mean Per-Class Error: %s" % self._mean_per_class_error())
         if metric_type in types_w_glm:
             if metric_type == 'ModelMetricsHGLMGaussianGaussian': # print something for HGLM
                 print("Standard error of fixed columns: "+str(self.hglm_metric("sefe")))
@@ -567,6 +567,10 @@ class MetricsBase(h2o_meta()):
             return self._metric_json["null_degrees_of_freedom"]
         return None
 
+    # private accessor for mean per-class error - the public version is overridden in H2OBinomialModelMetrics with
+    # a method with different return semantics
+    def _mean_per_class_error(self):
+        return self._metric_json['mean_per_class_error']
 
     def mean_per_class_error(self):
         """The mean per class error.
@@ -589,7 +593,7 @@ class MetricsBase(h2o_meta()):
         ...                validation_frame = valid)
         >>> pros_glm.mean_per_class_error()
         """
-        return self._metric_json['mean_per_class_error']
+        return self._mean_per_class_error()
 
     def custom_metric_name(self):
         """Name of custom metric or None."""
