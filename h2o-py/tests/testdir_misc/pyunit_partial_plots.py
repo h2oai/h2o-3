@@ -1,10 +1,8 @@
 import sys
-import tempfile
-
 sys.path.insert(1,"../../")
 import h2o
 import math
-from tests import pyunit_utils, test_plot_result_saving
+from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
@@ -69,14 +67,6 @@ def partial_plot_test():
     assert h2o_stddev_response_pdp_row == pdp_row_manual[1]
     assert h2o_std_error_mean_response_pdp_row == pdp_row_manual[2]
 
-    # test saving:
-    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
-    path1 = "{}/plot1.png".format(tmpdir)
-    path2 = "{}/plot2.png".format(tmpdir)
-    test_plot_result_saving(gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1), path2,
-                            gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1, save_to_file=path1), path1)
-
-    
     
 def partial_dependence(object, pred_data, xname, h2o_pp, pdp_name_idx):
     x_pt = h2o_pp[pdp_name_idx][xname.lower()]  # Needs to be lower case here as the PDP response sets everything to lower

@@ -23,7 +23,7 @@ class H2ORegressionModel(ModelBase):
         :param metric: A unit of measurement for the y-axis.
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure).
+        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
 
         :examples:
 

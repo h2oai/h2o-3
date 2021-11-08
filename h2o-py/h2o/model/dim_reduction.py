@@ -103,12 +103,12 @@ class H2ODimReductionModel(ModelBase):
         :param bool server: if true set server settings to matplotlib and do not show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
         
-        :returns: Object that contains the resulting scree plot (can be accessed like result.figure).
+        :returns: Object that contains the resulting scree plot (can be accessed like result.figure()).
         """
         # check for matplotlib. exit if absent.
         plt = get_matplotlib_pyplot(server)
         if plt is None:
-            return
+            return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
         fig = plt.figure()
         variances = [s ** 2 for s in self._model_json['output']['importance'].cell_values[0][1:]]
         plt.xlabel('Components')

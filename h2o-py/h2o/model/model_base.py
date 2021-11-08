@@ -1163,9 +1163,8 @@ class ModelBase(h2o_meta(Keyed)):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        fig = self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
+        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
                                       kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets, include_na)
-        return decorate_plot_result(res=pps, figure=fig)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
         # extract user defined split points from dict user_splits into an integer array of column indices
@@ -1225,7 +1224,7 @@ class ModelBase(h2o_meta(Keyed)):
             plt = get_matplotlib_pyplot(server)
             cm = _get_matplotlib_cm("Partial dependency plots")
             if not plt: 
-                return pps
+                return decorate_plot_result(res=pps, figure="RAISE_EXCEPTION_FLAG")
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
             gxs = gridspec.GridSpec(to_fig, 1)
@@ -1257,7 +1256,9 @@ class ModelBase(h2o_meta(Keyed)):
                       "mpl_toolkits.mplot3d or matplotlib.")
             if (save_to_file is not None) and fig_plotted:  # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
-            return fig
+            return decorate_plot_result(res=pps, figure=fig)
+        else:
+            return decorate_plot_result(res=pps)
 
     def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
                       plot_stddev, cm, i, row_index):
@@ -1664,7 +1665,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         plt = get_matplotlib_pyplot(server)
         if not plt:
-            return
+            return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
 
         importance = self.permutation_importance(frame, metric, n_samples, n_repeats, features, seed, use_pandas=False)
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
@@ -1695,8 +1696,8 @@ class ModelBase(h2o_meta(Keyed)):
         if not server:
             plt.show()
         if save_plot_path is not None:
-            plt.savefig(fname=save_plot_path)    
-        return decorate_plot_result(res=importance, figure=plt.gcf())
+            fig.savefig(fname=save_plot_path)    
+        return decorate_plot_result(res=importance, figure=fig)
 
 
 def _get_mplot3d_pyplot(function_name):

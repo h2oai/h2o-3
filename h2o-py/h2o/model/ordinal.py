@@ -75,7 +75,7 @@ class H2OOrdinalModel(ModelBase):
         :param metric: A unit of measurement for the y-axis.
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure).
+        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
         """
         if not has_extension(self, 'ScoringHistory'):
             raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)

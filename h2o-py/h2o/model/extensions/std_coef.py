@@ -17,7 +17,7 @@ class StandardCoef:
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
 
         plt = get_matplotlib_pyplot(server)
-        if not plt: return
+        if not plt: return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
 
         # get unsorted tuple of labels and coefficients
         unsorted_norm_coef = self.coef_norm().items()

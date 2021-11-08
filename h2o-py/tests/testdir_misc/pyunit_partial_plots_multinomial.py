@@ -1,9 +1,7 @@
 import sys
-import tempfile
-
 sys.path.insert(1,"../../")
 import h2o
-from tests import pyunit_utils, test_plot_result_saving
+from tests import pyunit_utils
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
 
@@ -85,16 +83,6 @@ def partial_plot_test():
     pdp_petal_len_cat_std = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True, 
                                                server=True)
     print(pdp_petal_len_cat_std)
-
-    # test saving:
-    tmpdir = tempfile.mkdtemp(prefix="h2o-func")
-    path1 = "{}/plot1.png".format(tmpdir)
-    path2 = "{}/plot2.png".format(tmpdir)
-    test_plot_result_saving(model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
-                                               server=True), path2,
-                            model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=True, plot=True,
-                                               server=True, save_to_file=path1), path1)
-
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(partial_plot_test)

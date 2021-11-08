@@ -756,7 +756,7 @@ class H2OBinomialModel(ModelBase):
         :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
         
-        :returns: object that contains the resulting figure (can be accessed like result.figure)
+        :returns: object that contains the resulting figure (can be accessed like result.figure())
 
         :examples:
 

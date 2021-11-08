@@ -4466,9 +4466,9 @@ def assert_equals(expected, actual, message=""):
     assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
 
 def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
-    plot_result1.figure.savefig(path1)
+    plot_result1.figure().savefig(path1)
     assert os.path.isfile(path1)
     os.remove(path1)
-    assert isinstance(plot_result2.figure , matplotlib.pyplot.Figure)
+    assert isinstance(plot_result2.figure() , matplotlib.pyplot.Figure)
     assert os.path.isfile(path2)
     os.remove(path2)

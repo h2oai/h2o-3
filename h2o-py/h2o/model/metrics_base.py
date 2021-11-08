@@ -1423,7 +1423,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return
+                return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
             fig = plt.figure()
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
@@ -1436,7 +1436,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(fname=save_to_file)
+                fig.savefig(fname=save_to_file)
             return decorate_plot_result(res=(self.fprs, self.tprs), figure=fig) 
         else:
             return decorate_plot_result(res=(self.fprs, self.tprs))
@@ -1448,7 +1448,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return
+                return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
             fig = plt.figure()
             plt.xlabel('Recall (TP/(TP+FP))')
             plt.ylabel('Precision (TPR)')

@@ -20,7 +20,7 @@ class VariableImportance:
 
         plt = get_matplotlib_pyplot(server)
         if plt is None:
-            return
+            return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
 
         # get the variable importances as a list of tuples, do not use pandas dataframe
         importances = self.varimp(use_pandas=False)

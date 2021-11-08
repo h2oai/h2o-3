@@ -31,7 +31,7 @@ class ScoringHistory:
     
     def scoring_history_plot(self, timestep, metric, server=False, save_plot_path=None):
         plt = get_matplotlib_pyplot(server)
-        if plt is None: return
+        if plt is None: return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
         
         scoring_history = self._get_scoring_history_to_plot()
         timestep = self._validate_timestep(timestep)
@@ -112,7 +112,7 @@ class ScoringHistoryGLM(ScoringHistory):
     
     def scoring_history_plot(self, timestep, metric, server=False, save_plot_path=None):
         plt = get_matplotlib_pyplot(server)
-        if plt is None: return
+        if plt is None: return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
         
         scoring_history = self.scoring_history()
 

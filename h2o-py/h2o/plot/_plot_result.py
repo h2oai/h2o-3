@@ -6,7 +6,15 @@ class _MList(list): pass
 class _MDict(dict): pass
 class _MStr(str): pass
 
+class Error(EnvironmentError):
+    pass
+
 def decorate_plot_result(res=None, figure=None):
+    def get_figure():
+        if figure != "RAISE_EXCEPTION_FLAG":
+            return figure
+        else:
+            raise Error("Cannot plot, matplotlib is absent!")
     # list all special/immutable types that we need first
     if res is None:
         dec = _MObject()
@@ -20,7 +28,8 @@ def decorate_plot_result(res=None, figure=None):
         dec = _MStr(res)
     else: # should be an H2O instance, should be mutable
         dec = res
-    dec.figure = figure
+    dec.figure = get_figure
+     
     return dec
 
 
