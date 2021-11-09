@@ -5,9 +5,7 @@ class _MTuple(tuple): pass
 class _MList(list): pass
 class _MDict(dict): pass
 class _MStr(str): pass
-
-class Error(EnvironmentError):
-    pass
+class Error(EnvironmentError): pass
 
 def decorate_plot_result(res=None, figure=None):
     def get_figure():
@@ -29,6 +27,7 @@ def decorate_plot_result(res=None, figure=None):
     else: # should be an H2O instance, should be mutable
         dec = res
     dec.figure = get_figure
+    dec.is_decorated_plot_result = True
      
     return dec
 

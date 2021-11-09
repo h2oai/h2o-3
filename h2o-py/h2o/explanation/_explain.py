@@ -24,7 +24,7 @@ def _display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg":
+    if (isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg") or (hasattr(object, "is_decorated_plot_result")):
         plt.show()
     else:
         try:
@@ -34,6 +34,9 @@ def _display(object):
             print(object)
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
+        print("\n")
+    if (hasattr(object, "is_decorated_plot_result") and (object.figure() is not None)):
+        plt.close(object.figure())
         print("\n")
     return object
 
