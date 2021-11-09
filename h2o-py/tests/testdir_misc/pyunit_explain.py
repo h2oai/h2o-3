@@ -80,7 +80,7 @@ def test_explanation_single_model_regression():
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot().figure, matplotlib.pyplot.Figure)
+    assert isinstance(gbm.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     for metric in ["auto", "deviance", "rmse"]:
         assert isinstance(gbm.learning_curve_plot(metric=metric.upper()).figure(), matplotlib.pyplot.Figure)
         assert isinstance(gbm.learning_curve_plot(metric).figure(), matplotlib.pyplot.Figure)
@@ -418,7 +418,7 @@ def test_explanation_single_model_multinomial_classification():
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot().figure(), matplotlib.pyplot().Figure)
+    assert isinstance(gbm.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
