@@ -216,7 +216,7 @@ Examples
     h2o.init()
 
     # Import the prostate dataset:
-    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+    train <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
 
     # Set the predictors and response:
     x <- c("AGE", "VOL", "DCAPS")
@@ -240,7 +240,7 @@ Examples
     from h2o.estimators import H2OANOVAGLMEstimator
 
     #Import the prostate dataset
-    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+    train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
 
     # Set the predictors and response:
     x = ['AGE','VOL','DCAPS']
@@ -248,7 +248,7 @@ Examples
 
     # Build and train the model:
     anova_model = H2OANOVAGLMEstimator(family='binomial', 
-                                       Lambda=0, 
+                                       lambda_=0, 
                                        missing_values_handling="skip")
     anova_model.train(x=x, y=y, training_frame=train)
 
