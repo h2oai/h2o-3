@@ -571,7 +571,7 @@ def shap_summary_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -707,7 +707,7 @@ def shap_explain_row_plot(
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -974,7 +974,7 @@ def pd_plot(
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig                   
-    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -1104,7 +1104,7 @@ def pd_multi_plot(
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig                
-    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -1247,7 +1247,7 @@ def ice_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
-    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -1492,7 +1492,7 @@ def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     :param figsize: Figure size
     :param num_of_features: Maximum number of variables to plot. Defaults to 10.
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-    :return: object that contains the resulting figure (can be accessed like result.figure)
+    :return: object that contains the resulting figure (can be accessed using result.figure())
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     importances = model.varimp(use_pandas=False)
@@ -1848,7 +1848,7 @@ def residual_analysis_plot(
     :param frame: H2OFrame
     :param figsize: figure size; passed directly to matplotlib
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
-    :returns: object that contains the resulting matplotlib figure (can be accessed like result.figure)
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -1940,7 +1940,7 @@ def learning_curve_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-    :return: object that contains the resulting figure (can be accessed like result.figure)
+    :return: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o

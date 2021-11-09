@@ -12,7 +12,7 @@ class StandardCoef:
         :param server: if true set server settings to matplotlib and show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: object that contains the resulting figure (can be accessed like result.figure)
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
 

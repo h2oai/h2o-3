@@ -1461,7 +1461,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param server: if true set server settings to matplotlib and do not show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: object that contains the resulting figure (can be accessed like result.figure)
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
         # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
@@ -1477,7 +1477,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param server: if true set server settings to matplotlib and show the graph
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: object that contains the resulting figure (can be accessed like result.figure)
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
         # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
@@ -1661,7 +1661,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param num_of_features: number of features to plot. Defaults to 10.
         :param server: if true set server settings to matplotlib and do not show the plot
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed like result.figure)
+        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed using result.figure())
         """
         plt = get_matplotlib_pyplot(server)
         if not plt:
