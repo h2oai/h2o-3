@@ -84,13 +84,71 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
       return m.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls, _numcnt, _catcnt, _customMetric));
     }
+  }
+
+  public static class IndependentGlrmModelMetricsBuilder extends IndependentMetricBuilderUnsupervised<IndependentGlrmModelMetricsBuilder> {
+    public double _miscls;     // Number of misclassified categorical values
+    public long _numcnt;      // Number of observed numeric entries
+    public long _catcnt;     // Number of observed categorical entries
+    public int[] _permutation;  // Permutation array for shuffling cols
+    public boolean _impute_original;
+    private int _ncats;
+    private int _nnums;
+    private double[] _normSub;
+    private double[] _normMul;
+
+    public IndependentGlrmModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul) {
+      this(dims, permutation, ncats, nnums, normSub, normMul, false); }
+    public IndependentGlrmModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul, boolean impute_original) {
+      _work = new double[dims];
+      _miscls = _numcnt = _catcnt = 0;
+      _permutation = permutation;
+      _impute_original = impute_original;
+      _ncats = ncats;
+      _nnums = nnums;
+      _normSub = normSub;
+      _normMul = normMul;
+    }
 
     @Override
-    public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
+    public double[] perRow(double[] preds, float[] dataRow) {
+      assert _ncats + _nnums == dataRow.length;
+
+      // Permute cols so categorical before numeric since error metric different
+      for (int i = 0; i < _ncats; i++) {
+        int idx = _permutation[i];
+        if (Double.isNaN(dataRow[idx])) continue;
+        if (dataRow[idx] != preds[idx]) _miscls++;
+        _catcnt++;
+      }
+
+      int c = 0;
+      for (int i = _ncats; i < dataRow.length; i++) {
+        int idx = _permutation[i];
+        if (Double.isNaN(dataRow[idx])) { c++; continue; }
+        double diff = (_impute_original ? dataRow[idx] : (dataRow[idx] - _normSub[c]) * _normMul[c]) - preds[idx];
+        _sumsqe += diff * diff;
+        _numcnt++;
+        c++;
+      }
+      assert c == _nnums;
+      return preds;
+    }
+
+    @Override
+    public void reduce(IndependentGlrmModelMetricsBuilder mm) {
+      super.reduce(mm);
+      _miscls += mm._miscls;
+      _numcnt += mm._numcnt;
+      _catcnt += mm._catcnt;
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics() {
       // double numerr = _numcnt > 0 ? _sumsqe / _numcnt : Double.NaN;
       // double caterr = _catcnt > 0 ? _miscls / _catcnt : Double.NaN;
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
-      return new ModelMetricsGLRM(m, null, _sumsqe, _miscls, _numcnt, _catcnt, _customMetric);
+      return new ModelMetricsGLRM(null, null, _sumsqe, _miscls, _numcnt, _catcnt, _customMetric);
     }
   }
 }

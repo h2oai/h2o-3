@@ -81,28 +81,6 @@ public class MetricBuilderPSVM<T extends MetricBuilderPSVM<T>> extends ModelMetr
     return mm;
   }
 
-  /**
-   * Create a ModelMetrics for a given model and frame
-   *
-   * @param m                Model
-   * @return ModelMetricsBinomial
-   */
-  @Override
-  public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-    double mse = Double.NaN;
-    double sigma = Double.NaN;
-    final AUC2 auc;
-    if (_wcount > 0) {
-      sigma = weightedSigma();
-      mse = _sumsqe / _wcount;
-      auc = AUC2.make01AUC(_auc);
-    } else {
-      auc = AUC2.emptyAUC();
-    }
-    ModelMetricsBinomial mm = new ModelMetricsBinomial(m, null, _count, mse, _domain, sigma, auc, Double.NaN, null, _customMetric);
-    return mm;
-  }
-
   public String toString() {
     if (_wcount == 0) return "empty, no rows";
     return "mse = " + MathUtils.roundToNDigits(_sumsqe / _wcount, 3);

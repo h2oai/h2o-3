@@ -240,8 +240,63 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
+  }
 
-    @Override public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
+  public static class IndependentMetricBuilderOrdinal<T extends IndependentMetricBuilderOrdinal<T>> extends IndependentMetricBuilderSupervised<T> {
+    double[/*nclasses*/][/*nclasses*/] _cm;
+    double[/*K*/] _hits;            // the number of hits for hitratio, length: K
+    int _K;               // TODO: Let user set K
+    double _logloss;
+
+    public IndependentMetricBuilderOrdinal( int nclasses, String[] domain ) {
+      super(nclasses,domain);
+      _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domain.length][domain.length];
+      _K = Math.min(10,_nclasses);
+      _hits = new double[_K];
+    }
+
+    public transient double [] _priorDistribution;
+    // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
+    // distribution;
+    @Override public double[] perRow(double ds[], float[] yact) { return perRow(ds, yact, 1, 0); }
+    @Override public double[] perRow(double ds[], float[] yact, double w, double o) {
+      if (_cm == null) return ds;
+      if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+      if(ArrayUtils.hasNaNs(ds)) return ds;
+      if(w == 0 || Double.isNaN(w)) return ds;
+      final int iact = (int)yact[0];
+      _count++;
+      _wcount += w;
+      _wY += w*iact;
+      _wYY += w*iact*iact;
+
+      // Compute error
+      double err = iact+1 < ds.length ? 1-ds[iact+1] : 1;  // Error: distance from predicting ycls as 1.0
+      _sumsqe += w*err*err;        // Squared error
+      assert !Double.isNaN(_sumsqe);
+
+      // Plain Olde Confusion Matrix
+      _cm[iact][(int)ds[0]]++; // actual v. predicted
+
+      // Compute hit ratio
+      if( _K > 0 && iact < ds.length-1)
+        updateHits(w,iact,ds,_hits,_priorDistribution);
+
+      // Compute log loss
+      _logloss += w*MathUtils.logloss(err);
+      return ds;                // Flow coding
+    }
+
+    @Override public void reduce( T mb ) {
+      if (_cm == null) return;
+      super.reduce(mb);
+      assert mb._K == _K;
+      ArrayUtils.add(_cm, mb._cm);
+      _hits = ArrayUtils.add(_hits, mb._hits);
+      _logloss += mb._logloss;
+    }
+    
+    @Override public ModelMetrics makeModelMetrics() {
       double mse = Double.NaN;
       double logloss = Double.NaN;
       float[] hr = new float[_K];
@@ -255,7 +310,7 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
       }
-      ModelMetricsOrdinal mm = new ModelMetricsOrdinal(m, null, _count, mse, _domain, sigma, cm,
+      ModelMetricsOrdinal mm = new ModelMetricsOrdinal(null, null, _count, mse, _domain, sigma, cm,
               hr, logloss, _customMetric);
       return mm;
     }

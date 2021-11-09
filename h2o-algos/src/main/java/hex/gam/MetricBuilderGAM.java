@@ -178,36 +178,4 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
     }
     return gamM.addModelMetrics(mm);
   }
-
-  @Override 
-  public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-    GAMModel gamM = (GAMModel) m;
-    computeAIC();
-    ModelMetrics mm=_metricBuilder.makeModelMetrics(gamM, null, null, null);
-    if (_glmf._family.equals(GLMModel.GLMParameters.Family.binomial) || _glmf._family.equals(quasibinomial) ||
-            _glmf._family.equals(fractionalbinomial)) {
-      ModelMetricsBinomial metricsBinomial = (ModelMetricsBinomial) mm;
-      mm = new ModelMetricsBinomialGLM(m, null, mm._nobs, mm._MSE, _domain, metricsBinomial._sigma,
-              metricsBinomial._auc, metricsBinomial._logloss, residualDeviance(), _null_deviance, _aic, nullDOF(),
-              resDOF(), null, _customMetric);
-    } else if (_glmf._family.equals(multinomial)) {
-      ModelMetricsMultinomial metricsMultinomial = (ModelMetricsMultinomial) mm;
-      mm = new ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM(m, null, metricsMultinomial._nobs,
-              metricsMultinomial._MSE, metricsMultinomial._domain, metricsMultinomial._sigma, metricsMultinomial._cm,
-              metricsMultinomial._hit_ratios, metricsMultinomial._logloss, residualDeviance(),_null_deviance, _aic,
-              nullDOF(), resDOF(), metricsMultinomial._auc,  _customMetric);
-    } else if (_glmf._family == GLMModel.GLMParameters.Family.ordinal) { // ordinal should have a different resDOF()
-      ModelMetricsOrdinal metricsOrdinal = (ModelMetricsOrdinal) mm;
-      mm = new ModelMetricsBinomialGLM.ModelMetricsOrdinalGLM(m, null, metricsOrdinal._nobs, metricsOrdinal._MSE,
-              metricsOrdinal._domain, metricsOrdinal._sigma, metricsOrdinal._cm, metricsOrdinal._hit_ratios,
-              metricsOrdinal._logloss, residualDeviance(), _null_deviance, _aic, nullDOF(), resDOF(), _customMetric);
-    } else {
-      ModelMetricsRegression metricsRegression = (ModelMetricsRegression) mm;
-      mm = new ModelMetricsRegressionGLM(m, null, metricsRegression._nobs, metricsRegression._MSE,
-              metricsRegression._sigma, metricsRegression._mean_absolute_error,
-              metricsRegression._root_mean_squared_log_error, residualDeviance(),
-              residualDeviance() / _wcount, _null_deviance, _aic, nullDOF(), resDOF(), _customMetric);
-    }
-    return mm;
-  }
 }

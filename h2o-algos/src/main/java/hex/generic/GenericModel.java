@@ -335,11 +335,6 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
             return null;
         }
-
-        @Override
-        public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-            return null;
-        }
     }
 
     @Override

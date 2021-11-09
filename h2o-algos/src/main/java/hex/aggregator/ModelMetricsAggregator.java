@@ -24,10 +24,5 @@ public class ModelMetricsAggregator extends ModelMetricsUnsupervised {
     public ModelMetrics makeModelMetrics(Model m, Frame f) {
       return m.addModelMetrics(new hex.aggregator.ModelMetricsAggregator(m, f, _customMetric));
     }
-
-    @Override
-    public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-      return m.addModelMetrics(new hex.aggregator.ModelMetricsAggregator(m, null, _customMetric));
-    }
   }
 }

@@ -24,9 +24,19 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
     public ModelMetrics makeModelMetrics(Model m, Frame f) {
       return m.addModelMetrics(new ModelMetricsAutoEncoder(m, f, _customMetric));
     }
-    
-    @Override public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-      return new ModelMetricsAutoEncoder(m, null, _customMetric);
+  }
+
+  public static class IndependentMetricBuilderAutoEncoder extends IndependentMetricBuilderUnsupervised<IndependentMetricBuilderAutoEncoder> {
+    public IndependentMetricBuilderAutoEncoder(int dims) {
+      _work = new double[dims];
+    }
+
+    @Override public double[] perRow(double ds[], float yact[]) {
+      throw H2O.unimpl();
+    }
+
+    @Override public ModelMetrics makeModelMetrics() {
+      return new ModelMetricsAutoEncoder(null, null, _customMetric);
     }
   }
 }

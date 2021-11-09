@@ -134,10 +134,6 @@ public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.S
       @Override public ModelMetrics makeModelMetrics(Model m, Frame f) {
         return m.addModelMetrics(new ModelMetricsSVD(m, f, _customMetric));
       }
-
-      @Override public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-        return new ModelMetricsSVD(m, null, _customMetric);
-      }
     }
   }
   

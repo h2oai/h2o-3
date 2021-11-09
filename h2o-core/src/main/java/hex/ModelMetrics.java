@@ -454,12 +454,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds);
     
     /**
-     * Having computed a MetricBuilder, this method fills in a ModelMetrics
-     * @param m Model
-     */
-    public abstract ModelMetrics makeModelMetricsWithoutRuntime(Model m);
-    
-    /**
      * Set value of custom metric.
      * @param customMetric  computed custom metric outside of this default builder
      */
@@ -475,5 +469,53 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       throw new UnsupportedOperationException("Should be overridden in implementation (together with makePredictionCache(..)).");
     }
 
+  }
+  
+  public static abstract class IndependentMetricBuilder<T extends IndependentMetricBuilder<T>> extends Iced<T> {
+    transient public double[] _work;
+    public double _sumsqe;      // Sum-squared-error
+    public long _count;
+    public double _wcount;
+    public double _wY; // (Weighted) sum of the response
+    public double _wYY; // (Weighted) sum of the squared response
+
+    // Custom metric holder
+    public CustomMetric _customMetric = null;
+
+    public  double weightedSigma() {
+//      double sampleCorrection = _count/(_count-1); //sample variance -> depends on the number of ACTUAL ROWS (not the weighted count)
+      double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
+      return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
+    }
+    abstract public double[] perRow(double ds[], float yact[]);
+    public double[] perRow(double ds[], float yact[],double weight, double offset) {
+      assert(weight==1 && offset == 0);
+      return perRow(ds, yact);
+    }
+    public void reduce( T mb ) {
+      _sumsqe += mb._sumsqe;
+      _count += mb._count;
+      _wcount += mb._wcount;
+      _wY += mb._wY;
+      _wYY += mb._wYY;
+    }
+
+    public void postGlobal() {
+      postGlobal(null);
+    }
+
+    public void postGlobal(CustomMetric customMetric) {
+      this._customMetric = customMetric;
+    }
+    
+    public abstract ModelMetrics makeModelMetrics();
+
+    /**
+     * Set value of custom metric.
+     * @param customMetric  computed custom metric outside of this default builder
+     */
+    public void setCustomMetric(CustomMetric customMetric) {
+      _customMetric = customMetric;
+    }
   }
 }

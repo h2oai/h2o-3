@@ -178,12 +178,77 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       for (int i = 0; i < mm._withinss.length; i++)
         mm._withinss[i] = _within_sumsqe[i];
     }
+  }
+
+  public static class IndependentMetricBuilderClustering extends IndependentMetricBuilderUnsupervised<IndependentMetricBuilderClustering> {
+    public long[] _size;        // Number of elements in cluster
+    public double[] _within_sumsqe;   // Within-cluster sum of squared error
+    private double[/*features*/] _colSum;  // Sum of each column
+    private double[/*features*/] _colSumSq;  // Sum of squared values of each column
+    private double[/*k*/][/*features*/] _centers_raw;
+    private double[/*k*/][/*features*/] _centers_std_raw;
+    private int[] _mode;
+    private int _k;
+    
+
+    public IndependentMetricBuilderClustering(
+        int ncol,
+        int nclust,
+        double[][] centers_raw,
+        double[][] centers_std_raw,
+        int[] mode,
+        int k) {
+      _work = new double[ncol];
+      _size = new long[nclust];
+      _within_sumsqe = new double[nclust];
+      Arrays.fill(_size, 0);
+      Arrays.fill(_within_sumsqe, 0);
+      _colSum = new double[ncol];
+      _colSumSq = new double[ncol];
+      Arrays.fill(_colSum, 0);
+      Arrays.fill(_colSumSq, 0);
+      _centers_raw = centers_raw;
+      _centers_std_raw = centers_std_raw;
+      _mode = mode;
+      _k = k;
+    }
+
+    // Compare row (dataRow) against centroid it was assigned to (preds[0])
+    @Override
+    public double[] perRow(double[] preds, float[] dataRow) {
+      assert !Double.isNaN(preds[0]);
+      
+      double[][] centers = _centers_std_raw != null ? _centers_std_raw : _centers_raw;
+
+      int clus = (int)preds[0];
+      double [] colSum = new double[_colSum.length];
+      double [] colSumSq = new double[_colSumSq.length];
+      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, _mode, colSum, colSumSq);
+      // System.out.println(Arrays.toString(colSumSq));
+      ArrayUtils.add(_colSum, colSum);
+      ArrayUtils.add(_colSumSq, colSumSq);
+      _count++;
+      _size[clus]++;
+      _sumsqe += sqr;
+      _within_sumsqe[clus] += sqr;
+
+      if (Double.isNaN(_sumsqe))
+        throw new H2OIllegalArgumentException("Sum of Squares is invalid (Double.NaN) - Check for missing values in the dataset.");
+      return preds;                // Flow coding
+    }
 
     @Override
-    public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-      assert m instanceof ClusteringModel;
-      ClusteringModel clm = (ClusteringModel) m;
-      ModelMetricsClustering mm = new ModelMetricsClustering(m, null, _customMetric);
+    public void reduce(IndependentMetricBuilderClustering mm) {
+      super.reduce(mm);
+      ArrayUtils.add(_size, mm._size);
+      ArrayUtils.add(_within_sumsqe, mm._within_sumsqe);
+      ArrayUtils.add(_colSum, mm._colSum);
+      ArrayUtils.add(_colSumSq, mm._colSumSq);
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics() {
+      ModelMetricsClustering mm = new ModelMetricsClustering(null, null, _customMetric);
 
       mm._size = _size;
       mm._tot_withinss = _sumsqe;
@@ -194,12 +259,12 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       long numRows = _count;
 
       // Sum-of-square distance from grand mean
-      if ( ((ClusteringParameters) clm._parms)._k == 1 )
+      if (_k == 1)
         mm._totss = mm._tot_withinss;
       else {
         mm._totss = 0;
         for (int i = 0; i < _colSum.length; i++) {
-          if(((ClusteringOutput)clm._output)._mode[i] == -1)
+          if (_mode[i] == -1)
             mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / numRows;
           else
             mm._totss += _colSum[i]; // simply add x[i] != modes[i] for categoricals

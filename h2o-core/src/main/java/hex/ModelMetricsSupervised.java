@@ -34,4 +34,15 @@ public class ModelMetricsSupervised extends ModelMetrics {
       _work = new double[_nclasses+1];
     }
   }
+
+  abstract public static class IndependentMetricBuilderSupervised<T extends IndependentMetricBuilderSupervised<T>> extends IndependentMetricBuilder<T> {
+    protected final String[] _domain;
+    protected final int _nclasses;
+
+    public IndependentMetricBuilderSupervised(int nclasses, String[] domain) {
+      _nclasses = nclasses;
+      _domain = domain;
+      _work = new double[_nclasses+1];
+    }
+  }
 }

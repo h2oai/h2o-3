@@ -154,10 +154,69 @@ public class ModelMetricsHGLM extends ModelMetricsSupervised {
       if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
+  }
+
+  public static class IndependentMetricBuilderHGLM<T extends IndependentMetricBuilderHGLM<T>> extends IndependentMetricBuilderSupervised<T> {
+    public double[] _sefe;       // standard error of fixed predictors/effects
+    public double[] _sere;       // standard error of random effects
+    public double _varfix;       // dispersion parameter of the mean model (residual variance for LMM)
+    public double[] _varranef;     // dispersion parameter of the random effects (variance of random effects for GLMM)
+    public boolean _converge;    // true if model has converged
+    public double _dfrefe;       // deviance degrees of freedom for mean part of the model
+    public double[] _summvc1;    // estimates, standard errors of the linear predictor in the dispersion model
+    public double[][] _summvc2;// estimates, standard errors of the linear predictor for dispersion parameter of random effects
+    public double _hlik;         // log h-likelihood
+    public double _pvh;          // adjusted profile log-likelihood profiled over random effects
+    public double _pbvh;         // adjusted profile log-likelihood profiled over fixed and random effects
+    public double _caic;         // conditional AIC
+    public long  _bad;           // index of the most influential observation
+    public double _sumetadiffsquare;  // sum(etai-eta0)^2
+    public double _convergence;       // sum(etai-eta0)^2/sum(etai)^2
+    public double[] _fixef;
+    public double[] _ranef;
+    public int[] _randc;
+    public int _iterations;    // number of iterations
+    public long _nobs;
+
+    public IndependentMetricBuilderHGLM(String[] domain) {
+      super(0,domain);
+    }
+
+    public void updateCoeffs(double[] fixedCoeffs, double[] randCoeffs) {
+      int fixfLen = fixedCoeffs.length;
+      if (_fixef ==null)
+        _fixef = new double[fixfLen];
+      System.arraycopy(fixedCoeffs, 0, _fixef, 0, fixfLen);
+
+      int randLen = randCoeffs.length;
+      if (_ranef == null)
+        _ranef = new double[randLen];
+      System.arraycopy(randCoeffs, 0, _ranef, 0, randLen);
+
+    }
+
+    public void updateSummVC(double[] VC1, double[][] VC2, int[] randc) {
+      if (_summvc1 ==null)
+        _summvc1 = new double[2];
+      System.arraycopy(VC1, 0, _summvc1, 0, 2);
+
+      if (_summvc2 == null) {
+        _randc = randc;
+        _summvc2 = new double[randc.length][2];
+      }
+
+      for (int index = 0; index < randc.length; index++)
+        System.arraycopy(VC2[index], 0, _summvc2[index], 0, 2);
+    }
 
     @Override
-    public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-      ModelMetricsHGLM mm = new ModelMetricsHGLM(m, null, _nobs, 0, _domain, 0, _customMetric, _sefe, _sere,
+    public double[] perRow(double[] ds, float[] yact) {
+      return new double[0];
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics() {
+      ModelMetricsHGLM mm = new ModelMetricsHGLM(null, null, _nobs, 0, _domain, 0, _customMetric, _sefe, _sere,
               _varfix, _varranef, _converge, _dfrefe, _summvc1, _summvc2, _hlik, _pvh, _pbvh, _caic, _bad,
               _sumetadiffsquare, _convergence, _randc, _fixef, _ranef, _iterations);
       return mm;

@@ -22,4 +22,8 @@ public class ModelMetricsUnsupervised extends ModelMetrics {
     public abstract ModelMetrics makeModelMetrics(Model m, Frame f);
     
   }
+
+  public static abstract class IndependentMetricBuilderUnsupervised<T extends IndependentMetricBuilderUnsupervised<T>>
+          extends IndependentMetricBuilder<T> {
+  }
 }

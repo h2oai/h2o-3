@@ -293,23 +293,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return Optional.of(gl);
     }
 
-    @Override public ModelMetrics makeModelMetricsWithoutRuntime(Model m) {
-      double mse = Double.NaN;
-      double logloss = Double.NaN;
-      double sigma = Double.NaN;
-      final AUC2 auc;
-      if (_wcount > 0) {
-        sigma = weightedSigma();
-        mse = _sumsqe / _wcount;
-        logloss = _logloss / _wcount;
-        auc = new AUC2(_auc);
-      } else {
-        auc = new AUC2();
-      }
-      ModelMetricsBinomial mm = new ModelMetricsBinomial(m, null, _count, mse, _domain, sigma, auc,  logloss, null, _customMetric);
-      return mm;
-    }
-
     @Override
     public Frame makePredictionCache(Model m, Vec response) {
       return new Frame(response.makeVolatileDoubles(1));
@@ -326,4 +309,83 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
     }
   }
+
+    public static class IndependentMetricBuilderBinomial<T extends IndependentMetricBuilderBinomial<T>> extends IndependentMetricBuilderSupervised<T> {
+        protected double _logloss;
+        protected AUC2.AUCBuilder _auc;
+        protected DistributionFamily _distributionFamily;
+
+        public IndependentMetricBuilderBinomial(String[] domain, DistributionFamily distributionFamily) {
+            super(2,domain); 
+            _auc = new AUC2.AUCBuilder(AUC2.NBINS);
+            _distributionFamily = distributionFamily;
+        }
+
+        public double auc() {return new AUC2(_auc)._auc;}
+        public double pr_auc() { return new AUC2(_auc)._pr_auc;}
+
+        // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
+        // distribution;
+        @Override public double[] perRow(double ds[], float[] yact) {return perRow(ds, yact, 1, 0);}
+        @Override public double[] perRow(double ds[], float[] yact, double w, double o) {
+            if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
+            if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
+            if(w == 0 || Double.isNaN(w)) return ds;
+            int iact = (int)yact[0];
+            boolean quasibinomial = (_distributionFamily == DistributionFamily.quasibinomial);
+            if (quasibinomial) {
+                if (yact[0] != 0)
+                    iact = _domain[0].equals(String.valueOf((int) yact[0])) ? 0 : 1;  // actual response index needed for confusion matrix, AUC, etc.
+                _wY += w * yact[0];
+                _wYY += w * yact[0] * yact[0];
+                // Compute error
+                double err = yact[0] - ds[iact + 1];
+                _sumsqe += w * err * err;           // Squared error
+                // Compute negative loglikelihood loss, according to https://0xdata.atlassian.net/secure/attachment/30135/30135_TMLErare.pdf Appendix C
+                _logloss += - w * (yact[0] * Math.log(Math.max(1e-15, ds[2])) + (1-yact[0]) * Math.log(Math.max(1e-15, ds[1])));
+            } else {
+                if (iact != 0 && iact != 1) return ds; // The actual is effectively a NaN
+                _wY += w * iact;
+                _wYY += w * iact * iact;
+                // Compute error
+                double err = iact + 1 < ds.length ? 1 - ds[iact + 1] : 1;  // Error: distance from predicting ycls as 1.0
+                _sumsqe += w * err * err;           // Squared error
+                // Compute log loss
+                _logloss += w * MathUtils.logloss(err);
+            }
+            _count++;
+            _wcount += w;
+            assert !Double.isNaN(_sumsqe);
+            _auc.perRow(ds[2], iact, w);
+            return ds;                // Flow coding
+        }
+
+        @Override public void reduce( T mb ) {
+            super.reduce(mb); // sumseq, count
+            _logloss += mb._logloss;
+            _auc.reduce(mb._auc);
+        }
+
+        @Override public ModelMetrics makeModelMetrics() {
+            double mse = Double.NaN;
+            double logloss = Double.NaN;
+            double sigma = Double.NaN;
+            final AUC2 auc;
+            if (_wcount > 0) {
+                sigma = weightedSigma();
+                mse = _sumsqe / _wcount;
+                logloss = _logloss / _wcount;
+                auc = new AUC2(_auc);
+            } else {
+                auc = new AUC2();
+            }
+            ModelMetricsBinomial mm = new ModelMetricsBinomial(null, null, _count, mse, _domain, sigma, auc,  logloss, null, _customMetric);
+            return mm;
+        }
+
+        public String toString(){
+            if(_wcount == 0) return "empty, no rows";
+            return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
+        }
+    }
 }
