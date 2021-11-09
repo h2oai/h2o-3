@@ -758,9 +758,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       if (_buildSpec.input_spec.validation_frame == null && _validationFrame != null) {
         _validationFrame.delete(jobKey, fs, true);
       }
-      if (_buildSpec.input_spec.leaderboard_frame == null && _leaderboardFrame != null) {
-        _leaderboardFrame.delete(jobKey, fs, true);
-      }
     }
     if (_trainingFrame != null && _origTrainingFrame != null)
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
