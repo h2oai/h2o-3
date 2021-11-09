@@ -134,7 +134,7 @@ try {
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
                                 ./gradlew build -x test
-                                ./gradlew buildH2oDevDist
+                                ./gradlew -PvalidateRelease buildH2oDevDist
                             """
                             }
                         }

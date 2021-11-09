@@ -208,6 +208,7 @@ allprojects {
 
     ext {
         isRelease = rootProject.hasProperty("doRelease")
+        validateRelease = rootProject.hasProperty("validateRelease")
         isCi = isCi
     }
 }
@@ -325,6 +326,19 @@ task buildH2oDevDist(type: Exec) {
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
+
+    if (validateRelease) {
+        def middleNumber = Integer.parseInt(projectVersion.split("\\.")[1])
+        def lastNumber = Integer.parseInt(projectVersion.split("\\.")[3])
+        def isBleedingEdge = middleNumber % 2 == 1
+        if (isBleedingEdge && branchName != "master") {
+            throw new Exception("The version ${projectVersion} is corresponding to nightly release but the branch you are releasing from is not master but ${branchName}")
+        } else if (!isBleedingEdge && !branchName.startsWith("rel-")) {
+            throw new Exception("The version ${projectVersion} is corresponding to the release but the branch you are releasing from not match release branch but ${branchName}")
+        } else if (lastNumber == 99999) {
+            throw new Exception("The version ${projectVersion} is a developer version and should not be released.")
+        }
+    }
 
     environment['BUILD_TIME_MILLIS'] = buildTimeMillis
     environment['BUILD_TIME_ISO8601'] = buildTimeIso8601
