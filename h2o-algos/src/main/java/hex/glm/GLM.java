@@ -2764,7 +2764,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     private void checkCoeffsBounds() {
       BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get())
               : new BetaConstraint(); // bounds for columns _dinfo.fullN()+1 only
-      double[] coeffs = _model._output.getNormBeta();
+      double[] coeffs = _model._output.beta();
       if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
         return;
       int coeffsLen = bc._betaLB.length;
