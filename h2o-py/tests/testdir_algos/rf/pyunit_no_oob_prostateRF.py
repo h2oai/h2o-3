@@ -5,6 +5,7 @@ sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.random_forest import H2ORandomForestEstimator
+from h2o.tree.tree import H2OTree
 
 
 
@@ -16,6 +17,13 @@ def build_decision_tree():
   decision_tree = H2ORandomForestEstimator(ntrees=1, max_depth=3, sample_rate=1.0, mtries=len(prostate_train.columns) - 1)
   decision_tree.train(y="CAPSULE", training_frame=prostate_train)
   decision_tree.show()
+
+  tree = H2OTree(
+      model=decision_tree,
+      tree_number=0,
+      tree_class=0
+  )
+  print(tree.decision_paths)
 
 
 if __name__ == "__main__":

@@ -161,8 +161,10 @@ class MetricsBase(h2o_meta()):
             print("AUC: " + str(self.auc()))
             print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
-            self.confusion_matrix().show()
-            self._metric_json["max_criteria_and_metric_scores"].show()
+            if self.confusion_matrix():
+                self.confusion_matrix().show()
+            if self._metric_json["max_criteria_and_metric_scores"]:
+                self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
         if metric_type in types_w_mult:
@@ -1569,8 +1571,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param metrics: A string (or list of strings) among metrics listed in :const:`maximizing_metrics`. Defaults to 'f1'.
         :param thresholds: A value (or list of values) between 0 and 1.
             If None, then the thresholds maximizing each provided metric will be used.
-        :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
-            (if there is only one).
+        :returns: a list of ConfusionMatrix objects (if there are more than one to return), a single ConfusionMatrix
+            (if there is only one) or None if thresholds are metrics scores are missing.
 
         :examples:
 
@@ -1589,6 +1591,10 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...           validation_frame = valid)
         >>> gbm.confusion_matrix(train)
         """
+        thresh2d = self._metric_json['thresholds_and_metric_scores']
+        if thresh2d is None:
+            return None
+
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None:
             metrics = ['f1']
@@ -1620,7 +1626,6 @@ class H2OBinomialModelMetrics(MetricsBase):
             thresholds_list.append(mt)
         first_metrics_thresholds_offset = len(thresholds_list) - len(metrics_thresholds)
 
-        thresh2d = self._metric_json['thresholds_and_metric_scores']
         actual_thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
         cms = []
         for i, t in enumerate(thresholds_list):
