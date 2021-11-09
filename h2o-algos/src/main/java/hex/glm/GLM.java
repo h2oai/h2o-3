@@ -2753,7 +2753,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private boolean betaConstraintsCheckEnabled() {
-      return Boolean.parseBoolean(getSysProperty("glm.beta.constraints.checkEnabled", "true"));
+      return Boolean.parseBoolean(getSysProperty("glm.beta.constraints.checkEnabled", "true")) &&
+              !multinomial.equals(_parms._family) && !ordinal.equals(_parms._family);
     }
 
     /***
@@ -2761,9 +2762,10 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
      * beta constraints bounds.  This check only applies when the beta constraints has a lower and upper bound.
      */
     private void checkCoeffsBounds() {
+      BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get())
+              : new BetaConstraint(); // bounds for columns _dinfo.fullN()+1 only
       double[] coeffs = _model._output.getNormBeta();
-      BetaConstraint bc = new BetaConstraint(_parms._beta_constraints.get());
-      if (bc._betaLB == null || bc._betaUB == null)
+      if (bc._betaLB == null || bc._betaUB == null || coeffs == null)
         return;
       int coeffsLen = bc._betaLB.length;
       for (int index=0; index < coeffsLen; index++) {
