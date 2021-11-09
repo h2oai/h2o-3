@@ -99,6 +99,8 @@ class MetricsBase(h2o_meta()):
                                           'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
                                        'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
+        types_w_mean_per_class_error = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric',
+                                        'ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric'] + types_w_mult
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
@@ -128,10 +130,7 @@ class MetricsBase(h2o_meta()):
             print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
-        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric'] or \
-            metric_type in types_w_mult or \
-            metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
-            # second element for first threshold is the actual mean per class error
+        if metric_type in types_w_mean_per_class_error:
             print("Mean Per-Class Error: %s" % self._mean_per_class_error())
         if metric_type in types_w_glm:
             if metric_type == 'ModelMetricsHGLMGaussianGaussian': # print something for HGLM

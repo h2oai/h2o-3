@@ -245,7 +245,7 @@ public class AUC2 extends Iced {
     return new AUC2();
   }
   
-  private boolean isEmpty() {
+  public boolean isEmpty() {
     return _nBins == 0;
   }
 
