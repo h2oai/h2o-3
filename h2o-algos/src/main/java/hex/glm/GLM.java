@@ -76,7 +76,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private boolean _earlyStopEnabled = false;
   private boolean _checkPointFirstIter = false;  // indicate first iteration for checkpoint model
   private boolean _betaConstraintsOn = false;
-  BetaConstraint _bc = null;
 
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
@@ -857,17 +856,17 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _betaConstraintsOn = (betaContsOn && (Solver.AUTO.equals(_parms._solver) ||
               Solver.COORDINATE_DESCENT.equals(_parms._solver) || Solver.IRLSM.equals(_parms._solver )||
               Solver.L_BFGS.equals(_parms._solver)));
-      _bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
+      BetaConstraint bc = _parms._beta_constraints != null ? new BetaConstraint(_parms._beta_constraints.get()) 
               : new BetaConstraint();
       if (betaContsOn && !_betaConstraintsOn) {
         warn("Beta Constraints", " will be disabled except for solver AUTO, COORDINATE_DESCENT, " +
                 "IRLSM or L_BFGS.  It is not available for ordinal or multinomial families.");
       }
-      if((_bc.hasBounds() || _bc.hasProximalPenalty()) && _parms._compute_p_values)
+      if((bc.hasBounds() || bc.hasProximalPenalty()) && _parms._compute_p_values)
         error("_compute_p_values","P-values can not be computed for constrained problems");
-      if (_bc.hasBounds() && _parms._early_stopping)
+      if (bc.hasBounds() && _parms._early_stopping)
         warn("beta constraint and early_stopping", "if both are enabled may degrade model performance.");
-      _state.setBC(_bc);
+      _state.setBC(bc);
       if(hasOffsetCol() && _parms._intercept && !ordinal.equals(_parms._family)) { // fit intercept
         GLMGradientSolver gslvr = gam.equals(_parms._glmType) ? new GLMGradientSolver(_job,_parms, 
                 _dinfo.filterExpandedColumns(new int[0]), 0, _state.activeBC(), _penaltyMatrix, _gamColIndices) 
@@ -2759,15 +2758,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     /***
      * When beta constraints are turned on, verify coefficients are either 0.0 or falls within the 
-     * beta constraints bounds.
+     * beta constraints bounds.  This check only applies when the beta constraints has a lower and upper bound.
      */
     private void checkCoeffsBounds() {
       double[] coeffs = _model._output.getNormBeta();
-      if (_bc._betaLB == null)
+      BetaConstraint bc = new BetaConstraint(_parms._beta_constraints.get());
+      if (bc._betaLB == null || bc._betaUB == null)
         return;
-      int coeffsLen = _bc._betaLB.length;
+      int coeffsLen = bc._betaLB.length;
       for (int index=0; index < coeffsLen; index++) {
-        if (!(coeffs[index] == 0 || (coeffs[index] >= _bc._betaLB[index] && coeffs[index] <= _bc._betaUB[index])))
+        if (!(coeffs[index] == 0 || (coeffs[index] >= bc._betaLB[index] && coeffs[index] <= bc._betaUB[index])))
           throw new H2OFailException("GLM model coefficients do not fall within beta constraint bounds.");
       }
     }
