@@ -5,7 +5,6 @@ sys.path.insert(1, os.path.join("..","..","..",".."))
 from h2o.automl import H2OAutoML
 from tests import pyunit_utils as pu
 
-pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
 from _automl_utils import import_dataset
 
 

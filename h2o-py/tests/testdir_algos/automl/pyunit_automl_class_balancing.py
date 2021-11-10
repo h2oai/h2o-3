@@ -6,7 +6,6 @@ import h2o
 from h2o.automl import H2OAutoML
 from tests import pyunit_utils as pu
 
-pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
 from _automl_utils import import_dataset, get_partitioned_model_names
 
 max_models = 2

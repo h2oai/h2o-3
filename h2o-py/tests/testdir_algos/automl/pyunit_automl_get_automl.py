@@ -6,7 +6,6 @@ from h2o.automl import H2OAutoML, get_leaderboard
 from h2o.automl.autoh2o import get_automl
 from tests import pyunit_utils as pu
 
-pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
 from _automl_utils import import_dataset
 
 
