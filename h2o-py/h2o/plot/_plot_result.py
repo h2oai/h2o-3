@@ -1,11 +1,12 @@
 # -*- encoding: utf-8 -*-
 # mutable versions of py immutable types
+from h2o.exceptions import H2OError
+
 class _MObject(object): pass
 class _MTuple(tuple): pass
 class _MList(list): pass
 class _MDict(dict): pass
 class _MStr(str): pass
-class Error(EnvironmentError): pass
 
 RAISE_ON_FIGURE_ACCESS = object()
 
@@ -14,7 +15,7 @@ def decorate_plot_result(res=None, figure=None):
         if figure is not RAISE_ON_FIGURE_ACCESS:
             return figure
         else:
-            raise Error("Cannot plot, matplotlib is absent!")
+            raise H2OError("Cannot plot, matplotlib is absent!")
     # list all special/immutable types that we need first
     if res is None:
         dec = _MObject()

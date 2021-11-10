@@ -3,6 +3,7 @@ import matplotlib
 
 from h2o.automl import H2OAutoML
 from h2o.estimators import H2OGradientBoostingEstimator
+from h2o.exceptions import H2OError
 from h2o.transforms import H2OPCA
 
 sys.path.insert(1,"../../../")
@@ -143,7 +144,7 @@ def test_decorate_plot_result():
     res = decorate_plot_result(Foo(bar="baz"), figure=RAISE_ON_FIGURE_ACCESS)
     try:
         res.figure()
-    except EnvironmentError:
+    except H2OError:
         pass
 
     
