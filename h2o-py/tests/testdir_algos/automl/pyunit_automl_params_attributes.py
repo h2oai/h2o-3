@@ -2,18 +2,12 @@ import os
 import sys
 
 sys.path.insert(1, os.path.join("..","..",".."))
-import h2o
-from h2o.automl import H2OAutoML
 from h2o.exceptions import H2OValueError
+from h2o.automl import H2OAutoML
 from tests import pyunit_utils as pu
 
-
-def import_dataset(seed=0):
-    df = h2o.import_file(path=pu.locate("smalldata/prostate/prostate.csv"))
-    target = "CAPSULE"
-    df[target] = df[target].asfactor()
-    fr = df.split_frame(ratios=[.8,.1], seed=seed)
-    return pu.ns(train=fr[0], valid=fr[1], test=fr[2], target=target, target_idx=1)
+pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
+from _automl_utils import import_dataset
 
 
 def test_params_can_be_set_as_attributes():

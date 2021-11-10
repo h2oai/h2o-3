@@ -13,6 +13,7 @@ import datetime
 from decimal import *
 from functools import reduce
 import imp
+import importlib
 import json
 import math
 import os
@@ -120,6 +121,18 @@ class Namespace:
 
 def ns(**kwargs):
     return Namespace(**kwargs)
+
+
+def load_module(name, dir_path):
+    try: #Py3
+        spec = importlib.util.spec_from_file_location(name, os.path.join(dir_path, name+".py"))
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+        return module
+    except AttributeError: #Py2
+        spec = imp.find_module(name, [dir_path])
+        return imp.load_module(name, *spec)
 
 
 def gen_random_uuid(numberUUID):
@@ -3292,15 +3305,6 @@ def model_seed_sorted(model_list):
     model_seed_list.sort()
     return model_seed_list
 
-
-def check_ignore_cols_automl(models,names,x,y):
-    models = sum(models.as_data_frame().values.tolist(),[])
-    for model in models:
-        if "StackedEnsemble" in model:
-            continue
-        else:
-            assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
-                "ignored columns are not honored for model " + model
 
 
 # This method is not changed to local method using as_data_frame because the frame size is too big.

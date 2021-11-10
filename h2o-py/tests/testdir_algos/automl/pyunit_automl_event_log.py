@@ -1,20 +1,20 @@
 from __future__ import print_function
 import sys, os, datetime as dt
+
 sys.path.insert(1, os.path.join("..","..",".."))
-import h2o
-from tests import pyunit_utils
 from h2o.automl import H2OAutoML
+from tests import pyunit_utils as pu
+
+pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
+from _automl_utils import import_dataset
 
 
 def test_event_log():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    y = 'CAPSULE'
-    train[y] = train[y].asfactor()
-
+    ds = import_dataset()
     aml = H2OAutoML(project_name="test_event_log",
                     max_models=2,
                     seed=1234)
-    aml.train(y=y, training_frame=train)
+    aml.train(y=ds.target, training_frame=ds.train)
 
     print(aml.event_log)
     assert aml.event_log.columns == ['timestamp', 'level', 'stage', 'message', 'name', 'value']
@@ -30,10 +30,7 @@ def test_event_log():
 
 
 def test_train_verbosity():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    y = 'CAPSULE'
-    train[y] = train[y].asfactor()
-
+    ds = import_dataset()
     make_aml = lambda verbosity=None: H2OAutoML(project_name="test_train_verbosity",
                                                 keep_cross_validation_predictions=True,
                                                 max_models=2,
@@ -41,16 +38,16 @@ def test_train_verbosity():
                                                 seed=1234,
                                                 verbosity=verbosity)
     print("verbosity off")
-    make_aml().train(y=y, training_frame=train)
+    make_aml().train(y=ds.target, training_frame=ds.train)
     print("verbosity debug")
-    make_aml('debug').train(y=y, training_frame=train)
+    make_aml('debug').train(y=ds.target, training_frame=ds.train)
     print("verbosity info")
-    make_aml('info').train(y=y, training_frame=train)
+    make_aml('info').train(y=ds.target, training_frame=ds.train)
     print("verbosity warn")
-    make_aml('warn').train(y=y, training_frame=train)
+    make_aml('warn').train(y=ds.target, training_frame=ds.train)
 
 
-pyunit_utils.run_tests([
+pu.run_tests([
     test_event_log,
     test_train_verbosity
 ])

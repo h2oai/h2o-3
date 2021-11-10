@@ -3,15 +3,15 @@ import sys, os
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
-from tests import pyunit_utils
 from h2o.automl import H2OAutoML
+from tests import pyunit_utils as pu
+
+pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
+from _automl_utils import import_dataset
 
 
 def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    y = 'CAPSULE'
-    train[y] = train[y].asfactor()
-
+    ds = import_dataset()
     aml_mono = H2OAutoML(project_name="test_automl_creates_interpretable_se",
                          max_models=5,
                          include_algos=["GBM", "XGBoost", "DRF", "StackedEnsemble"],
@@ -19,7 +19,7 @@ def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
                              AGE=1, DPROS=1, DCAPS=1, PSA=1, VOL=1, GLEASON=1
                          ),
                          seed=1234)
-    aml_mono.train(y=y, training_frame=train)
+    aml_mono.train(y=ds.target, training_frame=ds.train)
 
     assert (aml_mono
             .leaderboard
@@ -31,7 +31,7 @@ def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
                     max_models=2,
                     include_algos=["GBM", "XGBoost", "StackedEnsemble"],
                     seed=1234)
-    aml.train(y=y, training_frame=train)
+    aml.train(y=ds.target, training_frame=ds.train)
 
     assert not (aml
                 .leaderboard
@@ -40,10 +40,7 @@ def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
 
 
 def test_automl_creates_interpretable_SE_with_only_monotonic_models():
-    train = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    y = 'CAPSULE'
-    train[y] = train[y].asfactor()
-
+    ds = import_dataset()
     aml_mono = H2OAutoML(project_name="test_automl_creates_interpretable_se",
                          max_models=5,
                          include_algos=["GBM", "GLM", "XGBoost", "StackedEnsemble"],
@@ -51,7 +48,7 @@ def test_automl_creates_interpretable_SE_with_only_monotonic_models():
                              AGE=1, DPROS=1, DCAPS=1, PSA=1, VOL=1, GLEASON=1
                          ),
                          seed=1234)
-    aml_mono.train(y=y, training_frame=train)
+    aml_mono.train(y=ds.target, training_frame=ds.train)
 
     leaderboard = (aml_mono
         .leaderboard
@@ -66,7 +63,7 @@ def test_automl_creates_interpretable_SE_with_only_monotonic_models():
     assert all(['GBM' in bm or 'XGBoost' in bm for bm in se_mono.base_models])
 
 
-pyunit_utils.run_tests([
+pu.run_tests([
     test_automl_creates_interpretable_SE_iff_monotonic_models_exist,
     test_automl_creates_interpretable_SE_with_only_monotonic_models
 ])

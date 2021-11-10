@@ -3,23 +3,22 @@ import os
 import sys
 
 sys.path.insert(1, os.path.join("..","..",".."))
-import h2o
-from tests import pyunit_utils as pu
 from h2o.automl import H2OAutoML
 from h2o.model import ModelBase
+from tests import pyunit_utils as pu
+
+pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
+from _automl_utils import import_dataset
 
 
 def test_train_returns_leader_model():
-    fr = h2o.import_file(path=pu.locate("smalldata/prostate/prostate.csv"))
-    target = "CAPSULE"
-    fr[target] = fr[target].asfactor()
-    
+    ds = import_dataset()
     aml = H2OAutoML(max_models=3, project_name="py_aml_rain_result", seed=42)
-    model = aml.train(y=target, training_frame=fr)
+    model = aml.train(y=ds.target, training_frame=ds.train)
     
     assert isinstance(model, ModelBase)
     assert model.key == aml.leader.key
-    model.predict(fr)
+    model.predict(ds.test)
 
 
 pu.run_tests([

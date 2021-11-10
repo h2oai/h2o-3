@@ -1,18 +1,21 @@
 from __future__ import print_function
 import os
 import sys
-sys.path.insert(1, os.path.join("..","..",".."))
 import tempfile
 import time
-import h2o
-from tests import pyunit_utils
+
+sys.path.insert(1, os.path.join("..","..",".."))
 from h2o.automl import H2OAutoML
+from tests import pyunit_utils as pu
+
+pu.load_module("_automl_utils", os.path.join(os.path.dirname(__file__)))
+from _automl_utils import import_dataset
+
 
 def automl_mojo():
-    fr1 = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
-    fr1["CAPSULE"] = fr1["CAPSULE"].asfactor()
+    ds = import_dataset()
     aml = H2OAutoML(max_models=2, project_name="py_lb_test_aml1", seed=1234)
-    aml.train(y="CAPSULE", training_frame=fr1)
+    aml.train(y=ds.target, training_frame=ds.train)
 
     # download mojo
     model_zip_path = os.path.join(tempfile.mkdtemp(), 'model.zip')
@@ -25,7 +28,7 @@ def automl_mojo():
     assert os.path.isfile(model_zip_path)
     os.remove(model_zip_path)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(automl_mojo)
-else:
-    automl_mojo()
+
+pu.run_tests([
+    automl_mojo
+])

@@ -4,8 +4,8 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 import h2o.exceptions
-from tests import pyunit_utils as pu
 from h2o.automl import H2OAutoML
+from tests import pyunit_utils as pu
 
 
 def import_dataset(seed=0, mode='binary'):
