@@ -36,6 +36,8 @@ dependencies {
 }
 
 def buildVersionFile = new File(projectDir, "/src/main/java/water/genmodel/BuildVersion.java")
+// this is where the "buildVersionFile" used to be before we fixed it (it was causing classpath clash)
+def oldBuildVersionFile = new File(projectDir, "/src/main/java/water/init/BuildVersion.java")
 
 task generateBuildVersionJava {
   doLast {
@@ -44,10 +46,14 @@ task generateBuildVersionJava {
   }
 }
 
-compileJava.dependsOn generateBuildVersionJava
-
 task cleanBuildVersionJava(type: Delete) {
   delete buildVersionFile
 }
 
-clean.dependsOn cleanBuildVersionJava
+task cleanDeprecatedBuildVersionJava(type: Delete) {
+  delete oldBuildVersionFile
+}
+
+compileJava.dependsOn cleanDeprecatedBuildVersionJava, generateBuildVersionJava
+
+clean.dependsOn cleanBuildVersionJava, cleanDeprecatedBuildVersionJava
