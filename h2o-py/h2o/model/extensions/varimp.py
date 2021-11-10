@@ -1,4 +1,4 @@
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.typechecks import assert_is_type
 
 
@@ -20,7 +20,7 @@ class VariableImportance:
 
         plt = get_matplotlib_pyplot(server)
         if plt is None:
-            return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+            return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
         # get the variable importances as a list of tuples, do not use pandas dataframe
         importances = self.varimp(use_pandas=False)

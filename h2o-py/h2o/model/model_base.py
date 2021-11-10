@@ -9,7 +9,7 @@ from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
@@ -1224,7 +1224,7 @@ class ModelBase(h2o_meta(Keyed)):
             plt = get_matplotlib_pyplot(server)
             cm = _get_matplotlib_cm("Partial dependency plots")
             if not plt: 
-                return decorate_plot_result(res=pps, figure="RAISE_EXCEPTION_FLAG")
+                return decorate_plot_result(res=pps, figure=RAISE_ON_FIGURE_ACCESS)
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
             gxs = gridspec.GridSpec(to_fig, 1)
@@ -1665,7 +1665,7 @@ class ModelBase(h2o_meta(Keyed)):
         """
         plt = get_matplotlib_pyplot(server)
         if not plt:
-            return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+            return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
         importance = self.permutation_importance(frame, metric, n_samples, n_repeats, features, seed, use_pandas=False)
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))

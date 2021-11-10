@@ -1,4 +1,4 @@
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.typechecks import assert_is_type, I
 
 
@@ -17,7 +17,7 @@ class StandardCoef:
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
 
         plt = get_matplotlib_pyplot(server)
-        if not plt: return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+        if not plt: return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
         # get unsorted tuple of labels and coefficients
         unsorted_norm_coef = self.coef_norm().items()

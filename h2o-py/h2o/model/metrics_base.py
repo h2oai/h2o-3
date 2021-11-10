@@ -8,7 +8,7 @@ Regression model.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
@@ -1423,7 +1423,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
             fig = plt.figure()
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
@@ -1448,7 +1448,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
             fig = plt.figure()
             plt.xlabel('Recall (TP/(TP+FP))')
             plt.ylabel('Precision (TPR)')

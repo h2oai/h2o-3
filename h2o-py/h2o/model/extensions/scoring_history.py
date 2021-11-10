@@ -1,5 +1,5 @@
 from h2o.exceptions import H2OValueError
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import assert_is_type
 
@@ -31,7 +31,7 @@ class ScoringHistory:
     
     def scoring_history_plot(self, timestep, metric, server=False, save_plot_path=None):
         plt = get_matplotlib_pyplot(server)
-        if plt is None: return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+        if plt is None: return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
         
         scoring_history = self._get_scoring_history_to_plot()
         timestep = self._validate_timestep(timestep)
@@ -112,7 +112,7 @@ class ScoringHistoryGLM(ScoringHistory):
     
     def scoring_history_plot(self, timestep, metric, server=False, save_plot_path=None):
         plt = get_matplotlib_pyplot(server)
-        if plt is None: return decorate_plot_result(figure="RAISE_EXCEPTION_FLAG")
+        if plt is None: return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
         
         scoring_history = self.scoring_history()
 

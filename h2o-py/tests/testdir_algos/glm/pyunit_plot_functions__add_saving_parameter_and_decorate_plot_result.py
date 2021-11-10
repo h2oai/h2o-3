@@ -10,7 +10,7 @@ import h2o
 import tempfile
 from tests import pyunit_utils, test_plot_result_saving
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator as glm, H2OGeneralizedLinearEstimator
-from h2o.plot import decorate_plot_result
+from h2o.plot import decorate_plot_result, RAISE_ON_FIGURE_ACCESS
 
 def tests():
     binomial_plot_test()
@@ -140,7 +140,7 @@ def test_decorate_plot_result():
     assert res.bar == "baz"
     assert res.figure() == figure
 
-    res = decorate_plot_result(Foo(bar="baz"), figure="RAISE_EXCEPTION_FLAG")
+    res = decorate_plot_result(Foo(bar="baz"), figure=RAISE_ON_FIGURE_ACCESS)
     try:
         res.figure()
     except EnvironmentError:

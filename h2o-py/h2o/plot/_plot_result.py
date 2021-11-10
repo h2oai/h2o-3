@@ -7,9 +7,11 @@ class _MDict(dict): pass
 class _MStr(str): pass
 class Error(EnvironmentError): pass
 
+RAISE_ON_FIGURE_ACCESS = object()
+
 def decorate_plot_result(res=None, figure=None):
     def get_figure():
-        if figure != "RAISE_EXCEPTION_FLAG":
+        if figure is not RAISE_ON_FIGURE_ACCESS:
             return figure
         else:
             raise Error("Cannot plot, matplotlib is absent!")
@@ -32,3 +34,5 @@ def decorate_plot_result(res=None, figure=None):
     return dec
 
 
+def is_decorated_plot_result(obj):
+    return hasattr(obj, "_is_decorated_plot_result")

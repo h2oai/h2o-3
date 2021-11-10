@@ -13,7 +13,7 @@ except:
 import h2o
 import numpy as np
 from h2o.exceptions import H2OValueError
-from h2o.plot import decorate_plot_result, get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, is_decorated_plot_result
 
 
 def _display(object):
@@ -24,7 +24,7 @@ def _display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if (isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg") or (hasattr(object, "is_decorated_plot_result")):
+    if (isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg") or is_decorated_plot_result(object):
         plt.show()
     else:
         try:
@@ -35,7 +35,7 @@ def _display(object):
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
         print("\n")
-    if (hasattr(object, "is_decorated_plot_result") and (object.figure() is not None)):
+    if (is_decorated_plot_result(object) and (object.figure() is not None)):
         plt.close(object.figure())
         print("\n")
     return object
