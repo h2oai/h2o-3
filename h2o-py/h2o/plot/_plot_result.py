@@ -27,7 +27,7 @@ def decorate_plot_result(res=None, figure=None):
     else: # should be an H2O instance, should be mutable
         dec = res
     dec.figure = get_figure
-    dec.is_decorated_plot_result = True
+    dec._is_decorated_plot_result = True
      
     return dec
 
