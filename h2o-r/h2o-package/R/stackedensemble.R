@@ -349,6 +349,8 @@ h2o.stackedEnsemble <- function(x,
     return(h2o.getModel(model_id)@algorithm)
   }
 
+  model$cross_validation_metrics_summary <- model$metalearner_model@model$cross_validation_metrics_summary
+
   model$model_summary <- capture.output({
     print_ln <- function(...) cat(..., sep = "\n")
 

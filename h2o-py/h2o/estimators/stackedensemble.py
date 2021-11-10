@@ -1007,3 +1007,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
             raise H2OResponseError("Meta learner didn't get to be trained in time. "
                                    "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
         return self
+
+    def cross_validation_metrics_summary(self):
+        return self.metalearner().cross_validation_metrics_summary()
