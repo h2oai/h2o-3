@@ -1612,11 +1612,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
           }
         } else {
-          if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
-                  _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                  _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
-                  == ScoreKeeper.StoppingMetric.AUCPR) {
-            error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+          if (_parms._stopping_metric.isClassificationOnly()) {
+            error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric + " for regression.");
           }
         }
       }

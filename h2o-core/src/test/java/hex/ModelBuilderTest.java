@@ -14,6 +14,7 @@ import water.test.dummy.DummyModel;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
 import water.test.dummy.MessageInstallAction;
+import water.util.ArrayUtils;
 import water.util.ReflectionUtils;
 
 import java.io.File;
@@ -275,7 +276,48 @@ public class ModelBuilderTest {
       Scope.exit();
     }
   }
-  
+
+  @Test
+  public void testValidationOfClassificationStoppingMetrics() {
+    try {
+      Scope.enter();
+      Frame train = TestFrameCatalog.oneChunkFewRows();
+
+      ScoreKeeper.StoppingMetric[] classificationOnly = new ScoreKeeper.StoppingMetric[] {
+              ScoreKeeper.StoppingMetric.logloss,
+              ScoreKeeper.StoppingMetric.AUC,
+              ScoreKeeper.StoppingMetric.AUCPR,
+              ScoreKeeper.StoppingMetric.lift_top_group,
+              ScoreKeeper.StoppingMetric.misclassification,
+              ScoreKeeper.StoppingMetric.mean_per_class_error
+      };
+
+      for (ScoreKeeper.StoppingMetric sm : ScoreKeeper.StoppingMetric.values()) {
+        assertEquals(sm + "is probably not know to this test", 
+                ArrayUtils.contains(classificationOnly, sm), sm.isClassificationOnly());
+
+        DummyModelParameters failingParms = new DummyModelParameters("Failing Dummy " + sm, Key.make("dummny-failing-" + sm));
+        failingParms._train = train._key;
+        failingParms._stopping_metric = sm;
+        failingParms._stopping_rounds = 2;
+        failingParms._response_column = train.name(0);
+
+        DummyModelBuilder failingBuilder = new DummyModelBuilder(failingParms);
+        if (sm.isClassificationOnly()) {
+          assertEquals(
+                  "ERRR on field: _stopping_metric: Stopping metric cannot be " + sm + " for regression.\n",
+                  failingBuilder.validationErrors()
+          );
+        } else if ((sm != ScoreKeeper.StoppingMetric.custom) && (sm != ScoreKeeper.StoppingMetric.custom_increasing)) {
+          assertEquals("", failingBuilder.validationErrors());
+        }
+      }
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test
   public void testUsedColumns() {
     String[] trainNames = new String[] {
