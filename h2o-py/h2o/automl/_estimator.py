@@ -186,13 +186,8 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             More models can be trained on an existing AutoML project by specifying the same project name in multiple calls to the AutoML function
             (as long as the same training frame, or a sample, is used in subsequent runs).
         :param exclude_algos: List the algorithms to skip during the model-building phase. 
-            The full list of options is: 
-                ``"DRF"`` (Random Forest and Extremely-Randomized Trees),
-                ``"GLM"``,
-                ``"XGBoost"``,
-                ``"GBM"``,
-                ``"DeepLearning"``,
-                ``"StackedEnsemble"``. 
+            The full list of options is: ``"DRF"`` (Random Forest and Extremely-Randomized Trees), ``"GLM"``, ``"XGBoost"``, ``"GBM"``,
+            ``"DeepLearning"``, ``"StackedEnsemble"``.
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
             Usage example: ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``.
         :param include_algos: List the algorithms to restrict to during the model-building phase.
