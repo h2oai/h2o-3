@@ -20,7 +20,7 @@ def test_leaderboard_for_binary():
     aml = H2OAutoML(project_name="py_aml_lb_test_default_binom_sort",
                     seed=automl_seed,
                     max_models=8,
-                    nfolds=3,
+                    nfolds=2,
                     stopping_rounds=1,
                     stopping_tolerance=0.5,
                     exclude_algos=exclude_algos)
@@ -32,11 +32,11 @@ def test_leaderboard_for_binary():
 def test_leaderboard_for_binary_with_custom_sorting():
     print("Check leaderboard for Binomial sort by logloss")
     ds = import_dataset('binary', split=False)
-    exclude_algos = ["GLM", "DRF"]
+    exclude_algos = ["GLM", "DeepLearning", "DRF"]
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_binom_sort",
                     seed=automl_seed,
                     max_models=8,
-                    nfolds=3,
+                    nfolds=2,
                     stopping_rounds=1,
                     stopping_tolerance=0.5,
                     exclude_algos=exclude_algos,
@@ -53,7 +53,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binary():
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting_binary",
                     seed=automl_seed,
                     max_models=10,
-                    nfolds=3,
+                    nfolds=2,
                     stopping_rounds=1,
                     stopping_tolerance=0.5,
                     exclude_algos=exclude_algos)
@@ -74,7 +74,7 @@ def test_AUTO_stopping_metric_with_auc_sorting_metric():
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_auc_sorting",
                     seed=automl_seed,
                     max_models=10,
-                    nfolds=3,
+                    nfolds=2,
                     stopping_rounds=1,
                     stopping_tolerance=0.5,
                     exclude_algos=exclude_algos,

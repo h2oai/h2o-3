@@ -30,7 +30,7 @@ def test_leaderboard_with_all_algos():
     ds = import_dataset('multiclass', split=False)
     aml = H2OAutoML(project_name="py_aml_lb_test_all_algos",
                     max_models=12,
-                    nfolds=3,
+                    nfolds=2,
                     stopping_rounds=1,
                     stopping_tolerance=0.5,
                     seed=automl_seed)
@@ -46,7 +46,7 @@ def test_leaderboard_with_no_algos():
     aml = H2OAutoML(project_name="py_aml_lb_test_no_algo",
                     exclude_algos=exclude_algos
                     max_runtime_secs=10,
-                    nfolds=3,
+                    nfolds=2,
                     stopping_rounds=1,
                     stopping_tolerance=0.5,
                     seed=automl_seed)
