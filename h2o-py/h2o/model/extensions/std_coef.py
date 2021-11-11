@@ -1,22 +1,23 @@
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.typechecks import assert_is_type, I
 
 
 class StandardCoef:
 
-    def _std_coef_plot(self, num_of_features=None, server=False):
+    def _std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot a GLM model"s standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
         :param server: if true set server settings to matplotlib and show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: None.
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
         assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
 
         plt = get_matplotlib_pyplot(server)
-        if not plt: return
+        if not plt: return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
         # get unsorted tuple of labels and coefficients
         unsorted_norm_coef = self.coef_norm().items()
@@ -110,6 +111,9 @@ class StandardCoef:
         plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
         plt.tick_params(axis="x", which="minor", bottom="off", top="off",  labelbottom="off")
         plt.title("Standardized Coef. Magnitudes: H2O GLM", fontsize=20)
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
         # show plot
         if server:
             plt.show()
+        return decorate_plot_result(figure=fig) 

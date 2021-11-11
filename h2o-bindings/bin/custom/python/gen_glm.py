@@ -206,6 +206,26 @@ assert_is_type({pname}, None, numeric, [numeric])
 self._parms["{sname}"] = {pname}
 """
     ),
+    beta_constraints=dict(
+        setter="""
+# beta_constraints can be specified as a H2OFrame or python dict
+assert_is_type({pname}, None, dict, H2OFrame)
+if type({pname}) is H2OFrame:
+    self._parms["{sname}"]={pname}
+if type({pname}) is dict:
+    colnames = {pname}.keys()
+    col_names = []
+    upper_bounds = []
+    lower_bounds = []
+    for key in colnames:
+        one_col_bounds = {pname}.get(key)
+        col_names.append(key)
+        upper_bounds.append(one_col_bounds.get('upper_bound'))
+        lower_bounds.append(one_col_bounds.get('lower_bound'))
+    constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
+    self._parms["{sname}"] = constraints[["names", "lower_bounds", "upper_bounds"]]
+"""
+    )
 )
 
 doc = dict(

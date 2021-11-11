@@ -724,7 +724,7 @@ public final class ComputationState {
       }
     }
     ADMM.subgrad(_alpha * _lambda, beta, grad);
-    for (int c : activeCols) // set the error tolerance to the highest error og included columns
+    for (int c : activeCols) // set the error tolerance to the highest error of included columns
       if (grad[c] > err) err = grad[c];
       else if (grad[c] < -err) err = -grad[c];
     _gradientErr = err;
