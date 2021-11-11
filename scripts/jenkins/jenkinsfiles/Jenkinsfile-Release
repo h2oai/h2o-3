@@ -54,7 +54,8 @@ try {
                             <li><strong>Node:</strong> ${env.NODE_NAME}</li>
                             <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
-                            <li><strong>PyPI Upload:</strong> ${params.UPLOAD_PYPI}</li>
+                            <li><strong>Build PyPI:</strong> ${params.BUILD_PYPI}</li>
+                            <li><strong>PyPI Upload:</strong> ${params.UPLOAD_TO_PYPI}</li>
                             <li><strong>Build Conda:</strong> ${params.BUILD_CONDA}</li>
                             <li><strong>Anaconda Upload:</strong> ${params.UPLOAD_TO_ANACONDA}</li>
                             <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
@@ -305,13 +306,13 @@ EOF
                 if (params.TEST_RELEASE || env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)) {
                     prepareH2OVersionCheckScript(env.PROJECT_VERSION)
 
-                    if (params.UPLOAD_PYPI) {
+                    if (params.BUILD_PYPI) {
                         // create and upload PyPI package
-                        def UPLOAD_TO_PYPI_STAGE_NAME = 'Upload to PyPI'
-                        stage(UPLOAD_TO_PYPI_STAGE_NAME) {
+                        def BUILD_PYPI_STAGE_NAME = 'Build PyPI Package'
+                        stage(BUILD_PYPI_STAGE_NAME) {
                             try {
-                                pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                                pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                pipelineContext.getBuildSummary().addStageSummary(this, BUILD_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, BUILD_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                                 withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         sh """
@@ -323,18 +324,22 @@ EOF
 
                                             s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
 
-                                            if [ "\$TEST_RELEASE" = true ]; then
-                                                echo '****** WARNING! Upload to PyPI suppressed ******'
+                                            if [ "\$UPLOAD_TO_PYPI" = true ]; then
+                                                if [ "\$TEST_RELEASE" = true ]; then
+                                                    echo '****** WARNING! Upload to PyPI suppressed ******'
+                                                else
+                                                    echo '****** Upload to PyPI ******'
+                                                    twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                                fi
                                             else
-                                                echo '****** Upload to PyPI ******'
-                                                twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                                echo '****** WARNING! Upload PyPI Conda suppressed ******'
                                             fi
                                         """
                                     }
                                 }
-                                pipelineContext.getBuildSummary().markStageSuccessful(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_PYPI_STAGE_NAME)
                             } catch (Exception e) {
-                                pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                pipelineContext.getBuildSummary().markStageFailed(this, BUILD_PYPI_STAGE_NAME)
                                 throw e
                             }
                         }
@@ -629,9 +634,10 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
-            booleanParam(defaultValue: true, description: 'If set build conda packages and upload them to S3', name: 'BUILD_CONDA'),
-            booleanParam(defaultValue: false, description: 'If set and building rel- branch, publish to Anaconda.', name: 'UPLOAD_TO_ANACONDA'),
+            booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
+            booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
             booleanParam(defaultValue: true, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
         ])
     ]
@@ -677,8 +683,8 @@ Configuration:
     Test Release:           | ${params.TEST_RELEASE}
     S3 Bucket:              | ${env.S3_ROOT}
     Publish to Nexus:       | ${params.UPLOAD_NEXUS}
-    Publish to PyPI:        | ${params.UPLOAD_PYPI}
-    Publish to Conda:       | ${params.UPLOAD_CONDA}
+    Publish to PyPI:        | ${params.UPLOAD_TO_PYPI}
+    Publish to Conda:       | ${params.UPLOAD_TO_ANACONDA}
     Publish to Docker Hub   | ${params.BUILD_H2O_DOCKER}
 =======================================
 """
