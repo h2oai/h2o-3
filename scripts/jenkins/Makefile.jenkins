@@ -97,7 +97,7 @@ test-pyunit-xgboost-stress:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 5 --jvm.xmx 4g --testlist ../../tests/pyunitXGBoostStressTestList
 
 test-pyunit-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 6 --jvm.xmx 4g --testlist .lookup.txt
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 2 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-automl-smoke-noxgb: lookup-automl-smoke-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 1 --jvm.xmx 4g --jvm.opts '-Dsys.ai.h2o.ext.core.toggle.XGBoost=false' --testlist .lookup.txt
