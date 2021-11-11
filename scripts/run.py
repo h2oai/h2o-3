@@ -112,6 +112,18 @@ def is_javascript_test_file(file_name):
     return False
 
 
+def is_test_file(file_name):
+    return (is_rdemo(file_name)
+            or is_runit(file_name)
+            or is_rbooklet(file_name)
+            or is_ipython_notebook(file_name)
+            or is_pydemo(file_name)
+            or is_pyunit(file_name)
+            or is_pybooklet(file_name)
+            or is_gradle_build_python_test(file_name)
+            or is_javascript_test_file(file_name))
+
+
 '''
 function grab_java_message() will look through the java text output and try to extract the
 java messages from Java side.
@@ -1180,12 +1192,12 @@ class TestRunner(object):
             s = f.readline()
             while len(s) != 0:
                 stripped = s.strip()
-                if len(stripped) == 0:
+                if (len(stripped) == 0
+                    or stripped.startswith("#")
+                    or not is_test_file(stripped)):
                     s = f.readline()
                     continue
-                if stripped.startswith("#"):
-                    s = f.readline()
-                    continue
+                    
                 found_stripped = TestRunner.find_test(stripped)
                 self.add_test(found_stripped)
                 s = f.readline()
@@ -1210,12 +1222,12 @@ class TestRunner(object):
             s = f.readline()
             while len(s) != 0:
                 stripped = s.strip()
-                if len(stripped) == 0:
+                if (len(stripped) == 0 
+                        or stripped.startswith("#") 
+                        or not is_test_file(stripped)):
                     s = f.readline()
                     continue
-                if stripped.startswith("#"):
-                    s = f.readline()
-                    continue
+                    
                 self.exclude_list.append(stripped)
                 s = f.readline()
             f.close()
@@ -1263,26 +1275,7 @@ class TestRunner(object):
             # always do same order, for determinism when run on different machines
             for f in sorted(files):
                 # Figure out if the current file under consideration is a test.
-                is_test = False
-                if is_rdemo(f):
-                    is_test = True
-                if is_runit(f):
-                    is_test = True
-                if is_rbooklet(f):
-                    is_test = True
-                if is_ipython_notebook(f):
-                    is_test = True
-                if is_pydemo(f):
-                    is_test = True
-                if is_pyunit(f):
-                    is_test = True
-                if is_pybooklet(f):
-                    is_test = True
-                if is_gradle_build_python_test(f):
-                    is_test = True
-                if not is_test:
-                    continue
-
+                is_test = is_test_file(f)
                 is_small = False
                 is_medium = False
                 is_large = False
