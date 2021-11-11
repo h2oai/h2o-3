@@ -5,6 +5,7 @@ import h2o
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import can_use_pandas
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from .metrics_base import *  # NOQA
 from .model_base import ModelBase
 
