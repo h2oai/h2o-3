@@ -2,6 +2,38 @@
 
 ## H2O
 
+### Zizler (3.34.0.4) - 11/XX/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8403]](https://h2oai.atlassian.net/browse/PUBDEV-8403) - Fixed printing a DRF model when there are no out-of-bag samples.
+- [[PUBDEV-8400]](https://h2oai.atlassian.net/browse/PUBDEV-8400) - Fixed the `pyunit_PUBDEV_5008_5386_glm_ordinal_large.py` test from failing.
+- [[PUBDEV-8396]](https://h2oai.atlassian.net/browse/PUBDEV-8396) - Fixed AutoML XGBoost `learn_rate` search step.
+- [[PUBDEV-8394]](https://h2oai.atlassian.net/browse/PUBDEV-8394) - Ensured that jobs are rendered correctly in Flow and that AutoML internal jobs can be monitored without crashing on the backend.
+- [[PUBDEV-8390]](https://h2oai.atlassian.net/browse/PUBDEV-8390) - Fixed `gam_columns` failure in the `pyunit_PUBDEV_7185_GAM_mojo_ordinal.py` test. 
+- [[PUBDEV-8368]](https://h2oai.atlassian.net/browse/PUBDEV-8368) - Outlined that `tree_method=“approx”` is not supported with `col_sample_rate` or `col_sample_by_level` in XGBoost.
+- [[PUBDEV-8133]](https://h2oai.atlassian.net/browse/PUBDEV-8133) - Fixed multinomial classification in Rulefit.
+- [[PUBDEV-7907]](https://h2oai.atlassian.net/browse/PUBDEV-7907) - Enabled ability to provide metalearner parameters for NaiveBayes and XGBoost.
+
+#### Improvement
+
+- [[PUBDEV-8297]](https://h2oai.atlassian.net/browse/PUBDEV-8297) - Added a custom model ID parameter to MOJO importing/uploading methods through R/Python API and if a custom model ID is not specified, the default model ID is propagated as the models name from the MOJO path.
+- [[PUBDEV-8294]](https://h2oai.atlassian.net/browse/PUBDEV-8294) - Added warning for users who accidentally build a regression model when attempting building a binary classification model because they forgot to convert their target to categorical.
+- [[PUBDEV-8283]](https://h2oai.atlassian.net/browse/PUBDEV-8283) - Tuned `scale_pos_weight` parameter for XGBooost in AutoML for imbalanced data.
+
+#### Task
+
+- [[PUBDEV-8395]](https://h2oai.atlassian.net/browse/PUBDEV-8395) - Ensured H2O-3 builds with pip version >= 21.3.
+- [[PUBDEV-8346]](https://h2oai.atlassian.net/browse/PUBDEV-8346) - Added result frame to MAXRGLM.
+
+#### Docs
+
+- [[PUBDEV-8392]](https://h2oai.atlassian.net/browse/PUBDEV-8392) - Localized MOJO support list for all the H2O-3 algorithms.
+- [[PUBDEV-8370]](https://h2oai.atlassian.net/browse/PUBDEV-8370) - Corrected metric in the Performance and Prediction “Sensitive to Outliers” section of the User Guide.
+- [[PUBDEV-8278]](https://h2oai.atlassian.net/browse/PUBDEV-8278) - Clarified that `asnumeric()` converted ‘enum’ columns to underlying factor values and highlighted correct transformation approach.
+
 ### Zizler (3.34.0.3) - 10/7/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/3/index.html</a>
