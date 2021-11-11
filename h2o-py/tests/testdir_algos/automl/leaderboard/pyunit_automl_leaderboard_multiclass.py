@@ -20,6 +20,9 @@ def test_leaderboard_for_multiclass():
     aml = H2OAutoML(project_name="py_aml_lb_test_default_multiclass_sort",
                     seed=automl_seed,
                     max_models=8,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     exclude_algos=exclude_algos)
     aml.train(y=ds.target, training_frame=ds.train)
 
@@ -33,6 +36,9 @@ def test_leaderboard_for_multiclass_with_custom_sorting():
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_multiclass_sort",
                     seed=automl_seed,
                     max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     exclude_algos=exclude_algos,
                     sort_metric="logloss")
     aml.train(y=ds.target, training_frame=ds.train)

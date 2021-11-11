@@ -19,6 +19,9 @@ def test_leaderboard_for_regression():
     aml = H2OAutoML(project_name="py_aml_lb_test_default_regr_sort",
                     exclude_algos=exclude_algos,
                     max_models=8,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
@@ -32,6 +35,9 @@ def test_leaderboard_for_regression_with_custom_sorting():
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_sort",
                     exclude_algos=exclude_algos,
                     max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     seed=automl_seed,
                     sort_metric="RMSE")
     aml.train(y=ds.target, training_frame=ds.train)
@@ -46,6 +52,9 @@ def test_leaderboard_for_regression_with_custom_sorting_deviance():
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_deviance",
                     exclude_algos=exclude_algos,
                     max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     seed=automl_seed,
                     sort_metric="deviance")
     aml.train(y=ds.target, training_frame=ds.train)
@@ -60,6 +69,9 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting_regression",
                     exclude_algos=exclude_algos,
                     max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
@@ -78,6 +90,9 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric_regression():
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_custom_sorting",
                     exclude_algos=exclude_algos,
                     max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     seed=automl_seed,
                     sort_metric="rmse")
     aml.train(y=ds.target, training_frame=ds.train)

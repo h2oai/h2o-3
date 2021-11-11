@@ -29,8 +29,11 @@ def test_leaderboard_with_all_algos():
     print("Check leaderboard for all algorithms")
     ds = import_dataset('multiclass', split=False)
     aml = H2OAutoML(project_name="py_aml_lb_test_all_algos",
-                    seed=automl_seed,
-                    max_models=12)
+                    max_models=12,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
+                    seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
     check_leaderboard(aml, [], ["mean_per_class_error", "logloss", "rmse", "mse"], "mean_per_class_error")
@@ -41,9 +44,12 @@ def test_leaderboard_with_no_algos():
     ds = import_dataset('binary', split=False)
     exclude_algos = all_algos
     aml = H2OAutoML(project_name="py_aml_lb_test_no_algo",
-                    seed=automl_seed,
+                    exclude_algos=exclude_algos
                     max_runtime_secs=10,
-                    exclude_algos=exclude_algos)
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
+                    seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
     lb = aml.leaderboard

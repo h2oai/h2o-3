@@ -20,6 +20,9 @@ def test_leaderboard_for_binary():
     aml = H2OAutoML(project_name="py_aml_lb_test_default_binom_sort",
                     seed=automl_seed,
                     max_models=8,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     exclude_algos=exclude_algos)
     aml.train(y=ds.target, training_frame=ds.train)
 
@@ -29,10 +32,13 @@ def test_leaderboard_for_binary():
 def test_leaderboard_for_binary_with_custom_sorting():
     print("Check leaderboard for Binomial sort by logloss")
     ds = import_dataset('binary', split=False)
-    exclude_algos = ["GLM", "DeepLearning", "DRF"]
+    exclude_algos = ["GLM", "DRF"]
     aml = H2OAutoML(project_name="py_aml_lb_test_custom_binom_sort",
                     seed=automl_seed,
-                    max_models=10,
+                    max_models=8,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     exclude_algos=exclude_algos,
                     sort_metric="logloss")
     aml.train(y=ds.target, training_frame=ds.train)
@@ -46,7 +52,10 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binary():
     exclude_algos = ["DeepLearning", "GLM", "StackedEnsemble"]
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_no_sorting_binary",
                     seed=automl_seed,
-                    max_models=12,
+                    max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     exclude_algos=exclude_algos)
     aml.train(y=ds.target, training_frame=ds.train)
 
@@ -65,6 +74,9 @@ def test_AUTO_stopping_metric_with_auc_sorting_metric():
     aml = H2OAutoML(project_name="py_aml_lb_test_auto_stopping_metric_auc_sorting",
                     seed=automl_seed,
                     max_models=10,
+                    nfolds=3,
+                    stopping_rounds=1,
+                    stopping_tolerance=0.5,
                     exclude_algos=exclude_algos,
                     sort_metric='auc')
     aml.train(y=ds.target, training_frame=ds.train)
