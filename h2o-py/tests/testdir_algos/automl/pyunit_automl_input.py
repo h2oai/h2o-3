@@ -39,7 +39,7 @@ def test_no_x_train_and_validation_sets():
     print("AutoML run with x not provided with train and valid")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml2", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
-    aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds['valid'])
+    aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds.valid)
     assert aml.project_name == "py_aml2", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
@@ -58,7 +58,7 @@ def test_no_x_train_and_test_sets():
     print("AutoML run with x not provided with train and test")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml3", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
-    aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds['test'])
+    aml.train(y=ds.target, training_frame=ds.train, leaderboard_frame=ds.test)
     assert aml.project_name == "py_aml3", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
@@ -73,7 +73,7 @@ def test_no_x_train_and_validation_and_test_sets():
     print("AutoML run with x not provided with train, valid, and test")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml4", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234, nfolds=0)
-    aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds['valid'], leaderboard_frame=ds['test'])
+    aml.train(y=ds.target, training_frame=ds.train, validation_frame=ds.valid, leaderboard_frame=ds.test)
     assert aml.project_name == "py_aml4", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
@@ -92,7 +92,7 @@ def test_no_x_y_as_idx_train_and_validation_and_test_sets():
     print("AutoML run with x not provided and y as col idx with train, valid, and test")
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml5", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
-    aml.train(y=ds['target_idx'], training_frame=ds.train, validation_frame=ds['valid'], leaderboard_frame=ds['test'])
+    aml.train(y=ds.target_idx, training_frame=ds.train, validation_frame=ds.valid, leaderboard_frame=ds.test)
     assert aml.project_name == "py_aml5", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
     assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
@@ -109,9 +109,9 @@ def test_frames_can_be_passed_as_key():
 
     kw_args = [
         dict(training_frame=ds.train.frame_id),
-        dict(training_frame=ds.train, validation_frame=ds['valid'].frame_id),
-        dict(training_frame=ds.train, blending_frame=ds['valid'].frame_id),
-        dict(training_frame=ds.train, leaderboard_frame=ds['test'].frame_id),
+        dict(training_frame=ds.train, validation_frame=ds.valid.frame_id),
+        dict(training_frame=ds.train, blending_frame=ds.valid.frame_id),
+        dict(training_frame=ds.train, leaderboard_frame=ds.test.frame_id),
     ]
     
     for kwargs in kw_args:
