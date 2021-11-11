@@ -1,5 +1,5 @@
 from h2o.exceptions import H2OValueError
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import assert_is_type
 
@@ -29,9 +29,9 @@ class ScoringHistory:
     def _validate_timestep(self, timestep):
         return timestep
     
-    def scoring_history_plot(self, timestep, metric, server=False):
+    def scoring_history_plot(self, timestep, metric, server=False, save_plot_path=None):
         plt = get_matplotlib_pyplot(server)
-        if plt is None: return
+        if plt is None: return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
         
         scoring_history = self._get_scoring_history_to_plot()
         timestep = self._validate_timestep(timestep)
@@ -54,6 +54,7 @@ class ScoringHistory:
                 else (min(scoring_history[training_metric]), max(scoring_history[training_metric]))
         if ylim[0] == ylim[1]: ylim = (0, 1)
 
+        fig = plt.figure()
         if valid:  # Training and validation scoring history
             plt.xlabel(timestep)
             plt.ylabel(metric)
@@ -69,8 +70,11 @@ class ScoringHistory:
             plt.title("Training Scoring History")
             plt.ylim(ylim)
             plt.plot(scoring_history[timestep], scoring_history[training_metric])
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)    
         if not server:
             plt.show()
+        return decorate_plot_result(figure=fig)
 
 
 class ScoringHistoryTrees(ScoringHistory):
@@ -106,9 +110,9 @@ class ScoringHistoryGLM(ScoringHistory):
         # for others, validation is done in the plot function below
     )
     
-    def scoring_history_plot(self, timestep, metric, server=False):
+    def scoring_history_plot(self, timestep, metric, server=False, save_plot_path=None):
         plt = get_matplotlib_pyplot(server)
-        if plt is None: return
+        if plt is None: return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
         
         scoring_history = self.scoring_history()
 
@@ -134,11 +138,14 @@ class ScoringHistoryGLM(ScoringHistory):
         elif timestep not in allowed_timesteps:
             raise H2OValueError("for {}, timestep must be one of: {}".format(self.algo.upper(),
                                                                              ", ".join(allowed_timesteps)))
-
+        fig = plt.figure()
         plt.xlabel(timestep)
         plt.ylabel(metric)
         plt.title("Validation Scoring History")
         style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
         plt.plot(scoring_history[timestep], scoring_history[metric], style)
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
         if not server:
             plt.show()
+        return decorate_plot_result(figure=fig)

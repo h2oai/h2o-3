@@ -23,7 +23,7 @@ def glm_pr_plot_test():
     # build model with CV but no validation dataset
     cv_model = glm(family='binomial',alpha=[0.1,0.5,0.9], nfolds = 3, fold_assignment="modulo")
     cv_model.train(training_frame=training_data,x=myX,y=myY, validation_frame=test_data)
-    fn = "pr_plot_train_valid_cx"
+    fn = "pr_plot_train_valid_cx.png"
     perf = cv_model.model_performance(xval=True)
     perf.plot(type="pr", server=True, save_to_file=fn)
     if os.path.isfile(fn):
