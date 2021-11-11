@@ -19,7 +19,13 @@ def test_smoke_automl():
     nmodels = 20  # enough models to run every step (all base models, all grids, all SEs…)
     
     ds = import_dataset()
-    aml = H2OAutoML(max_models=nmodels, project_name="py_aml_smoke", seed=42, verbosity='debug')
+    aml = H2OAutoML(project_name="py_aml_smoke",
+                    max_models=nmodels,
+                    nfolds=3,
+                    stopping_tolerance=0.5,
+                    stopping_rounds=2,
+                    seed=42,
+                    verbosity='debug')
     model = aml.train(y=ds.target, training_frame=ds.train)
     
     assert isinstance(model, ModelBase)
