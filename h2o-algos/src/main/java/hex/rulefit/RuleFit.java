@@ -281,7 +281,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
                 // TODO: add here coverage_count and coverage percent
                // here consolidateRules
-                model._output._rule_importance = convertRulesToTable(consolidateRules( getRules(glmModel.coefficients(), ruleEnsemble, model._output.classNames())), isClassifier() && nclasses() > 2);
+                model._output._rule_importance = convertRulesToTable(consolidateRules(getRules(glmModel.coefficients(), ruleEnsemble, model._output.classNames())), isClassifier() && nclasses() > 2);
                 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 

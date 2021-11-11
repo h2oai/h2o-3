@@ -23,7 +23,9 @@ public class RuleFitUtils {
 
     static Rule[] consolidateRules(Rule[] rules) {
         for (int i = 0; i < rules.length; i++) {
-            rules[i] = consolidateRule(rules[i]);
+            if (rules[i].conditions != null) { // linear rules doesn't need to consolidate
+                rules[i] = consolidateRule(rules[i]);
+            }
         }
         return rules;
     }
