@@ -340,7 +340,7 @@ EOF
                                 pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_PYPI_STAGE_NAME)
                             } catch (Exception e) {
                                 pipelineContext.getBuildSummary().markStageFailed(this, BUILD_PYPI_STAGE_NAME)
-                                throw e
+                                e.printStackTrace()
                             }
                         }
                     }
@@ -396,7 +396,7 @@ EOF
                                         pipelineContext.getBuildSummary().markStageSuccessful(this, uploadToCondaStageName)
                                     } catch (Exception e) {
                                         pipelineContext.getBuildSummary().markStageFailed(this, uploadToCondaStageName)
-                                        throw e
+                                        e.printStackTrace()
                                     }
                                 }
                             }
@@ -427,7 +427,7 @@ EOF
                                     pipelineContext.getBuildSummary().markStageSuccessful(this, checkCondaOfflineStageName)
                                 } catch (Exception e) {
                                     pipelineContext.getBuildSummary().markStageFailed(this, checkCondaOfflineStageName)
-                                    throw e
+                                    e.printStackTrace()
                                 }
                             }
                         }
@@ -457,7 +457,7 @@ EOF
                                         pipelineContext.getBuildSummary().markStageSuccessful(this, checkCondaStageName)
                                     } catch (Exception e) {
                                         pipelineContext.getBuildSummary().markStageFailed(this, checkCondaStageName)
-                                        throw e
+                                        e.printStackTrace()
                                     }
                                 }
                             }
@@ -525,7 +525,7 @@ EOF
                             pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
                         } catch (Exception e) {
                             pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
-                            throw e
+                            e.printStackTrace()
                         }
                     }
     
@@ -587,7 +587,7 @@ EOF
                                 pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_H2O_DOCKER_STAGE_NAME)
                             } catch (Exception e) {
                                 pipelineContext.getBuildSummary().markStageFailed(this, BUILD_H2O_DOCKER_STAGE_NAME)
-                                throw e
+                                e.printStackTrace()
                             }
                         }
                     }
