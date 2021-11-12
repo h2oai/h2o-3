@@ -2014,12 +2014,12 @@ The accuracy of the baseline is evaluated when no model is used. For instance, i
 
 To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. 
 
-**An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100000 customers and predict the results of contacting only the top 10000 customers, the top 20000 customers, and so on. You do this by:
+**An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100,000 customers and predict the results of contacting only the top 10,000 customers, the top 20,000 customers, and so on. You do this by:
 
 - taking the dataset, sending it through your model, and obtaining a list of predicted output which is the probability of positive response;
 - sorting your dataset according to the output of your model which is the probability of positive response (this probability can also be called the **score**) from highest to lowest;
     
-    - In this case, the first bin contains the top 10000 customers with the highest response probability, the second bin contains the next 10000 customers with the highest response probability, and so on.
+    - In this case, the first bin contains the top 10,000 customers with the highest response probability, the second bin contains the next 100,00 customers with the highest response probability, and so on.
 
 **Cumulative gains and lift charts** are a graphical representation of the advantage of using a predictive model to choose which customers to target/contact. On the cumulative gains chart, the y-axis shows the percentage of positive responses out of a total possible positive responses. The x-axis shows the percentage of customers contacted. The lift chart shows how much more likely you are to receive responses than if you contacted a random sample of customers.
 
@@ -2039,20 +2039,38 @@ Example:
                           gainslift_bins = 20)
 
          # Plot the Gains/Lift chart:
-         gain_table = model@model$training_metrics@metrics$gains_lift_table
-         plot(gain_table$cumulative_data_fraction,
-              gain_table$cumulative_capture_rate,'l')
+         gain_table <- model@model$training_metrics@metrics$gains_lift_table
+         plot(gl$cumulative_data_fraction,
+              gl$cumulative_capture_rate,'l',
+              ylim = c(0,2.0), col = "darkgreen",
+              xlab = "cumulative_data_fraction"
+              ylab = "cumulative_capture_rate, cumulative_lift"
+              main = "Gains/Lift")
+         lines(gl$cumulative_data_fraction,
+               gl$cumulative_lift)
+
+    .. code-tab:: python
+
+        # Import the airlines dataset:
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testing/airlines_train.csv")
+
+        # Build and train the model:
+        model_gbm = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model = model_gbm.train(x=["Origin","Distance"], 
+                                y="IsDepDelayed", 
+                                training_frame=airlines)
+
 
 .. figure:: images/gainslift_plot.png
     :alt: Gains/Lift Plot
-    :scale: 30%
+    :scale: 40%
 
 In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
 
 - **Cumulative data fractions**: fraction of data used to calculate gain and lift at
 - **Lower threshold**: the lowest score output of the dataset in the data fraction bin
 - **Response rate**: ratio of the number of the positive classes and the number of data in the current data fraction
-- **Cumulative response rate**: for the first bin, it is the number of positive response over 10000 (assume each bin contains 100000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30000
+- **Cumulative response rate**: for the first bin, it is the number of positive response over 10,000 (assume each bin contains 100,000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20,000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30,000
 - **Average response rate**: ratio of the total number of positive classes and the total number of data rows in the dataset
 - **Lift**: ratio of response rate of the current data fraction and average response rate
 - **Cumulative lift**: ratio of cumulative response rate and average response rate
