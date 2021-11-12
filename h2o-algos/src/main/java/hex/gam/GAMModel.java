@@ -70,7 +70,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public void initActualParamValuesAfterGlmCreation(){
     EffectiveParametersUtils.initFoldAssignment(_parms);
   }
-
+  
   public TwoDimTable genCoefficientMagTableMultinomial(String[] colHeaders, double[][] coefficients,
                                                        String[] coefficientNames, String tableHeader) {
     String[] colTypes = new String[]{ "double", "string"};
@@ -406,6 +406,10 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         case ordinal: return ModelCategory.Ordinal;
         default: return ModelCategory.Regression;
       }
+    }
+
+    public void copyMetrics(ModelMetrics gamMetrics, ModelMetrics glmMetrics, Family family) {
+      
     }
   }
 

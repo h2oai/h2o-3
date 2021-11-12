@@ -678,13 +678,13 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
         Scope.track_generic(glmModel);
         _job.update(0, "Building out GAM model...");
-        fillOutGAMModel(glmModel, model); // build up GAM model by copying over results in glmModel
         model.update(_job);
+        fillOutGAMModel(glmModel, model); // build up GAM model by copying over results in glmModel
         // build GAM Model Metrics
         _job.update(0, "Scoring training frame");
-        scoreGenModelMetrics(model, train(), true); // score training dataset and generate model metrics
+        scoreGenModelMetrics(model, glmModel,train(), true); // score training dataset and generate model metrics
         if (valid() != null) {
-          scoreGenModelMetrics(model, valid(), false); // score validation dataset and generate model metrics
+          scoreGenModelMetrics(model, glmModel, valid(), false); // score validation dataset and generate model metrics
         }
       } catch(Gram.NonSPDMatrixException exception) {
         throw new Gram.NonSPDMatrixException("Consider enable lambda_search, decrease scale parameter value for TP " +
@@ -733,17 +733,21 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
      * @param scoreFrame
      * @param forTraining true for training dataset and false for validation dataset
      */
-    private void scoreGenModelMetrics(GAMModel model, Frame scoreFrame, boolean forTraining) {
+    private void scoreGenModelMetrics(GAMModel model, GLMModel glmModel, Frame scoreFrame, boolean forTraining) {
       Frame scoringTrain = new Frame(scoreFrame);
       model.adaptTestForTrain(scoringTrain, true, true);
       Frame scoredResult = model.score(scoringTrain);
       scoredResult.delete();
+      ModelMetrics glmMetrics = forTraining ? glmModel._output._training_metrics : glmModel._output._validation_metrics;
       ModelMetrics mtrain = ModelMetrics.getFromDKV(model, scoringTrain);
       if (mtrain!=null) {
-        if (forTraining)
+        if (forTraining) {
           model._output._training_metrics = mtrain;
-        else 
+          model._output.copyMetrics(mtrain, glmMetrics, _parms._family);
+        } else {
           model._output._validation_metrics = mtrain;
+          model._output.copyMetrics(mtrain, glmMetrics, _parms._family);
+        }
         Log.info("GAM[dest="+dest()+"]"+mtrain.toString());
       } else {
         Log.info("Model metrics is empty!");
