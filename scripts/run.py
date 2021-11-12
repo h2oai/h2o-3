@@ -1188,20 +1188,16 @@ class TestRunner(object):
         :return none
         """
         try:
-            f = open(test_list_file, "r")
-            s = f.readline()
-            while len(s) != 0:
-                stripped = s.strip()
-                if (len(stripped) == 0
-                    or stripped.startswith("#")
-                    or not is_test_file(stripped)):
-                    s = f.readline()
-                    continue
-                    
-                found_stripped = TestRunner.find_test(stripped)
-                self.add_test(found_stripped)
-                s = f.readline()
-            f.close()
+            with open(test_list_file) as f:
+                for line in f:
+                    stripped = line.strip()
+                    if (len(stripped) == 0
+                        or stripped.startswith("#")
+                        or not is_test_file(stripped)):
+                        continue
+                        
+                    found_stripped = TestRunner.find_test(stripped)
+                    self.add_test(found_stripped)
         except IOError as e:
             print("")
             print("ERROR: Failure reading test list: " + test_list_file)
@@ -1218,19 +1214,15 @@ class TestRunner(object):
         :return none
         """
         try:
-            f = open(exclude_list_file, "r")
-            s = f.readline()
-            while len(s) != 0:
-                stripped = s.strip()
-                if (len(stripped) == 0 
-                        or stripped.startswith("#") 
-                        or not is_test_file(stripped)):
-                    s = f.readline()
-                    continue
-                    
-                self.exclude_list.append(stripped)
-                s = f.readline()
-            f.close()
+            with open(exclude_list_file) as f:
+                for line in f:
+                    stripped = s.strip()
+                    if (len(stripped) == 0 
+                            or stripped.startswith("#") 
+                            or not is_test_file(stripped)):
+                        continue
+                        
+                    self.exclude_list.append(stripped)
         except IOError as e:
             print("")
             print("ERROR: Failure reading exclude list: " + exclude_list_file)
@@ -1275,7 +1267,9 @@ class TestRunner(object):
             # always do same order, for determinism when run on different machines
             for f in sorted(files):
                 # Figure out if the current file under consideration is a test.
-                is_test = is_test_file(f)
+                if not is_test_file(f):
+                    continue
+                    
                 is_small = False
                 is_medium = False
                 is_large = False
