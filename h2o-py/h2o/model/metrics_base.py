@@ -1389,7 +1389,7 @@ class H2OBinomialModelMetrics(MetricsBase):
                 )
         return metrics
 
-    def plot(self, type="roc", server=False, save_to_file=None, plot=True):
+    def plot(self, type="roc", server=False, save_to_file=None, plot=True, **kwargs):
         """
         Produce the desired metric plot.
 
@@ -1419,6 +1419,9 @@ class H2OBinomialModelMetrics(MetricsBase):
         
         """
 
+        if save_to_file is None:  # if not supplied by 'real name'
+            save_to_file = kwargs.get('save_plot_path')
+            
         if type == "roc":
             return self._plot_roc(server, save_to_file, plot)
         elif type == "pr":

@@ -1066,7 +1066,7 @@ class ModelBase(h2o_meta(Keyed)):
 
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
-                     col_pairs_2dpdp=None, save_to_file=None, row_index=None, targets=None):
+                     col_pairs_2dpdp=None, save_to_file=None, row_index=None, targets=None, **kwargs):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -1088,6 +1088,8 @@ class ModelBase(h2o_meta(Keyed)):
         :param targets: Target classes for multiclass model.
         :returns: Plot and list of calculated mean response tables for each feature requested.
         """
+        if save_to_file is None:  # if not supplied by 'real name'
+            save_to_file = kwargs.get('save_plot_path')
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0
         num_2dpdp = 0
