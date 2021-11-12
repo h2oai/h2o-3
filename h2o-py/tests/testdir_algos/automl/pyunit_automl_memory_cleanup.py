@@ -121,7 +121,7 @@ def test_suite_clean_cv_predictions():
         models = get_partitioned_model_names(aml.leaderboard)
         keys = list_keys_in_memory()
         preds = len(keys['cv_predictions'])
-        expected = len(models) * (nfolds + 1)  # +1 for holdout prediction
+        expected = len(models.all) * (nfolds + 1)  # +1 for holdout prediction
         assert preds == expected, "missing CV predictions in memory, got {actual}, expected {expected}".format(actual=preds, expected=expected)
         for m in models.base:
             assert_cv_predictions_on_model(m)

@@ -44,7 +44,7 @@ def test_leaderboard_with_no_algos():
     ds = import_dataset('binary', split=False)
     exclude_algos = all_algos
     aml = H2OAutoML(project_name="py_aml_lb_test_no_algo",
-                    exclude_algos=exclude_algos
+                    exclude_algos=exclude_algos,
                     max_runtime_secs=10,
                     nfolds=2,
                     stopping_rounds=1,
