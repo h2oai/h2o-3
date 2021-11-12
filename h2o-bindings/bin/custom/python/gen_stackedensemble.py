@@ -132,8 +132,6 @@ def class_extensions():
                                    "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
         return self
 
-    def cross_validation_metrics_summary(self):
-        return self.metalearner().cross_validation_metrics_summary()
 
 extensions = dict(
     __imports__="""
