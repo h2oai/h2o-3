@@ -1216,7 +1216,7 @@ class TestRunner(object):
         try:
             with open(exclude_list_file) as f:
                 for line in f:
-                    stripped = s.strip()
+                    stripped = line.strip()
                     if (len(stripped) == 0 
                             or stripped.startswith("#") 
                             or not is_test_file(stripped)):
