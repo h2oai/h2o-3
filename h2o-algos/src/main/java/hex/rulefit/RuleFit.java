@@ -78,6 +78,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     public void init(boolean expensive) {
         super.init(expensive);
         if (expensive) {
+            _parms.validate(this);
             if (_parms._fold_column != null) {
                 _train.remove(_parms._fold_column);
             }
