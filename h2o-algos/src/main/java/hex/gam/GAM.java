@@ -739,18 +739,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       Frame scoredResult = model.score(scoringTrain);
       scoredResult.delete();
       ModelMetrics glmMetrics = forTraining ? glmModel._output._training_metrics : glmModel._output._validation_metrics;
-      ModelMetrics mtrain = ModelMetrics.getFromDKV(model, scoringTrain);
-      if (mtrain!=null) {
-        if (forTraining) {
-          model._output._training_metrics = mtrain;
-          model._output.copyMetrics(mtrain, glmMetrics, _parms._family);
-        } else {
-          model._output._validation_metrics = mtrain;
-          model._output.copyMetrics(mtrain, glmMetrics, _parms._family);
-        }
-        Log.info("GAM[dest="+dest()+"]"+mtrain.toString());
+      if (forTraining) {
+        model._output.copyMetrics(model, scoringTrain, forTraining, glmMetrics);
+        Log.info("GAM[dest=" + dest() + "]" + model._output._training_metrics.toString());
       } else {
-        Log.info("Model metrics is empty!");
+        model._output.copyMetrics(model, scoringTrain, forTraining, glmMetrics);
+        Log.info("GAM[dest=" + dest() + "]" + model._output._validation_metrics.toString());
       }
     }
 

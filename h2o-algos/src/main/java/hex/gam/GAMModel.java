@@ -22,6 +22,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
+import static hex.glm.GLMModel.GLMParameters.Family.tweedie;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
@@ -408,8 +409,12 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       }
     }
 
-    public void copyMetrics(ModelMetrics gamMetrics, ModelMetrics glmMetrics, Family family) {
-      
+    public void copyMetrics(GAMModel gamModel, Frame train, boolean forTrain, ModelMetrics glmMetrics) {
+      ModelMetrics tmpMetrics = glmMetrics.deepCloneWithDifferentModelAndFrame(gamModel, train);
+      if (forTrain)
+        gamModel._output._training_metrics = tmpMetrics;
+      else
+        gamModel._output._validation_metrics = tmpMetrics;
     }
   }
 
