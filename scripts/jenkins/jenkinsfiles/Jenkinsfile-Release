@@ -47,7 +47,7 @@ try {
                     setReleaseJobProperties(pipelineContext)
 
                     pipelineContext.getBuildSummary().addDetailsSection(this)
-                    final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo 'version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
+                    final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo '^version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
                     String releaseContent = """
                         <ul>
                             <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
@@ -135,7 +135,7 @@ try {
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
                                 ./gradlew build -x test
-                                ./gradlew buildH2oDevDist
+                                ./gradlew -PvalidateRelease buildH2oDevDist
                             """
                             }
                         }
