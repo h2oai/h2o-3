@@ -11,8 +11,7 @@ import water.parser.BufferedString;
 import water.parser.parquet.ext.DecimalUtils;
 import water.util.StringUtils;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.Instant;
 
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
@@ -327,6 +326,8 @@ class ChunkConverter extends GroupConverter {
   }
 
   private static class DateConverter extends PrimitiveConverter {
+    private final static long EPOCH_MILLIS = Instant.EPOCH.toEpochMilli();
+    private final static long MILLIS_IN_A_DAY = 24 * 60 * 60 * 1000;
 
     private final int _colIdx;
     private final WriterDelegate _writer;
@@ -337,10 +338,9 @@ class ChunkConverter extends GroupConverter {
     }
 
     @Override
-    public void addInt(int value) {
-      LocalDate date = LocalDate.EPOCH.plusDays(value);
-      final long timestampMillis = date.atStartOfDay(ZoneId.of("GMT")).toInstant().toEpochMilli();
-      _writer.addNumCol(_colIdx, timestampMillis);
+    public void addInt(int numberOfDaysFromUnixEpoch) {
+      final long parquetDateEpochMillis = EPOCH_MILLIS + numberOfDaysFromUnixEpoch * MILLIS_IN_A_DAY;
+      _writer.addNumCol(_colIdx, parquetDateEpochMillis);
     }
   }
 
