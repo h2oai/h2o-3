@@ -271,7 +271,7 @@ public class ParquetParser extends Parser {
 
   private static byte convertType(OriginalType ot, PrimitiveType pt) {
     // handle special cases (where we cannot guess based on the physical primitive type)
-    if (OriginalType.TIMESTAMP_MILLIS.equals(ot)) {
+    if (OriginalType.TIMESTAMP_MILLIS.equals(ot) || OriginalType.DATE.equals(ot)) {
       return Vec.T_TIME;
     } else if (OriginalType.DECIMAL.equals(ot)){
       return Vec.T_NUM;

@@ -11,6 +11,9 @@ import water.parser.BufferedString;
 import water.parser.parquet.ext.DecimalUtils;
 import water.util.StringUtils;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
  *
@@ -133,6 +136,8 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           return new TimestampConverter(colIdx, _writer);
+        } else if (OriginalType.DATE.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT32)){
+            return new DateConverter(colIdx, _writer);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
           return new StringConverter(_writer, colIdx, dictSupport);
@@ -317,6 +322,24 @@ class ChunkConverter extends GroupConverter {
     public void addBinary(Binary value) {
       final long timestampMillis = ParquetInt96TimestampConverter.getTimestampMillis(value);
 
+      _writer.addNumCol(_colIdx, timestampMillis);
+    }
+  }
+
+  private static class DateConverter extends PrimitiveConverter {
+
+    private final int _colIdx;
+    private final WriterDelegate _writer;
+
+    DateConverter(int _colIdx, WriterDelegate _writer) {
+        this._colIdx = _colIdx;
+        this._writer = _writer;
+    }
+
+    @Override
+    public void addInt(int value) {
+      LocalDate date = LocalDate.EPOCH.plusDays(value);
+      final long timestampMillis = date.atStartOfDay(ZoneId.of("GMT")).toInstant().toEpochMilli();
       _writer.addNumCol(_colIdx, timestampMillis);
     }
   }
