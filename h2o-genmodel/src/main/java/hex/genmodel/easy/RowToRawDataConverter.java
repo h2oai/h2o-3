@@ -59,6 +59,30 @@ public class RowToRawDataConverter implements Serializable {
     return rawData;
   }
 
+  /**
+   *
+   * @param data instance of RowData we want to get prediction for
+   * @param columnName name of a column for which we are extracting value for                
+   * @return value for the specific column. 
+   * @throws PredictException Note: name of the exception feels like out of scope of the class with name `RowToRawDataConverter` 
+   * but this conversion is only needed to make it possible to produce predictions so it makes sense
+   */
+  public double convertValue(RowData data, String columnName) throws PredictException {
+    Integer index = _modelColumnNameToIndexMap.get(columnName);
+
+    // Skip column names that are not known.
+    if (index == null) {
+      return Double.NaN;
+    }
+
+    Object o = data.get(columnName);
+    double[] outputRawData = new double[1];
+    outputRawData[0] = Double.NaN;
+    convertValue(columnName, o, _domainMap.get(index), 0, outputRawData);
+
+    return outputRawData[0];
+  }
+
   protected boolean convertValue(String columnName, Object o, CategoricalEncoder catEncoder,
                                  int targetIndex, double[] rawData) throws PredictException {
     if (catEncoder == null) {
