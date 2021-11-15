@@ -269,6 +269,39 @@ def test_hist():
 
     h = df[0].hist(breaks=[0,0.5,2,3], plot=True)
     assert h.nrow == 4
+    
+def test_varimp_heatmap_model_correlation_heatmap():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    # get at most one column from each type
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+    
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+    
+    models = [h2o.get_model(m[0]) for m in
+              aml.leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
+    
+    # Test named models as well
+    gbm = H2OGradientBoostingEstimator(model_id="my_awesome_model")
+    gbm.train(y=y, training_frame=train)
+    models += [gbm]
+
+    with TemporaryDirectory() as tmpdir:
+        path1="{}/plot1.png".format(tmpdir)
+        path2="{}/plot2.png".format(tmpdir)
+        test_plot_result_saving( h2o.varimp_heatmap(models), path2,
+                                 h2o.varimp_heatmap(models, save_plot_path=path1), path1)
+        test_plot_result_saving(h2o.model_correlation_heatmap(models, train), path2,
+                                h2o.model_correlation_heatmap(models, train, save_plot_path=path1), path1)
+    h2o.varimp_heatmap(models)
 
 pyunit_utils.run_tests([
     binomial_plot_test,
@@ -280,5 +313,6 @@ pyunit_utils.run_tests([
     partial_plots_multinomial,
     roc_pr_curve,
     screeplot,
-    test_hist
+    test_hist,
+    test_varimp_heatmap_model_correlation_heatmap
 ])

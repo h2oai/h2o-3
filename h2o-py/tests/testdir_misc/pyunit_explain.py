@@ -182,11 +182,11 @@ def test_explanation_list_of_models_regression():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
@@ -352,11 +352,11 @@ def test_explanation_list_of_models_binomial_classification():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
@@ -502,11 +502,11 @@ def test_explanation_list_of_models_multinomial_classification():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences

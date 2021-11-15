@@ -1584,7 +1584,8 @@ def varimp_heatmap(
         top_n=None,  # type: Option[int]
         figsize=(16, 9),  # type: Tuple[float]
         cluster=True,  # type: bool
-        colormap="RdYlBu_r"  # type: str
+        colormap="RdYlBu_r",  # type: str
+        save_plot_path=None # type: str
 ):
     # type: (...) -> plt.Figure
     """
@@ -1603,7 +1604,8 @@ def varimp_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -1644,7 +1646,9 @@ def varimp_heatmap(
     plt.title("Variable Importance Heatmap")
     plt.grid(False)
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def varimp(
@@ -1697,7 +1701,8 @@ def model_correlation_heatmap(
         cluster_models=True,  # type: bool
         triangular=True,  # type: bool
         figsize=(13, 13),  # type: Tuple[float]
-        colormap="RdYlBu_r"  # type: str
+        colormap="RdYlBu_r",  # type: str
+        save_plot_path=None # type: str
 ):
     # type: (...) -> plt.Figure
     """
@@ -1714,7 +1719,8 @@ def model_correlation_heatmap(
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
     >>> import h2o
@@ -1763,7 +1769,9 @@ def model_correlation_heatmap(
         if _interpretable(t.get_text()):
             t.set_color("red")
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def _check_deprecated_top_n_argument(models, top_n):
