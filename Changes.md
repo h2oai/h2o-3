@@ -8,6 +8,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index
 
 #### Bug
 
+- [[PUBDEV-8407]](https://h2oai.atlassian.net/browse/PUBDEV-8407) -  Fixed broken `weights_column` in GAM.
 - [[PUBDEV-8403]](https://h2oai.atlassian.net/browse/PUBDEV-8403) - Fixed printing a DRF model when there are no out-of-bag samples.
 - [[PUBDEV-8400]](https://h2oai.atlassian.net/browse/PUBDEV-8400) - Fixed the `pyunit_PUBDEV_5008_5386_glm_ordinal_large.py` test from failing.
 - [[PUBDEV-8396]](https://h2oai.atlassian.net/browse/PUBDEV-8396) - Fixed AutoML XGBoost `learn_rate` search step.
