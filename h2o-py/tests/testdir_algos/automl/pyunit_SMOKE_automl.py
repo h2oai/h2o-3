@@ -16,7 +16,7 @@ Some smoke tests that should be executed on all environments/setup (for example 
 
 
 def test_smoke_automl():
-    nmodels = 20  # enough models to run every step (all base models, all grids, all SEs…)
+    nmodels = 20  # enough models to run every step (all base models, all grids, all SEs...)
     
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_aml_smoke",
