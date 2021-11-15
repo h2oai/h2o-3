@@ -428,7 +428,7 @@ def test_suite_remove_automl():
                         nfolds=0,
                         max_models=max_models,
                         seed=1)
-        aml.train(y=ds.target, training_frame=ds.train, blending_frame=ds.blend)
+        aml.train(y=ds.target, training_frame=ds.train, blending_frame=ds.valid)
 
         keys = list_keys_in_memory()
         # manually remove the first item for each category to verify robustness of global automl deletion
