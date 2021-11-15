@@ -2040,19 +2040,23 @@ Example:
 
          # Plot the Gains/Lift chart:
          gain_table <- model@model$training_metrics@metrics$gains_lift_table
-         plot(gl$cumulative_data_fraction,
-              gl$cumulative_capture_rate,'l',
-              ylim = c(0,2.0), col = "darkgreen",
-              xlab = "cumulative_data_fraction"
-              ylab = "cumulative_capture_rate, cumulative_lift"
+         plot(gain_table$cumulative_data_fraction,
+              gain_table$cumulative_capture_rate,'l', 
+              ylim = c(0,1.5), col = "dodgerblue3",
+              xlab = "cumulative data fraction",
+              ylab = "cumulative capture rate, cumulative lift",
               main = "Gains/Lift")
-         lines(gl$cumulative_data_fraction,
-               gl$cumulative_lift)
+        lines(gain_table$cumulative_data_fraction,
+              gain_table$cumulative_lift, col = "orange")
 
     .. code-tab:: python
 
+        from h2o.estimators import H2OGradientBoostingEstimator
+        from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+        from matplotlib.collections import PolyCollection
+
         # Import the airlines dataset:
-        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testing/airlines_train.csv")
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
 
         # Build and train the model:
         model_gbm = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
@@ -2060,10 +2064,30 @@ Example:
                                 y="IsDepDelayed", 
                                 training_frame=airlines)
 
+        # Plot the Gains/Lift chart:
+        gl = model.gains_lift()
+
+        X = gl['cumulative_data_fraction']
+        Y = gl['cumulative_capture_rate']
+        YC = gl['cumulative_lift']
+
+        plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
+        plt.figure(figsize=(10,10))
+        plt.grid(True)
+        plt.plot(X, Y, zorder=10, label='cumulative capture rate')
+        plt.plot(X, YC, zorder=10, label='cumulative lift')
+        plt.legend(loc=4, fancybox=True, framealpha=0.5)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1.5)
+        plt.xlabel('cumulative data fraction')
+        plt.ylabel('cumulative capture rate, cumulative lift')
+        plt.title('Gains/Lift')
+        fig = plt.gcf()
+        plt.show()
 
 .. figure:: images/gainslift_plot.png
     :alt: Gains/Lift Plot
-    :scale: 40%
+    :scale: 30%
 
 In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
 
