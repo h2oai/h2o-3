@@ -2066,7 +2066,6 @@ Example:
 
         # Plot the Gains/Lift chart:
         gl = model.gains_lift()
-
         X = gl['cumulative_data_fraction']
         Y = gl['cumulative_capture_rate']
         YC = gl['cumulative_lift']
