@@ -407,6 +407,14 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         default: return ModelCategory.Regression;
       }
     }
+
+    public void copyMetrics(GAMModel gamModel, Frame train, boolean forTrain, ModelMetrics glmMetrics) {
+      ModelMetrics tmpMetrics = glmMetrics.deepCloneWithDifferentModelAndFrame(gamModel, train);
+      if (forTrain)
+        gamModel._output._training_metrics = tmpMetrics;
+      else
+        gamModel._output._validation_metrics = tmpMetrics;
+    }
   }
 
   /**
