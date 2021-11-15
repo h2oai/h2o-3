@@ -4,20 +4,29 @@ import os
 import sys
 
 sys.path.insert(1, os.path.join("..","..",".."))
-import h2o
-from tests import pyunit_utils as pu
 from h2o.automl import H2OAutoML, get_leaderboard
 from h2o.model import ModelBase
+from tests import pyunit_utils as pu
+
+from _automl_utils import import_dataset
+
+"""
+Some smoke tests that should be executed on all environments/setup (for example in a setup where XGBoost is not available).
+"""
 
 
 def test_smoke_automl():
-    fr = h2o.import_file(path=pu.locate("smalldata/prostate/prostate.csv"))
-    target = "CAPSULE"
-    fr[target] = fr[target].asfactor()
-    nmodels = 20  # enough models to run every step (all base models, all grids, all SEs…)
+    nmodels = 20  # enough models to run every step (all base models, all grids, all SEs...)
     
-    aml = H2OAutoML(max_models=nmodels, project_name="py_aml_smoke", seed=42, verbosity='debug')
-    model = aml.train(y=target, training_frame=fr)
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_smoke",
+                    max_models=nmodels,
+                    nfolds=3,
+                    stopping_tolerance=0.5,
+                    stopping_rounds=2,
+                    seed=42,
+                    verbosity='debug')
+    model = aml.train(y=ds.target, training_frame=ds.train)
     
     assert isinstance(model, ModelBase)
     lb = get_leaderboard(aml, ['algos', 'provider', 'step', 'group'])
