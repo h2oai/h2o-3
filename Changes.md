@@ -31,6 +31,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index
 
 #### Task
 
+- [[PUBDEV-8410]](https://h2oai.atlassian.net/browse/PUBDEV-8410) - Added GAM training/validation metrics.
 - [[PUBDEV-8395]](https://h2oai.atlassian.net/browse/PUBDEV-8395) - Ensured H2O-3 builds with pip version >= 21.3.
 - [[PUBDEV-8346]](https://h2oai.atlassian.net/browse/PUBDEV-8346) - Added result frame to MAXRGLM.
 
