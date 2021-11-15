@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zizler (3.34.0.4) - 11/XX/2021
+### Zizler (3.34.0.4) - 11/15/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html</a>
 
@@ -15,6 +15,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index
 - [[PUBDEV-8390]](https://h2oai.atlassian.net/browse/PUBDEV-8390) - Fixed `gam_columns` failure in the `pyunit_PUBDEV_7185_GAM_mojo_ordinal.py` test. 
 - [[PUBDEV-8368]](https://h2oai.atlassian.net/browse/PUBDEV-8368) - Outlined that `tree_method=“approx”` is not supported with `col_sample_rate` or `col_sample_by_level` in XGBoost.
 - [[PUBDEV-8133]](https://h2oai.atlassian.net/browse/PUBDEV-8133) - Fixed multinomial classification in Rulefit.
+- [[PUBDEV-7973]](https://h2oai.atlassian.net/browse/PUBDEV-7973) - Fixed inconsistencies in GLM `beta_constraints`.
 - [[PUBDEV-7907]](https://h2oai.atlassian.net/browse/PUBDEV-7907) - Enabled ability to provide metalearner parameters for NaiveBayes and XGBoost.
 
 #### Improvement
@@ -22,6 +23,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index
 - [[PUBDEV-8297]](https://h2oai.atlassian.net/browse/PUBDEV-8297) - Added a custom model ID parameter to MOJO importing/uploading methods through R/Python API and if a custom model ID is not specified, the default model ID is propagated as the models name from the MOJO path.
 - [[PUBDEV-8294]](https://h2oai.atlassian.net/browse/PUBDEV-8294) - Added warning for users who accidentally build a regression model when attempting building a binary classification model because they forgot to convert their target to categorical.
 - [[PUBDEV-8283]](https://h2oai.atlassian.net/browse/PUBDEV-8283) - Tuned `scale_pos_weight` parameter for XGBooost in AutoML for imbalanced data.
+
+#### New Feature
+
+- [[PUBDEV-8385]](https://h2oai.atlassian.net/browse/PUBDEV-8385) - Added saving parameters to plot functions.
 
 #### Task
 
