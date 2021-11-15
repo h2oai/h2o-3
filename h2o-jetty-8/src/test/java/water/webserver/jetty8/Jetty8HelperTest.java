@@ -77,6 +77,7 @@ public class Jetty8HelperTest {
 
       verify(defaultConnectorMock).setRequestHeaderSize(32 * 1024);
       verify(defaultConnectorMock).setRequestBufferSize(32 * 1024);
+      verify(defaultConnectorMock).setMaxIdleTime(5 * 60 * 1000);
       assertFalse(Response.RELATIVE_REDIRECT_ALLOWED);
     } finally {
       Response.RELATIVE_REDIRECT_ALLOWED = origRedirects;
