@@ -49,7 +49,7 @@ def test_gam_model_predict():
 def assert_va_test_metrics_eq(glmtrmetrics, glmtemetrics, trmetrics, vmetrics, tmetrics, metrictitle):
     print("GLM training {2}: {0}, GAM training {2}: {1}".format(glmtrmetrics, trmetrics, metrictitle))
     print("GLM test {2}: {0}, GAM test {2}: {1}".format(glmtemetrics, tmetrics, metrictitle))
-    assert vmetrics==tmetrics, "Gam validation {0}: {1}, Gam test {0}: {2}".format(metrictitle, vmetrics, tmetrics)
+    assert abs(vmetrics-tmetrics)<1e-6, "Gam validation {0}: {1}, Gam test {0}: {2}".format(metrictitle, vmetrics, tmetrics)
     
 
 if __name__ == "__main__":
