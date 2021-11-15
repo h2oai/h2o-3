@@ -22,11 +22,10 @@ test.grid.extendedisolationforest <- function() {
       x = c(1, 2),
       training_frame = single_blob.hex,
       hyper_params = hyper_parameters,
-      parallelism = 0
     )
   print(paste("Expected size of hyperparameter space is", length(baseline_grid@model_ids)))
   expect_equal(length(baseline_grid@model_ids), size_of_hyper_space)
 }
 
 
-doTest("Parallel Grid Search test for Extended Isolation Forest", test.grid.extendedisolationforest)
+doTest("Grid Search test for Extended Isolation Forest", test.grid.extendedisolationforest)
