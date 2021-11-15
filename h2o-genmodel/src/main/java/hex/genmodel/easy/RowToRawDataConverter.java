@@ -76,11 +76,11 @@ public class RowToRawDataConverter implements Serializable {
     }
 
     Object o = data.get(columnName);
-    double[] outputRawData = new double[1];
-    outputRawData[0] = Double.NaN;
-    convertValue(columnName, o, _domainMap.get(index), 0, outputRawData);
+    double[] outputRawData = new double[index+1];
+    outputRawData[index] = Double.NaN;
+    convertValue(columnName, o, _domainMap.get(index), index, outputRawData);
 
-    return outputRawData[0];
+    return outputRawData[index];
   }
 
   protected boolean convertValue(String columnName, Object o, CategoricalEncoder catEncoder,
