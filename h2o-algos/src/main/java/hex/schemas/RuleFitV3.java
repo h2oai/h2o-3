@@ -24,7 +24,8 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
             "weights_column", 
             "distribution",
             "rule_generation_ntrees",
-            "auc_type"
+            "auc_type",
+            "remove_duplicates"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable).", gridable = true)
@@ -50,5 +51,8 @@ public class RuleFitV3 extends ModelBuilderSchema<RuleFit, RuleFitV3, RuleFitV3.
 
     @API(help = "specifies the number of trees to build in the tree model. Defaults to 50.")
     public int rule_generation_ntrees;
+    
+    @API(help = "whether to remove rules which are identical to an earlier rule. Defaults to true." )
+    public boolean remove_duplicates;
   }
 }

@@ -63,6 +63,7 @@ public class RuleFitTest extends TestUtil {
             params._distribution = DistributionFamily.bernoulli;
             params._min_rule_length = 1;
             params._max_rule_length = 10;
+  //          params._remove_duplicates = false;
 
             rfModel = new RuleFit(params).trainModel().get();
 
