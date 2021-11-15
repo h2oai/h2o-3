@@ -111,7 +111,7 @@ def test_explanation_automl_regression():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
@@ -275,7 +275,7 @@ def test_explanation_automl_binomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
@@ -302,7 +302,7 @@ def test_explanation_automl_binomial_classification():
 
     # Leaderboard slices work
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     leaderboard_without_SE = aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :]
@@ -445,7 +445,7 @@ def test_explanation_automl_multinomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
