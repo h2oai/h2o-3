@@ -70,7 +70,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public void initActualParamValuesAfterGlmCreation(){
     EffectiveParametersUtils.initFoldAssignment(_parms);
   }
-  
+
   public TwoDimTable genCoefficientMagTableMultinomial(String[] colHeaders, double[][] coefficients,
                                                        String[] coefficientNames, String tableHeader) {
     String[] colTypes = new String[]{ "double", "string"};
