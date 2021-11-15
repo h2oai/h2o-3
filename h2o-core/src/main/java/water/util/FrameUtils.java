@@ -182,7 +182,6 @@ public class FrameUtils {
   }
 
   public static double [] asDoubles(Vec v){
-    if(v.length() > MAX_VEC_NUM_ROWS_FOR_ARRAY_EXPORT) throw new IllegalArgumentException("Vec is too big to be extracted into array");
     return new Vec2ArryTsk((int)v.length()).doAll(v).res;
   }
 
