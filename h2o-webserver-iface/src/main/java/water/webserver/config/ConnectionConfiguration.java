@@ -26,6 +26,10 @@ public class ConnectionConfiguration {
         return getSysPropInt("responseBufferSize", defaultOutputBufferSize);
     }
 
+    public int getIdleTimeout() {
+        return getSysPropInt("jetty.idleTimeout", 5 * 60 * 1000);
+    }
+
     public boolean isRelativeRedirectAllowed() {
         return getSysPropBool("relativeRedirectAllowed", true);
     }

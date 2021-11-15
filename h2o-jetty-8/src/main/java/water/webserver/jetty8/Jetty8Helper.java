@@ -84,6 +84,7 @@ class Jetty8Helper {
       //        something else at assembly time
       Response.RELATIVE_REDIRECT_ALLOWED = false;
     }
+    connector.setMaxIdleTime(cfg.getIdleTimeout());
   }
 
   HandlerWrapper authWrapper(Server jettyServer) {
