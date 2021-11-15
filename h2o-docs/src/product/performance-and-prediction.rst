@@ -2059,10 +2059,10 @@ Example:
         airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
 
         # Build and train the model:
-        model_gbm = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
-        model = model_gbm.train(x=["Origin","Distance"], 
-                                y="IsDepDelayed", 
-                                training_frame=airlines)
+        model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model.train(x=["Origin","Distance"], 
+                    y="IsDepDelayed", 
+                    training_frame=airlines)
 
         # Plot the Gains/Lift chart:
         gl = model.gains_lift()
