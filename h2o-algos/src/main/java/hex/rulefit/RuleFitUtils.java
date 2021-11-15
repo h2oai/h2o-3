@@ -1,7 +1,10 @@
 package hex.rulefit;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RuleFitUtils {
 
@@ -27,7 +30,8 @@ public class RuleFitUtils {
                 rules[i] = consolidateRule(rules[i]);
             }
         }
-        return rules;
+        // todo: deduplication should probably have a parameter to switch on/off because it will change the results
+        return deduplicateRules(rules);
     }
 
     static Rule consolidateRule(Rule rule) {
@@ -43,8 +47,11 @@ public class RuleFitUtils {
         for (int i = 0; i < varNames.size(); i++) {
             consolidatedConditions.addAll(consolidateConditionsByVar(conditions, varNames.get(i)));
         }
-
-        rule.conditions = consolidatedConditions.toArray(new Condition[0]);
+        
+        // sort by feature name as a preparation for rules deduplication
+        rule.conditions = consolidatedConditions.stream()
+                .sorted(Comparator.comparing(condition -> condition.featureName))
+                .collect(Collectors.toList()).toArray(new Condition[0]);
         rule.languageRule = rule.generateLanguageRule();
         return rule;
     }
@@ -97,5 +104,19 @@ public class RuleFitUtils {
 
             return currVarConsolidatedConditions;
         }
+    }
+    
+    static Rule[] deduplicateRules(Rule[] rules) {
+        List<Rule> list = Arrays.asList(rules);
+
+        List<Rule> transform = list.stream()
+                .collect(Collectors.groupingBy(rule -> rule.languageRule))
+                .entrySet().stream()
+                .map(e -> e.getValue().stream()
+                        .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient)))
+                .map(f -> f.get())
+                .collect(Collectors.toList());
+        System.out.println(transform);
+        return transform.toArray(new Rule[0]);
     }
 }
