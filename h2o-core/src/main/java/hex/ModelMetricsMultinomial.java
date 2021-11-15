@@ -366,6 +366,14 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       return mm;
     }
   }
+  
+  public static class GenericIndependentMetricBuilderMultinomial extends IndependentMetricBuilderMultinomial<GenericIndependentMetricBuilderMultinomial> {
+    public GenericIndependentMetricBuilderMultinomial() {}
+    
+    public GenericIndependentMetricBuilderMultinomial(int nclasses, String[] domain, MultinomialAucType aucType) {
+      super(nclasses, domain, aucType);
+    }
+  }
 
   public static class IndependentMetricBuilderMultinomial<T extends IndependentMetricBuilderMultinomial<T>> extends IndependentMetricBuilderSupervised<T> {
     double[/*nclasses*/][/*nclasses*/] _cm;
@@ -377,7 +385,9 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
     MultinomialAucType _aucType;
 
-    public IndependentMetricBuilderMultinomial( int nclasses, String[] domain, MultinomialAucType aucType) {
+    public IndependentMetricBuilderMultinomial() {}
+
+    public IndependentMetricBuilderMultinomial(int nclasses, String[] domain, MultinomialAucType aucType) {
       super(nclasses,domain);
       int domainLength = domain.length;
       _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domainLength][domainLength];

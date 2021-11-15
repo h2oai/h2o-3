@@ -39,6 +39,11 @@ public class ModelMetricsSupervised extends ModelMetrics {
     protected final String[] _domain;
     protected final int _nclasses;
 
+    public IndependentMetricBuilderSupervised() {
+      _domain = null;
+      _nclasses = -1;
+    }
+
     public IndependentMetricBuilderSupervised(int nclasses, String[] domain) {
       _nclasses = nclasses;
       _domain = domain;

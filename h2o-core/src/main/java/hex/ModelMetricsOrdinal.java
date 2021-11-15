@@ -241,12 +241,22 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
       return mm;
     }
   }
+  
+  public static class GenericIndependentMetricBuilderOrdinal extends IndependentMetricBuilderOrdinal<GenericIndependentMetricBuilderOrdinal> {
+    public GenericIndependentMetricBuilderOrdinal() {}
+    
+    public GenericIndependentMetricBuilderOrdinal(int nclasses, String[] domain) {
+      super(nclasses, domain);
+    }
+  }
 
   public static class IndependentMetricBuilderOrdinal<T extends IndependentMetricBuilderOrdinal<T>> extends IndependentMetricBuilderSupervised<T> {
     double[/*nclasses*/][/*nclasses*/] _cm;
     double[/*K*/] _hits;            // the number of hits for hitratio, length: K
     int _K;               // TODO: Let user set K
     double _logloss;
+
+    public IndependentMetricBuilderOrdinal() {}
 
     public IndependentMetricBuilderOrdinal( int nclasses, String[] domain ) {
       super(nclasses,domain);

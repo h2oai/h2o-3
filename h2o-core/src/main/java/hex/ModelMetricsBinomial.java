@@ -309,21 +309,31 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
     }
   }
+  
+  public static class GenericIndependentMetricBuilderBinomial extends IndependentMetricBuilderBinomial<GenericIndependentMetricBuilderBinomial> {
+    public GenericIndependentMetricBuilderBinomial() {}
+      
+    public GenericIndependentMetricBuilderBinomial(String[] domain, DistributionFamily distributionFamily) { 
+      super(domain, distributionFamily);
+    }
+  }
 
     public static class IndependentMetricBuilderBinomial<T extends IndependentMetricBuilderBinomial<T>> extends IndependentMetricBuilderSupervised<T> {
         protected double _logloss;
         protected AUC2.AUCBuilder _auc;
         protected DistributionFamily _distributionFamily;
 
+        public IndependentMetricBuilderBinomial() {}
+    
         public IndependentMetricBuilderBinomial(String[] domain, DistributionFamily distributionFamily) {
             super(2,domain); 
             _auc = new AUC2.AUCBuilder(AUC2.NBINS);
             _distributionFamily = distributionFamily;
         }
-
+    
         public double auc() {return new AUC2(_auc)._auc;}
         public double pr_auc() { return new AUC2(_auc)._pr_auc;}
-
+    
         // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
         // distribution;
         @Override public double[] perRow(double ds[], float[] yact) {return perRow(ds, yact, 1, 0);}
@@ -359,13 +369,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
             _auc.perRow(ds[2], iact, w);
             return ds;                // Flow coding
         }
-
+    
         @Override public void reduce( T mb ) {
             super.reduce(mb); // sumseq, count
             _logloss += mb._logloss;
             _auc.reduce(mb._auc);
         }
-
+    
         @Override public ModelMetrics makeModelMetrics() {
             double mse = Double.NaN;
             double logloss = Double.NaN;
@@ -382,7 +392,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
             ModelMetricsBinomial mm = new ModelMetricsBinomial(null, null, _count, mse, _domain, sigma, auc,  logloss, null, _customMetric);
             return mm;
         }
-
+    
         public String toString(){
             if(_wcount == 0) return "empty, no rows";
             return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
