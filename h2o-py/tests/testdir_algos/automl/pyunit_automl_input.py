@@ -47,7 +47,7 @@ def test_no_x_train_and_validation_sets():
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     log_df = aml.event_log.as_data_frame()
-    warn_messages = log_df[log_df['level'] == 'Warn']['message']
+    warn_messages = log_df[log_df['level'] == 'WARN']['message']
     assert warn_messages.str.startswith("User specified a validation frame with cross-validation still enabled").any(), \
         "a warning should have been raised for using a validation frame with CV enabled"
     print("Check leaderboard")
@@ -81,7 +81,7 @@ def test_no_x_train_and_validation_and_test_sets():
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     log_df = aml.event_log.as_data_frame()
-    warn_messages = log_df[log_df['level'] == 'Warn']['message']
+    warn_messages = log_df[log_df['level'] == 'WARN']['message']
     assert not warn_messages.str.startswith("User specified a validation frame with cross-validation still enabled").any(), \
         "no warning should have been raised as CV was disabled"
     print("Check leaderboard")

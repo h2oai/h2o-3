@@ -20,7 +20,7 @@ def test_warn_on_empty_leaderboard():
                     seed=1234)
     aml.train(y=ds.target, training_frame=ds.train)
     assert aml.leaderboard.nrow == 0
-    warnings = aml.event_log[aml.event_log['level'] == 'Warn','message']
+    warnings = aml.event_log[aml.event_log['level'] == 'WARN','message']
     last_warning = warnings[warnings.nrow-1,:].flatten()
     assert "Empty leaderboard" in last_warning
 
