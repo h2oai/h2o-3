@@ -190,8 +190,7 @@ public class FrameUtils {
     if (frame.numRows() > MAX_VEC_NUM_ROWS_FOR_ARRAY_EXPORT)
       throw new IllegalArgumentException("Frame is too big to be extracted into array");
 
-    double [][] frameArray = new double[frame.numCols()][(int) frame.numRows()];
-
+    double [][] frameArray = new double[frame.numCols()][];
     for (int i = 0; i < frame.numCols(); i++) {
       Vec v = frame.vec(i);
       frameArray[i] = new Vec2ArryTsk((int)v.length()).doAll(v).res;
