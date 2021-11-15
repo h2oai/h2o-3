@@ -2032,20 +2032,20 @@ Example:
         airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
 
         # Build and train the model:
-         model <- h2o.gbm(x = c("Origin", "Distance"), 
-                          y = "IsDepDelayed", 
-                          training_frame = airlines, 
-                          ntrees = 1, 
-                          gainslift_bins = 20)
+        model <- h2o.gbm(x = c("Origin", "Distance"), 
+                         y = "IsDepDelayed", 
+                         training_frame = airlines, 
+                         ntrees = 1, 
+                         gainslift_bins = 20)
 
-         # Plot the Gains/Lift chart:
-         gain_table <- model@model$training_metrics@metrics$gains_lift_table
-         plot(gain_table$cumulative_data_fraction,
-              gain_table$cumulative_capture_rate,'l', 
-              ylim = c(0,1.5), col = "dodgerblue3",
-              xlab = "cumulative data fraction",
-              ylab = "cumulative capture rate, cumulative lift",
-              main = "Gains/Lift")
+        # Plot the Gains/Lift chart:
+        gain_table <- model@model$training_metrics@metrics$gains_lift_table
+        plot(gain_table$cumulative_data_fraction,
+             gain_table$cumulative_capture_rate,'l', 
+             ylim = c(0,1.5), col = "dodgerblue3",
+             xlab = "cumulative data fraction",
+             ylab = "cumulative capture rate, cumulative lift",
+             main = "Gains/Lift")
         lines(gain_table$cumulative_data_fraction,
               gain_table$cumulative_lift, col = "orange")
 
@@ -2114,7 +2114,11 @@ Examples:
           airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
 
           # Build and train the model:
-          model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = airlines, ntrees = 1, gainslift_bins = 20)
+          model <- h2o.gbm(x = c("Origin", "Distance"), 
+                           y = "IsDepDelayed", 
+                           training_frame = airlines, 
+                           ntrees = 1, 
+                           gainslift_bins = 20)
 
           # Print the Gains/Lift table:
           print(h2o.gainsLift(model))
