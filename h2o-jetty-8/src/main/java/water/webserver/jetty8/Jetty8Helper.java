@@ -82,6 +82,7 @@ class Jetty8Helper {
     connector.setRequestBufferSize(getSysPropInt(proto+".requestBufferSize", 32*1024));
     connector.setResponseHeaderSize(getSysPropInt(proto+".responseHeaderSize", connector.getResponseHeaderSize()));
     connector.setResponseBufferSize(getSysPropInt(proto+".responseBufferSize", connector.getResponseBufferSize()));
+    connector.setMaxIdleTime(getSysPropInt(proto + ".jetty.idleTimeout", 5 * 60 * 1000));
   }
 
   private static int getSysPropInt(String suffix, int defaultValue) {
