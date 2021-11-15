@@ -224,7 +224,7 @@ def screeplot():
     with TemporaryDirectory() as tmpdir:
         path="{}/plot1.png".format(tmpdir)
         test_plot_result_saving(screeplot_result, "{}/plot2.png".format(tmpdir),
-                                australia_pca.screeplot(type="barplot", **kwargs, save_plot_path=path), path)
+                                australia_pca.screeplot(type="barplot", save_plot_path=path, **kwargs), path)
     
 
 def std_coef__varimp():    
