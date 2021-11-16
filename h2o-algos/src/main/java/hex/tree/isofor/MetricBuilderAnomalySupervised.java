@@ -49,7 +49,7 @@ public class MetricBuilderAnomalySupervised extends ModelMetricsBinomial.MetricB
   }
 
   private static void adaptPreds(double[] ds) {
-    ds[2] = Math.min(ds[1], 1.0);
+    ds[2] = Math.max(0, Math.min(ds[1], 1.0));
     ds[1] = 1 - ds[2];
     ds[0] = -1;
   }

@@ -10,7 +10,7 @@ test.grid.isofor <- function() {
     h2o.importFile(path = locate("smalldata/iris/iris.csv"),
                    destination_frame = "iris.hex")
   
-  ntrees_opts = c(1, 5)
+  ntrees_opts = c(5, 10)
   size_of_hyper_space = length(ntrees_opts)
   
   hyper_parameters = list(ntrees = ntrees_opts)
@@ -19,7 +19,6 @@ test.grid.isofor <- function() {
       "isolationforest",
       grid_id = "isofor_grid_test",
       x = 1:4,
-      y = 5,
       training_frame = iris.hex,
       hyper_params = hyper_parameters
     )
@@ -32,29 +31,51 @@ test.grid.isofor <- function() {
     h2o.importFile(locate("smalldata/anomaly/ecg_discord_train.csv"))
   test <-
     h2o.importFile(locate("smalldata/anomaly/ecg_discord_test.csv"))
-  
+
+  # introduce "some" label column - in this test we only check that the grid runs
   model <-
     h2o.isolationForest(training_frame = train,
                         seed = 1234,
-                        ntrees = 10)
-  predictions <- h2o::h2o.predict(model, test)
+                        ntrees = max(ntrees_opts),
+                        sample_size = 5)
+  predictions <- h2o.predict(model, test)
   threshold <-
     h2o.quantile(probs = c(0.8), x = predictions)["predictQuantiles"]
   print(threshold)
   labels_test <- predictions > threshold
   test["label"] = h2o.asfactor(labels_test["predict"])
+
+  standard_grid <-
+    h2o.grid(
+      "isolationforest",
+      grid_id = "isofor_grid_test_standard",
+      x = 1:4,
+      training_frame = train,
+      hyper_params = hyper_parameters,
+      sample_size = 5
+  )
+  summary(standard_grid, show_stack_traces = TRUE)
   
   validated_grid <-
     h2o.grid(
       "isolationforest",
       grid_id = "isofor_grid_test_validation",
       x = 1:4,
-      y = 5,
       training_frame = train,
       validation_frame = test,
       hyper_params = hyper_parameters,
-      validation_response_column = "label"
+      validation_response_column = "label",
+      sample_size = 5
     )
+    summary(validated_grid, show_stack_traces = TRUE)
+
+    # check we have the same models regardless of using validation frame
+    expect_equal(length(standard_grid@model_ids), length(validated_grid@model_ids))
+    for (i in 1:length(standard_grid@model_ids)) {
+      standard <- h2o.getModel(standard_grid@model_ids[[i]])
+      validated <- h2o.getModel(validated_grid@model_ids[[i]])
+      expect_equal(standard@model$training_metrics@metrics$mean_score, validated@model$training_metrics@metrics$mean_score)
+    }
 }
 
 doTest("Isolation Forest Grid Search test", test.grid.isofor)

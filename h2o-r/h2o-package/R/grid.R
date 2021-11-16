@@ -77,7 +77,7 @@ h2o.grid <- function(algorithm,
     warning("Parameter is_supervised is deprecated. It is not possible to override default behaviour.")
   }
   #Unsupervised algos to account for in grid (these algos do not need response)
-  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm", "extendedisolationforest")
+  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm", "isolationforest", "extendedisolationforest")
   # Parameter list
   dots <- list(...)
   # Add x, y, and training_frame
