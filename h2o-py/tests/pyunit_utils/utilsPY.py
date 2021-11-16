@@ -11,8 +11,10 @@ from past.builtins import basestring
 import copy
 import datetime
 from decimal import *
+import fnmatch
 from functools import reduce
 import imp
+import importlib
 import json
 import math
 import os
@@ -128,6 +130,7 @@ def gen_random_uuid(numberUUID):
     for uindex in range(numberUUID):
         uuidVec[uindex] = uuid.uuid4()
     return uuidVec
+
 
 def gen_random_time(numberTimes, maxtime= datetime.datetime(2080, 8,6,8,14,59), mintime=datetime.datetime(1980, 8,6,6,14,59)):
     '''
@@ -3292,15 +3295,6 @@ def model_seed_sorted(model_list):
     model_seed_list.sort()
     return model_seed_list
 
-
-def check_ignore_cols_automl(models,names,x,y):
-    models = sum(models.as_data_frame().values.tolist(),[])
-    for model in models:
-        if "StackedEnsemble" in model:
-            continue
-        else:
-            assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
-                "ignored columns are not honored for model " + model
 
 
 # This method is not changed to local method using as_data_frame because the frame size is too big.
