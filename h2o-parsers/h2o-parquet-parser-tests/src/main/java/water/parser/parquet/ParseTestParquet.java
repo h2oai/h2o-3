@@ -255,7 +255,7 @@ public class ParseTestParquet extends TestUtil {
 
   @Test
   public void testParseSingleEmpty() {
-    FrameAssertion assertion = new GenFrameAssertion("empty.parquet", TestUtil.ari(5, 0), psTransformer) {
+    FrameAssertion assertion = new GenFrameAssertion("empty.parquet", TestUtil.ari(6, 0), psTransformer) {
       @Override
       protected File prepareFile() throws IOException {
         return ParquetFileGenerator.generateEmptyWithSchema(Files.createTempDir(), file);
@@ -263,8 +263,8 @@ public class ParseTestParquet extends TestUtil {
 
       @Override
       public void check(Frame f) {
-        assertArrayEquals("Column names need to match!", ar("int32_field", "int64_field", "float_field", "double_field", "timestamp_field"), f.names());
-        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME), f.types());
+        assertArrayEquals("Column names need to match!", ar("int32_field", "int64_field", "float_field", "double_field", "timestamp_field", "date_field"), f.names());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_TIME), f.types());
       }
     };
     assertFrameAssertion(assertion);
@@ -470,21 +470,19 @@ class ParquetFileGenerator {
             + "} ");
     GroupWriteSupport.setSchema(schema, conf);
     SimpleGroupFactory fact = new SimpleGroupFactory(schema);
-    ParquetWriter<Group> writer = new ParquetWriter<>(new Path(f.getPath()), new GroupWriteSupport(),
-        UNCOMPRESSED, 256 * nrows, 256 * nrows, 128 * nrows, true, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf);
-    try {
+    int size = nrows > 0 ? nrows * 128 : 512; // to have some non-zero size when generating empty file
+    try (ParquetWriter<Group> writer = new ParquetWriter<>(new Path(f.getPath()), new GroupWriteSupport(),
+            UNCOMPRESSED, 2 * size, 2 * size, size, true, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf)) {
       for (int i = 0; i < nrows; i++) {
         writer.write(fact.newGroup()
-            .append("int32_field", 32 + i)
-            .append("int64_field", 64L + i)
-            .append("float_field", 1.0f + i)
-            .append("double_field", 2.0d + i)
-            .append("timestamp_field", date.getTime() + (i * 117))
-            .append("date_field", 2 * i)
+                .append("int32_field", 32 + i)
+                .append("int64_field", 64L + i)
+                .append("float_field", 1.0f + i)
+                .append("double_field", 2.0d + i)
+                .append("timestamp_field", date.getTime() + (i * 117))
+                .append("date_field", 2 * i)
         );
       }
-    } finally {
-      writer.close();
     }
     return f;
   }
@@ -523,24 +521,7 @@ class ParquetFileGenerator {
   }
 
   static File generateEmptyWithSchema(File parentDir, String filename) throws IOException {
-    File f = new File(parentDir, filename);
-
-    Configuration conf = new Configuration();
-    MessageType schema = parseMessageType(
-        "message test { "
-            + "required int32 int32_field; "
-            + "required int64 int64_field; "
-            + "required float float_field; "
-            + "required double double_field; "
-            + "required int64 timestamp_field (TIMESTAMP_MILLIS);"
-            + "} ");
-    GroupWriteSupport.setSchema(schema, conf);
-    SimpleGroupFactory fact = new SimpleGroupFactory(schema);
-    ParquetWriter<Group> writer = new ParquetWriter<Group>(new Path(f.getPath()), new GroupWriteSupport(),
-        UNCOMPRESSED, 1024, 1024, 512, false, false, ParquetProperties.WriterVersion.PARQUET_2_0, conf);
-    writer.close();
-
-    return f;
+    return generateParquetFile(parentDir, filename, 0, null);
   }
 
   static File generateSparseParquetFile(File parentDir, String filename, int nrows) throws IOException {
