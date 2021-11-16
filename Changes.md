@@ -38,6 +38,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index
 #### Docs
 
 - [[PUBDEV-8392]](https://h2oai.atlassian.net/browse/PUBDEV-8392) - Localized MOJO support list for all the H2O-3 algorithms.
+- [[PUBDEV-8381]](https://h2oai.atlassian.net/browse/PUBDEV-8381) - Added Gains/Lift documentation to the Performance and Prediction section of the User Guide.
 - [[PUBDEV-8370]](https://h2oai.atlassian.net/browse/PUBDEV-8370) - Corrected metric in the Performance and Prediction “Sensitive to Outliers” section of the User Guide.
 - [[PUBDEV-8278]](https://h2oai.atlassian.net/browse/PUBDEV-8278) - Clarified that `asnumeric()` converted ‘enum’ columns to underlying factor values and highlighted correct transformation approach.
 
