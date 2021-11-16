@@ -36,8 +36,6 @@ def cancer():
 
     print("Multinomial model rules:")
     print(rfit_multi.rule_importance())
-
-    assert len(rfit_multi.rule_importance()['rule']) == 12
     
     print("Binomial train RMSE vs. multinomial train RMSE:")
     print(str(rfit.rmse()) + " vs. " + str(rfit_multi.rmse()))

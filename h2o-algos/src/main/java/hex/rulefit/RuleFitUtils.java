@@ -116,13 +116,18 @@ public class RuleFitUtils {
     static Rule[] deduplicateRules(Rule[] rules) {
         List<Rule> list = Arrays.asList(rules);
 
+        // group by non linear rules
         List<Rule> transform = list.stream()
+                .filter(rule -> rule.conditions != null)
                 .collect(Collectors.groupingBy(rule -> rule.languageRule))
                 .entrySet().stream()
                 .map(e -> e.getValue().stream()
                         .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient)))
                 .map(f -> f.get())
                 .collect(Collectors.toList());
+
+        // add linear rules
+        transform.addAll(list.stream().filter(rule -> rule.conditions == null).collect(Collectors.toList()));
 
         return transform.toArray(new Rule[0]);
     }

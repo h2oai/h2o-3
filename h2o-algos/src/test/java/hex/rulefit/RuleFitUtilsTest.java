@@ -179,7 +179,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Condition[] conditions = new Condition[] {condition1, condition2, condition3};
 
             Rule rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            Rule consolidatedRule = RuleFitUtils.consolidateRule(rule, true);
+            Rule consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA < 14.730077743530273 or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
             
             condition1 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1, new String[] {"ABC", "AAA"}, new int[] {2, 6},"PSA", true);
@@ -188,7 +188,7 @@ public class RuleFitUtilsTest extends TestUtil {
             conditions = new Condition[] {condition1, condition2, condition3};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule, true);
+            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA in {ABC, AAA, CCC, BBB} or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
 
             condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
@@ -197,7 +197,7 @@ public class RuleFitUtilsTest extends TestUtil {
             conditions = new Condition[] {condition1, condition2, condition3};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule, true);
+            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
 
             condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
@@ -208,7 +208,7 @@ public class RuleFitUtilsTest extends TestUtil {
             conditions = new Condition[] {condition1, condition2, condition3, condition4};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule, true);
+            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA < 10.0) & (PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
             
         } finally {
@@ -253,7 +253,7 @@ public class RuleFitUtilsTest extends TestUtil {
             
             Rule[] rulesToDeduplicate = new Rule[] {rule1, rule2, rule3, rule4};
 
-            Rule[]  deduplicatedRules = RuleFitUtils.deduplicateRules(rulesToDeduplicate);
+            Rule[] deduplicatedRules = RuleFitUtils.consolidateRules(rulesToDeduplicate, true);
             
             assertEquals(3, deduplicatedRules.length);
 
