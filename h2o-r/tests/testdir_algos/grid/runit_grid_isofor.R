@@ -5,7 +5,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-test.grid.resume <- function() {
+test.grid.isofor <- function() {
   iris.hex <-
     h2o.importFile(path = locate("smalldata/iris/iris.csv"),
                    destination_frame = "iris.hex")
@@ -57,4 +57,4 @@ test.grid.resume <- function() {
     )
 }
 
-doTest("Parallel Grid Search test", test.grid.resume)
+doTest("Isolation Forest Grid Search test", test.grid.isofor)
