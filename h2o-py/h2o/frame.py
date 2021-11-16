@@ -26,7 +26,7 @@ from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
-from h2o.plot import get_matplotlib_pyplot
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
@@ -3831,7 +3831,7 @@ class H2OFrame(Keyed):
             expr=ExprNode("table", self, dense))
 
 
-    def hist(self, breaks="sturges", plot=True, **kwargs):
+    def hist(self, breaks="sturges", plot=True, save_plot_path=None, **kwargs):
         """
         Compute a histogram over a numeric column.
 
@@ -3839,9 +3839,11 @@ class H2OFrame(Keyed):
             or a single number for the number of breaks; or a list containing the split points, e.g:
             ``[-50, 213.2123, 9324834]``. If breaks is "fd", the MAD is used over the IQR in computing bin width.
         :param bool plot: If True (default), then a plot will be generated using ``matplotlib``.
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig.
 
         :returns: If ``plot`` is False, return H2OFrame with these columns: breaks, counts, mids_true,
-            mids, and density; otherwise this method draws a plot and returns nothing.
+            mids, and density; otherwise this method draws a plot and returns H2OFrame and a plot (can be accessed 
+            using result.figure()).
 
         :examples:
 
@@ -3861,7 +3863,7 @@ class H2OFrame(Keyed):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
             hist["widths"] = hist["breaks"].difflag1()
             # [2:] because we're removing the title and the first row (which consists of NaNs)
@@ -3869,6 +3871,7 @@ class H2OFrame(Keyed):
             widths = [float(c[0]) for c in h2o.as_list(hist["widths"], use_pandas=False)[2:]]
             counts = [float(c[0]) for c in h2o.as_list(hist["counts"], use_pandas=False)[2:]]
 
+            fig = plt.figure()
             plt.xlabel(self.names[0])
             plt.ylabel("Frequency")
             plt.title("Histogram of %s" % self.names[0])
@@ -3884,11 +3887,14 @@ class H2OFrame(Keyed):
             else:
                 plt.bar(left=lefts, height=counts, width=widths, bottom=0)
 
+            if save_plot_path is not None:
+                fig.savefig(fname=save_plot_path)
             if not server:
                 plt.show()
+            return decorate_plot_result(res=hist, figure=fig)    
         else:
             hist["density"] = hist["counts"] / (hist["breaks"].difflag1() * hist["counts"].sum())
-            return hist
+            return decorate_plot_result(res=hist)
 
 
     def isax(self, num_words, max_cardinality, optimize_card=False, **kwargs):

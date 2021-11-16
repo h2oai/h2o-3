@@ -12,7 +12,7 @@ from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
-from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
@@ -1064,9 +1064,10 @@ class ModelBase(h2o_meta(Keyed)):
             metrics["train"] = output["training_metrics"]
         return metrics
 
+    @deprecated_params({'save_to_file': 'save_plot_path'})
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
                      plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
-                     col_pairs_2dpdp=None, save_to_file=None, row_index=None, targets=None):
+                     col_pairs_2dpdp=None, save_plot_path=None, row_index=None, targets=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -1083,10 +1084,10 @@ class ModelBase(h2o_meta(Keyed)):
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :param col_pairs_2dpdp: list containing pairs of column names for 2D pdp
-        :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param save_plot_path: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
-        :returns: Plot and list of calculated mean response tables for each feature requested.
+        :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using result.figure()).
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0
@@ -1164,7 +1165,7 @@ class ModelBase(h2o_meta(Keyed)):
 
         # Plot partial dependence plots using matplotlib
         return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets, include_na)
+                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
         # extract user defined split points from dict user_splits into an integer array of column indices

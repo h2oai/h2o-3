@@ -152,7 +152,7 @@ def partial_plots():
         path1 = "{}/plot1.png".format(tmpdir)
         path2 = "{}/plot2.png".format(tmpdir)
         test_plot_result_saving(gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1), path2,
-                                gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1, save_to_file=path1), path1)
+                                gbm_model.partial_plot(data=data, cols=['AGE'], server=True, plot=True, row_index=1, save_plot_path=path1), path1)
 
 
 def partial_plots_multinomial():
@@ -210,7 +210,7 @@ def roc_pr_curve():
         perf_test = air_gbm.model_performance(air_test)
     
         test_plot_result_saving(perf_test.plot(type="roc", server=False), path2,
-                                perf_test.plot(type="roc", server=False, save_to_file=path1), path1)
+                                perf_test.plot(type="roc", server=False, save_plot_path=path1), path1)
 
 
 def screeplot():
@@ -224,7 +224,7 @@ def screeplot():
     with TemporaryDirectory() as tmpdir:
         path="{}/plot1.png".format(tmpdir)
         test_plot_result_saving(screeplot_result, "{}/plot2.png".format(tmpdir),
-                                australia_pca.screeplot(type="barplot", **kwargs, save_plot_path=path), path)
+                                australia_pca.screeplot(type="barplot", save_plot_path=path, **kwargs), path)
     
 
 def std_coef__varimp():    
@@ -255,6 +255,54 @@ def std_coef__varimp():
                                 cars_glm.varimp_plot(server=True, save_plot_path=path), path)
 
 
+def test_hist():
+    df = h2o.upload_file(pyunit_utils.locate("smalldata/iris/iris.csv"))
+
+    with TemporaryDirectory() as tmpdir:
+        path1="{}/plot1.png".format(tmpdir)
+        path2="{}/plot2.png".format(tmpdir)
+        test_plot_result_saving( df[0].hist(breaks=5, plot=True), path2,
+                                 df[0].hist(breaks=5, plot=True, save_plot_path=path1), path1)
+
+    h = df[0].hist(breaks=5, plot=True)
+    assert h.nrow == 5
+
+    h = df[0].hist(breaks=[0,0.5,2,3], plot=True)
+    assert h.nrow == 4
+    
+def test_varimp_heatmap_model_correlation_heatmap():
+    train = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
+    y = "CAPSULE"
+    train[y] = train[y].asfactor()
+    # get at most one column from each type
+    cols_to_test = []
+    for col, typ in train.types.items():
+        for ctt in cols_to_test:
+            if typ == train.types[ctt] or col == y:
+                break
+        else:
+            cols_to_test.append(col)
+    
+    aml = H2OAutoML(seed=1234, max_models=5)
+    aml.train(y=y, training_frame=train)
+    
+    models = [h2o.get_model(m[0]) for m in
+              aml.leaderboard["model_id"].as_data_frame(use_pandas=False, header=False)]
+    
+    # Test named models as well
+    gbm = H2OGradientBoostingEstimator(model_id="my_awesome_model")
+    gbm.train(y=y, training_frame=train)
+    models += [gbm]
+
+    with TemporaryDirectory() as tmpdir:
+        path1="{}/plot1.png".format(tmpdir)
+        path2="{}/plot2.png".format(tmpdir)
+        test_plot_result_saving( h2o.varimp_heatmap(models), path2,
+                                 h2o.varimp_heatmap(models, save_plot_path=path1), path1)
+        test_plot_result_saving(h2o.model_correlation_heatmap(models, train), path2,
+                                h2o.model_correlation_heatmap(models, train, save_plot_path=path1), path1)
+    h2o.varimp_heatmap(models)
+
 pyunit_utils.run_tests([
     binomial_plot_test,
     test_decorate_plot_result,
@@ -264,5 +312,7 @@ pyunit_utils.run_tests([
     partial_plots,
     partial_plots_multinomial,
     roc_pr_curve,
-    screeplot
+    screeplot,
+    test_hist,
+    test_varimp_heatmap_model_correlation_heatmap
 ])
