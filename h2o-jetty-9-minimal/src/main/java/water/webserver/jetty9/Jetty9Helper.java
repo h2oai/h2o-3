@@ -73,6 +73,7 @@ class Jetty9Helper {
         httpConfiguration.setResponseHeaderSize(cfg.getResponseHeaderSize());
         httpConfiguration.setOutputBufferSize(cfg.getOutputBufferSize(httpConfiguration.getOutputBufferSize()));
         httpConfiguration.setRelativeRedirectAllowed(cfg.isRelativeRedirectAllowed());
+        httpConfiguration.setIdleTimeout(cfg.getIdleTimeout());
         return httpConfiguration;
     }
 

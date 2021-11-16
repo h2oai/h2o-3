@@ -16,6 +16,7 @@ public class ConnectionConfigurationTest {
         assertEquals(32 * 1024, cfg.getRequestBufferSize());
         assertEquals(32 * 1024, cfg.getResponseHeaderSize());
         assertEquals(17, cfg.getOutputBufferSize(17));
+        assertEquals(5 * 60 * 1000, cfg.getIdleTimeout());
         assertTrue(cfg.isRelativeRedirectAllowed());
     }
 
@@ -28,6 +29,7 @@ public class ConnectionConfigurationTest {
             props.put(prefix + "requestBufferSize", "43");
             props.put(prefix + "responseHeaderSize", "44");
             props.put(prefix + "responseBufferSize", "45");
+            props.put(prefix + "jetty.idleTimeout", "46");
             props.put(prefix + "relativeRedirectAllowed", "false");
 
             ConnectionConfiguration cfg = new MyConnectionConfiguration(props, isSecured);
@@ -35,6 +37,7 @@ public class ConnectionConfigurationTest {
             assertEquals(43, cfg.getRequestBufferSize());
             assertEquals(44, cfg.getResponseHeaderSize());
             assertEquals(45, cfg.getOutputBufferSize(17));
+            assertEquals(46, cfg.getIdleTimeout());
             assertFalse(cfg.isRelativeRedirectAllowed());
         }
     }
