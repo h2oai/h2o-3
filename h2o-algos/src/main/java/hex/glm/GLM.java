@@ -1152,6 +1152,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _model = new GLMModel(_result, _parms, this, _state._ymu, _dinfo._adaptedFrame.lastVec().sigma(), _lmax, _nobs);
     }
     _model._output.setLambdas(_parms);  // set lambda_min and lambda_max if lambda_search is enabled
+    _model._output._ymu = _state._ymu;
     _model.delete_and_lock(_job);
   }
 

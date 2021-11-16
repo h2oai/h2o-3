@@ -53,6 +53,12 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
 
     @API(help="Starting lambda value used when lambda search is enabled.")
     double lambda_max;
+    
+    @API(help="ymu value")
+    double[] ymu;
+    
+    @API(help="rank")
+    double rank;
 
     @API(help = "Dispersion parameter, only applicable to Tweedie family (input/output) and fractional Binomial (output only)")
     double dispersion;
@@ -172,6 +178,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       alpha_best = impl.alpha_best();
       best_submodel_index = impl.bestSubmodelIndex();
       dispersion = impl.dispersion();
+      rank = impl.rank();
+      ymu = impl.ymu().clone();
       if(impl._multinomial || impl._ordinal)
         return fillMultinomial(impl);
       String [] names = impl.coefficientNames().clone();
