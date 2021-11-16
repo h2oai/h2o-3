@@ -424,7 +424,7 @@ Multinomial family generalization of the binomial model is used for multi-class 
 
 .. math::
 
-\hat{y}_c = Pr(y = c|x) = \frac{e^{x^\top\beta_c + \beta_{c0}}}{\sum^K_{k=1}(e^{x^\top\beta_k+\beta_{k0}})}
+   \hat{y}_c = Pr(y = c|x) = \frac{e^{x^\top\beta_c + \beta_{c0}}}{\sum^K_{k=1}(e^{x^\top\beta_k+\beta_{k0}})}
 
 The penalized negative log-likelihood is defined as:
 
