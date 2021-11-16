@@ -54,11 +54,12 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Starting lambda value used when lambda search is enabled.")
     double lambda_max;
     
-    @API(help="ymu value")
+    @API(help="double array storing ratio of number of response in class k over total number of responses for each" +
+            " classes of multinomial/ordinal families, mean response value for all other families")
     double[] ymu;
     
-    @API(help="rank")
-    double rank;
+    @API(help="rank: number of non-zero coefficients")
+    int rank;
 
     @API(help = "Dispersion parameter, only applicable to Tweedie family (input/output) and fractional Binomial (output only)")
     double dispersion;
