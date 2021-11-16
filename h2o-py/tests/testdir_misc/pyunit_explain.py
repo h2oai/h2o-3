@@ -118,7 +118,7 @@ def test_explanation_automl_regression():
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -282,7 +282,7 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -310,7 +310,7 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(h2o.explanation.varimp(leaderboard_without_SE, use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -452,7 +452,7 @@ def test_explanation_automl_multinomial_classification():
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
