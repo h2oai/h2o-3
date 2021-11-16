@@ -17,14 +17,6 @@ import water.H2O;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 
-;
-
-/**
- * Class for GLMValidation.
- *
- * @author tomasnykodym
- *
- */
 public class IndependentGLMMetricBuilder extends IndependentMetricBuilderSupervised<IndependentGLMMetricBuilder> {
   double residual_deviance;
   double null_devince;
@@ -39,7 +31,7 @@ public class IndependentGLMMetricBuilder extends IndependentMetricBuilderSupervi
   private final double [] _ymu;
   final boolean _computeMetrics;
   boolean _hglm;
-  public IndependentGLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, MultinomialAucType aucType, DistributionFamily family, boolean hglm){
+  public IndependentGLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, MultinomialAucType aucType, boolean hglm){
     super(domain == null?0:domain.length, domain);
     _glmf = glmf;
     _rank = rank;
@@ -55,7 +47,7 @@ public class IndependentGLMMetricBuilder extends IndependentMetricBuilderSupervi
           case binomial:
           case quasibinomial:
           case fractionalbinomial:
-            _metricBuilder = new IndependentMetricBuilderBinomial(domain, family);
+            _metricBuilder = new IndependentMetricBuilderBinomial(domain, glmf._family.toDistributionFamily());
             break;
           case multinomial:
             _metricBuilder = new IndependentMetricBuilderMultinomial(domain.length, domain, aucType);

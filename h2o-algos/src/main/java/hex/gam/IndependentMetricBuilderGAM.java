@@ -27,7 +27,7 @@ public class IndependentMetricBuilderGAM extends ModelMetricsSupervised.Independ
     transient double[] _ds = new double[3];
     transient float[] _yact = new float[1];
 
-    public IndependentMetricBuilderGAM(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass, MultinomialAucType aucType, DistributionFamily distributionFamily) {
+    public IndependentMetricBuilderGAM(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass, MultinomialAucType aucType) {
         super(domain==null?0:domain.length, domain);
         _intercept = intercept;
         _computeMetrics = computeMetrics;
@@ -39,7 +39,7 @@ public class IndependentMetricBuilderGAM extends ModelMetricsSupervised.Independ
             case binomial:
             case quasibinomial:
             case fractionalbinomial:
-                _metricBuilder = new ModelMetricsBinomial.IndependentMetricBuilderBinomial(domain, distributionFamily); break;
+                _metricBuilder = new ModelMetricsBinomial.IndependentMetricBuilderBinomial(domain, glmf._family.toDistributionFamily()); break;
             case multinomial:
                 _metricBuilder = new ModelMetricsMultinomial.IndependentMetricBuilderMultinomial(nclass, domain, aucType); break;
             case ordinal:
