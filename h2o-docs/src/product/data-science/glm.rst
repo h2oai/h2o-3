@@ -424,6 +424,12 @@ Multinomial family generalization of the binomial model is used for multi-class 
 
 .. math::
 
+\hat{y}_c = Pr(y = c|x) = \frac{e^{x^\top\beta_c + \beta_{c0}}}{\sum^K_{k=1}(e^{x^\top\beta_k+\beta_{k0}})}
+
+The penalized negative log-likelihood is defined as:
+
+.. math::
+
  - \Big[ \dfrac {1} {N} \sum_{i=1}^N \sum_{k=1}^K \big( y_{i,k} (x^T_i \beta_k + \beta_{k0}) \big) - \text{log} \big( \sum_{k=1}^K e^{x{^T_i}\beta_k + {\beta_{k0}}} \big) \Big] + \lambda \Big[ \dfrac {(1-\alpha)} {2} ||\beta || ^2_F + \alpha \sum_{j=1}^P ||\beta_j ||_1 \Big]
 
 where :math:`\beta_c` is a vector of coefficients for class "c", and :math:`y_{i,k}` is the :math:`k\text{th}` element of the binary vector produced by expanding the response variable using one-hot encoding (i.e., :math:`y_{i,k} == 1` iff the response at the :math:`i\text{th}` observation is "k"; otherwise it is 0.)
