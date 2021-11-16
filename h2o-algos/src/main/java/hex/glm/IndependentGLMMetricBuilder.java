@@ -24,13 +24,16 @@ public class IndependentGLMMetricBuilder extends IndependentMetricBuilderSupervi
   double _log_likelihood;
   double _aic;// internal AIC used only for poisson family!
   private double _aic2;// internal AIC used only for poisson family!
-  final GLMWeightsFun _glmf;
-  final private int _rank;
+  private GLMWeightsFun _glmf;
+  private int _rank;
   IndependentMetricBuilder _metricBuilder;
-  final boolean _intercept;
-  private final double [] _ymu;
-  final boolean _computeMetrics;
+  private boolean _intercept;
+  private double [] _ymu;
+  private boolean _computeMetrics;
   boolean _hglm;
+  
+  public IndependentGLMMetricBuilder() {}
+  
   public IndependentGLMMetricBuilder(String[] domain, double [] ymu, GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, MultinomialAucType aucType, boolean hglm){
     super(domain == null?0:domain.length, domain);
     _glmf = glmf;
