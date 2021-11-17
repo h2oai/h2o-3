@@ -35,7 +35,6 @@ def test_beta_constraints_binomial():
                                    1.959130413902314*0.8, 0.13139198387980652*0.8, 1.80498551446445*0.8]}
     constraints = h2o.H2OFrame(dictBounds)
     constraints = constraints[["names", "lower_bounds", "upper_bounds"]]
-    run_print_model_performance('binomial', h2o_data, nfolds, constraints, x, y, printText, seed, 'coordinate_descent')
     run_print_model_performance('binomial', h2o_data, nfolds, constraints, x, y, printText, seed, 'irlsm')
 
 def run_print_model_performance(family, train, nfolds, bc_constraints, x, y, printText, seed, solver):
@@ -44,13 +43,9 @@ def run_print_model_performance(family, train, nfolds, bc_constraints, x, y, pri
     h2o_model = H2OGeneralizedLinearEstimator(family=family, nfolds=nfolds, beta_constraints=bc_constraints, seed=seed,
                                               solver = solver)
     h2o_model.train(x=x, y=y, training_frame=train)
-    print("With lambda search and with solver {0}".format(solver))
-    h2o_model2 = H2OGeneralizedLinearEstimator(family=family, nfolds=nfolds, beta_constraints=bc_constraints, seed=seed,
-                                              lambda_search=True, solver = solver)
-    h2o_model2.train(x=x, y=y, training_frame=train)
+
     # check coefficients to be within bounds
     coeff = h2o_model.coef()
-    coeff2 = h2o_model2.coef()
     colNames = bc_constraints["names"]
     lowerB = bc_constraints["lower_bounds"]
     upperB = bc_constraints["upper_bounds"]
@@ -61,13 +56,6 @@ def run_print_model_performance(family, train, nfolds, bc_constraints, x, y, pri
         assert ((coeff[colNames[count,0]] >= lowerB[count,0] or low_diff) and (coeff[colNames[count,0]]
                                                                               <= upperB[count,0] or up_diff)) or coef_inactive, \
             "coef for {0}: {1}, lower bound: {2}, upper bound: {3}".format(colNames[count,0], coeff[colNames[count,0]],
-                                                                           lowerB[count,0], upperB[count,0])
-        low_diff2 =  abs(coeff2[colNames[count,0]]-lowerB[count,0]) < 1e-6
-        up_diff2 = abs(coeff2[colNames[count,0]] <= upperB[count,0]) < 1e-6
-        coef_inactive2 = coeff2[colNames[count,0]]==0
-        assert ((coeff2[colNames[count,0]] >= lowerB[count,0] or low_diff2) and (coeff2[colNames[count,0]]
-                                                                                <= upperB[count,0] or up_diff2)) or coef_inactive2, \
-            "With lambda search: coef for {0}: {1}, lower bound: {2}, upper bound: {3}".format(colNames[count,0], coeff2[colNames[count,0]],
                                                                            lowerB[count,0], upperB[count,0])
 
 if __name__ == "__main__":
