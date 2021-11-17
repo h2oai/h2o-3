@@ -111,14 +111,14 @@ def test_explanation_automl_regression():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -182,11 +182,11 @@ def test_explanation_list_of_models_regression():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
@@ -275,14 +275,14 @@ def test_explanation_automl_binomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -302,7 +302,7 @@ def test_explanation_automl_binomial_classification():
 
     # Leaderboard slices work
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     leaderboard_without_SE = aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :]
@@ -310,7 +310,7 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(h2o.explanation.varimp(leaderboard_without_SE, use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -352,11 +352,11 @@ def test_explanation_list_of_models_binomial_classification():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
@@ -445,14 +445,14 @@ def test_explanation_automl_multinomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -502,11 +502,11 @@ def test_explanation_list_of_models_multinomial_classification():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
