@@ -11,6 +11,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.util.EffectiveParametersUtils;
 import water.*;
+import water.exceptions.H2OColumnNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -545,6 +546,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     Vec[] gamColCSs = new Vec[numCSGamCols];
     String[] gamColCSNames = new String[numCSGamCols];
     for (int vind=0; vind<numCSGamCols; vind++) {
+      if (adptedF.vec(parms._gam_columns_sorted[vind][0]) == null) 
+        throw new H2OColumnNotFoundArgumentException("gam_columns", adptedF, parms._gam_columns_sorted[vind][0]);
+
       gamColCSs[vind] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
       gamColCSNames[vind] = parms._gam_columns_sorted[vind][0];
     }

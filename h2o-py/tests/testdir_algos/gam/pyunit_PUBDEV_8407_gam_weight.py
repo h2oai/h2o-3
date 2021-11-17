@@ -23,7 +23,7 @@ def link_functions_tweedie_vpow():
     }
 
     train = h2o.H2OFrame(pd.DataFrame(data))
-    test = train.drop(3)
+    test = train.drop("W")
     print(train)
     h2o_model = H2OGeneralizedAdditiveEstimator(family="tweedie",
                                                 gam_columns=["X3"],
