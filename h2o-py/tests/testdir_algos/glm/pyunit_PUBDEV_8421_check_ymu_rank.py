@@ -15,7 +15,7 @@ def test_binomial_ymu_rank():
     model.train(x=X, y=Y, training_frame=training_data)
     
     assert len(model._model_json["output"]["ymu"]) > 0
-    assert model._model_json["output"]["rank"] == len(model.coef())
+    assert model._model_json["output"]["rank"] == len(model.coef()) # only true when all coefficients are non-zero
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_binomial_ymu_rank)
