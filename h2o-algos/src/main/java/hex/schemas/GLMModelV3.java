@@ -132,6 +132,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
           }
           standardized_coefficient_magnitudes = new TwoDimTableV3();
           standardized_coefficient_magnitudes.fillFromImpl(tdt);
+        } else {
+          rank = 0;
         }
 
       return this;
@@ -188,6 +190,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       double [] beta = impl.beta();
       if (beta != null)
         rank = ArrayUtils.countNonzeros(beta);
+      else
+        rank = 0;
       String [] names = impl.coefficientNames().clone();
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
