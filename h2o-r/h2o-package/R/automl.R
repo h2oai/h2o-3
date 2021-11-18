@@ -72,7 +72,7 @@
 #'  * GLM (Generalized Linear Model)
 #'  * DRF (Distributed Random Forest)
 #'  * XRT (eXtremely Randomized Trees)
-#'  * DeepLearning
+#'  * DeepLearning (Fully Connected Deep Neural Network)
 #' 
 #'  It also applies HPO on the following algorithms:
 #'  * XGBoost
