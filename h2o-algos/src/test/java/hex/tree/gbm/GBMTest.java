@@ -16,10 +16,7 @@ import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.CompressedTree;
-import hex.tree.Constraints;
-import hex.tree.SharedTree;
-import hex.tree.SharedTreeModel;
+import hex.tree.*;
 import org.hamcrest.number.OrderingComparison;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -42,6 +39,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -4731,8 +4729,76 @@ public class GBMTest extends TestUtil {
     SharedTree.SharedTreeDebugParams debugParms = new SharedTree.SharedTreeDebugParams();
     debugParms._reproducible_histos = true; // use fully reproducible (deterministic) histograms
     debugParms._keep_orig_histo_precision = true; // do not reduce precision of histograms in the final step
+    debugParms._histo_monitor_class = HistogramCollectingMonitor.class.getName();
     
-    checkReproducibility(0.9, Double.NaN, debugParms);
+    try {
+      checkReproducibility(0.9, Double.NaN, debugParms);
+      assertFalse(HistogramCollectingMonitor._histos.isEmpty());
+      List<HistogramCollectingMonitor> initialHistos = HistogramCollectingMonitor._histos
+              .stream()
+              .filter(HistogramCollectingMonitor::isForEmptyModel)
+              .collect(Collectors.toList());
+      assertEquals(10, initialHistos.size());
+      int histosPerModel = HistogramCollectingMonitor._histos.size() / initialHistos.size();
+      compareModelHistos(HistogramCollectingMonitor._histos, histosPerModel);
+    } finally {
+      HistogramCollectingMonitor._histos.clear();
+    }
+  }
+
+  static void compareModelHistos(List<HistogramCollectingMonitor> histos, int histosPerModel) {
+    assertTrue(histosPerModel > 0);
+    for (int i = 0; i < histos.size() - histosPerModel; i++) {
+      HistogramCollectingMonitor histo = histos.get(i);
+      HistogramCollectingMonitor histoComp = histos.get(i + histosPerModel);
+      for (int h = 0; h < histo._hcs.length; h++) {
+        for (int c = 0; c < histo._hcs[h].length; c++) {
+          assertEquals(histo._tree, histoComp._tree);
+          assertEquals(histo._k, histoComp._k);
+          assertEquals(histo._leaf, histoComp._leaf);
+          assertArrayEquals(
+                  "Vals for histogram " + histo._hcs[h][c]._name + " should match exactly, h=" + h + ",c" + c + ",i" + i,
+                  histo._hcs[h][c].getRawVals(),
+                  histoComp._hcs[h][c].getRawVals(),
+                  0
+          );
+        }
+      }
+    }
+  }
+
+  public static class HistogramCollectingMonitor
+          implements Consumer<DHistogram[][]> {
+
+    int _tree;
+    int _k;
+    int _leaf;
+    DHistogram[][] _hcs;
+
+    static final List<HistogramCollectingMonitor> _histos = new ArrayList<>();
+
+    @SuppressWarnings("unused")
+    public HistogramCollectingMonitor(int tree, int k, int leaf) {
+      _tree = tree;
+      _k = k;
+      _leaf = leaf;
+    }
+
+    @SuppressWarnings("unused")
+    public HistogramCollectingMonitor() {
+    }
+
+    boolean isForEmptyModel() {
+      return _tree == 0 && _leaf == 0;
+    }
+    
+    @Override
+    public void accept(DHistogram[][] hcs) {
+      _hcs = hcs;
+      synchronized (_histos) {
+        _histos.add(this);
+      }
+    }
   }
 
   private void checkReproducibility(double thresholdNA, double NA) {

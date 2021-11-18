@@ -62,13 +62,14 @@ public class SharedTreeTest extends TestUtil  {
     Field[] fields = Weaver.getWovenFields(SharedTree.SharedTreeDebugParams.class);
     List<String> fieldNames = Stream.of(fields).map(Field::getName).collect(Collectors.toList());
     assertEquals(Arrays.asList(
-            "_reproducible_histos", "_keep_orig_histo_precision"
+            "_reproducible_histos", "_keep_orig_histo_precision", "_histo_monitor_class"
     ), fieldNames);
     // next verify the fields have the expected default value
     SharedTree<?, ?, ?> st = ModelBuilder.make(_parms);
     SharedTree.SharedTreeDebugParams dp = st.getDebugParams();
     assertFalse(dp._reproducible_histos);
     assertFalse(dp._keep_orig_histo_precision);
+    assertNull(dp._histo_monitor_class);
   }
 
   @Test

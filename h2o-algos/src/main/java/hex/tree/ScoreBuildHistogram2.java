@@ -11,6 +11,7 @@ import water.util.VecUtils;
 import static hex.tree.SharedTree.ScoreBuildOneTree;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * Created by tomas on 10/28/16.
@@ -73,6 +74,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final boolean _reproducibleHistos;
   // only for debugging purposes
   final boolean _reduceHistoPrecision; // if enabled allows to test that histograms are 100% reproducible when reproducibleHistos are enabled
+  transient Consumer<DHistogram[][]> _hcsMonitor;
 
   public ScoreBuildHistogram2(ScoreBuildOneTree sb, int treeNum, int k, int ncols, int nbins, DTree tree, int leaf,
                               DHistogram[][] hcs, DistributionFamily family,
@@ -103,6 +105,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     if (_reproducibleHistos && treeNum == 0 && k == 0 && leaf == 0) {
       Log.info("Using a deterministic way of building histograms");
     }
+    _hcsMonitor = dp.makeDHistogramMonitor(treeNum, k, leaf);
   }
 
   @Override
@@ -295,7 +298,11 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             WorkAllocator workAllocator = _reproducibleHistos ? new RangeWorkAllocator(_cids.length, nthreads) : new SharedPoolWorkAllocator(_cids.length); 
             ComputeHistoThread computeHistoThread = new ComputeHistoThread(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,workAllocator);
             LocalMR mr = new LocalMR(computeHistoThread, nthreads, ScoreBuildHistogram2.this);
-            (_reproducibleHistos ? mr.withNoPrevTaskReuse() : mr).fork();
+            if (_reproducibleHistos) {
+              mr = mr.withNoPrevTaskReuse();
+              assert mr.isReproducible();
+            }
+            mr.fork();
           }
         },nactive_cols,ScoreBuildHistogram2.this).fork();
       }
@@ -446,5 +453,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         if (_reduceHistoPrecision) 
           dh.reducePrecision();
       }
+    if (_hcsMonitor != null)
+      _hcsMonitor.accept(_hcs);
   }
 }
