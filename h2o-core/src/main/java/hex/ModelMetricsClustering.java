@@ -193,14 +193,13 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
 
     public IndependentMetricBuilderClustering(
         int ncol,
-        int nclust,
+        int k,
         double[][] centers_raw,
         double[][] centers_std_raw,
-        int[] mode,
-        int k) {
+        int[] mode) {
       _work = new double[ncol];
-      _size = new long[nclust];
-      _within_sumsqe = new double[nclust];
+      _size = new long[k];
+      _within_sumsqe = new double[k];
       Arrays.fill(_size, 0);
       Arrays.fill(_within_sumsqe, 0);
       _colSum = new double[ncol];
