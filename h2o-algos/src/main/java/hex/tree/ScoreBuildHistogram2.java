@@ -298,7 +298,11 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             WorkAllocator workAllocator = _reproducibleHistos ? new RangeWorkAllocator(_cids.length, nthreads) : new SharedPoolWorkAllocator(_cids.length); 
             ComputeHistoThread computeHistoThread = new ComputeHistoThread(_hcs.length == 0?new DHistogram[0]:_hcs[c],c,fLargestChunkSz,workAllocator);
             LocalMR mr = new LocalMR(computeHistoThread, nthreads, ScoreBuildHistogram2.this);
-            (_reproducibleHistos ? mr.withNoPrevTaskReuse() : mr).fork();
+            if (_reproducibleHistos) {
+              mr = mr.withNoPrevTaskReuse();
+              assert mr.isReproducible();
+            }
+            mr.fork();
           }
         },nactive_cols,ScoreBuildHistogram2.this).fork();
       }
