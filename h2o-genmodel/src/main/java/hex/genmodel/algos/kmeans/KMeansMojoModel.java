@@ -5,12 +5,12 @@ import hex.genmodel.MojoModel;
 
 public class KMeansMojoModel extends MojoModel implements IClusteringModel {
 
-  boolean _standardize;
-  double[][] _centers;
+  public boolean _standardize;
+  public double[][] _centers;
 
   double[] _means;
   double[] _mults;
-  int[] _modes;
+  public int[] _modes;
 
   KMeansMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
