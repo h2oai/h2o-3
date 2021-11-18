@@ -19,10 +19,12 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 
 public abstract class SharedTree<
     M extends SharedTreeModel<M,P,O>, 
@@ -1199,11 +1201,13 @@ public abstract class SharedTree<
 
     public boolean _reproducible_histos;
     public boolean _keep_orig_histo_precision;
+    public String _histo_monitor_class;
 
     public SharedTreeDebugParams(boolean initFromSysProps) {
       if (initFromSysProps) {
         _reproducible_histos = H2O.getSysBoolProperty("tree.SharedTree.reproducibleHistos", DEFAULT._reproducible_histos);
         _keep_orig_histo_precision = H2O.getSysBoolProperty("tree.SharedTree.keepOrigHistoPrecision", DEFAULT._keep_orig_histo_precision);
+        _histo_monitor_class = H2O.getSysProperty("tree.SharedTree.histoMonitorClass", DEFAULT._histo_monitor_class);
       }
     }
     
@@ -1215,6 +1219,21 @@ public abstract class SharedTree<
       return this.equals(DEFAULT);
     }
 
+    @SuppressWarnings("unchecked")
+    public Consumer<DHistogram[][]> makeDHistogramMonitor(int treeNum, int k, int leaf) {
+      if (_histo_monitor_class == null) {
+        return null;
+      }
+      try {
+        Class<?> histoMonitorClass = Class.forName(_histo_monitor_class);
+        Constructor<?> histoMonitorConstructor = histoMonitorClass.getConstructor(int.class, int.class, int.class);
+        Object histoMonitor = histoMonitorConstructor.newInstance(treeNum, k, leaf);
+        return (Consumer<DHistogram[][]>) histoMonitor;
+      } catch (Exception e) {
+        throw new IllegalStateException("Failed initialize Histogram Monitor Class: " + _histo_monitor_class, e);
+      }
+    }
+
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
@@ -1223,13 +1242,15 @@ public abstract class SharedTree<
       SharedTreeDebugParams that = (SharedTreeDebugParams) o;
 
       if (_reproducible_histos != that._reproducible_histos) return false;
-      return _keep_orig_histo_precision == that._keep_orig_histo_precision;
+      if (_keep_orig_histo_precision != that._keep_orig_histo_precision) return false;
+      return _histo_monitor_class != null ? _histo_monitor_class.equals(that._histo_monitor_class) : that._histo_monitor_class == null;
     }
 
     @Override
     public int hashCode() {
       int result = (_reproducible_histos ? 1 : 0);
       result = 31 * result + (_keep_orig_histo_precision ? 1 : 0);
+      result = 31 * result + (_histo_monitor_class != null ? _histo_monitor_class.hashCode() : 0);
       return result;
     }
   }
