@@ -83,6 +83,10 @@ public final class DHistogram extends Iced<DHistogram> {
   public double wYNA()  { return _vals[_vals_dim*_nbin+1]; }
   public double wYYNA() { return _vals[_vals_dim*_nbin+2]; }
 
+  public double[] getRawVals() {
+    return _vals;
+  }
+
   /**
    * Squared Error for NA bucket and prediction value _pred1
    * @return se
