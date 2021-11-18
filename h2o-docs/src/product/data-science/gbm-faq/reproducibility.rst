@@ -296,7 +296,31 @@ The parallelization level (number of cores, nthreads) controls how the dataset w
 How does my model provide reproducibility information?
 ######################################################
 
-Reproducibility information is divided into node information, cluster configuration, and input frames and is stored in MOJO. This can be accessed as: ``model._model_json['output']['reproducibility_information_table']``
+Reproducibility information is divided into node information, cluster configuration, and input frames. It is stored in MOJO. This information can be accessed by: 
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Import your MOJO:
+      mojo_model <- h2o.import_mojo(mojo_path)
+
+      # Extract some of model's reproducibility information:
+      # Extract java version:
+      java_version = mojo_model@model$reproducibility_information_table[[1]]['java_version']
+      # Extract h2o cluster version:
+      h2o_cluster_version = mojo_model@model$reproducibility_information_table[[2]]['h2o_cluster_version']
+
+   .. code-tab:: python
+
+      # Import your MOJO:
+      mojo_model = h2o.upload_mojo(mojo_path=mojo_path)
+
+      # Extract some of model's reproducibility information:
+      # Extract java version:
+      java_version = mojo_model._model_json['output']['reproducibility_information_table'][0]['java_version'][0]
+      # Extract h2o cluster version:
+      h2o_cluster_version = mojo_model._model_json['output']['reproducibility_information_table'][1]['h2o_cluster_version'][0]
+
 
 The **Input Frames Information** subtable stores the following data (``checksum``  and ``ESPC``) for frames used in the input of the algorithm:
 
