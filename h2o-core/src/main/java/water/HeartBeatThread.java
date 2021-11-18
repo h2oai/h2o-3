@@ -118,7 +118,7 @@ public class HeartBeatThread extends Thread {
         hb._process_total_ticks = -1;
         hb._process_num_open_fds = -1;
       }
-      hb._num_cpus = (short) Runtime.getRuntime().availableProcessors();
+      hb._num_cpus = (short) H2ORuntime.availableProcessors();
       hb._cpus_allowed = (short) lpfr.getProcessCpusAllowed();
       if (H2O.ARGS.nthreads < hb._cpus_allowed) {
         hb._cpus_allowed = H2O.ARGS.nthreads;

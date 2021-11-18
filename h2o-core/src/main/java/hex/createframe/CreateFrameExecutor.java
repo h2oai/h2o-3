@@ -166,7 +166,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
         estimatedByteSize(),
         numCols,
         numCols * 4,
-        Runtime.getRuntime().availableProcessors(),
+        H2ORuntime.availableProcessors(),
         H2O.getCloudSize(),
         false,
         false
