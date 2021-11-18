@@ -106,10 +106,11 @@ public class GAMModelUtils {
     model._output._glm_dispersion = glmModel._output.dispersion();
     model._nobs = glmModel._nobs;
     model._nullDOF = glmModel._nullDOF;
-    model._ymu = new double[glmModel._ymu.length];
     model._rank = glmModel._output.bestSubmodel().rank();
+    model._output._rank = model._rank;
     model._ymu = new double[glmModel._ymu.length];
     System.arraycopy(glmModel._ymu, 0, model._ymu, 0, glmModel._ymu.length);
+    model._output._ymu = model._ymu.clone();
     // pass GLM _solver value to GAM so that GAM effective _solver value can be set
     if (model.evalAutoParamsEnabled && model._parms._solver == GLMParameters.Solver.AUTO) {
       model._parms._solver = glmModel._parms._solver;

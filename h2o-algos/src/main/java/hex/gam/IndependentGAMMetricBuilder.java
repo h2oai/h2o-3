@@ -10,24 +10,26 @@ import water.util.MathUtils;
 
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 
-public class IndependentMetricBuilderGAM extends ModelMetricsSupervised.IndependentMetricBuilderSupervised<IndependentMetricBuilderGAM> {
+public class IndependentGAMMetricBuilder extends ModelMetricsSupervised.IndependentMetricBuilderSupervised<IndependentGAMMetricBuilder> {
     double _residual_deviance;
     double _null_deviance;
     long _nobs;
     double _log_likelihood;
     double _aic;
     private double _aic2;
-    final GLMModel.GLMWeightsFun _glmf;
+    private GLMModel.GLMWeightsFun _glmf;
     ModelMetrics.IndependentMetricBuilder _metricBuilder;  // point to generic model metric classes
-    final boolean _intercept;
-    private final double[] _ymu;
-    final boolean _computeMetrics;
-    final private int _rank;
+    private boolean _intercept;
+    private double[] _ymu;
+    private boolean _computeMetrics;
+    private int _rank;
     int _nclass;
     transient double[] _ds = new double[3];
     transient float[] _yact = new float[1];
 
-    public IndependentMetricBuilderGAM(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass, MultinomialAucType aucType) {
+    public IndependentGAMMetricBuilder() {}
+
+    public IndependentGAMMetricBuilder(String[] domain, double[] ymu, GLMModel.GLMWeightsFun glmf, int rank, boolean computeMetrics, boolean intercept, int nclass, MultinomialAucType aucType) {
         super(domain==null?0:domain.length, domain);
         _intercept = intercept;
         _computeMetrics = computeMetrics;
@@ -87,7 +89,7 @@ public class IndependentMetricBuilderGAM extends ModelMetricsSupervised.Independ
         }
     }
 
-    public void reduce(IndependentMetricBuilderGAM other) {
+    public void reduce(IndependentGAMMetricBuilder other) {
         if (_computeMetrics)
             _metricBuilder.reduce(other._metricBuilder);
         _residual_deviance += other._residual_deviance;
