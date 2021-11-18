@@ -9,6 +9,9 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
     public enum Algorithm {DRF, GBM, AUTO}
@@ -156,7 +159,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return fs;
     }
 
-    void updateModelMetrics( GLMModel glmModel, Frame fr){
+    void updateModelMetrics(GLMModel glmModel, Frame fr){
         for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
             // what is null here was already added to RF model from GLM submodel during hex.rulefit.RuleFit.RuleFitDriver.fillModelMetrics
             if (modelMetricsKey.get() != null)
@@ -173,4 +176,19 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     public boolean haveMojo() {
         return true;
     }
+    
+    Frame transformByRules(Frame frame, String[] ruleIds) {
+        Frame adaptFrm = new Frame(frame);
+        adaptTestForTrain(adaptFrm, true, false);
+        
+        List<Rule> rules = new ArrayList<>();
+        for (int i = 0; i < ruleIds.length; i++) {
+            rules.add(ruleEnsemble.getRuleByVarName(RuleFitUtils.readRuleId(ruleIds[i])));
+        }
+        RuleEnsemble subEnsemble = new RuleEnsemble(rules.toArray(new Rule[0]));
+        
+        return subEnsemble.transform(adaptFrm);
+    }
+    
+
 }

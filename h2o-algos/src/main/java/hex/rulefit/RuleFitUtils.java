@@ -131,4 +131,14 @@ public class RuleFitUtils {
 
         return transform.toArray(new Rule[0]);
     }
+
+    static String readRuleId(String ruleId) {
+        // if ruleId is in form after deduplication: "M0T0N1, M0T9N56, M9T34N56", meaning contains ", "
+        // find only first rule (other are equivalents)
+        if (ruleId.contains(",")) {
+            return ruleId.split(",")[0];
+        } else {
+            return ruleId;
+        }
+    }
 }

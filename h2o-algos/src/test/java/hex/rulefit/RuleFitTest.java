@@ -1026,6 +1026,38 @@ public class RuleFitTest extends TestUtil {
             Frame scored = Scope.track(rfit.score(train));
 
             Assert.assertTrue(rfit.testJavaScoring(train, scored, 1e-4));
+            
+            
+            // test transform by rules functionality:
+            Frame transformedOutput = rfit.transformByRules(train, new String[] {"M1T38N9, M1T44N9", "M2T34N20"});
+            Rule rule1 = rfit.ruleEnsemble.getRuleByVarName("M1T38N9");
+            Rule rule2 = rfit.ruleEnsemble.getRuleByVarName("M2T34N20");
+
+            System.out.println("Rule 1: \n" + rule1.languageRule);
+            System.out.println("Rule 2: \n" + rule2.languageRule);
+            
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(0), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(1), 1);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(2), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(3), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(4), 1);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(5), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(6), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(7), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(8), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(9), 1);
+            
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(0), 1);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(1), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(2), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(3), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(4), 1);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(5), 1);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(6), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(7), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(8), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(9), 0);
+            
         } finally {
             Scope.exit();
         }

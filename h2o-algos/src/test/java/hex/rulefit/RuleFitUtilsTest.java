@@ -269,5 +269,25 @@ public class RuleFitUtilsTest extends TestUtil {
             Scope.exit();
         }
     }
+    
+    
+    @Test
+    public void testReadRuleId() {
+        String ruleId = "M1T10N8";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), ruleId);
+        
+        ruleId = "M1T10N8, M1T29N8";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), "M1T10N8");
+
+        ruleId = "M3T15N9_0, M5T15N14_0, M4T15N11_0, M8T15N19_0";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), "M3T15N9_0");
+
+        ruleId = "M6T10N36_0";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), "M6T10N36_0");
+
+        // todo decidde linear beehaviour, but thats not a rule, so maybe return an error
+
+
+    }
 
 }
