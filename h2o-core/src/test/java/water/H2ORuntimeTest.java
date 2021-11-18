@@ -1,5 +1,6 @@
 package water;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -30,4 +31,11 @@ public class H2ORuntimeTest {
                 System.setProperty("sys.ai.h2o.activeProcessorCount", oldValue);
         }
     }
+
+    @Test
+    public void getActiveProcessorCount_in_CI() {
+        Assume.assumeTrue(TestUtil.isCI());
+        assertEquals(4, H2ORuntime.getActiveProcessorCount());
+    }
+
 }
