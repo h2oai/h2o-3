@@ -1018,7 +1018,7 @@ public class EasyPredictModelWrapper implements Serializable {
     return predict(data, offset, new double[predsSize]);
   }
 
-  protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
+  public double[] fillRawData(RowData data, double[] rawData) throws PredictException {
     return rowDataConverter.convert(data, rawData);
   }
   
