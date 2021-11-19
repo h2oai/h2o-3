@@ -11,7 +11,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .compatibility import *  # NOQA
 
 import csv
-import imp  # keeping this deprecated module as soon as we keep supporting Py2.7
 import io
 import itertools
 import os
@@ -66,20 +65,25 @@ def temp_ctr():
     return _id_ctr
 
 
+def is_module_available(mod):
+    if PY2:
+        import imp
+        try:
+            imp.find_module(mod)
+            return True
+        except ImportError:
+            return False
+        
+    import importlib.util
+    return importlib.util.find_spec(mod) is not None
+
+
 def can_use_pandas():
-    try:
-        imp.find_module('pandas')
-        return True
-    except ImportError:
-        return False
+    return is_module_available('pandas')
 
 
 def can_use_numpy():
-    try:
-        imp.find_module('numpy')
-        return True
-    except ImportError:
-        return False
+    return is_module_available('numpy')
 
 
 _url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
