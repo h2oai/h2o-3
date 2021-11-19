@@ -17,7 +17,7 @@ import java.util.TreeSet;
 
 
 /**
- * Area under uplift curve
+ * Object to calculate uplift curve and area under uplift curve
  */
 public class AUUC extends Iced{
     public final int _nBins;              // max number of bins; can be less if there are fewer points
@@ -31,7 +31,6 @@ public class AUUC extends Iced{
     public final long[] _frequencyCumsum; // cumulative sum of frequency to plot AUUC
     public double[] _uplift;              // output uplift values
     public final long _n;                 // number of data
-
     
     public static final int NBINS = 1000;
 

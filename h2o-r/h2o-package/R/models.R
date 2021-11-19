@@ -4025,9 +4025,9 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
 #' @export
 plot.H2OBinomialUpliftMetrics <- function(x, metric = "qini", main, ...) {
     if(!metric %in% c("qini", "lift", "gain")) stop("metric must be 'qini' or 'lift' or 'gain'")
-    xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
+    xaxis <- "Number targeted"; yaxis = "Cumulative Uplift"
     if(missing(main)) {
-        main <- "Area under uplift curve"
+        main <- paste("Uplift curve - ", metric)
         if(x@on_train) {
             main <- paste(main, "(on train)")
         } else if (x@on_valid) {
@@ -4037,6 +4037,14 @@ plot.H2OBinomialUpliftMetrics <- function(x, metric = "qini", main, ...) {
     xdata <- x@metrics$thresholds_and_metric_scores$n
     ydata <- eval(parse(text=paste("x@metrics$thresholds_and_metric_scores$", metric, sep="")))
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(ydata),max(ydata)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
+    if(metric == 'lift'){
+        legend("bottomright", legend=c(metric), col=c("blue"), inset=.02, lty=1:2, cex=0.8)  
+    } else {
+        a <- ydata[length(ydata)-1] / xdata[length(xdata)-1]
+        yrnd <- xdata * a
+        graphics::lines(xdata, yrnd, main = main, xlab = xaxis, ylab = yaxis, ylim=c(min(yrnd),max(yrnd)), xlim=c(min(xdata),max(xdata)), type='l', lty=2, col='black', lwd=2, panel.first = grid())
+        legend("upperright", legend=c(metric, "random"), col=c("blue", "black"), inset=.02, lty=1:2, cex=0.8)  
+    }
 }
 
 #' @export

@@ -3,14 +3,14 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.UplitRandomForest.smoke <- function() {
-    train <- h2o.importFile(locate("smalldata/uplift/criteo_uplift_13k.csv"))
+    train <- h2o.importFile(locate("smalldata/uplift/upliftml_train.csv"))
     train$treatment <- as.factor(train$treatment)
-    train$conversion <- as.factor(train$conversion)
+    train$outcome <- as.factor(train$outcome)
 
     uplift.model <- h2o.upliftRandomForest(
                                              training_frame = train,
-                                             x = sprintf("f%s",seq(0:10)),
-                                             y = "conversion",
+                                             x = sprintf("feature_%s",seq(0:11)),
+                                             y = "outcome",
                                              ntrees=10,
                                              max_depth=10,
                                              treatment_column="treatment",
@@ -31,6 +31,7 @@ test.UplitRandomForest.smoke <- function() {
     perf <- h2o.performance(uplift.model, train)
     auuc <-h2o.auuc(perf)
     expect_equal(5.47, auuc, tolerance = 0.01, scale = 1)
+    plot(perf)
 }
 
 doTest("UpliftRandomForest: Smoke Test", test.UplitRandomForest.smoke)

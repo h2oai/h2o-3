@@ -1620,7 +1620,7 @@ public class DTree extends Iced {
     double nCT0 = numhiContr[0];
     double prY1CT1 = resphiTreat[0]/nCT1;
     double prY1CT0 = resphiContr[0]/nCT0;
-    double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0); // normalization here?
+    double bestUpliftGain = upliftMetric.node(prY1CT1 , prY1CT0);
     // if there are any NAs, then try to split them from the non-NAs
     if (wNA>=min_rows) {
       double prCT1All = (nCT1 + numTreatNA + 1)/(nCT0 + numContrNA + nCT1 + numTreatNA + 2);

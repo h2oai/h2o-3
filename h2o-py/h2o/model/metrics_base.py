@@ -1960,14 +1960,19 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             plt = get_matplotlib_pyplot(server)
             if plt is None:
                 return
-            plt.ylabel('Uplift')
-            plt.xlabel('Number of data')
-            plt.title('Area under Uplift curve - '+metric)
+            plt.ylabel('Cumulative Uplift')
+            plt.xlabel('Number Targeted')
+            plt.title('Uplift curve - '+metric)
             uplift = self.uplift(metric)
             n = self.n()
-            plt.plot(n, uplift, 'b-')
-            plt.axis([min(n) - 0.02 * min(n), max(n) + 0.02 * max(n), 
-                      min(uplift) - 0.02 * min(uplift), max(uplift) + 0.02 * max(uplift)])
+            a = uplift[len(uplift)-1]/n[len(n)-1]
+            plt.plot(n, uplift, 'b-', label='uplift')
+            if metric is "lift":
+                plt.legend(loc='upper right')
+            else:
+                rnd = [a * nn for nn in n]
+                plt.plot(n, rnd, 'k--', label='random')
+                plt.legend(loc='lower right')
             plt.grid(True)
             plt.tight_layout()
             if not server:
