@@ -296,7 +296,7 @@ The parallelization level (number of cores, nthreads) controls how the dataset w
 How does my model provide reproducibility information?
 ######################################################
 
-Reproducibility information is divided into node information, cluster configuration, and input frames. It is stored in MOJO. This information can be accessed by: 
+Reproducibility information is divided into node information, cluster configuration, and input frames. It is stored in both the binary model and MOJO. This information can be accessed by: 
 
 .. tabs::
    .. code-tab:: r R
