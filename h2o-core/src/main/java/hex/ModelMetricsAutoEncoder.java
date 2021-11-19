@@ -25,18 +25,4 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
       return m.addModelMetrics(new ModelMetricsAutoEncoder(m, f, _customMetric));
     }
   }
-
-  public static class IndependentMetricBuilderAutoEncoder extends IndependentMetricBuilderUnsupervised<IndependentMetricBuilderAutoEncoder> {
-    public IndependentMetricBuilderAutoEncoder(int dims) {
-      _work = new double[dims];
-    }
-
-    @Override public double[] perRow(double ds[], float yact[]) {
-      throw H2O.unimpl();
-    }
-
-    @Override public ModelMetrics makeModelMetrics() {
-      return new ModelMetricsAutoEncoder(null, null, _customMetric);
-    }
-  }
 }

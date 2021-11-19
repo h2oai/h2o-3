@@ -86,7 +86,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     }
   }
 
-  public static class IndependentGlrmModelMetricsBuilder extends IndependentMetricBuilderUnsupervised<IndependentGlrmModelMetricsBuilder> {
+  public static class IndependentGLRMModelMetricsBuilder extends IndependentMetricBuilderUnsupervised<IndependentGLRMModelMetricsBuilder> {
     public double _miscls;     // Number of misclassified categorical values
     public long _numcnt;      // Number of observed numeric entries
     public long _catcnt;     // Number of observed categorical entries
@@ -97,9 +97,9 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     private double[] _normSub;
     private double[] _normMul;
 
-    public IndependentGlrmModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul) {
+    public IndependentGLRMModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul) {
       this(dims, permutation, ncats, nnums, normSub, normMul, false); }
-    public IndependentGlrmModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul, boolean impute_original) {
+    public IndependentGLRMModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul, boolean impute_original) {
       _work = new double[dims];
       _miscls = _numcnt = _catcnt = 0;
       _permutation = permutation;
@@ -136,7 +136,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     }
 
     @Override
-    public void reduce(IndependentGlrmModelMetricsBuilder mm) {
+    public void reduce(IndependentGLRMModelMetricsBuilder mm) {
       super.reduce(mm);
       _miscls += mm._miscls;
       _numcnt += mm._numcnt;
