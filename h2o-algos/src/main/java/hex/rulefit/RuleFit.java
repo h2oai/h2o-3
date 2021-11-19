@@ -260,6 +260,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     glmParameters._lambda = getOptimalLambda();
                 }
 
+                LOG.info("Training GLM...");
                 long startGLMTime = System.nanoTime();
                 GLM job = new GLM(glmParameters);
                 glmModel = job.trainModel().get();

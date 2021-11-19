@@ -95,7 +95,7 @@ public class RuleFitUtilsTest extends TestUtil {
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = gbm._output;
             final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
             SharedTreeSubgraph sharedTreeSubgraph = gbm.getSharedTreeSubgraph(0, treeClass);
-            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
+            Set<Rule> treeRules =  Rule.extractRulesFromTree2(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
             Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"GLEASON", false);
@@ -144,20 +144,30 @@ public class RuleFitUtilsTest extends TestUtil {
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = isofor._output;
             final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
             SharedTreeSubgraph sharedTreeSubgraph = isofor.getSharedTreeSubgraph(0, treeClass);
-            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
+            Set<Rule> treeRules =  Rule.extractRulesFromTree2(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
             List<String> languageRules = treeRules.stream().map(it -> it.languageRule).sorted().collect(Collectors.toList());
             // Note: this hard-coded list of expected rules is sensitive to changes in the upstream algo
+//            List<String> expectedRules = Arrays.asList(
+//                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1987})",
+//                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1988})",
+//                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA)",
+//                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f5, f6, f7})",
+//                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
+//                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+//                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance < 348.5)",
+//                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance >= 348.5 or Distance is NA)"
+//            );
             List<String> expectedRules = Arrays.asList(
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1987})",
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1988})",
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA)",
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f5, f6, f7})",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance < 348.5)",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance >= 348.5 or Distance is NA)"
+                    "(Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
+                    "(Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(Distance < 348.5) & (Distance >= 211.5 or Distance is NA) & (fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA)",
+                    "(Distance >= 348.5 or Distance is NA) & (fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA)",
+                    "(fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fDayOfWeek in {f5, f6, f7}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fYear in {f1987})",
+                    "(fYear in {f1988})"
             );
             assertEquals(expectedRules, languageRules);
 
