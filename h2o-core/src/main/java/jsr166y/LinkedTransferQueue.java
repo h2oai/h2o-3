@@ -6,6 +6,8 @@
 
 package jsr166y;
 
+import water.H2ORuntime;
+
 import java.util.AbstractQueue;
 import java.util.Collection;
 import java.util.Iterator;
@@ -380,7 +382,7 @@ public class LinkedTransferQueue<E> extends AbstractQueue<E>
 
     /** True if on multiprocessor */
     private static final boolean MP =
-        Runtime.getRuntime().availableProcessors() > 1;
+        H2ORuntime.availableProcessors() > 1;
 
     /**
      * The number of times to spin (with randomly interspersed calls

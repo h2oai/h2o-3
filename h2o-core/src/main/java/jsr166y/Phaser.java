@@ -6,6 +6,8 @@
 
 package jsr166y;
 
+import water.H2ORuntime;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -980,7 +982,7 @@ public class Phaser {
     }
 
     /** The number of CPUs, for spin control */
-    private static final int NCPU = Runtime.getRuntime().availableProcessors();
+    private static final int NCPU = H2ORuntime.availableProcessors();
 
     /**
      * The number of times to spin before blocking while waiting for

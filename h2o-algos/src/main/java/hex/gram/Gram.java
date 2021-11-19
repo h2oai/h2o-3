@@ -535,7 +535,7 @@ public final class Gram extends Iced<Gram> {
     double[][] arr = new double[denseN][];
     for( int i = 0; i < arr.length; ++i )
       arr[i] = Arrays.copyOfRange(fchol._xx[i], sparseN, sparseN + denseN);
-    int p = Runtime.getRuntime().availableProcessors();
+    final int p = H2ORuntime.availableProcessors();
     InPlaceCholesky d = InPlaceCholesky.decompose_2(arr, 10, p);
     fchol.setSPD(d.isSPD());
     arr = d.getL();

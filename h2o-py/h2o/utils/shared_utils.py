@@ -11,7 +11,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from .compatibility import *  # NOQA
 
 import csv
-import imp  # keeping this deprecated module as soon as we keep supporting Py2.7
 import io
 import itertools
 import os
@@ -66,35 +65,46 @@ def temp_ctr():
     return _id_ctr
 
 
-def can_use_pandas():
-    try:
-        imp.find_module('pandas')
+def is_module_available(mod):
+    if mod in sys.modules and sys.modules[mod] is not None:  # fast track + safer in unusual environments 
         return True
-    except ImportError:
-        return False
+    if PY2:
+        import imp
+        try:
+            imp.find_module(mod)
+            return True
+        except ImportError:
+            return False
+        
+    import importlib.util
+    return importlib.util.find_spec(mod) is not None
+
+
+def can_use_pandas():
+    return is_module_available('pandas')
 
 
 def can_use_numpy():
-    try:
-        imp.find_module('numpy')
-        return True
-    except ImportError:
-        return False
+    return is_module_available('numpy')
 
 
 _url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
 _url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in range(256)]
 
+
 def url_encode(s):
     # Note: type cast str(s) will not be needed once all code is made compatible
     return "".join(_url_chars_map[c] for c in bytes_iterator(s))
 
+
 def quote(s):
     return url_encode(s)
+
 
 def clamp(x, xmin, xmax):
     """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
     return max(xmin, min(x, xmax))
+
 
 def _gen_header(cols):
     return ["C" + str(c) for c in range(1, cols + 1, 1)]
@@ -190,6 +200,7 @@ def _handle_numpy_array(python_obj, header):
 def _handle_pandas_data_frame(python_obj, header):
     data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
     return list(str(c) for c in python_obj.columns), data
+
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys()) if python_obj else _gen_header(1)
