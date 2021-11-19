@@ -66,6 +66,8 @@ def temp_ctr():
 
 
 def is_module_available(mod):
+    if mod in sys.modules:  # fast track + safer in unusual environments 
+        return True
     if PY2:
         import imp
         try:
