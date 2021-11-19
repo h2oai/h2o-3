@@ -24,7 +24,7 @@ public class H2ORuntime {
         return availableProcessors;
     }
 
-    static int getActiveProcessorCount() {
+    public static int getActiveProcessorCount() {
         return Integer.parseInt(System.getProperty("sys.ai.h2o.activeProcessorCount", "0"));
     }
     
