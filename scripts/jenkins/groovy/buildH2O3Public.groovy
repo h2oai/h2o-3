@@ -11,10 +11,10 @@ def call(final pipelineContext) {
         pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
         try {
             // Launch docker container, build h2o-3
-            def buildEnv = config.getBuildEnv()
-                + "PYTHON_VERSION=${config.VERSIONS.PYTHON.active}"
-                + "R_VERSION=${config.VERSIONS.R.latest_3}"
-                + "JAVA_VERSION=${config.VERSIONS.JAVA.first}"
+            def buildEnv = config.getBuildEnv() + 
+                    "PYTHON_VERSION=${config.VERSIONS.PYTHON.active}" + 
+                    "R_VERSION=${config.VERSIONS.R.latest_3}" + 
+                    "JAVA_VERSION=${config.VERSIONS.JAVA.first}"
             def timeoutMinutes = 100
             stage(stageName) {
                 pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext)

@@ -623,7 +623,7 @@ def call(final pipelineContext) {
   // Stages executed in addition to NIGHTLY_REPEATED_STAGES, executed once a night.
   // Should contain all Java versions and also the minimum supported Python version. 
   def NIGHTLY_STAGES = [] +
-          + v.JAVA.smoke_tests.collect {
+          v.JAVA.smoke_tests.collect {
             [
               stageName: "Java ${it} Smoke",
               target: 'test-junit-smoke-jenkins',
@@ -631,8 +631,8 @@ def call(final pipelineContext) {
               timeoutValue: 20,
               component: config.COMPONENT_JAVA
             ]
-          }
-          + v.JAVA.lts_tests.collect {
+          } +
+          v.JAVA.lts_tests.collect {
             [
               stageName: "Java ${it} JUnit",
               target: 'test-junit-1x-jenkins',
@@ -643,72 +643,72 @@ def call(final pipelineContext) {
               additionalTestPackages: [config.COMPONENT_PY],
               imageSpecifier: "python-${v.PYTHON.legacy}-jdk-${it}"
             ]
-          }
-          + [
-              [
-                stageName: "Py${v.PYTHON.legacy} Single Node", 
-                target: 'test-pyunit-single-node', 
-                pythonVersion: v.PYTHON.legacy,
-                timeoutValue: 40, 
-                component: config.COMPONENT_PY
-              ],
-              [
-                stageName: "Py${v.PYTHON.legacy} Small", 
-                target: 'test-pyunit-small', 
-                pythonVersion: v.PYTHON.legacy,
-                timeoutValue: 90, 
-                component: config.COMPONENT_PY
-              ],
-              [
-                stageName: "Py${v.PYTHON.legacy} Fault Tolerance", 
-                target: 'test-pyunit-fault-tolerance', 
-                pythonVersion: v.PYTHON.legacy,
-                timeoutValue: 30, component: config.COMPONENT_PY
-              ],
-              [
-                stageName: "Py${v.PYTHON.legacy} AutoML", 
-                target: 'test-pyunit-automl', 
-                pythonVersion: v.PYTHON.legacy,
-                timeoutValue: 90, 
-                component: config.COMPONENT_PY
-              ],
-              [
-                stageName: "Py${v.PYTHON.legacy} Medium-large", 
-                target: 'test-pyunit-medium-large', 
-                pythonVersion: v.PYTHON.legacy,
-                timeoutValue: 150, 
-                component: config.COMPONENT_PY
-              ],
-              [
-                stageName: 'R3 Small Client Mode', 
-                target: 'test-r-small-client-mode', 
-                rVersion: v.R.latest_3,
-                timeoutValue: 155, 
-                component: config.COMPONENT_R
-              ],
-              [
-                stageName: 'R3 Client Mode AutoML', 
-                target: 'test-r-client-mode-automl', 
-                rVersion: v.R.latest_3,
-                timeoutValue: 155, 
-                component: config.COMPONENT_R
-              ],
-              [
-                stageName: 'R3 Small Client Mode Disconnect Attack', 
-                target: 'test-r-small-client-mode-attack', 
-                rVersion: v.R.latest_3,
-                timeoutValue: 155, 
-                component: config.COMPONENT_R
-              ],
-              [ // These run with reduced number of file descriptors for early detection of FD leaks
-                stageName: 'XGBoost Stress tests', 
-                target: 'test-pyunit-xgboost-stress', 
-                pythonVersion: v.PYTHON.active, 
-                timeoutValue: 40,
-                component: config.COMPONENT_PY, 
-                customDockerArgs: [ '--ulimit nofile=150:150' ]
-              ]
+          } +
+          [
+            [
+              stageName: "Py${v.PYTHON.legacy} Single Node", 
+              target: 'test-pyunit-single-node', 
+              pythonVersion: v.PYTHON.legacy,
+              timeoutValue: 40, 
+              component: config.COMPONENT_PY
+            ],
+            [
+              stageName: "Py${v.PYTHON.legacy} Small", 
+              target: 'test-pyunit-small', 
+              pythonVersion: v.PYTHON.legacy,
+              timeoutValue: 90, 
+              component: config.COMPONENT_PY
+            ],
+            [
+              stageName: "Py${v.PYTHON.legacy} Fault Tolerance", 
+              target: 'test-pyunit-fault-tolerance', 
+              pythonVersion: v.PYTHON.legacy,
+              timeoutValue: 30, component: config.COMPONENT_PY
+            ],
+            [
+              stageName: "Py${v.PYTHON.legacy} AutoML", 
+              target: 'test-pyunit-automl', 
+              pythonVersion: v.PYTHON.legacy,
+              timeoutValue: 90, 
+              component: config.COMPONENT_PY
+            ],
+            [
+              stageName: "Py${v.PYTHON.legacy} Medium-large", 
+              target: 'test-pyunit-medium-large', 
+              pythonVersion: v.PYTHON.legacy,
+              timeoutValue: 150, 
+              component: config.COMPONENT_PY
+            ],
+            [
+              stageName: 'R3 Small Client Mode', 
+              target: 'test-r-small-client-mode', 
+              rVersion: v.R.latest_3,
+              timeoutValue: 155, 
+              component: config.COMPONENT_R
+            ],
+            [
+              stageName: 'R3 Client Mode AutoML', 
+              target: 'test-r-client-mode-automl', 
+              rVersion: v.R.latest_3,
+              timeoutValue: 155, 
+              component: config.COMPONENT_R
+            ],
+            [
+              stageName: 'R3 Small Client Mode Disconnect Attack', 
+              target: 'test-r-small-client-mode-attack', 
+              rVersion: v.R.latest_3,
+              timeoutValue: 155, 
+              component: config.COMPONENT_R
+            ],
+            [ // These run with reduced number of file descriptors for early detection of FD leaks
+              stageName: 'XGBoost Stress tests', 
+              target: 'test-pyunit-xgboost-stress', 
+              pythonVersion: v.PYTHON.active, 
+              timeoutValue: 40,
+              component: config.COMPONENT_PY, 
+              customDockerArgs: [ '--ulimit nofile=150:150' ]
             ]
+          ]
 
   def supportedHadoopDists = config.getSupportedHadoopDistributions()
   def HADOOP_STAGES = []
