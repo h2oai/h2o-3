@@ -45,8 +45,18 @@
 #'        an accurate prediction, remove all rows with weight == 0.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
 #'        enter 0. Defaults to 10000.
+#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
+#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
+#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
+#'        Defaults to AUTO.
+#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
+#'        much) Defaults to 0.001.
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
@@ -120,7 +130,11 @@ h2o.stackedEnsemble <- function(x,
                                 weights_column = NULL,
                                 offset_column = NULL,
                                 seed = -1,
+                                score_each_iteration = FALSE,
                                 score_training_samples = 10000,
+                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                stopping_tolerance = 0.001,
+                                stopping_rounds = 0,
                                 keep_levelone_frame = FALSE,
                                 export_checkpoints_dir = NULL,
                                 auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
@@ -189,8 +203,16 @@ h2o.stackedEnsemble <- function(x,
     parms$offset_column <- offset_column
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
   if (!missing(score_training_samples))
     parms$score_training_samples <- score_training_samples
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))
@@ -226,7 +248,11 @@ h2o.stackedEnsemble <- function(x,
                                                 weights_column = NULL,
                                                 offset_column = NULL,
                                                 seed = -1,
+                                                score_each_iteration = FALSE,
                                                 score_training_samples = 10000,
+                                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                                stopping_tolerance = 0.001,
+                                                stopping_rounds = 0,
                                                 keep_levelone_frame = FALSE,
                                                 export_checkpoints_dir = NULL,
                                                 auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
@@ -300,8 +326,16 @@ h2o.stackedEnsemble <- function(x,
     parms$offset_column <- offset_column
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
   if (!missing(score_training_samples))
     parms$score_training_samples <- score_training_samples
+  if (!missing(stopping_metric))
+    parms$stopping_metric <- stopping_metric
+  if (!missing(stopping_tolerance))
+    parms$stopping_tolerance <- stopping_tolerance
+  if (!missing(stopping_rounds))
+    parms$stopping_rounds <- stopping_rounds
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))

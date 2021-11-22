@@ -82,7 +82,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                  weights_column=None,  # type: Optional[str]
                  offset_column=None,  # type: Optional[str]
                  seed=-1,  # type: int
+                 score_each_iteration=False,  # type: bool
                  score_training_samples=10000,  # type: int
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_tolerance=0.001,  # type: float
+                 stopping_rounds=0,  # type: int
                  keep_levelone_frame=False,  # type: bool
                  export_checkpoints_dir=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
@@ -155,10 +159,27 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
                random number)
                Defaults to ``-1``.
         :type seed: int
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
+        :type score_each_iteration: bool
         :param score_training_samples: Specify the number of training set samples for scoring. The value must be >= 0.
                To use all training samples, enter 0.
                Defaults to ``10000``.
         :type score_training_samples: int
+        :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client.
+               Defaults to ``"auto"``.
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+               "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+        :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
+               is not at least this much)
+               Defaults to ``0.001``.
+        :type stopping_tolerance: float
+        :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
+               length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+               Defaults to ``0``.
+        :type stopping_rounds: int
         :param keep_levelone_frame: Keep level one frame used for metalearner training.
                Defaults to ``False``.
         :type keep_levelone_frame: bool
@@ -187,7 +208,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self.weights_column = weights_column
         self.offset_column = offset_column
         self.seed = seed
+        self.score_each_iteration = score_each_iteration
         self.score_training_samples = score_training_samples
+        self.stopping_metric = stopping_metric
+        self.stopping_tolerance = stopping_tolerance
+        self.stopping_rounds = stopping_rounds
         self.keep_levelone_frame = keep_levelone_frame
         self.export_checkpoints_dir = export_checkpoints_dir
         self.auc_type = auc_type
@@ -761,6 +786,20 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
     @property
+    def score_each_iteration(self):
+        """
+        Whether to score during each iteration of model training.
+
+        Type: ``bool``, defaults to ``False``.
+        """
+        return self._parms.get("score_each_iteration")
+
+    @score_each_iteration.setter
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
+
+    @property
     def score_training_samples(self):
         """
         Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
@@ -774,6 +813,52 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def score_training_samples(self, score_training_samples):
         assert_is_type(score_training_samples, None, int)
         self._parms["score_training_samples"] = score_training_samples
+
+    @property
+    def stopping_metric(self):
+        """
+        Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score
+        for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
+        client.
+
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("stopping_metric")
+
+    @stopping_metric.setter
+    def stopping_metric(self, stopping_metric):
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
+        self._parms["stopping_metric"] = stopping_metric
+
+    @property
+    def stopping_tolerance(self):
+        """
+        Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
+
+        Type: ``float``, defaults to ``0.001``.
+        """
+        return self._parms.get("stopping_tolerance")
+
+    @stopping_tolerance.setter
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
+
+    @property
+    def stopping_rounds(self):
+        """
+        Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
+        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+
+        Type: ``int``, defaults to ``0``.
+        """
+        return self._parms.get("stopping_rounds")
+
+    @stopping_rounds.setter
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
 
     @property
     def keep_levelone_frame(self):

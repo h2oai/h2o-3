@@ -52,7 +52,11 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "weights_column",
       "offset_column",
       "seed",
+      "score_each_iteration",
       "score_training_samples",
+      "stopping_metric",
+      "stopping_tolerance",
+      "stopping_rounds",
       "keep_levelone_frame",
       "export_checkpoints_dir", 
       "auc_type"

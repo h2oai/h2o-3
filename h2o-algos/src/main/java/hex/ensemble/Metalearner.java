@@ -10,6 +10,9 @@ import water.Key;
 import water.fvec.Frame;
 import water.util.Log;
 
+import java.lang.reflect.Field;
+import java.util.Objects;
+
 public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Model<M, P, ?>, P extends Model.Parameters> {
 
   /**
@@ -106,6 +109,19 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
 
   abstract B createBuilder();
 
+  protected <P1 extends Model.Parameters, P2 extends Model.Parameters> void setIfNotSet(P1 from, P2 to, String what) {
+    try {
+      P2 defaultParms = (P2) to.getClass().newInstance();
+      Field toField = to.getClass().getField(what);
+      Field fromField = from.getClass().getField(what);
+      if (Objects.equals(toField.get(to), toField.get(defaultParms))) {
+        toField.set(to, fromField.get(from));
+      }
+    } catch (Exception e){
+      // Ignore
+    }
+  }
+
   protected void setCommonParams(P parms) {
     if (parms._seed == -1) { //use _metalearnerSeed only as legacy fallback if not set on metalearner_parameters 
       parms._seed = _metalearnerSeed;
@@ -116,6 +132,12 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     parms._max_runtime_secs = _maxRuntimeSecs;
     parms._weights_column = _model._parms._weights_column;
     parms._offset_column = _model._parms._offset_column;
+
+    // Checking if it was set in "metalearner_params" to keep backward compatibility
+    setIfNotSet(_model._parms, parms, "_stopping_metric");
+    setIfNotSet(_model._parms, parms, "_stopping_rounds");
+    setIfNotSet(_model._parms, parms, "_stopping_tolerance");
+    setIfNotSet(_model._parms, parms, "_score_each_iteration");
   }
 
   protected void setCrossValidationParams(P parms) {

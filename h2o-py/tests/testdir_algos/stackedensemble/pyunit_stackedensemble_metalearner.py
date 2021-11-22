@@ -155,11 +155,20 @@ def metalearner_parameters_test():
                                          validation_frame=test,
                                          base_models=[gbm.model_id, rf.model_id],
                                          metalearner_algorithm='xgboost',
-                                         metalearner_params={'booster': 'dart'})
+                                         metalearner_params={'booster': 'dart', 'stopping_tolerance': 0.00271828},
+                                         stopping_rounds=10,
+                                         stopping_metric="AUC",
+                                         stopping_tolerance=0.00314159,
+                                         score_each_iteration=True)
     se_xgb.train(x=x, y=y, training_frame=train)
 
     assert se_xgb.actual_params["metalearner_algorithm"] == "xgboost"
-    assert '{"booster": ["dart"]}' == se_xgb.actual_params["metalearner_params"]
+    assert ('{"booster": ["dart"], "stopping_tolerance": [0.00271828]}' == se_xgb.actual_params["metalearner_params"] or
+           '{"stopping_tolerance": [0.00271828], "booster": ["dart"]}' == se_xgb.actual_params["metalearner_params"])
+    assert se_xgb.metalearner().actual_params["stopping_rounds"] == 10
+    assert se_xgb.metalearner().actual_params["stopping_metric"] == "AUC"
+    assert se_xgb.metalearner().actual_params["stopping_tolerance"] == 0.00271828
+    assert se_xgb.metalearner().actual_params["score_each_iteration"]
 
 
 pyunit_utils.run_tests([
