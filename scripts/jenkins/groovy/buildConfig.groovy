@@ -48,9 +48,31 @@ class BuildConfig {
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
-  public static final String DEFAULT_PYTHON_VERSION = '3.6'
-  public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
-  public static final List R_VERSIONS = ['3.3.3', '3.4.1']
+
+// keep in sync with docker images, 
+// but also used for conda builds, 
+// should we build a package for every intermediate Py version between active and latest?
+  public static final Map<String, Map<String, ?>> VERSIONS = [
+          PYTHON : [
+            legacy: '2.7',   // support for legacy 2.7
+            first: '3.5',    // first 3.x officially supported version
+            active: '3.6',   // now 3.7, the first active Py version: for active versions, see https://devguide.python.org/#status-of-python-branches
+            latest: '3.8',   // now 3.10, he latest supported Py version
+            conda_builds: (6..10).collect { "3.${it}"}  // all Py versions for which we build a conda package
+          ],
+          R : [
+            latest_3: '3.5.3',  //now 3.6.3
+            latest_4: '4.0.2',  //now 4.1.2
+          ],
+          JAVA: [
+            mojo: '7',
+            first_LTS: '8',
+            latest_LTS: '11', // now 17
+            latest: '15',     // now 17
+            smoke_tests: (10..15),
+            lts_tests: [11],       //outside first_LTS
+          ]
+  ]
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'

@@ -8,6 +8,14 @@ H2O_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 NO_CACHE ?= --no-cache
 BASE_FROM_IMAGE := nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
+# same as Jenkinsfile-build-docker
+PY_VERSIONS = 2.7  3.5  3.7  3.8
+R_VERSIONS = 3.3.3  3.4.4  3.5.3  3.6.3  4.0.5  4.1.2 
+# default versions
+JAVA_DEF = 8
+PY_DEF = 3.7
+R_DEF = 3.4.4
+
 dev-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-base:$(VERSION) \
 		$(NO_CACHE) \
@@ -19,16 +27,16 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-jdk-8-base: dev-base
+dev-jdk-$(JAVA_DEF)-base: dev-base
 endif
-dev-jdk-8-base:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base:$(VERSION) \
+dev-jdk-$(JAVA_DEF)-base:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-$(JAVA_DEF)-base:$(VERSION) \
 		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-8-base \
+		-f jenkins-images/Dockerfile-jdk-$(JAVA_DEF)-base \
 		--build-arg FROM_VERSION=$(VERSION) \
 		.
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-8-base:$(VERSION)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-jdk-$(JAVA_DEF)-base:$(VERSION)
 endif
 
 ifneq ($(CI), 1)
@@ -46,7 +54,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-base: dev-jdk-8-base
+dev-python-base: dev-jdk-$(JAVA_DEF)-base
 endif
 dev-python-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-base:$(VERSION) \
@@ -59,7 +67,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-r-base: dev-python-3.6
+dev-r-base: dev-python-$(PY_DEF)
 endif
 dev-r-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-base:$(VERSION) \
@@ -72,87 +80,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-python-2.7-jdk-%: dev-python-2.7
-endif
-dev-python-2.7-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-2.7-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-python-3.5-jdk-%: dev-python-3.5
-endif
-dev-python-3.5-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.5-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-python-3.6-jdk-%: dev-python-3.6
-endif
-dev-python-3.6-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.6-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-python-3.7-jdk-%: dev-python-3.7
-endif
-dev-python-3.7-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.7-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.7 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.7-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-python-3.8-jdk-%: dev-python-3.8
-endif
-dev-python-3.8-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-mojocompat: dev-python-3.6
+dev-mojocompat: dev-python-$(PY_DEF)
 endif
 dev-mojocompat:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-mojocompat:$(VERSION) \
@@ -163,6 +91,26 @@ dev-mojocompat:
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-mojocompat:$(VERSION)
 endif
+
+define make-dev-python-jdk
+ifneq ($(CI), 1)
+dev-python-$1-jdk-%: dev-python-$1
+endif
+dev-python-$1-jdk-%:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-$1-jdk-$$*:$(VERSION) \
+		 $(NO_CACHE) \
+		 -f jenkins-images/Dockerfile-jdk-others \
+		 --build-arg FROM_VERSION=$(VERSION) \
+		 --build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-$1 \
+		 --build-arg INSTALL_JAVA_VERSION=$$* \
+		 --build-arg H2O_BRANCH=$(H2O_BRANCH) \
+		 .
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-$1-jdk-$$*:$(VERSION)
+endif
+all:: dev-python-$1-jdk-%
+endef
+$(foreach ver, $(PY_VERSIONS), $(eval $(call make-dev-python-jdk,$(ver))))
 
 ifneq ($(CI), 1)
 dev-python-%: dev-python-base
@@ -179,85 +127,25 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-$*:$(VERSION)
 endif
 
+define make-dev-r-jdk
 ifneq ($(CI), 1)
-dev-r-3.3.3-jdk-%: dev-r-3.3.3
+dev-r-$1-jdk-%: dev-r-$1
 endif
-dev-r-3.3.3-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
+dev-r-$1-jdk-%:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-$1-jdk-$$*:$(VERSION) \
+		 $(NO_CACHE) \
+		 -f jenkins-images/Dockerfile-jdk-others \
+		 --build-arg FROM_VERSION=$(VERSION) \
+		 --build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-$1 \
+		 --build-arg INSTALL_JAVA_VERSION=$$* \
+		 --build-arg H2O_BRANCH=$(H2O_BRANCH) \
+		 .
 ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.3.3-jdk-$*:$(VERSION)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-$1-jdk-$$*:$(VERSION)
 endif
-
-ifneq ($(CI), 1)
-dev-r-3.4.1-jdk-%: dev-r-3.4.1
-endif
-dev-r-3.4.1-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-r-3.5.3-jdk-%: dev-r-3.5.3
-endif
-dev-r-3.5.3-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.5.3-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-r-3.6.2-jdk-%: dev-r-3.6.2
-endif
-dev-r-3.6.2-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.6.2-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.6.2 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.6.2-jdk-$*:$(VERSION)
-endif
-
-ifneq ($(CI), 1)
-dev-r-4.0.2-jdk-%: dev-r-4.0.2
-endif
-dev-r-4.0.2-jdk-%:
-	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-r-4.0.2-jdk-$*:$(VERSION) \
-		$(NO_CACHE) \
-		-f jenkins-images/Dockerfile-jdk-others \
-		--build-arg FROM_VERSION=$(VERSION) \
-		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-r-4.0.2 \
-		--build-arg INSTALL_JAVA_VERSION=$* \
-		--build-arg H2O_BRANCH=$(H2O_BRANCH) \
-		.
-ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
-	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-r-4.0.2-jdk-$*:$(VERSION)
-endif
+all:: dev-r-$1-jdk-%
+endef
+$(foreach ver, $(R_VERSIONS), $(eval $(call make-dev-r-jdk,$(ver))))
 
 ifneq ($(CI), 1)
 dev-r-%: dev-r-base
@@ -290,7 +178,7 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
-dev-build-base: dev-r-3.4.1
+dev-build-base: dev-r-$(R_DEF)
 endif
 dev-build-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-build-base:$(VERSION) \

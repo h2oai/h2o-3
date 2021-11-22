@@ -39,10 +39,13 @@ try {
             if (pipelineContext == null) {
               def initPipelineContext = load('h2o-3/scripts/jenkins/groovy/initPipelineContext.groovy')
               pipelineContext = initPipelineContext(scmEnv, 'MODE_SINGLE_TEST', true)
+              v = pipelineContext.getBuildConfig().VERSIONS
+              pyVersions = [v.PYTHON.legacy, v.PYTHON.first, v.PYTHON.active, v.PYTHON.latest]
+              rVersions = [v.R.latest_3, v.R.latest_4]
               pipelineContext.getBuildConfig().setJobProperties(this, parameters([
                       choice(choices: ['Python', 'R'].join("\n"), description: 'Component which will be tested.', name: 'testComponent'),
-                      choice(choices: ['2.7', '3.5', '3.6'].join("\n"), description: 'Component which will be tested.', name: 'singleTestPyVersion'),
-                      choice(choices: ['3.3.3', '3.4.1'].join("\n"), description: 'Component which will be tested.', name: 'singleTestRVersion'),
+                      choice(choices: pyVersions.join("\n"), description: 'Component which will be tested.', name: 'singleTestPyVersion'),
+                      choice(choices: rVersions.join("\n"), description: 'Component which will be tested.', name: 'singleTestRVersion'),
                       string(defaultValue: null, description: 'Path to test which will be executed. For example <code>testdir_algos/gbm/pyunit_bernoulli_gbm.py</code> - <strong>no h2o-py/test/</strong> in the beginning.', name: 'testPath'),
                       string(defaultValue: '10g', description: 'Maximum size, of the memory allocation pool.', name: 'singleTestXmx'),
                       string(defaultValue: '1', description: 'Number of H2O clouds to start.', name: 'singleTestNumClouds'),

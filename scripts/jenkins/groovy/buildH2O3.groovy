@@ -1,12 +1,9 @@
 def call(final pipelineContext) {
 
-    final String PYTHON_VERSION = '3.6'
-    final String R_VERSION = '3.4.1'
-    final String JAVA_VERSION = '8'
-
     // Load required scripts
     def insideDocker = load('h2o-3/scripts/jenkins/groovy/insideDocker.groovy')
     def makeTarget = load('h2o-3/scripts/jenkins/groovy/makeTarget.groovy')
+    def config = pipelineContext.getBuildConfig()
 
     def stageName = 'Build H2O-3'
     def buildClosure = {
@@ -14,57 +11,60 @@ def call(final pipelineContext) {
         pipelineContext.getBuildSummary().setStageDetails(this, stageName, env.NODE_NAME, env.WORKSPACE)
         try {
             // Launch docker container, build h2o-3, create test packages and archive artifacts
-            def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + "PYTHON_VERSION=${PYTHON_VERSION}" + "R_VERSION=${R_VERSION}" + "JAVA_VERSION=${JAVA_VERSION}"
-            def timeoutMinutes = pipelineContext.getBuildConfig().getBuildHadoop() ? 50 : 15
+            def buildEnv = config.getBuildEnv()
+                + "PYTHON_VERSION=${config.VERSIONS.PYTHON.active}" 
+                + "R_VERSION=${config.VERSIONS.R.latest_3}" 
+                + "JAVA_VERSION=${config.VERSIONS.JAVA.first}"
+            def timeoutMinutes = config.getBuildHadoop() ? 50 : 15
             stage(stageName) {
                 pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext)
-                insideDocker(buildEnv, pipelineContext.getBuildConfig().getDefaultImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), timeoutMinutes, 'MINUTES') {
+                insideDocker(buildEnv, config.getDefaultImage(), config.DOCKER_REGISTRY, config, timeoutMinutes, 'MINUTES') {
                     try {
                         makeTarget(pipelineContext) {
                             target = 'build-h2o-3'
                             hasJUnit = false
                             archiveFiles = false
-                            makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                            makefilePath = config.MAKEFILE_PATH
                             activatePythonEnv = true
                         }
                         makeTarget(pipelineContext) {
                             target = 'test-package-py'
                             hasJUnit = false
                             archiveFiles = false
-                            makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                            makefilePath = config.MAKEFILE_PATH
                             activatePythonEnv = true
                         }
                         makeTarget(pipelineContext) {
                             target = 'test-package-r'
                             hasJUnit = false
                             archiveFiles = false
-                            makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                            makefilePath = config.MAKEFILE_PATH
                             activatePythonEnv = true
                         }
-                        if (pipelineContext.getBuildConfig().getBuildHadoop()) {
+                        if (config.getBuildHadoop()) {
                             makeTarget(pipelineContext) {
                                 target = 'test-package-hadoop'
                                 hasJUnit = false
                                 archiveFiles = false
-                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                makefilePath = config.MAKEFILE_PATH
                                 activatePythonEnv = true
                             }
                         }
-                        if (pipelineContext.getBuildConfig().componentChanged(pipelineContext.getBuildConfig().COMPONENT_JS)) {
+                        if (config.componentChanged(config.COMPONENT_JS)) {
                             makeTarget(pipelineContext) {
                                 target = 'test-package-js'
                                 hasJUnit = false
                                 archiveFiles = false
-                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                makefilePath = config.MAKEFILE_PATH
                                 activatePythonEnv = true
                             }
                         }
-                        if (pipelineContext.getBuildConfig().componentChanged(pipelineContext.getBuildConfig().COMPONENT_JAVA)) {
+                        if (config.componentChanged(config.COMPONENT_JAVA)) {
                             makeTarget(pipelineContext) {
                                 target = 'test-package-java'
                                 hasJUnit = false
                                 archiveFiles = false
-                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                makefilePath = config.MAKEFILE_PATH
                                 activatePythonEnv = true
                             }
                             makeTarget(pipelineContext) {
@@ -79,19 +79,19 @@ def call(final pipelineContext) {
                                 target = 'test-package-gradle'
                                 hasJUnit = false
                                 archiveFiles = false
-                                makefilePath = pipelineContext.getBuildConfig().MAKEFILE_PATH
+                                makefilePath = config.MAKEFILE_PATH
                                 activatePythonEnv = true
                             }
                         }
                     } finally {
                         archiveArtifacts "**/*.log, **/out.*, **/*py.out.txt, **/java*out.txt, **/status.*"
-                        pipelineContext.getBuildConfig().TEST_PACKAGES_COMPONENTS.each { component ->
-                            if (pipelineContext.getBuildConfig().stashComponent(component) || 
-                                    (component == pipelineContext.getBuildConfig().COMPONENT_JAVA && pipelineContext.getBuildConfig().stashComponent(pipelineContext.getBuildConfig().COMPONENT_ANY))) {
+                        config.TEST_PACKAGES_COMPONENTS.each { component ->
+                            if (config.stashComponent(component) || 
+                                    (component == config.COMPONENT_JAVA && config.stashComponent(config.COMPONENT_ANY))) {
                                 echo "********* Stash ${component} *********"
                                 pipelineContext.getUtils().stashFiles(
                                         this,
-                                        pipelineContext.getBuildConfig().getStashNameForTestPackage(component),
+                                        config.getStashNameForTestPackage(component),
                                         "h2o-3/test-package-${component}.zip",
                                         true
                                 )
@@ -99,7 +99,7 @@ def call(final pipelineContext) {
                         }
                         pipelineContext.getUtils().stashFiles(
                                 this,
-                                pipelineContext.getBuildConfig().H2O_JAR_STASH_NAME,
+                                config.H2O_JAR_STASH_NAME,
                                 "h2o-3/build/h2o.jar"
                         )
                     }
@@ -112,7 +112,7 @@ def call(final pipelineContext) {
         }
     }
     if (env.BUILDING_FORK) {
-        withCustomCommitStates(scm, pipelineContext.getBuildConfig().H2O_OPS_TOKEN, stageName) {
+        withCustomCommitStates(scm, config.H2O_OPS_TOKEN, stageName) {
             buildClosure()
         }
     } else {

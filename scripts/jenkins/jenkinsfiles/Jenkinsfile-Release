@@ -17,9 +17,6 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                env.PYTHON_VERSION = '3.6'
-                env.R_VERSION = '3.4.1'
-
                 sh 'printenv | sort'
 
                 final String CHECKOUT_STAGE_NAME = 'Checkout'
@@ -75,6 +72,9 @@ try {
                     try {
                         pipelineContext.getBuildSummary().addStageSummary(this, BUILD_STAGE_NAME, env.BUILD_NUMBER_DIR)
                         pipelineContext.getBuildSummary().setStageDetails(this, BUILD_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                        v = pipelineContext.getBuildConfig().VERSIONS
+                        env.PYTHON_VERSION = v.PYTHON.active
+                        env.R_VERSION = v.R.latest_3
                         withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
                             insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
                                 printReleaseConfiguration(pipelineContext)
@@ -349,7 +349,7 @@ EOF
                     if (params.BUILD_CONDA) {
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
-                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
+                        final def pyVersions = pipelineContext.getBuildConfig().VERSIONS.PYTHON.conda_builds
 
                         // build for all Python versions
                         for (pyVersion in pyVersions) {
