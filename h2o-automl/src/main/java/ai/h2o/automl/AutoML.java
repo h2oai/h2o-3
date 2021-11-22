@@ -298,7 +298,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               .sum();
 
       boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2064;
-      if (max_runtime > 0 && use_blending) {
+      if (max_runtime > 0 && use_blending &&
+              !(buildSpec.build_control.keep_cross_validation_predictions ||
+                buildSpec.build_control.keep_cross_validation_models ||
+                buildSpec.build_control.keep_cross_validation_fold_assignment)) {
         _useAutoBlending = true;
         buildSpec.build_control.nfolds = 0;
         eventLog().info(Stage.Validation, "Blending will be used.");
