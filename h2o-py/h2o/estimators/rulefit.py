@@ -346,3 +346,18 @@ class H2ORuleFitEstimator(H2OEstimator):
         if self._model_json["algo"] != "rulefit":
             raise H2OValueError("This function is available for Rulefit models only")
         return self._model_json["output"]['rule_importance']
+
+    def fit_rules(self, frame, rule_ids):
+        """
+        Evaluates validity of the given rules on the given data. 
+
+        :param frame: H2OFrame on which rule validity is to be evaluated
+        :param rule_ids: string array of rule ids to be evaluated against the frame
+        :return: H2OFrame with a column per each input ruleId, representing a flag whether given rule is applied to the observation or not.
+        """
+        import h2o
+        from h2o.frame import H2OFrame
+        from h2o.utils.typechecks import assert_is_type
+        assert_is_type(frame, H2OFrame)
+        json = h2o.api("POST /3/FitRules", data={"rule_ids": rule_ids, "frame": frame.frame_id})
+        return H2OFrame.get_frame(json["result"]["name"])

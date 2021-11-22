@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
+public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> implements FitRulesCollector {
     public enum Algorithm {DRF, GBM, AUTO}
 
     public enum ModelType {RULES, RULES_AND_LINEAR, LINEAR}
@@ -177,7 +177,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return true;
     }
     
-    Frame transformByRules(Frame frame, String[] ruleIds) {
+    @Override
+    public Frame fitRules(Frame frame, String[] ruleIds) {
         Frame adaptFrm = new Frame(frame);
         adaptTestForTrain(adaptFrm, true, false);
         
@@ -186,8 +187,10 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             rules.add(ruleEnsemble.getRuleByVarName(RuleFitUtils.readRuleId(ruleIds[i])));
         }
         RuleEnsemble subEnsemble = new RuleEnsemble(rules.toArray(new Rule[0]));
-        
-        return subEnsemble.transform(adaptFrm);
+        Frame result = subEnsemble.transform(adaptFrm);
+        result = new Frame(Key.make(), result.names(), result.vecs());
+        DKV.put(result);
+        return result;
     }
     
 
