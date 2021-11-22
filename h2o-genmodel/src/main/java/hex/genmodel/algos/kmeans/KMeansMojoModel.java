@@ -8,8 +8,8 @@ public class KMeansMojoModel extends MojoModel implements IClusteringModel {
   public boolean _standardize;
   public double[][] _centers;
 
-  double[] _means;
-  double[] _mults;
+  public double[] _means;
+  public double[] _mults;
   public int[] _modes;
 
   KMeansMojoModel(String[] columns, String[][] domains, String responseColumn) {

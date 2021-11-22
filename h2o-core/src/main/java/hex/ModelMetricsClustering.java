@@ -185,8 +185,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     public double[] _within_sumsqe;   // Within-cluster sum of squared error
     private double[/*features*/] _colSum;  // Sum of each column
     private double[/*features*/] _colSumSq;  // Sum of squared values of each column
-    private double[/*k*/][/*features*/] _centers_raw;
-    private double[/*k*/][/*features*/] _centers_std_raw;
+    private double[/*k*/][/*features*/] _centers;
     private int[] _mode;
     private int _k;
 
@@ -195,8 +194,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     public IndependentMetricBuilderClustering(
         int ncol,
         int k,
-        double[][] centers_raw,
-        double[][] centers_std_raw,
+        double[][] centers,
         int[] mode) {
       _work = new double[ncol];
       _size = new long[k];
@@ -207,8 +205,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       _colSumSq = new double[ncol];
       Arrays.fill(_colSum, 0);
       Arrays.fill(_colSumSq, 0);
-      _centers_raw = centers_raw;
-      _centers_std_raw = centers_std_raw;
+      _centers = centers;
       _mode = mode;
       _k = k;
     }
@@ -218,12 +215,11 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     public double[] perRow(double[] preds, float[] dataRow) {
       assert !Double.isNaN(preds[0]);
       
-      double[][] centers = _centers_std_raw != null ? _centers_std_raw : _centers_raw;
 
       int clus = (int)preds[0];
       double [] colSum = new double[_colSum.length];
       double [] colSumSq = new double[_colSumSq.length];
-      double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, _mode, colSum, colSumSq);
+      double sqr = hex.genmodel.GenModel.KMeans_distance(_centers[clus], dataRow, _mode, colSum, colSumSq);
       // System.out.println(Arrays.toString(colSumSq));
       ArrayUtils.add(_colSum, colSum);
       ArrayUtils.add(_colSumSq, colSumSq);
