@@ -8,13 +8,17 @@ H2O_BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD)
 NO_CACHE ?= --no-cache
 BASE_FROM_IMAGE := nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 
-# same as Jenkinsfile-build-docker
-PY_VERSIONS = 2.7  3.5  3.7  3.8
-R_VERSIONS = 3.3.3  3.4.4  3.5.3  3.6.3  4.0.5  4.1.2 
+# keep versions in sync with Jenkinsfile-build-docker
+PY_VERSIONS = 2.7  3.5  3.6  3.7  3.8
+# PY_VERSIONS = 2.7  3.5  3.6  3.7  3.8  3.9  3.10       # use this to include all latest minor versions (apparently not necessary).
+# PY_VERSIONS = 2.7  3.5  3.7  3.10                      # use this to build only what is necessary and use 3.7 as a default.
+R_VERSIONS = 3.3.3  3.4.1  3.5.3  3.6.2  4.0.2
+# R_VERSIONS = 3.3.3  3.4.4  3.5.3  3.6.3  4.0.5  4.1.2  # use this to include all latest minor versions (apparently not necessary).
+# R_VERSIONS = 3.4.4  3.6.3  4.1.2                       # use this to build only what is necessary (providing that we keep 3.4 as a default).
 # default versions
 JAVA_DEF = 8
-PY_DEF = 3.7
-R_DEF = 3.4.4
+PY_DEF = 3.6    # we can switch default to 3.7
+R_DEF = 3.4.1   # we can switch default to 3.4.4 or 3.6.3
 
 dev-base:
 	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-base:$(VERSION) \
