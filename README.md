@@ -700,6 +700,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 * [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - stage 2 (algos)
 * Multi-Output Regression in Deep Learning
 * GAM Improvements (support for Monotonic Splines)
+* XGBoost Upgrade
 * Data Ingest Improvements (Secured Hive in Standalone/K8S)
 * Extended Isolation Forest MOJO
 * Uplift MOJO
