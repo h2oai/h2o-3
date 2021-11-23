@@ -14,7 +14,7 @@ def call(final pipelineContext) {
             def buildEnv = config.getBuildEnv() + 
                     "PYTHON_VERSION=${config.VERSIONS.PYTHON.active}" + 
                     "R_VERSION=${config.VERSIONS.R.latest_3}" + 
-                    "JAVA_VERSION=${config.VERSIONS.JAVA.first}"
+                    "JAVA_VERSION=${config.VERSIONS.JAVA.first_LTS}"
             def timeoutMinutes = config.getBuildHadoop() ? 50 : 15
             stage(stageName) {
                 pipelineContext.getUtils().stashXGBoostWheels(this, pipelineContext)
