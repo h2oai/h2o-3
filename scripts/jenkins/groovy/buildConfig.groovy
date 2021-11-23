@@ -69,7 +69,7 @@ class BuildConfig {
             first_LTS: '8',
             latest_LTS: '11', // now 17
             latest: '15',     // now 17
-            smoke_tests: (10..15),
+            smoke_tests: (10..15).toList(),
             lts_tests: [11],       //outside first_LTS
           ]
   ]
