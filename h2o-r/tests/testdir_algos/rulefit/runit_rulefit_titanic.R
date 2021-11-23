@@ -35,7 +35,9 @@ test.rulefit.titanic <- function() {
 
     expect_true(!is.null(rfit@model$validation_metrics))
 
-
+    result = h2o.fit_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
+    expect_true(sum(result[2]) ==  210)
+    expect_true(sum(result[3]) ==  632)
 }
 
 doTest("RuleFit Test: Titanic Data", test.rulefit.titanic)

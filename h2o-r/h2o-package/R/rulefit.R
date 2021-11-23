@@ -223,3 +223,52 @@ h2o.rulefit <- function(x,
   segment_models <- .h2o.segmentModelsJob('rulefit', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+#' Evaluates validity of the given rules on the given data. Returns a frame with a column per each input rule id, 
+#' representing a flag whether given rule is applied to the observation or not.
+#'
+#' @param model A trained rulefit model.  
+#' @param frame A frame on which rule validity is to be evaluated
+#' @param rule_ids Rule ids to be evaluated against the frame
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' titanic <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+#' response = "survived"
+#' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
+#' titanic[,response] <- as.factor(titanic[,response])
+#' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
+#' 
+#' splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' 
+#' rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
+#' h2o.fit_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
+#' }
+#' @export
+h2o.fit_rules <- function(model, frame, rule_ids) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "rulefit"){
+            parms <- list()
+            parms$model_id <- model@model_id
+            parms$frame <- h2o.getId(frame)
+            parms$rule_ids <- .collapse.char(rule_ids)
+
+            json <- .h2o.doSafePOST(urlSuffix = "FitRules", parms=parms)
+            source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
+
+            return(h2o.getFrame(source$result$name))
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+
