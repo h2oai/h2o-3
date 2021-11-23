@@ -179,7 +179,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Condition[] conditions = new Condition[] {condition1, condition2, condition3};
 
             Rule rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            Rule consolidatedRule = RuleFitUtils.consolidateRule(rule);
+            Rule consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA < 14.730077743530273 or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
             
             condition1 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1, new String[] {"ABC", "AAA"}, new int[] {2, 6},"PSA", true);
@@ -188,7 +188,7 @@ public class RuleFitUtilsTest extends TestUtil {
             conditions = new Condition[] {condition1, condition2, condition3};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule);
+            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA in {ABC, AAA, CCC, BBB} or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
 
             condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
@@ -197,7 +197,7 @@ public class RuleFitUtilsTest extends TestUtil {
             conditions = new Condition[] {condition1, condition2, condition3};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule);
+            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
 
             condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
@@ -208,8 +208,62 @@ public class RuleFitUtilsTest extends TestUtil {
             conditions = new Condition[] {condition1, condition2, condition3, condition4};
 
             rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule);
+            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
             assertEquals("(PSA < 10.0) & (PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
+            
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void deduplicateRulesTest() {
+        try {
+            Scope.enter();
+
+            Condition conditionr11 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
+            Condition conditionr12 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
+            Condition conditionr13 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions1 = new Condition[] {conditionr11, conditionr13, conditionr12};
+
+            Rule rule1 = new Rule(conditions1, 0.032236840575933456, "somevarname1");
+            rule1.coefficient = 4.0;
+
+            Condition conditionr21 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1, new String[] {"ABC", "AAA"}, new int[] {2, 6},"PSA", true);
+            Condition conditionr22 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1,  new String[] { "CCC", "BBB", "AAA"}, new int[] {1, 3, 6}, "PSA", false);
+            Condition conditionr23 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions2 = new Condition[] {conditionr21, conditionr22, conditionr23};
+
+            Rule rule2 = new Rule(conditions2, 0.032236840575933456, "somevarname2");
+
+            Condition condition31 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
+            Condition condition32 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 14.730077743530273, null, null, "PSA", false);
+            Condition condition33 = new Condition(2, Condition.Type.Numerical, Condition.Operator.LessThan, 2.5, null, null,"DPROS", false);
+            Condition[] conditions3 = new Condition[] {condition31, condition32, condition33};
+
+            Rule rule3 = new Rule(conditions3, 0.032236840575933456, "somevarname3");
+
+            Condition conditionr41 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
+            Condition conditionr42 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
+            Condition conditionr43 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions4 = new Condition[] {conditionr41, conditionr42, conditionr43};
+
+            Rule rule4 = new Rule(conditions4, 10.23, "somevarname4");
+            rule4.coefficient = 3.0;
+            
+            Rule[] rulesToDeduplicate = new Rule[] {rule1, rule2, rule3, rule4};
+
+            Rule[] deduplicatedRules = RuleFitUtils.consolidateRules(rulesToDeduplicate, true);
+            
+            assertEquals(3, deduplicatedRules.length);
+
+            Rule deduplicatedRule = Arrays.asList(deduplicatedRules).stream()
+                    .filter(rule -> rule.coefficient != 0.0)
+                    .findAny()
+                    .orElse(null);
+            
+            assertEquals(deduplicatedRule.coefficient, rule1.coefficient + rule4.coefficient, 0.0);
+            assertEquals("somevarname1, somevarname4", deduplicatedRule.varName);
             
         } finally {
             Scope.exit();

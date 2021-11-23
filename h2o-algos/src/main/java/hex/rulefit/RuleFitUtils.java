@@ -1,7 +1,10 @@
 package hex.rulefit;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RuleFitUtils {
 
@@ -21,16 +24,20 @@ public class RuleFitUtils {
         return pathNames;
     }
 
-    static Rule[] consolidateRules(Rule[] rules) {
+    static Rule[] consolidateRules(Rule[] rules, boolean remove_duplicates) {
         for (int i = 0; i < rules.length; i++) {
             if (rules[i].conditions != null) { // linear rules doesn't need to consolidate
-                rules[i] = consolidateRule(rules[i]);
+                rules[i] = consolidateRule(rules[i], remove_duplicates);
             }
         }
-        return rules;
+        
+        if (remove_duplicates)
+            return deduplicateRules(rules);
+        else
+            return rules;
     }
 
-    static Rule consolidateRule(Rule rule) {
+    static Rule consolidateRule(Rule rule, boolean remove_duplicates) {
         List<Condition> consolidatedConditions = new ArrayList<>();
 
         Condition[] conditions = rule.conditions;
@@ -43,8 +50,15 @@ public class RuleFitUtils {
         for (int i = 0; i < varNames.size(); i++) {
             consolidatedConditions.addAll(consolidateConditionsByVar(conditions, varNames.get(i)));
         }
-
-        rule.conditions = consolidatedConditions.toArray(new Condition[0]);
+        
+        if (remove_duplicates) {
+            // sort by feature name as a preparation for rules deduplication
+            rule.conditions = consolidatedConditions.stream()
+                    .sorted(Comparator.comparing(condition -> condition.featureName))
+                    .collect(Collectors.toList()).toArray(new Condition[0]);
+        } else {
+            rule.conditions = consolidatedConditions.toArray(new Condition[0]);
+        }
         rule.languageRule = rule.generateLanguageRule();
         return rule;
     }
@@ -97,5 +111,24 @@ public class RuleFitUtils {
 
             return currVarConsolidatedConditions;
         }
+    }
+    
+    static Rule[] deduplicateRules(Rule[] rules) {
+        List<Rule> list = Arrays.asList(rules);
+
+        // group by non linear rules
+        List<Rule> transform = list.stream()
+                .filter(rule -> rule.conditions != null)
+                .collect(Collectors.groupingBy(rule -> rule.languageRule))
+                .entrySet().stream()
+                .map(e -> e.getValue().stream()
+                        .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient)))
+                .map(f -> f.get())
+                .collect(Collectors.toList());
+
+        // add linear rules
+        transform.addAll(list.stream().filter(rule -> rule.conditions == null).collect(Collectors.toList()));
+
+        return transform.toArray(new Rule[0]);
     }
 }
