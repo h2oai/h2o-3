@@ -1,7 +1,7 @@
 import fnmatch
-import imp
 import importlib
 import os
+import re
 import sys
 
 
@@ -64,12 +64,15 @@ def load_module(name, dir_path, no_conflict=True):
         spec.loader.exec_module(module)
         return module
     except AttributeError:  # Py2
+        import imp
         spec = imp.find_module(name, [dir_path])
         return imp.load_module(name, *spec)
 
 
 def load_utilities(test_file=None):
-    ff = file_filter(include="**/_*.py", exclude="**/__init__.py")
+    utils_pat = re.compile(r".*/_\w+\.py$")
+    ff = file_filter(include=(lambda p: utils_pat.match(p)), 
+                     exclude="*/__init__.py")
     recursive = False
     folders = []
     if test_file is None:
