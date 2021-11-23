@@ -39,6 +39,7 @@ class H2ORuleFitEstimator(H2OEstimator):
                  distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
                  rule_generation_ntrees=50,  # type: int
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 remove_duplicates=True,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -95,6 +96,9 @@ class H2ORuleFitEstimator(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        :param remove_duplicates: whether to remove rules which are identical to an earlier rule. Defaults to true.
+               Defaults to ``True``.
+        :type remove_duplicates: bool
         """
         super(H2ORuleFitEstimator, self).__init__()
         self._parms = {}
@@ -113,6 +117,7 @@ class H2ORuleFitEstimator(H2OEstimator):
         self.distribution = distribution
         self.rule_generation_ntrees = rule_generation_ntrees
         self.auc_type = auc_type
+        self.remove_duplicates = remove_duplicates
 
     @property
     def training_frame(self):
@@ -316,6 +321,20 @@ class H2ORuleFitEstimator(H2OEstimator):
     def auc_type(self, auc_type):
         assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
         self._parms["auc_type"] = auc_type
+
+    @property
+    def remove_duplicates(self):
+        """
+        whether to remove rules which are identical to an earlier rule. Defaults to true.
+
+        Type: ``bool``, defaults to ``True``.
+        """
+        return self._parms.get("remove_duplicates")
+
+    @remove_duplicates.setter
+    def remove_duplicates(self, remove_duplicates):
+        assert_is_type(remove_duplicates, None, bool)
+        self._parms["remove_duplicates"] = remove_duplicates
 
 
     def rule_importance(self):

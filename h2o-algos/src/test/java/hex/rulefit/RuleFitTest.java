@@ -441,6 +441,7 @@ public class RuleFitTest extends TestUtil {
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES;
             params._min_rule_length = 1;
+            params._remove_duplicates = false;
 
             RuleFitModel model = new RuleFit( params).trainModel().get();
             Scope.track_generic(model);

@@ -5,7 +5,7 @@ from tests import pyunit_utils
 from h2o.estimators.rulefit import H2ORuleFitEstimator
 
 
-def football():
+def credit():
     df = h2o.import_file(pyunit_utils.locate("smalldata/kaggle/CreditCard/creditcard_train_cat.csv"))
     df["DEFAULT_PAYMENT_NEXT_MONTH"] = df["DEFAULT_PAYMENT_NEXT_MONTH"].asfactor()
     x = df.columns
@@ -49,6 +49,6 @@ def football():
 
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(football)
+  pyunit_utils.standalone_test(credit)
 else:
-    football()
+    credit()

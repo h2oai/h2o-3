@@ -65,6 +65,9 @@ Defining a RuleFit Model (Beta API)
 		- and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
 		- and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
+- **remove_duplicates**: Specify whether to remove rules which are identical to an earlier rule. Defaults to true.
+
+
 Interpreting a RuleFit Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
