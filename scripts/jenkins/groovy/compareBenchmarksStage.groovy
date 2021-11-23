@@ -5,51 +5,51 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'paribas': [
                 50: [
                     'train_time_min':  7,
-                    'train_time_max': 12
+                    'train_time_max': 10
                 ],
                 200: [
-                    'train_time_min': 30,
-                    'train_time_max': 36
+                    'train_time_min': 29,
+                    'train_time_max': 32
                 ]
             ],
             'homesite': [
                 50: [
                     'train_time_min': 9,
-                    'train_time_max': 14
+                    'train_time_max': 10
                 ],
                 200: [
-                    'train_time_min': 40,
-                    'train_time_max': 50
+                    'train_time_min': 37,
+                    'train_time_max': 39
                 ]
             ],
             'redhat': [
                 50: [
-                    'train_time_min': 29,
-                    'train_time_max': 36
+                    'train_time_min': 23,
+                    'train_time_max': 26
                 ],
                 200: [
-                    'train_time_min': 139,
-                    'train_time_max': 151
+                    'train_time_min': 104,
+                    'train_time_max': 107
                 ]
             ],
             'springleaf': [
                 50: [
-                    'train_time_min': 60,
-                    'train_time_max': 69
+                    'train_time_min': 52,
+                    'train_time_max': 54
                 ],
                 200: [
-                    'train_time_min': 498,
-                    'train_time_max': 562
+                    'train_time_min': 475,
+                    'train_time_max': 484
                 ]
             ],
             'higgs': [
                 50: [
-                    'train_time_min': 88,
-                    'train_time_max': 98
+                    'train_time_min': 73,
+                    'train_time_max': 76
                 ],
                 200: [
-                    'train_time_min': 522,
-                    'train_time_max': 554
+                    'train_time_min': 378,
+                    'train_time_max': 389
                 ]
             ]
         ],
