@@ -23,16 +23,10 @@ def pca_wideDataset_rotterdam_pcarandomized():
     y = set(["relapse"])
     x = list(set(rotterdamH2O.names)-y)
 
-    transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
-    transformN = transform_types[randint(0, len(transform_types)-1)]
-    print("transform used on dataset is {0}.\n".format(transformN))
-    buildModel = [False, False, False]
-    buildModel[randint(0, len(buildModel)-1)] = True
-
     print("------  Testing Randomized PCA --------")
-    gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
+    gramSVD = H2OPCA(k=8, impute_missing=True, transform="NONE", seed=12345)
     gramSVD.train(x=x, training_frame=rotterdamH2O)
-    randomizedPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Randomized", seed=12345,
+    randomizedPCA = H2OPCA(k=8, impute_missing=True, transform="NONE", pca_method="Randomized", seed=12345,
                            max_iterations=5)  # power
     randomizedPCA.train(x=x, training_frame=rotterdamH2O)
 

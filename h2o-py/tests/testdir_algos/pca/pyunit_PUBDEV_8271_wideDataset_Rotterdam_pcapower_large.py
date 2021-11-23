@@ -19,16 +19,10 @@ def pca_wideDataset_rotterdam_pcapower():
     y = set(["relapse"])
     x = list(set(rotterdamH2O.names)-y)
 
-    transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
-    transformN = transform_types[randint(0, len(transform_types)-1)]
-    print("transform used on dataset is {0}.\n".format(transformN))
-    buildModel = [False, False, False]
-    buildModel[randint(0, len(buildModel)-1)] = True
-
     print("------  Testing Power PCA --------")
-    gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345)
+    gramSVD = H2OPCA(k=8, impute_missing=True, transform="STANDARDIZE", seed=12345)
     gramSVD.train(x=x, training_frame=rotterdamH2O)
-    powerPCA = H2OPCA(k=8, impute_missing=True, transform=transformN, pca_method="Power", seed=12345)  # power
+    powerPCA = H2OPCA(k=8, impute_missing=True, transform="STANDARDIZE", pca_method="Power", seed=12345)  # power
     powerPCA.train(x=x, training_frame=rotterdamH2O)
     # compare singular values and stuff with GramSVD
     print("@@@@@@  Comparing eigenvalues between GramSVD and Power...\n")
