@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
+import static hex.rulefit.RuleFitUtils.consolidateRules;
 
 
 /**
@@ -77,6 +78,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     public void init(boolean expensive) {
         super.init(expensive);
         if (expensive) {
+            _parms.validate(this);
             if (_parms._fold_column != null) {
                 _train.remove(_parms._fold_column);
             }
@@ -279,7 +281,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(getRules(glmModel.coefficients(), ruleEnsemble, model._output.classNames()), isClassifier() && nclasses() > 2);
+               // here consolidateRules
+                model._output._rule_importance = convertRulesToTable(consolidateRules(getRules(glmModel.coefficients(), ruleEnsemble, model._output.classNames())), isClassifier() && nclasses() > 2);
                 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 
@@ -566,8 +569,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         return summary;
     }
+    
     @Override
     public boolean haveMojo() { return true; }
+    
 }
 
 

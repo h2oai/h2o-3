@@ -60,6 +60,13 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         
         // specifies the number of trees to build in the tree model. Defaults to 50.
         public int _rule_generation_ntrees = 50;
+
+        public void validate(RuleFit rfit) {
+            if (rfit._parms._min_rule_length > rfit._parms._max_rule_length) {
+                rfit.error("min_rule_length", "min_rule_length cannot be greater than max_rule_length. Current values:  min_rule_length = " + rfit._parms._min_rule_length
+                        + ", max_rule_length = " + rfit._parms._max_rule_length + ".");
+            }
+        }
     }
 
     public static class RuleFitOutput extends Model.Output {

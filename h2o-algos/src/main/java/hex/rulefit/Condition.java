@@ -5,9 +5,14 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 public class Condition extends Iced {
-    public enum Type {Categorical, Numerical};
+    public enum Type {Categorical, Numerical}
     public enum Operator {LessThan, GreaterThanOrEqual, In}
     int featureIndex;
     Type type;
@@ -103,5 +108,51 @@ public class Condition extends Iced {
             }
             out[iRow] = newVal;
         }
+    }
+
+    Condition expandBy(Condition otherCondition) {
+        assert this.type.equals(otherCondition.type);
+        assert this.operator.equals(otherCondition.operator);
+        assert this.featureIndex == otherCondition.featureIndex;
+        assert this.featureName.equals(otherCondition.featureName);
+        
+        double expandedNumThreshold;
+        String[] expandedlanguageCatTreshold;
+        int[] expandedCatTreshold;
+        boolean expandedNAsIncluded = false;
+        
+        if (this.type.equals(Type.Categorical)) {
+            expandedNumThreshold = -1;
+            
+            List<String> expandedLanguageCatTresholdList = new ArrayList<>();
+            List<Integer> expandedCatTresholdList = new ArrayList<>();
+            expandedLanguageCatTresholdList.addAll(Arrays.asList(this.languageCatTreshold));
+            expandedCatTresholdList.addAll(Arrays.stream(this.catTreshold).boxed().collect(Collectors.toList()));
+            for (int i = 0; i < otherCondition.catTreshold.length; i++) {
+                if (!expandedCatTresholdList.contains(otherCondition.catTreshold[i])) {
+                    expandedCatTresholdList.add(otherCondition.catTreshold[i]);
+                    expandedLanguageCatTresholdList.add(otherCondition.languageCatTreshold[i]);
+                }
+            }
+            expandedlanguageCatTreshold = expandedLanguageCatTresholdList.toArray(new String[0]);
+            expandedCatTreshold = expandedCatTresholdList.stream().mapToInt(i->i).toArray();
+
+        } else {
+            if (Operator.LessThan.equals(this.operator)) {
+                expandedNumThreshold = Double.max(this.numTreshold, otherCondition.numTreshold);
+            } else {
+                assert Operator.GreaterThanOrEqual.equals(this.operator);
+                expandedNumThreshold = Double.min(this.numTreshold, otherCondition.numTreshold);
+            }
+
+            expandedlanguageCatTreshold = null;
+            expandedCatTreshold = null;
+        }
+        
+        if (this.NAsIncluded || otherCondition.NAsIncluded)
+            expandedNAsIncluded = true;
+        
+        return new Condition(this.featureIndex, this.type, this.operator, expandedNumThreshold, 
+                expandedlanguageCatTreshold, expandedCatTreshold, this.featureName, expandedNAsIncluded);
     }
 }

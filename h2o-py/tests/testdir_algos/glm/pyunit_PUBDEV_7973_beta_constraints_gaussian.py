@@ -38,34 +38,20 @@ def test_beta_constraints_gaussian():
                                                  20.130364463336967 * 0.8]})
     constraints = constraints[["names", "lower_bounds", "upper_bounds"]]
     run_print_model_performance('gaussian', h2o_data, nfolds, constraints, x, y, printText, seed, 'coordinate_descent')
-    run_print_model_performance('gaussian', h2o_data, nfolds, constraints, x, y, printText, seed, 'irlsm')
-
 
 def run_print_model_performance(family, train, nfolds, bc_constraints, x, y, printText, seed, solver):
-    print(printText)
-    print("Without lambda search, solver = {0}".format(solver))
-    h2o_model = H2OGeneralizedLinearEstimator(family=family, nfolds=nfolds, beta_constraints=bc_constraints,
-                                              seed=seed,
-                                              solver=solver)
-    h2o_model.train(x=x, y=y, training_frame=train)
     print("With lambda search, solver = {0}".format(solver))
     h2o_model2 = H2OGeneralizedLinearEstimator(family=family, nfolds=nfolds, beta_constraints=bc_constraints,
                                                seed=seed,
                                                lambda_search=True, solver=solver)
     h2o_model2.train(x=x, y=y, training_frame=train)
     # make sure coefficients are within bounds
-    coeff = h2o_model.coef()
     coeff2 = h2o_model2.coef()
     colNames = bc_constraints["names"]
     lowerB = bc_constraints["lower_bounds"]
     upperB = bc_constraints["upper_bounds"]
     for count in range(0, len(colNames)):
         # fix issue due to rounding difference between bounds and coefficients.
-        coef_inactive = coeff[colNames[count,0]]==0
-        assert (round(coeff[colNames[count,0]],6) >= round(lowerB[count,0],6) and round(coeff[colNames[count,0]],6) 
-                <= round(upperB[count,0], 6)) or coef_inactive, \
-            "coef for {0}: {1}, lower bound: {2}, upper bound: {3}".format(colNames[count,0], coeff[colNames[count,0]],
-                                                                           lowerB[count,0], upperB[count,0])
         coef_inactive2 = coeff2[colNames[count,0]]==0
         assert (round(coeff2[colNames[count,0]],6) >= round(lowerB[count,0],6) and round(coeff2[colNames[count,0]],6) 
                 <= round(upperB[count,0], 6)) or coef_inactive2, \
