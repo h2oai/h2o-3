@@ -687,14 +687,23 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.36.01 - Fall 2021
+### H2O 3.36.01 - Winter 2021
 
 * [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) Uplift Trees
-* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML (Infogram, ...)
-* Data Ingest Improvements (Secured Hive in Standalone, IDBroker on CDP)
+* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - Infogram
+* RuleFit improvements (multinomial support, rule deduplication and consolidation)
+* Backward elimination in MAXR
+* Improved support for CDP (S3A with IDBroker)
+
+### H2O 3.38.01 - Spring 2022
+
+* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - stage 2 (algos)
+* Multi-Output Regression in Deep Learning
+* GAM Improvements (support for Monotonic Splines)
+* Data Ingest Improvements (Secured Hive in Standalone/K8S)
 * Extended Isolation Forest MOJO
-* New features ICE plots (including ability to run on MOJO/POJO)
-* Improvements in RuleFit (including multinomial support)
+* Uplift MOJO
+* New features ICE plots
 
 <a name="Community"></a>
 ## 11. Community
