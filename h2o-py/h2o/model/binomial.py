@@ -6,6 +6,7 @@ from h2o.exceptions import H2OValueError
 from h2o.utils.typechecks import assert_is_type
 from .extensions import has_extension
 from .model_base import ModelBase
+from ..utils.metaclass import deprecated_params
 
 
 class H2OBinomialModel(ModelBase):
@@ -851,6 +852,20 @@ class H2OBinomialModel(ModelBase):
         >>> gbm.gains_lift(train=True, valid=True, xval=True)
         """
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
+
+    @deprecated_params({'save_to_file': 'save_plot_path'})
+    def plot_gainslift(self, xval=False, server=False, save_plot_path=None, plot=True, **kwargs):
+        """
+        Plot Gains/Lift curves.
+
+        :param xval: if True, use cross-validation metrics
+        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
+        :param save_plot_path: filename to save the plot to
+        :param plot: True to plot curve, False to get a gains lift table
+
+        :returns: Gains lift table + the resulting plot (can be accessed using result.figure())
+        """
+        return self._delegate_to_metrics('plot_gainslift', xval=xval, server=server, save_plot_path=save_plot_path, plot=plot)
 
     def kolmogorov_smirnov(self):
         """

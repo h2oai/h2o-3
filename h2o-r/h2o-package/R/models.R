@@ -4360,10 +4360,46 @@ h2o.std_coef_plot <- function(model, num_of_features = NULL){
 
 }
 
+#' Plot Gains/Lift curves
+#' @param object Either an H2OModel or H2OModelMetrics
+#' @param ... Optional arguments
+#' @export
+setGeneric("h2o.plot_gainslift", function(object, ...) {})
+
+.gainslift_plot <- function(gain_table) {
+  graphics::plot(gain_table$cumulative_data_fraction,
+                 gain_table$cumulative_capture_rate, 'l',
+                 ylim = c(0, max(gain_table$cumulative_capture_rate, gain_table$cumulative_lift)), col = "blue",
+                 xlab = "cumulative data fraction",
+                 ylab = "cumulative capture rate, cumulative lift",
+                 main = "Gains/Lift",
+                 panel.first = grid())
+  graphics::lines(gain_table$cumulative_data_fraction,
+                  gain_table$cumulative_lift, col = "orange")
+  legend("topright", c("cummulative capture rate", "cummulative lift"), lty = 1, col = c("blue", "orange"))
+}
+
+#' Plot Gains/Lift curves
+#' @param object H2OModelMetrics object
+#' @export
+setMethod("h2o.plot_gainslift", "H2OModelMetrics", function(object) {
+  gain_table <- h2o.gainsLift(object)
+  .gainslift_plot(gain_table)
+})
+
+#' Plot Gains/Lift curves
+#' @param object H2OModel object
+#' @param xval if TRUE, use cross-validation metrics
+#' @export
+setMethod("h2o.plot_gainslift", "H2OModel", function(object, xval = FALSE) {
+  gain_table <- h2o.gainsLift(object, xval = xval)
+  .gainslift_plot(gain_table)
+})
+
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
-  if(!type %in% c("roc", "pr")) stop("type must be 'roc' or 'pr'")
+  if(!type %in% c("roc", "pr", "gainslift")) stop("type must be 'roc', 'pr', or 'gainslift'")
   if(type == "roc") {
     xaxis <- "False Positive Rate (TPR)"; yaxis = "True Positive Rate (FPR)"
     if(missing(main)) {
@@ -4391,6 +4427,8 @@ plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
     xdata <- rev(x@metrics$thresholds_and_metric_scores$recall)
     ydata <- rev(x@metrics$thresholds_and_metric_scores$precision)
     graphics::plot(xdata, ydata, main = main, xlab = xaxis, ylab = yaxis, ylim=c(0,1), xlim=c(0,1), type='l', lty=2, col='blue', lwd=2, panel.first = grid())
+  } else if (type == "gainslift") {
+    h2o.plot_gainslift(x)
   }
 }
 

@@ -244,6 +244,7 @@ reference:
       - h2o.permutation_importance
       - h2o.permutation_importance_plot
       - h2o.pivot
+      - h2o.plot_gainslift
       - h2o.prcomp
       - h2o.predict
       - h2o.predict_json
