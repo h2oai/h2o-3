@@ -10,12 +10,9 @@ public class FitRulesV3 extends RequestSchemaV3<Iced, FitRulesV3> {
 
   @API(help = "Frame on which rule validity is to be evaluated", required = true)
   public FrameV3 frame;
-//TODO docs
+
   @API(help = "String array of rule ids to be evaluated against the frame", required = true)
   public String[] rule_ids;
-
-//  @API(help = "Frame the model has been fitted to", required = true)
-//  public FrameV3 result;
 
   //output
   @API(help="Output of the assembly line.", direction=API.Direction.OUTPUT)

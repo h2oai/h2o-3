@@ -199,7 +199,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused")
   public FriedmanPopescusHV3 makeFriedmansPopescusH(int version, FriedmanPopescusHV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
-    if (model instanceof FriedmanPopescusHCollector || model instanceof FitRulesCollector) {
+    if (model instanceof FriedmanPopescusHCollector) {
       s.h  = ((FriedmanPopescusHCollector) model).getFriedmanPopescusH(s.frame._fr, s.variables);
       return s;
     } else {
@@ -211,10 +211,8 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public FitRulesV3 fitRules(int version, FitRulesV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
     if (model instanceof FitRulesCollector) {
-   //   new KeyV3.FrameKeyV3(assembly.fit((Frame)DKV.getGet(ass.frame.key()))._key);
       s.result = new KeyV3.FrameKeyV3(((FitRulesCollector) model).fitRules(s.frame._fr, s.rule_ids)._key);
       return s;
-      //return fitRulesV3;
     } else {
       throw H2O.unimpl(String.format("%s does not support fitRules evaluation", model._parms.fullName()));
     }
