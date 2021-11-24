@@ -43,7 +43,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     }
 
     public double auuc() {return _auuc.auuc();}
-    
+
+    @Override
+    protected StringBuilder appendToStringMetrics(StringBuilder sb) {
+        return sb;
+    }
 
     /**
      * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
