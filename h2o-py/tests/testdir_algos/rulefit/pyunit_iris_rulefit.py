@@ -43,6 +43,13 @@ def iris():
     mojo_predictions = mojo_model.predict(test)
 
     assert pyunit_utils.compare_frames(rfit_predictions, mojo_predictions, 0)
+
+    # test fit_rules also on linear variable input
+    rfit = H2ORuleFitEstimator(min_rule_length=4, max_rule_length=5, max_num_rules=3, seed=1234, model_type="rules_and_linear")
+    rfit.train(training_frame=train, x=x, y=y, validation_frame=test)
+    print(rfit.rule_importance())
+    frame = rfit.fit_rules(train, ['linear.petal_len_Iris-setosa'])
+    assert frame.sum().getrow()[0] == train.nrows
     
 
 if __name__ == "__main__":

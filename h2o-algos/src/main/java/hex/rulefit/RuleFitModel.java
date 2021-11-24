@@ -10,7 +10,9 @@ import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> implements FitRulesCollector {
@@ -183,15 +185,32 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         adaptTestForTrain(adaptFrm, true, false);
         
         List<Rule> rules = new ArrayList<>();
+        List<String> linearRules = new ArrayList<>();
         for (int i = 0; i < ruleIds.length; i++) {
+            if (ruleIds[i].startsWith("linear.") && isLinearVar(ruleIds[i])) {
+                linearRules.add(ruleIds[i]);
+            } else {
             rules.add(ruleEnsemble.getRuleByVarName(RuleFitUtils.readRuleId(ruleIds[i])));
+            }
         }
         RuleEnsemble subEnsemble = new RuleEnsemble(rules.toArray(new Rule[0]));
         Frame result = subEnsemble.transform(adaptFrm);
+        // linear rules apply to all the rows
+        for (int i = 0; i < linearRules.size(); i++) {
+            result.add(linearRules.get(i), Vec.makeOne(frame.numRows()));
+        }
+        
         result = new Frame(Key.make(), result.names(), result.vecs());
         DKV.put(result);
         return result;
     }
     
-
+    private boolean isLinearVar(String potentialLinVarId) {
+        List<String> linVarNames = Arrays.asList(glmModel.names()).stream().filter(name -> name.startsWith("linear.")).collect(Collectors.toList());
+        for (int i = 0; i < linVarNames.size(); i++) {
+            if (potentialLinVarId.startsWith(linVarNames.get(i)))
+                return true;
+        }
+        return false;
+    }
 }
