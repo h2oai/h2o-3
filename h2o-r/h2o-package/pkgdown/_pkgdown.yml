@@ -198,7 +198,7 @@ reference:
       - h2o.makeGLMModel
       - h2o.match
       - h2o.max
-      - h2o.maxrglm
+      - h2o.modelSelection
       - h2o.mean_per_class_error
       - h2o.mean_residual_deviance
       - h2o.mean

@@ -1940,11 +1940,11 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.coef <- function(object, predictorSize=-1) {
-  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph", "maxrglm")) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph", "modelselection")) {
     if ((object@algorithm == "glm" || object@algorithm == "gam") && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
         grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
-      if (object@algorithm == "maxrglm") {
+      if (object@algorithm == "modelselection") {
         modelIDs <- object@model$best_model_ids
         numModels = length(modelIDs)
         if (predictorSize == 0)
@@ -2008,8 +2008,8 @@ grabOneModelCoef <- function(modelIDs, index, standardized) {
 #' @export
 h2o.coef_norm <- function(object, predictorSize=-1) {
   if (is(object, "H2OModel") &&
-      (object@algorithm %in% c("glm", "gam", "coxph", "maxrglm"))) {
-    if (object@algorithm == "maxrglm") {
+      (object@algorithm %in% c("glm", "gam", "coxph", "modelselection"))) {
+    if (object@algorithm == "modelselection") {
       modelIDs <- object@model$best_model_ids
       numModels = length(modelIDs)
       if (predictorSize == 0)

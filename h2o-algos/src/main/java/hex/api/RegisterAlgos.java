@@ -2,6 +2,7 @@ package hex.api;
 
 import hex.ModelBuilder;
 import hex.anovaglm.ANOVAGLM;
+import hex.modelselection.ModelSelection;
 import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
@@ -35,7 +36,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new PSVM(true),
             new hex.rulefit     .RuleFit     (true),
             new hex.tree.uplift.UpliftDRF    (true),
-            new hex.maxrglm     .MaxRGLM     (true)
+            new hex.modelselection .ModelSelection (true)
     };
 
     // "Word2Vec", "Example", "Grep"

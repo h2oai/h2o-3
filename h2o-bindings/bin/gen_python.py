@@ -355,7 +355,7 @@ def algo_to_classname(algo):
     if algo == "anovaglm": return "H2OANOVAGLMEstimator"
     if algo == "targetencoder": return "H2OTargetEncoderEstimator"
     if algo == "rulefit": return "H2ORuleFitEstimator"
-    if algo == "maxrglm": return "H2OMaxRGLMEstimator"
+    if algo == "modelselection": return "H2OModelSelectionEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
 
 
@@ -454,7 +454,8 @@ def main():
         naivebayes="naive_bayes",
         isolationforest="isolation_forest",
         extendedisolationforest="extended_isolation_forest",
-        upliftdrf="uplift_random_forest"
+        upliftdrf="uplift_random_forest",
+        modelselection="model_selection"
     )
     algo_to_category = dict(
         svd="Miscellaneous",

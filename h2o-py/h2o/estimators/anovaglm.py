@@ -786,7 +786,7 @@ class H2OANOVAGLMEstimator(H2OEstimator):
 
     def result(self):
         """
-        Get result frame that contains information about the model building process like for maxrglm and anovaglm.
-        :return: the H2OFrame that contains information about the model building process like for maxrglm and anovaglm.
+        Get result frame that contains information about the model building process like for modelselection and anovaglm.
+        :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)

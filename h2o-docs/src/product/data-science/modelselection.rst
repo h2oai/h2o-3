@@ -1,4 +1,4 @@
-Maximum R Square Improvements (MAXR)
+Model Selection
 ------------------------------------
 
 Introduction

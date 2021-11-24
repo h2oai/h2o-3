@@ -21,10 +21,10 @@ import numpy as np
 def test_define_dataset():
     family = 'gaussian' # can be any valid GLM families
     nrow = 10000
-    ncol = 8
-    realFrac = 0.3
+    ncol = 10
+    realFrac = 0.5
     intFrac = 0
-    enumFrac = 0.7
+    enumFrac = 0.5
     missing_fraction = 0
     factorRange= 5
     numericRange = 10

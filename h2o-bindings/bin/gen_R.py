@@ -272,7 +272,7 @@ def algo_to_modelname(algo):
     if algo == "anovaglm": return "ANOVA GLM"
     if algo == "targetencoder": return "Target Encoder"
     if algo == "gam": return "Generalized Additive Model"
-    if algo == "maxrglm": return "Maximum R GLM"
+    if algo == "modelselection": return "Model Selection"
     return algo
 
 
@@ -344,6 +344,7 @@ def main():
         if name == "naivebayes": module = "naiveBayes"
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
+        if name == "modelselection": module = "modelSelection"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
 
