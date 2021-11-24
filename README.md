@@ -694,6 +694,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 * RuleFit improvements (multinomial support, rule deduplication and consolidation)
 * Backward elimination in MAXR
 * Improved support for CDP (S3A with IDBroker)
+* Support for Java 16 and 17
 
 ### H2O 3.38.01 - Spring 2022
 
