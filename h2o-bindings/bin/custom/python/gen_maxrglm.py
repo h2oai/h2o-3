@@ -1,4 +1,66 @@
 def class_extensions():
+    def coef_norm(self, predictor_size=None):
+        """
+        Get the normalized coefficients for all models built with different number of predictors.
+        
+        :param self:
+        :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
+        :return: list of Python Dicts of coefficients for all models built with different predictor numbers
+        """
+        model_ids = self._model_json["output"]["best_model_ids"]
+        if model_ids is None:
+            return None
+        else:
+            model_numbers = len(model_ids)
+            if predictor_size==None:
+                coefs = [None]*model_numbers
+                for index in range(0, model_numbers):
+                    one_model = h2o.get_model(model_ids[index]['name'])
+                    tbl = one_model._model_json["output"]["coefficients_table"]
+                    if tbl is not None:
+                        coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
+                return coefs
+            if predictor_size > model_numbers:
+                raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
+            if predictor_size == 0:
+                raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
+
+            one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+            tbl = one_model._model_json["output"]["coefficients_table"]
+            if tbl is not None:
+                return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
+
+    def coef(self, predictor_size=None):
+        """
+        Get the coefficients for all models built with different number of predictors.
+        
+        :param self: 
+        :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
+        :return: list of Python Dicts of coefficients for all models built with different predictor numbers
+        """
+        model_ids = self._model_json["output"]["best_model_ids"]
+        if model_ids is None:
+            return None
+        else:
+            model_numbers = len(model_ids)
+            if predictor_size==None:
+                coefs = [None]*model_numbers
+                for index in range(0, model_numbers):
+                    one_model = h2o.get_model(model_ids[index]['name'])
+                    tbl = one_model._model_json["output"]["coefficients_table"]
+                    if tbl is not None:
+                        coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
+                return coefs
+            if predictor_size > model_numbers:
+                raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
+            if predictor_size == 0:
+                raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
+
+            one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+            tbl = one_model._model_json["output"]["coefficients_table"]
+            if tbl is not None:
+                return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
+
     def result(self):
         """
         Get result frame that contains information about the model building process like for maxrglm and anovaglm.
@@ -40,6 +102,7 @@ extensions = dict(
     from h2o.frame import H2OFrame
     from h2o.expr import ExprNode
     from h2o.expr import ASTId
+    from h2o.exceptions import H2OValueError
     """,
     __class__=class_extensions,
     __init__validation="""

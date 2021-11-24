@@ -1727,6 +1727,9 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'
 #' Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.
 #'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param predictorSize predictor subset size.  If specified, will only return model coefficients of that subset size.  If
+#'          not specified will return a lists of model coefficient dicts for all predictor subset size.
 #' @param object an \linkS4class{H2OModel} object.
 #' @examples 
 #' \dontrun{
@@ -1749,16 +1752,43 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h2o.coef(cars_glm)
 #' }
 #' @export
-h2o.coef <- function(object) {
-  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph")) {
+h2o.coef <- function(object, predictorSize=-1) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph", "maxrglm")) {
     if ((object@algorithm == "glm" || object@algorithm == "gam") && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
         grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
-      structure(object@model$coefficients_table$coefficients,
+      if (object@algorithm == "maxrglm") {
+        modelIDs <- object@model$best_model_ids
+        numModels = length(modelIDs)
+        if (predictorSize == 0)
+          stop("predictorSize (predictor subset size) must be between 0 and the total number of predictors used.")
+        if (predictorSize > numModels)
+          stop("predictorSize (predictor subset size) cannot exceed the total number of predictors used.")
+        if (predictorSize > 0) { # subset size was specified
+          return(grabOneModelCoef(modelIDs, predictorSize, FALSE))
+        } else {
+        coeffs <- vector("list", numModels)
+        for (index in seq(numModels)) {
+          coeffs[[index]] <- grabOneModelCoef(modelIDs, index, FALSE)
+        }
+        return(coeffs)
+          }
+      } else {
+        structure(object@model$coefficients_table$coefficients,
                 names = object@model$coefficients_table$names)
+      }
     }
   } else {
     stop("Can only extract coefficients from GAM, GLM and CoxPH models")
+  }
+}
+
+grabOneModelCoef <- function(modelIDs, index, standardized) {
+  oneModel <- h2o.getModel(modelIDs[[index]]$name)
+  if (standardized) {
+    return(h2o.coef(oneModel))
+  } else {
+    return(h2o.coef_norm(oneModel))
   }
 }
 
@@ -1766,6 +1796,8 @@ h2o.coef <- function(object) {
 #' Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 #'
 #' @param object an \linkS4class{H2OModel} object.
+#' @param predictorSize predictor subset size.  If specified, will only return model coefficients of that subset size.  If
+#'          not specified will return a lists of model coefficient dicts for all predictor subset size.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -1784,16 +1816,38 @@ h2o.coef <- function(object) {
 #'                     y = response, 
 #'                     training_frame = train, 
 #'                     validation_frame = valid)
-#' h2o.coef(cars_glm)
+#' h2o.coef_norm(cars_glm)
 #' }
 #' @export
-h2o.coef_norm <- function(object) {
-  if (is(object, "H2OModel") && ((object@algorithm == "glm") || (object@algorithm == "gam"))) {
+h2o.coef_norm <- function(object, predictorSize=-1) {
+  if (is(object, "H2OModel") &&
+      (object@algorithm %in% c("glm", "gam", "coxph", "maxrglm"))) {
+    if (object@algorithm == "maxrglm") {
+      modelIDs <- object@model$best_model_ids
+      numModels = length(modelIDs)
+      if (predictorSize == 0)
+        stop("predictorSize (predictor subset size) must be between 0 and the total number of predictors used.")
+      if (predictorSize > numModels)
+        stop("predictorSize (predictor subset size) cannot exceed the total number of predictors used.")
+      if (predictorSize > 0) { # subset size was specified {
+        return(grabOneModelCoef(modelIDs, predictorSize, TRUE))
+      } else {
+      coeffs <- vector("list", numModels)
+      for (index in seq(numModels)) {
+        coeffs[[index]] <- grabOneModelCoef(modelIDs, index, TRUE)
+      }
+      return(coeffs)
+      }
+    }
     if (object@allparameters$family %in% c("multinomial", "ordinal")) {
-        grabCoeff(object@model$coefficients_table, "std_coefs_class", TRUE)
+      grabCoeff(object@model$coefficients_table,
+                "std_coefs_class",
+                TRUE)
     } else {
-      structure(object@model$coefficients_table$standardized_coefficients,
-                names = object@model$coefficients_table$names)
+      structure(
+        object@model$coefficients_table$standardized_coefficients,
+        names = object@model$coefficients_table$names
+      )
     }
   } else {
     stop("Can only extract coefficients from GAMs/GLMs")

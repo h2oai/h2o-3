@@ -22,6 +22,8 @@ public class MaxRGLMModelV3 extends ModelSchemaV3<MaxRGLMModel, MaxRGLMModelV3, 
         @API(help="Key of models containing best 1-predictor model, best 2-predictors model, ....")
         KeyV3.ModelKeyV3[] best_model_ids;
         
+        String[][] coefficient_names;
+        
         @Override
         public MaxRGLMModelOutputV3 fillFromImpl(MaxRGLMModel.MaxRGLMModelOutput impl) {
             super.fillFromImpl(impl);   // fill in the best_model_predictors_r2 table here when done

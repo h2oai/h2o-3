@@ -13,6 +13,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.IntStream;
 
 import static hex.gam.GamTestPiping.massageFrame;
@@ -180,6 +181,44 @@ public class MaxRGLMBasicTests {
                 System.arraycopy(coeff, 0, coeffWOIntercept, 0, coeffWOIntercept.length);
                 assertArrayEquals("best predictor subset containing different predictors", coeffWOIntercept,
                         bestPredictorSubsets[index]);
+            }
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
+    public void testCoeffs() {
+        Scope.enter();
+        try {
+            double tol = 1e-6;
+            Frame trainF = parseTestFile("smalldata/logreg/prostate.csv");
+            Scope.track(trainF);
+            MaxRGLMModel.MaxRGLMParameters parms = new MaxRGLMModel.MaxRGLMParameters();
+            parms._response_column = "AGE";
+            parms._family = gaussian;
+            parms._ignored_columns = new String[]{"ID"};
+            parms._max_predictor_number=trainF.numCols()-3;
+            parms._train = trainF._key;
+            MaxRGLMModel model = new MaxRGLM(parms).trainModel().get();
+            Scope.track_generic(model); // best one predictor model
+            String[][] coeffNames = model._output.coefficientNames();
+            double[][] beta = model._output.beta();
+            double[][] betaNorm = model._output.getNormBeta();
+            HashMap<String, Double>[] coeffs = model.coefficients();
+            HashMap<String, Double>[] coeffsNorm = model.coefficients(true);
+            // coefficients obtained from both ways should be equal
+            int numModel = beta.length;
+            for (int index=0; index < numModel; index++) {
+                HashMap<String, Double> coefOneModel = model.coefficients(index+1);
+                HashMap<String, Double> coefOneModelNorm = model.coefficients(index+1, true);
+                int coefLen = beta[index].length;
+                for (int index2=0; index2 < coefLen; index2++) {
+                    assertTrue(Math.abs(beta[index][index2]-coeffs[index].get(coeffNames[index][index2])) < tol);
+                    assertTrue(Math.abs(betaNorm[index][index2]-coeffsNorm[index].get(coeffNames[index][index2])) < tol);
+                    assertTrue(Math.abs(beta[index][index2]-coefOneModel.get(coeffNames[index][index2])) < tol);
+                    assertTrue(Math.abs(betaNorm[index][index2]-coefOneModelNorm.get(coeffNames[index][index2])) < tol);
+                }
             }
         } finally {
             Scope.exit();
