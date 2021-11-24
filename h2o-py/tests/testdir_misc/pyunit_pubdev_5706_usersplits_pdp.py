@@ -32,7 +32,7 @@ def partial_plot_test_with_user_splits():
                           75.21052631578948, 77.10526315789474]
     user_splits['RACE'] = ["Black"]
     # pdp without weight or NA
-    with pyunit_utils.TemporaryDirectory(keep=True) as tmpdir:
+    with pyunit_utils.TemporaryDirectory() as tmpdir:
         file, filename = tempfile.mkstemp(suffix=".png", dir=tmpdir)
         pdpOrig = gbm_model.partial_plot(data=data,cols=['AGE', 'RACE', 'DCAPS'],server=True, plot=True, save_to_file=filename)
         assert os.path.getsize(filename) > 0
