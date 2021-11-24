@@ -189,15 +189,6 @@ public abstract class SharedTree<
     _isUplift = _parms._treatment_column != null;
   }
 
-  @Override
-  public String[] specialColNames() {
-    String[] colNames = super.specialColNames();
-    if(_parms._treatment_column != null) {
-      return ArrayUtils.append(colNames, _parms._treatment_column);
-    }
-    return colNames;
-  }
-
   protected void validateRowSampleRate() {
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
       error("_sample_rate", "sample_rate should be in interval ]0,1] but it is " + _parms._sample_rate + ".");
