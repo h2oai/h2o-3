@@ -21,36 +21,36 @@ def test_gaussian_alpha():
     test_data = data_frames[1]
 
     # test with lambda search on, generate_scoring_history on and off
-    model1 = glm(family="gaussian", lambda_search=True, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=True)
+    model1 = glm(family="gaussian", lambda_search=True, alpha=[0,0.2,1], generate_scoring_history=True, nlambdas=5)
     model1.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
-    model2 = glm(family="gaussian", lambda_search=True, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=False)
+    model2 = glm(family="gaussian", lambda_search=True, alpha=[0,0.2,1], generate_scoring_history=False, nlambdas=5)
     model2.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
     pyunit_utils.assertCoefDictEqual(model1.coef(), model2.coef())
 
     # test with lambda search off, generate_scoring_history on and off
-    model1 = glm(family="gaussian", lambda_search=False, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=True, 
-                 Lambda=[0,0.1,0.001,0.004])
+    model1 = glm(family="gaussian", lambda_search=False, alpha=[0,0.8,1], generate_scoring_history=True, 
+                 Lambda=[0,0.004])
     model1.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
-    model2 = glm(family="gaussian", lambda_search=False, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=False,
-                 Lambda=[0,0.1,0.001,0.004])
+    model2 = glm(family="gaussian", lambda_search=False, alpha=[0,0.8,1], generate_scoring_history=False,
+                 Lambda=[0,0.004])
     model2.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
     pyunit_utils.assertCoefDictEqual(model1.coef(), model2.coef())
 
     # test with lambda search on, generate_scoring_history on and off, cv on
-    model1 = glm(family="gaussian", lambda_search=True, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=True, 
-                 nfolds=2, seed=12345)
+    model1 = glm(family="gaussian", lambda_search=True, alpha=[0,0.8,1], generate_scoring_history=True, 
+                 nfolds=2, seed=12345, nlambdas=5)
     model1.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
-    model2 = glm(family="gaussian", lambda_search=True, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=False,
-                 nfolds=2, seed=12345)
+    model2 = glm(family="gaussian", lambda_search=True, alpha=[0,0.8,1], generate_scoring_history=False,
+                 nfolds=2, seed=12345, nlambdas=5)
     model2.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
     pyunit_utils.assertCoefDictEqual(model1.coef(), model2.coef())
 
     # test with lambda search off, generate_scoring_history on and off, cv on
-    model1 = glm(family="gaussian", lambda_search=False, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=True,
-                 Lambda=[0,0.1,0.001,0.004], nfolds=2, seed=12345)
+    model1 = glm(family="gaussian", lambda_search=False, alpha=[0,0.2,1], generate_scoring_history=True,
+                 Lambda=[0,0.1], nfolds=2, seed=12345)
     model1.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
-    model2 = glm(family="gaussian", lambda_search=False, alpha=[0,0.2,0.5,0.8,1], generate_scoring_history=False,
-                 Lambda=[0,0.1,0.001,0.004], nfolds=2, seed=12345)
+    model2 = glm(family="gaussian", lambda_search=False, alpha=[0,0.2], generate_scoring_history=False,
+                 Lambda=[0,0.1], nfolds=2, seed=12345)
     model2.train(x=myX, y=myY, training_frame = training_data, validation_frame = test_data)
     pyunit_utils.assertCoefDictEqual(model1.coef(), model2.coef())
 
