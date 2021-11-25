@@ -487,12 +487,36 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
       return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
-    abstract public double[] perRow(double ds[], float yact[]);
-    public double[] perRow(double ds[], float yact[],double weight, double offset) {
+    
+    public double[] perRow(double[] ds, double[] yact) {
+      return perRow(ds, double2float(yact));
+    }
+
+    public double[] perRow(double[] ds, double[] yact, double weight, double offset) {
+      return perRow(ds, double2float(yact), weight, offset);
+    }
+    
+    abstract public double[] perRow(double[] ds, float[] yact);
+    
+    public double[] perRow(double[] ds, float[] yact, double weight, double offset) {
       assert(weight==1 && offset == 0);
       return perRow(ds, yact);
     }
-    public void reduce( T mb ) {
+    
+    private float[] double2float(double[] input) {
+      if (input == null) return null;
+      float[] output = new float[input.length];
+      for (int i = 0; i < input.length; i++) {
+        output[i] = (float)input[i];
+      }
+      return output;
+    }
+
+    public void reduce(Object mb) {
+      reduce((T)mb);
+    }
+    
+    public void reduce(T mb) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;
       _wcount += mb._wcount;
