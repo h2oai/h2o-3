@@ -1066,7 +1066,7 @@ class ModelBase(h2o_meta(Keyed)):
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
-                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
+                     plot=True, plot_stddev=True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
                      col_pairs_2dpdp=None, save_plot_path=None, row_index=None, targets=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
@@ -1102,7 +1102,7 @@ class ModelBase(h2o_meta(Keyed)):
         if cols is None and col_pairs_2dpdp is None:
             raise ValueError("Must specify either cols or col_pairs_2dpd to generate partial dependency plots.")
 
-        if col_pairs_2dpdp and targets and len(targets > 1):
+        if col_pairs_2dpdp and targets and len(targets) > 1:
             raise ValueError("Multinomial 2D Partial Dependency is available only for one target.")
             
         assert_is_type(destination_key, None, str)
@@ -1164,8 +1164,10 @@ class ModelBase(h2o_meta(Keyed)):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_plot_path, row_index, targets, include_na)
+        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, 
+                                             col_pairs_2dpdp, data, nbins,
+                                             kwargs["user_cols"], kwargs["num_user_splits"], 
+                                             plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
         # extract user defined split points from dict user_splits into an integer array of column indices
@@ -1360,7 +1362,10 @@ class ModelBase(h2o_meta(Keyed)):
             fmt = 'o'
         else:
             fmt = '-'
-            axs.set_xlim(min(x), max(x))
+            if isinstance(x[0], str):
+                axs.set_xlim(0, len(x)-1)
+            else:
+                axs.set_xlim(min(x), max(x))
         if cat:
             labels = x  # 1d pdp, this is 0
             x = range(len(labels))
