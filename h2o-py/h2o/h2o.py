@@ -103,6 +103,14 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
     This function is mostly for internal purposes, but may occasionally be useful for direct access to
     the backend H2O server. It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
 
+    The list of available endpoints can be obtained using::
+    
+        endpoints = [' '.join([r.http_method, r.url_pattern]) for r in h2o.api("GET /3/Metadata/endpoints").routes]
+    
+    For each route, the available parameters (passed as data or json) can be obtained using::
+    
+        parameters = {f.name: f.help for f in h2o.api("GET /3/Metadata/schemas/{route.input_schema}").fields}
+    
     :examples:
 
     >>> res = h2o.api("GET /3/NetworkTest")
