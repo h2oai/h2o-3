@@ -1026,6 +1026,7 @@ public class RuleFitTest extends TestUtil {
             
             // test transform by rules functionality:
             Frame transformedOutput = rfit.fitRules(train, new String[] {"M1T38N9, M1T44N9", "M2T34N20"});
+            Scope.track(transformedOutput);
             Rule rule1 = rfit.ruleEnsemble.getRuleByVarName("M1T38N9");
             Rule rule2 = rfit.ruleEnsemble.getRuleByVarName("M2T34N20");
 
