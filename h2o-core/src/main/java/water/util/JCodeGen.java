@@ -386,8 +386,12 @@ public class JCodeGen {
 
   // Compiler loaded???
   public static boolean canCompile() { return COMPILER!=null; }
-  
+
   public static Class compile(String class_name, String java_text) throws Exception {
+    return compile(class_name, java_text, true);
+  }
+
+  public static Class compile(String class_name, String java_text, boolean failureIsFatal) throws Exception {
     if( COMPILER==null ) throw new UnsupportedOperationException("Unable to launch an internal instance of javac");
     // Wrap input string up as a file-like java source thing
     JavaFileObject file = new JavaSourceFromString(class_name, java_text);
@@ -395,7 +399,10 @@ public class JCodeGen {
     JavacFileManager jfm = new JavacFileManager(COMPILER.getStandardFileManager(null, null, null));
     // Invoke javac
     if( !COMPILER.getTask(null, jfm, null, /*javac options*/null, null, Arrays.asList(file)).call() )
-      throw H2O.fail("Internal POJO compilation failed.");
+      if (failureIsFatal)
+        throw H2O.fail("Internal POJO compilation failed.");
+      else
+        throw new IllegalStateException("Internal POJO compilation failed.");
 
     // Load POJO classes via a separated classloader to separate POJO namespace
     ClassLoader cl = new TestPojoCL(Thread.currentThread().getContextClassLoader());
