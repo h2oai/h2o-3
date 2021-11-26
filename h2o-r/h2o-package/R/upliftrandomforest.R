@@ -64,6 +64,7 @@
 #'        "Euclidean", "ChiSquared". Defaults to AUTO.
 #' @param auuc_type AUUC metric used to calculate Area under Uplift. Must be one of: "AUTO", "Qini", "Lift", "Gain". Defaults to
 #'        AUTO.
+#' @param auuc_nbins Number of bins to calculate Area under Uplift. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -105,6 +106,7 @@ h2o.upliftRandomForest <- function(x,
                                    gainslift_bins = -1,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                    auuc_type = c("AUTO", "Qini", "Lift", "Gain"),
+                                   auuc_nbins = -1,
                                    verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -197,6 +199,8 @@ h2o.upliftRandomForest <- function(x,
     parms$uplift_metric <- uplift_metric
   if (!missing(auuc_type))
     parms$auuc_type <- auuc_type
+  if (!missing(auuc_nbins))
+    parms$auuc_nbins <- auuc_nbins
 
   if (!missing(distribution)) {
     warning("The only bernoulli distribution is supported for Uplift Random Forest.")
@@ -243,6 +247,7 @@ h2o.upliftRandomForest <- function(x,
                                                    gainslift_bins = -1,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                                    auuc_type = c("AUTO", "Qini", "Lift", "Gain"),
+                                                   auuc_nbins = -1,
                                                    segment_columns = NULL,
                                                    segment_models_id = NULL,
                                                    parallelism = 1)
@@ -339,6 +344,8 @@ h2o.upliftRandomForest <- function(x,
     parms$uplift_metric <- uplift_metric
   if (!missing(auuc_type))
     parms$auuc_type <- auuc_type
+  if (!missing(auuc_nbins))
+    parms$auuc_nbins <- auuc_nbins
 
   if (!missing(distribution)) {
     warning("The only bernoulli distribution is supported for Uplift Random Forest.")

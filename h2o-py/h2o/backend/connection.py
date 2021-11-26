@@ -36,7 +36,8 @@ from h2o.utils.metaclass import CallableString, backwards_compatibility, h2o_met
 from h2o.utils.shared_utils import stringify_list, stringify_dict, print2
 from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, is_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
-                                    H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics)
+                                    H2OMultinomialModelMetrics, H2OOrdinalModelMetrics, H2OAutoEncoderModelMetrics, 
+                                    H2OBinomialUpliftModelMetrics)
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
@@ -885,6 +886,7 @@ class H2OResponse(dict):
         if schema == "ModelMetricsRegressionV3": return H2ORegressionModelMetrics.make(keyvals)
         if schema == "ModelMetricsClusteringV3": return H2OClusteringModelMetrics.make(keyvals)
         if schema == "ModelMetricsBinomialV3": return H2OBinomialModelMetrics.make(keyvals)
+        if schema == "ModelMetricsBinomialUpliftV3": return H2OBinomialUpliftModelMetrics.make(keyvals)
         if schema == "ModelMetricsMultinomialV3": return H2OMultinomialModelMetrics.make(keyvals)
         if schema == "ModelMetricsOrdinalV3": return H2OOrdinalModelMetrics.make(keyvals)
         if schema == "ModelMetricsAutoEncoderV3": return H2OAutoEncoderModelMetrics.make(keyvals)

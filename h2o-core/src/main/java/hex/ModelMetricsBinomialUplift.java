@@ -10,17 +10,14 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     public final AUUC _auuc;
-    public final GainsUplift _gainsUplift;
 
     public ModelMetricsBinomialUplift(Model model, Frame frame, long nobs, String[] domain,
-                                      double sigma, AUUC auuc, GainsUplift uplift,
+                                      double sigma, AUUC auuc,
                                       CustomMetric customMetric) {
         super(model, frame,  nobs, 0, domain, sigma, customMetric);
-        _gainsUplift = uplift;
         _auuc = auuc;
     }
 
@@ -37,14 +34,14 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
         if(_auuc != null){
-            sb.append("AUUC: ").append((float) _auuc._auuc).append("\n");
+            sb.append("Default AUUC: ").append((float) _auuc.auuc()).append("\n");
+            sb.append("Qini AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.qini)).append("\n");
+            sb.append("Lift AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.lift)).append("\n");
+            sb.append("Gain AUUC: ").append((float) _auuc.auucByType(AUUC.AUUCType.gain)).append("\n");
         }
-        if (_gainsUplift != null) sb.append(_gainsUplift);
         return sb.toString();
     }
 
-    public GainsUplift gainsUplift() { return _gainsUplift; }
-    
     public double auuc() {return _auuc.auuc();}
     
 
@@ -54,24 +51,21 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
      * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec treatment) {
-        return make(targetClassProbs, actualLabels, treatment, actualLabels.domain());
+    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec treatment, AUUC.AUUCType auucType, int nbins) {
+        return make(targetClassProbs, actualLabels, treatment, actualLabels.domain(), auucType, nbins);
     }
-
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec treatment,  String[] domain) {
-        return make(targetClassProbs, actualLabels, null,  treatment, domain);
-    }
-
+    
     /**
      * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
      * @param targetClassProbs A Vec containing target class probabilities
      * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
-     * @param weights A Vec containing the observation weights.
      * @param treatment A Vec containing the treatment values               
      * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
+     * @param auucType Type of default AUUC
+     * @param auucNbins Number of bins to calculate AUUC (-1 means default value 1000, the number has to be higher than zero)                
      * @return ModelMetrics object
      */
-    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec weights, Vec treatment, String[] domain) {
+    static public ModelMetricsBinomialUplift make(Vec targetClassProbs, Vec actualLabels, Vec treatment, String[] domain, AUUC.AUUCType auucType, int auucNbins) {
         Scope.enter();
         try {
             Vec labels = actualLabels.toCategoricalVec();
@@ -79,29 +73,27 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             if (labels == null || targetClassProbs == null || treatment ==  null)
                 throw new IllegalArgumentException("Missing actualLabels or predictedProbs or treatment values for uplift binomial metrics!");
             if (!targetClassProbs.isNumeric())
-                throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities for binomial metrics.");
-            if (targetClassProbs.min() < 0 || targetClassProbs.max() > 1)
-                throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1 for binomial metrics.");
+                throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities for uplift binomial metrics.");
             if (domain.length != 2)
-                throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain) + " for binomial metrics.");
+                throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain) + " for uplift binomial metrics.");
             labels = labels.adaptTo(domain);
             if (labels.cardinality() != 2)
-                throw new IllegalArgumentException("Adapted domain must have 2 class labels, but is " + Arrays.toString(labels.domain()) + " for binomial metrics.");
+                throw new IllegalArgumentException("Adapted domain must have 2 class labels, but is " + Arrays.toString(labels.domain()) + " for uplift binomial metrics.");
             if (!treatment.isCategorical() || treatment.cardinality() != 2)
-                throw new IllegalArgumentException("Treatment values should be catecorical value and have 2 class " + Arrays.toString(treatment.domain()) + " for binomial uplift metrics.");
-
+                throw new IllegalArgumentException("Treatment values should be catecorical value and have 2 class " + Arrays.toString(treatment.domain()) + " for uplift binomial uplift metrics.");
+            long dataSize = treatment.length();
+            if (auucNbins < -1 || auucNbins == 0 || auucNbins > dataSize)
+                throw new IllegalArgumentException("The number of bins to calculate AUUC need to be -1 (default value) or higher than zero, but less than data size.");
+            if(auucNbins == -1)
+                auucNbins = AUUC.NBINS > dataSize ? (int) dataSize : AUUC.NBINS;
             Frame fr = new Frame(targetClassProbs);
             fr.add("labels", labels);
-            if (weights != null) {
-                fr.add("weights", weights);
-            }
             fr.add("treatment", treatment);
-            // TODO solve nbins parameter
-            MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(AUUC.NBINS, targetClassProbs)).doAll(fr)._mb;
+            MetricBuilderBinomialUplift mb = new UpliftBinomialMetrics(labels.domain(), AUUC.calculateQuantileThresholds(auucNbins, targetClassProbs)).doAll(fr)._mb;
             labels.remove();
             Frame preds = new Frame(targetClassProbs);
             ModelMetricsBinomialUplift mm = (ModelMetricsBinomialUplift) mb.makeModelMetrics(null, fr, preds,
-                    fr.vec("labels"), fr.vec("weights"), fr.vec("treatment")); // use the Vecs from the frame (to make sure the ESPC is identical)
+                    fr.vec("labels"), fr.vec("treatment"), auucType, auucNbins); // use the Vecs from the frame (to make sure the ESPC is identical)
             mm._description = "Computed on user-given predictions and labels.";
             return mm;
         } finally {
@@ -122,19 +114,16 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         
         @Override public void map(Chunk[] chks) {
             _mb = new MetricBuilderBinomialUplift(domain, thresholds);
+            Chunk uplift = chks[0];
             Chunk actuals = chks[1];
-            Chunk weights = chks.length == 3 ? chks[2] : null;
-            Chunk uplift = chks.length == 4 ? chks[3] : null;
-            double[] ds = new double[3];
+            Chunk treatment =chks[2];
+            double[] ds = new double[1];
             float[] acts = new float[1];
             for (int i=0; i<chks[0]._len;++i) {
-                ds[2] = chks[0].atd(i); //class 1 probs (user-given)
-                ds[1] = chks[1].atd(i); //class 0 probs
-                ds[0] = ds[1] - ds[2];
+                ds[0] = uplift.atd(i);
                 acts[0] = (float) actuals.atd(i);
-                double weight = weights != null ? weights.atd(i) : 1;
-                double u = uplift.atd(i);
-                _mb.perRow(ds, acts, weight, u,0,null);
+                float t = (float )treatment.atd(i);
+                _mb.perRow(ds, acts, t, 1, 0, null);
             }
         }
         @Override public void reduce(UpliftBinomialMetrics mrt) { _mb.reduce(mrt._mb); }
@@ -162,10 +151,10 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         }
         
         @Override public double[] perRow(double ds[], float[] yact, Model m) {
-            return perRow(ds, yact, Double.NaN,1, 0, m);
+            return perRow(ds, yact, Float.NaN,1, 0, m);
         }
         
-        @Override public double[] perRow(double ds[], float[] yact, double treatment, double weight, double offset, Model m) {
+        @Override public double[] perRow(double ds[], float[] yact, float treatment, double weight, double offset, Model m) {
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
             if(weight == 0 || Double.isNaN(weight)) return ds;
@@ -199,80 +188,48 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f,
                                                        Frame frameWithExtraColumns, final Frame preds) {
             Vec resp = null;
-            Vec weight = null;
             Vec treatment = null;
-            if (_wcount > 0) {
-                if (preds!=null) {
-                    if (frameWithExtraColumns == null)
-                        frameWithExtraColumns = f;
-                    resp = m==null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ?
-                            frameWithExtraColumns.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
-                            :
-                            frameWithExtraColumns.vec(m._parms._response_column);
-                    if (resp != null) {
-                        weight = m==null?null : frameWithExtraColumns.vec(m._parms._weights_column);
-                    }
-                    if(m != null && m._parms._treatment_column != null){
-                        treatment = frameWithExtraColumns.vec(m._parms._treatment_column);
-                    }
+            AUUC.AUUCType auucType = m==null ? AUUC.AUUCType.AUTO : m._parms._auuc_type;
+            if (preds!=null) {
+                if (frameWithExtraColumns == null)
+                    frameWithExtraColumns = f;
+                resp = m==null && frameWithExtraColumns.vec(f.numCols()-1).isCategorical() ?
+                        frameWithExtraColumns.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+                        :
+                        frameWithExtraColumns.vec(m._parms._response_column);
+                if(m != null && m._parms._treatment_column != null){
+                    treatment = frameWithExtraColumns.vec(m._parms._treatment_column);
                 }
             }
-            return makeModelMetrics(m, f, preds, resp, weight, treatment);
+            int auucNbins = m==null || m._parms._auuc_nbins == -1? 
+                    AUUC.NBINS : m._parms._auuc_nbins;
+            return makeModelMetrics(m, f, preds, resp, treatment, auucType, auucNbins);
         }
 
         private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds,
-                                              final Vec resp, final Vec weight, final Vec treatment) {
-            GainsUplift gul = null;
+                                              final Vec resp, final Vec treatment, AUUC.AUUCType auucType, int nbins) {
             AUUC auuc = null;
-            if (_wcount > 0) {
-                if (preds != null) {
-                    if (resp != null) {
-                        if (_auuc == null) {
-                            auuc = new AUUC(preds.vec(0), resp, treatment, m._parms._auuc_type);
-                        }
-                        final Optional<GainsUplift> optionalGainsUplift = calculateGainsUplift(m, preds, resp, weight, treatment);
-                        if (optionalGainsUplift.isPresent()) {
-                            gul = optionalGainsUplift.get();
-                        }
+            if (preds != null) {
+                if (resp != null) {
+                    if (_auuc == null) {
+                        auuc = new AUUC(preds.vec(0), resp, treatment, auucType, nbins);
+                    } else {
+                        auuc = new AUUC(_auuc, auucType);
                     }
                 }
             }
-            return makeModelMetrics(m, f, auuc, gul);
+            return makeModelMetrics(m, f, auuc);
         }
 
-        private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc, GainsUplift gul) {
+        private ModelMetrics makeModelMetrics(Model m, Frame f, AUUC auuc) {
             double sigma = Double.NaN;
-            if(_wcount > 0 && auuc == null) {
+            if(auuc == null) {
                 sigma = weightedSigma();
                 auuc = new AUUC(_auuc, m._parms._auuc_type);
-            } else if(auuc == null){
-                auuc = new AUUC();
             }
-            ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, auuc, gul, _customMetric);
+            ModelMetricsBinomialUplift mm = new ModelMetricsBinomialUplift(m, f, _count, _domain, sigma, auuc, _customMetric);
             if (m!=null) m.addModelMetrics(mm);
             return mm;
-        }
-
-        /**
-         * @param m       Model to calculate GainsUplift for
-         * @param preds   Predictions
-         * @param resp    Actual label
-         * @param weights Weights
-         * @param treatment  Treatment column               
-         * @return An Optional with GainsUplift instance if GainsUplift is not disabled (gainsUplift_bins = 0). Otherwise an
-         * empty Optional.
-         */
-        private Optional<GainsUplift> calculateGainsUplift(Model m, Frame preds, Vec resp, Vec weights, Vec treatment) {
-            final GainsUplift gl = new GainsUplift(preds.vec(0), resp, weights, treatment);
-            if (m != null && m._parms._gainslift_bins < -1) {
-                throw new IllegalArgumentException("Number of G/L bins must be greater or equal than -1.");
-            } else if (m != null && (m._parms._gainslift_bins > 0 || m._parms._gainslift_bins == -1)) {
-                gl._groups = m._parms._gainslift_bins;
-            } else if (m != null){
-                return Optional.empty();
-            }
-            gl.exec(m != null ? m._output._job : null);
-            return Optional.of(gl);
         }
 
         @Override
@@ -287,7 +244,6 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         }
 
         public String toString(){
-            if(_wcount == 0) return "empty, no rows";
             return "";
         }
     }

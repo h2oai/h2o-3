@@ -17,7 +17,6 @@ import java.util.Random;
 public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
     public enum UpliftMetricType { AUTO, KL, ChiSquared, Euclidean }
-    public UpliftMetricType _uplift_metric;
 
     // Called from an http request
     public UpliftDRF(hex.tree.uplift.UpliftDRFModel.UpliftDRFParameters parms) {
@@ -112,7 +111,7 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
 
         @Override
         protected boolean doOOBScoring() {
-            return false;
+            return true;
         }
 
         @Override protected void initializeModelSpecifics() {

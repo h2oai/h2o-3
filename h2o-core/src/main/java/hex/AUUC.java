@@ -29,13 +29,14 @@ public class AUUC extends Iced{
     public final long[] _yControl;        // control group and y==1
     public final long[] _frequency;       // number of data in each bin
     public final long[] _frequencyCumsum; // cumulative sum of frequency to plot AUUC
-    public double[] _uplift;              // output uplift values
+    public double[][] _uplift;              // output uplift values
     public final long _n;                 // number of data
     
     public static final int NBINS = 1000;
 
     public final AUUCType _auucType;
-    public double _auuc;
+    public final int _auucTypeIndx;
+    public double[] _auucs;
     
     public double threshold( int idx ) { return _ths[idx]; }
     public long treatment( int idx ) { return _treatment[idx]; }
@@ -43,11 +44,19 @@ public class AUUC extends Iced{
     public long yTreatment( int idx ) { return _yTreatment[idx]; }
     public long yControl( int idx ) { return _yControl[idx]; }
     public long frequency( int idx ) { return _frequency[idx]; }
-    public double uplift( int idx) { return _uplift[idx]; }
-    
+    public double uplift( int idx) { return _uplift[_auucTypeIndx][idx]; }
+    public double[] upliftByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return _uplift[idx];
+    }
     public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(NBINS, probs, y, uplift, auucType);
     }
+    
+    public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType, int nbins) {
+        this(nbins, probs, y, uplift, auucType);
+    }
+
 
     public AUUC(int nBins, Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(new AUUCImpl(calculateQuantileThresholds(nBins, probs)).doAll(probs, y, uplift)._bldr, auucType);
@@ -59,6 +68,7 @@ public class AUUC extends Iced{
 
     private AUUC(AUUCBuilder bldr, boolean trueProbabilities, AUUCType auucType) {
         _auucType = auucType;
+        _auucTypeIndx = Arrays.asList(AUUCType.values()).indexOf(_auucType);
         _nBins = bldr._nBins;
         assert _nBins >= 1 : "Must have >= 1 bins for AUUC calculation, but got " + _nBins;
         assert trueProbabilities || bldr._thresholds[_nBins - 1] == 1 : "Bins need to contain pred = 1 when 0-1 probabilities are used";
@@ -70,7 +80,7 @@ public class AUUC extends Iced{
         _yControl = Arrays.copyOf(bldr._yControl,_nBins);
         _frequency = Arrays.copyOf(bldr._frequency, _nBins);
         _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
-        _uplift = new double[_nBins];
+        _uplift = new double[AUUCType.values().length][_nBins];
 
         // Rollup counts
         long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0, tmpf= 0;
@@ -81,17 +91,20 @@ public class AUUC extends Iced{
             tmpcp += _yControl[i]; _yControl[i] = tmpcp;
             tmpf += _frequencyCumsum[i]; _frequencyCumsum[i] = tmpf;
         }
-        for( int i=0; i<_nBins; i++ ) {
-            _uplift[i] = _auucType.exec(this, i);
+        for(int i=0; i<AUUCType.VALUES.length; i++) {
+            for (int j = 0; j < _nBins; j++) {
+                _uplift[i][j] = AUUCType.VALUES[i].exec(this, j);
+            }
         }
-        
-        if(_uplift.length == 1 && Double.isNaN(_uplift[0])) {
-           _uplift[0] = 0;
-        } else {
-            ArrayUtils.interpolateLinear(_uplift);
+        for(int i=0; i<AUUCType.VALUES.length; i++) {
+            if (_uplift[i].length == 1 && Double.isNaN(_uplift[i][0])) {
+                _uplift[i][0] = 0;
+            } else {
+                ArrayUtils.interpolateLinear(_uplift[i]);
+            }
         }
         if (trueProbabilities) {
-            _auuc = computeAuuc();
+            _auucs = computeAuucs();
             _maxIdx = _auucType.maxCriterionIdx(this);
         } else {
             _maxIdx = 0;
@@ -103,9 +116,11 @@ public class AUUC extends Iced{
         _n = 0;
         _ths = new double[0];
         _treatment = _control = _yTreatment = _yControl = _frequency = _frequencyCumsum = new long[0];
-        _auuc = Double.NaN;
+        _auucs = new double[AUUCType.VALUES.length];
         _maxIdx = -1;
         _auucType = AUUCType.AUTO;
+        _auucTypeIndx = Arrays.asList(AUUCType.values()).indexOf(_auucType);
+        _uplift = new double[AUUCType.values().length][];
     }
     
     public static double[] calculateQuantileThresholds(int groups, Vec preds) {
@@ -114,6 +129,7 @@ public class AUUC extends Iced{
         double[] quantiles;
         try {
             QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
+            qp._seed = 42;
             fr = new Frame(Key.<Frame>make(), new String[]{"predictions"}, new Vec[]{preds});
             DKV.put(fr);
             qp._train = fr._key;
@@ -135,7 +151,9 @@ public class AUUC extends Iced{
             if (qm != null) qm.remove();
             if (fr != null) DKV.remove(fr._key);
         }
-        
+        if(Double.isNaN(quantiles[0])){
+            quantiles[0] = 0;
+        }
         return quantiles;
     }
     
@@ -146,9 +164,31 @@ public class AUUC extends Iced{
         }
         return area/(_n+1);
     }
+
+    private double[] computeAuucs(){
+        AUUCType[] auucTypes = AUUCType.VALUES;
+        double[] auucs = new double[auucTypes.length];
+        for(int i = 0; i < auucTypes.length; i++ ) {
+            double area = 0;
+            for(int j = 0; j < _nBins; j++) {
+                area += _uplift[i][j] * frequency(j);
+            }
+            auucs[i] = area/(_n+1);
+        }
+        return auucs;
+    }
+    
+    public double auucByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return auuc(idx);
+    }
+
+    public double auuc(int idx){
+        return _auucs[idx];
+    }
     
     public double auuc(){
-        return _auuc;
+        return auuc(_auucTypeIndx);
     }
 
     private static class AUUCImpl extends MRTask<AUUCImpl> {
@@ -159,11 +199,11 @@ public class AUUC extends Iced{
             _thresholds = thresholds; 
         }
         
-        @Override public void map(Chunk ps, Chunk actuals, Chunk uplift) {
+        @Override public void map(Chunk ps, Chunk actuals, Chunk treatment) {
             AUUCBuilder bldr = _bldr = new AUUCBuilder(_thresholds);
             for( int row = 0; row < ps._len; row++ )
-                if( !ps.isNA(row) && !uplift.isNA(row) )
-                    bldr.perRow(ps.atd(row),1, actuals.atd(row), uplift.atd(row));
+                if( !ps.isNA(row) && !treatment.isNA(row) )
+                    bldr.perRow(ps.atd(row),1, actuals.atd(row), (float) treatment.atd(row));
         }
         @Override public void reduce( AUUCImpl auuc ) { _bldr.reduce(auuc._bldr); }
     }
@@ -192,10 +232,9 @@ public class AUUC extends Iced{
             _frequency = new long[nBins];
         }
 
-        public void perRow(double pred, double w, double y, double treatment) {
-            //TODO: for-loop or binary search? 
+        public void perRow(double pred, double w, double y, float treatment) {
             if (w == 0) {return;}
-            for(int t=0; t < _thresholds.length; t++) {
+            for(int t = 0; t < _thresholds.length; t++) {
                 if (pred >= _thresholds[t] && (t == 0 || pred <_thresholds[t-1])) {
                     _n++;
                     _frequency[t]++;

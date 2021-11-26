@@ -40,18 +40,18 @@ public class AUUCTest extends TestUtil {
         assert Arrays.equals(auuc._yControl, new long[]{0, 1, 2, 2, 2, 2, 2, 2, 2, 2});
 
         double[] causalMlQini = new double[]{0, 0, 0, 0, 0.66667, 0, -0.66667, 0, 0.4, 0};
-        assert equalTwoArrays(causalMlQini, auuc._uplift, 1e-2);
+        assert equalTwoArrays(causalMlQini, auuc.upliftByType(AUUC.AUUCType.qini), 1e-2);
 
         double[] causalMlLift = new double[]{0, 0, 0, 0, 0.33333, 0, -0.16667, 0, 0.1, 0};
         auuc = doAUUC(10, probs, y, treatment, AUUC.AUUCType.lift);
-        assert equalTwoArrays(causalMlLift, auuc._uplift, 1e-2);
+        assert equalTwoArrays(causalMlLift, auuc.upliftByType(AUUC.AUUCType.lift), 1e-2);
 
         double[] causalMlGain = new double[]{0, 0, 0, 0, 1.6667, 0, -1.16667, 0, 0.9, 0};
         auuc = doAUUC(10, probs, y, treatment, AUUC.AUUCType.gain);
-        assert equalTwoArrays(causalMlGain, auuc._uplift, 1e-2);
+        assert equalTwoArrays(causalMlGain, auuc.upliftByType(AUUC.AUUCType.gain), 1e-2);
 
         double resultAUUC = ArrayUtils.sum(causalMlGain)/(causalMlGain.length+1);
-        assert auuc._auuc - resultAUUC < 10e-10;
+        assert auuc.auuc() - resultAUUC < 10e-10;
     }
 
     private static AUUC doAUUC(int nbins, double[] probs, double[] y, double[] treatment) {

@@ -45,7 +45,8 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "gainslift_bins",
                 "treatment_column",
                 "uplift_metric",
-                "auuc_type"
+                "auuc_type",
+                "auuc_nbins"
         };
 
         // Input fields
@@ -66,6 +67,8 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
         @API(help = "AUUC metric used to calculate Area under Uplift.", level = API.Level.secondary, values = { "AUTO", "Qini", "Lift", "Gain"})
         public AUUC.AUUCType auuc_type;
 
+        @API(help = "Number of bins to calculate Area under Uplift.", level = API.Level.secondary)
+        public int auuc_nbins;
 
     }
 }

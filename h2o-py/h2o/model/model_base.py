@@ -376,7 +376,8 @@ class ModelBase(h2o_meta(Keyed)):
         """
         return self._model_json["output"]["training_metrics"]._metric_json
     
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type="none"):
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
+                          auuc_type=None, auuc_nbins=-1):
         """
         Generate model metrics for this model on test_data.
 
@@ -387,13 +388,18 @@ class ModelBase(h2o_meta(Keyed)):
         :param bool xval: Report the cross-validation metrics for the model. If train and valid are True, then it
             defaults to True.
         :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when test_data is not None. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
-
+        :param String auuc_type: Change default AUUC type for uplift binomial classification AUUC calculation 
+            when test_data is not None. One of: ``"AUTO"``, ``"qini"``, ``"lift"``, ``"gain"``, (default: ``"AUTO"``). 
+            If type is "auto" qini AUUC is calculated. 
+        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to -1, which means 1000.
         :returns: An object of class H2OModelMetrics.
         """
         
         if test_data is None:
             if auc_type is not None and auc_type != "none":
                 print("WARNING: The `auc_type` parameter is set but it is not used because the `test_data` parameter is None.")
+            if auuc_type is not None:
+                print("WARNING: The `auuc_type` parameter is set but it is not used because the `test_data` parameter is None.")
             if train: 
                 return self._model_json["output"]["training_metrics"]
             if valid: 
@@ -408,10 +414,18 @@ class ModelBase(h2o_meta(Keyed)):
                 print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
                 return
             if auc_type is not None:
-                assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+                assert_is_type(auc_type, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
                 res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), 
                               data={"auc_type": auc_type})
-
+            elif auuc_type is not None:
+                assert_is_type(auuc_type, Enum("AUTO", "qini", "gain", "lift"))
+                if (self._model_json["treatment_column_name"] is not None) and not(self._model_json["treatment_column_name"] in test_data.names):
+                    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the treatment column in your dataset.")
+                    return
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                              data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins})
+            else:
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
             # FIXME need to do the client-side filtering...  (PUBDEV-874)
             raw_metrics = None
             for mm in res["model_metrics"]:
@@ -895,6 +909,48 @@ class ModelBase(h2o_meta(Keyed)):
             m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def auuc(self, train=False, valid=False):
+        """
+        Get the AUUC (Area Under Uplift Curve).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid".
+
+        :param bool train: If train is True, then return the AUUC value for the training data.
+        :param bool valid: If valid is True, then return the AUUC value for the validation data.
+
+        :returns: The AUUC.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, False)
+        m = {}
+        for k, v in viewitems(tm):
+            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
+                raise H2OValueError("auuc() is only available for Uplift Binomial classifiers.")
+            m[k] = None if v is None else v.auuc()
+        return list(m.values())[0] if len(m) == 1 else m
+
+    def auuc_table(self, train=False, valid=False):
+        """
+        Get the AUUC table (Area Under Uplift Curve values of oll types).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid".
+
+        :param bool train: If train is True, then return the AUUC table value for the training data.
+        :param bool valid: If valid is True, then return the AUUC table value for the validation data.
+
+        :returns: The AUUC table.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, False)
+        m = {}
+        for k, v in viewitems(tm):
+            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
+                raise H2OValueError("auuc_table() is only available for Uplift Binomial classifiers.")
+            m[k] = None if v is None else v.auuc_table()
+        return list(m.values())[0] if len(m) == 1 else m
+    
     def aic(self, train=False, valid=False, xval=False):
         """
         Get the AIC (Akaike Information Criterium).

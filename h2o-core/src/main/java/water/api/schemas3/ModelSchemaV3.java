@@ -71,6 +71,7 @@ public class ModelSchemaV3<
     this.timestamp = m._output._job == null?-1:m._output._job.isRunning() ? 0 : m._output._job.end_time();
     this.data_frame = new KeyV3.FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;
+    this.treatment_column_name = m._parms._treatment_column;
     this.algo = m._parms.algoName().toLowerCase();
     this.algo_full_name = m._parms.fullName();
     // Key<? extends Model> k = m._key;

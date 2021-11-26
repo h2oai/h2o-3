@@ -59,6 +59,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  treatment_column="treatment",  # type: str
                  uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
                  auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
+                 auuc_nbins=-1,  # type: int
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -188,6 +189,9 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         :param auuc_type: AUUC metric used to calculate Area under Uplift.
                Defaults to ``"auto"``.
         :type auuc_type: Literal["auto", "qini", "lift", "gain"]
+        :param auuc_nbins: Number of bins to calculate Area under Uplift.
+               Defaults to ``-1``.
+        :type auuc_nbins: int
         """
         super(H2OUpliftRandomForestEstimator, self).__init__()
         self._parms = {}
@@ -228,6 +232,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.treatment_column = treatment_column
         self.uplift_metric = uplift_metric
         self.auuc_type = auuc_type
+        self.auuc_nbins = auuc_nbins
 
     @property
     def training_frame(self):
@@ -741,5 +746,19 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def auuc_type(self, auuc_type):
         assert_is_type(auuc_type, None, Enum("auto", "qini", "lift", "gain"))
         self._parms["auuc_type"] = auuc_type
+
+    @property
+    def auuc_nbins(self):
+        """
+        Number of bins to calculate Area under Uplift.
+
+        Type: ``int``, defaults to ``-1``.
+        """
+        return self._parms.get("auuc_nbins")
+
+    @auuc_nbins.setter
+    def auuc_nbins(self, auuc_nbins):
+        assert_is_type(auuc_nbins, None, int)
+        self._parms["auuc_nbins"] = auuc_nbins
 
 

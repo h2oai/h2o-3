@@ -27,11 +27,15 @@ test.UplitRandomForest.smoke <- function() {
     mean.score <- mean(score$uplift_predict)
     print(mean.score)
     print(score)
-    expect_equal(-0.0133, mean.score, tolerance = 0.01, scale = 1)
+    expect_equal(0.0767, mean.score, tolerance = 0.01, scale = 1)
     perf <- h2o.performance(uplift.model, train)
     auuc <-h2o.auuc(perf)
-    expect_equal(5.47, auuc, tolerance = 0.01, scale = 1)
+    print(auuc)
+    expect_equal(251.5781, auuc, tolerance = 0.01, scale = 1)
     plot(perf)
+    print("Print auuc table")
+    auuc.table <- h2o.auuc_table(perf)
+    print(auuc.table)
 }
 
 doTest("UpliftRandomForest: Smoke Test", test.UplitRandomForest.smoke)

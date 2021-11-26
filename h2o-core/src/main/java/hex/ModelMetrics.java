@@ -425,7 +425,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     
     abstract public double[] perRow(double ds[], float yact[], Model m);
     
-    public double[] perRow(double ds[], float yact[], double treatment, double weight, double offset, Model m) {
+    public double[] perRow(double ds[], float yact[], float treatment, double weight, double offset, Model m) {
       assert(Double.isNaN(treatment) && weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }

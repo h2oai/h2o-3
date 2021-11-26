@@ -9,6 +9,7 @@ from causalml.metrics import auuc_score
 
 import pandas as pd
 
+
 def uplift_compare():
     treatment_column = "treatment"
     response_column = "outcome"
@@ -104,8 +105,13 @@ def uplift_compare():
 
     # test plot_auuc
     perf = h2o_drfs[0].model_performance(testing_df)
-    n, uplift = perf.plot_auuc(metric="gain", plot=False)
+    n, uplift = perf.plot_uplift(metric="gain", plot=False)
     print(uplift)
+
+    print(perf.auuc())
+    print(h2o_drfs[0].auuc())
+    print(perf.auuc_table())
+    print(h2o_drfs[0].auuc_table())
 
 
 if __name__ == "__main__":

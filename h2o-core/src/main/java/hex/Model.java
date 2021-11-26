@@ -500,8 +500,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public int _gainslift_bins = -1;
     
     public MultinomialAucType _auc_type = MultinomialAucType.AUTO;
-    
+
+    /**
+     * Type to calculate default AUUC value.Ignored for non uplift models.
+     */
     public AUUC.AUUCType _auuc_type = AUUC.AUUCType.AUTO;
+
+    /**
+     * Bins for calculating AUUC, if applicable. Ignored for non uplift models.
+     */
+    public int _auuc_nbins = -1;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }

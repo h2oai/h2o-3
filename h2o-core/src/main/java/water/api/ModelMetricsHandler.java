@@ -35,6 +35,8 @@ class ModelMetricsHandler extends Handler {
     public int _top_n;
     public int _bottom_n;
     public boolean _compare_abs;
+    public String _auuc_type;
+    public int _auuc_nbins;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -163,6 +165,12 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Set default multinomial AUC type. Must be one of: \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", \"WEIGHTED_OVO\". Default is \"NONE\" (optional, only for multinomial classification).", json=false, direction = API.Direction.INPUT)
     public String auc_type;
 
+    @API(help = "Set default AUUC type for uplift binomial classification. Must be one of: \"AUTO\", \"qini\", \"lift\", \"gain\". Default is \"AUTO\" (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
+    public String auuc_type;
+
+    @API(help = "Set number of bins to calculate AUUC. Must be -1 or higher than 0. Default is -1 which means 1000 (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
+    public int auuc_nbins;
+
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
     public ModelMetricsBaseV3[] model_metrics;
@@ -186,6 +194,8 @@ class ModelMetricsHandler extends Handler {
       mml._top_n = this.top_n;
       mml._bottom_n = this.bottom_n;
       mml._compare_abs = this.compare_abs;
+      mml._auuc_type = this.auuc_type;
+      mml._auuc_nbins = this.auuc_nbins;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -218,6 +228,8 @@ class ModelMetricsHandler extends Handler {
       this.top_n = mml._top_n;
       this.bottom_n = mml._bottom_n;
       this.compare_abs = mml._compare_abs;
+      this.auuc_type = mml._auuc_type;
+      this.auuc_nbins = mml._auuc_nbins;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -289,6 +301,12 @@ class ModelMetricsHandler extends Handler {
     if(s.auc_type != null) {
       parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type.toUpperCase());
     }
+    AUUC.AUUCType auucType = parms._model._parms._auuc_type;
+    int auucNbins = parms._model._parms._auuc_nbins;
+    if(s.auuc_type != null){
+      parms._model._parms._auuc_type = AUUC.AUUCType.valueOf(s.auuc_type);
+      parms._model._parms._auuc_nbins = s.auuc_nbins;
+    }
     parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
@@ -302,6 +320,8 @@ class ModelMetricsHandler extends Handler {
     }
     // set original auc type back
     parms._model._parms._auc_type = at;
+    parms._model._parms._auuc_type = auucType;
+    parms._model._parms._auuc_nbins = auucNbins;
     return mm;
   }
 
@@ -311,6 +331,8 @@ class ModelMetricsHandler extends Handler {
     public String[] _domain;
     public DistributionFamily _distribution;
     public MultinomialAucType _auc_type;
+    public AUUC.AUUCType _auuc_type;
+    public int _auuc_nbins;
     public ModelMetrics _model_metrics;
   }
 
@@ -338,6 +360,14 @@ class ModelMetricsHandler extends Handler {
             level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
     public MultinomialAucType auc_type;
 
+    @API(help = "Default AUUC type (for uplift binomial classification).",
+            valuesProvider = ModelParamsValuesProviders.UpliftAuucTypeSchemeValuesProvider.class,
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public AUUC.AUUCType auuc_type;
+
+    @API(help = "Number of bins to calculate AUUC (for uplift binomial classification).",
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public int auuc_nbins;
 
     @API(help="Model Metrics.", direction=API.Direction.OUTPUT)
     public ModelMetricsBaseV3 model_metrics;
@@ -368,7 +398,9 @@ class ModelMetricsHandler extends Handler {
     if(null != s.treatment_frame){
       Frame treatmentFrame = DKV.getGet(s.treatment_frame);
       if (null == treatmentFrame) throw new H2OKeyNotFoundArgumentException("treatment_frame", "make", s.treatment_frame);
-      treatment = treatmentFrame.anyVec();
+     treatment = treatmentFrame.anyVec();
+      if(s.auuc_type == null) s.auuc_type = AUUC.AUUCType.AUTO;
+      if(s.auuc_nbins < -1 || s.auuc_nbins == 0) throw new H2OIllegalArgumentException("auuc_bins", "make", "The value has to be -1 or higher than 0.");
     }
 
     if (s.domain ==null) {
@@ -378,15 +410,16 @@ class ModelMetricsHandler extends Handler {
       ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), weights, s.distribution);
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
-      if (pred.numCols()!=1) {
-        throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
-      }
       if(treatment != null){
-        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain);
+        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins);
         s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
+      } else {
+        if (pred.numCols()!=1) {
+          throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
+        }
+        ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
+        s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
       }
-      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
-      s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
     } else if (s.domain.length>2){
       if (pred.numCols()!=s.domain.length) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with " + s.domain.length + " class labels, the predictions_frame must have exactly " + s.domain.length + " columns containing the class-probabilities.");

@@ -28,7 +28,7 @@ public class Score extends CMetricScoringTask<Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-  final double[] _thresholds;   // Only for uplift metric builder to calculate AUUC
+  double[] _thresholds;   // Only for uplift metric builder to calculate AUUC
 
   /** Output parameter: Metric builder */
   ModelMetrics.MetricBuilder _mb;
@@ -51,12 +51,6 @@ public class Score extends CMetricScoringTask<Score> {
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
     assert _kresp != null || !_bldr.isSupervised();
     assert (! _is_train) || (_sii == null);
-    // TODO: fix nbins from parameters
-    if(bldr.isUplift()) {
-      _thresholds = AUUC.calculateQuantileThresholds(AUUC.NBINS, preds.vec(0));
-    } else {
-      _thresholds = null;
-    }
   }
 
   @Override public void map(Chunk allchks[]) {
@@ -84,7 +78,6 @@ public class Score extends CMetricScoringTask<Score> {
     }
     final int nclass = _bldr.nclasses();
     _mb = m.makeMetricBuilder(domain);
-    // TODO is there better way? New makeMetricBuilder method? 
     if(_bldr.isUplift()){
       ((ModelMetricsBinomialUplift.MetricBuilderBinomialUplift) _mb).resetThresholds(_thresholds);
     }
@@ -133,7 +126,7 @@ public class Score extends CMetricScoringTask<Score> {
       if(!_bldr.isUplift()) {
         _mb.perRow(cdists, val, weight, offset, m);
       } else {
-        double treatment = treatmentChunk.atd(row);
+        float treatment = (float) treatmentChunk.atd(row);
         _mb.perRow(cdists, val, treatment, weight, offset, m);
       }
 
@@ -184,6 +177,12 @@ public class Score extends CMetricScoringTask<Score> {
     ModelMetrics mm;
     if (model._output.nclasses() == 2 && _computeGainsLift) {
       assert preds != null : "Predictions were pre-created";
+      if(_bldr.isUplift()) {
+        int nbins = _bldr._model._parms._auuc_nbins;
+        _thresholds = AUUC.calculateQuantileThresholds(nbins == -1 ? AUUC.NBINS : nbins, preds.vec(0));
+      } else {
+        _thresholds = null;
+      }
       mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
     } else {
       boolean calculatePreds = preds == null && model.isDistributionHuber();

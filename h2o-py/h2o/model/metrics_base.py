@@ -1777,10 +1777,12 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         super(H2OBinomialUpliftModelMetrics, self).__init__(metric_json, on, algo)
         
-    def auuc(self):
+    def auuc(self, metric=None):
         """
-        Retrieve area under uplift curve (AUUC) value. 
+        Retrieve area under uplift curve (AUUC) value.
         
+        :param metric AUUC metric type (None, "qini", "lift", "gain",
+            default is None which means it takes default metric from model parameters) 
         :returns: AUUC value.
 
         :examples:
@@ -1804,13 +1806,18 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
         >>> uplift_model.auuc()
         """
-        return self._metric_json['AUUC']
-    
-    def uplift(self, metric="auto"):
+        if metric is None:
+            return self._metric_json['AUUC']
+        else:
+            assert metric in ['qini', 'lift', 'gain'], \
+               "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
+            return self._metric_json['auuc_table'][metric][0]
+            
+    def uplift(self, metric="AUTO"):
         """
         Retrieve uplift values for each bin. 
         
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
         
         :returns: a list of uplift values.
 
@@ -1835,6 +1842,9 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
         >>> uplift_model.uplift()
         """
+        assert metric in ['AUTO', 'qini', 'lift', 'gain']
+        if metric is "AUTO": 
+            metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric]
 
     def n(self):
@@ -1895,12 +1905,14 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         return self._metric_json["thresholds_and_metric_scores"]["thresholds"]
 
-    def gains_uplift(self):
+    def auuc_table(self):
         """
-        Retrieve gains uplift table. 
-
+        Retrieve all types of AUUC in a table.
+         
+        :returns: a table of AUUCs.
+    
         :examples:
-        
+         
         >>> from h2o.estimators import H2OUpliftRandomForestEstimator
         >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
         >>> treatment_column = "treatment"
@@ -1918,21 +1930,19 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.gains_uplift()
+        >>> uplift_model.auuc_table()
         """
-        if 'gains_uplift_table' in self._metric_json:
-            return self._metric_json['gains_uplift_table']
-        return None
+        return self._metric_json["auuc_table"]
 
-    def plot_auuc(self, server=False, save_to_file=None, plot=True, metric="auto"):
+    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="auto"):
         """
-        Plot Area Under Uplift Curve. 
+        Plot Uplift Curve. 
         
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
         :param save_to_file filename to save the plot to
         :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
             (number of observations and uplift values)
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
 
         :examples:
         
@@ -1953,25 +1963,25 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.plot_auuc(plot=True)
-        >>> n, uplift = uplift_model.plot_auuc(plot=False)
+        >>> uplift_model.plot_uplift(plot=True)
+        >>> n, uplift = uplift_model.plot_uplift(plot=False)
         """
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
                 return
-            plt.ylabel('Cumulative Uplift')
+            plt.ylabel('Cumulative '+metric)
             plt.xlabel('Number Targeted')
-            plt.title('Uplift curve - '+metric)
+            plt.title('Cumulate Uplift Curve - '+metric+"\n"+r'AUUC={0:.4f}'.format(self.auuc(metric)))
             uplift = self.uplift(metric)
             n = self.n()
-            a = uplift[len(uplift)-1]/n[len(n)-1]
             plt.plot(n, uplift, 'b-', label='uplift')
+            a = uplift[len(uplift)-1]/n[len(n)-1]
+            rnd = [a * nn for nn in n]
+            plt.plot(n, rnd, 'k--', label='random')
             if metric is "lift":
                 plt.legend(loc='upper right')
             else:
-                rnd = [a * nn for nn in n]
-                plt.plot(n, rnd, 'k--', label='random')
                 plt.legend(loc='lower right')
             plt.grid(True)
             plt.tight_layout()
