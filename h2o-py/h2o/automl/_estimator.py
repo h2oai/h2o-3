@@ -73,19 +73,29 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     Automatic Machine Learning
 
     The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-    The current version of AutoML trains and cross-validates the following algorithms (in the following order):
-    three pre-specified XGBoost GBM (Gradient Boosting Machine) models,
-    a fixed grid of GLMs,
-    a default Random Forest (DRF),
-    five pre-specified H2O GBMs,
-    a near-default Deep Neural Net,
-    an Extremely Randomized Forest (XRT),
-    a random grid of XGBoost GBMs,
-    a random grid of H2O GBMs,
-    and a random grid of Deep Neural Nets.
+    It trains several models, cross-validated by default, by using the following available algorithms:
+    
+    - XGBoost
+    - GBM (Gradient Boosting Machine)
+    - GLM (Generalized Linear Model)
+    - DRF (Distributed Random Forest)
+    - XRT (eXtremely Randomized Trees)
+    - DeepLearning (Fully Connected Deep Neural Network)
+    
+    It also applies HPO on the following algorithms:
+    
+    - XGBoost
+    - GBM
+    - DeepLearning
+    
     In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the
-    leaderboard.  AutoML trains several Stacked Ensemble models during the run.
-    Two kinds of Stacked Ensemble models are trained one of all available models, and one of only the best models of each kind.
+    leaderboard. 
+    Finally, AutoML also trains several Stacked Ensemble models at various stages during the run.
+    Mainly two kinds of Stacked Ensemble models are trained:
+    
+    - one of all available models at time t
+    - one of only the best models of each kind at time t.
+    
     Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
 
     :examples:
@@ -224,7 +234,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Defaults to ``"AUTO"`` (This translates to ``"auc"`` for binomial classification, ``"mean_per_class_error"`` for multinomial classification, ``"deviance"`` for regression).
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are ``None`` (live log disabled), ``"debug"``, ``"info"`` or ``"warn"``.
+            Available options are ``None`` (live log disabled), ``"debug"``, ``"info"``, ``"warn"`` or ``"error"``.
             Defaults to ``"warn"``.
         """
 
@@ -617,24 +627,21 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         """
         the callback function used to print verbose info when polling AutoML job.
         """
-        levels = ['Debug', 'Info', 'Warn']
-        if verbosity is None or verbosity.capitalize() not in levels:
+        levels = ['debug', 'info', 'warn', 'error']
+        if verbosity is None or verbosity.lower() not in levels:
             return
 
-        levels = levels[levels.index(verbosity.capitalize()):]
         try:
             if job.progress > state.get('last_job_progress', 0):
-                # print("\nbar_progress={}, job_progress={}".format(bar_progress, job.progress))
-                events = _fetch_state(job.dest_key, properties=['event_log'])['event_log']
-                events = events[events['level'].isin(levels), :]
+                events_table = _fetch_state(job.dest_key, properties=[], verbosity=verbosity)['json']['event_log_table']
                 last_nrows = state.get('last_events_nrows', 0)
-                if events.nrows > last_nrows:
-                    fr = events[last_nrows:, ['timestamp', 'message']].as_data_frame(use_pandas=False, header=False)
+                if len(events_table.cell_values) > last_nrows:
+                    events = zip(*events_table[last_nrows:][['timestamp', 'message']])
                     print('')
-                    for r in fr:
+                    for r in events:
                         print("{}: {}".format(r[0], r[1]))
                     print('')
-                    state['last_events_nrows'] = events.nrows
+                    state['last_events_nrows'] = len(events_table.cell_values)
             state['last_job_progress'] = job.progress
         except Exception as e:
             print("Failed polling AutoML progress log: {}".format(e))

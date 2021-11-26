@@ -1,15 +1,9 @@
 #' Automatic Machine Learning
-#'
+#' 
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-#' The current version of AutoML trains and cross-validates the following algorithms:
-#' three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs,
-#' a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net,
-#' an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs,
-#' and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms,
-#' so some may be missing from the leaderboard. AutoML trains several Stacked Ensemble models during the run.
-#' Two kinds of Stacked Ensemble models are trained one of all available models, and one of only the best models of each kind.
-#' Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
-#'
+#' AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
+#' which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
+#' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or index of the response variable in the model. For classification, the y column must be a
@@ -69,11 +63,31 @@
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
-#'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
+#'        Must be one of NULL (live log disabled), "debug", "info", "warn", "error". Defaults to "warn".
 #' @param ... Additional (experimental) arguments to be passed through; Optional.        
-#' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
+#' @details AutoML trains several models, cross-validated by default, by using the following available algorithms:
+#'  * XGBoost
+#'  * GBM (Gradient Boosting Machine)
+#'  * GLM (Generalized Linear Model)
+#'  * DRF (Distributed Random Forest)
+#'  * XRT (eXtremely Randomized Trees)
+#'  * DeepLearning (Fully Connected Deep Neural Network)
+#' 
+#'  It also applies HPO on the following algorithms:
+#'  * XGBoost
+#'  * GBM
+#'  * DeepLearning
+#' 
+#'  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.
+#' 
+#'  Finally, AutoML also trains several Stacked Ensemble models at various stages during the run.
+#'  Mainly two kinds of Stacked Ensemble models are trained:
+#'  * one of all available models at time t.
+#'  * one of only the best models of each kind at time t.
+#' 
+#'  Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
+#'
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -87,6 +101,7 @@
 #' head(lb)
 #' }
 #' @export
+#' @md
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
@@ -344,7 +359,7 @@ h2o.automl <- function(x, y, training_frame,
   }
 
   # POST call to AutoMLBuilder (executes the AutoML job)
-  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
+  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", parms_as_payload = TRUE, .params = params)
 
   poll_state <- list()
   poll_updates <- function(job) {
@@ -401,22 +416,20 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 }
 
 .automl.poll_updates <- function(job, verbosity=NULL, state=NULL) {
-  levels <- c('Debug', 'Info', 'Warn')
-  idx = ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
+  levels <- c('debug', 'info', 'warn', 'error')
+  idx <- ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
   if (is.na(idx)) return()
 
-  levels <- levels[idx:length(levels)]
   try({
       if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
         project_name <- job$dest$name
-        events <- .automl.fetch_state(project_name, properties=c('event_log'))$event_log
-        events <- events[events['level'] %in% levels,]
+        events <- .automl.fetch_state(project_name, properties=list())$json$event_log_table
         last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
-        if (h2o.nrow(events) > last_nrows) {
+        if (nrow(events) > last_nrows) {
           for (row in (last_nrows+1):nrow(events)) {
             cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
           }
-          state$last_events_nrows <- h2o.nrow(events)
+          state$last_events_nrows <- nrow(events)
         }
       }
       state$last_job_progress <- job$progress
@@ -451,28 +464,27 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
 .automl.fetch_state <- function(run_id, properties=NULL) {
   # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
-  project_name <- automl_job$project_name
-  automl_id <- automl_job$automl_id$name
-
-  leaderboard <- as.data.frame(automl_job$leaderboard_table)
-  row.names(leaderboard) <- seq(nrow(leaderboard))
-
+  state_json <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
+  project_name <- state_json$project_name
+  automl_id <- state_json$automl_id$name
+  is_leaderboard_empty <- all(dim(state_json$leaderboard_table) == c(1, 1)) && state_json$leaderboard_table[1, 1] == ""
+    
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
-  if (should_fetch('leaderboard')) {
-    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
-    # leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
+  if (should_fetch('leaderboard')) { 
+    leaderboard <- .automl.fetch_table(state_json$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
     # If the leaderboard is empty, it creates a dummy row so let's remove it
-    if (leaderboard$model_id[1,1] == "") {
+    if (is_leaderboard_empty) {
       leaderboard <- leaderboard[-1,]
       warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
     }
+  } else {
+    leaderboard <- NULL
   }
 
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
-  if (should_fetch('leader') & nrow(leaderboard) > 0) {
-    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  if (should_fetch('leader') && !is_leaderboard_empty) {
+    leader <- h2o.getModel(state_json$leaderboard$models[[1]]$name)
   } else {
     # create a phony leader
     Class <- paste0("H2OBinomialModel")
@@ -480,15 +492,13 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   if (should_fetch('event_log')) {
-    event_log <- as.data.frame(automl_job$event_log_table)
-    event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
-    # row.names(event_log) <- seq(nrow(event_log))
+    event_log <- .automl.fetch_table(state_json$event_log_table, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
   } else {
     event_log <- NULL
   }
 
   if (should_fetch('modeling_steps')) {
-    modeling_steps <- lapply(automl_job$modeling_steps, function(sdef) {
+    modeling_steps <- lapply(state_json$modeling_steps, function(sdef) {
       list(name=sdef$name, steps=sdef$steps)
     })
   } else {
@@ -501,7 +511,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     leaderboard=leaderboard,
     leader=leader,
     event_log=event_log,
-    modeling_steps=modeling_steps
+    modeling_steps=modeling_steps,
+    json=state_json
   ))
 }
 

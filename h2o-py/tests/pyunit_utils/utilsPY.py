@@ -25,6 +25,7 @@ import string
 import subprocess
 from subprocess import STDOUT,PIPE
 import sys
+import tempfile
 import time # needed to randomly generate time
 import threading
 import urllib.request, urllib.error, urllib.parse
@@ -35,25 +36,6 @@ try:
 except:
     from io import StringIO  # py3
     
-
-try:
-    from tempfile import TemporaryDirectory
-except ImportError:
-    import tempfile
-    
-    class TemporaryDirectory:
-
-        def __init__(self):
-            self.tmp_dir = None
-
-        def __enter__(self):
-            self.tmp_dir = tempfile.mkdtemp()
-            return self.tmp_dir
-
-        def __exit__(self, *args):
-            shutil.rmtree(self.tmp_dir)
-
-
 # 3rd parties
 import numpy as np
 import pandas as pd
@@ -74,6 +56,24 @@ from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimato
     H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
 from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
+
+
+class TemporaryDirectory:
+
+    def __init__(self, keep=False):
+        """
+        :param keep: set to True for debugging, to look at generated content.
+        """
+        self.tmp_dir = None
+        self._keep = keep
+
+    def __enter__(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix='h2o_pyunit_')
+        return self.tmp_dir
+
+    def __exit__(self, *args):
+        if not self._keep:
+            shutil.rmtree(self.tmp_dir)
 
 
 class Timeout:
