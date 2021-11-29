@@ -373,14 +373,14 @@ test-junit-16-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-16
 
 test-junit-16:
-	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=16 --add-opens=java.base/java.lang=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=16 --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-17-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-17
 
 test-junit-17:
-	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=17 --add-opens=java.base/java.lang=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=17 --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-latest-jenkins:
 	$(call sed_test_scripts)
