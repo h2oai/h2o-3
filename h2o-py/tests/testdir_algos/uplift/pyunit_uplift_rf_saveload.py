@@ -39,7 +39,6 @@ def uplift_random_forest_save_and_load():
         treatment_column=treatment_column,
         uplift_metric="KL",
         distribution="bernoulli",
-        gainslift_bins=10,
         min_rows=10,
         nbins=1000,
         seed=seed,

@@ -41,7 +41,6 @@ def uplift_compare():
             treatment_column=treatment_column,
             uplift_metric="euclidean",
             distribution="bernoulli",
-            gainslift_bins=10,
             min_rows=5,
             nbins=1000,
             seed=42,

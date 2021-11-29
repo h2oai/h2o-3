@@ -1202,7 +1202,6 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object An \linkS4class{H2OBinomialUpliftMetrics}
 #' @param train Retrieve the training AUUC
 #' @param valid Retrieve the validation AUUC
-#' @param metric Type of AUUC which to return. 
 #' @examples
 #' \dontrun{
 #' library(h2o)

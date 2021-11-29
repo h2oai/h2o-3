@@ -16,7 +16,6 @@ def uplift_train_predict(uplift_metric, x_names, treatment_column, response_colu
         treatment_column=treatment_column,
         uplift_metric=uplift_metric,
         distribution="bernoulli",
-        gainslift_bins=10,
         min_rows=10,
         nbins=1000,
         seed=seed,

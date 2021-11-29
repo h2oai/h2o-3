@@ -59,7 +59,6 @@ test.uplift.vs.h2oUplit <- function() {
       uplift_metric = uplift_metrics[i],
       auuc_type = "qini",
       distribution = "bernoulli",
-      gainslift_bins = 1000,
       ntrees = ntrees,
       mtries = mtries,
       max_depth = 10,
