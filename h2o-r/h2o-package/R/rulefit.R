@@ -235,7 +235,9 @@ h2o.rulefit <- function(x,
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' titanic <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+#' titanic <- h2o.importFile(
+#'  "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+#' )
 #' response = "survived"
 #' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
 #' titanic[,response] <- as.factor(titanic[,response])
