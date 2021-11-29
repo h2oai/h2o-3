@@ -158,11 +158,9 @@ Defining a MAXR Model
 MAXR method
 ~~~~~~~~~~~
 
-This method begins by finding the one-variable model producing the highest :math:`R^2`. Next, the variable that yields the greatest increase in :math:`R^2` is added. 
+The MAXR method starts with the one-variable model that produces the highest :math:`R^2` and adds the variable that gives the greatest increase to :math:`R^2`. This creates the two-variable model. Within this second model, each variable in the model is compared to each variable not in the model to determine if the replacement or removal of any variable will increase :math:`R^2`. Any switch determined to increase :math:`R^2` is then made.
 
-Once the two-variable model is obtained, each of the variables in the model is compared to each variable not in the model. For each comparison, the MAXR method determines if removing one variable and replacing it with the other variable increases :math:`R^2`. After comparing all possible switches, the MAXR method makes the switch that produces the largest increase in :math:`R^2`.
-
-Comparisons begin again, and the process continues until the MAXR method finds that no switch could increase :math:`R^2`. Therefor, the two-variable model that's achieved is the "best" two-variable model the technique could find, the "best" three-variable model, and so forth.
+This process continues until MAXR determines that no further switch could further increase :math:`R^2`. This is how it determines the best of each x-variable model. 
 
 H2O MaxRGLM
 ~~~~~~~~~~~
