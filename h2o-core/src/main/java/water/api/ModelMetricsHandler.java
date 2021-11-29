@@ -410,7 +410,7 @@ class ModelMetricsHandler extends Handler {
       ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), weights, s.distribution);
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
-      if(treatment != null){
+      if (treatment != null) {
         ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins);
         s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
       } else {

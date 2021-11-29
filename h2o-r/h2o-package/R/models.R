@@ -1192,9 +1192,10 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
-#' Retrieve the AUUC
+#' Retrieve the default AUUC
 #'
-#' Retrieves the AUUC value from an \linkS4class{H2OBinomialUpliftMetrics}.
+#' Retrieves the AUUC value from an \linkS4class{H2OBinomialUpliftMetrics}. The type of AUUC depends on auuc_type which
+#' was set before training. If you need specific AUUC, see h2o.auuc_table function.
 #' If "train" and "valid" parameters are FALSE (default), then the training AUUC value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of AUUCs are returned, where the names are "train", "valid".
 #'
@@ -1218,7 +1219,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h2o.auuc(perf)
 #' }
 #' @export
-h2o.auuc <- function(object, train=FALSE, valid=FALSE, metric=None) {
+h2o.auuc <- function(object, train=FALSE, valid=FALSE) {
     if( is(object, "H2OModelMetrics") ) return( object@metrics$AUUC )
     if( is(object, "H2OModel") ) {
         model.parts <- .model.parts(object)

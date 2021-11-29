@@ -2222,14 +2222,15 @@ public class ArrayUtils {
 
   /*
    * Linear interpolation values in the array with Double.NaN values.
-   * The interpolation always starts from 0. 
+   * The interpolation always starts from the first item of the array. 
    * The last element of array cannot be Double.NaN.
    *
    * @param array input array with Double.NaN values
    */
   public static void interpolateLinear(double[] array){
-    assert array.length > 0 && !Double.isNaN(array[array.length-1]);
-    if(array.length == 1){
+    assert array.length > 0 && !Double.isNaN(array[array.length-1]): 
+            "Input array length should be > 0 and the first item should not be NaN";
+    if (array.length == 1){
       return;
     }
     List<Integer> nonNullIdx = new ArrayList<>();
@@ -2250,7 +2251,7 @@ public class ArrayUtils {
     if(nonNullIdx.size() == 0) return;
     double start = Double.NaN, end = Double.NaN, step = Double.NaN, mean = Double.NaN;
     for (int i=0; i<array.length; i++) {
-      // begin always with 0
+      // always begin with 0
       if(i == 0 && Double.isNaN(array[i])) {
         start = 0;
         end = array[nonNullIdx.get(0)];

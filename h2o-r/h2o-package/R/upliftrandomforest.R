@@ -59,7 +59,6 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
-#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param uplift_metric Divergence metric used to find best split when building an upplift tree. Must be one of: "AUTO", "KL",
 #'        "Euclidean", "ChiSquared". Defaults to AUTO.
 #' @param auuc_type AUUC metric used to calculate Area under Uplift. Must be one of: "AUTO", "Qini", "Lift", "Gain". Defaults to
@@ -103,7 +102,6 @@ h2o.upliftRandomForest <- function(x,
                                    custom_metric_func = NULL,
                                    export_checkpoints_dir = NULL,
                                    check_constant_response = TRUE,
-                                   gainslift_bins = -1,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                    auuc_type = c("AUTO", "Qini", "Lift", "Gain"),
                                    auuc_nbins = -1,
@@ -193,8 +191,6 @@ h2o.upliftRandomForest <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
-  if (!missing(gainslift_bins))
-    parms$gainslift_bins <- gainslift_bins
   if (!missing(uplift_metric))
     parms$uplift_metric <- uplift_metric
   if (!missing(auuc_type))
@@ -244,7 +240,6 @@ h2o.upliftRandomForest <- function(x,
                                                    custom_metric_func = NULL,
                                                    export_checkpoints_dir = NULL,
                                                    check_constant_response = TRUE,
-                                                   gainslift_bins = -1,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                                    auuc_type = c("AUTO", "Qini", "Lift", "Gain"),
                                                    auuc_nbins = -1,
@@ -338,8 +333,6 @@ h2o.upliftRandomForest <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
-  if (!missing(gainslift_bins))
-    parms$gainslift_bins <- gainslift_bins
   if (!missing(uplift_metric))
     parms$uplift_metric <- uplift_metric
   if (!missing(auuc_type))

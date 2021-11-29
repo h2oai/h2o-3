@@ -42,7 +42,6 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "custom_metric_func",
                 "export_checkpoints_dir",
                 "check_constant_response",
-                "gainslift_bins",
                 "treatment_column",
                 "uplift_metric",
                 "auuc_type",

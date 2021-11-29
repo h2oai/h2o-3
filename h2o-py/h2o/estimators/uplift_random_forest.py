@@ -55,7 +55,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                  custom_metric_func=None,  # type: Optional[str]
                  export_checkpoints_dir=None,  # type: Optional[str]
                  check_constant_response=True,  # type: bool
-                 gainslift_bins=-1,  # type: int
                  treatment_column="treatment",  # type: str
                  uplift_metric="auto",  # type: Literal["auto", "kl", "euclidean", "chi_squared"]
                  auuc_type="auto",  # type: Literal["auto", "qini", "lift", "gain"]
@@ -175,10 +174,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                column being a constant value or not.
                Defaults to ``True``.
         :type check_constant_response: bool
-        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
-               binning.
-               Defaults to ``-1``.
-        :type gainslift_bins: int
         :param treatment_column: Define column which will be use for computing uplift gain to select best split for a
                tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.
                Defaults to ``"treatment"``.
@@ -228,7 +223,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
         self.custom_metric_func = custom_metric_func
         self.export_checkpoints_dir = export_checkpoints_dir
         self.check_constant_response = check_constant_response
-        self.gainslift_bins = gainslift_bins
         self.treatment_column = treatment_column
         self.uplift_metric = uplift_metric
         self.auuc_type = auuc_type
@@ -689,20 +683,6 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def check_constant_response(self, check_constant_response):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
-
-    @property
-    def gainslift_bins(self):
-        """
-        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
-
-        Type: ``int``, defaults to ``-1``.
-        """
-        return self._parms.get("gainslift_bins")
-
-    @gainslift_bins.setter
-    def gainslift_bins(self, gainslift_bins):
-        assert_is_type(gainslift_bins, None, int)
-        self._parms["gainslift_bins"] = gainslift_bins
 
     @property
     def treatment_column(self):

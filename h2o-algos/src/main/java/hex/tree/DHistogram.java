@@ -600,6 +600,13 @@ public final class DHistogram extends Iced<DHistogram> {
       updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, treatment);
   }
 
+  void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+    if (_intOpt)
+      updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
+    else
+      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, null);
+  }
+
   /**
    * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
    * 
