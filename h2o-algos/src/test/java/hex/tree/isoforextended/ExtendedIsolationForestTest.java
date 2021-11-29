@@ -16,6 +16,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FrameUtils;
+import water.util.RandomUtils;
 
 import java.util.Arrays;
 
@@ -393,6 +394,13 @@ public class ExtendedIsolationForestTest extends TestUtil {
     @Test
     public void testGaussianVector() {
         double[] a = IsolationTree.gaussianVector(5,  2, 0xCAFFE);
-        assertArrayEquals(new double[]{0.866, 0.0, 1.657, -0.166, 0.0}, a, 1e-3);
+        int numOfZeros = 0;
+        for (double v : a) {
+            if (v == 0) {
+                numOfZeros++;
+            }
+        }
+        assertEquals("Array should contain two zeros: " + Arrays.toString(a),2, numOfZeros);
+        assertArrayEquals("Arrays are different: " + Arrays.toString(a), new double[]{0.866, 0.0, 1.657, -0.166, 0.0}, a, 1e-3);
     }
 }
