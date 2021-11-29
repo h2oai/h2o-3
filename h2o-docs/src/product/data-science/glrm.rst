@@ -18,76 +18,83 @@ Given large collections of data with numeric and categorical values, entries in 
 
 Both X and Y have practical interpretations. Each row of Y is an archetypal feature formed from the columns of A, and each row of X corresponds to a row of A projected into this reduced dimension feature space. We can approximately reconstruct A from the matrix product XY, which has rank k. The number k is chosen to be much less than both m and n: a typical value for 1 million rows and 2,000 columns of numeric data is k = 15. The smaller k is, the more compression gained from the low-rank representation.
 
-Defining a GLRM Model
-~~~~~~~~~~~~~~~~~~~~~
+Definining a GLRM Model
+~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+Common Parameters
+'''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. NOTE: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. NOTE: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset to calculate validation metrics.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset to calculate validation metrics.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns are used.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: (Optional) Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training (disabled by default).
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **representation_name**: Specify the frame key to save the resulting X.
-
--  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
-
--  `k <algo-params/k.html>`__: (Required) Specify the rank of matrix approximation (defaults to 1).
-
--  **loss**: Specify the numeric loss function: Quadratic (default), Absolute, Huber, Poisson, Hinge, or Periodic.
-
--  **loss_by_col**: Specify the loss function by column override: Quadratic, Absolute, Huber, Poisson, Hinge, or Periodic, Categorical, or Ordinal.
+-  **impute_original**: Specify whether to reconstruct the original training data by reversing the data transform after projecting archetypes. This option is disabled by default.
 
 -  **loss_by_col_idx**: Specify the loss function by column index override.
 
--  **multi_loss**: Specify either **Categorical** (default) or **Ordinal** for the categorical loss function.
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  **period**: When ``loss=periodic``, specify the length of the period (defaults to 1).
+-  **representation_name**: Specify the frame key to save the resulting X.
 
--  **regularization_x**: Specify the regularization function for the X matrix: None (default), Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
+-  **recover_svd**: Specify whether to recover singular values and eigenvectors of XY. This option is disabled by default.
 
--  **regularization_y**: Specify the regularization function for the Y matrix: None (default), Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Specify whether to score during each iteration of the model training (disabled by default).
+
+-  **user_x**: Specify the initial X value.
+
+-  **user_y**: Specify the initial Y value.
+
+-  **expand_user_y**: Specify whether to expand categorical columns in the user-specified initial Y value. This value is enabled by default.
+
+
+Hyperparameters
+'''''''''''''''
+
+-  `k <algo-params/k.html>`__: *Required* Specify the rank of matrix approximation (defaults to 1).
 
 -  **gamma_x**: Specify the regularization weight on the X matrix (defaults to 0).
 
 -  **gamma_y**: Specify the regularization weight on the Y matrix (defaults to 0).
 
--  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6, and the value defaults to 1000.
+-  **regularization_x**: Specify the regularization function for the X matrix: None (default), Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
 
--  **max_updates**: Specify the maximum number of updates (defaults to 2000).
+-  **regularization_y**: Specify the regularization function for the Y matrix: None (default), Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, or Simplex.
+
+-  `init <algo-params/init1.html>`__: Specify the initialization mode: Random, Furthest, PlusPlus (default), or User.
 
 -  **init_step_size**: Specify the initial step size (defaults to 1).
 
 -  **min_step_size**: Specify the minimum step size (defaults to 0.0001).
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
+-  **loss**: Specify the numeric loss function: Quadratic (default), Absolute, Huber, Poisson, Hinge, or Periodic.
 
--  `init <algo-params/init1.html>`__: Specify the initialization mode: Random, Furthest, PlusPlus (default), or User.
+-  **loss_by_col**: Specify the loss function by column override: Quadratic, Absolute, Huber, Poisson, Hinge, or Periodic, Categorical, or Ordinal.
+
+-  **multi_loss**: Specify either **Categorical** (default) or **Ordinal** for the categorical loss function.
+
+-  **period**: When ``loss=periodic``, specify the length of the period (defaults to 1).
+
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6, and the value defaults to 1000.
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Specify the maximum allowed runtime in seconds for model training. Set to 0 (disabled) by default.
+
+-  **max_updates**: Specify the maximum number of updates (defaults to 2000).
+
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
 -  **svd_method**: Specify the method for computing SVD during initialization: GramSVD, Power, Randomized (default).
 
        **Caution**: Randomized is currently experimental.
 
--  **user_y**: (Optional) Specify the initial Y value.
-
--  **user_x**: (Optional) Specify the initial X value.
-
--  **expand_user_y**: Specify whether to expand categorical columns in the user-specified initial Y value. This value is enabled by default.
-
--  **impute_original**: Specify whether to reconstruct the original training data by reversing the data transform after projecting archetypes. This option is disabled by default.
-
--  **recover_svd**: Specify whether to recover singular values and eigenvectors of XY. This option is disabled by default.
-
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Specify the maximum allowed runtime in seconds for model training. Set to 0 (disabled) by default.
-
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
 Examples
 ~~~~~~~~

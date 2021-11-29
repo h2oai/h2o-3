@@ -11,26 +11,24 @@ PCA is commonly used to model without regularization or perform dimensionality r
 Defining a PCA Model
 ~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+Common Parameters
+'''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset to calculate validation metrics.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset to calculate validation metrics.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns are used.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  `pca_method <algo-params/pca_method.html>`__: Specify the algorithm to use for computing the principal components:
+-  `impute_missing <algo-params/impute_missing.html>`__: Specifies whether to impute missing entries with the column mean value. This value defaults to False.
 
-   -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package (default)
-   -  **Power**: Computes the SVD using the power iteration method (experimental)
-   -  **Randomized**: Uses randomized subspace iteration method
-   -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
 -  `pca_impl <algo-params/pca_impl.html>`__: Specify the implementation to use for computing PCA (via SVD or EVD). Available options include:
 
@@ -39,23 +37,33 @@ Defining a PCA Model
    - **mtj_svd_densematrix**: Singular-value decompositions for dense matrix using Matrix Toolkit Java (`MTJ <https://github.com/fommil/matrix-toolkits-java/>`__)
    - **jama**: Eigenvalue decompositions for dense matrix using Java Matrix (`JAMA <http://math.nist.gov/javanumerics/jama/>`__)
 
+-  `pca_method <algo-params/pca_method.html>`__: Specify the algorithm to use for computing the principal components:
+
+   -  **GramSVD**: Uses a distributed computation of the Gram matrix, followed by a local SVD using the JAMA package (default)
+   -  **Power**: Computes the SVD using the power iteration method (experimental)
+   -  **Randomized**: Uses randomized subspace iteration method
+   -  **GLRM**: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
+
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Specify whether to score during each iteration of the model training. This option is disabled by default.
+
+-  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first  factor level of each categorical column when expanding into indicator columns. This option is disabled by default.
+
+
+Hyperparameters
+'''''''''''''''
+
+-  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training data. This option is enabled by default.
+
 -  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. This can be a value from 1 to the minimum of (total number of rows, total number of columns) in the dataset. This value defaults to 1.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is 1000.
 
--  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
-
--  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For PCA models, this option ignores the first  factor level of each categorical column when expanding into indicator columns. This option is disabled by default.
-
--  `compute_metrics <algo-params/compute_metrics.html>`__: Enable metrics computations on the training data. This option is enabled by default.
-
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training. This option is disabled by default.
-
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This value is set to 0 (disabled) by default.
 
--  `impute_missing <algo-params/impute_missing.html>`__: Specifies whether to impute missing entries with the column mean value. This value defaults to False.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This value defaults to -1 (time-based random number).
 
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
+
 
 Interpreting a PCA Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,7 +174,7 @@ associated with :math:`\lambda`.
 Solve for :math:`x` by Gaussian elimination.
 
 Recovering SVD from GLRM
-^^^^^^^^^^^^^^^^^^^^^^^^
+''''''''''''''''''''''''
 
 GLRM gives :math:`x` and :math:`y`, where :math:`x\in\rm \Bbb I \!\Bbb R^{n \times k}` and :math:`y\in\rm \Bbb I \!\Bbb R ^{k \times m}`
 

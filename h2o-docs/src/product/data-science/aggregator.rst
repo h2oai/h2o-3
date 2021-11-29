@@ -15,27 +15,28 @@ Aggregator maintains outliers as outliers, but lumps together dense clusters int
 
 The Aggregator method behaves just any other unsupervised model. You can ignore columns, which will then be dropped for distance computation. Training itself creates the aggregated H2O Frame, which also includes the count of members for every row/exemplar. The aggregated frame always includes the full original content of the training frame, even if some columns were ignored for the distance computation. Scoring/prediction is overloaded with a function that returns the members of a given exemplar row index from 0...Nexemplars (this time without a count). 
 
-
 Defining an Aggregator Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
-   a reference. By default, H2O automatically generates a destination
-   key.
+Common Parameters
+'''''''''''''''''
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
-   model. **NOTE**: In Flow, if you click the **Build a model** button from the
-   ``Parse`` cell, the training frame is entered automatically.
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+-  `y <algo-params/y.html>`__: *Required* Specify the column to use as the dependent variable. The data can be numeric or categorical.
+
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  **target_num_exemplars**: Specify a value for the targeted number of exemplars. This value defaults to 5000.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, 0.5 is +/- 50 percent). This value defaults to 0.5.
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize (default), Demean, or Descale.
+- **save_mapping_frame**: When this option is enabled, the mapping of rows in an aggregated frame to the one in the original/raw frame will be created and exported. This option is disabled by default.
+
+Hyperparameters
+'''''''''''''''
 
 -  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features (defaults to AUTO):
 
@@ -46,9 +47,11 @@ Defining an Aggregator Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during Aggregator training and only keep the **T** (10) most frequent levels.
 
-- **save_mapping_frame**: When this option is enabled, the mapping of rows in an aggregated frame to the one in the original/raw frame will be created and exported. This option is disabled by default.
+-  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, 0.5 is +/- 50 percent). This value defaults to 0.5.
 
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+-  **target_num_exemplars**: Specify a value for the targeted number of exemplars. This value defaults to 5000.
+
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize (default), Demean, or Descale.
 
 Aggregator Output
 ~~~~~~~~~~~~~~~~~
