@@ -4,7 +4,7 @@ Maximum R Square Improvements (MAXR)
 Introduction
 ~~~~~~~~~~~~
 
-The maximum :math:`R^2` improvement technique does not settle on a single model. Instead, it tries to find the "best" one-variable model, the "best" two-variable model, and so forth. The conventional maximum :math:`R^2` improvement technique does not guarantee to find the model with the largest :math:`R^2` for each predictor subset size. However, the H2O maximum :math:`R^2` improvement technique does guarantee to find the model with the largest :math:`R^2` for each predictor subset size.
+Instead of settling on a single model, the maximum :math:`R^2` improvement method finds the best iteration of the one-variable model, the two-variable model, and so on. The conventional maximum :math:`R^2` improvement technique does not guarantee to find the model with the largest :math:`R^2` for each predictor subset size. However, the H2O maximum :math:`R^2` improvement technique does guarantee to find the model with the largest :math:`R^2` for each predictor subset size.
 
 Defining a MAXR Model
 ~~~~~~~~~~~~~~~~~~~~~
