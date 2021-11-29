@@ -11,6 +11,8 @@ import water.parser.BufferedString;
 import water.parser.parquet.ext.DecimalUtils;
 import water.util.StringUtils;
 
+import java.time.Instant;
+
 /**
  * Implementation of Parquet's GroupConverter for H2O's chunks.
  *
@@ -133,6 +135,8 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           return new TimestampConverter(colIdx, _writer);
+        } else if (OriginalType.DATE.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT32)){
+            return new DateConverter(colIdx, _writer);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
           return new StringConverter(_writer, colIdx, dictSupport);
@@ -318,6 +322,25 @@ class ChunkConverter extends GroupConverter {
       final long timestampMillis = ParquetInt96TimestampConverter.getTimestampMillis(value);
 
       _writer.addNumCol(_colIdx, timestampMillis);
+    }
+  }
+
+  private static class DateConverter extends PrimitiveConverter {
+    private final static long EPOCH_MILLIS = Instant.EPOCH.toEpochMilli();
+    private final static long MILLIS_IN_A_DAY = 24 * 60 * 60 * 1000;
+
+    private final int _colIdx;
+    private final WriterDelegate _writer;
+
+    DateConverter(int _colIdx, WriterDelegate _writer) {
+        this._colIdx = _colIdx;
+        this._writer = _writer;
+    }
+
+    @Override
+    public void addInt(int numberOfDaysFromUnixEpoch) {
+      final long parquetDateEpochMillis = EPOCH_MILLIS + numberOfDaysFromUnixEpoch * MILLIS_IN_A_DAY;
+      _writer.addNumCol(_colIdx, parquetDateEpochMillis);
     }
   }
 
