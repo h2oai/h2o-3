@@ -160,7 +160,7 @@ MAXR method
 
 The MAXR method starts with the one-variable model that produces the highest :math:`R^2` and adds the variable that gives the greatest increase to :math:`R^2`. This creates the two-variable model. Within this second model, each variable in the model is compared to each variable not in the model to determine if the replacement or removal of any variable will increase :math:`R^2`. Any switch determined to increase :math:`R^2` is then made.
 
-This process continues until MAXR determines that no further switch could further increase :math:`R^2`. This is how it determines the best of each x-variable model. 
+This process continues until MAXR determines that no further switch could further increase :math:`R^2`. This is how it determines the best of each n-variable model. 
 
 H2O MaxRGLM
 ~~~~~~~~~~~
