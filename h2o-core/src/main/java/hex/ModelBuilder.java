@@ -1048,16 +1048,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
   public boolean hasTreatmentCol() { return _parms._treatment_column != null;}
   public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0) + (hasTreatmentCol() ? 1 : 0); }
-  public String[] specialColNames() {
-    String[] n = new String[numSpecialCols()];
-    int i=0;
-    if (hasOffsetCol()) n[i++]=_parms._offset_column;
-    if (hasWeightCol()) n[i++]=_parms._weights_column;
-    if (hasFoldCol())   n[i++]=_parms._fold_column;
-    if (hasTreatmentCol()) n[i++]=_parms._treatment_column;
-    return n;
-  }
-  // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
 
   public boolean havePojo() { return false; }
   public boolean haveMojo() { return false; }

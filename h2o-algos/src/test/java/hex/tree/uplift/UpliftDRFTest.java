@@ -2,7 +2,6 @@ package hex.tree.uplift;
 
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
-import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Scope;
@@ -19,7 +18,6 @@ import static org.junit.Assert.*;
 @CloudSize(1)
 @RunWith(H2ORunner.class)
 public class UpliftDRFTest extends TestUtil {
-    private static final Logger LOG = Logger.getLogger(UpliftDRFTest.class);
 
     @Test
     public void testBasicTrain() {

@@ -1,12 +1,11 @@
 package hex.tree.uplift;
 
-import hex.ModelCategory;
+import hex.*;
 import hex.tree.SharedTreeModel;
 import hex.tree.SharedTreeModelWithContributions;
-import hex.tree.drf.DRFModel;
 import hex.util.EffectiveParametersUtils;
+import water.H2O;
 import water.Key;
-import water.util.SBPrintStream;
 
 public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
 
@@ -71,4 +70,12 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         preds[0] = preds[1] - preds[2];
         return preds;
     }
+
+    @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+        if (_output.getModelCategory() == ModelCategory.BinomialUplift) {
+            return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain);
+        }
+        throw H2O.unimpl();
+    }
+
 }

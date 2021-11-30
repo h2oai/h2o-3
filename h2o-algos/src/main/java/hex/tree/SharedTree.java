@@ -85,6 +85,10 @@ public abstract class SharedTree<
   public boolean _isUplift;
   public boolean isUplift(){return _isUplift;}
 
+  protected Score.ScoreExtension makeScoreExtension() {
+    return null;
+  }
+
   @Override public boolean haveMojo() { return true; }
   @Override public boolean havePojo() { 
     if (_parms == null)
@@ -187,15 +191,6 @@ public abstract class SharedTree<
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
     _isUplift = _parms._treatment_column != null;
-  }
-
-  @Override
-  public String[] specialColNames() {
-    String[] colNames = super.specialColNames();
-    if(_parms._treatment_column != null) {
-      return ArrayUtils.append(colNames, _parms._treatment_column);
-    }
-    return colNames;
   }
 
   protected void validateRowSampleRate() {

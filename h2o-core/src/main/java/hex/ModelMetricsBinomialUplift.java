@@ -3,10 +3,7 @@ package hex;
 import water.MRTask;
 import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.C8DVolatileChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -43,7 +40,11 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     }
 
     public double auuc() {return _auuc.auuc();}
-    
+
+    @Override
+    protected StringBuilder appendToStringMetrics(StringBuilder sb) {
+        return sb;
+    }
 
     /**
      * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
@@ -106,31 +107,31 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         String[] domain;
         double[] thresholds;
         public MetricBuilderBinomialUplift _mb;
-        
-        public UpliftBinomialMetrics(String[] domain, double[] thresholds) { 
-            this.domain = domain; 
+
+        public UpliftBinomialMetrics(String[] domain, double[] thresholds) {
+            this.domain = domain;
             this.thresholds = thresholds;
         }
-        
+
         @Override public void map(Chunk[] chks) {
             _mb = new MetricBuilderBinomialUplift(domain, thresholds);
             Chunk uplift = chks[0];
             Chunk actuals = chks[1];
             Chunk treatment =chks[2];
             double[] ds = new double[1];
-            float[] acts = new float[1];
+            float[] acts = new float[2];
             for (int i=0; i<chks[0]._len;++i) {
                 ds[0] = uplift.atd(i);
                 acts[0] = (float) actuals.atd(i);
-                float t = (float )treatment.atd(i);
-                _mb.perRow(ds, acts, t, 1, 0, null);
+                acts[1] = (float )treatment.atd(i);
+                _mb.perRow(ds, acts, 1, 0, null);
             }
         }
         @Override public void reduce(UpliftBinomialMetrics mrt) { _mb.reduce(mrt._mb); }
     }
 
-    public static class MetricBuilderBinomialUplift<T extends MetricBuilderBinomialUplift<T>> extends MetricBuilderSupervised<T> {
-        
+    public static class MetricBuilderBinomialUplift extends MetricBuilderSupervised<MetricBuilderBinomialUplift> {
+
         protected AUUC.AUUCBuilder _auuc;
 
         public MetricBuilderBinomialUplift( String[] domain, double[] thresholds) { 
@@ -143,18 +144,14 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
         public MetricBuilderBinomialUplift( String[] domain) {
             super(2,domain);
         }
-        
-        public void resetThresholds(double[] thresholds){
-            if(thresholds != null) {
-                _auuc = new AUUC.AUUCBuilder(thresholds);
-            }
+
+        @Override public double[] perRow(double[] ds, float[] yact, Model m) {
+            return perRow(ds, yact,1, 0, m);
         }
-        
-        @Override public double[] perRow(double ds[], float[] yact, Model m) {
-            return perRow(ds, yact, Float.NaN,1, 0, m);
-        }
-        
-        @Override public double[] perRow(double ds[], float[] yact, float treatment, double weight, double offset, Model m) {
+
+        @Override
+        public double[] perRow(double[] ds, float[] yact, double weight, double offset, Model m) {
+            assert _auuc == null || yact.length == 2 : "Treatment must be included in `yact` when calculating AUUC";
             if(Float .isNaN(yact[0])) return ds; // No errors if   actual   is missing
             if(ArrayUtils.hasNaNs(ds)) return ds;  // No errors if prediction has missing values (can happen for GLM)
             if(weight == 0 || Double.isNaN(weight)) return ds;
@@ -164,13 +161,14 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
             _wYY += weight * y * y;
             _count++;
             _wcount += weight;
-            if(_auuc != null) {
+            if (_auuc != null) {
+                float treatment = yact[1];
                 _auuc.perRow(ds[0], weight, y, treatment);
             }
             return ds;
         }
 
-        @Override public void reduce( T mb ) {
+        @Override public void reduce(MetricBuilderBinomialUplift mb ) {
             super.reduce(mb);
             if(_auuc != null) {
                 _auuc.reduce(mb._auuc);
