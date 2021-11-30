@@ -1,16 +1,15 @@
 package hex.tree.uplift;
 
-import hex.ModelCategory;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
-import org.apache.commons.lang.SerializationUtils;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import static hex.ModelMetricsBinomialUplift.MetricBuilderBinomialUplift;
 
 import java.util.Random;
 
@@ -314,6 +313,26 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         fs[2] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
         fs[0] = fs[1] - fs[2];
         return sum;
+    }
+
+    @Override
+    protected UpliftScoreExtension makeScoreExtension() {
+        return new UpliftScoreExtension();
+    }
+
+    private static class UpliftScoreExtension extends Score.ScoreExtension {
+        public UpliftScoreExtension() {
+        }
+
+        @Override
+        protected double getPrediction(double[] cdist) {
+            return cdist[1] - cdist[2];
+        }
+
+        @Override
+        protected int[] getResponseComplements(SharedTreeModel<?, ?, ?> m) {
+            return new int[]{m._output.treatmentIdx()};
+        }
     }
 
 }

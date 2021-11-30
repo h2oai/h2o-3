@@ -143,7 +143,6 @@ public abstract class SharedTreeModel<
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
       case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain, _parms._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
-      case BinomialUplift: return new ModelMetricsBinomialUplift.MetricBuilderBinomialUplift(domain);
       default: throw H2O.unimpl();
     }
   }

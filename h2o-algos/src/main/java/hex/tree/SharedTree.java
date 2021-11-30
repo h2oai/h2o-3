@@ -85,6 +85,10 @@ public abstract class SharedTree<
   public boolean _isUplift;
   public boolean isUplift(){return _isUplift;}
 
+  protected Score.ScoreExtension makeScoreExtension() {
+    return null;
+  }
+
   @Override public boolean haveMojo() { return true; }
   @Override public boolean havePojo() { 
     if (_parms == null)
