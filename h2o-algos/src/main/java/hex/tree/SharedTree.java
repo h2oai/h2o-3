@@ -82,8 +82,9 @@ public abstract class SharedTree<
 
   public boolean isSupervised(){return true;}
 
-  public boolean _isUplift;
-  public boolean isUplift(){return _isUplift;}
+  public boolean providesVarImp() {
+    return isSupervised();
+  }
 
   protected Score.ScoreExtension makeScoreExtension() {
     return null;
@@ -190,7 +191,6 @@ public abstract class SharedTree<
       warn("_parallel_main_model_building",
               "Parallel main model will be disabled because use_best_cv_iteration is specified.");
     }
-    _isUplift = _parms._treatment_column != null;
   }
 
   protected void validateRowSampleRate() {
@@ -869,7 +869,7 @@ public abstract class SharedTree<
       }
       out._model_summary = createModelSummaryTable(out._ntrees, out._treeStats);
       out._scoring_history = createScoringHistoryTable();
-      if (out._ntrees > 0 && isSupervised() && !isUplift()) {    // Compute variable importances
+      if (out._ntrees > 0 && providesVarImp()) {    // Compute variable importances
         out._varimp = new hex.VarImp(_improvPerVar, out._names);
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }

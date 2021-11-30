@@ -66,6 +66,8 @@ public class UpliftDRFTest extends TestUtil {
             Scope.track_generic(out);
             assertArrayEquals(new String[]{"uplift_predict", "p_y1_ct1", "p_y1_ct0"}, out.names());
             assertEquals(train.numRows(), out.numRows());
+
+            assertNull(model._output._varimp); // not supported yet
         } finally {
             Scope.exit();
         }
