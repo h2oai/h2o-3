@@ -4,7 +4,7 @@ Maximum R Square Improvements (MAXR)
 Introduction
 ~~~~~~~~~~~~
 
-The conventional maximum :math:`R^2` improvement technique does not guarantee to find the model with the largest :math:`R^2` for each predictor subset size. However, the H2O maximum :math:`R^2` improvement technique does guarantee to find the model with the largest :math:`R^2` for each predictor subset size.
+The conventional maximum :math:`R^2` improvement technique does not guarantee to find the model with the largest :math:`R^2` for each predictor subset size. However, the H2O maximum :math:`R^2` improvement technique does guarantee to find the model with the largest :math:`R^2` for each predictor subset size. 
 
 Defining a MAXR Model
 ~~~~~~~~~~~~~~~~~~~~~
