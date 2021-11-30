@@ -21,13 +21,9 @@ def class_extensions():
         from h2o.frame import H2OFrame
         from h2o.utils.typechecks import assert_is_type
         assert_is_type(frame, H2OFrame)
-        kwargs = dict(
-            model_id=self.model_id,
-            rule_ids=rule_ids,
-            frame=frame.frame_id
-        )
-        json = h2o.api("POST /3/FitRules", data=kwargs)
-        return H2OFrame.get_frame(json["result"]["name"])
+        astFrame = h2o.rapids('(rulefit.fit.rules {} {} {})'.format(self.model_id, frame.frame_id, rule_ids))
+        return h2o.get_frame(astFrame['key']['name'])
+    
 
 extensions = dict(
     __class__=class_extensions,

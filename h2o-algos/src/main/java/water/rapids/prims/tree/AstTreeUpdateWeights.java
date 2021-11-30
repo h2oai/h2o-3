@@ -26,6 +26,7 @@ public class AstTreeUpdateWeights extends AstPrimitive<AstTreeUpdateWeights> {
     public String str() {
         return "tree.update.weights";
     }
+    
 
     @Override
     public ValStr apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
