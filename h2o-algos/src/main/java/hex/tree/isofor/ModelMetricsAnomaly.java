@@ -70,6 +70,8 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
   }
 
   public static class IndependentMetricBuilderAnomaly extends IndependentMetricBuilderUnsupervised<IndependentMetricBuilderAnomaly> {
+    private static final int fallbackIDOnIce = 1100;
+    
     private transient String _description;
     private double _total_score = 0;
     private double _total_norm_score = 0;

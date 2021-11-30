@@ -157,6 +157,8 @@ public class ModelMetricsHGLM extends ModelMetricsSupervised {
   }
 
   public static class IndependentMetricBuilderHGLM<T extends IndependentMetricBuilderHGLM<T>> extends IndependentMetricBuilderSupervised<T> {
+    private static final int fallbackIDOnIce = 1065;
+    
     public double[] _sefe;       // standard error of fixed predictors/effects
     public double[] _sere;       // standard error of random effects
     public double _varfix;       // dispersion parameter of the mean model (residual variance for LMM)

@@ -243,6 +243,8 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
   }
   
   public static class GenericIndependentMetricBuilderOrdinal extends IndependentMetricBuilderOrdinal<GenericIndependentMetricBuilderOrdinal> {
+    private static final int fallbackIDOnIce = 1030;
+    
     public GenericIndependentMetricBuilderOrdinal() {}
     
     public GenericIndependentMetricBuilderOrdinal(int nclasses, String[] domain) {

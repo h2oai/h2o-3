@@ -11,6 +11,8 @@ import water.util.MathUtils;
 import static hex.glm.GLMModel.GLMParameters.Family.*;
 
 public class IndependentGAMMetricBuilder extends ModelMetricsSupervised.IndependentMetricBuilderSupervised<IndependentGAMMetricBuilder> {
+    private static final int fallbackIDOnIce = 1070;
+    
     double _residual_deviance;
     double _null_deviance;
     long _nobs;

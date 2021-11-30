@@ -368,6 +368,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
   
   public static class GenericIndependentMetricBuilderMultinomial extends IndependentMetricBuilderMultinomial<GenericIndependentMetricBuilderMultinomial> {
+    private static final int fallbackIDOnIce = 1020;
+    
     public GenericIndependentMetricBuilderMultinomial() {}
     
     public GenericIndependentMetricBuilderMultinomial(int nclasses, String[] domain, MultinomialAucType aucType) {

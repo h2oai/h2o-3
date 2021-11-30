@@ -4,6 +4,7 @@ import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
+import java.lang.reflect.Field;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.ServiceLoader;
@@ -162,13 +163,26 @@ public class TypeMap {
   public static int onIce(String className) {
     Integer I = MAP.get(className);
     if( I != null ) return I;
-    // Need to install a new cloud-wide type ID for className.
-    assert H2O.CLOUD.size() > 0 : "No cloud when getting type id for "+className;
-    // Am I leader, or not?  Lock the cloud to find out
-    Paxos.lockCloud(className);
-    // Leader: pick an ID.  Not-the-Leader: fetch ID from leader.
-    int id = H2O.CLOUD.leader() == H2O.SELF ? -1 : FetchId.fetchId(className);
-    return install(className,id);
+    
+    if (H2O.CLOUD.size() > 0) { // Running on H2O-runtime
+      // Am I leader, or not?  Lock the cloud to find out
+      Paxos.lockCloud(className);
+      // Leader: pick an ID.  Not-the-Leader: fetch ID from leader.
+      int id = H2O.CLOUD.leader() == H2O.SELF ? -1 : FetchId.fetchId(className);
+      return install(className, id);
+    } else {
+      try {
+        Class<?> clazz = Class.forName(className);
+        Field field = clazz.getField("fallbackIDOnIce");
+        boolean wasAccessible = field.isAccessible();
+        field.setAccessible(true);
+        int id = field.getInt(null);
+        if (!wasAccessible) field.setAccessible(false);
+        return id;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   // Quick check to see if cached
