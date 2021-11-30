@@ -1,5 +1,6 @@
 package water;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +19,11 @@ import static org.junit.Assert.*;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({JavaVersionSupportTest.SupportedJavasTest.class, JavaVersionSupportTest.UnsupportedJavasTest.class})
 public class JavaVersionSupportTest {
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        Assume.assumeTrue(System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions") == null);
+    }
 
     @RunWith(Parameterized.class)
     public static class SupportedJavasTest {
