@@ -929,11 +929,7 @@ public abstract class SharedTree<
     colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
-    if(!_output.isUpliftBinomialClassifier()) {
-      colHeaders.add("Training RMSE");
-      colTypes.add("double");
-      colFormat.add("%.5f");
-    }
+    colHeaders.add("Training RMSE"); colTypes.add("double"); colFormat.add("%.5f");
     if (_output.getModelCategory() == ModelCategory.Regression) {
       colHeaders.add("Training MAE"); colTypes.add("double"); colFormat.add("%.5f");
       if (!hasCustomDistribution) {
@@ -942,7 +938,7 @@ public abstract class SharedTree<
         colFormat.add("%.5f");
       }
     }
-    if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) {
+    if (_output.isClassifier()) {
       colHeaders.add("Training LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -950,26 +946,19 @@ public abstract class SharedTree<
       colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training Lift"); colTypes.add("double"); colFormat.add("%.5f");
     }
-    if(_output.isClassifier() && !_output.isUpliftBinomialClassifier()){
+    if(_output.isClassifier()){
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
     if (_output.getModelCategory() == ModelCategory.Multinomial) {
       colHeaders.add("Training AUC"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Training pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
     }
-    if(_output.isUpliftBinomialClassifier()){
-      colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
-    }
     if (hasCustomMetric) {
       colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
     }
 
     if (_output._validation_metrics != null) {
-      if(!_output.isUpliftBinomialClassifier()) {
-        colHeaders.add("Validation RMSE");
-        colTypes.add("double");
-        colFormat.add("%.5f");
-      }
+      colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (_output.getModelCategory() == ModelCategory.Regression) {
         colHeaders.add("Validation MAE"); colTypes.add("double"); colFormat.add("%.5f");
         if (!hasCustomDistribution) {
@@ -978,7 +967,7 @@ public abstract class SharedTree<
           colFormat.add("%.5f");
         }
       }
-      if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) {
+      if (_output.isClassifier()) {
         colHeaders.add("Validation LogLoss"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Binomial) {
@@ -986,15 +975,12 @@ public abstract class SharedTree<
         colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation Lift"); colTypes.add("double"); colFormat.add("%.5f");
       }
-      if(_output.isClassifier() && !_output.isUpliftBinomialClassifier()){
+      if(_output.isClassifier()){
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (_output.getModelCategory() == ModelCategory.Multinomial) {
         colHeaders.add("Validation AUC"); colTypes.add("double"); colFormat.add("%.5f");
         colHeaders.add("Validation pr_auc"); colTypes.add("double"); colFormat.add("%.5f");
-      }
-      if(_output.isUpliftBinomialClassifier()){
-        colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
       }
       if (hasCustomMetric) {
         colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
@@ -1022,55 +1008,45 @@ public abstract class SharedTree<
       table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
       table.set(row, col++, i);
       ScoreKeeper st = _scored_train[i];
-      if(!_output.isUpliftBinomialClassifier()) {
-        table.set(row, col++, st._rmse);
-      }
+      table.set(row, col++, st._rmse);
       if (_output.getModelCategory() == ModelCategory.Regression) {
         table.set(row, col++, st._mae);
         if (!hasCustomDistribution) {
           table.set(row, col++, st._mean_residual_deviance);
         }
       }
-      if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._logloss);
+      if (_output.isClassifier()) table.set(row, col++, st._logloss);
       if (_output.getModelCategory() == ModelCategory.Binomial) {
         table.set(row, col++, st._AUC);
         table.set(row, col++, st._pr_auc);
         table.set(row, col++, st._lift);
       }
-      if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._classError);
+      if (_output.isClassifier()) table.set(row, col++, st._classError);
       if (_output.getModelCategory() == ModelCategory.Multinomial) {
         table.set(row, col++, st._AUC);
         table.set(row, col++, st._pr_auc);
-      }
-      if (_output.isUpliftBinomialClassifier()){
-        table.set(row, col++, st._AUUC);
       }
       if (hasCustomMetric) table.set(row, col++, st._custom_metric);
 
       if (_output._validation_metrics != null) {
         st = _scored_valid[i];
-        if(!_output.isUpliftBinomialClassifier()) {
-          table.set(row, col++, st._rmse);
-        }
+        table.set(row, col++, st._rmse);
         if (_output.getModelCategory() == ModelCategory.Regression) {
           table.set(row, col++, st._mae);
           if (!hasCustomDistribution) {
             table.set(row, col++, st._mean_residual_deviance);
           }
         }
-        if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._logloss);
+        if (_output.isClassifier()) table.set(row, col++, st._logloss);
         if (_output.getModelCategory() == ModelCategory.Binomial) {
           table.set(row, col++, st._AUC);
           table.set(row, col++, st._pr_auc);
           table.set(row, col++, st._lift);
         }
-        if (_output.isClassifier() && !_output.isUpliftBinomialClassifier()) table.set(row, col++, st._classError);
+        if (_output.isClassifier()) table.set(row, col++, st._classError);
         if (_output.getModelCategory() == ModelCategory.Multinomial) {
           table.set(row, col++, st._AUC);
           table.set(row, col++, st._pr_auc);
-        }
-        if (_output.isUpliftBinomialClassifier()){
-          table.set(row, col++, st._AUUC);
         }
         if (hasCustomMetric) table.set(row, col++, st._custom_metric);
       }

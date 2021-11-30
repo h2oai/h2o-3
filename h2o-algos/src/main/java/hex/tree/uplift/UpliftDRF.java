@@ -3,14 +3,19 @@ package hex.tree.uplift;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import static hex.ModelMetricsBinomialUplift.MetricBuilderBinomialUplift;
+import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftDRFParameters, UpliftDRFModel.UpliftDRFOutput> {
@@ -317,6 +322,70 @@ public class UpliftDRF extends SharedTree<UpliftDRFModel, UpliftDRFModel.UpliftD
         fs[2] = weight * chk_tree(chks, 1).atd(row) / chk_oobt(chks).atd(row);
         fs[0] = fs[1] - fs[2];
         return sum;
+    }
+
+    @Override
+    protected TwoDimTable createScoringHistoryTable() {
+        UpliftDRFModel.UpliftDRFOutput out = _model._output;
+        return createUpliftScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
+                out._training_time_ms, _parms._custom_metric_func != null);
+    }
+
+    static TwoDimTable createUpliftScoringHistoryTable(Model.Output _output,
+                                                       ScoreKeeper[] _scored_train,
+                                                       ScoreKeeper[] _scored_valid,
+                                                       Job job, long[] _training_time_ms,
+                                                       boolean hasCustomMetric) {
+        List<String> colHeaders = new ArrayList<>();
+        List<String> colTypes = new ArrayList<>();
+        List<String> colFormat = new ArrayList<>();
+        colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
+        colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
+        colHeaders.add("Number of Trees"); colTypes.add("long"); colFormat.add("%d");
+        colHeaders.add("Training AUUC"); colTypes.add("double"); colFormat.add("%.5f");
+        if (hasCustomMetric) {
+            colHeaders.add("Training Custom"); colTypes.add("double"); colFormat.add("%.5f");
+        }
+
+        if (_output._validation_metrics != null) {
+            colHeaders.add("Validation AUUC"); colTypes.add("double"); colFormat.add("%.5f");
+            if (hasCustomMetric) {
+                colHeaders.add("Validation Custom"); colTypes.add("double"); colFormat.add("%.5f");
+            }
+        }
+
+        int rows = 0;
+        for( int i = 0; i<_scored_train.length; i++ ) {
+            if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+            rows++;
+        }
+        TwoDimTable table = new TwoDimTable(
+                "Scoring History", null,
+                new String[rows],
+                colHeaders.toArray(new String[0]),
+                colTypes.toArray(new String[0]),
+                colFormat.toArray(new String[0]),
+                "");
+        int row = 0;
+        for( int i = 0; i<_scored_train.length; i++ ) {
+            if (i != 0 && Double.isNaN(_scored_train[i]._rmse) && (_scored_valid == null || Double.isNaN(_scored_valid[i]._rmse))) continue;
+            int col = 0;
+            DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+            table.set(row, col++, fmt.print(_training_time_ms[i]));
+            table.set(row, col++, PrettyPrint.msecs(_training_time_ms[i] - job.start_time(), true));
+            table.set(row, col++, i);
+            ScoreKeeper st = _scored_train[i];
+            table.set(row, col++, st._AUUC);
+            if (hasCustomMetric) table.set(row, col++, st._custom_metric);
+
+            if (_output._validation_metrics != null) {
+                st = _scored_valid[i];
+                table.set(row, col++, st._AUUC);
+                if (hasCustomMetric) table.set(row, col++, st._custom_metric);
+            }
+            row++;
+        }
+        return table;
     }
 
     @Override
