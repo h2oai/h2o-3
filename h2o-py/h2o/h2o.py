@@ -1916,7 +1916,8 @@ def load_dataset(relative_path):
     raise H2OValueError("Data file %s cannot be found" % relative_path)
 
 
-def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, auc_type="NONE"):
+def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, treatment=None, auc_type="NONE",
+                 auuc_type="AUTO", auuc_nbins=-1):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -1925,10 +1926,14 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     :param domain: list of response factors for classification.
     :param distribution: distribution for regression.
     :param H2OFrame weights: an H2OFrame containing observation weights (optional).
-    :param auc_type: auc For multinomial classification you have to specify which type of agregated AUC/AUCPR 
+    :param H2OFrame treatment: an H2OFrame containing treatment information for uplift binomial classification only.
+    :param auc_type: For multinomial classification you have to specify which type of agregated AUC/AUCPR 
            will be used to calculate this metric. Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, 
            NONE and AUTO (OVO = One vs. One, OVR = One vs. Rest). Default is "NONE" (AUC and AUCPR are not calculated).
-
+    :param auuc_type: For uplift binomial classification you have to specify which type of AUUC will be used to 
+           calculate this metric. Possibilities are gini, lift, gain, AUTO. Default is AUTO which means qini.
+    :param auuc_nbins: For uplift binomial classification you have to specify number of bins to be used 
+           for calculation the AUUC. Default is -1, which means 1000.
     :examples:
 
     >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
@@ -1959,6 +1964,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     assert_is_type(predicted, H2OFrame)
     assert_is_type(actual, H2OFrame)
     assert_is_type(weights, H2OFrame, None)
+    assert_is_type(treatment, H2OFrame, None)
     assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
@@ -1970,6 +1976,13 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     params = {"domain": domain, "distribution": distribution}
     if weights is not None:
         params["weights_frame"] = weights.frame_id
+    if treatment is not None:
+        params["treatment_frame"] = treatment.frame_id
+        allowed_auuc_types = ["qini", "lift", "gain", "AUTO"]
+        assert auuc_type in allowed_auuc_types, "auuc_type should be "+(" ".join([str(type) for type in allowed_auuc_types]))
+        params["auuc_type"] = auuc_type
+        assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
+        params["auuc_nbins"] = auuc_nbins
     params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)

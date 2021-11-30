@@ -296,6 +296,10 @@ public class MathUtils {
   public static int log2(long n) {
     return 63 - Long.numberOfLeadingZeros(n);
   }
+  private static final double LOG2 = Math.log(2);
+  public static double log2(double x) {
+    return Math.log(x) / LOG2;
+  }
 
   public static float[] div(float[] nums, float n) {
     assert !Float.isInfinite(n) : "Trying to divide " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want

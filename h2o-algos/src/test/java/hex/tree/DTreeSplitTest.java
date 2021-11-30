@@ -54,7 +54,7 @@ public class DTreeSplitTest {
                 null,
                 ArrayUtils.seq(0, data.length),
                 data.length,
-                0);
+                0, null);
         return histo;
     }
 

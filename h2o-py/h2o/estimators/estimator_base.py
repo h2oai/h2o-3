@@ -20,12 +20,13 @@ from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
+from ..model.binomial_uplift import H2OBinomialUpliftModel
 from ..model.clustering import H2OClusteringModel
 from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncoderMetrics
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
                                   H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
-                                  H2OModelMetricsRegressionCoxPH)
+                                  H2OModelMetricsRegressionCoxPH, H2OBinomialUpliftModelMetrics)
 from ..model.model_base import ModelBase
 from ..model.multinomial import H2OMultinomialModel
 from ..model.ordinal import H2OOrdinalModel
@@ -475,6 +476,9 @@ class H2OEstimator(ModelBase):
         if model_type == "Binomial":
             metrics_class = H2OBinomialModelMetrics
             model_class = H2OBinomialModel
+        elif model_type == "BinomialUplift":
+            metrics_class = H2OBinomialUpliftModelMetrics
+            model_class = H2OBinomialUpliftModel
         elif model_type == "Clustering":
             metrics_class = H2OClusteringModelMetrics
             model_class = H2OClusteringModel

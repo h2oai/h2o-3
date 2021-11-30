@@ -259,6 +259,7 @@ def algo_to_modelname(algo):
     if algo == "deeplearning": return "Deep Learning - Neural Network"
     if algo == "xgboost": return "XGBoost"
     if algo == "drf": return "Random Forest Model in H2O"
+    if algo == "upliftdrf": return "Uplift Random Forest Model in H2O"
     if algo == "gbm": return "Gradient Boosting Machine"
     if algo == "glm": return "H2O Generalized Linear Models"
     if algo == "glrm": return "Generalized Low Rank Model"
@@ -335,6 +336,9 @@ def main():
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "upliftdrf":
+            module = "upliftRandomForest"
+            file_name = "upliftrandomforest"
         if name == "isolationforest": module = "isolationForest"
         if name == "extendedisolationforest": module = "extendedIsolationForest"
         if name == "naivebayes": module = "naiveBayes"

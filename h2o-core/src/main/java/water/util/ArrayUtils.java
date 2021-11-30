@@ -2219,4 +2219,57 @@ public class ArrayUtils {
 
     return p;
   }
+
+  /*
+   * Linear interpolation values in the array with Double.NaN values.
+   * The interpolation always starts from the first item of the array. 
+   * The last element of array cannot be Double.NaN.
+   *
+   * @param array input array with Double.NaN values
+   */
+  public static void interpolateLinear(double[] array){
+    assert array.length > 0 && !Double.isNaN(array[array.length-1]): 
+            "Input array length should be > 0 and the first item should not be NaN";
+    if (array.length == 1){
+      return;
+    }
+    List<Integer> nonNullIdx = new ArrayList<>();
+    List<Integer> steps = new ArrayList<>();
+    int tmpStep = 0;
+    for (int i = 0; i < array.length; i++) {
+      if (!Double.isNaN(array[i])) {
+        nonNullIdx.add(i);
+        if (tmpStep != 0) {
+          steps.add(tmpStep);
+        }
+        tmpStep = 0;
+      }
+      else {
+        tmpStep++;
+      }
+    }
+    if(nonNullIdx.size() == 0) return;
+    double start = Double.NaN, end = Double.NaN, step = Double.NaN, mean = Double.NaN;
+    for (int i=0; i<array.length; i++) {
+      // always begin with 0
+      if(i == 0 && Double.isNaN(array[i])) {
+        start = 0;
+        end = array[nonNullIdx.get(0)];
+        step = 1.0 / (double)(steps.get(0) + 1);
+        mean = step;
+        array[i] = start * (1 - mean) + end * mean;
+        mean += step;
+      } else if (!Double.isNaN(array[i]) && nonNullIdx.size() > 1 && steps.size() > 0) {
+        start = array[nonNullIdx.get(0)];
+        end = array[nonNullIdx.get(1)];
+        step = 1.0 / (double)(steps.get(0) + 1);
+        mean = step;
+        nonNullIdx.remove(0);
+        steps.remove(0);
+      } else if (Double.isNaN(array[i])) {
+        array[i] = start * (1 - mean) + end * mean;
+        mean += step;
+      }
+    }
+  }
 }

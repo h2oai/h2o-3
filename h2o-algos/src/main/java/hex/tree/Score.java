@@ -28,7 +28,8 @@ public class Score extends CMetricScoringTask<Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-  
+  double[] _thresholds;   // Only for uplift metric builder to calculate AUUC
+
   /** Output parameter: Metric builder */
   ModelMetrics.MetricBuilder _mb;
 
@@ -65,6 +66,7 @@ public class Score extends CMetricScoringTask<Score> {
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
+    Chunk treatmentChunk = m._output.hasTreatment() ? chks[m._output.treatmentIdx()] : null;
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
@@ -76,6 +78,9 @@ public class Score extends CMetricScoringTask<Score> {
     }
     final int nclass = _bldr.nclasses();
     _mb = m.makeMetricBuilder(domain);
+    if(_bldr.isUplift()){
+      ((ModelMetricsBinomialUplift.MetricBuilderBinomialUplift) _mb).resetThresholds(_thresholds);
+    }
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
@@ -111,10 +116,19 @@ public class Score extends CMetricScoringTask<Score> {
         // for binomial the predicted class is not needed
         // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
         // (we are just building the metrics)
-        cdists[0] = -1;
+        if(_bldr.isUplift()) {
+          cdists[0] = cdists[1] - cdists[2];
+        } else {
+          cdists[0] = -1;
+        }
       }
       val[0] = (float)ys.atd(row);
-      _mb.perRow(cdists, val, weight, offset, m);
+      if(!_bldr.isUplift()) {
+        _mb.perRow(cdists, val, weight, offset, m);
+      } else {
+        float treatment = (float) treatmentChunk.atd(row);
+        _mb.perRow(cdists, val, treatment, weight, offset, m);
+      }
 
       if (_preds != null) {
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);
@@ -163,6 +177,12 @@ public class Score extends CMetricScoringTask<Score> {
     ModelMetrics mm;
     if (model._output.nclasses() == 2 && _computeGainsLift) {
       assert preds != null : "Predictions were pre-created";
+      if(_bldr.isUplift()) {
+        int nbins = _bldr._model._parms._auuc_nbins;
+        _thresholds = AUUC.calculateQuantileThresholds(nbins == -1 ? AUUC.NBINS : nbins, preds.vec(0));
+      } else {
+        _thresholds = null;
+      }
       mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
     } else {
       boolean calculatePreds = preds == null && model.isDistributionHuber();

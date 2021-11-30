@@ -2,6 +2,7 @@ package hex.tree;
 
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.uplift.*;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Chunk;
@@ -43,7 +44,7 @@ import static hex.tree.SharedTreeModel.SharedTreeParameters.HistogramType;
  *  <p>Support for histogram split points based on quantiles (or random points) is
  *  available as well, via {@code _histoType}.
  *
-*/
+ */
 public final class DHistogram extends Iced<DHistogram> {
   
   private static final Logger LOG = Logger.getLogger(DHistogram.class);
@@ -59,21 +60,31 @@ public final class DHistogram extends Iced<DHistogram> {
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public final int _minInt;         // Integer version of _min. Used in integer optimized histograms. 
   public final boolean _initNA;  // Does the initial histogram have any NAs? 
-                                 // Needed to correctly count actual number of bins of the initial histogram. 
+  // Needed to correctly count actual number of bins of the initial histogram. 
   public final double _pred1; // We calculate what would be the SE for a possible fallback predictions _pred1
   public final double _pred2; // and _pred2. Currently used for min-max bounds in monotonic GBMs.
 
   protected double [] _vals; // Values w, wY and wYY encoded per bin in a single array. 
-                             // If _pred1 or _pred2 are specified they are included as well.
-                             // If constraints are used and gamma denominator or nominator needs to be calculated its will be included.
+  // If _pred1 or _pred2 are specified they are included as well.
+  // If constraints are used and gamma denominator or nominator needs to be calculated its will be included.
   protected final int _vals_dim; // _vals.length == _vals_dim * _nbin; How many values per bin are encoded in _vals.
-                                 // Current possible values are
-                                 // - 3:_pred1 nor _pred2 provided and gamma denominator is not needed 
-                                 // - 5: if either _pred1 or _pred2 is provided (or both)
-                                 //      - 5 if gamma denominator and nominator are not needed
-                                 //      - 6 if gamma denominator is needed
-                                 //      - 7 if gamma nominator is needed (tweedie constraints)
-                                 // also see functions hasPreds() and hasDenominator()
+  // Current possible values are
+  // - 3:_pred1 nor _pred2 provided and gamma denominator is not needed 
+  // - 5: if either _pred1 or _pred2 is provided (or both)
+  //      - 5 if gamma denominator and nominator are not needed
+  //      - 6 if gamma denominator is needed
+  //      - 7 if gamma nominator is needed (tweedie constraints)
+  // also see functions hasPreds() and hasDenominator()
+
+  protected final boolean _useUplift;
+  protected double [] _valsUplift; // if not null always dimension 4: 
+  // 0 treatment group nominator 
+  // 1 treatment group denominator
+  // 2 control group nominator
+  // 3 control group denominator
+  protected final int _valsDimUplift = 4;
+  protected final Divergence _upliftMetric;
+
   private final Distribution _dist;
   public double w(int i){  return _vals[_vals_dim*i+0];}
   public double wY(int i){ return _vals[_vals_dim*i+1];}
@@ -103,6 +114,10 @@ public final class DHistogram extends Iced<DHistogram> {
   final boolean hasPreds() {
     return _vals_dim >= 5;
   } 
+  public double numTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin]; }
+  public double respTreatmentNA() { return _valsUplift[_valsDimUplift*_nbin+1]; }
+  public double numControlNA() { return _valsUplift[_valsDimUplift*_nbin+2]; }
+  public double respControlNA() { return _valsUplift[_valsDimUplift*_nbin+3]; }
 
   final boolean hasDenominator() {
     return _vals_dim >= 6;
@@ -110,6 +125,10 @@ public final class DHistogram extends Iced<DHistogram> {
 
   final boolean hasNominator() {
     return _vals_dim == 7;
+  }
+
+  final boolean useUplift(){
+    return _useUplift;
   }
 
   protected double  _min2, _maxIn; // Min/Max, _maxIn is Inclusive.
@@ -174,7 +193,7 @@ public final class DHistogram extends Iced<DHistogram> {
       _pred2 = cs._max;
       if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
         _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
-        _dist = cs._dist; 
+        _dist = cs._dist;
       } else if (!cs.needsGammaNom()) {
         _vals_dim = 6;
         _dist = cs._dist;
@@ -199,6 +218,8 @@ public final class DHistogram extends Iced<DHistogram> {
     _initNA = initNA;
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
+    _useUplift = false;
+    _upliftMetric = null;
     _seed = seed;
     while (_histoType == HistogramType.RoundRobin) {
       HistogramType[] h = HistogramType.values();
@@ -225,6 +246,84 @@ public final class DHistogram extends Iced<DHistogram> {
     assert(_vals == null);
     _checkFloatSplits = checkFloatSplits;
 
+    if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
+    // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
+  }
+
+  DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
+             double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
+             Constraints cs, boolean checkFloatSplits, boolean useUplift, UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType) {
+    assert nbins >= 1;
+    assert nbins_cats >= 1;
+    assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
+    if (cs != null) {
+      _pred1 = cs._min;
+      _pred2 = cs._max;
+      if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
+        _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
+      } else if (!cs.needsGammaNom()) {
+        _vals_dim = 6;
+      } else {
+        _vals_dim = 7;
+      }
+      _dist = cs._dist;
+    } else {
+      _pred1 = Double.NaN;
+      _pred2 = Double.NaN;
+      _vals_dim = 3;
+      _dist = null;
+    }
+    _isInt = isInt;
+    _name = name;
+    _min = min;
+    _maxEx = maxEx;             // Set Exclusive max
+    _min2 = Double.MAX_VALUE;   // Set min/max to outer bounds
+    _maxIn= -Double.MAX_VALUE;
+    _initNA = initNA;
+    _intOpt = intOpt;
+    _minInt = (int) min;
+    _minSplitImprovement = minSplitImprovement;
+    _histoType = histogramType;
+    _seed = seed;
+    while (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
+      SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
+      _histoType = h[(int)Math.abs(seed++ % h.length)];
+    }
+    if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
+      _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
+    assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
+    _globalQuantilesKey = globalQuantilesKey;
+    // See if we can show there are fewer unique elements than nbins.
+    // Common for e.g. boolean columns, or near leaves.
+    int xbins = isInt == 2 ? nbins_cats : nbins;
+    if (isInt > 0 && maxEx - min <= xbins) {
+      assert ((long) min) == min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
+      xbins = (char) ((long) maxEx - (long) min);  // Shrink bins
+      _step = 1.0f;                           // Fixed stepsize
+    } else {
+      _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
+      if(_step <= 0 || Double.isInfinite(_step) || Double.isNaN(_step))
+        throw new StepOutOfRangeException(name,_step, xbins, maxEx, min);
+    }
+    _nbin = (char) xbins;
+    _useUplift = useUplift;
+    if (useUplift) {
+      switch (upliftMetricType) {
+        case ChiSquared:
+          _upliftMetric = new ChiSquaredDivergence();
+          break;
+        case Euclidean:
+          _upliftMetric = new EuclideanDistance();
+          break;
+        default:
+          _upliftMetric = new KLDivergence();
+      }
+    } else {
+      _upliftMetric = null;
+    }
+    assert(_nbin>0);
+    assert(_vals == null);
+    _checkFloatSplits = checkFloatSplits;
     if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
   }
@@ -287,8 +386,9 @@ public final class DHistogram extends Iced<DHistogram> {
   }
   
   // Big allocation of arrays
-  public void init() { init(null);}
-  public void init(final double[] vals) {
+  public void init() { init(null, null);}
+  public void init(double[] vals) { init(vals, null);}
+  public void init(final double[] vals, double[] valsUplift) {
     assert _vals == null;
     if (_histoType==HistogramType.Random) {
       // every node makes the same split points
@@ -337,6 +437,9 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     // otherwise AUTO/UniformAdaptive
     _vals = vals == null ? MemoryManager.malloc8d(_vals_dim * _nbin + _vals_dim) : vals;
+    if(useUplift()) {
+      _valsUplift = valsUplift == null ? MemoryManager.malloc8d(_valsDimUplift * _nbin + _valsDimUplift) : valsUplift;
+    }
     // this always holds: _vals != null
     assert _nbin > 0;
     if (_checkFloatSplits) {
@@ -355,10 +458,12 @@ public final class DHistogram extends Iced<DHistogram> {
     assert (_vals == null || dsh._vals == null) || (_isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
       _min == dsh._min && _maxEx == dsh._maxEx);
     if( dsh._vals == null ) return;
-    if(_vals == null)
-      init(dsh._vals);
-    else
-      ArrayUtils.add(_vals,dsh._vals);
+    if(_vals == null) {
+      init(dsh._vals, dsh._valsUplift);
+    } else {
+      ArrayUtils.add(_vals, dsh._vals);
+      ArrayUtils.add(_valsUplift, dsh._valsUplift);
+    }
     if (_min2 > dsh._min2) _min2 = dsh._min2;
 
     if (_maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
@@ -376,8 +481,20 @@ public final class DHistogram extends Iced<DHistogram> {
     return Double.isInfinite(res) ? maxIn : res;
   }
 
-  // The initial histogram bins are setup from the Vec rollups.
-  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey, 
+  /**
+   * The initial histogram bins are setup from the Vec rollups.
+   * @param fr frame with column data
+   * @param ncols number of columns
+   * @param nbins number of bins
+   * @param hs an array of histograms to be initialize
+   * @param seed seed to reproduce
+   * @param parms parameters of the model
+   * @param globalQuantilesKey array of global quantile keys
+   * @param cs monotone constraints (could be null)
+   * @param checkFloatSplits
+   * @return array of DHistograms objects 
+   */
+  public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey,
                                          Constraints cs, boolean checkFloatSplits) {
     Vec vecs[] = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
@@ -404,8 +521,14 @@ public final class DHistogram extends Iced<DHistogram> {
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, 
                                 Constraints cs, boolean checkFloatSplits) {
+    UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType = null;
+    boolean useUplift = false;
+    if (parms instanceof UpliftDRFModel.UpliftDRFParameters) {
+      upliftMetricType = ((UpliftDRFModel.UpliftDRFParameters) parms)._uplift_metric;
+      useUplift = true;
+    }
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs,
-            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits);
+            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits, useUplift, upliftMetricType);
   }
 
   /**
@@ -470,11 +593,18 @@ public final class DHistogram extends Iced<DHistogram> {
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
   }
 
+  void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
+    if (_intOpt)
+      updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
+    else
+      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, treatment);
+  }
+
   void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     if (_intOpt)
       updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
     else
-      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo);
+      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, null);
   }
 
   /**
@@ -491,11 +621,12 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param rows rows sorted by leaf assignemnt
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
+   * @param treatment treatment column data           
    */
-  void updateHisto(double[] ws, double[] resp, double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
+  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
-    
+
     for(int r = lo; r< hi; ++r) {
       final int k = rows[r];
       final double weight = ws == null ? 1 : ws[k];
@@ -529,6 +660,16 @@ public final class DHistogram extends Iced<DHistogram> {
             _vals[binDimStart + 6] += _dist.gammaNum(weight, resp[k], y, preds[k]);
           }
         }
+      }
+      if(_useUplift) {
+        // Note: Only for binomial, response should be (0, 1)
+        double t = treatment[k];
+        double rs = resp[k];
+        int binDimStartUplift = _valsDimUplift * b;
+        _valsUplift[binDimStartUplift] += t;                 // treatment number
+        _valsUplift[binDimStartUplift + 1] += t * rs;        // treatment number with response == 1 
+        _valsUplift[binDimStartUplift + 2] += (1 - t);       // control number
+        _valsUplift[binDimStartUplift + 3] += (1 - t) * rs;  // control number with response == 1
       }
     }
   }

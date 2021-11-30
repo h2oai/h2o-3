@@ -97,6 +97,9 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     sb.append(" Description: " + (_description == null ? "N/A" : _description) + "\n");
     sb.append(" model id: " + _modelKey + "\n");
     sb.append(" frame id: " + _frameKey + "\n");
+    if(ModelCategory.BinomialUplift.equals(this._model_category)) {
+      return sb.toString();
+    }
     return appendToStringMetrics(sb).toString();
   }
 
@@ -419,11 +422,19 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       double sampleCorrection = 1; //this will make the result (and R^2) invariant to globally scaling the weights
       return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
+    
     abstract public double[] perRow(double ds[], float yact[], Model m);
-    public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
-      assert(weight==1 && offset == 0);
+    
+    public double[] perRow(double ds[], float yact[], float treatment, double weight, double offset, Model m) {
+      assert(Double.isNaN(treatment) && weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }
+
+    public double[] perRow(double ds[], float yact[], double weight, double offset,  Model m) {
+      assert(weight == 1 && offset == 0);
+      return perRow(ds, yact, m);
+    }
+    
     public void reduce( T mb ) {
       _sumsqe += mb._sumsqe;
       _count += mb._count;

@@ -41,8 +41,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final int _weightIdx;
   final int _workIdx;
   final int _nidIdx;
+  final int _treatmentIdx;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram hcs[][], DistributionFamily family, int weightIdx, int workIdx, int nidIdx) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, DTree tree, int leaf, DHistogram hcs[][], DistributionFamily family, int weightIdx, int workIdx, int nidIdx, int treatmentIdx) {
     super(cc);
     _k    = k;
     _ncols= ncols;
@@ -54,6 +55,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _weightIdx = weightIdx;
     _workIdx = workIdx;
     _nidIdx = nidIdx;
+    _treatmentIdx = treatmentIdx;
   }
 
   public ScoreBuildHistogram dfork2(byte[] types, Frame fr, boolean run_local) {

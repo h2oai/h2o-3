@@ -13,6 +13,8 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.model.metrics_base import H2OBinomialModelMetrics
+from h2o.estimators import H2OUpliftRandomForestEstimator
+
 base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
                        'nobs', 'aucpr', 'pr_auc', 'r2', 'rmse', 'rmsle',
                        'residual_deviance', 'residual_degrees_of_freedom', 'null_deviance', 'null_degrees_of_freedom']
@@ -188,6 +190,44 @@ def pyunit_make_metrics(weights_col=None):
     assert abs(m2.aucpr() - m1.aucpr()) < 1e-5
 
 
+def pyunit_make_metrics_uplift():
+    treatment_column = "treatment"
+    response_column = "outcome"
+    feature_cols = ["feature_"+str(x) for x in range(1,13)]
+    
+    train = h2o.import_file(pyunit_utils.locate("smalldata/uplift/upliftml_train.csv"))
+    train[treatment_column] = train[treatment_column].asfactor()
+    train[response_column] = train[response_column].asfactor()
+
+    test = h2o.import_file(pyunit_utils.locate("smalldata/uplift/upliftml_test.csv"))
+    test[treatment_column] = test[treatment_column].asfactor()
+    test[response_column] = test[response_column].asfactor()
+
+    nbins = 20
+    model = H2OUpliftRandomForestEstimator(
+        treatment_column=treatment_column,
+        seed=42,
+        auuc_nbins=nbins,
+        score_each_iteration=True
+    )
+    
+    model.train(y=response_column, x=feature_cols, training_frame=train, validation_frame=test)
+    # test on validation data, train metrics are affected by sample rate
+    m0 = model.model_performance(valid=True)
+    predicted = h2o.assign(model.predict(test)[0], "pred")
+    actual = test[response_column]
+    treatment = test[treatment_column]
+    m1 = model.model_performance(test_data=test, auuc_type="AUTO", auuc_nbins=nbins)
+    m2 = h2o.make_metrics(predicted, actual, treatment=treatment, auuc_type="AUTO", auuc_nbins=nbins)
+    
+    print(m0.auuc())
+    print(m1.auuc())
+    print(m2.auuc())
+    
+    assert abs(m0.auuc() - m1.auuc()) < 1e-5
+    assert abs(m1.auuc() - m2.auuc()) < 1e-5
+
+
 def suite_model_metrics():
 
     def test_model_metrics_basic():
@@ -196,9 +236,13 @@ def suite_model_metrics():
     def test_model_metrics_weights():
         pyunit_make_metrics(weights_col="weights")
 
+    def test_model_metrics_uplift():
+        pyunit_make_metrics_uplift()
+        
     return [
         test_model_metrics_basic,
-        test_model_metrics_weights
+        test_model_metrics_weights,
+        test_model_metrics_uplift
     ]
 
 

@@ -143,6 +143,8 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 return genModel.isSupervised() ? genModel.getResponseName() : null; 
             }
             @Override
+            public String getTreatmentColumn() {return null;}
+            @Override
             public double missingColumnsType() {
                 return Double.NaN;
             }
