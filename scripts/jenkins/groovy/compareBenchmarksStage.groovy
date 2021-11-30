@@ -296,8 +296,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'homesite': [
                 ['RULES_AND_LINEAR', 3, 3]: [
-                        'train_time_min': 8,
-                        'train_time_max': 11
+                        'train_time_min': 9,
+                        'train_time_max': 12
                 ]
             ],
             'springleaf': [
@@ -309,13 +309,13 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'paribas': [
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 4,
-                        'train_time_max': 5
+                        'train_time_max': 6
                 ]
             ],
             'higgs': [
                 ['RULES_AND_LINEAR', 3, 3]: [
                         'train_time_min': 22,
-                        'train_time_max': 24
+                        'train_time_max': 25
                 ]
             ]
         ]    
