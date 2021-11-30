@@ -65,7 +65,7 @@ public abstract class SharedTree<
   protected double _initialPrediction;
 
   // Sum of variable empirical improvement in squared-error.  The value is not scaled.
-  private transient float[/*nfeatures*/] _improvPerVar;
+  protected transient float[/*nfeatures*/] _improvPerVar;
 
   protected Random _rand;
 
@@ -590,63 +590,7 @@ public abstract class SharedTree<
     return did_split ? hcs : null;
   }
 
-  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, final DTree tree, final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
-    // Build 1 uplift tree
-
-    // Build up the next-generation tree splits from the current histograms.
-    // Nearly all leaves will split one more level.  This loop nest is
-    //           O( #active_splits * #bins * #ncols )
-    // but is NOT over all the data.
-    ScoreBuildOneTree sb1t = null;
-    Vec vecs[] = fr.vecs();
-    // Build a frame with just a single tree (& work & nid) columns, so the
-    // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
-    // to close other tree's Vecs when run in parallel.
-    int k = 0;
-    if( tree != null ) {
-      int selectedCol = _ncols + 2;
-      final String[] fr2cols = Arrays.copyOf(fr._names, selectedCol);
-      final Vec[] fr2vecs = Arrays.copyOf(vecs, selectedCol);
-      Frame fr2 = new Frame(fr2cols, fr2vecs); //predictors, weights and the actual response
-      if (isSupervised() && fr2.find(_parms._response_column) == -1) {
-        fr2.add(_parms._response_column, fr.vec(_parms._response_column));
-      }
-
-      // Add temporary workspace vectors (optional weights are taken over from fr)
-      int respIdx = fr2.find(_parms._response_column);
-      int weightIdx = fr2.find(_parms._weights_column);
-      int treatmentIdx = fr2.find(_parms._treatment_column);
-      int predsIdx = fr2.numCols(); fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]); //tree predictions
-      int workIdx =  fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      int nidIdx  =  fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
-      if (LOG.isTraceEnabled()) LOG.trace("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
-      // Async tree building
-      // step 1: build histograms
-      // step 2: split nodes
-      H2O.submitTask(sb1t = new ScoreBuildOneTree(this,k, nbins, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution,
-              respIdx, weightIdx, predsIdx, workIdx, nidIdx, treatmentIdx));
-    }
-    // Block for all K trees to complete.
-    boolean did_split=false;
-    if( sb1t != null ) {
-      sb1t.join();
-      if( sb1t._did_split ) did_split=true;
-      if (LOG.isTraceEnabled()) {
-        LOG.info("Done with this layer for class " + k + ":\n" + new Frame(
-                new String[]{"TREE", "WORK", "NIDS"},
-                new Vec[]{
-                        vecs[idx_tree(k)],
-                        vecs[idx_work(k)],
-                        vecs[idx_nids(k)]
-                }
-        ).toTwoDimTable());
-      }
-    }
-    // The layer is done.
-    return did_split ? hcs : null;
-  }
-
-  static class ScoreBuildOneTree extends H2OCountedCompleter {
+  protected static class ScoreBuildOneTree extends H2OCountedCompleter {
     final SharedTree _st;
     final int _k;               // The tree
     final int _nbins;           // Numerical columns: Number of histogram bins
@@ -664,10 +608,10 @@ public abstract class SharedTree<
     final int _nidIdx;
     final int _treatmentIdx;
 
-    boolean _did_split;
+    public boolean _did_split;
 
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
-                      int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int treatmentIdx) {
+    public ScoreBuildOneTree(SharedTree st, int k, int nbins, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family,
+                             int respIdx, int weightIdx, int predsIdx, int workIdx, int nidIdx, int treatmentIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
