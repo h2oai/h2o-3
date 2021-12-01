@@ -22,35 +22,70 @@ Defining a Deep Learning Model
 
 H2O Deep Learning models have many input parameters, many of which are only accessible via the expert mode. For most cases, use the default values. Please read the following instructions before building extensive Deep Learning models. The application of grid search and successive continuation of winning models via checkpoint restart is highly recommended, as model performance can vary greatly.
 
--  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+Parameters are optional unless specified as *required*.
 
--  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
+Common Parameters
+'''''''''''''''''
 
--  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate the accuracy of the model.
+-  `training_frame <algo-params/training_frame.html>`__: *Required* Specify the dataset used to build the model. **NOTE**: In Flow, if you click the **Build a model** button from the ``Parse`` cell, the training frame is entered automatically.
 
--  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0 (no cross-validation).
-   
-    **Note**: Cross-validation is not supported when autoencoder is enabled.
-
--  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to true.
-
--  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions. This option defaults to false.
-
--  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to false.
+-  `validation_frame <algo-params/validation_frame.html>`__: Specify the dataset used to evaluate the accuracy of the model.
 
 -  `y <algo-params/y.html>`__: Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  **autoencoder**: Specify whether to enable the Deep Learning autoencoder. This option is defaults to false (not enabled). 
+   
+    **Note**: Cross-validation is not supported when autoencoder is enabled.
+
+-  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
+   
+    **Note**: Cross-validation is not supported during checkpoint restarts.
+
+-  **diagnostics**: Specify whether to compute the variable importances for input features (using the Gedeon method). For large networks, enabling this option can reduce speed. This option is defaults to true (enabled).
+
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+-  **export_weights_and_biases**: Specify whether to export the neural network weights and biases as H2O frames. This option is defaults to false (not enabled).
+
 -  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random,  `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems). This option defaults to AUTO.
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
-
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training. This option defaults to false.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
+
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. This option defaults to false.
+
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to true.
+
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions. This option defaults to false.
+
+-  **max_confusion_matrix_size**: This option is deprecated and will be removed in a future release. 
+
+-  `model_id <algo-params/model_id.html>`__: Specify a custom name for the model to use as a reference. By default, H2O automatically generates a destination key.
+
+-  **mini_batch_size**: Specify a value for the mini-batch size. (Smaller values lead to a better fit; larger values can speed up and generalize better.) This option defaults to 1.
+
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation. This option defaults to 0 (no cross-validation).
+   
+    **Note**: Cross-validation is not supported when autoencoder is enabled.
+
+-  `offset_column <algo-params/offset_column.html>`__: (Applicable for regression only) Specify a column to use as the offset. 
+   
+    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
+
+-  **pretrained_autoencoder**: Specify a pretrained autoencoder model to initialize this model with.
+
+-  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. This option is defaults to false (not enabled).
+
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: Specify whether to score during each iteration of the model training. This option defaults to false.
+
+-  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. This option is true by default.
+
+-  **verbose**: Print scoring history to the console. For Deep Learning, metrics are per epoch. This option is defaults to false (not enabled).
 
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
    
@@ -58,86 +93,38 @@ H2O Deep Learning models have many input parameters, many of which are only acce
    
     **Note**: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  `offset_column <algo-params/offset_column.html>`__: (Applicable for regression only) Specify a column to use as the offset. 
-   
-    **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. 
 
--  `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the ``max_after_balance_size`` parameter. This option defaults to false.
-
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: (Applicable only for classification and when ``balance_classes`` is enabled) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. 
-
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0. This option defaults to 5.0.
-
--  **max_confusion_matrix_size**: This option is deprecated and will be removed in a future release. 
-
--  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously-trained Deep Learning model. Use this option to build a new model as a continuation of a previously-generated model.
-   
-    **Note**: Cross-validation is not supported during checkpoint restarts.
-
--  **pretrained_autoencoder**: Specify a pretrained autoencoder model to initialize this model with.
-
--  **overwrite_with_best_model**: Specify whether to overwrite the final model with the best model found during training, based on the option specified for **stopping_metric**. This option is enabled by default.
-
--  `use_all_factor_levels <algo-params/use_all_factor_levels.html>`__: Specify whether to use all factor levels in the possible set of predictors; if you enable this option, sufficient regularization is required. By default, the first factor level is skipped. For Deep Learning models, this option is useful for determining variable importances and is automatically enabled if the autoencoder is selected. This option is true by default.
-
--  `standardize <algo-params/standardize.html>`__: If enabled, automatically standardize the data (mean 0, variance 1). If disabled, the user must provide properly scaled input data. This option defaults to true.
+Hyperparameters
+'''''''''''''''
 
 -  **activation**: Specify the activation function (Tanh, Tanh with dropout, Rectifier, Rectifier with dropout, Maxout, Maxout with dropout). This option defaults to Rectifier.
    
     **Note**: **Maxout** is not supported when **autoencoder** is enabled.
 
--  **hidden**: Specify the hidden layer sizes (e.g., 100,100). The value must be positive. This option defaults to (200,200).
-
--  **epochs**: Specify the number of times to iterate (stream) the dataset. The value can be a fraction. This option defaults to 10.
-
--  **train_samples_per_iteration**: Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic (default) values, enter -2.
-
--  **target_ratio_comm_to_comp**: Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). This option defaults to 0.05.
-
--  **seed**: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
-
 -  **adaptive_rate**: Specify whether to enable the adaptive learning rate (ADADELTA). This option is enabled by default.
 
--  **rho**: (Applicable only if **adaptive\_rate** is enabled) Specify the adaptive learning rate time decay factor. This option defaults to 0.99.
+-  **average_activation**: Specify the average activation for the sparse autoencoder. If **Rectifier** is used, the **average_activation** value must be positive. This option defaults to 0.
 
--  **epsilon**:(Applicable only if **adaptive\_rate** is enabled) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option defaults to 1e-08.
+-  `balance_classes <algo-params/balance_classes.html>`__: (Applicable for classification only) Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the ``max_after_balance_size`` parameter. This option defaults to false.
 
--  `rate <algo-params/rate.html>`__: (Applicable only if **adaptive_rate** is disabled) Specify the learning rate. Higher values result in a less stable model, while lower values lead to slower convergence. This option defaults to 0.005.
+-  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
--  `rate_annealing <algo-params/rate_annealing.html>`__: (Applicable only if **adaptive_rate** is disabled) Specify the rate annealing value. The rate annealing is calculated as rate / (1 + rate_annealing * samples). This option defaults to 1e-06.
+  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In Deep Learning, the algorithm will perform ``one_hot_internal`` encoding if ``auto`` is specified. Defaults to ``AUTO``.
+  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
+  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+  - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.). This is useful for keeping the number of columns small for XGBoost or DeepLearning, where the algorithm otherwise perform ExplicitOneHotEncoding. 
+  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). Note that this requires a specified response column.
 
--  `rate_decay <algo-params/rate_decay.html>`__: (Applicable only if **adaptive_rate** is disabled) Specify the rate decay factor between layers. The rate decay is calculated as (N-th layer: rate * rate_decay ^ (n - 1)). This options defaults to 1. 
+  **Note**: This value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
 
--  **momentum_start**: (Applicable only if **adaptive_rate** is disabled) Specify the initial momentum at the beginning of training; we suggest 0.5.  This option defaults to 0.
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: (Applicable only for classification and when ``balance_classes`` is enabled) Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. 
 
--  **momentum_ramp**: (Applicable only if **adaptive_rate** is disabled) Specify the number of training samples for which the momentum increases. This option defaults to 1000000.
+-  **classification_stop**: This option specifies the stopping criteria in terms of classification error (1-accuracy) on the training data scoring dataset. When the error is at or below this threshold, training stops. To disable this option, enter -1. This option defaults to 0.
 
--  **momentum_stable**: (Applicable only if **adaptive_rate** is disabled) Specify the final momentum after the ramp is over; we suggest 0.99. This option defaults to 0.
+-  **regression_stop**: (Regression models only) Specify the stopping criterion for regression error (MSE) on the training data. When the error is at or below this threshold, training stops. To disable this option, enter -1. This option defaults to 1e-06.
 
--  **nesterov_accelerated_gradient**: (Applicable only if **adaptive_rate** is disabled) Enables the `Nesterov Accelerated Gradient <http://premolab.ru/pub_files/pub88/qhkDNEyp8.pdf>`__. This option defaults to true.
-
--  **input_dropout_ratio**: Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. This option defaults to 0.
-
--  **hidden_dropout_ratios**: (Applicable only if the activation type is **TanhWithDropout**, **RectifierWithDropout**, or **MaxoutWithDropout**) Specify the hidden layer dropout ratio to improve generalization. Specify one value per hidden layer. The range is >= 0 to <1, and the default is 0.5.
-
--  **l1**: Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0 (default).
-
--  **l2**: Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. Defaults to 0.
-
--  **max_w2**: Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). Defaults to 3.4028235e+38.
-
--  **initial_weight_distribution**: Specify the initial weight distribution (Uniform Adaptive, Uniform, or Normal). This option defaults to Uniform Adaptive.
-
--  **initial_weight_scale**: (Applicable only if **initial_weight_distribution** is **Uniform** or **Normal**) Specify the scale of the distribution function. For **Uniform**, the values are drawn uniformly. For **Normal**, the values are drawn from a Normal distribution with a standard deviation. This option defaults to 1.
-
--  **initial_weights**: Specify a list of H2OFrame IDs to initialize the weight matrices of this model with.
-
--  **initial_biases**: Specify a list of H2OFrame IDs to initialize the bias vectors of this model with.
-
--  **loss**: Specify the loss function. The options are Automatic, CrossEntropy, Quadratic, Huber, or Absolute and the default value is Automatic.  This option defaults to Automatic.
-   
-    - Use **Absolute**, **Quadratic**, or **Huber** for regression 
-    - Use **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
+-  **col_major**: Specify whether to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is defaults to false (not enabled).
 
 -  `distribution <algo-params/distribution.html>`__: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie. This option defaults to AUTO.
 
@@ -151,18 +138,82 @@ H2O Deep Learning models have many input parameters, many of which are only acce
   - If the distribution is ``gamma``, the response column must be numeric.
   - If the distribution is ``quantile``, the response column must be numeric.
 
+-  **elastic_averaging**: Specify whether to enable elastic averaging between computing nodes, which can improve distributed model convergence. This option is defaults to false (not enabled).
+
+-  **elastic_averaging_moving_rate**: Specify the moving rate for elastic averaging. This option is only available if ``elastic_averaging=True``. This option defaults to 0.9.
+
+-  **elastic_averaging_regularization**: Specify the elastic averaging regularization strength. This option is only available if ``elastic_averaging=True``. This option defaults to 0.001.
+
+-  **epochs**: Specify the number of times to iterate (stream) the dataset. The value can be a fraction. This option defaults to 10.
+
+-  **epsilon**:(Applicable only if **adaptive\_rate** is enabled) Specify the adaptive learning rate time smoothing factor to avoid dividing by zero. This option defaults to 1e-08.
+
+-  **fast_mode**: Specify whether to enable fast mode, a minor approximation in back-propagation. This option is defaults to true (enabled).
+
+-  **force_load_balance**: Specify whether to force extra load balancing to increase training speed for small datasets and use all cores. This option is defaults to true (enabled).
+
+-  **hidden**: Specify the hidden layer sizes (e.g., 100,100). The value must be positive. This option defaults to (200,200).
+
+-  **hidden_dropout_ratios**: (Applicable only if the activation type is **TanhWithDropout**, **RectifierWithDropout**, or **MaxoutWithDropout**) Specify the hidden layer dropout ratio to improve generalization. Specify one value per hidden layer. The range is >= 0 to <1, and the default is 0.5.
+
+-  **input_dropout_ratio**: Specify the input layer dropout ratio to improve generalization. Suggested values are 0.1 or 0.2. This option defaults to 0.
+
+-  **initial_biases**: Specify a list of H2OFrame IDs to initialize the bias vectors of this model with.
+
+-  **initial_weights**: Specify a list of H2OFrame IDs to initialize the weight matrices of this model with.
+
+-  **initial_weight_distribution**: Specify the initial weight distribution (Uniform Adaptive, Uniform, or Normal). This option defaults to Uniform Adaptive.
+
+-  **initial_weight_scale**: (Applicable only if **initial_weight_distribution** is **Uniform** or **Normal**) Specify the scale of the distribution function. For **Uniform**, the values are drawn uniformly. For **Normal**, the values are drawn from a Normal distribution with a standard deviation. This option defaults to 1.
+
+-  **l1**: Specify the L1 regularization to add stability and improve generalization; sets the value of many weights to 0 (default).
+
+-  **l2**: Specify the L2 regularization to add stability and improve generalization; sets the value of many weights to smaller values. Defaults to 0.
+
+-  **loss**: Specify the loss function. The options are Automatic, CrossEntropy, Quadratic, Huber, or Absolute and the default value is Automatic.  This option defaults to Automatic.
+   
+    - Use **Absolute**, **Quadratic**, or **Huber** for regression 
+    - Use **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
+
+-  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0. This option defaults to 5.0.
+
+-  **max_categorical_features**: Specify the maximum number of categorical features enforced via hashing. The value must be at least one. This option defaults to 2147483647.
+
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 (default) to disable.
+
+-  **max_w2**: Specify the constraint for the squared sum of the incoming weights per unit (e.g., for Rectifier). Defaults to 3.4028235e+38.
+
+-  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation). This option defaults to MeanImputation.
+
+-  **momentum_start**: (Applicable only if **adaptive_rate** is disabled) Specify the initial momentum at the beginning of training; we suggest 0.5.  This option defaults to 0.
+
+-  **momentum_ramp**: (Applicable only if **adaptive_rate** is disabled) Specify the number of training samples for which the momentum increases. This option defaults to 1000000.
+
+-  **momentum_stable**: (Applicable only if **adaptive_rate** is disabled) Specify the final momentum after the ramp is over; we suggest 0.99. This option defaults to 0.
+
+-  **nesterov_accelerated_gradient**: (Applicable only if **adaptive_rate** is disabled) Enables the `Nesterov Accelerated Gradient <http://premolab.ru/pub_files/pub88/qhkDNEyp8.pdf>`__. This option defaults to true.
+
+-  **overwrite_with_best_model**: Specify whether to overwrite the final model with the best model found during training, based on the option specified for **stopping_metric**. This option is enabled by default.
+
 -  `quantile_alpha <algo-params/quantile_alpha.html>`__: (Only applicable if ``distribution="quantile"``.) Specify the quantile to be used for Quantile Regression. This option defaults to 0.5.
 
--  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if ``distribution="tweedie"``) Specify the Tweedie power. The range is from 1 to 2, and the default is 1.5.
-   
-    - For a normal distribution, enter ``0``.
-    - For Poisson distribution, enter ``1``. 
-    - For a gamma distribution, enter ``2``. 
-    - For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. 
-    
-   For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
-
 -  `huber_alpha <algo-params/huber_alpha.html>`__: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1, and the default is 0.9.
+
+-  **quiet_mode**: Specify whether to display less output in the standard output. This option is defaults to false (not enabled).
+
+-  `rate <algo-params/rate.html>`__: (Applicable only if **adaptive_rate** is disabled) Specify the learning rate. Higher values result in a less stable model, while lower values lead to slower convergence. This option defaults to 0.005.
+
+-  `rate_annealing <algo-params/rate_annealing.html>`__: (Applicable only if **adaptive_rate** is disabled) Specify the rate annealing value. The rate annealing is calculated as rate / (1 + rate_annealing * samples). This option defaults to 1e-06.
+
+-  `rate_decay <algo-params/rate_decay.html>`__: (Applicable only if **adaptive_rate** is disabled) Specify the rate decay factor between layers. The rate decay is calculated as (N-th layer: rate * rate_decay ^ (n - 1)). This options defaults to 1. 
+
+-  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets. This option is defaults to true (enabled).
+
+-  **reproducible**: Specify whether to force reproducibility on small data. If this option is enabled, the model takes more time to generate because it uses only one thread. This option is defaults to false (not enabled).
+
+-  **rho**: (Applicable only if **adaptive\_rate** is enabled) Specify the adaptive learning rate time decay factor. This option defaults to 0.99.
+
+-  **score_duty_cycle**: Specify the maximum duty cycle fraction for scoring. A lower value results in more training and a higher value results in more scoring. This option defaults to 0.1.
 
 -  **score_interval**: Specify the shortest time interval (in seconds) to wait between model scoring. This option defaults to 5.
 
@@ -170,19 +221,17 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **score_validation_samples**: (Applicable only if a ``validation_frame`` is specified) Specify the number of validation set samples for scoring. The value must be >= 0. To use all validation samples, enter 0 (default).
 
--  **score_duty_cycle**: Specify the maximum duty cycle fraction forscoring. A lower value results in more training and a higher value results in more scoring. This option defaults to 0.1.
+-  **score_validation_sampling**: Specify the method used to sample validation dataset for scoring. This value can be either  "Uniform" (default) or "Stratified".
 
--  **classification_stop**: This option specifies the stopping criteria in terms of classification error (1-accuracy) on the training data scoring dataset. When the error is at or below this threshold, training stops. To disable this option, enter -1. This option defaults to 0.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
--  **regression_stop**: (Regression models only) Specify the stopping criterion for regression error (MSE) on the training data. When the error is at or below this threshold, training stops. To disable this option, enter -1. This option defaults to 1e-06.
+-  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is defaults to false (not enabled).
 
--  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for **stopping_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0``. The metric is computed on the validation data (if provided); otherwise, training data is used. This option defaults to 5.
-   
-   **Note**: If cross-validation is enabled:
+-  **sparse**: Specify whether to enable sparse data handling, which is more efficient for data with many zero values. This option is defaults to false (not enabled).
 
-    - All cross-validation models stop training when the validation metric doesn't improve.
-    - The main model runs for the mean number of epochs.
-    - N+1 models may be off by the number specified for **stopping_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+-  **sparsity_beta**: (Applicable only if **autoencoder** is enabled) Specify the sparsity-based regularization optimization. For more information, refer to the following `link <http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf>`__. This option defaults to 0.
+
+-  `standardize <algo-params/standardize.html>`__: If enabled, automatically standardize the data (mean 0, variance 1). If disabled, the user must provide properly scaled input data. This option defaults to true.
 
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
@@ -202,73 +251,31 @@ H2O Deep Learning models have many input parameters, many of which are only acce
     - ``mean_per_class_error``
     - ``custom`` (Python client only)
     - ``custom_increasing`` (Python client only)
+
+-  `stopping_rounds <algo-params/stopping_rounds.html>`__: Stops training when the option selected for **stopping_metric** doesn't improve for the specified number of training rounds, based on a simple moving average. To disable this feature, specify ``0``. The metric is computed on the validation data (if provided); otherwise, training data is used. This option defaults to 5.
+   
+   **Note**: If cross-validation is enabled:
+
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+  
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This option defaults to 0.
+
+-  **target_ratio_comm_to_comp**: Specify the target ratio of communication overhead to computation. This option is only enabled for multi-node operation and if **train\_samples\_per\_iteration** equals -2 (auto-tuning). This option defaults to 0.05.
+
+-  **train_samples_per_iteration**: Specify the number of global training samples per MapReduce iteration. To specify one epoch, enter 0. To specify all available data (e.g., replicated training data), enter -1. To use the automatic (default) values, enter -2.
+
+-  `tweedie_power <algo-params/tweedie_power.html>`__: (Only applicable if ``distribution="tweedie"``) Specify the Tweedie power. The range is from 1 to 2, and the default is 1.5.
+   
+    - For a normal distribution, enter ``0``.
+    - For Poisson distribution, enter ``1``. 
+    - For a gamma distribution, enter ``2``. 
+    - For a compound Poisson-gamma distribution, enter a value greater than 1 but less than 2. 
     
--  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
-   metric-based stopping to stop training if the improvement is less
-   than this value. This option defaults to 0.
-
--  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 (default) to disable.
-
--  **score_validation_sampling**: Specify the method used to sample validation dataset for scoring. This value can be either  "Uniform" (default) or "Stratified".
-
--  **diagnostics**: Specify whether to compute the variable importances for input features (using the Gedeon method). For large networks, enabling this option can reduce speed. This option is defaults to true (enabled).
-
--  **fast_mode**: Specify whether to enable fast mode, a minor approximation in back-propagation. This option is defaults to true (enabled).
-
--  **force_load_balance**: Specify whether to force extra load balancing to increase training speed for small datasets and use all cores. This option is defaults to true (enabled).
+   For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
 -  **variable_importances**: Specify whether to compute variable importance. This option is defaults to true.
-
--  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets. This option is defaults to true (enabled).
-
--  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. This option is defaults to false (not enabled).
-
--  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is defaults to false (not enabled).
-
--  `missing_values_handling <algo-params/missing_values_handling.html>`__: Specify how to handle missing values (Skip or MeanImputation). This option defaults to MeanImputation.
-
--  **quiet_mode**: Specify whether to display less output in the standard output. This option is defaults to false (not enabled).
-
--  **autoencoder**: Specify whether to enable the Deep Learning autoencoder. This option is defaults to false (not enabled). 
-   
-    **Note**: Cross-validation is not supported when autoencoder is enabled.
-
--  **sparse**: Specify whether to enable sparse data handling, which is more efficient for data with many zero values. This option is defaults to false (not enabled).
-
--  **col_major**: Specify whether to use a column major weight matrix for the input layer. This option can speed up forward propagation but may reduce the speed of backpropagation. This option is defaults to false (not enabled).
-
--  **average_activation**: Specify the average activation for the sparse autoencoder. If **Rectifier** is used, the **average_activation** value must be positive. This option defaults to 0.
-
--  **sparsity_beta**: (Applicable only if **autoencoder** is enabled) Specify the sparsity-based regularization optimization. For more information, refer to the following `link <http://www.mit.edu/~9.520/spring09/Classes/class11_sparsity.pdf>`__. This option defaults to 0.
-
--  **max_categorical_features**: Specify the maximum number of categorical features enforced via hashing. The value must be at least one. This option defaults to 2147483647.
-
--  **reproducible**: Specify whether to force reproducibility on small data. If this option is enabled, the model takes more time to generate because it uses only one thread. This option is defaults to false (not enabled).
-
--  **export_weights_and_biases**: Specify whether to export the neural network weights and biases as H2O frames. This option is defaults to false (not enabled).
-
--  **mini_batch_size**: Specify a value for the mini-batch size. (Smaller values lead to a better fit; larger values can speed up and generalize better.) This option defaults to 1.
-
--  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
-
-  - ``auto`` or ``AUTO``: Allow the algorithm to decide. In Deep Learning, the algorithm will perform ``one_hot_internal`` encoding if ``auto`` is specified. Defaults to ``AUTO``.
-  - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels (default)
-  - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
-  - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
-  - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.). This is useful for keeping the number of columns small for XGBoost or DeepLearning, where the algorithm otherwise perform ExplicitOneHotEncoding. 
-  - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). Note that this requires a specified response column.
-
-  **Note**: This value defaults to ``one_hot_internal``. Similarly, if ``auto`` is specified, then the algorithm performs ``one_hot_internal`` encoding. 
-
--  **elastic_averaging**: Specify whether to enable elastic averaging between computing nodes, which can improve distributed model convergence. This option is defaults to false (not enabled).
-
--  **elastic_averaging_moving_rate**: Specify the moving rate for elastic averaging. This option is only available if ``elastic_averaging=True``. This option defaults to 0.9.
-
--  **elastic_averaging_regularization**: Specify the elastic averaging regularization strength. This option is only available if ``elastic_averaging=True``. This option defaults to 0.001.
-
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
-
--  **verbose**: Print scoring history to the console. For Deep Learning, metrics are per epoch. This option is defaults to false (not enabled).
 
 
 Interpreting a Deep Learning Model
