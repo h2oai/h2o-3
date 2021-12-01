@@ -174,17 +174,17 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                column being a constant value or not.
                Defaults to ``True``.
         :type check_constant_response: bool
-        :param treatment_column: Define column which will be use for computing uplift gain to select best split for a
-               tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.
+        :param treatment_column: Define the column which will be used for computing uplift gain to select best split for
+               a tree. The column has to devide the dataset into treatment (value 1) and control (value 0) groups.
                Defaults to ``"treatment"``.
         :type treatment_column: str
-        :param uplift_metric: Divergence metric used to find best split when building an upplift tree.
+        :param uplift_metric: Divergence metric used to find best split when building an uplift tree.
                Defaults to ``"auto"``.
         :type uplift_metric: Literal["auto", "kl", "euclidean", "chi_squared"]
-        :param auuc_type: AUUC metric used to calculate Area under Uplift.
+        :param auuc_type: Metric used to calculate Area Under Uplift Curve.
                Defaults to ``"auto"``.
         :type auuc_type: Literal["auto", "qini", "lift", "gain"]
-        :param auuc_nbins: Number of bins to calculate Area under Uplift.
+        :param auuc_nbins: Number of bins to calculate Area Under Uplift Curve.
                Defaults to ``-1``.
         :type auuc_nbins: int
         """
@@ -702,7 +702,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def uplift_metric(self):
         """
-        Divergence metric used to find best split when building an upplift tree.
+        Divergence metric used to find best split when building an uplift tree.
 
         Type: ``Literal["auto", "kl", "euclidean", "chi_squared"]``, defaults to ``"auto"``.
         """
@@ -716,7 +716,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def auuc_type(self):
         """
-        AUUC metric used to calculate Area under Uplift.
+        Metric used to calculate Area Under Uplift Curve.
 
         Type: ``Literal["auto", "qini", "lift", "gain"]``, defaults to ``"auto"``.
         """
@@ -730,7 +730,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     @property
     def auuc_nbins(self):
         """
-        Number of bins to calculate Area under Uplift.
+        Number of bins to calculate Area Under Uplift Curve.
 
         Type: ``int``, defaults to ``-1``.
         """

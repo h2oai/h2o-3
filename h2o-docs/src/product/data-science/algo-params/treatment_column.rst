@@ -28,6 +28,7 @@ Related Parameters
 - `y <y.html>`__
 - `uplift_metric <uplift_metric.html>`__
 - `auuc_type <auuc_type.html>`__
+- `auuc_nbins <auuc_nbins.html>`__
 
 Example
 ~~~~~~~

@@ -13,8 +13,8 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param treatment_column Define column which will be use for computing uplift gain to select best split for a tree. The column has to
-#'        devide dataset into treatment (value 1) and control (value 0) group. Defaults to treatment.
+#' @param treatment_column Define the column which will be used for computing uplift gain to select best split for a tree. The column has
+#'        to devide the dataset into treatment (value 1) and control (value 0) groups. Defaults to treatment.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -59,11 +59,11 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
-#' @param uplift_metric Divergence metric used to find best split when building an upplift tree. Must be one of: "AUTO", "KL",
+#' @param uplift_metric Divergence metric used to find best split when building an uplift tree. Must be one of: "AUTO", "KL",
 #'        "Euclidean", "ChiSquared". Defaults to AUTO.
-#' @param auuc_type AUUC metric used to calculate Area under Uplift. Must be one of: "AUTO", "Qini", "Lift", "Gain". Defaults to
+#' @param auuc_type Metric used to calculate Area Under Uplift Curve. Must be one of: "AUTO", "qini", "lift", "gain". Defaults to
 #'        AUTO.
-#' @param auuc_nbins Number of bins to calculate Area under Uplift. Defaults to -1.
+#' @param auuc_nbins Number of bins to calculate Area Under Uplift Curve. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -103,7 +103,7 @@ h2o.upliftRandomForest <- function(x,
                                    export_checkpoints_dir = NULL,
                                    check_constant_response = TRUE,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
-                                   auuc_type = c("AUTO", "Qini", "Lift", "Gain"),
+                                   auuc_type = c("AUTO", "qini", "lift", "gain"),
                                    auuc_nbins = -1,
                                    verbose = FALSE)
 {
@@ -241,7 +241,7 @@ h2o.upliftRandomForest <- function(x,
                                                    export_checkpoints_dir = NULL,
                                                    check_constant_response = TRUE,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
-                                                   auuc_type = c("AUTO", "Qini", "Lift", "Gain"),
+                                                   auuc_type = c("AUTO", "qini", "lift", "gain"),
                                                    auuc_nbins = -1,
                                                    segment_columns = NULL,
                                                    segment_models_id = NULL,

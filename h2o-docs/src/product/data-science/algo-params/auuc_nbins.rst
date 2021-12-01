@@ -1,4 +1,4 @@
-``auuc_type``
+``auuc_nbins``
 -------------
 
 - Available in: Uplift DRF
@@ -8,24 +8,13 @@
 Description
 ~~~~~~~~~~~
 
-Use this option to specify the calculation of Area Under Uplift Curve (AUUC) metric.
+Use this option to specify the number of bins for the calculation of Area Under Uplift Curve (AUUC). 
 
-To calculate AUUC for big data, the predictions are binned to histograms. Because of this feature, the results should be different compared to exact computation.
+To calculate AUUC for big data, the predictions are binned into histograms. Because of this feature, the results should be different compared to exact computation. To get a value closer to the exact AUUC calculation, a higher number of bins has to be set. 
 
-To define AUUC, binned predictions are sorted from the largest to smallest value. For every group the cumulative sum of observations statistic is calculated. The resutl cumulative uplift is defined based on these statistics. 
+To define AUUC, binned predictions are sorted from the largest to the smallest value. For every group, the cumulative sum of observations statistics is calculated. The result cumulative uplift is defined based on these statistics. 
 
-The statistics of every group are:
-
-1. :math:`T` how many observations are in the treatment group (how many data rows in the bin have ``treatment_column`` label == 1) 
-2. :math:`C` how many observations are in the control group (how many data rows in the bin have ``treatment_column`` label == 0)
-3. :math:`TY1` how many observations are in the treatment group and respond to the offer (how many data rows in the bin have ``treatment_column`` label == 1 and ``response_column`` label == 1)
-4. :math:`CY1` how many observations are in the control group and respond to the offer (how many data rows in the bin have ``treatment_column`` label == 0 and ``response_column`` label == 1)
-
-You can set the ``auuc_type`` the metric for each bin be computed as:
-
-- Qini (``auuc_type="qini"``) :math:`TY1 - CY1 * \frac{T}{C}`
-- Lift (``auuc_type="lift"``) :math:`\frac{TY1}{T} - \frac{CY1}{C}`
-- Gain (``auuc_type="gain"``) :math:`(\frac{TY1}{T} - \frac{CY1}{C}) * (T + C)` 
+The default value is -1, which means 1000 bins are used. The value should be higher than zero and less than number of data rows. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -33,7 +22,7 @@ Related Parameters
 - `treatment_column <treatment_column.html>`__
 - `response_column <response_column.html>`__
 - `uplift_metric <uplift_metric.html>`__
-- `auuc_nbins <auuc_nbins.html>`__
+- `auuc_type <auuc_type.html>`__
 
 
 Example
@@ -74,7 +63,7 @@ Example
                                            min_rows=10,
                                            nbins=1000,
                                            seed=1234,
-                                           auuc_type="qini")
+                                           auuc_nbins=1000)
     # Eval performance:
     perf <- h2o.performance(uplift.model)
 
@@ -111,7 +100,7 @@ Example
                                                   min_rows=10,
                                                   nbins=1000,
                                                   seed=1234,
-                                                  auuc_type="gain")
+                                                  auuc_nbins=1000)
     uplift_model.train(x=predictors, 
                        y=response, 
                        training_frame=train, 
