@@ -4,7 +4,7 @@ Maximum R Square Improvements (MAXR)
 Introduction
 ~~~~~~~~~~~~
 
-The maximum :math:`R^2` improvement technique does not settle on a single model. Instead, it tries to find the "best" one-variable model, the "best" two-variable model, and so forth. The conventional maximum :math:`R^2` improvement technique does not guarantee to find the model with the largest :math:`R^2` for each predictor subset size. However, the H2O maximum :math:`R^2` improvement technique does guarantee to find the model with the largest :math:`R^2` for each predictor subset size.
+The conventional maximum :math:`R^2` improvement technique does not guarantee to find the model with the largest :math:`R^2` for each predictor subset size. However, the H2O maximum :math:`R^2` improvement technique does guarantee to find the model with the largest :math:`R^2` for each predictor subset size. 
 
 Defining a MAXR Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -154,15 +154,6 @@ Defining a MAXR Model
 
 - **max_predictor_number**: Maximum number of predictors to be considered when building GLM models. Defaults to 1.
 
-
-MAXR method
-~~~~~~~~~~~
-
-This method begins by finding the one-variable model producing the highest :math:`R^2`. Next, the variable that yields the greatest increase in :math:`R^2` is added. 
-
-Once the two-variable model is obtained, each of the variables in the model is compared to each variable not in the model. For each comparison, the MAXR method determines if removing one variable and replacing it with the other variable increases :math:`R^2`. After comparing all possible switches, the MAXR method makes the switch that produces the largest increase in :math:`R^2`.
-
-Comparisons begin again, and the process continues until the MAXR method finds that no switch could increase :math:`R^2`. Therefor, the two-variable model that's achieved is the "best" two-variable model the technique could find, the "best" three-variable model, and so forth.
 
 H2O MaxRGLM
 ~~~~~~~~~~~
