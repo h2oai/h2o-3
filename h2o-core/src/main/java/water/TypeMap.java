@@ -173,7 +173,7 @@ public class TypeMap {
     } else {
       try {
         Class<?> clazz = Class.forName(className);
-        Field field = clazz.getDeclaredField("fallbackIDOnIce");
+        Field field = clazz.getField("fallbackIDOnIce");
         boolean wasAccessible = field.isAccessible();
         field.setAccessible(true);
         int id = field.getInt(null);
