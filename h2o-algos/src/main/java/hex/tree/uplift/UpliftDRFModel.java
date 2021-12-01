@@ -42,6 +42,11 @@ public class UpliftDRFModel extends SharedTreeModel<UpliftDRFModel, UpliftDRFMod
         public ModelCategory getModelCategory() {
             return ModelCategory.BinomialUplift;
         }
+
+        @Override
+        public boolean isBinomialClassifier() {
+            return false;
+        }
     }
 
     public UpliftDRFModel(Key<UpliftDRFModel> selfKey, UpliftDRFParameters parms, UpliftDRFOutput output ) {
