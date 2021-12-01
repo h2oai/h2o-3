@@ -181,8 +181,6 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   }
 
   public static class IndependentMetricBuilderClustering extends IndependentMetricBuilderUnsupervised<IndependentMetricBuilderClustering> {
-    private static final int fallbackIDOnIce = 1050;
-    
     public long[] _size;        // Number of elements in cluster
     public double[] _within_sumsqe;   // Within-cluster sum of squared error
     private double[/*features*/] _colSum;  // Sum of each column

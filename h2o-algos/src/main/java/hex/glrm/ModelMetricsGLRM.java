@@ -87,8 +87,6 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   }
 
   public static class IndependentGLRMModelMetricsBuilder extends IndependentMetricBuilderUnsupervised<IndependentGLRMModelMetricsBuilder> {
-    private static final int fallbackIDOnIce = 1090;
-    
     public double _miscls;     // Number of misclassified categorical values
     public long _numcnt;      // Number of observed numeric entries
     public long _catcnt;     // Number of observed categorical entries
@@ -98,8 +96,6 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     private int _nnums;
     private double[] _normSub;
     private double[] _normMul;
-    
-    public IndependentGLRMModelMetricsBuilder() {}
 
     public IndependentGLRMModelMetricsBuilder(int dims, int[] permutation, int ncats, int nnums, double[] normSub, double[] normMul) {
       this(dims, permutation, ncats, nnums, normSub, normMul, false); }

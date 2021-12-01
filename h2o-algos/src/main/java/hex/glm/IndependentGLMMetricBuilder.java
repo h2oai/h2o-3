@@ -18,8 +18,6 @@ import water.util.ArrayUtils;
 import water.util.MathUtils;
 
 public class IndependentGLMMetricBuilder extends IndependentMetricBuilderSupervised<IndependentGLMMetricBuilder> {
-  private static final int fallbackIDOnIce = 1060;
-  
   double residual_deviance;
   double null_devince;
   long _nobs;

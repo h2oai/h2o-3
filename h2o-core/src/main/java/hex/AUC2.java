@@ -360,8 +360,6 @@ public class AUC2 extends Iced {
   }
 
   public static class AUCBuilder extends Iced {
-    private static final int fallbackIDOnIce = 1000;
-    
     final int _nBins;
     int _n;                     // Current number of bins
     final double _ths[];        // Histogram bins, center

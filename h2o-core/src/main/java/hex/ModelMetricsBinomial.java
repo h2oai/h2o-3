@@ -310,10 +310,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
   }
   
-  public static class GenericIndependentMetricBuilderBinomial extends IndependentMetricBuilderBinomial<GenericIndependentMetricBuilderBinomial> { 
-    private static final int fallbackIDOnIce = 1010;
-      
-    public GenericIndependentMetricBuilderBinomial() { }
+  public static class GenericIndependentMetricBuilderBinomial extends IndependentMetricBuilderBinomial<GenericIndependentMetricBuilderBinomial> {
+    public GenericIndependentMetricBuilderBinomial() {}
       
     public GenericIndependentMetricBuilderBinomial(String[] domain, DistributionFamily distributionFamily) { 
       super(domain, distributionFamily);

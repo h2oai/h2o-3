@@ -201,8 +201,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   }
   
   public static class GenericIndependentMetricBuilderRegression extends IndependentMetricBuilderRegression<GenericIndependentMetricBuilderRegression> {
-    private static final int fallbackIDOnIce = 1040;
-    
     public GenericIndependentMetricBuilderRegression() {}
     
     public GenericIndependentMetricBuilderRegression(Distribution dist) {

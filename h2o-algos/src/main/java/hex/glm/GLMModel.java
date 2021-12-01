@@ -759,9 +759,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double l = 0;
     public double dev = Double.NaN;
   }
-  public static class GLMWeightsFun extends Iced { 
-  private static final int fallbackIDOnIce = 1080;  
-      
+  public static class GLMWeightsFun extends Iced {
     final public Family _family;
     final Link _link;
     final double _var_power;
