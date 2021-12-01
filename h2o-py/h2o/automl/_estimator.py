@@ -196,7 +196,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             More models can be trained on an existing AutoML project by specifying the same project name in multiple calls to the AutoML function
             (as long as the same training frame, or a sample, is used in subsequent runs).
         :param exclude_algos: List the algorithms to skip during the model-building phase. 
-            The full list of options is:
+            The full list of options is::
             
                 "DRF" (Random Forest and Extremely-Randomized Trees)
                 "GLM"
