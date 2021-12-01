@@ -15,6 +15,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
    data-science/algo-params/alpha
    data-science/algo-params/auc_type
+   data-science/algo-params/auuc_nbins
    data-science/algo-params/auuc_type
    data-science/algo-params/balance_classes
    data-science/algo-params/base_models

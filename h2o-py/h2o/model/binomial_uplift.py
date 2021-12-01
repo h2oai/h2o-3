@@ -60,7 +60,7 @@ class H2OBinomialUpliftModel(ModelBase):
         
         :param bool train: If True, return the uplift values for the training data.
         :param bool valid: If True, return the uplift values for the validation data.
-        :param metric AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
+        :param metric: AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
         
         :returns: a list of uplift values for the specified key(s).
 

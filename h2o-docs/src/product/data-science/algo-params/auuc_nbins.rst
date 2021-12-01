@@ -1,5 +1,5 @@
 ``auuc_nbins``
--------------
+--------------
 
 - Available in: Uplift DRF
 - Hyperparameter: no
@@ -12,7 +12,7 @@ Use this option to specify the number of bins for the calculation of Area Under 
 
 To calculate AUUC for big data, the predictions are binned into histograms. Because of this feature, the results should be different compared to exact computation. To get a value closer to the exact AUUC calculation, a higher number of bins has to be set. 
 
-To define AUUC, binned predictions are sorted from the largest to the smallest value. For every group, the cumulative sum of observations statistics is calculated. The result cumulative uplift is defined based on these statistics. 
+To define AUUC, binned predictions are sorted from largest to the smallest value. For every group, the cumulative sum of observations statistics is calculated. The resulting cumulative uplift is defined based on these statistics. 
 
 The default value is -1, which means 1000 bins are used. The value should be higher than zero and less than number of data rows. 
 
@@ -37,7 +37,7 @@ Example
     # Import the uplift dataset into H2O:
     data <- h2o.importFile(locate("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"))
 
-    # Set the predictors, response and treatment column:
+    # Set the predictors, response, and treatment column:
     # set the predictors
     predictors <- c("f1", "f2", "f3", "f4", "f5", "f6","f7", "f8") 
     # set the response as a factor
@@ -79,7 +79,7 @@ Example
     # Import the cars dataset into H2O:
     data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
 
-    # Set the predictors, response and treatment column:
+    # Set the predictors, response, and treatment column:
     predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
     # set the response as a factor
     response = "conversion"

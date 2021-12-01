@@ -15,7 +15,7 @@ Aggregated data (class distributions) from data histograms are used to calculate
 The goal is to maximize the differences between class distributions in the treatment and control sets, so the splitting criteria are based on distribution divergences. Based on the ``uplift_metric`` parameter, the distribution divergence is calculated. In H2O-3, three ``uplift_metric`` types are supported:
 
 - **Kullback-Leibler divergence** (``uplift_metric="KL"``) - uses logarithms to calculate divergence, asymmetric, widely used, tends to infinity values (if treatment or control group distributions contain zero values). :math:`KL(P, Q) = \sum_{{i=0}^{N} p_i \log{\frac{p_i}{q_i}} }`
-- **Squared Euclidean distance** (``uplift_metric="euclidean"``) - symmetric and stable distribution (does not tend to infinity values). :math:`E(P, Q) = \sum_{i=0}^{N} \sqrt{p_i-q_i}`
+- **Squared Euclidean distance** (``uplift_metric="euclidean"``) - symmetric and stable distribution, does not tend to infinity values. :math:`E(P, Q) = \sum_{i=0}^{N} \sqrt{p_i-q_i}`
 - **Chi-squared divergence** (``uplift_metric="chi_squared"``) - Euclidean divergence normalized by control group distribution. Asymmetric and also tends to infinity values (if control group distribution contains zero values). :math:`\sqrt{X}(P, Q) = \sum_{i=0}^{N} \frac{\sqrt{p_i-q_i}}{q_i}`
 
 where:
@@ -32,7 +32,7 @@ Related Parameters
 
 - `treatment_column <treatment_column.html>`__
 - `auuc_type <auuc_type.html>`__
-- `auuc_nbins<auuc_nbins.html>`__
+- `auuc_nbins <auuc_nbins.html>`__
 
 Example
 ~~~~~~~
@@ -46,7 +46,7 @@ Example
     # Import the uplift dataset into H2O:
     data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
 
-    # Set the predictors, response and treatment column:
+    # Set the predictors, response, and treatment column:
     # set the predictors
     predictors <- c("f1", "f2", "f3", "f4", "f5", "f6","f7", "f8") 
     # set the response as a factor
@@ -86,7 +86,7 @@ Example
     # Import the cars dataset into H2O:
     data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
 
-    # Set the predictors, response and treatment column:
+    # Set the predictors, response, and treatment column:
     predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
     # set the response as a factor
     response = "conversion"

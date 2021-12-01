@@ -175,7 +175,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
                Defaults to ``True``.
         :type check_constant_response: bool
         :param treatment_column: Define the column which will be used for computing uplift gain to select best split for
-               a tree. The column has to devide the dataset into treatment (value 1) and control (value 0) groups.
+               a tree. The column has to divide the dataset into treatment (value 1) and control (value 0) groups.
                Defaults to ``"treatment"``.
         :type treatment_column: str
         :param uplift_metric: Divergence metric used to find best split when building an uplift tree.
@@ -688,7 +688,7 @@ class H2OUpliftRandomForestEstimator(H2OEstimator):
     def treatment_column(self):
         """
         Define the column which will be used for computing uplift gain to select best split for a tree. The column has
-        to devide the dataset into treatment (value 1) and control (value 0) groups.
+        to divide the dataset into treatment (value 1) and control (value 0) groups.
 
         Type: ``str``, defaults to ``"treatment"``.
         """

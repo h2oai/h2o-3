@@ -8,11 +8,11 @@
 Description
 ~~~~~~~~~~~
 
-Use this option to specify the calculation of Area Under Uplift Curve (AUUC) metric.
+Use this option to specify the calculation of the Area Under Uplift Curve (AUUC) metric.
 
 To calculate AUUC for big data, the predictions are binned to histograms. Because of this feature, the results should be different compared to exact computation.
 
-To define AUUC, binned predictions are sorted from the largest to smallest value. For every group the cumulative sum of observations statistic is calculated. The resutl cumulative uplift is defined based on these statistics. 
+To define AUUC, binned predictions are sorted from largest to smallest value. For every group the cumulative sum of observations statistic is calculated. The resulting cumulative uplift is defined based on these statistics. 
 
 The statistics of every group are:
 
@@ -21,7 +21,7 @@ The statistics of every group are:
 3. :math:`TY1` how many observations are in the treatment group and respond to the offer (how many data rows in the bin have ``treatment_column`` label == 1 and ``response_column`` label == 1)
 4. :math:`CY1` how many observations are in the control group and respond to the offer (how many data rows in the bin have ``treatment_column`` label == 0 and ``response_column`` label == 1)
 
-You can set the ``auuc_type`` the metric for each bin be computed as:
+You can set the ``auuc_type`` metric for each bin be computed as:
 
 - Qini (``auuc_type="qini"``) :math:`TY1 - CY1 * \frac{T}{C}`
 - Lift (``auuc_type="lift"``) :math:`\frac{TY1}{T} - \frac{CY1}{C}`
@@ -48,7 +48,7 @@ Example
     # Import the uplift dataset into H2O:
     data <- h2o.importFile(locate("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"))
 
-    # Set the predictors, response and treatment column:
+    # Set the predictors, response, and treatment column:
     # set the predictors
     predictors <- c("f1", "f2", "f3", "f4", "f5", "f6","f7", "f8") 
     # set the response as a factor
@@ -90,7 +90,7 @@ Example
     # Import the cars dataset into H2O:
     data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
 
-    # Set the predictors, response and treatment column:
+    # Set the predictors, response, and treatment column:
     predictors = ["f1", "f2", "f3", "f4", "f5", "f6","f7", "f8"]
     # set the response as a factor
     response = "conversion"

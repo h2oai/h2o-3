@@ -55,7 +55,7 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
         @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
         public double sample_rate;
 
-        @API(help = "Define the column which will be used for computing uplift gain to select best split for a tree. The column has to devide the dataset into treatment (value 1) and control (value 0) groups.", gridable = false, level = API.Level.secondary, required = true,
+        @API(help = "Define the column which will be used for computing uplift gain to select best split for a tree. The column has to divide the dataset into treatment (value 1) and control (value 0) groups.", gridable = false, level = API.Level.secondary, required = true,
                 is_member_of_frames = {"training_frame", "validation_frame"},
                 is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"})
         public String treatment_column;

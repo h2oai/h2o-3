@@ -1308,7 +1308,7 @@ h2o.auuc_table <- function(object, train=FALSE, valid=FALSE) {
 #' Retrieves the thresholds and metric scores table from an \linkS4class{H2OBinomialUpliftMetrics}.
 #' The table contains indices, thresholds, all cumulative uplift values and cumulative number of observations.
 #' If "train" and "valid" parameters are FALSE (default), then the training table is returned. If more
-#' than one parameter is set to TRUE, then a named vector of tables are returned, where the names are "train", "valid".
+#' than one parameter is set to TRUE, then a named vector of tables is returned, where the names are "train", "valid".
 #'
 #' @param object An \linkS4class{H2OBinomialUpliftMetrics}
 #' @param train Retrieve the training thresholds and metric scores table
