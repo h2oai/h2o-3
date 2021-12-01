@@ -44,15 +44,9 @@ h2o.fit_rules <- function(model, frame, rule_ids) {
     o <- model
     if (is(o, "H2OModel")) {
         if (o@algorithm == "rulefit"){
-            parms <- list()
-            parms$model_id <- model@model_id
-            parms$frame <- h2o.getId(frame)
-            parms$rule_ids <- .collapse.char(rule_ids)
-
-            json <- .h2o.doSafePOST(urlSuffix = "FitRules", parms=parms)
-            source <- .h2o.fromJSON(jsonlite::fromJSON(json,simplifyDataFrame=FALSE))
-
-            return(h2o.getFrame(source$result$name))
+            expr <- sprintf('(rulefit.fit.rules %s %s %s)', model@model_id, h2o.getId(frame), .collapse.char(rule_ids))
+            rapidsFrame <- h2o.rapids(expr)
+            return(h2o.getFrame(rapidsFrame$key$name))
         } else {
             warning(paste0("No calculation available for this model"))
             return(NULL)

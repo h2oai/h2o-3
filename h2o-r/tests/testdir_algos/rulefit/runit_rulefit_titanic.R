@@ -8,6 +8,7 @@ test.rulefit.titanic <- function() {
     
     Log.info("Importing titanic.csv...\n")
     titanic = h2o.uploadFile(locate("smalldata/gbm_test/titanic.csv"))
+    titanic = h2o.uploadFile("/Users/zuzanaolajcova/IdeaProjects/h2o-3/smalldata/gbm_test/titanic.csv")
 
     response = "survived"
     predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")

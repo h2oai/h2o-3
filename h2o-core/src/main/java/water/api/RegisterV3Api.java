@@ -273,10 +273,6 @@ public class RegisterV3Api extends AbstractRegister {
             "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",
             "Fetch partial dependence data.");
 
-    context.registerEndpoint("makeFitRules",
-            "POST /3/FitRules", ModelsHandler.class, "fitRules",
-            "Evaluate validity of the given rules on the given data.");
-
     // Model serialization - import/export calls
     context.registerEndpoint("importModel",
             "POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",
