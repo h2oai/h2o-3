@@ -180,8 +180,7 @@ public class TypeMap {
         if (!wasAccessible) field.setAccessible(false);
         return id;
       } catch (Exception e) {
-        throw new RuntimeException(
-          "Can't resolve id for class '" + className + "' since no cluster is running and 'fallbackIDOnIce' is not set.", e);
+        throw new RuntimeException(e);
       }
     }
   }
