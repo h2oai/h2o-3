@@ -596,13 +596,13 @@ def call(final pipelineContext) {
 
   final MULTINODE_CLUSTERS_CONFIGS = [
       [ distribution: "hdp", version: "2.2",
-        nameNode: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
+        nameNode: "mr-0xd4", configSource: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
         hiveHost: "mr-0xd9.0xdata.loc",
         nodes: 4, xmx: "16G", extramem: "100",
         cloudingDir: "/user/jenkins/hadoop_multinode_tests"
       ],
       [ distribution: "hdp", version: "2.4",
-        nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
+        nameNode: "mr-0xg5", configSource: "mr-0xg5", hdpName: "steam2", krb: true,
         hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
         nodes: 4, xmx: "10G", extramem: "100",
         cloudingDir: "/user/jenkins/hadoop_multinode_tests"

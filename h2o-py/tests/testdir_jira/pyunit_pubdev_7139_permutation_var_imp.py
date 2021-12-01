@@ -150,7 +150,6 @@ def test_permutation_importance_plot_works():
     model.permutation_importance_plot(fr, n_repeats=5)
     plt.close("all")
 
-
 pyunit_utils.run_tests([
     test_metrics_gbm,
     test_big_data_cars,

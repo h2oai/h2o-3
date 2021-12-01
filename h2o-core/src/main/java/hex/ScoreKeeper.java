@@ -119,31 +119,33 @@ public class ScoreKeeper extends Iced {
     IConvergenceStrategy getConvergenceStrategy();
     double metricValue(ScoreKeeper sk);
   }
-  
+
   public enum StoppingMetric implements IStoppingMetric {
-    AUTO(ConvergenceStrategy.AUTO, false), 
-    deviance(ConvergenceStrategy.LESS_IS_BETTER, false),
-    logloss(ConvergenceStrategy.LESS_IS_BETTER, true),
-    MSE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    RMSE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    MAE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    AUC(ConvergenceStrategy.MORE_IS_BETTER, true),
-    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true),
-    lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false),
-    misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
-    mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
-    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false),
-    custom(ConvergenceStrategy.LESS_IS_BETTER, false),
-    custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
+    AUTO(ConvergenceStrategy.AUTO, false, false),
+    deviance(ConvergenceStrategy.LESS_IS_BETTER, false, false),
+    logloss(ConvergenceStrategy.LESS_IS_BETTER, true, true),
+    MSE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    RMSE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    MAE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    AUC(ConvergenceStrategy.MORE_IS_BETTER, true, true),
+    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true, true),
+    lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false, true),
+    misclassification(ConvergenceStrategy.LESS_IS_BETTER, true, true),
+    mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true, true),
+    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false, false),
+    custom(ConvergenceStrategy.LESS_IS_BETTER, false, false),
+    custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false, false),
     ;
 
     private final ConvergenceStrategy _convergence;
     private final boolean _lowerBoundBy0;
+    private final boolean _classificationOnly;
 
-    StoppingMetric(ConvergenceStrategy convergence, boolean lowerBoundBy0) {
+    StoppingMetric(ConvergenceStrategy convergence, boolean lowerBoundBy0, boolean classificationOnly) {
       _convergence = convergence;
       _lowerBoundBy0 = lowerBoundBy0;
+      _classificationOnly = classificationOnly;
     }
 
     public int direction() {
@@ -152,6 +154,10 @@ public class ScoreKeeper extends Iced {
 
     public boolean isLowerBoundBy0() {
       return _lowerBoundBy0;
+    }
+
+    public boolean isClassificationOnly() {
+      return _classificationOnly;
     }
 
     public ConvergenceStrategy getConvergenceStrategy() {

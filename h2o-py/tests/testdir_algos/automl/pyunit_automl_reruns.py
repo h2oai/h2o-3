@@ -4,8 +4,8 @@ import sys
 
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
-from tests import pyunit_utils as pu
 from h2o.automl import H2OAutoML
+from tests import pyunit_utils as pu
 
 
 max_models = 5

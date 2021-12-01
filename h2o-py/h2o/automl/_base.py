@@ -239,8 +239,7 @@ def _fetch_leaderboard(aml_id, extensions=None):
     else extensions)
     resp = h2o.api("GET /99/Leaderboards/%s" % aml_id, data=dict(extensions=extensions))
     dest_key = resp['project_name'].split('@', 1)[0]+"_custom_leaderboard"
-    lb = _fetch_table(resp['table'], key=dest_key, progress_bar=False)
-    return h2o.assign(lb[1:], dest_key)
+    return _fetch_table(resp['table'], key=dest_key, progress_bar=False)
 
 
 def _fetch_table(table, key=None, progress_bar=True):
@@ -250,13 +249,14 @@ def _fetch_table(table, key=None, progress_bar=True):
         ori_progress_state = H2OJob.__PROGRESS_BAR__
         H2OJob.__PROGRESS_BAR__ = progress_bar
         # Parse leaderboard H2OTwoDimTable & return as an H2OFrame
-        return h2o.H2OFrame(table.cell_values, destination_frame=key, column_names=table.col_header, column_types=table.col_types)
+        fr = h2o.H2OFrame(table.cell_values, destination_frame=key, column_names=table.col_header, column_types=table.col_types)
+        return h2o.assign(fr[1:], key) # removing index and reassign id to ensure persistence on backend
     finally:
         H2OJob.__PROGRESS_BAR__ = ori_progress_state
 
 
-def _fetch_state(aml_id, properties=None):
-    state_json = h2o.api("GET /99/AutoML/%s" % aml_id)
+def _fetch_state(aml_id, properties=None, verbosity=None):
+    state_json = h2o.api("GET /99/AutoML/%s" % aml_id, data=dict(verbosity=verbosity))
     project_name = state_json["project_name"]
     if project_name is None:
         raise H2OValueError("No AutoML instance with id {}.".format(aml_id))
@@ -273,12 +273,10 @@ def _fetch_state(aml_id, properties=None):
     leaderboard = None
     if should_fetch('leaderboard'):
         leaderboard = _fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
-        leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
 
     event_log = None
     if should_fetch('event_log'):
         event_log = _fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
-        event_log = h2o.assign(event_log[1:], project_name+"_eventlog")  # removing index and reassign id to ensure persistence on backend
 
     return dict(
         project_name=project_name,

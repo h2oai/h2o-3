@@ -26,8 +26,8 @@ from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.config import get_config_value
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
@@ -1699,6 +1699,23 @@ class H2OFrame(Keyed):
         assert_is_type(levels, [str])
         return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
+    def append_levels(self, levels):
+        """
+        Appends new levels to a domain of a categorical column.
+
+        :param List[str] levels: A list of strings specifying the additional levels.
+        :returns: A single-column H2OFrame with the desired levels.
+
+        :examples:
+
+        >>> import numpy as np
+        >>> import random
+        >>> python_lists = np.random.randint(-5,5, (10000, 1))
+        >>> frame = h2o.H2OFrame(python_obj=python_lists).asfactor()
+        >>> extra_levels = frame.append_levels(["A", "B"])
+        >>> extra_levels
+        """
+        return H2OFrame._expr(expr=ExprNode("appendLevels", self, False, levels), cache=self._ex._cache)
 
     def rename(self, columns=None):
         """
@@ -2265,6 +2282,7 @@ class H2OFrame(Keyed):
         :examples:
         >>> fr[2]              # All rows, 3rd column
         >>> fr[-2]             # All rows, 2nd column from end
+        >>> fr[2:]             # All rows, all columns from the 3rd one
         >>> fr[:, -1]          # All rows, last column
         >>> fr[0:5, :]         # First 5 rows, all columns
         >>> fr[fr[0] > 1, :]   # Only rows where first cell is greater than 1, all columns
@@ -3817,7 +3835,7 @@ class H2OFrame(Keyed):
             expr=ExprNode("table", self, dense))
 
 
-    def hist(self, breaks="sturges", plot=True, **kwargs):
+    def hist(self, breaks="sturges", plot=True, save_plot_path=None, **kwargs):
         """
         Compute a histogram over a numeric column.
 
@@ -3825,9 +3843,11 @@ class H2OFrame(Keyed):
             or a single number for the number of breaks; or a list containing the split points, e.g:
             ``[-50, 213.2123, 9324834]``. If breaks is "fd", the MAD is used over the IQR in computing bin width.
         :param bool plot: If True (default), then a plot will be generated using ``matplotlib``.
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig.
 
         :returns: If ``plot`` is False, return H2OFrame with these columns: breaks, counts, mids_true,
-            mids, and density; otherwise this method draws a plot and returns nothing.
+            mids, and density; otherwise this method draws a plot and returns H2OFrame and a plot (can be accessed 
+            using result.figure()).
 
         :examples:
 
@@ -3847,7 +3867,7 @@ class H2OFrame(Keyed):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
             hist["widths"] = hist["breaks"].difflag1()
             # [2:] because we're removing the title and the first row (which consists of NaNs)
@@ -3855,6 +3875,7 @@ class H2OFrame(Keyed):
             widths = [float(c[0]) for c in h2o.as_list(hist["widths"], use_pandas=False)[2:]]
             counts = [float(c[0]) for c in h2o.as_list(hist["counts"], use_pandas=False)[2:]]
 
+            fig = plt.figure()
             plt.xlabel(self.names[0])
             plt.ylabel("Frequency")
             plt.title("Histogram of %s" % self.names[0])
@@ -3870,11 +3891,14 @@ class H2OFrame(Keyed):
             else:
                 plt.bar(left=lefts, height=counts, width=widths, bottom=0)
 
+            if save_plot_path is not None:
+                fig.savefig(fname=save_plot_path)
             if not server:
                 plt.show()
+            return decorate_plot_result(res=hist, figure=fig)    
         else:
             hist["density"] = hist["counts"] / (hist["breaks"].difflag1() * hist["counts"].sum())
-            return hist
+            return decorate_plot_result(res=hist)
 
 
     def isax(self, num_words, max_cardinality, optimize_card=False, **kwargs):
@@ -4506,13 +4530,17 @@ class H2OFrame(Keyed):
     def asnumeric(self):
         """
         Create a new frame with all columns converted to numeric.
+
+        If you want to convert a column that is "enum" type to "numeric"
+        type, convert the column to "character" type first, then to "numeric". Otherwise, the values may be converted to underlying
+        factor values, not the expected mapped values.
         
         :returns: New frame with all columns converted to numeric.
 
         :examples:
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars.asnumeric()
+        >>> cars.ascharacter().asnumeric()
         """
         fr = H2OFrame._expr(expr=ExprNode("as.numeric", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():

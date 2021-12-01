@@ -1,6 +1,9 @@
 # Py2 compat
 from __future__ import print_function
+
+import matplotlib
 from future import standard_library
+
 standard_library.install_aliases()
 from past.builtins import basestring
 
@@ -8,8 +11,10 @@ from past.builtins import basestring
 import copy
 import datetime
 from decimal import *
+import fnmatch
 from functools import reduce
 import imp
+import importlib
 import json
 import math
 import os
@@ -20,6 +25,7 @@ import string
 import subprocess
 from subprocess import STDOUT,PIPE
 import sys
+import tempfile
 import time # needed to randomly generate time
 import threading
 import urllib.request, urllib.error, urllib.parse
@@ -30,25 +36,6 @@ try:
 except:
     from io import StringIO  # py3
     
-
-try:
-    from tempfile import TemporaryDirectory
-except ImportError:
-    import tempfile
-    
-    class TemporaryDirectory:
-
-        def __init__(self):
-            self.tmp_dir = None
-
-        def __enter__(self):
-            self.tmp_dir = tempfile.mkdtemp()
-            return self.tmp_dir
-
-        def __exit__(self, *args):
-            shutil.rmtree(self.tmp_dir)
-
-
 # 3rd parties
 import numpy as np
 import pandas as pd
@@ -69,6 +56,24 @@ from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimato
     H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
 from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
+
+
+class TemporaryDirectory:
+
+    def __init__(self, keep=False):
+        """
+        :param keep: set to True for debugging, to look at generated content.
+        """
+        self.tmp_dir = None
+        self._keep = keep
+
+    def __enter__(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix='h2o_pyunit_')
+        return self.tmp_dir
+
+    def __exit__(self, *args):
+        if not self._keep:
+            shutil.rmtree(self.tmp_dir)
 
 
 class Timeout:
@@ -125,6 +130,7 @@ def gen_random_uuid(numberUUID):
     for uindex in range(numberUUID):
         uuidVec[uindex] = uuid.uuid4()
     return uuidVec
+
 
 def gen_random_time(numberTimes, maxtime= datetime.datetime(2080, 8,6,8,14,59), mintime=datetime.datetime(1980, 8,6,6,14,59)):
     '''
@@ -599,13 +605,12 @@ def run_tests(tests, run_in_isolation=True, init_options={}):
     #flatten in case of nested tests/test suites
     all_tests = reduce(lambda l, r: (l.extend(r) if isinstance(r, (list, tuple)) else l.append(r)) or l, tests, [])
     for test in all_tests:
-        if not(hasattr(test, 'tag') and (('H2OANOVAGLM' in test.tag) or ('H2OMaxRGLM' in test.tag))): # exclude AnovaGLM because it does not have score function
-            header = "Running {}{}".format(test.__name__, "" if not hasattr(test, 'tag') else " [{}]".format(test.tag))
-            print("\n"+('='*len(header))+"\n"+header)
-            if run_in_isolation:
-                standalone_test(test, init_options)
-            else:
-                test()
+        header = "Running {}{}".format(test.__name__, "" if not hasattr(test, 'tag') else " [{}]".format(test.tag))
+        print("\n"+('='*len(header))+"\n"+header)
+        if run_in_isolation:
+            standalone_test(test)
+        else:
+            test()
             
 def tag_test(test, tag):
     if tag is not None:
@@ -3291,15 +3296,6 @@ def model_seed_sorted(model_list):
     return model_seed_list
 
 
-def check_ignore_cols_automl(models,names,x,y):
-    models = sum(models.as_data_frame().values.tolist(),[])
-    for model in models:
-        if "StackedEnsemble" in model:
-            continue
-        else:
-            assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
-                "ignored columns are not honored for model " + model
-
 
 # This method is not changed to local method using as_data_frame because the frame size is too big.
 def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
@@ -4462,3 +4458,11 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
 
 def assert_equals(expected, actual, message=""):
     assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+
+def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
+    plot_result1.figure().savefig(path1)
+    assert os.path.isfile(path1)
+    os.remove(path1)
+    assert isinstance(plot_result2.figure() , matplotlib.pyplot.Figure)
+    assert os.path.isfile(path2)
+    os.remove(path2)

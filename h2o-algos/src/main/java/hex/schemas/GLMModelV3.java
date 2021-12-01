@@ -53,6 +53,13 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
 
     @API(help="Starting lambda value used when lambda search is enabled.")
     double lambda_max;
+    
+    @API(help="double array storing ratio of number of response in class k over total number of responses for each" +
+            " classes of multinomial/ordinal families, mean response value for all other families")
+    double[] ymu;
+    
+    @API(help="rank: number of non-zero coefficients")
+    int rank;
 
     @API(help = "Dispersion parameter, only applicable to Tweedie family (input/output) and fractional Binomial (output only)")
     double dispersion;
@@ -93,12 +100,13 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         Arrays.fill(colTypes, "double");
         String [] colFormats = new String[cols.length];
         Arrays.fill(colFormats,"%5f");
-
+        int rankEachClass = 0;
         double [][] betaNorm = impl.getNormBetaMultinomial();
         if(betaNorm != null) {
           TwoDimTable tdt = new TwoDimTable("Coefficients", "glm multinomial coefficients", ns, cols, colTypes, colFormats, "names");
           for (int c = 0; c < n; ++c) {
             double[] beta = impl.get_global_beta_multinomial()[c];
+            rankEachClass += ArrayUtils.countNonzeros(beta);
             tdt.set(0, c, beta[beta.length - 1]);
             tdt.set(0, n + c, betaNorm[c][beta.length - 1]);
             for (int i = 0; i < beta.length - 1; ++i) {
@@ -107,7 +115,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
             }
           }
           coefficients_table.fillFromImpl(tdt);
-
+          rank = rankEachClass;
           if (n>2) {  // restore column names from pythonized ones
             coefficients_table_multinomials_with_class_names.fillFromImpl(tdt);
             revertCoeffNames(cols2, n, coefficients_table_multinomials_with_class_names);
@@ -124,6 +132,8 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
           }
           standardized_coefficient_magnitudes = new TwoDimTableV3();
           standardized_coefficient_magnitudes.fillFromImpl(tdt);
+        } else {
+          rank = 0;
         }
 
       return this;
@@ -172,8 +182,16 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       alpha_best = impl.alpha_best();
       best_submodel_index = impl.bestSubmodelIndex();
       dispersion = impl.dispersion();
+      double[] tempYmu = impl.ymu();
+      ymu = tempYmu==null?null:tempYmu.clone();
       if(impl._multinomial || impl._ordinal)
         return fillMultinomial(impl);
+
+      double [] beta = impl.beta();
+      if (beta != null)
+        rank = ArrayUtils.countNonzeros(beta);
+      else
+        rank = 0;
       String [] names = impl.coefficientNames().clone();
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
@@ -182,7 +200,6 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         random_coefficients_table = new TwoDimTableV3();
         random_coefficients_table.fillFromImpl(buildRandomCoefficients2DTable(impl.ubeta(), impl.randomcoefficientNames()));
       }
-      double [] beta = impl.beta();
       final double [] magnitudes = new double[beta.length];
       int len = magnitudes.length - 1;
       int[] indices = new int[len];

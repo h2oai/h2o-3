@@ -24,6 +24,14 @@ public class Rule extends Iced {
         
     }
 
+    public Rule(Condition[] conditions, double predictionValue, String varName,  double coefficient) {
+        this.conditions = conditions;
+        this.predictionValue = predictionValue;
+        this.varName = varName; 
+        this.coefficient = coefficient;
+        this.languageRule = generateLanguageRule();
+    }
+
     public void setCoefficient(double coefficient) {
         this.coefficient = coefficient;
     }
@@ -65,28 +73,35 @@ public class Rule extends Iced {
         for (int i = 0; i < ((SharedTreeModel.SharedTreeParameters) model._parms)._ntrees; i++) {
             for (int treeClass = 0; treeClass < nclasses; treeClass++) {
                 SharedTreeSubgraph sharedTreeSubgraph = model.getSharedTreeSubgraph(i, treeClass);
-                rules.addAll(extractRulesFromTree(sharedTreeSubgraph, modelId));
+                if (sharedTreeSubgraph == null)
+                    continue;
+                String classString = nclasses > 2 ? "_" + model._output.classNames()[treeClass] : null;
+                rules.addAll(extractRulesFromTree(sharedTreeSubgraph, modelId, classString));
             }
         }
 
         return rules;
     }
     
-    public static Set<Rule> extractRulesFromTree(SharedTreeSubgraph tree, int modelId) {
+    public static Set<Rule> extractRulesFromTree(SharedTreeSubgraph tree, int modelId, String classString) {
         Set<Rule> rules = new HashSet<>();
         List<Condition> conditions = new ArrayList<>();
-        traverseNodes(tree.rootNode, conditions, rules, null, modelId);
+        traverseNodes(tree.rootNode, conditions, rules, null, modelId, classString);
         return rules;
     }
     
-    private static void traverseNodes(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, Condition conditionToAdd, int modelId) {
+    private static void traverseNodes(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, Condition conditionToAdd, int modelId, String classString) {
         if (conditionToAdd != null) {
             conditions.add(conditionToAdd);
         }
         
         if (node.isLeaf()) {
             // create Rule
-            rules.add(new Rule(conditions.toArray(new Condition[]{}), node.getPredValue(), "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber()));
+            String varName = "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber();
+            if (classString != null) {
+                varName += classString;
+            }
+            rules.add(new Rule(conditions.toArray(new Condition[]{}), node.getPredValue(), varName));
         } else {
             // traverse
             int colId = node.getColId();
@@ -95,17 +110,17 @@ public class Rule extends Iced {
             if (node.getDomainValues() == null) {
                 float splitValue = node.getSplitValue();
                 traverseNodes(node.getRightChild(), new ArrayList<>(conditions), rules, 
-                        new Condition(colId, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, splitValue, null, null, colName, node.getRightChild().isInclusiveNa()), modelId);
+                        new Condition(colId, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, splitValue, null, null, colName, node.getRightChild().isInclusiveNa()), modelId, classString);
                 traverseNodes(node.getLeftChild(), new ArrayList<>(conditions), rules,
-                        new Condition(colId, Condition.Type.Numerical, Condition.Operator.LessThan, splitValue, null, null, colName, node.getLeftChild().isInclusiveNa()), modelId);
+                        new Condition(colId, Condition.Type.Numerical, Condition.Operator.LessThan, splitValue, null, null, colName, node.getLeftChild().isInclusiveNa()), modelId, classString);
             } else {
                 String[] domainValues = node.getDomainValues();
                 CategoricalThreshold rightCategoricalThreshold = extractCategoricalThreshold(node.getRightChild().getInclusiveLevels(), domainValues);
                 traverseNodes(node.getRightChild(), new ArrayList<>(conditions), rules, 
-                        new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, rightCategoricalThreshold.catThreshold, rightCategoricalThreshold.catThresholdNum, colName, node.getRightChild().isInclusiveNa()), modelId);
+                        new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, rightCategoricalThreshold.catThreshold, rightCategoricalThreshold.catThresholdNum, colName, node.getRightChild().isInclusiveNa()), modelId, classString);
                 CategoricalThreshold leftCategoricalThreshold = extractCategoricalThreshold(node.getLeftChild().getInclusiveLevels(), domainValues);
                 traverseNodes(node.getLeftChild(), new ArrayList<>(conditions), rules,
-                        new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, leftCategoricalThreshold.catThreshold, leftCategoricalThreshold.catThresholdNum, colName, node.getLeftChild().isInclusiveNa()), modelId);
+                        new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, leftCategoricalThreshold.catThreshold, leftCategoricalThreshold.catThresholdNum, colName, node.getLeftChild().isInclusiveNa()), modelId, classString);
             }
         }
     }

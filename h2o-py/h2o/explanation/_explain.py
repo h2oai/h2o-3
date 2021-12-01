@@ -2,8 +2,9 @@
 
 import random
 import warnings
-from contextlib import contextmanager
 from collections import OrderedDict, Counter, defaultdict
+from contextlib import contextmanager
+
 try:
     from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
 except:
@@ -11,8 +12,8 @@ except:
 
 import h2o
 import numpy as np
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
 from h2o.exceptions import H2OValueError
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, is_decorated_plot_result
 
 
 def _display(object):
@@ -23,7 +24,7 @@ def _display(object):
     """
     import matplotlib.figure
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
-    if isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg":
+    if (isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg") or is_decorated_plot_result(object):
         plt.show()
     else:
         try:
@@ -33,6 +34,9 @@ def _display(object):
             print(object)
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
+        print("\n")
+    if (is_decorated_plot_result(object) and (object.figure() is not None)):
+        plt.close(object.figure())
         print("\n")
     return object
 
@@ -546,7 +550,8 @@ def shap_summary_plot(
         alpha=1,  # type: float
         colormap=None,  # type: str
         figsize=(12, 12),  # type: Union[Tuple[float], List[float]]
-        jitter=0.35  # type: float
+        jitter=0.35,  # type: float
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP summary plot
@@ -568,7 +573,8 @@ def shap_summary_plot(
     :param colormap: colormap to use instead of the default blue to red colormap
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     
@@ -668,7 +674,9 @@ def shap_summary_plot(
     plt.title("SHAP Summary plot for \"{}\"".format(model.model_id))
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def shap_explain_row_plot(
@@ -679,7 +687,8 @@ def shap_explain_row_plot(
         top_n_features=10,  # type: int
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
-        contribution_type="both"  # type: str
+        contribution_type="both",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP local explanation
@@ -701,7 +710,8 @@ def shap_explain_row_plot(
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     
@@ -801,7 +811,9 @@ def shap_explain_row_plot(
         plt.gca().set_axisbelow(True)
         plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
     elif plot_type == "breakdown":
         if columns is None:
@@ -854,7 +866,9 @@ def shap_explain_row_plot(
         plt.gca().set_axisbelow(True)
         plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def _get_top_n_levels(column, top_n):
@@ -945,6 +959,7 @@ def pd_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):
     """
     Plot partial dependence plot.
@@ -963,7 +978,8 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                   
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     
@@ -1056,7 +1072,9 @@ def pd_plot(
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
         plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def pd_multi_plot(
@@ -1069,7 +1087,8 @@ def pd_multi_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
-        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."]  # type: List[str]
+        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."],  # type: List[str]
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     Plot partial dependencies of a variable across multiple models.
@@ -1090,7 +1109,8 @@ def pd_multi_plot(
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     
@@ -1202,7 +1222,9 @@ def pd_multi_plot(
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
         plt.tight_layout(rect=[0, 0, 0.8, 1])
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def ice_plot(
@@ -1213,6 +1235,7 @@ def ice_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1230,7 +1253,8 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     
@@ -1334,7 +1358,9 @@ def ice_plot(
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
         plt.tight_layout(rect=[0, 0, 0.85, 1])
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def _has_varimp(model):
@@ -1466,14 +1492,15 @@ def _consolidate_varimps(model):
 # It provides the same capabilities as `model.varimp_plot` but without
 # either forcing "Agg" backend or showing the plot.
 # It also mimics the look and feel of the rest of the explain plots.
-def _varimp_plot(model, figsize, num_of_features=None):
+def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
     # type: (h2o.model.ModelBase, Tuple[Float, Float], Optional[int]) -> matplotlib.pyplot.Figure
     """
     Variable importance plot.
     :param model: H2O model
     :param figsize: Figure size
     :param num_of_features: Maximum number of variables to plot. Defaults to 10.
-    :return:
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :return: object that contains the resulting figure (can be accessed using result.figure())
     """
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     importances = model.varimp(use_pandas=False)
@@ -1495,7 +1522,9 @@ def _varimp_plot(model, figsize, num_of_features=None):
     plt.gca().set_axisbelow(True)
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def _interpretable(model):
@@ -1563,7 +1592,8 @@ def varimp_heatmap(
         top_n=None,  # type: Option[int]
         figsize=(16, 9),  # type: Tuple[float]
         cluster=True,  # type: bool
-        colormap="RdYlBu_r"  # type: str
+        colormap="RdYlBu_r",  # type: str
+        save_plot_path=None # type: str
 ):
     # type: (...) -> plt.Figure
     """
@@ -1582,7 +1612,8 @@ def varimp_heatmap(
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
     
@@ -1624,7 +1655,9 @@ def varimp_heatmap(
     plt.title("Variable Importance Heatmap")
     plt.grid(False)
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def varimp(
@@ -1677,7 +1710,8 @@ def model_correlation_heatmap(
         cluster_models=True,  # type: bool
         triangular=True,  # type: bool
         figsize=(13, 13),  # type: Tuple[float]
-        colormap="RdYlBu_r"  # type: str
+        colormap="RdYlBu_r",  # type: str
+        save_plot_path=None # type: str
 ):
     # type: (...) -> plt.Figure
     """
@@ -1694,7 +1728,8 @@ def model_correlation_heatmap(
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
     
@@ -1744,7 +1779,9 @@ def model_correlation_heatmap(
         if _interpretable(t.get_text()):
             t.set_color("red")
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def _check_deprecated_top_n_argument(models, top_n):
@@ -1811,7 +1848,8 @@ def model_correlation(
 def residual_analysis_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
-        figsize=(16, 9)  # type: Tuple[float]
+        figsize=(16, 9),  # type: Tuple[float]
+        save_plot_path=None # type: Optional[str]
 ):
     # type: (...) -> plt.Figure
     """
@@ -1827,7 +1865,8 @@ def residual_analysis_plot(
     :param model: H2OModel
     :param frame: H2OFrame
     :param figsize: figure size; passed directly to matplotlib
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
     
@@ -1889,7 +1928,9 @@ def residual_analysis_plot(
 
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def learning_curve_plot(
@@ -1898,7 +1939,8 @@ def learning_curve_plot(
         cv_ribbon=None,  # type: Optional[bool]
         cv_lines=None,  # type: Optional[bool]
         figsize=(16,9),  # type: Tuple[float]
-        colormap=None  # type: Optional[str]
+        colormap=None,  # type: Optional[str]
+        save_plot_path=None # type: Optional[str]
 ):
     # type: (...) -> plt.Figure
     """
@@ -1916,7 +1958,8 @@ def learning_curve_plot(
                      automatically determine if this is suitable visualisation
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :return: a matplotlib figure
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :return: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
     
@@ -2153,8 +2196,11 @@ def learning_curve_plot(
         if lbl in labels_and_handles:
             labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
     plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
+    
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
 
-    return plt.gcf()
+    return decorate_plot_result(figure=plt.gcf())
 
 
 def _preprocess_scoring_history(model, scoring_history, training_metric=None):

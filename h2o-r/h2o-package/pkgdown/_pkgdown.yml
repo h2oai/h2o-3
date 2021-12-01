@@ -44,6 +44,7 @@ reference:
       - h2o.anomaly
       - h2o.any
       - h2o.anyFactor
+      - h2o.api
       - h2o.arrange
       - h2o.as_date
       - h2o.ascharacter

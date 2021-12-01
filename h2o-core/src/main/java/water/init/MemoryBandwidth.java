@@ -1,12 +1,13 @@
 package water.init;
 
+import water.H2ORuntime;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Timer;
 
 public class MemoryBandwidth {
   public static void main(String[] args) {
-    int num_threads = Runtime.getRuntime().availableProcessors();
+    int num_threads = H2ORuntime.availableProcessors();
     double membw = run(num_threads);
     Log.info("Memory bandwidth (" + num_threads + " cores) : " + membw + " GB/s.");
   }

@@ -87,6 +87,7 @@ class Jetty9Helper {
         httpConfiguration.setRequestHeaderSize(getSysPropInt(proto + ".requestHeaderSize", 32 * 1024));
         httpConfiguration.setResponseHeaderSize(getSysPropInt(proto + ".responseHeaderSize", 32 * 1024));
         httpConfiguration.setOutputBufferSize(getSysPropInt(proto + ".responseBufferSize", httpConfiguration.getOutputBufferSize()));
+        httpConfiguration.setIdleTimeout(getSysPropInt(proto + ".jetty.idleTimeout", 5 * 60 * 1000));
 
         return new HttpConnectionFactory(httpConfiguration);
     }

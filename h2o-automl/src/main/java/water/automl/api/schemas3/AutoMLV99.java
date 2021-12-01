@@ -10,10 +10,11 @@ import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;
 import water.api.schemas3.TwoDimTableV3;
+import water.logging.LoggingLevel;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
-
+  
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
     public AutoMLKeyV3() { }
 
@@ -24,6 +25,10 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
   @API(help="Optional AutoML run ID; omitting this returns all runs", direction=API.Direction.INPUT)
   public AutoMLKeyV3 automl_id;
+
+  @API(help="Verbosity level of the returned event log", direction=API.Direction.INOUT,
+          valuesProvider= EventLogEntryV99.LevelProvider.class)
+  public LoggingLevel verbosity;
 
   @API(help="ID of the actual training frame for this AutoML run after any automatic splitting", direction=API.Direction.OUTPUT)
   public KeyV3.FrameKeyV3 training_frame;
@@ -94,7 +99,9 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     if (null == eventLog) {
       eventLog = new EventLog(autoML._key);
     }
-    event_log = new EventLogV99().fillFromImpl(eventLog);
+    event_log = new EventLogV99();
+    event_log.verbosity = verbosity;
+    event_log.fillFromImpl(eventLog);
     event_log_table = event_log.table;  // for backwards compatibility
 
     Leaderboard lb = autoML.leaderboard();

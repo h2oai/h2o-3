@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.compatibility import *  # NOQA
 
 import os
 import traceback
@@ -10,11 +9,12 @@ from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.model.extensions import has_extension
-from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
 @backwards_compatibility(
@@ -1069,9 +1069,10 @@ class ModelBase(h2o_meta(Keyed)):
             metrics["train"] = output["training_metrics"]
         return metrics
 
+    @deprecated_params({'save_to_file': 'save_plot_path'})
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
-                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
-                     col_pairs_2dpdp=None, save_to_file=None, row_index=None, targets=None):
+                     plot=True, plot_stddev=True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
+                     col_pairs_2dpdp=None, save_plot_path=None, row_index=None, targets=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -1088,11 +1089,11 @@ class ModelBase(h2o_meta(Keyed)):
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :param col_pairs_2dpdp: list containing pairs of column names for 2D pdp
-        :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param save_plot_path: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
-        
-        :returns: Plot and list of calculated mean response tables for each feature requested.
+
+        :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using result.figure()).
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0
@@ -1107,7 +1108,7 @@ class ModelBase(h2o_meta(Keyed)):
         if cols is None and col_pairs_2dpdp is None:
             raise ValueError("Must specify either cols or col_pairs_2dpd to generate partial dependency plots.")
 
-        if col_pairs_2dpdp and targets and len(targets > 1):
+        if col_pairs_2dpdp and targets and len(targets) > 1:
             raise ValueError("Multinomial 2D Partial Dependency is available only for one target.")
             
         assert_is_type(destination_key, None, str)
@@ -1169,9 +1170,10 @@ class ModelBase(h2o_meta(Keyed)):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets, include_na)
-        return pps
+        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, 
+                                             col_pairs_2dpdp, data, nbins,
+                                             kwargs["user_cols"], kwargs["num_user_splits"], 
+                                             plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
         # extract user defined split points from dict user_splits into an integer array of column indices
@@ -1231,7 +1233,7 @@ class ModelBase(h2o_meta(Keyed)):
             plt = get_matplotlib_pyplot(server)
             cm = _get_matplotlib_cm("Partial dependency plots")
             if not plt: 
-                return pps
+                return decorate_plot_result(res=pps, figure=RAISE_ON_FIGURE_ACCESS)
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
             gxs = gridspec.GridSpec(to_fig, 1)
@@ -1263,6 +1265,9 @@ class ModelBase(h2o_meta(Keyed)):
                       "mpl_toolkits.mplot3d or matplotlib.")
             if (save_to_file is not None) and fig_plotted:  # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
+            return decorate_plot_result(res=pps, figure=fig)
+        else:
+            return decorate_plot_result(res=pps)
 
     def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
                       plot_stddev, cm, i, row_index):
@@ -1363,7 +1368,10 @@ class ModelBase(h2o_meta(Keyed)):
             fmt = 'o'
         else:
             fmt = '-'
-            axs.set_xlim(min(x), max(x))
+            if isinstance(x[0], str):
+                axs.set_xlim(0, len(x)-1)
+            else:
+                axs.set_xlim(min(x), max(x))
         if cat:
             labels = x  # 1d pdp, this is 0
             x = range(len(labels))
@@ -1457,34 +1465,36 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def varimp_plot(self, num_of_features=None, server=False):
+    def varimp_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot the variable importance for a trained model.
 
         :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
         :param server: if true set server settings to matplotlib and do not show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: None.
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
         # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'VariableImportance'):
-            return self._varimp_plot(num_of_features=num_of_features, server=server)
+            return self._varimp_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path)
         raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
 
-    def std_coef_plot(self, num_of_features=None, server=False):
+    def std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot a model's standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
         :param server: if true set server settings to matplotlib and show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: None.
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
         # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
         # Later, the method will be exposed only for models supporting the feature.
         if has_extension(self, 'StandardCoef'):
-            return self._std_coef_plot(num_of_features=num_of_features, server=server)
+            return self._std_coef_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path)
         raise H2OValueError("Standardized coefficient plot is not available for this type of model (%s)." % self.algo)
 
     @staticmethod
@@ -1649,7 +1659,7 @@ class ModelBase(h2o_meta(Keyed)):
             return varimp
 
     def permutation_importance_plot(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1,
-                                    num_of_features=10, server=False):
+                                    num_of_features=10, server=False, save_plot_path=None):
         """
         Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
         returns the variable importance table.
@@ -1663,12 +1673,13 @@ class ModelBase(h2o_meta(Keyed)):
         :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
         :param num_of_features: number of features to plot. Defaults to 10.
         :param server: if true set server settings to matplotlib and do not show the plot
-
-        :return: H2OTwoDimTable with variable importance
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        
+        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed using result.figure())
         """
         plt = get_matplotlib_pyplot(server)
         if not plt:
-            return
+            return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
         importance = self.permutation_importance(frame, metric, n_samples, n_repeats, features, seed, use_pandas=False)
         fig, ax = plt.subplots(1, 1, figsize=(14, 10))
@@ -1698,7 +1709,9 @@ class ModelBase(h2o_meta(Keyed)):
                   (" (" + metric.lower() + ")" if metric.lower() != "auto" else ""), fontsize=20)
         if not server:
             plt.show()
-        return importance
+        if save_plot_path is not None:
+            fig.savefig(fname=save_plot_path)    
+        return decorate_plot_result(res=importance, figure=fig)
 
 
 def _get_mplot3d_pyplot(function_name):

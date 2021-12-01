@@ -7,6 +7,7 @@ import water.DKV;
 import water.Key;
 import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -193,21 +194,16 @@ public class MaxRGLMUtils {
     }
 
     /**
-     * Given GLM run results of a fixed number of predictors, the model with the best R2 value will be extracted into
-     * arrays bestModelPredictors and bestR2VValues
-     * @param bestModelPredictors
-     * @param bestR2Values
+     * Given GLM run results of a fixed number of predictors, find the model with the best R2 value.
+     *
      * @param glmResults
-     * @param numPredMinus1
      */
-    public static void extractBestModels(String[][] bestModelPredictors, double[] bestR2Values, GLM[] glmResults, 
-                                         int numPredMinus1) {
+    public static GLMModel findBestModel(GLM[] glmResults) {
         double bestR2Val = 0;
-        String[] bestPreds = null;
         int numModels = glmResults.length;
+        GLMModel bestModel = null;
         for (int index = 0; index < numModels; index++) {
             GLMModel oneModel = glmResults[index].get();
-            Scope.track_generic(oneModel);
             double currR2 = oneModel.r2();
             if (oneModel._parms._nfolds > 0) {
                 int r2Index = Arrays.asList(oneModel._output._cross_validation_metrics_summary.getRowHeaders()).indexOf("r2");
@@ -216,12 +212,9 @@ public class MaxRGLMUtils {
             }
             if (currR2 > bestR2Val) {
                 bestR2Val = currR2;
-                bestPreds = oneModel._output.coefficientNames().clone();
+                bestModel = oneModel;
             }
         }
-        bestR2Values[numPredMinus1] = bestR2Val;
-        int predNum = bestPreds.length-1;   // copy over coefficient names excluding the intercept
-        bestModelPredictors[numPredMinus1] = new String[predNum];
-        System.arraycopy(bestPreds, 0, bestModelPredictors[numPredMinus1], 0, predNum);
+        return bestModel;
     }
 }

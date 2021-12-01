@@ -1181,17 +1181,17 @@ Certain metrics are more sensitive to outliers. When a metric is sensitive to ou
 
 Usually our model is very good. We have an absolute error less than 1 day about 70% of the time. There is one instance, however, where our model did very poorly. We have one prediction that was 30 days off.
 
-Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: ``MSE`` and ``RMSE``.
+Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: ``MAE`` and ``RMSE``.
 
 +--------------+--------+--------+
-|              | MSE    | RMSE   |
+|              | MAE    | RMSE   |
 +==============+========+========+
 | Outlier      | 0.99   | 2.64   |
 +--------------+--------+--------+
 | No Outlier   | 0.80   | 1.0    |
 +--------------+--------+--------+
 
-Calculating the ``RMSE`` and ``MSE`` on our error data, the ``RMSE`` is more than twice as large as the ``MSE`` because ``RMSE`` is sensitive to outliers. If you remove the one outlier record from our calculation, ``RMSE`` drops down significantly.
+Calculating the ``RMSE`` and ``MAE`` on our error data, the ``RMSE`` is more than twice as large as the ``MAE`` because ``RMSE`` is sensitive to outliers. If you remove the one outlier record from our calculation, ``RMSE`` drops down significantly.
 
 Performance Units
 #################
@@ -2003,6 +2003,143 @@ Examples:
 
         # build the standardized coefficient magnitudes plot:
         glm.std_coef_plot()
+
+
+Gains/Lift 
+''''''''''
+
+Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The Gains/Lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
+
+The accuracy of the baseline is evaluated when no model is used. For instance, if there are :math:`x\%` positive responses in the dataset, when you grab :math:`10\%` of the dataset, you can assume that there are :math:`10\%` of the :math:`x\%` positive responses in the :math:`10\%` of the dataset that you chose. If :math:`x=10` and there are :math:`10\%` positive responses in the dataset, when you choose :math:`10\%` of a dataset, you can expect there to be :math:`1\%` of the positive responses in the :math:`10\%` of the dataset you chose.
+
+To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. 
+
+**An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100,000 customers and predict the results of contacting only the top 10,000 customers, the top 20,000 customers, and so on. You do this by:
+
+- taking the dataset, sending it through your model, and obtaining a list of predicted output which is the probability of positive response;
+- sorting your dataset according to the output of your model which is the probability of positive response (this probability can also be called the **score**) from highest to lowest;
+    
+    - In this case, the first bin contains the top 10,000 customers with the highest response probability, the second bin contains the next 100,00 customers with the highest response probability, and so on.
+
+**Cumulative gains and lift charts** are a graphical representation of the advantage of using a predictive model to choose which customers to target/contact. On the cumulative gains chart, the y-axis shows the percentage of positive responses out of a total possible positive responses. The x-axis shows the percentage of customers contacted. The lift chart shows how much more likely you are to receive responses than if you contacted a random sample of customers.
+
+Example:
+
+.. tabs::
+    .. code-tab:: r R
+
+        # Import the airlines dataset:
+        airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model <- h2o.gbm(x = c("Origin", "Distance"), 
+                         y = "IsDepDelayed", 
+                         training_frame = airlines, 
+                         ntrees = 1, 
+                         gainslift_bins = 20)
+
+        # Plot the Gains/Lift chart:
+        gain_table <- model@model$training_metrics@metrics$gains_lift_table
+        plot(gain_table$cumulative_data_fraction,
+             gain_table$cumulative_capture_rate,'l', 
+             ylim = c(0,1.5), col = "dodgerblue3",
+             xlab = "cumulative data fraction",
+             ylab = "cumulative capture rate, cumulative lift",
+             main = "Gains/Lift")
+        lines(gain_table$cumulative_data_fraction,
+              gain_table$cumulative_lift, col = "orange")
+
+    .. code-tab:: python
+
+        from h2o.estimators import H2OGradientBoostingEstimator
+        from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+        from matplotlib.collections import PolyCollection
+
+        # Import the airlines dataset:
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model.train(x=["Origin","Distance"], 
+                    y="IsDepDelayed", 
+                    training_frame=airlines)
+
+        # Plot the Gains/Lift chart:
+        gl = model.gains_lift()
+        X = gl['cumulative_data_fraction']
+        Y = gl['cumulative_capture_rate']
+        YC = gl['cumulative_lift']
+
+        plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
+        plt.figure(figsize=(10,10))
+        plt.grid(True)
+        plt.plot(X, Y, zorder=10, label='cumulative capture rate')
+        plt.plot(X, YC, zorder=10, label='cumulative lift')
+        plt.legend(loc=4, fancybox=True, framealpha=0.5)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1.5)
+        plt.xlabel('cumulative data fraction')
+        plt.ylabel('cumulative capture rate, cumulative lift')
+        plt.title('Gains/Lift')
+        fig = plt.gcf()
+        plt.show()
+
+.. figure:: images/gainslift_plot.png
+    :alt: Gains/Lift Plot
+    :scale: 30%
+
+In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
+
+- **Cumulative data fractions**: fraction of data used to calculate gain and lift at
+- **Lower threshold**: the lowest score output of the dataset in the data fraction bin
+- **Response rate**: ratio of the number of the positive classes and the number of data in the current data fraction
+- **Cumulative response rate**: for the first bin, it is the number of positive response over 10,000 (assume each bin contains 100,000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20,000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30,000
+- **Average response rate**: ratio of the total number of positive classes and the total number of data rows in the dataset
+- **Lift**: ratio of response rate of the current data fraction and average response rate
+- **Cumulative lift**: ratio of cumulative response rate and average response rate
+- **Score**: the average of all the classifier output probabilities for each individual data fraction bin
+- **Capture rate**: for each data fraction it is the ratio of positive classes in each bin divided by the total number of positive classes in the dataset
+- **Cumulative capture rate**: for the first bin, it is just the capture rate; the second bin is the ratio of (sum of number of positive classes for the first two bins) and the total number of positive classes in your dataset
+- **Gain**: :math:`100\times(\text{lift for current data fraction}-1)`
+- **Cumulative Gain**: :math:`100\times(\text{cumulative lift for current data fraction}-1)`
+- `Kolmogorov-Smirnov (KS) Metric`_
+
+Examples:
+
+.. tabs::
+      .. code-tab:: r R
+
+          # Import the airlines dataset:
+          airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+          # Build and train the model:
+          model <- h2o.gbm(x = c("Origin", "Distance"), 
+                           y = "IsDepDelayed", 
+                           training_frame = airlines, 
+                           ntrees = 1, 
+                           gainslift_bins = 20)
+
+          # Print the Gains/Lift table:
+          print(h2o.gainsLift(model))
+
+      .. code-tab:: python
+
+        from h2o.estimators import H2OGradientBoostingEstimator
+
+        # Import the airlines dataset:
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
+
+        # Print the Gains/Lift table for the model:
+        print(model.gains_lift())
+
+.. figure:: images/gainslift_table.png
+  :alt: Gains/Lift Table
+  :scale: 150%
+
 
 Partial Dependence Plots
 ''''''''''''''''''''''''

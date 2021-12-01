@@ -19,26 +19,18 @@ def pca_wideDataset_rotterdam_glrm():
     y = set(["relapse"])
     x = list(set(rotterdamH2O.names)-y)
 
-    transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
-    transformN = transform_types[randint(0, len(transform_types)-1)]
-    print("transform used on dataset is {0}.\n".format(transformN))
-    buildModel = [False, False, False]
-    buildModel[randint(0, len(buildModel)-1)] = True
-
-
     # special test with GLRM.  Need use_all_levels to be true
     print("------  Testing GLRM PCA --------")
-    gramSVD = H2OPCA(k=8, impute_missing=True, transform=transformN, seed=12345, use_all_factor_levels=True)
+    gramSVD = H2OPCA(k=8, impute_missing=True, transform="DEMEAN", seed=12345, use_all_factor_levels=True)
     gramSVD.train(x=x, training_frame=rotterdamH2O)
 
-    glrmPCA = H2OGeneralizedLowRankEstimator(k=8, transform=transformN, seed=12345, init="Random",
-                                             max_iterations=10, recover_svd=True, regularization_x="None",
-                                             regularization_y="None")
+    glrmPCA = H2OGeneralizedLowRankEstimator(k=8, transform="DEMEAN", seed=12345, init="Random",
+                                             recover_svd=True, regularization_x="None",
+                                             regularization_y="None", max_iterations=11)
     glrmPCA.train(x=x, training_frame=rotterdamH2O)
 
     # compare singular values and stuff with GramSVD
-    print("@@@@@@  Comparing eigenvectors between GramSVD and GLRM...\n")
-    print("@@@@@@  Comparing eigenvalues between GramSVD and GLRM...\n")
+    print("@@@@@@  Comparing eigenvectors and eigenvalues between GramSVD and GLRM...\n")
     pyunit_utils.assert_H2OTwoDimTable_equal(gramSVD._model_json["output"]["importance"],
                                              glrmPCA._model_json["output"]["importance"],
                                              ["Standard deviation", "Cumulative Proportion", "Cumulative Proportion"],

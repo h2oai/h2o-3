@@ -1,9 +1,6 @@
 package hex.gam;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ModelMetrics;
+import hex.*;
 import hex.gam.GAMModel.GAMParameters;
 import hex.gam.GamSplines.ThinPlateDistanceWithKnots;
 import hex.gam.GamSplines.ThinPlatePolynomialWithKnots;
@@ -22,15 +19,16 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.IcedHashSet;
 import water.util.Log;
+import water.util.TwoDimTable;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
-import static hex.gam.MatrixFrameUtils.GAMModelUtils.copyGLMCoeffs;
-import static hex.gam.MatrixFrameUtils.GAMModelUtils.copyGLMtoGAMModel;
+import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
 import static hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn.generateZTransp;
@@ -46,15 +44,15 @@ import static water.util.ArrayUtils.subtract;
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
   private double[][][] _knots; // Knots for splines
-  private double[] _cv_alpha = null;  // best alpha value found from cross-validation
-  private double[] _cv_lambda = null; // bset lambda value found from cross-validation
   private int _thinPlateSmoothersWithKnotsNum = 0;
   private int _cubicSplineNum = 0;
   double[][] _gamColMeansRaw; // store raw gam column means in gam_column_sorted order and only for thin plate smoothers
   public double[][] _oneOGamColStd;
   public double[] _penaltyScale;
-  private boolean _cvOn = false;
-  private Frame _origTrain = null;
+  public int _glmNFolds = 0;
+  Model.Parameters.FoldAssignmentScheme _foldAssignment = null;
+  String _foldColumn = null;
+  boolean _cvOn = false;
   
   @Override
   public ModelCategory[] can_build() {
@@ -93,36 +91,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   public GAM(GAMModel.GAMParameters parms, Key<GAMModel> key) {
     super(parms, key);
     init(false);
-  }
-
-  // cross validation can be used to choose the best alpha/lambda values among a whole collection of alpha
-  // and lambda values.  Future hyperparameters can be added for cross-validation to choose as well.
-  @Override
-  public void computeCrossValidation() {
-    _cvOn = true;
-    _origTrain = _parms.train();  // store original training frame before it is changed
-    validateGamParameters();  // perform GAM initialization once here and reduce operations performed during the folds
-    if (error_count() > 0) {
-      throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
-    }
-    super.computeCrossValidation();
-  }
-
-  // find the best alpha/lambda values used to build the main model moving forward by looking at the devianceValid
-  @Override
-  public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
-    double deviance_valid = Double.POSITIVE_INFINITY;
-    double best_alpha = 0;
-    double best_lambda = 0;
-    for (int i = 0; i < cvModelBuilders.length; ++i) {  // run cv for each lambda value
-      GAMModel g = (GAMModel) cvModelBuilders[i].dest().get();
-      if (g._output._devianceValid < deviance_valid) {
-        best_alpha= g._output._best_alpha;
-        best_lambda = g._output._best_lambda;
-      }
-    }
-    _cv_alpha = new double[]{best_alpha};
-    _cv_lambda = new double[]{best_lambda};
   }
   
   /***
@@ -211,6 +179,20 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   
   @Override
   public void init(boolean expensive) {
+    if (_parms._nfolds > 0 || _parms._fold_column != null) {
+      _cvOn = true;
+      _glmNFolds = _parms._fold_column == null ? _parms._nfolds 
+              : _parms.train().vec(_parms._fold_column).toCategoricalVec().domain().length;
+      if (_parms._fold_assignment != null) {
+        _foldAssignment = _parms._fold_assignment;
+        _parms._fold_assignment = null;
+      }
+      if (_parms._fold_column != null) {
+        _foldColumn = _parms._fold_column;
+        _parms._fold_column = null;
+      }
+      _parms._nfolds = 0;
+    }
     super.init(expensive);
     if (expensive && (_knots == null))  // add GAM specific check here, only do it once especially during CV
       validateGamParameters();
@@ -412,6 +394,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     Key<Frame>[] _gamFrameKeysCenter;
     double[][] _gamColMeans;          // store gam column means without centering.
     int[][][] _allPolyBasisList;      // store polynomial basis function for all TP smoothers
+    DataInfo _dinfo = null;
+    
     /***
      * This method will take the _train that contains the predictor columns and response columns only and add to it
      * the following:
@@ -599,29 +583,13 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         copy2DArray(genOneGamCol._bInvD, _binvD[_csIndex]);
       }
     }
-    
-    // During CV, _parms.train() will contain only predictors, response and cv weights.  Gam columns that are not
-    // part of the predictors will not be there.  Hence, I stored the original _parms.train() in _origTrain and then
-    // restore it when we need to restore the orighinal _parms.train().
-    public Frame getTrainFrame(Frame trainFrame) {
-      if (_cvOn && trainFrame.numRows() == _origTrain.numRows()) {  // special treatment for cv training frame
-        if (Arrays.asList(trainFrame.names()).contains("__internal_cv_weights__")) {
-          Frame origTrain = _origTrain.clone();
-          origTrain.add("__internal_cv_weights__", trainFrame.vec("__internal_cv_weights__"));
-          return origTrain;
-        } else {
-          return _origTrain;
-        }
-      }
-      return trainFrame;
-    }
 
     void addGAM2Train() {
       final int numGamFrame = _parms._gam_columns.length; // number of smoothers to generate
       RecursiveAction[] generateGamColumn = new RecursiveAction[numGamFrame];
       int thinPlateInd = 0;
       int csInd = 0;
-      Frame trainFrame = getTrainFrame(_parms.train());
+      Frame trainFrame = _parms.train();
       for (int index = 0; index < numGamFrame; index++) { // generate smoothers/splines
         final Frame predictVec = prepareGamVec(index, _parms, trainFrame);// extract predictors from frame
         final int numKnots = _parms._num_knots_sorted[index];
@@ -672,7 +640,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
       
       if (valid() != null)  // transform the validation frame if present
-        _valid = rebalance(adaptValidFrame(getTrainFrame(_parms.valid()), _valid,  _parms, _gamColNamesCenter, _binvD,
+        _valid = rebalance(adaptValidFrame(_parms.valid(), _valid,  _parms, _gamColNamesCenter, _binvD,
                 _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd), 
                 false, _result+".temporary.valid");
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
@@ -686,11 +654,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
 
     public final void buildModel(Frame newTFrame, Frame newValidFrame) {
       GAMModel model = null;
-      DataInfo dinfo = null;
       final IcedHashSet<Key<Frame>> validKeys = new IcedHashSet<>();
       try {
         _job.update(0, "Adding GAM columns to training dataset...");
-        dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels 
+        _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels 
                 || _parms._lambda_search, _parms._standardize ? 
                 DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
                 _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.Skip,
@@ -698,8 +665,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                         || _parms.missingValuesHandling() == GLMParameters.MissingValuesHandling.PlugValues,
                 _parms.makeImputer(), false, hasWeightCol(), hasOffsetCol(), hasFoldCol(),
                 _parms.interactionSpec());
-        DKV.put(dinfo._key, dinfo);
-        model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo));
+        DKV.put(_dinfo._key, _dinfo);
+        model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, _dinfo));
         model.write_lock(_job);
         if (_parms._keep_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
@@ -711,29 +678,38 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
         Scope.track_generic(glmModel);
         _job.update(0, "Building out GAM model...");
-        fillOutGAMModel(glmModel, model); // build up GAM model by copying over results in glmModel
         model.update(_job);
+        fillOutGAMModel(glmModel, model); // build up GAM model by copying over results in glmModel
         // build GAM Model Metrics
         _job.update(0, "Scoring training frame");
-        scoreGenModelMetrics(model, train(), true); // score training dataset and generate model metrics
+        scoreGenModelMetrics(model, glmModel,train(), true); // score training dataset and generate model metrics
         if (valid() != null) {
-          scoreGenModelMetrics(model, valid(), false); // score validation dataset and generate model metrics
+          scoreGenModelMetrics(model, glmModel, valid(), false); // score validation dataset and generate model metrics
         }
       } catch(Gram.NonSPDMatrixException exception) {
         throw new Gram.NonSPDMatrixException("Consider enable lambda_search, decrease scale parameter value for TP " +
                 "smoothers, \ndisable scaling for TP penalty matrics, or not use thin plate regression smoothers at all.");
       } finally {
         try {
-          final List<Key<Vec>> keep = new ArrayList<>();
+          final List<Key> keep = new ArrayList<>();
           if (model != null) {
             if (_parms._keep_gam_cols) {
               keepFrameKeys(keep, newTFrame._key);
             } else {
               DKV.remove(newTFrame._key);
             }
+            if (_cvOn) {
+              if (_parms._keep_cross_validation_predictions) {
+                keepFrameKeys(keep, model._output._cross_validation_holdout_predictions_frame_id);
+                for (int fInd = 0; fInd < _glmNFolds; fInd++)
+                  keepFrameKeys(keep, model._output._cross_validation_predictions[fInd]);
+              }
+              if (_parms._keep_cross_validation_fold_assignment)
+                keepFrameKeys(keep, model._output._cross_validation_fold_assignment_frame_id);
+            }
           }
-          if (dinfo != null)
-            dinfo.remove();
+          if (_dinfo != null)
+            _dinfo.remove();
 
           if (newValidFrame != null && validKeys != null) {
             keepFrameKeys(keep, newValidFrame._key);  // save valid frame keys for scoring later
@@ -757,36 +733,36 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
      * @param scoreFrame
      * @param forTraining true for training dataset and false for validation dataset
      */
-    private void scoreGenModelMetrics(GAMModel model, Frame scoreFrame, boolean forTraining) {
+    private void scoreGenModelMetrics(GAMModel model, GLMModel glmModel, Frame scoreFrame, boolean forTraining) {
       Frame scoringTrain = new Frame(scoreFrame);
       model.adaptTestForTrain(scoringTrain, true, true);
       Frame scoredResult = model.score(scoringTrain);
       scoredResult.delete();
-      ModelMetrics mtrain = ModelMetrics.getFromDKV(model, scoringTrain);
-      if (mtrain!=null) {
-        if (forTraining)
-          model._output._training_metrics = mtrain;
-        else 
-          model._output._validation_metrics = mtrain;
-        Log.info("GAM[dest="+dest()+"]"+mtrain.toString());
+      ModelMetrics glmMetrics = forTraining ? glmModel._output._training_metrics : glmModel._output._validation_metrics;
+      if (forTraining) {
+        model._output.copyMetrics(model, scoringTrain, forTraining, glmMetrics);
+        Log.info("GAM[dest=" + dest() + "]" + model._output._training_metrics.toString());
       } else {
-        Log.info("Model metrics is empty!");
+        model._output.copyMetrics(model, scoringTrain, forTraining, glmMetrics);
+        Log.info("GAM[dest=" + dest() + "]" + model._output._validation_metrics.toString());
       }
     }
 
     GLMModel buildGLMModel(GAMParameters parms, Frame trainData, Frame validFrame) {
       GLMParameters glmParam = copyGAMParams2GLMParams(parms, trainData, validFrame);  // copy parameter from GAM to GLM
-      if (_cv_lambda != null) { // use best alpha and lambda values from cross-validation to build GLM main model 
-        glmParam._lambda = _cv_lambda;
-        glmParam._alpha = _cv_alpha;
-        glmParam._lambda_search = false;
-      }
       int numGamCols = _parms._gam_columns.length;
       for (int find = 0; find < numGamCols; find++) {
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
           _penaltyMatCenter[find] = ArrayUtils.mult(_penaltyMatCenter[find], _parms._scale[find]);
       }
       glmParam._glmType = gam;
+      if (_foldColumn == null) {
+        glmParam._nfolds = _glmNFolds;
+      } else {
+        glmParam._fold_column = _foldColumn;
+        glmParam._nfolds = 0;
+      }
+      glmParam._fold_assignment = _foldAssignment;
       return new GLM(glmParam, _penaltyMatCenter,  _gamColNamesCenter).trainModel().get();
     }
 
@@ -826,7 +802,30 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
       copyGLMCoeffs(glm, model, _parms, nclasses());  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
-      copyGLMtoGAMModel(model, glm, _parms, valid());  // copy over fields from glm model to gam model
+      copyGLMtoGAMModel(model, glm, _parms, valid()!=null);  // copy over fields from glm model to gam model
+      if (_cvOn) {
+        copyCVGLMtoGAMModel(model, glm, _parms, _foldColumn);  // copy over fields from cross-validation
+        _parms._nfolds = _foldColumn == null ? _glmNFolds : 0;  // restore original cross-validation parameter values
+        _parms._fold_assignment = _foldAssignment;
+        _parms._fold_column = _foldColumn;
+      }
+    }
+
+    public GLMParameters copyGAMParams2GLMParams(GAMParameters parms, Frame trainData, Frame valid) {
+      GLMParameters glmParam = new GLMParameters();
+      List<String> gamOnlyList = Arrays.asList(
+              "_num_knots", "_gam_columns", "_bs", "_scale", "_train",
+              "_saveZMatrix", "_saveGamCols", "_savePenaltyMat"
+      );
+      Field[] field1 = GAMParameters.class.getDeclaredFields();
+      setParamField(parms, glmParam, false, field1, gamOnlyList);
+      Field[] field2 = Model.Parameters.class.getDeclaredFields();
+      setParamField(parms, glmParam, true, field2, gamOnlyList);
+      glmParam._train = trainData._key;
+      glmParam._valid = valid==null?null:valid._key;
+      glmParam._nfolds = _glmNFolds; // will do cv in GLM and not in GAM
+      glmParam._fold_assignment = _foldAssignment;
+      return glmParam;
     }
   }
 }

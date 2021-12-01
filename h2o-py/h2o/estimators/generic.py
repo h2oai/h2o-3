@@ -40,6 +40,9 @@ class H2OGenericEstimator(H2OEstimator):
         """
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
+        if model_id is None and path is not None:
+            path_split = path.split('/')
+            model_id = path_split[len(path_split)-1].split('.')[0]
         self._id = self._parms['model_id'] = model_id
         self.model_key = model_key
         self.path = path
@@ -102,12 +105,13 @@ class H2OGenericEstimator(H2OEstimator):
 
 
     @staticmethod
-    def from_file(file=str):
+    def from_file(file=str, model_id=None):
         """
         Creates new Generic model by loading existing embedded model into library, e.g. from H2O MOJO.
         The imported model must be supported by H2O.
 
         :param file: A string containing path to the file to create the model from
+        :param model_id: Model ID
         :return: H2OGenericEstimator instance representing the generic model
 
         :examples:
@@ -122,7 +126,7 @@ class H2OGenericEstimator(H2OEstimator):
         >>> model = H2OGenericEstimator.from_file(original_model_filename)
         >>> model.model_performance()
         """
-        model = H2OGenericEstimator(path = file)
+        model = H2OGenericEstimator(path=file, model_id=model_id)
         model.train()
 
         return model

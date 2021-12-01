@@ -26,7 +26,7 @@ public class RuleFitMojoModel extends MojoModel {
     double[] linearFromRules = null;
     int testsize = 0;
     if (!_modelType.equals(ModelType.LINEAR)) {
-      linearFromRules = _ruleEnsemble.transformRow(row, _depth, _ntrees, _linearModel._names, _linearModel._domains);
+      linearFromRules = _ruleEnsemble.transformRow(row, _depth, _ntrees, _linearModel._names, _linearModel._domains, this._domains[  Arrays.asList(this._names).indexOf(this._responseColumn)]);
       testsize += linearFromRules.length;
       if (_modelType.equals(ModelType.RULES_AND_LINEAR)) {
         testsize += row.length;

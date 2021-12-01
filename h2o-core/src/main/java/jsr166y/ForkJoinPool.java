@@ -5,6 +5,8 @@
  */
 
 package jsr166y;
+import water.H2ORuntime;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2089,7 +2091,7 @@ public class ForkJoinPool extends AbstractExecutorService {
      *         java.lang.RuntimePermission}{@code ("modifyThread")}
      */
     public ForkJoinPool() {
-        this(Runtime.getRuntime().availableProcessors(),
+        this(H2ORuntime.availableProcessors(),
              defaultForkJoinWorkerThreadFactory, null, false);
     }
 

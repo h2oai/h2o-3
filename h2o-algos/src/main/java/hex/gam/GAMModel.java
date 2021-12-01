@@ -11,6 +11,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.util.EffectiveParametersUtils;
 import water.*;
+import water.exceptions.H2OColumnNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -321,6 +322,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double[] _glm_stdErr;
     public double _glm_best_lamda_value;
     public TwoDimTable _glm_scoring_history;
+    public TwoDimTable[] _glm_cv_scoring_history;
     public TwoDimTable _coefficients_table;
     public TwoDimTable _coefficients_table_no_centering;
     public TwoDimTable _standardized_coefficient_magnitudes;
@@ -405,6 +407,14 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         case ordinal: return ModelCategory.Ordinal;
         default: return ModelCategory.Regression;
       }
+    }
+
+    public void copyMetrics(GAMModel gamModel, Frame train, boolean forTrain, ModelMetrics glmMetrics) {
+      ModelMetrics tmpMetrics = glmMetrics.deepCloneWithDifferentModelAndFrame(gamModel, train);
+      if (forTrain)
+        gamModel._output._training_metrics = tmpMetrics;
+      else
+        gamModel._output._validation_metrics = tmpMetrics;
     }
   }
 
@@ -536,6 +546,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     Vec[] gamColCSs = new Vec[numCSGamCols];
     String[] gamColCSNames = new String[numCSGamCols];
     for (int vind=0; vind<numCSGamCols; vind++) {
+      if (adptedF.vec(parms._gam_columns_sorted[vind][0]) == null) 
+        throw new H2OColumnNotFoundArgumentException("gam_columns", adptedF, parms._gam_columns_sorted[vind][0]);
+
       gamColCSs[vind] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
       gamColCSNames[vind] = parms._gam_columns_sorted[vind][0];
     }
@@ -780,16 +793,42 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       for (Key oneKey:_validKeys) {
           Keyed.remove(oneKey, fs, true);
       }
+    if (_parms._keep_cross_validation_predictions)
+      Keyed.remove(_output._cross_validation_holdout_predictions_frame_id, fs, true);
+    if (_parms._keep_cross_validation_fold_assignment)
+      Keyed.remove(_output._cross_validation_fold_assignment_frame_id, fs, true);
+    if (_parms._keep_cross_validation_models && _output._cross_validation_models!=null) {
+      for (Key oneModelKey : _output._cross_validation_models)
+        Keyed.remove(oneModelKey, fs, true);
+    }
     return fs;
   }
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     if (_output._gamTransformedTrainCenter!=null)
       ab.putKey(_output._gamTransformedTrainCenter);
+    if (_parms._keep_cross_validation_predictions)
+      ab.putKey(_output._cross_validation_holdout_predictions_frame_id);
+    if (_parms._keep_cross_validation_fold_assignment)
+      ab.putKey(_output._cross_validation_fold_assignment_frame_id);
+    if (_parms._keep_cross_validation_models && _output._cross_validation_models!=null) {
+      for (Key oneModelKey : _output._cross_validation_models)
+        ab.putKey(oneModelKey);
+    }
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    if (_output._gamTransformedTrainCenter!=null)
+      ab.getKey(_output._gamTransformedTrainCenter, fs);
+    if (_parms._keep_cross_validation_predictions)
+      ab.getKey(_output._cross_validation_holdout_predictions_frame_id, fs);
+    if (_parms._keep_cross_validation_fold_assignment)
+      ab.getKey(_output._cross_validation_fold_assignment_frame_id, fs);
+    if (_parms._keep_cross_validation_models && _output._cross_validation_models!=null) {
+      for (Key oneModelKey : _output._cross_validation_models)
+      ab.getKey(oneModelKey, fs);
+    }
     return super.readAll_impl(ab, fs);
   }
 }

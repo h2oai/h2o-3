@@ -11,6 +11,7 @@ import ai.h2o.automl.leaderboard.*;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.utils.DistributionFamily;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -100,6 +101,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return _foldColumn; }
   public Vec getWeightsColumn() { return _weightsColumn; }
 
+  public DistributionFamily getDistributionFamily() {
+    return _distributionFamily;
+  }
+
+  public double[] getClassDistribution() {
+    if (_classDistribution == null)
+      _classDistribution = (new MRUtils.ClassDist(_responseColumn)).doAll(_responseColumn).dist();
+    return _classDistribution;
+  }
+
   public StepDefinition[] getActualModelingSteps() { return _actualModelingSteps; }
 
   Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place.
@@ -110,6 +121,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Vec _responseColumn;
   Vec _foldColumn;
   Vec _weightsColumn;
+
+  DistributionFamily _distributionFamily;
+  private double[] _classDistribution;
 
   Date _startTime;
   Countdown _runCountdown;
@@ -421,10 +435,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     eventLog().info(Stage.Workflow, "AutoML duration: "+ PrettyPrint.msecs(_runCountdown.duration(), true))
             .setNamedValue("duration_secs", Math.round(_runCountdown.duration() / 1000.));
 
-    Log.info(eventLog().toString("Event Log for AutoML Run " + _key + ":"));
+    Log.info("AutoML run summary:");
     for (EventLogEntry event : eventLog()._events)
       Log.info(event);
-
     if (0 < leaderboard().getModelKeys().length) {
       Log.info(leaderboard().toLogString());
     } else {
@@ -546,6 +559,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
   }
+
+  private DistributionFamily inferDistribution(Vec response) {
+    int numOfDomains = response.domain() == null ? 0 : response.domain().length;
+    if (numOfDomains == 0)
+      return DistributionFamily.gaussian;
+    if (numOfDomains == 2)
+      return DistributionFamily.bernoulli;
+    if (numOfDomains > 2)
+      return DistributionFamily.multinomial;
+
+    throw new RuntimeException("Number of domains is equal to 1.");
+  }
+
   private void prepareData() {
     final AutoMLInput input = _buildSpec.input_spec;
     _origTrainingFrame = DKV.getGet(input.training_frame);
@@ -567,6 +593,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _responseColumn = _trainingFrame.vec(input.response_column);
     _foldColumn = _trainingFrame.vec(input.fold_column);
     _weightsColumn = _trainingFrame.vec(input.weights_column);
+
+    _distributionFamily = inferDistribution(_responseColumn);
 
     eventLog().info(Stage.DataImport,
         "training frame: "+_trainingFrame.toString().replace("\n", " ")+" checksum: "+_trainingFrame.checksum());

@@ -1770,7 +1770,22 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        self._parms["beta_constraints"] = H2OFrame._validate(beta_constraints, 'beta_constraints')
+        # beta_constraints can be specified as a H2OFrame or python dict
+        assert_is_type(beta_constraints, None, dict, H2OFrame)
+        if type(beta_constraints) is H2OFrame:
+            self._parms["beta_constraints"]=beta_constraints
+        if type(beta_constraints) is dict:
+            colnames = beta_constraints.keys()
+            col_names = []
+            upper_bounds = []
+            lower_bounds = []
+            for key in colnames:
+                one_col_bounds = beta_constraints.get(key)
+                col_names.append(key)
+                upper_bounds.append(one_col_bounds.get('upper_bound'))
+                lower_bounds.append(one_col_bounds.get('lower_bound'))
+            constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
+            self._parms["beta_constraints"] = constraints[["names", "lower_bounds", "upper_bounds"]]
 
     @property
     def max_active_predictors(self):

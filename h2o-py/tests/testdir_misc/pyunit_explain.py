@@ -1,5 +1,7 @@
 from __future__ import print_function
-import sys, os, collections
+
+import os
+import sys
 
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import matplotlib
@@ -7,7 +9,7 @@ matplotlib.use("Agg")  # remove warning from python2 (missing TKinter)
 import h2o
 import pandas
 import matplotlib.pyplot
-from tests import pyunit_utils
+from tests import pyunit_utils, test_plot_result_saving
 from h2o.automl import H2OAutoML
 from h2o.estimators import *
 from h2o.explanation._explain import H2OExplanation
@@ -51,37 +53,37 @@ def test_explanation_single_model_regression():
     gbm.train(y=y, training_frame=train)
 
     # test shap summary
-    assert isinstance(gbm.shap_summary_plot(train), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_summary_plot(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test shap explain row
-    assert isinstance(gbm.shap_explain_row_plot(train, 1), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_explain_row_plot(train, 1).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test residual analysis
-    assert isinstance(gbm.residual_analysis_plot(train), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.residual_analysis_plot(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test pd_plot
     for col in cols_to_test:
         try:
-            assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
+            assert isinstance(gbm.pd_plot(train, col).figure(), matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
 
     # test ICE plot
     for col in cols_to_test:
         try:
-            assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+            assert isinstance(gbm.ice_plot(train, col).figure(), matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     for metric in ["auto", "deviance", "rmse"]:
-        assert isinstance(gbm.learning_curve_plot(metric=metric.upper()), matplotlib.pyplot.Figure)
-        assert isinstance(gbm.learning_curve_plot(metric), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.learning_curve_plot(metric=metric.upper()).figure(), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.learning_curve_plot(metric).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -109,14 +111,14 @@ def test_explanation_automl_regression():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -126,7 +128,7 @@ def test_explanation_automl_regression():
     # test partial dependences
     for col in cols_to_test:
         try:
-            assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+            assert isinstance(aml.pd_multi_plot(train, col).figure(), matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
@@ -180,24 +182,24 @@ def test_explanation_list_of_models_regression():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
     for col in cols_to_test:
         try:
-            assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+            assert isinstance(h2o.pd_multi_plot(models, train, col).figure(), matplotlib.pyplot.Figure)
         except ValueError:
             assert col == "name", "'name' is a string column which is not supported."
     matplotlib.pyplot.close("all")
 
     # test learning curve
     for model in models:
-        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+        assert isinstance(model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -224,25 +226,24 @@ def test_explanation_single_model_binomial_classification():
     gbm.train(y=y, training_frame=train)
 
     # test shap summary
-    assert isinstance(gbm.shap_summary_plot(train), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_summary_plot(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test shap explain row
-    assert isinstance(gbm.shap_explain_row_plot(train, 1), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.shap_explain_row_plot(train, 1).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test pd_plot
     for col in cols_to_test:
-        assert isinstance(gbm.pd_plot(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.pd_plot(train, col).figure(), matplotlib.pyplot.Figure)
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.ice_plot(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.ice_plot(train, col).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
-    matplotlib.pyplot.close()
+    assert isinstance(gbm.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -274,14 +275,14 @@ def test_explanation_automl_binomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -290,7 +291,7 @@ def test_explanation_automl_binomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.pd_multi_plot(train, col), matplotlib.pyplot.Figure)
+        assert isinstance(aml.pd_multi_plot(train, col).figure(), matplotlib.pyplot.Figure)
         matplotlib.pyplot.close()
 
     # test explain
@@ -301,7 +302,7 @@ def test_explanation_automl_binomial_classification():
 
     # Leaderboard slices work
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     leaderboard_without_SE = aml.leaderboard[~aml.leaderboard["model_id"].grep("^Stacked", output_logical=True), :]
@@ -309,14 +310,14 @@ def test_explanation_automl_binomial_classification():
     assert isinstance(h2o.explanation.varimp(leaderboard_without_SE, use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(leaderboard_without_SE, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
     assert isinstance(h2o.explanation.model_correlation(leaderboard_without_SE, train, use_pandas=True), pandas.DataFrame)
 
     # test partial dependences
-    assert isinstance(h2o.pd_multi_plot(leaderboard_without_SE, train, cols_to_test[0]), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.pd_multi_plot(leaderboard_without_SE, train, cols_to_test[0]).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test explain
@@ -351,21 +352,21 @@ def test_explanation_list_of_models_binomial_classification():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.pd_multi_plot(models, train, col), matplotlib.pyplot.Figure)
+        assert isinstance(h2o.pd_multi_plot(models, train, col).figure(), matplotlib.pyplot.Figure)
         matplotlib.pyplot.close()
 
     # test learning curve
     for model in models:
-        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+        assert isinstance(model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -409,16 +410,16 @@ def test_explanation_single_model_multinomial_classification():
 
     # test pd_plot
     for col in cols_to_test:
-        assert isinstance(gbm.pd_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.pd_plot(train, col, target="setosa").figure(), matplotlib.pyplot.Figure)
 
     # test ICE plot
     for col in cols_to_test:
-        assert isinstance(gbm.ice_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(gbm.ice_plot(train, col, target="setosa").figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test learning curve
-    assert isinstance(gbm.learning_curve_plot(), matplotlib.pyplot.Figure)
-    matplotlib.pyplot.close()
+    assert isinstance(gbm.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
+    matplotlib.pyplot.close("all")
 
     # test explain
     assert isinstance(gbm.explain(train, render=False), H2OExplanation)
@@ -444,14 +445,14 @@ def test_explanation_automl_multinomial_classification():
     aml.train(y=y, training_frame=train)
 
     # test variable importance heatmap plot
-    assert isinstance(aml.varimp_heatmap(), matplotlib.pyplot.Figure)
+    assert isinstance(aml.varimp_heatmap().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.varimp(use_pandas=False)) == 3  # numpy.ndarray, colnames, rownames
     assert isinstance(aml.varimp(use_pandas=True), pandas.DataFrame)
 
     # test model correlation heatmap plot
-    assert isinstance(aml.model_correlation_heatmap(train), matplotlib.pyplot.Figure)
+    assert isinstance(aml.model_correlation_heatmap(train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     assert len(aml.model_correlation(train, use_pandas=False)) == 2  # numpy.ndarray, colnames and rownames both in the same order => represented by just one vector
@@ -459,7 +460,7 @@ def test_explanation_automl_multinomial_classification():
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(aml.pd_multi_plot(train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(aml.pd_multi_plot(train, col, target="setosa").figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -501,21 +502,21 @@ def test_explanation_list_of_models_multinomial_classification():
     models += [gbm]
 
     # test variable importance heatmap plot
-    assert isinstance(h2o.varimp_heatmap(models), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.varimp_heatmap(models).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test model correlation heatmap plot
-    assert isinstance(h2o.model_correlation_heatmap(models, train), matplotlib.pyplot.Figure)
+    assert isinstance(h2o.model_correlation_heatmap(models, train).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # test partial dependences
     for col in cols_to_test:
-        assert isinstance(h2o.pd_multi_plot(models, train, col, target="setosa"), matplotlib.pyplot.Figure)
+        assert isinstance(h2o.pd_multi_plot(models, train, col, target="setosa").figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test learning curve
     for model in models:
-        assert isinstance(model.learning_curve_plot(), matplotlib.pyplot.Figure)
+        assert isinstance(model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
     # test explain
@@ -540,7 +541,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                               lambda_=0,
                                               compute_p_values=True)
     glm_model.train(predictors, response_col, training_frame=prostate)
-    assert isinstance(glm_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(glm_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # HGLM
@@ -556,7 +557,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                                rand_link=["identity"],
                                                calc_like=True)
     hglm_model.train(x=x, y=y, training_frame=h2o_data)
-    assert isinstance(hglm_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(hglm_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # GAM
@@ -581,7 +582,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                                 num_knots=numKnots,
                                                 knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
     gam_model.train(x=x, y=y, training_frame=train, validation_frame=test)
-    assert isinstance(gam_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(gam_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # GLRM
@@ -595,7 +596,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                                 init="SVD",
                                                 transform="standardize")
     glrm_model.train(training_frame=arrestsH2O)
-    assert isinstance(glrm_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(glrm_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # CoxPH
@@ -606,7 +607,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
     coxph_model.train(x="age",
                       y="event",
                       training_frame=heart)
-    assert isinstance(coxph_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(coxph_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
     # IsolationForest
@@ -614,7 +615,7 @@ def test_learning_curve_for_algos_not_present_in_automl():
                                            max_depth=20,
                                            ntrees=50)
     if_model.train(training_frame=prostate)
-    assert isinstance(if_model.learning_curve_plot(), matplotlib.pyplot.Figure)
+    assert isinstance(if_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
 

@@ -60,6 +60,17 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         
         // specifies the number of trees to build in the tree model. Defaults to 50.
         public int _rule_generation_ntrees = 50;
+        
+        // whether to remove rules which are identical to an earlier rule. Defaults to true.
+        public boolean _remove_duplicates = true;
+        
+
+        public void validate(RuleFit rfit) {
+            if (rfit._parms._min_rule_length > rfit._parms._max_rule_length) {
+                rfit.error("min_rule_length", "min_rule_length cannot be greater than max_rule_length. Current values:  min_rule_length = " + rfit._parms._min_rule_length
+                        + ", max_rule_length = " + rfit._parms._max_rule_length + ".");
+            }
+        }
     }
 
     public static class RuleFitOutput extends Model.Output {
@@ -117,7 +128,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         Frame linearTest = new Frame();
         try {
             if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-                linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees));
+                linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees, this._output.classNames()));
             }
             if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
                 linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());

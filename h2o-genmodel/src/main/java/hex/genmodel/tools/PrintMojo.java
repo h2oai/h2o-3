@@ -8,7 +8,7 @@ import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
-import water.init.AbstractBuildVersion;
+import water.genmodel.AbstractBuildVersion;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

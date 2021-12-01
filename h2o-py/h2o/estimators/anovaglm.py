@@ -7,6 +7,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import h2o
+from h2o.base import Keyed
+from h2o.frame import H2OFrame
+from h2o.expr import ExprNode
+from h2o.expr import ASTId
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -781,8 +785,8 @@ class H2OANOVAGLMEstimator(H2OEstimator):
         self._parms["lambda"] = value
 
     def result(self):
-        key = self._model_json["output"]["result_frame_key"]
-        if key is None:
-            return None
-        else:
-            return h2o.get_frame(key['name'])
+        """
+        Get result frame that contains information about the model building process like for maxrglm and anovaglm.
+        :return: the H2OFrame that contains information about the model building process like for maxrglm and anovaglm.
+        """
+        return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)

@@ -83,9 +83,18 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         try {
             builder.init(false);          // validate parameters
+            if (builder._messages.length > 0) {
+                for (ModelBuilder.ValidationMessage vm : builder._messages) {
+                    if (vm.log_level() == Log.WARN) {
+                        aml().eventLog().warn(Stage.ModelTraining, vm.field()+" param, "+vm.message());
+                    } else if (vm.log_level() == Log.ERRR) {
+                        aml().eventLog().error(Stage.ModelTraining, vm.field()+" param, "+vm.message());
+                    }
+                }
+            }
             return builder.trainModelOnH2ONode();
         } catch (H2OIllegalArgumentException exception) {
-            aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
+            aml().eventLog().error(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
             onDone(null);
             return null;
         }

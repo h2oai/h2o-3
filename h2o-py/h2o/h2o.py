@@ -103,6 +103,14 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
     This function is mostly for internal purposes, but may occasionally be useful for direct access to
     the backend H2O server. It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
 
+    The list of available endpoints can be obtained using::
+    
+        endpoints = [' '.join([r.http_method, r.url_pattern]) for r in h2o.api("GET /3/Metadata/endpoints").routes]
+    
+    For each route, the available parameters (passed as data or json) can be obtained using::
+    
+        parameters = {f.name: f.help for f in h2o.api("GET /3/Metadata/schemas/{route.input_schema}").fields}
+    
     :examples:
 
     >>> res = h2o.api("GET /3/NetworkTest")
@@ -2202,11 +2210,12 @@ class {}Wrapper({}, DistributionFunc, object):
     return "python:{}={}".format(dest_key, class_name)
 
 
-def import_mojo(mojo_path):
+def import_mojo(mojo_path, model_id=None):
     """
     Imports an existing MOJO model as an H2O model.
     
     :param mojo_path: Path to the MOJO archive on the H2O's filesystem
+    :param model_id: Model ID, default is None
     :return: An H2OGenericEstimator instance embedding given MOJO
 
     :examples:
@@ -2223,16 +2232,17 @@ def import_mojo(mojo_path):
     """
     if mojo_path is None:
         raise TypeError("MOJO path may not be None")
-    mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
+    mojo_estimator = H2OGenericEstimator.from_file(mojo_path, model_id)
     print(mojo_estimator)
     return mojo_estimator
 
 
-def upload_mojo(mojo_path):
+def upload_mojo(mojo_path, model_id=None):
     """
     Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
 
     :param mojo_path:  Path to the MOJO archive on the user's local filesystem
+    :param model_id: Model ID, default None
     :return: An H2OGenericEstimator instance embedding given MOJO
 
     :examples:
@@ -2249,7 +2259,7 @@ def upload_mojo(mojo_path):
     """
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
-    mojo_estimator = H2OGenericEstimator(model_key = get_frame(frame_key))
+    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), path=mojo_path, model_id=model_id)
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator

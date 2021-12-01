@@ -12,7 +12,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 
     # GLM
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
-    glm = H2OGeneralizedLinearEstimator(nfolds = 3, family = family, max_iterations=5) # alpha = 1, lambda_ = 1, bad values, use default
+    glm = H2OGeneralizedLinearEstimator(nfolds = 2, family = family, max_iterations=2) # alpha = 1, lambda_ = 1, bad values, use default
     glm.train(x = x, y = y, training_frame=airlines, validation_frame=airlines, )
     print(glm)
     with Capturing() as original_output:

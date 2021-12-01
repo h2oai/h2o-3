@@ -6,10 +6,15 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.rapids.Rapids;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParameters, 
         MaxRGLMModel.MaxRGLMModelOutput> {
@@ -40,13 +45,18 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         throw new UnsupportedOperationException("AnovaGLM does not support scoring on data.  It only provide " +
                 "information on predictor relevance");
     }
+
+    @Override
+    public Frame result() {
+        return _output.generateResultFrame();
+    }
     
     public static class MaxRGLMParameters extends Model.Parameters {
         public double[] _alpha;
         public double[] _lambda;
         public boolean _standardize = true;
         GLMModel.GLMParameters.Family _family = GLMModel.GLMParameters.Family.gaussian;
-        public boolean lambda_search;
+        public boolean _lambda_search;
         public GLMModel.GLMParameters.Link _link = GLMModel.GLMParameters.Link.identity;
         public GLMModel.GLMParameters.Solver _solver = GLMModel.GLMParameters.Solver.IRLSM;
         public String[] _interactions=null;
@@ -115,6 +125,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         DataInfo _dinfo;
         String[][] _best_model_predictors; // store for each predictor number, the best model predictors
         double[] _best_r2_values;  // store the best R2 values of the best models with fix number of predictors
+        public Key[] _best_model_ids;
         
         public MaxRGLMModelOutput(MaxRGLM b, DataInfo dinfo) {
             super(b, dinfo._adaptedFrame);
@@ -125,20 +136,31 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         public ModelCategory getModelCategory() {
             return ModelCategory.Regression;
         }
-
-        public void summarizeRunResult(String[][] bestModelPredictors, double[] bestR2Values) {
-            int numModels = bestR2Values.length;
-            _best_r2_values = bestR2Values.clone();
-            _best_model_predictors = new String[numModels][];
-            for (int index = 0; index < numModels; index++)
-                _best_model_predictors[index] = bestModelPredictors[index].clone();
-
-            generateSummary(bestModelPredictors, bestR2Values);
+        
+        private Frame generateResultFrame() {
+            int numRows = _best_r2_values.length;
+            String[] modelNames = new String[numRows];
+            String[] predNames = new String[numRows];
+            String[] modelIds = Stream.of(_best_model_ids).map(Key::toString).toArray(String[]::new);
+            // generate model names and predictor names
+            for (int index=0; index < numRows; index++) {
+                int numPred = index+1;
+                modelNames[index] = "best "+numPred+" predictor(s) model";
+                predNames[index] = String.join(", ", _best_model_predictors[index]);
+            }
+            // generate vectors before forming frame
+            Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+            Vec modNames = Vec.makeVec(modelNames, vg.addVec());
+            Vec modelIDV = Vec.makeVec(modelIds, vg.addVec());
+            Vec r2 = Vec.makeVec(_best_r2_values, vg.addVec());
+            Vec predN = Vec.makeVec(predNames, vg.addVec());
+            String[] colNames = new String[]{"model_name", "model_id", "best_r2_value", "predictor_names"};
+            return new Frame(Key.<Frame>make(), colNames, new Vec[]{modNames, modelIDV, r2, predN});
         }
         
-        public void generateSummary(String[][] bestModelPredictors, double[] bestR2Values) {
-            int numModels = bestR2Values.length;
-            String[] names = new String[]{"best R2 value", "predictor names"};
+        public void generateSummary() {
+            int numModels = _best_r2_values.length;
+            String[] names = new String[]{"best r2 value", "predictor names"};
             String[] types = new String[]{"double", "String"};
             String[] formats = new String[]{"%d", "%s"};
             String[] rowHeaders = new String[numModels];
@@ -149,25 +171,52 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
                     rowHeaders, names, types, formats, "");
             for (int rIndex=0; rIndex < numModels; rIndex++) {
                 int colInd = 0;
-                _model_summary.set(rIndex, colInd++, bestR2Values[rIndex]);
-                _model_summary.set(rIndex, colInd++, String.join(", ", bestModelPredictors[rIndex]));
+                _model_summary.set(rIndex, colInd++, _best_r2_values[rIndex]);
+                _model_summary.set(rIndex, colInd++, String.join(", ", _best_model_predictors[rIndex]));
             }
+        }
+        
+        void updateBestModels(GLMModel bestModel, int index) {
+            _best_model_ids[index] = bestModel.getKey();
+            if (bestModel._parms._nfolds > 0) {
+                int r2Index = Arrays.asList(bestModel._output._cross_validation_metrics_summary.getRowHeaders()).indexOf("r2");
+                Float tempR2 = (Float) bestModel._output._cross_validation_metrics_summary.get(r2Index, 0);
+                _best_r2_values[index] = tempR2.doubleValue();
+            } else {
+                _best_r2_values[index] = bestModel.r2();
+            }
+            ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(bestModel._output.coefficientNames()));
+            coeffNames.remove(coeffNames.size()-1); // remove intercept as it is not a predictor
+            _best_model_predictors[index] = coeffNames.toArray(new String[0]);
         }
     }
 
     @Override
     protected Futures remove_impl(Futures fs, boolean cascade) {
         super.remove_impl(fs, cascade);
+        if (cascade && _output._best_model_ids != null && _output._best_model_ids.length > 0) {
+            for (Key oneModelID : _output._best_model_ids)
+                Keyed.remove(oneModelID, fs, cascade);   // remove model key
+        }
         return fs;
     }
 
     @Override
     protected AutoBuffer writeAll_impl(AutoBuffer ab) {
+        if (_output._best_model_ids != null && _output._best_model_ids.length > 0) {
+            for (Key oneModelID : _output._best_model_ids)
+                ab.putKey(oneModelID);  // add GLM model key
+        }
         return super.writeAll_impl(ab);
     }
 
     @Override
     protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+        if (_output._best_model_ids != null && _output._best_model_ids.length > 0) {
+            for (Key oneModelID : _output._best_model_ids) {
+                ab.getKey(oneModelID, fs);  // add GLM model key
+            }
+        }
         return super.readAll_impl(ab, fs);
     }
 

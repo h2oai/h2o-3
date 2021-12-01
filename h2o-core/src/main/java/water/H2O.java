@@ -119,7 +119,7 @@ final public class H2O {
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
-            "          (The default is " + (char)Runtime.getRuntime().availableProcessors() + ".)\n" +
+            "          (The default is " + (char)H2ORuntime.availableProcessors() + ".)\n" +
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
@@ -358,7 +358,7 @@ final public class H2O {
     public boolean cleaner = false;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
+    public short nthreads= (short)H2ORuntime.availableProcessors();
 
     /** -log_dir=/path/to/dir; directory to save logs in */
     public String log_dir;
@@ -1279,7 +1279,7 @@ final public class H2O {
   public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
-  public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
+  public static final int NUMCPUS = H2ORuntime.availableProcessors();
 
   // Best-guess process ID
   public static final long PID;
@@ -1836,7 +1836,7 @@ final public class H2O {
     Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
-    Log.info("Java availableProcessors: " + runtime.availableProcessors());
+    Log.info("Java availableProcessors: " + H2ORuntime.availableProcessors());
     Log.info("Java heap totalMemory: " + PrettyPrint.bytes(runtime.totalMemory()));
     Log.info("Java heap maxMemory: " + PrettyPrint.bytes(runtime.maxMemory()));
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");

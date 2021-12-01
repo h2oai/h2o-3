@@ -752,6 +752,11 @@ predict_leaf_node_assignment.H2OModel <- function(object, newdata, type = c("Pat
 #' @export
 h2o.predict_leaf_node_assignment <- predict_leaf_node_assignment.H2OModel
 
+h2o.result <- function(model) {
+  if (!is(model, "H2OModel")) stop("h2o.result can only be applied to H2OModel instances with constant results")
+  return(as.data.frame(.newExpr("result", model@model_id)))
+}
+
 h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deeplearning"), params, strategy = c("mod1", "random")) {
   output <- data.frame()
 
@@ -5284,6 +5289,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' predictions <- h2o.predict(generic_model, dataset)
 #'
 #' @param mojo_file_path Filesystem path to the model imported
+#' @param model_id Model ID, default is NULL
 #' @return Returns H2O Generic Model based on given embedded model
 #'
 #' @examples
@@ -5307,7 +5313,7 @@ h2o.get_seed <- get_seed.H2OModel
 #' generic_model_predictions  <- h2o.predict(generic_model, data)
 #' }
 #' @export
-h2o.genericModel <- function(mojo_file_path){
+h2o.genericModel <- function(mojo_file_path, model_id=NULL){
   h2o.generic(path = mojo_file_path)
 }
 
@@ -5318,6 +5324,7 @@ h2o.genericModel <- function(mojo_file_path){
 #' predictions <- h2o.predict(mojo_model, dataset)
 #'
 #' @param mojo_file_path Filesystem path to the model imported
+#' @param model_id Model ID, default is NULL
 #' @return Returns H2O Generic Model embedding given MOJO model
 #'
 #' @examples
@@ -5340,8 +5347,8 @@ h2o.genericModel <- function(mojo_file_path){
 #' predictions  <- h2o.predict(mojo_model, data)
 #' }
 #' @export
-h2o.import_mojo <- function(mojo_file_path){
-  model <- h2o.generic(path = mojo_file_path)
+h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
+  model <- h2o.generic(path = mojo_file_path, model_id)
   return(model)
 }
 
@@ -5353,6 +5360,7 @@ h2o.import_mojo <- function(mojo_file_path){
 #' predictions <- h2o.predict(mojo_model, dataset)
 #'
 #' @param mojo_local_file_path Filesystem path to the model imported
+#' @param model_id Model ID, default is NULL
 #' @return Returns H2O Generic Model embedding given MOJO model
 #'
 #' @examples
@@ -5376,9 +5384,9 @@ h2o.import_mojo <- function(mojo_file_path){
 #' predictions  <- h2o.predict(mojo_model, data)
 #' }
 #' @export
-h2o.upload_mojo <- function(mojo_local_file_path){
+h2o.upload_mojo <- function(mojo_local_file_path, model_id=NULL){
   model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
-  model <- h2o.generic(model_key = model_file_key)
+  model <- h2o.generic(model_key = model_file_key, model_id = model_id, path = mojo_local_file_path)
   return(model)
 }
 

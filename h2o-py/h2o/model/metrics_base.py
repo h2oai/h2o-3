@@ -8,9 +8,9 @@ Regression model.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
@@ -99,6 +99,8 @@ class MetricsBase(h2o_meta()):
                                           'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
                                        'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
+        types_w_mean_per_class_error = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric',
+                                        'ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric'] + types_w_mult
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
@@ -128,11 +130,8 @@ class MetricsBase(h2o_meta()):
             print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
-        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric']:
-            # second element for first threshold is the actual mean per class error
-            print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
-        if metric_type in types_w_mult or metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
-            print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
+        if metric_type in types_w_mean_per_class_error:
+            print("Mean Per-Class Error: %s" % self._mean_per_class_error())
         if metric_type in types_w_glm:
             if metric_type == 'ModelMetricsHGLMGaussianGaussian': # print something for HGLM
                 print("Standard error of fixed columns: "+str(self.hglm_metric("sefe")))
@@ -161,8 +160,10 @@ class MetricsBase(h2o_meta()):
             print("AUC: " + str(self.auc()))
             print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
-            self.confusion_matrix().show()
-            self._metric_json["max_criteria_and_metric_scores"].show()
+            if self.confusion_matrix():
+                self.confusion_matrix().show()
+            if self._metric_json["max_criteria_and_metric_scores"]:
+                self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
         if metric_type in types_w_mult:
@@ -568,6 +569,10 @@ class MetricsBase(h2o_meta()):
             return self._metric_json["null_degrees_of_freedom"]
         return None
 
+    # private accessor for mean per-class error - the public version is overridden in H2OBinomialModelMetrics with
+    # a method with different return semantics
+    def _mean_per_class_error(self):
+        return self._metric_json['mean_per_class_error']
 
     def mean_per_class_error(self):
         """The mean per class error.
@@ -590,7 +595,7 @@ class MetricsBase(h2o_meta()):
         ...                validation_frame = valid)
         >>> pros_glm.mean_per_class_error()
         """
-        return self._metric_json['mean_per_class_error']
+        return self._mean_per_class_error()
 
     def custom_metric_name(self):
         """Name of custom metric or None."""
@@ -1385,17 +1390,18 @@ class H2OBinomialModelMetrics(MetricsBase):
                 )
         return metrics
 
-    def plot(self, type="roc", server=False, save_to_file=None, plot=True):
+    @deprecated_params({'save_to_file': 'save_plot_path'})
+    def plot(self, type="roc", server=False, save_plot_path=None, plot=True, **kwargs):
         """
         Produce the desired metric plot.
 
         :param type: the type of metric plot (currently, only ROC curve ('roc') and Precision Recall curve ('pr') are supported).
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :param save_to_file: filename to save the plot to
+        :param save_plot_path: filename to save the plot to
         :param plot: True to plot curve, False to get a tuple of values at axis x and y of the plot 
-            (tprs and fprs for AUC, recall and precision for PR)
+                (tprs and fprs for AUC, recall and precision for PR)
         
-        :returns: None or values of x and y axis of the plot 
+        :returns: None or values of x and y axis of the plot + the resulting plot (can be accessed using result.figure())
 
         :examples:
 
@@ -1416,15 +1422,16 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
 
         if type == "roc":
-            return self._plot_roc(server, save_to_file, plot)
+            return self._plot_roc(server, save_plot_path, plot)
         elif type == "pr":
-            return self._plot_pr(server, save_to_file, plot)
+            return self._plot_pr(server, save_plot_path, plot)
     
     def _plot_roc(self, server=False, save_to_file=None, plot=True):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+            fig = plt.figure()
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
             plt.title('Receiver Operating Characteristic Curve')
@@ -1436,9 +1443,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(save_to_file)
+                fig.savefig(fname=save_to_file)
+            return decorate_plot_result(res=(self.fprs, self.tprs), figure=fig) 
         else:
-            return self.fprs, self.tprs
+            return decorate_plot_result(res=(self.fprs, self.tprs))
 
     def _plot_pr(self, server=False, save_to_file=None, plot=True):
         recalls = [x[0] for x in self.recall(thresholds='all')]
@@ -1447,7 +1455,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
-                return
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+            fig = plt.figure()
             plt.xlabel('Recall (TP/(TP+FP))')
             plt.ylabel('Precision (TPR)')
             plt.title('Precision Recall Curve')
@@ -1459,9 +1468,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(save_to_file)
+                plt.savefig(fname=save_to_file)
+            return decorate_plot_result(res=(recalls, precisions), figure=fig)
         else:
-            return recalls, precisions
+            return decorate_plot_result(res=(recalls, precisions))
 
 
     @property
@@ -1566,8 +1576,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param metrics: A string (or list of strings) among metrics listed in :const:`maximizing_metrics`. Defaults to 'f1'.
         :param thresholds: A value (or list of values) between 0 and 1.
             If None, then the thresholds maximizing each provided metric will be used.
-        :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
-            (if there is only one).
+        :returns: a list of ConfusionMatrix objects (if there are more than one to return), a single ConfusionMatrix
+            (if there is only one) or None if thresholds are metrics scores are missing.
 
         :examples:
 
@@ -1586,6 +1596,10 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...           validation_frame = valid)
         >>> gbm.confusion_matrix(train)
         """
+        thresh2d = self._metric_json['thresholds_and_metric_scores']
+        if thresh2d is None:
+            return None
+
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None:
             metrics = ['f1']
@@ -1617,7 +1631,6 @@ class H2OBinomialModelMetrics(MetricsBase):
             thresholds_list.append(mt)
         first_metrics_thresholds_offset = len(thresholds_list) - len(metrics_thresholds)
 
-        thresh2d = self._metric_json['thresholds_and_metric_scores']
         actual_thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
         cms = []
         for i, t in enumerate(thresholds_list):

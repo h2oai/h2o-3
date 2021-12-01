@@ -41,7 +41,6 @@ class H2OTwoDimTable(object):
         self._col_types = col_types
         self._cell_values = cell_values or self._parse_values(raw_cell_values, col_types)
 
-
     @staticmethod
     def make(keyvals):
         """
@@ -62,24 +61,20 @@ class H2OTwoDimTable(object):
             if key == "data": kwargs["raw_cell_values"] = value
         return H2OTwoDimTable(**kwargs)
 
-
     @property
     def cell_values(self):
         """The contents of the table, as a list of rows."""
         return self._cell_values
-
 
     @property
     def col_header(self):
         """Array of column names."""
         return self._col_header
 
-
     @property
     def col_types(self):
         """Array of column types."""
         return self._col_types
-
 
     def as_data_frame(self):
         """Convert to a python 'data frame'."""
@@ -88,7 +83,6 @@ class H2OTwoDimTable(object):
             pandas.options.display.max_colwidth = 70
             return pandas.DataFrame(self._cell_values, columns=self._col_header)
         return self
-
 
     def show(self, header=True):
         """Print the contents of this table."""
@@ -109,10 +103,10 @@ class H2OTwoDimTable(object):
             pd = self.as_data_frame()
             return self.as_data_frame().head(20), pd.shape[0], True
         else:
-            table = copy.deepcopy(self._cell_values)
+            table = self._cell_values
             nr = 0
-            if _is_list_of_lists(table): nr = len(
-                table)  # only set if we truly have multiple rows... not just one long row :)
+            if _is_list_of_lists(table): 
+                nr = len(table)  # only set if we truly have multiple rows... not just one long row :)
             if nr > 20:  # create a truncated view of the table, first/last 5 rows
                 trunc_table = []
                 trunc_table += [v for v in table[:5]]
@@ -125,7 +119,6 @@ class H2OTwoDimTable(object):
         # FIXME: should return a string rather than printing it
         self.show()
         return ""
-
 
     def _parse_values(self, values, types):
         if self._col_header[0] is None:
@@ -144,7 +137,6 @@ class H2OTwoDimTable(object):
                     continue
         return list(zip(*values))  # transpose the values! <3 splat ops
 
-
     def __getitem__(self, item):
         if is_type(item, int, str):
             # single col selection returns list
@@ -160,16 +152,15 @@ class H2OTwoDimTable(object):
                     raise H2OValueError("Column `%s` does not exist in the table" % item)
             return [row[index] for row in self._cell_values]
         elif isinstance(item, slice):
-            # row selection if item is slice returns H2OTwoDimTable
-            # FIXME! slice behavior should be consistent with other selectors - return columns instead of rows...
-            self._cell_values = [self._cell_values[ii] for ii in range(*item.indices(len(self._cell_values)))]
-            return self
+            # row selection if item is slice returns H2OTwoDimTable (slice works like pandas DateFrame, not like H2OFrame)
+            new_table = copy.deepcopy(self)
+            new_table._cell_values = [self._cell_values[ii] for ii in range(*item.indices(len(self._cell_values)))]
+            return new_table
         elif is_type(item, [int, str]):
             # multiple col selection returns list of cols
             return [self[i] for i in item]
         else:
             raise TypeError('can not support getting item for ' + str(item))
-
 
     def __setitem__(self, key, value):
         # This is not tested, and probably not used anywhere... That's why it's so horrible.

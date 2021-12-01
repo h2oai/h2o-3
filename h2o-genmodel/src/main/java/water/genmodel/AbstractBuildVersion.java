@@ -1,4 +1,4 @@
-package water.init;
+package water.genmodel;
 
 abstract public class AbstractBuildVersion {
 
@@ -56,7 +56,7 @@ abstract public class AbstractBuildVersion {
   public static AbstractBuildVersion getBuildVersion() {
     AbstractBuildVersion abv = AbstractBuildVersion.UNKNOWN_VERSION;
     try {
-      Class klass = Class.forName("water.init.BuildVersion");
+      Class klass = Class.forName("water.genmodel.BuildVersion");
       java.lang.reflect.Constructor constructor = klass.getConstructor();
       abv = (AbstractBuildVersion) constructor.newInstance();
     } catch (Exception ignore) { }
