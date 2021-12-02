@@ -134,13 +134,7 @@ Defining a MAXR Model
 
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
--  `balance_classes <algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is defaults to false (not enabled), and can increase the data frame size. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
-
 -  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
-
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
-   the training data after balancing class counts (**balance\_classes**
-   must be enabled). The value can be less than 1.0 and defaults to 5.0.
 
 - **max_confusion_matrix_size**: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the logs. Defaults to 20.
 
