@@ -503,11 +503,20 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       return perRow(ds, yact);
     }
     
-    private float[] double2float(double[] input) {
+    protected float[] double2float(double[] input) {
       if (input == null) return null;
       float[] output = new float[input.length];
       for (int i = 0; i < input.length; i++) {
         output[i] = (float)input[i];
+      }
+      return output;
+    }
+
+    protected double[] float2double(float[] input) {
+      if (input == null) return null;
+      double[] output = new double[input.length];
+      for (int i = 0; i < input.length; i++) {
+        output[i] = (double) input[i];
       }
       return output;
     }

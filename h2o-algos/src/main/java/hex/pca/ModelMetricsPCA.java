@@ -25,4 +25,17 @@ public class ModelMetricsPCA extends ModelMetricsUnsupervised {
       return m.addModelMetrics(new ModelMetricsPCA(m, f, _customMetric));
     }
   }
+
+  // Builder calculates just as H2O-runtime
+  public static class IndependentPCAMetricBuilder
+    extends IndependentMetricBuilderUnsupervised<IndependentPCAMetricBuilder> {
+
+    @Override
+    public double[] perRow(double[] preds, float[] dataRow) { return preds; }
+
+    @Override
+    public ModelMetrics makeModelMetrics() {
+      return new ModelMetricsPCA(null, null, _customMetric);
+    }
+  }
 }
