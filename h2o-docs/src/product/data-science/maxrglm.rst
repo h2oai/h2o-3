@@ -26,8 +26,7 @@ Defining a MAXR Model
 
 -  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable.
 
-   -  For a regression model, this column must be numeric (**Real** or **Int**).
-   -  For a classification model, this column must be categorical (**Enum** or **String**). If the family is **Binomial**, the dataset cannot contain more than two levels.
+   -  For a regression model only, this column must be numeric (**Real** or **Int**).
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
