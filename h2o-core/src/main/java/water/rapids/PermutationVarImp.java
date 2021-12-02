@@ -111,7 +111,7 @@ public class PermutationVarImp {
 
         final Frame fr;
         if (n_samples > 1) {
-            if (n_samples > 1000) {
+            if (n_samples > 1000 || _model._parms._weights_column != null) {
                 fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
             } else {
                 Random rand = getRNG(seed);
