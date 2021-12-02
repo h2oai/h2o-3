@@ -179,49 +179,58 @@ Examples
 ~~~~~~~~
 
 .. tabs::
-	.. code-tab:: r R
+   .. code-tab:: r R
 
-		library(h2o)
+      library(h2o)
+      h2o.init()
 
-		# Import the prostate dataset:
-		prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+      # Import the prostate dataset:
+      prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
 
-		# Set the predictors and response:
-		response <- "GLEASON"
-		predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+      # Set the predictors & response:
+      predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+      response <- "GLEASON"
 
-		# Build and train the model:
-		maxrglm_model <- h2o.maxrglm(y = response, x = predictors, 
-					     seed = 12345, training_frame = prostate, 
-					     max_predictor_number = 2)
+      # Build & train the model:
+      maxrglmModel <- h2o.maxrglm(x = predictors, y = response, training_frame = prostate, seed = 12345, max_predictor_number = 7)
 
-		# Find the best R2 value:
-		h2o.get_best_r2_values(maxrglm_model)
+      # Retrieve the results (H2OFrame containing best model_ids, best_r2_value, & predictor subsets):
+      results <- h2o.result(maxrglmModel)
+      print(results)
 
+      # Retrieve the list of coefficients:
+      coeff <- h2o.coef(maxrglmModel)
+      print(coeff)
 
+      # Retrieve the list of standardized coefficients:
+      coeff_norm <- h2o.coef_norm(maxrglmModel)
 
-	.. code-tab:: python
+   .. code-tab:: python
 
-		import h2o
-		from h2o.estimators import H2OMaxRGLMEstimator
-		h2o.init()
+      import h2o
+      from h2o.estimators import H2OMaxRGLMEstimator
+      h2o.init()
 
-		# Import the prostate dataset:
-		prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+      # Import the prostate dataset:
+      prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
 
-		# Set the predictors and response:
-		predictors = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-		response = "GLEASON"
+      # Set the predictors & response:
+      predictors = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
+      response = "GLEASON"
 
-		# Build and train the model:
-		maxrglm_model = H2OMaxRGLMEstimator(max_predictor_number=2, seed=12345)
-		maxrglm_model.train(x=predictors, y=response, training_frame=prostate)
+      # Build & train the model:
+      maxrglmModel = H2OMaxRGLMEstimator(max_predictor_number=7, seed=12345)
+      maxrglmModel.train(x=predictors, y=response, training_frame=prostate)
 
-		# Find the best R2 value:
-		maxrglm_model.get_best_R2_values()
+      # Retrieve the results (H2OFrame containing best model_ids, best_r2_value, & predictor subsets):
+      results = maxrglmModel.result()
+      print(results)
 
+      # Retrieve the list of coefficients:
+      coeff = maxrglmModel.coef()
+      print(coeff)
 
-
-
-
+      # Retrieve the list of standardized coefficients:
+      coeff_norm = maxrglmModel.coef_norm()
+      print(coeff_norm)
 
