@@ -134,10 +134,6 @@ Defining a MAXR Model
 
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
-
-- **max_confusion_matrix_size**: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the logs. Defaults to 20.
-
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
    training.  This defaults to 0 (unlimited).
 
