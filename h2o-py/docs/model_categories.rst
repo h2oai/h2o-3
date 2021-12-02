@@ -15,7 +15,7 @@ Model Categories
     :show-inheritance:
 
 :mod:`MetricsBase`
-----------------
+------------------
 
 .. automodule:: h2o.model.metrics_base
     :members:
@@ -71,7 +71,7 @@ Model Categories
     :show-inheritance:
 
 :mod:`Word Embedding`
-----------------------
+---------------------
 .. automodule:: h2o.model.word_embedding
     :members:
     :undoc-members:

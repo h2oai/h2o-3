@@ -238,6 +238,7 @@ class NumpyFrame:
         Is column a factor/categorical column?
 
         :param column: string containing the column name
+        
         :returns: boolean
         """
         return column in self._factors or self._get_column_and_factor(column)[0] in self._factors
@@ -248,6 +249,7 @@ class NumpyFrame:
         Get a dictionary mapping a factor to its numerical representation in the NumpyFrame
 
         :param column: string containing the column name
+        
         :returns: dictionary
         """
         fact = self._factors[column]
@@ -259,6 +261,7 @@ class NumpyFrame:
         Get a dictionary mapping numerical representation of a factor to the category names.
 
         :param column: string containing the column name
+        
         :returns: dictionary
         """
         fact = self._factors[column]
@@ -574,6 +577,7 @@ def shap_summary_plot(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -710,6 +714,7 @@ def shap_explain_row_plot(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -977,6 +982,7 @@ def pd_plot(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -1107,6 +1113,7 @@ def pd_multi_plot(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1250,6 +1257,7 @@ def ice_plot(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -1608,6 +1616,7 @@ def varimp_heatmap(
     :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1723,6 +1732,7 @@ def model_correlation_heatmap(
     :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1859,6 +1869,7 @@ def residual_analysis_plot(
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -1951,6 +1962,7 @@ def learning_curve_plot(
     :return: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -2478,6 +2490,7 @@ def explain(
     :returns: H2OExplanation containing the model explanations including headers and descriptions
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -2745,6 +2758,7 @@ def explain_row(
     :returns: H2OExplanation containing the model explanations including headers and descriptions
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>

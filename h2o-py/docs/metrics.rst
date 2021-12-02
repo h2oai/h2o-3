@@ -7,6 +7,7 @@ Metrics in H2O
   :members:
   :undoc-members:
   :show-inheritance:
+  :noindex:
 
 :mod:`H2O Grid Metrics`
 -------------------------------
