@@ -20,12 +20,6 @@
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        FALSE.
-#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-#'        be automatically computed to obtain class balance during training. Requires balance_classes.
-#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-#'        balance_classes. Defaults to 5.0.
 #' @param ntrees Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth (0 for unlimited). Defaults to 20.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
@@ -42,20 +36,14 @@
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -2.
 #' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.632.
 #' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
-#' @param checkpoint Model checkpoint to resume training with.
 #' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
 #' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
-#' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
@@ -77,9 +65,6 @@ h2o.upliftRandomForest <- function(x,
                                    score_each_iteration = FALSE,
                                    score_tree_interval = 0,
                                    ignore_const_cols = TRUE,
-                                   balance_classes = FALSE,
-                                   class_sampling_factors = NULL,
-                                   max_after_balance_size = 5.0,
                                    ntrees = 50,
                                    max_depth = 20,
                                    min_rows = 1,
@@ -91,16 +76,11 @@ h2o.upliftRandomForest <- function(x,
                                    mtries = -2,
                                    sample_rate = 0.632,
                                    sample_rate_per_class = NULL,
-                                   checkpoint = NULL,
                                    col_sample_rate_change_per_level = 1,
                                    col_sample_rate_per_tree = 1,
                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                   calibrate_model = FALSE,
-                                   calibration_frame = NULL,
                                    distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                                   custom_metric_func = NULL,
-                                   export_checkpoints_dir = NULL,
                                    check_constant_response = TRUE,
                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
@@ -143,12 +123,6 @@ h2o.upliftRandomForest <- function(x,
     parms$score_tree_interval <- score_tree_interval
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
-  if (!missing(balance_classes))
-    parms$balance_classes <- balance_classes
-  if (!missing(class_sampling_factors))
-    parms$class_sampling_factors <- class_sampling_factors
-  if (!missing(max_after_balance_size))
-    parms$max_after_balance_size <- max_after_balance_size
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -171,8 +145,6 @@ h2o.upliftRandomForest <- function(x,
     parms$sample_rate <- sample_rate
   if (!missing(sample_rate_per_class))
     parms$sample_rate_per_class <- sample_rate_per_class
-  if (!missing(checkpoint))
-    parms$checkpoint <- checkpoint
   if (!missing(col_sample_rate_change_per_level))
     parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if (!missing(col_sample_rate_per_tree))
@@ -181,14 +153,6 @@ h2o.upliftRandomForest <- function(x,
     parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
-  if (!missing(calibrate_model))
-    parms$calibrate_model <- calibrate_model
-  if (!missing(calibration_frame))
-    parms$calibration_frame <- calibration_frame
-  if (!missing(custom_metric_func))
-    parms$custom_metric_func <- custom_metric_func
-  if (!missing(export_checkpoints_dir))
-    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
   if (!missing(uplift_metric))
@@ -215,9 +179,6 @@ h2o.upliftRandomForest <- function(x,
                                                    score_each_iteration = FALSE,
                                                    score_tree_interval = 0,
                                                    ignore_const_cols = TRUE,
-                                                   balance_classes = FALSE,
-                                                   class_sampling_factors = NULL,
-                                                   max_after_balance_size = 5.0,
                                                    ntrees = 50,
                                                    max_depth = 20,
                                                    min_rows = 1,
@@ -229,16 +190,11 @@ h2o.upliftRandomForest <- function(x,
                                                    mtries = -2,
                                                    sample_rate = 0.632,
                                                    sample_rate_per_class = NULL,
-                                                   checkpoint = NULL,
                                                    col_sample_rate_change_per_level = 1,
                                                    col_sample_rate_per_tree = 1,
                                                    histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                                                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                                   calibrate_model = FALSE,
-                                                   calibration_frame = NULL,
                                                    distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                                                   custom_metric_func = NULL,
-                                                   export_checkpoints_dir = NULL,
                                                    check_constant_response = TRUE,
                                                    uplift_metric = c("AUTO", "KL", "Euclidean", "ChiSquared"),
                                                    auuc_type = c("AUTO", "qini", "lift", "gain"),
@@ -285,12 +241,6 @@ h2o.upliftRandomForest <- function(x,
     parms$score_tree_interval <- score_tree_interval
   if (!missing(ignore_const_cols))
     parms$ignore_const_cols <- ignore_const_cols
-  if (!missing(balance_classes))
-    parms$balance_classes <- balance_classes
-  if (!missing(class_sampling_factors))
-    parms$class_sampling_factors <- class_sampling_factors
-  if (!missing(max_after_balance_size))
-    parms$max_after_balance_size <- max_after_balance_size
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(max_depth))
@@ -313,8 +263,6 @@ h2o.upliftRandomForest <- function(x,
     parms$sample_rate <- sample_rate
   if (!missing(sample_rate_per_class))
     parms$sample_rate_per_class <- sample_rate_per_class
-  if (!missing(checkpoint))
-    parms$checkpoint <- checkpoint
   if (!missing(col_sample_rate_change_per_level))
     parms$col_sample_rate_change_per_level <- col_sample_rate_change_per_level
   if (!missing(col_sample_rate_per_tree))
@@ -323,14 +271,6 @@ h2o.upliftRandomForest <- function(x,
     parms$histogram_type <- histogram_type
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
-  if (!missing(calibrate_model))
-    parms$calibrate_model <- calibrate_model
-  if (!missing(calibration_frame))
-    parms$calibration_frame <- calibration_frame
-  if (!missing(custom_metric_func))
-    parms$custom_metric_func <- custom_metric_func
-  if (!missing(export_checkpoints_dir))
-    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
   if (!missing(uplift_metric))

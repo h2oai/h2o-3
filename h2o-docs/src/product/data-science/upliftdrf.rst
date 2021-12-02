@@ -81,14 +81,6 @@ Defining a Uplift DRF Model
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
    training columns, since no information can be gained from them. This option is defaults to true (enabled).
 
--  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the class distribution. This option is defaults to false (not enabled), and can increase the data frame size. This option is only applicable for classification.
-
--  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these ratios are automatically computed during training to obtain the class balance. Note that this requires ``balance_classes=true``.
-
--  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
-   the training data after balancing class counts (**balance\_classes**
-   must be enabled). The value can be less than 1.0 and defaults to 5.0.
-
 -  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees (defaults to 50).
 
 -  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth. Higher values will make the model more complex and can lead to overfitting. Setting this value to 0 specifies no limit. This value defaults to 20. 
@@ -129,10 +121,6 @@ Defining a Uplift DRF Model
 
 -  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. Note that this method is sample without replacement.
 
--  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
-   previously trained model. Use this option to build a new model as a
-   continuation of a previously generated model.
-
 -  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. This can be a value > 0.0 and <= 2.0 and defaults to 1. (Note that this method is sample without replacement.) For example:
 
    level 1: **col\_sample_rate**
@@ -167,14 +155,6 @@ Defining a Uplift DRF Model
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful in GBM/DRF, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. Note that this requires a specified response column.
-
--  `calibrate_model <algo-params/calibrate_model.html>`__: Use Platt scaling to calculate calibrated class probabilities. Defaults to False.
-
--  `calibration_frame <algo-params/calibration_frame.html>`__: Specifies the frame to be used for Platt scaling.
-
--  **verbose**: Print scoring history to the console. For Uplift DRF, metrics are per tree. This option is defaults to false (not enabled).
-
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not. This option is defaults to false (not enabled).
 
@@ -454,12 +434,18 @@ FAQ
 
   -  Uplift DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours.
 
-References
-~~~~~~~~~~
+
+Uplift trees modeling sources:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 `N. J. Radcliffe, and P. D. Surry, "Real-World Uplift Modelling withSignificance-Based Uplift Trees", Stochastic Solutions White Paper, 2011. <https://stochasticsolutions.com/pdf/sig-based-up-trees.pdf>`_
 
 `P. D. Surry, and N. J. Radcliffe, "Quality measures for uplift models", 2011. <https://www.stochasticsolutions.co.uk/pdf/kdd2011late.pdf>`_
 
+References
+~~~~~~~~~~
+
 `P. Rzepakowski, and S. Jaroszewicz, "Decision trees for uplift modeling with single and multiple treatments", 2012. <https://link.springer.com/article/10.1007/s10115-011-0434-0>`_
+
+`Huigang Chen, Totte Harinen, Jeong-Yoon Lee, Mike Yung, Zhenyu Zhao, "CausalML: Python Package for Causal Machine Learning", 2020. <https://arxiv.org/abs/2002.11631>`_
 
