@@ -26,7 +26,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     algo = "targetencoder"
     supervised_learning = True
 
-    @deprecated_params({'k': 'inflection_point', 'noise_level': 'noise', 'f': 'smoothing'})
+    @deprecated_params({'k': 'inflection_point', 'f': 'smoothing', 'noise_level': 'noise'})
     def __init__(self,
                  model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
                  training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
@@ -394,8 +394,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         self._parms["seed"] = seed
 
     k = deprecated_property('k', inflection_point)
-    noise_level = deprecated_property('noise_level', noise)
     f = deprecated_property('f', smoothing)
+    noise_level = deprecated_property('noise_level', noise)
 
     def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, as_training=False, **kwargs):
         """
