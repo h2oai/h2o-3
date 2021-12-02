@@ -347,7 +347,7 @@ class H2ORuleFitEstimator(H2OEstimator):
             raise H2OValueError("This function is available for Rulefit models only")
         return self._model_json["output"]['rule_importance']
 
-    def eval_rules(self, frame, rule_ids):
+    def predict_rules(self, frame, rule_ids):
         """
         Evaluates validity of the given rules on the given data. 
 

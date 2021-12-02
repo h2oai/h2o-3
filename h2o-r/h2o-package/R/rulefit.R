@@ -249,10 +249,10 @@ h2o.rulefit <- function(x,
 #' 
 #' rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, 
 #' min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
-#' h2o.eval_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
+#' h2o.predict_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
 #' }
 #' @export
-h2o.eval_rules <- function(model, frame, rule_ids) {
+h2o.predict_rules <- function(model, frame, rule_ids) {
     o <- model
     if (is(o, "H2OModel")) {
         if (o@algorithm == "rulefit"){
