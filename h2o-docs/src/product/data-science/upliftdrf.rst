@@ -10,6 +10,10 @@ Uplift DRF can be applied in fields where we operate with two groups of subjects
 
 The current version of Uplift DRF is based on the implementation of DRF because the principle of training is similar to DRF. When given a set of data, Uplift DRF generates a forest of classification uplift trees, rather than a single classification tree. Each of these trees is a weak learner built on a subset of rows and columns. More trees will reduce the variance. Classification take the average prediction over all of their trees to make a final prediction. (Note: For a categorical response column, Uplift DRF maps factors  (e.g. 'dog', 'cat', 'mouse) in lexicographic order to a name lookup array with integer indices (e.g. 'cat -> 0, 'dog' -> 1, 'mouse' -> 2.)
 
+Uplift DRF demo
+~~~~~~~~~~~~~~~~~~~~
+Here is a `Jupyter notebook <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/uplift_random_forest_compare_causalml.ipynb>`__ where H2O Uplift DRF is compared to implementation Uplift RF from CausalML library.
+
 
 Uplift metric
 ~~~~~~~~~~~~~~
@@ -376,7 +380,7 @@ FAQ
 
 -  **What happens when you try to predict on a categorical level not seen during training?**
 
-  DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
+  Uplift DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
 -  **Does it matter if the data is sorted?**
 
@@ -450,21 +454,12 @@ FAQ
 
   -  Uplift DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours.
 
-
-Uplift DRF demo
-~~~~~~~~~~~~~~~~~~~~
-Here is a `Jupyter notebook <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/uplift_random_forest_compare_causalml.ipynb>`__ where H2O Uplift DRF is compared to implementation Uplift RF from CausalML library.
-
-Uplift DRF Algorithm
-~~~~~~~~~~~~~~~~~~~~
+References
+~~~~~~~~~~
 
 `N. J. Radcliffe, and P. D. Surry, "Real-World Uplift Modelling withSignificance-Based Uplift Trees", Stochastic Solutions White Paper, 2011. <https://stochasticsolutions.com/pdf/sig-based-up-trees.pdf>`_
 
 `P. D. Surry, and N. J. Radcliffe, "Quality measures for uplift models", 2011. <https://www.stochasticsolutions.co.uk/pdf/kdd2011late.pdf>`_
-
-
-References
-~~~~~~~~~~
 
 `P. Rzepakowski, and S. Jaroszewicz, "Decision trees for uplift modeling with single and multiple treatments", 2012. <https://link.springer.com/article/10.1007/s10115-011-0434-0>`_
 
