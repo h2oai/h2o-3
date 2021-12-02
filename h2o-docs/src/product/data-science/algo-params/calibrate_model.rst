@@ -1,7 +1,7 @@
 ``calibrate_model``
 -------------------
 
-- Available in: GBM, DRF, XGBoost, Uplift DRF
+- Available in: GBM, DRF, XGBoost
 - Hyperparameter: no
 
 Description

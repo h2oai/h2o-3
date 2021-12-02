@@ -1,7 +1,7 @@
 ``export_checkpoints_dir``
 --------------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, XGBoost, Aggregator, CoxPH, Isolation Forest, AutoML, Uplift DRF
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, PCA, GLRM, Naïve-Bayes, K-Means, Word2Vec, Stacked Ensembles, XGBoost, Aggregator, CoxPH, Isolation Forest, AutoML
 - Hyperparameter: no
 
 Description

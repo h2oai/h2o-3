@@ -281,7 +281,7 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     # Generate predictions on a validation set (if necessary):
     predict <- h2o.predict(uplift.model, newdata = valid)
 
-    # Plot AUUC:
+    # Plot Uplift Curve:
     plot(perf, metric="gain")
     
     # Get all AUUC types: 
@@ -369,10 +369,6 @@ FAQ
 -  **Should data be shuffled before training?**
 
   No.
-
--  **How does the algorithm handle highly imbalanced data in a response column?**
-
-  Specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
 
 -  **What if there are a large number of columns?**
 
