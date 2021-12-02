@@ -17,12 +17,11 @@ def class_extensions():
         :param rule_ids: string array of rule ids to be evaluated against the frame
         :return: H2OFrame with a column per each input ruleId, representing a flag whether given rule is applied to the observation or not.
         """
-        import h2o
         from h2o.frame import H2OFrame
         from h2o.utils.typechecks import assert_is_type
+        from h2o.expr import ExprNode
         assert_is_type(frame, H2OFrame)
-        astFrame = h2o.rapids('(rulefit.fit.rules {} {} {})'.format(self.model_id, frame.frame_id, rule_ids))
-        return h2o.get_frame(astFrame['key']['name'])
+        return H2OFrame._expr(expr=ExprNode("rulefit.fit.rules", self, frame, rule_ids))
     
 
 extensions = dict(

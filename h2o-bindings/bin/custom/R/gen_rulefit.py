@@ -44,9 +44,7 @@ h2o.fit_rules <- function(model, frame, rule_ids) {
     o <- model
     if (is(o, "H2OModel")) {
         if (o@algorithm == "rulefit"){
-            expr <- sprintf('(rulefit.fit.rules %s %s %s)', model@model_id, h2o.getId(frame), .collapse.char(rule_ids))
-            rapidsFrame <- h2o.rapids(expr)
-            return(h2o.getFrame(rapidsFrame$key$name))
+            return(.newExpr("rulefit.fit.rules", model@model_id, frame, rule_ids))
         } else {
             warning(paste0("No calculation available for this model"))
             return(NULL)
