@@ -109,13 +109,13 @@ public class PermutationVarImp {
         if (_model._parms._ignored_columns != null)
             featuresToCompute.removeAll(Arrays.asList(_model._parms._ignored_columns));
 
-        Frame fr = null;
+        final Frame fr;
         if (n_samples > 1) {
             if (n_samples > 1000) {
                 fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
             } else {
                 Random rand = getRNG(seed);
-                fr = _inputFrame.deepSlice(rand.longs(n_samples, 0, _inputFrame.numRows()).toArray(), null);
+                fr = _inputFrame.deepSlice(ArrayUtils.distinctLongs((int) n_samples, _inputFrame.numRows(), rand), null);
             }
         } else {
             fr = _inputFrame;

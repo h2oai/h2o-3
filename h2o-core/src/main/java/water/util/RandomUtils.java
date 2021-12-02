@@ -2,7 +2,6 @@ package water.util;
 
 import water.H2O;
 
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -11,7 +10,7 @@ public class RandomUtils {
   private static RNGType _rngType = RNGType.PCGRNG;
 
   /* Returns the configured random generator */
-  public static Random getRNG(long... seed) {
+  public static RandomBase getRNG(long... seed) {
     switch(_rngType) {
     case JavaRNG:      return new H2ORandomRNG(seed[0]);
     case XorShiftRNG:  return new XorShiftRNG (seed[0]);
@@ -24,8 +23,6 @@ public class RandomUtils {
     }
     throw H2O.fail();
   }
-
-
 
   // Converted to Java from the C
   /*
@@ -50,7 +47,7 @@ public class RandomUtils {
    *
    * http://www.pcg-random.org
    */
-  public static class PCGRNG extends Random {
+  public static class PCGRNG extends RandomBase {
     private long _state;        // Random state
     private long _inc;          // Fixed sequence, always odd
     // Seed the rng. Specified in two parts, state initializer and a sequence
@@ -120,7 +117,7 @@ public class RandomUtils {
 
   /** Stock Java RNG, but force the initial seed to have no zeros in either the
    *  low 32 or high 32 bits - leading to well known really bad behavior. */
-  public static class H2ORandomRNG extends Random {
+  public static class H2ORandomRNG extends RandomBase {
     public H2ORandomRNG(long seed) {
       super();
       if ((seed >>> 32) < 0x0000ffffL)         seed |= 0x5b93000000000000L;
@@ -132,7 +129,7 @@ public class RandomUtils {
   /** Simple XorShiftRNG.
    *  Note: According to RF benchmarks it does not provide so accurate results
    *  as {@link java.util.Random}, however it can be used as an alternative. */
-  public static class XorShiftRNG extends Random {
+  public static class XorShiftRNG extends RandomBase {
     private AtomicLong _seed;
     public XorShiftRNG (long seed) { _seed = new AtomicLong(seed); }
     @Override public long nextLong() {
@@ -194,7 +191,7 @@ public class RandomUtils {
    * @author Makoto Matsumoto and Takuji Nishimura (original C version)
    * @author Daniel Dyer (Java port)
    */
-  public static class MersenneTwisterRNG extends Random {
+  public static class MersenneTwisterRNG extends RandomBase {
 
     // Magic numbers from original C version.
     private static final int    N                = 624;

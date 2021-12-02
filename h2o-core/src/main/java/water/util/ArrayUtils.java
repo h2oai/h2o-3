@@ -1103,6 +1103,16 @@ public class ArrayUtils {
     }
   }
 
+  public static long[] distinctLongs(int n, long bound, Random rng) {
+    if (!(rng instanceof RandomBase))
+      throw new IllegalArgumentException("Random implementation needs to be created by RandomUtils and inherit from RandomBase");
+    Set<Long> rows = new HashSet<>();
+    while (rows.size() < n) {
+      rows.add(((RandomBase) rng).nextLong(bound));
+    }
+    return rows.stream().sorted().mapToLong(Long::longValue).toArray();
+  }
+
   // Generate a n by m array of random numbers drawn from the standard normal distribution
   public static double[][] gaussianArray(int n, int m) { return gaussianArray(n, m, System.currentTimeMillis()); }
   public static double[][] gaussianArray(int n, int m, long seed) {
