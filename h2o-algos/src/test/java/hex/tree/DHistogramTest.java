@@ -1,5 +1,7 @@
 package hex.tree;
 
+import hex.tree.uplift.UpliftDRF;
+import hex.tree.uplift.UpliftDRFModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
@@ -213,6 +215,9 @@ public class DHistogramTest extends TestUtil {
       DKV.put(f);
 
       TreeParameters defaultTP = new TreeParameters();
+
+      // disabled for Uplift
+      assertFalse(DHistogram.useIntOpt(null, new UpliftDRFModel.UpliftDRFParameters(), null));
       
       // disabled when constraints are used
       assertFalse(DHistogram.useIntOpt(null, null, new Constraints(new int[0], null, false)));
