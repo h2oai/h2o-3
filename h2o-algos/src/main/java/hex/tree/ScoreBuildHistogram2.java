@@ -399,14 +399,13 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double[] treatment = null;
       final int maxWorkId = _allocator.getMaxId(id);
       for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
-        if (cs == null) {
+        if (cs == null) { // chunk data cache doesn't exist yet
           if (_respIdx >= 0)
             resp = MemoryManager.malloc8d(_maxChunkSz);
           if (_predsIdx >= 0)
             preds = MemoryManager.malloc8d(_maxChunkSz);
-        }
-        if(_treatmentIdx >= 0){
-          treatment = MemoryManager.malloc8d(_maxChunkSz);
+          if (_treatmentIdx >= 0)
+            treatment = MemoryManager.malloc8d(_maxChunkSz);
         }
         cs = computeChunk(i, cs, _ws[i], resp, preds, treatment);
       }
