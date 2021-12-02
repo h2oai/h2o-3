@@ -14,6 +14,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
+import water.exceptions.H2OGridException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.BufferedString;
@@ -68,16 +69,16 @@ public class GridTest extends TestUtil {
       searchCriteria.set_max_runtime_secs(1d);
 
       Job<Grid> gridSearch = GridSearch.startGridSearch(
-          null, params, hyperParms,
-            new GridSearch.SimpleParametersBuilderFactory(),
-            searchCriteria, 2
+              null, params, hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory(),
+              searchCriteria, 2
       );
 
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
 
-     assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+      assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
     } finally {
       Scope.exit();
     }
@@ -105,11 +106,11 @@ public class GridTest extends TestUtil {
       params._response_column = "IsDepDelayed";
       params._seed = 42;
 
-      Job<Grid> gridSearch = GridSearch.startGridSearch(           
-          dest, params, hyperParms,
-          new GridSearch.SimpleParametersBuilderFactory(),
-          new HyperSpaceSearchCriteria.CartesianSearchCriteria(), 
-          2
+      Job<Grid> gridSearch = GridSearch.startGridSearch(
+              dest, params, hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory(),
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+              2
       );
       Scope.track_generic(gridSearch);
       gridSearch.stop();
@@ -122,11 +123,11 @@ public class GridTest extends TestUtil {
 
       final Grid grid = DKV.getGet(dest);
       Scope.track_generic(grid);
-      
-      for(Model m : grid.getModels()){
+
+      for (Model m : grid.getModels()) {
         Scope.track_generic(m);
       }
-    
+
       assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
 
     } finally {
@@ -165,7 +166,7 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   @Test
   public void testCoxPHGridSearch() {
     try {
@@ -177,9 +178,9 @@ public class GridTest extends TestUtil {
       trainingFrame.add("w3", Vec.makeRepSeq(trainingFrame.numRows(), 11));
       DKV.put(trainingFrame);
       Scope.track(trainingFrame);
-      
+
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
-        put("_weights_column", new String[] {"w1", "w2", "w3"});
+        put("_weights_column", new String[]{"w1", "w2", "w3"});
       }};
 
       CoxPHModel.CoxPHParameters params = new CoxPHModel.CoxPHParameters();
@@ -231,7 +232,7 @@ public class GridTest extends TestUtil {
   }
 
   @Test
-  public void testFaileH2OdParamsCleanup() {
+  public void testFailedH2OParamsCleanup() {
     try {
       Scope.enter();
       final Frame trainingFrame = parseTestFile("smalldata/iris/iris_train.csv");
@@ -320,7 +321,7 @@ public class GridTest extends TestUtil {
       final File serializedGridFile = new File(params._export_checkpoints_dir, originalGrid._key.toString());
       assertTrue(serializedGridFile.exists());
       assertTrue(serializedGridFile.isFile());
-      
+
       final Grid grid = loadGridFromFile(serializedGridFile);
       assertArrayEquals(originalGrid.getModelKeys(), grid.getModelKeys());
       Scope.track_generic(grid);
@@ -328,7 +329,7 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   private static Grid waitForModelsToTrain(Job<Grid> gs, Key<Grid> gridKey, int numModels) throws InterruptedException {
     while (gs.isRunning()) {
       Thread.sleep(1000);
@@ -366,15 +367,15 @@ public class GridTest extends TestUtil {
       final Frame trainingFrame = parseTestFile(trainKey, "smalldata/iris/iris_train.csv");
       Scope.track(trainingFrame);
       Job<Grid> gs = GridSearch.startGridSearch(
-          null, gridKey, params, hyperParms,             
-          new GridSearch.SimpleParametersBuilderFactory(),
-          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
-          recovery1, 1
+              null, gridKey, params, hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory(),
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+              recovery1, 1
       );
       Scope.track_generic(gs);
       Grid grid1 = waitForModelsToTrain(gs, gridKey, 1);
       grid1ModelKeys = grid1.getModelKeys();
-      assertTrue("full grid should not have finished", grid1ModelKeys.length < 4*3*3);
+      assertTrue("full grid should not have finished", grid1ModelKeys.length < 4 * 3 * 3);
     } finally {
       Scope.exit();
     }
@@ -394,18 +395,18 @@ public class GridTest extends TestUtil {
         assertNotNull(DKV.getGet(originalModelKey));
       }
       Job<Grid> gs2 = GridSearch.startGridSearch(
-          null, gridKey,
-          loadedGrid1.getParams(),
-          loadedGrid1.getHyperParams(),
-          new GridSearch.SimpleParametersBuilderFactory(),
-          loadedGrid1.getSearchCriteria(),
-          recovery2,
-          loadedGrid1.getParallelism()
+              null, gridKey,
+              loadedGrid1.getParams(),
+              loadedGrid1.getHyperParams(),
+              new GridSearch.SimpleParametersBuilderFactory(),
+              loadedGrid1.getSearchCriteria(),
+              recovery2,
+              loadedGrid1.getParallelism()
       );
       Scope.track_generic(gs2);
       Grid resumedGrid = waitForModelsToTrain(gs2, gridKey, grid1ModelKeys.length);
       resumedModelKeys = resumedGrid.getModelKeys();
-      assertTrue("full grid should not have finished", resumedModelKeys.length < 4*3*3);
+      assertTrue("full grid should not have finished", resumedModelKeys.length < 4 * 3 * 3);
     } finally {
       Scope.exit();
     }
@@ -453,40 +454,40 @@ public class GridTest extends TestUtil {
       Recovery<Grid> recovery = new Recovery<>(recoveryDir);
       Key gridKey = Key.make("gridSearchWithRecovery_GRID");
       Job<Grid> gs = GridSearch.startGridSearch(
-          null, gridKey, params, hyperParms,
-          new GridSearch.SimpleParametersBuilderFactory<>(),
-          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
-          recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
+              null, gridKey, params, hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory<>(),
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+              recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
       );
       Scope.track_generic(gs);
       Grid gridInProgress = DKV.getGet(gridKey);
       Scope.track_generic(gridInProgress);
-      while (gs.isRunning() && gridInProgress.getModelKeys().length == 0) {
+      while (gs.isRunning() && gridInProgress.getModelKeys().length==0) {
         System.out.println("sleeping...");
         Thread.sleep(100);
         gridInProgress = DKV.getGet(gridKey);
       }
       assertTrue(
-          "Some files should be in the recovery directory (grid in progress)", 
-          new File(recoveryDir).listFiles().length > 0
+              "Some files should be in the recovery directory (grid in progress)",
+              new File(recoveryDir).listFiles().length > 0
       );
-          
+
       // wait for grid to finish and check cleanup was done
       gs.get();
       assertEquals(
-          "Recovery directory should be empty after successful grid. " +
-              Arrays.toString(new File(recoveryDir).list()), 
-          new File(recoveryDir).listFiles().length, 0
+              "Recovery directory should be empty after successful grid. " +
+                      Arrays.toString(new File(recoveryDir).list()),
+              new File(recoveryDir).listFiles().length, 0
       );
     } finally {
       Scope.exit();
     }
   }
-  
+
   private void testGridRecovery(Key gridKey, Job gs, Frame train, String recoveryDir) throws IOException, InterruptedException {
     Grid originalGrid = DKV.getGet(gridKey);
     Scope.track_generic(originalGrid);
-    while (gs.isRunning() && originalGrid.getModelKeys().length == 0) {
+    while (gs.isRunning() && originalGrid.getModelKeys().length==0) {
       Thread.sleep(100);
     }
     assertTrue("Some files should be in the recovery directory", new File(recoveryDir).listFiles().length > 0);
@@ -497,10 +498,10 @@ public class GridTest extends TestUtil {
       Thread.sleep(100);
     }
     assertNotEquals(
-        "Recovery directory should not be empty after canceled grid.",
-        new File(recoveryDir).listFiles().length, 0
+            "Recovery directory should not be empty after canceled grid.",
+            new File(recoveryDir).listFiles().length, 0
     );
-    
+
     Key<Model>[] originalKeys = originalGrid.getModelKeys();
     originalGrid.remove();
     train.remove();
@@ -539,10 +540,10 @@ public class GridTest extends TestUtil {
       Recovery<Grid> recovery = new Recovery<>(recoveryDir);
       Key gridKey = Key.make("gridSearchWithRecovery_GRID");
       Job<Grid> gs = GridSearch.startGridSearch(
-          null, gridKey, params, hyperParms,
-          new GridSearch.SimpleParametersBuilderFactory<>(),
-          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
-          recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
+              null, gridKey, params, hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory<>(),
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+              recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
       );
       Scope.track_generic(gs);
       testGridRecovery(gridKey, gs, trainingFrame, recoveryDir);
@@ -551,11 +552,11 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   private Object[] toArrayOfArrays(double[] arr) {
     Object[] res = new Object[arr.length];
     for (int i = 0; i < arr.length; i++) {
-      res[i] = new double[] { arr[i] };
+      res[i] = new double[]{arr[i]};
     }
     return res;
   }
@@ -571,8 +572,8 @@ public class GridTest extends TestUtil {
       trainingFrame.remove(0);
 
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
-        put("_alpha", toArrayOfArrays(new double[]{ 0.01, 0.3, 0.5, 0.7, 0.9}));
-        put("_lambda", toArrayOfArrays(new double[]{ 1e-5, 1e-6, 1e-7, 1e-8, 5e-5, 5e-6, 5e-7, 5e-8}));
+        put("_alpha", toArrayOfArrays(new double[]{0.01, 0.3, 0.5, 0.7, 0.9}));
+        put("_lambda", toArrayOfArrays(new double[]{1e-5, 1e-6, 1e-7, 1e-8, 5e-5, 5e-6, 5e-7, 5e-8}));
       }};
 
       GLMModel.GLMParameters params = new GLMModel.GLMParameters();
@@ -582,10 +583,10 @@ public class GridTest extends TestUtil {
       Recovery<Grid> recovery = new Recovery<>(recoveryDir);
       Key gridKey = Key.make("gridSearchWithRecoveryGlm");
       Job<Grid> gs = GridSearch.startGridSearch(
-          null, gridKey, params, hyperParms,
-          new GridSearch.SimpleParametersBuilderFactory<>(),
-          new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
-          recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
+              null, gridKey, params, hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory<>(),
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+              recovery, GridSearch.SEQUENTIAL_MODEL_BUILDING
       );
       Scope.track_generic(gs);
       testGridRecovery(gridKey, gs, trainingFrame, recoveryDir);
@@ -619,12 +620,12 @@ public class GridTest extends TestUtil {
       Scope.track_generic(gs);
       final Grid originalGrid = gs.get();
       Scope.track_generic(originalGrid);
-      
+
       final String originalGridPath = exportDir + "/" + originalGrid._key.toString();
       originalGrid.exportBinary(exportDir, true);
       assertTrue(Files.exists(Paths.get(originalGridPath)));
-      for(Model model : originalGrid.getModels()){
-        assertTrue(Files.exists(Paths.get(exportDir, model._key.toString())));  
+      for (Model model : originalGrid.getModels()) {
+        assertTrue(Files.exists(Paths.get(exportDir, model._key.toString())));
       }
     } finally {
       Scope.exit();
@@ -642,7 +643,7 @@ public class GridTest extends TestUtil {
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
         put("_ntrees", new Integer[]{5, 10, 50});
-        put("_max_depth", new Integer[]{2,3});
+        put("_max_depth", new Integer[]{2, 3});
         put("_learn_rate", new Double[]{.7});
       }};
 
@@ -674,7 +675,7 @@ public class GridTest extends TestUtil {
       final Freezable possibleGrid = autoBuffer.get();
       assertTrue(possibleGrid instanceof Grid);
       return (Grid) possibleGrid;
-      
+
     }
   }
 
@@ -713,7 +714,7 @@ public class GridTest extends TestUtil {
       assertEquals(0, failures.getFailureCount());
 
       errGrid.appendFailedModelParameters(errGrid.getModels()[0]._key, params, new RuntimeException("Test exception"));
-      
+
       failures = errGrid.getFailures();
       assertEquals(1, failures.getFailureCount());
 
@@ -773,7 +774,7 @@ public class GridTest extends TestUtil {
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
-      
+
       for (Model m : grid.getModels()) {
         Model foundModel = grid.getModel(m._input_parms);
         assertNotNull("Expected to find the model in model cache.", foundModel);
@@ -784,7 +785,8 @@ public class GridTest extends TestUtil {
     }
   }
 
-  @Test // this test is fine as with Cartesian we don't really have early stopping based on max_models ( always train whole hyper space)
+  @Test
+  // this test is fine as with Cartesian we don't really have early stopping based on max_models ( always train whole hyper space)
   public void testParallelCartesian() {
     try {
       Scope.enter();
@@ -796,7 +798,7 @@ public class GridTest extends TestUtil {
         put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
         put("_ntrees", new Integer[]{5});
         put("_max_depth", new Integer[]{2});
-        put("_min_rows", new Integer[]{10,11,12,13,14});
+        put("_min_rows", new Integer[]{10, 11, 12, 13, 14});
         put("_learn_rate", new Double[]{.7});
       }};
 
@@ -838,7 +840,7 @@ public class GridTest extends TestUtil {
         put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
         put("_ntrees", new Integer[]{5});
         put("_max_depth", new Integer[]{2});
-        put("_min_rows", new Integer[]{10,11,12,13,14});
+        put("_min_rows", new Integer[]{10, 11, 12, 13, 14});
         put("_learn_rate", new Double[]{.7});
       }};
 
@@ -874,7 +876,7 @@ public class GridTest extends TestUtil {
         put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
         put("_ntrees", new Integer[]{5});
         put("_max_depth", new Integer[]{2});
-        put("_min_rows", new Integer[]{10,11,12,13,14});
+        put("_min_rows", new Integer[]{10, 11, 12, 13, 14});
         put("_learn_rate", new Double[]{.7});
       }};
 
@@ -906,12 +908,12 @@ public class GridTest extends TestUtil {
       Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
 
       Map<String, Object[]> hyperParms = Collections.singletonMap(
-        "_cancel_job", new Boolean[]{true}
+              "_cancel_job", new Boolean[]{true}
       );
 
       DummyModelParameters params = new DummyModelParameters();
       params._train = trainingFrame._key;
-      
+
       Grid grid = GridSearch.startGridSearch(null, params, hyperParms).get();
       Scope.track_generic(grid);
 
@@ -932,19 +934,53 @@ public class GridTest extends TestUtil {
       Map<String, Object[]> hyperParms = Collections.singletonMap(
               "_cancel_job", new Boolean[]{true}
       );
-      
+
       DummyModelParameters params = new DummyModelParameters();
       params._train = trainingFrame._key;
       params._on_exception_action = new MessageInstallAction(proofKey, "onExceptionalCompletionCalled");
 
       Grid grid = GridSearch.startGridSearch(null, params, hyperParms).get();
       Scope.track_generic(grid);
-      
+
       assertEquals("Computed onExceptionalCompletionCalled", DKV.getGet(proofKey).toString());
     } finally {
       Scope.exit();
       DKV.remove(proofKey);
     }
+  }
+
+  @Test(expected = H2OGridException.class)
+  public void test_grid_cancelled_on_consecutive_model_failures() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parseTestFile("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+      String target = "species";
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.bernoulli});  // incompatible with iris
+        put("_ntrees", new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        put("_max_depth", new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+//        put("_min_rows", new Integer[]{5000000}); // Invalid hyperparameter, causes model training to fail
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = target;
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void test_parallel_grid_cancelled_on_consecutive_model_failures() {
+
   }
 
 }

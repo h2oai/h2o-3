@@ -23,6 +23,8 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
+import water.exceptions.H2OAutoMLException;
+import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;
@@ -60,14 +62,21 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         applyPreprocessing(baseParams);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        return GridSearch.startGridSearch(
-                resultKey,
-                baseParams,
-                hyperParams,
-                new GridSearch.SimpleParametersBuilderFactory<>(),
-                searchCriteria,
-                GridSearch.SEQUENTIAL_MODEL_BUILDING
-        );
+        try {
+            Job job = GridSearch.startGridSearch(
+                    resultKey,
+                    baseParams,
+                    hyperParams,
+                    new GridSearch.SimpleParametersBuilderFactory<>(),
+                    searchCriteria,
+                    GridSearch.SEQUENTIAL_MODEL_BUILDING
+            );
+            
+            return job;
+        } catch (H2OGridException exception) {
+            aml().eventLog().warn(Stage.ModelTraining, "Skipping model search "+resultKey+" due to exception: "+exception);
+            return null;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -95,7 +104,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return builder.trainModelOnH2ONode();
         } catch (H2OIllegalArgumentException exception) {
             aml().eventLog().error(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
-            onDone(null);
             return null;
         }
     }

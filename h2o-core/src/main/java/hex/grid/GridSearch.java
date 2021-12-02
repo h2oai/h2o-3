@@ -6,12 +6,14 @@ import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
+import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -67,14 +69,18 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see #startGridSearch(Key, Key, HyperSpaceWalker, Recovery, int)
  */
 public final class GridSearch<MP extends Model.Parameters> {
+  private static final int DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES = 10;
+  
   public final Key<Grid> _result;
   public final Job<Grid> _job;
   public final Recovery<Grid> _recovery;
   public final int _parallelism;
+  public int _maxConsecutiveModelFailures = DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES;
 
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
+  private final AtomicInteger _consecutiveModelFailures = new AtomicInteger();
 
   private GridSearch(
       final Key<Job> jobKey,
@@ -128,6 +134,16 @@ public final class GridSearch<MP extends Model.Parameters> {
       @Override
       public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
         Log.warn("GridSearch job " + _job._description + " completed with exception: " + ex);
+        try {
+          // user (or AutoML) may want to cancel a grid search in the middle of the search for various reasons
+          //  without wanting to throw away the grid itself with all the models previously trained.
+          if (Grid.isJobCanceled(ex))
+            Log.info("Keeping incomplete grid "+_job._result+" after cancellation of job "+_job._description);
+          else  
+            Keyed.remove(_job._result); // ensure that grid is cleaned up if it was completed abnormally.
+        } catch (Exception logged) {
+          Log.warn("Exception thrown when removing result from job " + _job._description, logged);
+        }
         return true;
       }
     }, gridWork, maxRuntimeSecs());
@@ -209,6 +225,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     @Override
     public void onBuildSuccess(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
+        _consecutiveModelFailures.set(0);
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
         onModel(grid, finishedModel._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
@@ -232,7 +249,11 @@ public final class GridSearch<MP extends Model.Parameters> {
       } finally {
         parallelSearchGridLock.unlock();
       }
-      attemptBuildNextModel(parallelModelBuilder, null);
+      if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+        _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures", modelBuildFailure.getThrowable()));
+      } else {
+        attemptBuildNextModel(parallelModelBuilder, null);
+      }
     }
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
@@ -354,6 +375,7 @@ public final class GridSearch<MP extends Model.Parameters> {
 
           //// build the model!
           model = buildModel(params, grid, ++counter, protoModelKey);
+          _consecutiveModelFailures.set(0);
           if (model != null) {
             model.fillScoringInfo(scoringInfo);
             grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -375,6 +397,9 @@ public final class GridSearch<MP extends Model.Parameters> {
               Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
           } else {
             Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+            if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+              _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures", e));
+            }
           }
 
           grid.appendFailedModelParameters(model != null ? model._key : null, params, e);

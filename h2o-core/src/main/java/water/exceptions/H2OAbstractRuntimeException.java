@@ -5,7 +5,10 @@ import water.H2OError;
 import water.util.IcedHashMapGeneric;
 
 /**
- * RuntimeException which results in an http 400 error, and serves as a base class for other error types.
+ * RuntimeException which results in a http 400 error by default, and serves as a base class for other error types.
+ * Note that the HTTP error status can be overridden when converting the exception to {@link H2OError}
+ * when overriding {@link #toH2OError(String)}.
+ * 
  * NOTE: don't use this directly; use more specific types.
  */
 abstract public class H2OAbstractRuntimeException extends RuntimeException {
@@ -28,7 +31,7 @@ abstract public class H2OAbstractRuntimeException extends RuntimeException {
   }
 
   public H2OError toH2OError() {
-    return new H2OError(timestamp, null, getMessage(), dev_message, HTTP_RESPONSE_CODE(), values, this);
+    return toH2OError(null);
   }
 
   public H2OError toH2OError(String error_url) {

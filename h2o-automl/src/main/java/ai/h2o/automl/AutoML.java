@@ -3,6 +3,8 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.ModelingStepsExecutor.ResultState;
+import ai.h2o.automl.ModelingStepsExecutor.ResultStatus;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
@@ -15,6 +17,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
+import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -23,6 +26,7 @@ import water.util.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
@@ -45,6 +49,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
   public static final String keySeparator = "@@";
+  
+  private static final int DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES = 10; 
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
@@ -131,6 +137,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   WorkAllocations _workAllocations;
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
+  int _maxConsecutiveModelFailures = DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES;
+  AtomicInteger _consecutiveModelFailures = new AtomicInteger();
   AtomicLong _incrementalSeed = new AtomicLong();
   private String _runId;
 
@@ -421,8 +429,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _modelingStepsExecutor.start();
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.get().format(_runCountdown.start_time()))
             .setNamedValue("start_epoch", _runCountdown.start_time(), EventLogEntry.epochFormat.get());
-    learn();
-    stop();
+    try {
+      learn();
+    } finally {
+      stop();
+    }
   }
   
   @Override
@@ -636,21 +647,28 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   //*****************  Training Jobs  *****************//
 
   private void learn() {
-    List<ModelingStep> executed = new ArrayList<>();
+    List<ModelingStep> completed = new ArrayList<>();
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
     }
     for (ModelingStep step : getExecutionPlan()) {
         if (!exceededSearchLimits(step)) {
-          if (_modelingStepsExecutor.submit(step, job())) {
-            executed.add(step);
+          ResultState state = _modelingStepsExecutor.submit(step, job());
+          if (state.is(ResultStatus.success)) {
+            _consecutiveModelFailures.set(0);
+            completed.add(step);
+          } else if (state.is(ResultStatus.failed)) {
+            _consecutiveModelFailures.incrementAndGet();
+            if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+              throw new H2OAutoMLException("Aborting AutoML after too many consecutive model failures", state.error());
+            }
           }
         }
     }
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
     }
-    _actualModelingSteps = session().getModelingStepsRegistry().createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
+    _actualModelingSteps = session().getModelingStepsRegistry().createDefinitionPlanFromSteps(completed.toArray(new ModelingStep[0]));
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
   }
 
