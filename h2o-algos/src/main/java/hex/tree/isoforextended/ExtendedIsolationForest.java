@@ -155,7 +155,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
             IsolationTree isolationTree = new IsolationTree(heightLimit, _parms._extension_level);
             for (int tid = 0; tid < _parms._ntrees; tid++) {
                 Timer timer = new Timer();
-                Frame subSample = _train.deepSlice(ArrayUtils.distinctLongs(_parms._sample_size, _train.numRows(), _rand), null);
+                Frame subSample = MRUtils.sampleFrameSmall(_train, _parms._sample_size, _rand);
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
                 CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
                 if (LOG.isDebugEnabled()) {

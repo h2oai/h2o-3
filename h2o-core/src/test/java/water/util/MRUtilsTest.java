@@ -5,6 +5,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Scope;
+import water.TestFrameCatalog;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
@@ -21,11 +22,11 @@ public class MRUtilsTest extends TestUtil {
 
     @Test
     public void testSampleWithWeight() {
-        Frame f = parseTestFile("bigdata/laptop/lending-club/loan.csv");
-        Scope.enter();
-        Scope.track(f);
-        String column = "loan_amnt";
+        final String column = "loan_amnt";
         try {
+            Scope.enter();
+            Frame f = parseTestFile("bigdata/laptop/lending-club/loan.csv");
+            Scope.track(f);
             Frame f1 = MRUtils.sampleFrame(f, 10000, 1);
             Frame f2 = MRUtils.sampleFrame(f, 10000, 2);
             Frame f3 = MRUtils.sampleFrame(f, 10000, 3);
@@ -61,6 +62,19 @@ public class MRUtilsTest extends TestUtil {
             // Sampling when considering the weights should have significantly higher sums of the weights than without considering them.
             assert 0.8 * mean_weight_weighted > mean_weight;
 
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSampleSmall() {
+        try {
+            Scope.enter();
+            Frame fr = TestFrameCatalog.oneChunkFewRows();
+            Assert.assertSame(fr, MRUtils.sampleFrameSmall(fr, (int) fr.numRows(), 42L));
+            Assert.assertSame(fr, MRUtils.sampleFrameSmall(fr, (int) fr.numRows() + 1, 42L));
+            Assert.assertEquals(2L, MRUtils.sampleFrameSmall(fr, 2, 42L).numRows());
         } finally {
             Scope.exit();
         }

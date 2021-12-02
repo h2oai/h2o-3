@@ -114,8 +114,7 @@ public class PermutationVarImp {
             if (n_samples > 1000 || _model._parms._weights_column != null) {
                 fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
             } else {
-                Random rand = getRNG(seed);
-                fr = _inputFrame.deepSlice(ArrayUtils.distinctLongs((int) n_samples, _inputFrame.numRows(), rand), null);
+                fr = MRUtils.sampleFrameSmall(_inputFrame, (int) n_samples, seed);
             }
         } else {
             fr = _inputFrame;

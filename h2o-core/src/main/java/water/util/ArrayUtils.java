@@ -1103,7 +1103,17 @@ public class ArrayUtils {
     }
   }
 
+  /**
+   * Generates a random array of n distinct non-negative long values. Values are sorted for reproducibility.  
+   * 
+   * @param n desired size of the array
+   * @param bound (exclusive) upper bound of maximum long-value that can be included 
+   * @param rng random generator
+   * @return long array of length n holding values [0, bound)
+   */
   public static long[] distinctLongs(int n, long bound, Random rng) {
+    if (n > bound)
+      throw new IllegalArgumentException("argument bound (=" + bound + ") needs to be lower or equal to n (=" + n + ")");
     if (!(rng instanceof RandomBase))
       throw new IllegalArgumentException("Random implementation needs to be created by RandomUtils and inherit from RandomBase");
     Set<Long> rows = new HashSet<>();

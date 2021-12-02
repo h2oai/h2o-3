@@ -545,4 +545,33 @@ public class ArrayUtilsTest {
     interpolateLinear(complex);
     assertArrayEquals("Interpolated array should be"+Arrays.toString(complexExpected)+" but is"+Arrays.toString(complex), complexExpected, complex, 0);
   }
+
+  @Test
+  public void testDistinctLongs() {
+    assertArrayEquals(new long[0], ArrayUtils.distinctLongs(0, 100L, RandomUtils.getRNG(42)));
+    assertArrayEquals(
+            ArrayUtils.toString(ArrayUtils.seq(0, 33)), 
+            ArrayUtils.toString(ArrayUtils.distinctLongs(33, 33L, RandomUtils.getRNG(42)))); // comparing strings to avoid int-long conversion ;)
+    
+    long bound = (long) Integer.MAX_VALUE + 1;
+    long[] vals = ArrayUtils.distinctLongs(33, bound, RandomUtils.getRNG(42));
+    assertEquals(33, vals.length);
+    for (int i = 0; i < vals.length; i++) {
+      assertTrue(vals[i] < bound);
+      assertTrue(i == 0 || vals[i - 1] < vals[i]);
+    }
+    try {
+      ArrayUtils.distinctLongs(11, 10, RandomUtils.getRNG(42));
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertEquals(e.getMessage(), "argument bound (=10) needs to be lower or equal to n (=11)");
+    }
+    try {
+      ArrayUtils.distinctLongs(11, 12, new Random());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertEquals(e.getMessage(), "Random implementation needs to be created by RandomUtils and inherit from RandomBase");
+    }
+  }
+
 }
