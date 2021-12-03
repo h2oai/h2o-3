@@ -4,20 +4,9 @@ source("../../scripts/h2o-r-test-setup.R")
 # dataset - synthetic dataset
 
 test.pvalue.syn.tweedie <- function(conn){
-	set.seed = 123
-	N=10; p=2
-	nzc=2
-	x=matrix(rnorm(N*p),N,p)
-	beta=rnorm(nzc)
-	f = x[,seq(nzc)]%*%beta
-	mu=exp(f)
-	y=rpois(N,mu)
-	wts = sample(1:6, N, TRUE)*10
-
-	data =cbind(y,wts,x)
-	data = data.frame(data)
-	hdata = as.h2o(data,destination_frame = "data")
-	
+	hdata <- h2o.importFile(locate("smalldata/glm_test/tweediePvalue.csv"))
+	data <- as.data.frame(hdata)
+	wts <- data$wts
 	#For tweedie
 	(gg3 =glm(y~.- wts,family = tweedie(var.power=1,link.power=0),data = data,offset = wts/10))
 	r_pval = as.numeric(summary(gg3)$coefficients[,4])

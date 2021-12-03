@@ -131,6 +131,7 @@ public class MaxRGLM extends ModelBuilder<MaxRGLMModel, MaxRGLMModel.MaxRGLMPara
                 model._output._best_model_ids = new Key[_parms._max_predictor_number];
                 model._output._best_r2_values = new double[_parms._max_predictor_number];
                 model._output._best_model_predictors = new String[_parms._max_predictor_number][];
+                model._output._coefficient_names = new String[_parms._max_predictor_number][];
                 // build glm model with num_predictors and find one with best R2
                 for (int predNum=1; predNum <= _parms._max_predictor_number; predNum++) { 
                     int numModels = combinatorial(_numPredictors, predNum);

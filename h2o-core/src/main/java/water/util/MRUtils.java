@@ -402,7 +402,7 @@ public class MRUtils {
    */
   public static Frame sampleFrame(Frame fr, final long rows, final String weightColumn, final long seed) {
     if (fr == null) return null;
-    final int weightIdx = weightColumn != null ? ArrayUtils.indexOf(fr.names(), weightColumn) : -1;
+    final int weightIdx = fr.find(weightColumn);
     final double fractionOfWeights;
     if (weightIdx < 0) {
       fractionOfWeights = rows > 0 ? (double)rows / fr.numRows(): 1.f;

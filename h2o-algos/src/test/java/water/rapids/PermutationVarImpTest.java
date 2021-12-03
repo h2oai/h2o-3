@@ -1,7 +1,9 @@
-package hex.varimp;
+package water.rapids;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.tree.drf.DRF;
+import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
@@ -13,9 +15,12 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.FVecFactory;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.rapids.PermutationVarImp;
 import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.RandomUtils;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -39,7 +44,7 @@ public class PermutationVarImpTest extends TestUtil {
     @Test
     public void testMetricGLMBinomial() {
         GLMModel model = null;
-        Frame fr = parse_test_file("smalldata/glm_test/glm_test2.csv");
+        Frame fr = parseTestFile("smalldata/glm_test/glm_test2.csv");
         Frame score = null;
         try {
             Scope.enter();
@@ -51,7 +56,7 @@ public class PermutationVarImpTest extends TestUtil {
             params._standardize = false;
             params._max_iterations = 20;
 
-            GLM glm = new GLM( params);
+            GLM glm = new GLM(params);
             model = glm.trainModel().get();
             score = model.score(fr);
 
@@ -66,8 +71,8 @@ public class PermutationVarImpTest extends TestUtil {
             TwoDimTable pviTableLogloss = pvi.getPermutationVarImp("logloss");
 
             // the first column contains the relative (Permutation Variable) importance
-            for (int row = 0 ; row < pviTableAuc.getRowDim() ; row++){
-                String [] colTypes = pviTableRmse.getColTypes();
+            for (int row = 0; row < pviTableAuc.getRowDim(); row++) {
+                String[] colTypes = pviTableRmse.getColTypes();
                 Assert.assertTrue(colTypes[0].equals("double"));
                 Assert.assertTrue(colTypes[1].equals("double"));
                 Assert.assertTrue(colTypes[2].equals("double"));
@@ -102,7 +107,7 @@ public class PermutationVarImpTest extends TestUtil {
         Frame fr = null, fr2 = null;
         try {
             Scope.enter();
-            fr = parse_test_file("./smalldata/junit/cars.csv");
+            fr = parseTestFile("./smalldata/junit/cars.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
 
             parms._train = fr._key;
@@ -146,7 +151,7 @@ public class PermutationVarImpTest extends TestUtil {
             Scope.enter();
             final String response = "CAPSULE";
             final String testFile = "./smalldata/logreg/prostate.csv";
-            fr = parse_test_file(testFile)
+            fr = parseTestFile(testFile)
                     .toCategoricalCol("RACE")
                     .toCategoricalCol("GLEASON")
                     .toCategoricalCol(response);
@@ -170,11 +175,11 @@ public class PermutationVarImpTest extends TestUtil {
             PermutationVarImp fi = new PermutationVarImp(gbm, fr);
             TwoDimTable pvi = fi.getPermutationVarImp("auto");
 
-            String [] colTypes = pvi.getColTypes();
+            String[] colTypes = pvi.getColTypes();
 
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
-            Assert.assertTrue( colTypes[2].equals("double"));
+            Assert.assertTrue(colTypes[0].equals("double"));
+            Assert.assertTrue(colTypes[1].equals("double"));
+            Assert.assertTrue(colTypes[2].equals("double"));
         } finally {
             if (fr != null) fr.remove();
             Scope.exit();
@@ -185,13 +190,13 @@ public class PermutationVarImpTest extends TestUtil {
      * Testing Permutation Variable importance on GLM model
      */
     @Test
-    public void testPermVarImOutput(){
+    public void testPermVarImOutput() {
         GLMModel model = null;
 
         Key parsed = Key.make("prostate_parsed");
         Key modelKey = Key.make("prostate_model");
 
-        Frame fr = parse_test_file(parsed, "smalldata/logreg/prostate.csv");
+        Frame fr = parseTestFile(parsed, "smalldata/logreg/prostate.csv");
         Key betaConsKey = Key.make("beta_constraints");
 
         FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
@@ -219,11 +224,11 @@ public class PermutationVarImpTest extends TestUtil {
             String ts = table.toString();
             assertTrue(ts.length() > 0);
 
-            String [] colTypes = table.getColTypes();
+            String[] colTypes = table.getColTypes();
 
-            Assert.assertTrue( colTypes[0].equals("double"));
-            Assert.assertTrue( colTypes[1].equals("double"));
-            Assert.assertTrue( colTypes[2].equals("double"));
+            Assert.assertTrue(colTypes[0].equals("double"));
+            Assert.assertTrue(colTypes[1].equals("double"));
+            Assert.assertTrue(colTypes[2].equals("double"));
         } finally {
             fr.delete();
             betaConstraints.delete();
@@ -249,19 +254,19 @@ public class PermutationVarImpTest extends TestUtil {
     }
 
     /**
-     * Test Permutation Variable Importance together with GLM model and 
-     * check whether the PVI values ordered are similar to the 
+     * Test Permutation Variable Importance together with GLM model and
+     * check whether the PVI values ordered are similar to the
      * coefficients from the GLM. Allows +-3 elements to be in different oreder
      */
     @Test
-    public void testPermVarImpGLM(){
+    public void testPermVarImpGLM() {
         Scope.enter();
         Key parsed = Key.make("cars_parsed");
         Frame fr = null;
         GLMModel model = null;
         try {
-            fr = parse_test_file(parsed, "smalldata/junit/cars.csv");
-            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson, GLMModel.GLMParameters.Family.poisson.defaultLink, new double[]{0}, new double[]{0},0,0);
+            fr = parseTestFile(parsed, "smalldata/junit/cars.csv");
+            GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.poisson, GLMModel.GLMParameters.Family.poisson.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
             params._response_column = "power (hp)";
             params._ignored_columns = new String[]{"name"};
             params._train = parsed;
@@ -279,7 +284,7 @@ public class PermutationVarImpTest extends TestUtil {
 
             // Variable -> Relative Importance 
             Map<String, Double> perVarImp = new HashMap<>();
-            for (int i = 0; i< permVarImpTable.getRowDim(); i ++)
+            for (int i = 0; i < permVarImpTable.getRowDim(); i++)
                 perVarImp.put((String) permVarImpTable.getRowHeaders()[i], (double) permVarImpTable.get(i, 0));
             Map<String, Double> coefficients = model
                     .coefficients(true)
@@ -292,8 +297,8 @@ public class PermutationVarImpTest extends TestUtil {
             Map<String, Double> sPvi = MapSort.sortByValue(perVarImp);
 
             // Instead of comparing values compare positions (rank)
-            String [] coeff = new String[sCoefficients.size() - 1];
-            String [] pvi = new String[perVarImp.size()];
+            String[] coeff = new String[sCoefficients.size() - 1];
+            String[] pvi = new String[perVarImp.size()];
 
             int id = 0;
             for (String name : sCoefficients.keySet()) {
@@ -314,26 +319,26 @@ public class PermutationVarImpTest extends TestUtil {
             // *      ...       *        ...        *     (variable)
             // |\\    ...   / / | \ \    ...      //|     (compared)
             // * **   ...  *  * * *  *   ...    * * *     (variable)
-            for (int i = 0 ; i < size; i++){
-                if (i == 0){
+            for (int i = 0; i < size; i++) {
+                if (i == 0) {
                     assertTrue(pvi[i].equals(coeff[i]) ||
                             pvi[i].equals(coeff[i + 1]) ||
                             pvi[i].equals(coeff[i + 2]));
 
-                } else if (i == 1){
+                } else if (i == 1) {
                     assertTrue(pvi[i].equals(coeff[i]) ||
                             pvi[i].equals(coeff[i - 1]) ||
                             pvi[i].equals(coeff[i + 1]) ||
                             pvi[i].equals(coeff[i + 2]));
 
-                } else if (i >= 2 && i < size - 2){
+                } else if (i >= 2 && i < size - 2) {
                     assertTrue(pvi[i].equals(coeff[i]) ||
                             pvi[i].equals(coeff[i - 1]) ||
                             pvi[i].equals(coeff[i - 2]) ||
                             pvi[i].equals(coeff[i + 1]) ||
                             pvi[i].equals(coeff[i + 2]));
 
-                } else if (i == size - 2){
+                } else if (i == size - 2) {
                     assertTrue(pvi[i].equals(coeff[i]) ||
                             pvi[i].equals(coeff[i - 1]) ||
                             pvi[i].equals(coeff[i - 2]) ||
@@ -352,4 +357,60 @@ public class PermutationVarImpTest extends TestUtil {
             Scope.exit();
         }
     }
+
+
+    @Test
+    public void testPermVarImpWeights() {
+        try {
+            Scope.enter();
+            Random r = RandomUtils.getRNG(42);
+            double[] resp = new double[10_000];
+            double[] feat1 = new double[resp.length];
+            double[] feat2 = new double[resp.length];
+            double[] weights = new double[resp.length];
+            for (int i = 0; i < resp.length; i++) {
+                if (i < 100) {
+                    weights[i] = 1;
+                    feat1[i] = r.nextDouble();
+                    feat2[i] = r.nextDouble();
+                } else {
+                    weights[i] = 0;
+                    feat1[i] = r.nextDouble(); // keep the same distribution in 0-weighted rows as in 1-weighted 
+                    feat2[i] = 10;             // skew the distribution for 0-weighted rows in column 2
+                }
+                resp[i] = feat1[i] + feat2[i];
+            }
+            Frame fr = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withColNames("c1", "c2", "weight", "response")
+                    .withDataForCol(0, feat1)
+                    .withDataForCol(1, feat2)
+                    .withDataForCol(2, weights)
+                    .withDataForCol(3, resp)
+                    .build();
+
+            DRFModel.DRFParameters p = new DRFModel.DRFParameters();
+            p._train = fr._key;
+            p._response_column = "response";
+            p._weights_column = "weight";
+            p._mtries = 1;
+            p._seed = 0xCAFE;
+            DRFModel m = new DRF(p).trainModel().get();
+            Scope.track_generic(m);
+
+            PermutationVarImp permVarImp = new PermutationVarImp(m, fr);
+            Map<String, Double> estimatedVarImp = permVarImp.calculatePermutationVarImp(
+                    "MSE", fr.vec(p._weights_column).nzCnt(), m._output.features(), 42);
+
+            Log.info("Actual varimp: " + m._output._variable_importances);
+            Log.info("Estimated varimp: " + estimatedVarImp);
+            double viC1 = estimatedVarImp.get("c1");
+            double viC2 = estimatedVarImp.get("c2");
+
+            Assert.assertArrayEquals(new double[]{0.5, 0.5}, new double[]{viC1/(viC1+viC2), viC2/(viC1+viC2)}, 0.1);
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }
