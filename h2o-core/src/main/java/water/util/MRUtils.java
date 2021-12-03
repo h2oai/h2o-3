@@ -446,4 +446,34 @@ public class MRUtils {
     return r;
   }
 
+  /**
+   * Sample small number of rows from a frame. Doesn't support weights.
+   * 
+   * Meaning of "small" is relative, it shouldn't be more that 10k of rows.
+   * 
+   * @param fr Input frame
+   * @param rows Exact number of rows to sample
+   * @param seed Seed for RNG
+   * @return Sampled frame, guaranteed to have exactly specified #rows (as long as the frame is large enough)
+   */
+  public static Frame sampleFrameSmall(Frame fr, final int rows, final long seed) {
+    return sampleFrameSmall(fr, rows, getRNG(seed));
+  }
+
+  /**
+   * Sample small number of rows from a frame. Doesn't support weights.
+   *
+   * Meaning of "small" is relative, it shouldn't be more that 10k of rows.
+   *
+   * @param fr Input frame
+   * @param rows Exact number of rows to sample
+   * @param rand Random Generator
+   * @return Sampled frame, guaranteed to have exactly specified #rows (as long as the frame is large enough)
+   */
+  public static Frame sampleFrameSmall(Frame fr, final int rows, final Random rand) {
+    if (rows >= fr.numRows())
+      return fr;
+    return fr.deepSlice(ArrayUtils.distinctLongs(rows, fr.numRows(), rand), null);
+  }
+
 }

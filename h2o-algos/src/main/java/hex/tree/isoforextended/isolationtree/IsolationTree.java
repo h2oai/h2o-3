@@ -251,10 +251,18 @@ public class IsolationTree {
      */
     public static double[] gaussianVector(int n, int zeroNum, long seed) {
         double[] gaussian = ArrayUtils.gaussianVector(n, seed);
-        int[] indexToMakeZero = RandomUtils.getRNG(seed).ints(0, n).distinct().limit(zeroNum).toArray();
+        Random r = RandomUtils.getRNG(seed);
 
-        for (int index: indexToMakeZero) {
-            gaussian[index] = 0.0;
+        while (zeroNum > 0) {
+            int pos = r.nextInt(n);
+            if (!Double.isNaN(gaussian[pos])) {
+                gaussian[pos] = Double.NaN;
+                zeroNum--;
+            }
+        }
+        for (int i = 0; i < gaussian.length; i++) {
+            if (Double.isNaN(gaussian[i]))
+                gaussian[i] = 0;
         }
         return gaussian;
     }
