@@ -338,7 +338,7 @@ public class FriedmanPopescusH {
                     totalWeight += weightStackAr[stackSize];
                 } else {
                     // non-terminal node:
-                    int featureId = ArrayUtils.indexOf(targetFeature, currNode.getColId());
+                    int featureId = ArrayUtils.indexOfSorted(targetFeature, currNode.getColId());
                     if (featureId != -1) {
                         // split feature in target set
                         // push left or right child on stack

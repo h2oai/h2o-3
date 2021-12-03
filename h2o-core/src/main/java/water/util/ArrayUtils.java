@@ -109,7 +109,7 @@ public class ArrayUtils {
    * @param <T>: data type
    * @return index of element val or -1 if not found
    */
-  public static<T extends Comparable<T>> int indexOf(T[] arr, T val) {
+  public static<T extends Comparable<T>> int indexOfSorted(T[] arr, T val) {
     int highIndex = arr.length-1;
     int compare0 = val.compareTo(arr[0]); // small shortcut
     if (compare0 == 0)
