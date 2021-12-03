@@ -76,6 +76,7 @@ class H2OFrame(Keyed):
     :param str separator: (deprecated)
 
     :example:
+    
     >>> python_obj = [1, 2, 2.5, -100.9, 0]
     >>> frame = h2o.H2OFrame(python_obj)
     >>> frame
@@ -3435,10 +3436,12 @@ class H2OFrame(Keyed):
     def drop_duplicates(self, columns, keep="first"):
         """
         Drops duplicated rows across specified columns.
+        
         :param columns: Columns to compare during the duplicate detection process.
         :param keep: Which rows to keep. Two possible values: ["first", "last"]. The "first" value (default) keeps
          the first row and deletes the rest. The "last" value keeps the last row.
-        :return: A new H2OFrame with rows deduplicated
+         
+        :returns: A new H2OFrame with rows deduplicated
         """
         assert_is_type(columns, [int], [str])
         assert_is_type(keep, Enum("first", "last"))
@@ -3938,25 +3941,24 @@ class H2OFrame(Keyed):
         numerical and enum columns alone.  Note that H2O one-hot-encoding introduces a missing(NA)
         column. There can be NAs in any columns.
 
-        Follow the steps below to compare H2OXGBoost and native XGBoost:
+        Follow the steps below to compare H2OXGBoost and native XGBoost::
 
-        1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
-        h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
-        h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
-        h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+            # 1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+            h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
+            h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+            h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
 
-        2. Derive the DMatrix from H2OFrame:
-        nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+            # 2. Derive the DMatrix from H2OFrame:
+            nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
 
-        3. Derive the parameters for native XGBoost:
-        nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+            # 3. Derive the parameters for native XGBoost:
+            nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
 
-        4. Train your native XGBoost model and generate a prediction:
-        nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
-        nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
+            # 4. Train your native XGBoost model and generate a prediction:
+            nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+            nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
 
-        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native 
-        XGBoost.
+            # 5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
 
         :param h2oFrame: H2OFrame to be converted to DMatrix for native XGBoost
         :param predictors: List of predictor columns, can be column names or indices

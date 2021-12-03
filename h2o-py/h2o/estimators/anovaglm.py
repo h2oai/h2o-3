@@ -21,8 +21,8 @@ class H2OANOVAGLMEstimator(H2OEstimator):
     """
     ANOVA for Generalized Linear Model
 
-    H2O ANOVAGLM is used to calculate Type III SS which is used to evaluate the contributions of individual predictors
-     and their interactions to a model.  Predictors or interactions with negligible contributions to the model will have 
+    H2O ANOVAGLM is used to calculate Type III SS which is used to evaluate the contributions of individual predictors 
+    and their interactions to a model.  Predictors or interactions with negligible contributions to the model will have 
     high p-values while those with more contributions will have low p-values. 
     """
 

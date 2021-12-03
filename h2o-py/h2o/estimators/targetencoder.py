@@ -408,7 +408,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         :param float noise: If provided, this overrides the amount of random noise added to the target encoding defined on the model, this helps prevent overfitting.
         :param boolean as_training: Must be set to True when encoding the training frame. Defaults to False.
 
-        :example:
+        :examples:
+
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> predictors = ["home.dest", "cabin", "embarked"]
         >>> response = "survived"

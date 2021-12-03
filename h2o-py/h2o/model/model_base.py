@@ -204,6 +204,7 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: A new H2OFrame made of feature contributions.
 
         :examples:
+        
         >>> prostate = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
         >>> fr = h2o.import_file(prostate)
         >>> predictors = list(range(2, fr.ncol))
@@ -484,6 +485,7 @@ class ModelBase(h2o_meta(Keyed)):
 
 
         :examples:
+        
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
@@ -517,6 +519,7 @@ class ModelBase(h2o_meta(Keyed)):
         :return: H statistic of the variables 
         
         :examples:
+        
         >>> prostate_train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate_train.csv")
         >>> prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
         >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees=100, learn_rate=0.1,
@@ -1036,6 +1039,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :param genmodel_name: Custom name of genmodel jar
+        
         :returns: name of the POJO file written.
         """
         assert_is_type(path, str)
@@ -1050,6 +1054,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :param genmodel_name: Custom name of genmodel jar
+        
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
@@ -1143,6 +1148,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param save_plot_path: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
+
         :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using result.figure()).
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
@@ -1645,6 +1651,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param features: features to include in the permutation importance. Use None to include all.
         :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
         :param use_pandas: set true to return pandas data frame.
+        
         :return: H2OTwoDimTable or Pandas data frame
         """
         from h2o.two_dim_table import H2OTwoDimTable
@@ -1723,6 +1730,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param num_of_features: number of features to plot. Defaults to 10.
         :param server: if true set server settings to matplotlib and do not show the plot
         :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        
         :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed using result.figure())
         """
         plt = get_matplotlib_pyplot(server)

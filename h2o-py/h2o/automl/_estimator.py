@@ -99,6 +99,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>> h2o.init()
@@ -195,19 +196,27 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             More models can be trained on an existing AutoML project by specifying the same project name in multiple calls to the AutoML function
             (as long as the same training frame, or a sample, is used in subsequent runs).
         :param exclude_algos: List the algorithms to skip during the model-building phase. 
-            The full list of options is: 
-                ``"DRF"`` (Random Forest and Extremely-Randomized Trees),
-                ``"GLM"``,
-                ``"XGBoost"``,
-                ``"GBM"``,
-                ``"DeepLearning"``,
-                ``"StackedEnsemble"``. 
+            The full list of options is:
+            
+                - ``"DRF"`` (Random Forest and Extremely-Randomized Trees)
+                - ``"GLM"``
+                - ``"XGBoost"``
+                - ``"GBM"``
+                - ``"DeepLearning"``
+                - ``"StackedEnsemble"``
+                
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-            Usage example: ``exclude_algos = ["GLM", "DeepLearning", "DRF"]``.
+            Usage example::
+            
+                exclude_algos = ["GLM", "DeepLearning", "DRF"]
+                
         :param include_algos: List the algorithms to restrict to during the model-building phase.
             This can't be used in combination with ``exclude_algos`` param.
             Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-            Usage example: ``include_algos = ["GLM, "DeepLearning", "DRF"]``.
+            Usage example::
+
+                include_algos = ["GLM", "DeepLearning", "DRF"]
+                
         :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase.
             By default, the exploitation phase is ``0`` (disabled) as this is still experimental;
             to activate it, it is recommended to try a ratio around 0.1.
@@ -507,6 +516,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :returns: An H2OAutoML object.
 
         :examples:
+        
         >>> # Set up an H2OAutoML object
         >>> aml = H2OAutoML(max_runtime_secs=30)
         >>> # Launch an AutoML run

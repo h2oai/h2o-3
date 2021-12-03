@@ -411,7 +411,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
-    :param partition_by Names of the column the persisted dataset has been partitioned by.
+    :param partition_by: Names of the column the persisted dataset has been partitioned by.
 
         - "unknown" - this will force the column to be parsed as all NA
         - "uuid"    - the values in the column must be true UUID or will be parsed as NA
