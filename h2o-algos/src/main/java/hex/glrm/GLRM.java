@@ -144,7 +144,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       error("_recover_svd", "_recover_svd and _impute_original cannot both be true if _train" +
               " is transformed");
 
-    if (_train == null) return;
+    if (null == _train) return;
     if (_ncolA < 2)
       error("_train", "_train must have more than one column");
     if (_valid != null && _valid.numRows() != _train.numRows())
@@ -154,21 +154,31 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm" +
               " may be slow.");
 
-    if (_parms._loading_name != null) {
+    if (null != _parms._loading_name) {
       warn("loading_name", "loading_name is deprecated, use representation_name instead.");
-      if (_parms._representation_name == null)
+      if (null == _parms._representation_name)
         _parms._representation_name = _parms._loading_name;
     }
-
-    if ((_parms._representation_name != null) && (_parms._loading_name != null)) {
+    
+    if ((null != _parms._representation_name) && (null != _parms._loading_name)) {
       if (!(_parms._representation_name.equals(_parms._loading_name)))
         warn("_representation_name and _loading_name", "Are not equal.  _representation_name will" +
                 " be used since _loading_name is deprecated.");
     }
     
+    if (null != _parms._representation_name) {
+      if (dest().toString().equals(_parms._representation_name))
+        error("representation_name", "representation_name and model_id cannot use the same string.");
+    }
+
+    if (null != _parms._loading_name) {
+      if (dest().toString().equals(_parms._loading_name))
+        error("loading_name", "loading_name and model_id cannot use the same string.");
+    }
+    
     if (_parms._k < 1 || _parms._k > _ncolY) error("_k", "_k must be between 1 and " + _ncolY +
             " inclusive");
-    if (_parms._user_y != null) { // Check dimensions of user-specified initial Y
+    if (null != _parms._user_y) { // Check dimensions of user-specified initial Y
       if (_parms._init != GlrmInitialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
 
