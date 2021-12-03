@@ -103,14 +103,14 @@ public final class Gram extends Iced<Gram> {
       for (int betaInd = 0; betaInd < numKnots; betaInd++) {
         Integer betaIndex = gamIndices[gamInd][betaInd]; // for multinomial
         if (activeColumns != null) {  // column indices in gamIndices need to be translated due to columns deleted
-          betaIndex = ArrayUtils.indexOfSorted(activeColumns, betaIndex);
+          betaIndex = Arrays.binarySearch(activeColumns, betaIndex);
           if (betaIndex < 0)
             continue;
         }
         for (int betaIndj = 0; betaIndj <= betaInd; betaIndj++) {
           Integer betaIndexJ = gamIndices[gamInd][betaIndj];
           if (activeColumns != null) {  // column indices in gamIndices need to be translated due to columns deleted
-            betaIndexJ = ArrayUtils.indexOfSorted(activeColumns, betaIndexJ);
+            betaIndexJ = Arrays.binarySearch(activeColumns, betaIndexJ);
             if (betaIndexJ < 0)
               continue;
           }
