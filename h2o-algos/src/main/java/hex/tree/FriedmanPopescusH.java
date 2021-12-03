@@ -44,7 +44,7 @@ public class FriedmanPopescusH {
             for (int j = 0; j < currCombinations.size(); j++) {
                 int[] currCombination = currCombinations.get(j);
                 String[] cols = getCurrCombinationCols(currCombination, vars);
-                Integer[] currModelIds = getCurrentCombinationModelIds(currCombination, modelIds);
+                int[] currModelIds = getCurrentCombinationModelIds(currCombination, modelIds);
                 fValues.put(Arrays.toString(currCombination), computeFValues(currModelIds, filteredFrame, cols, learnRate, sharedTreeSubgraphs));
             }
         }
@@ -52,8 +52,8 @@ public class FriedmanPopescusH {
         
     }
 
-    static Integer[] getCurrentCombinationModelIds(int[] currCombination, int[] modelIds) {
-        Integer[] currCombinationCols = new Integer[currCombination.length];
+    static int[] getCurrentCombinationModelIds(int[] currCombination, int[] modelIds) {
+        int[] currCombinationCols = new int[currCombination.length];
         for (int i = 0; i < currCombination.length; i++) {
             currCombinationCols[i] = modelIds[currCombination[i]];
         }
@@ -205,7 +205,7 @@ public class FriedmanPopescusH {
     }
     
     
-    static Frame computeFValues(Integer[] modelIds, Frame filteredFrame, String[] cols, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
+    static Frame computeFValues(int[] modelIds, Frame filteredFrame, String[] cols, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
         // filter frame -> only curr combination cols will be used
         filteredFrame = filterFrame(filteredFrame, cols);
         filteredFrame = new Frame(Key.make(), filteredFrame.names(), filteredFrame.vecs());
@@ -221,7 +221,7 @@ public class FriedmanPopescusH {
     
     
     
-    static Frame partialDependence(Integer[] modelIds, Frame uniqueWithCounts, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
+    static Frame partialDependence(int[] modelIds, Frame uniqueWithCounts, double learnRate, SharedTreeSubgraph[][] sharedTreeSubgraphs) {
         Frame result = new Frame();
         int nclasses = sharedTreeSubgraphs[0].length;
         int ntrees = sharedTreeSubgraphs.length;
@@ -240,7 +240,7 @@ public class FriedmanPopescusH {
     }
 
     public static double[] add(double[] first, double[] second) { 
-        int length = first.length < second.length ? first.length : second.length;
+        int length = Math.min(first.length, second.length);
         double[] result = new double[length]; 
         for (int i = 0; i < length; i++) { 
             result[i] = first[i] + second[i]; 
@@ -311,7 +311,7 @@ public class FriedmanPopescusH {
      *             
      * @return Vec with the resulting partial dependence values for each point of the input grid         
      */
-    public static Vec partialDependenceTree(SharedTreeSubgraph tree, Integer[] targetFeature, double learnRate, Frame grid) {
+    static Vec partialDependenceTree(SharedTreeSubgraph tree, int[] targetFeature, double learnRate, Frame grid) {
         Vec outVec = Vec.makeZero(grid.numRows());
         
         int stackSize;
@@ -338,8 +338,8 @@ public class FriedmanPopescusH {
                     totalWeight += weightStackAr[stackSize];
                 } else {
                     // non-terminal node:
-                    int featureId = ArrayUtils.indexOf(targetFeature, currNode.getColId());
-                    if (featureId != -1) {
+                    int featureId = ArrayUtils.find(targetFeature, currNode.getColId());
+                    if (featureId >= 0) {
                         // split feature in target set
                         // push left or right child on stack
                         if (grid.vec(featureId).at(i) <= currNode.getSplitValue()) {

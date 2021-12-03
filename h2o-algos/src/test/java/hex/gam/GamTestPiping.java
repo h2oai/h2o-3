@@ -503,13 +503,13 @@ public class GamTestPiping extends TestUtil {
         for (int beta1 = 0; beta1 < numKnots; beta1++) {
           Integer betaIndex = gamCoeffIndices[gamColInd][beta1]; // for multinomial
           if (activeCols != null)
-            betaIndex = ArrayUtils.indexOf(activeCols, betaIndex);
+            betaIndex = ArrayUtils.find(activeCols, betaIndex);
           if (betaIndex < 0)
             continue;
           for (int beta2 = 0; beta2 < numKnots; beta2++) {
             Integer betaIndex2 = gamCoeffIndices[gamColInd][beta2]; // for multinomial
             if (activeCols != null)
-              betaIndex2 = ArrayUtils.indexOf(activeCols, betaIndex2);
+              betaIndex2 = ArrayUtils.find(activeCols, betaIndex2);
             if (betaIndex2 < 0)
               continue;
             gramGLM[betaIndex][betaIndex2] += penalty_mat[gamColInd][beta1][beta2] + penalty_mat[gamColInd][beta2][beta1];
