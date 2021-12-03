@@ -95,7 +95,7 @@ public class PermutationVarImp {
         return null;
     }
 
-    private HashMap<String, Double> calculatePermutationVarImp(String metric, long n_samples, final String[] features, long seed) {
+    Map<String, Double> calculatePermutationVarImp(String metric, long n_samples, final String[] features, long seed) {
         // Use random seed if set to -1
         if (-1 == seed) seed = new Random().nextLong();
 
@@ -111,7 +111,7 @@ public class PermutationVarImp {
 
         Frame fr = null;
         if (n_samples > 1) {
-            if (n_samples > 1000) {
+            if (n_samples > 1000 || _model._parms._weights_column != null) {
                 fr = MRUtils.sampleFrame(_inputFrame, n_samples, _model._parms._weights_column, seed);
             } else {
                 Random rand = getRNG(seed);
@@ -173,7 +173,7 @@ public class PermutationVarImp {
     public TwoDimTable getPermutationVarImp(String metric, final long n_samples, final String[] features, long seed) {
         metric = inferAndValidateMetric(metric);
 
-        HashMap<String, Double> varImps = calculatePermutationVarImp(metric, n_samples, features, seed);
+        Map<String, Double> varImps = calculatePermutationVarImp(metric, n_samples, features, seed);
 
         String[] names = new String[varImps.size()];
         double[] importance = new double[varImps.size()];
@@ -201,7 +201,7 @@ public class PermutationVarImp {
     public TwoDimTable getRepeatedPermutationVarImp(String metric, final long n_samples, final int n_repeats ,final String[] features, long seed) {
         metric = inferAndValidateMetric(metric);
 
-        HashMap<String, Double>[] varImps =  new HashMap[n_repeats];
+        Map<String, Double>[] varImps =  new HashMap[n_repeats];
         for (int i = 0; i < n_repeats; i++) {
             varImps[i] = calculatePermutationVarImp(metric, n_samples, features, (seed == -1 ? -1 : seed + i));
         }
