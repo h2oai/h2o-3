@@ -14,6 +14,7 @@ import water.util.TwoDimTable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParameters, 
@@ -126,10 +127,35 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         String[][] _best_model_predictors; // store for each predictor number, the best model predictors
         double[] _best_r2_values;  // store the best R2 values of the best models with fix number of predictors
         public Key[] _best_model_ids;
+        String[][] _coefficient_names;
         
         public MaxRGLMModelOutput(MaxRGLM b, DataInfo dinfo) {
             super(b, dinfo._adaptedFrame);
             _dinfo = dinfo;
+        }
+
+        public String[][] coefficientNames() {
+            return _coefficient_names;
+        }
+        
+        public double[][] beta() {
+            int numModel = _best_model_ids.length;
+            double[][] coeffs = new double[numModel][];
+            for (int index=0; index < numModel; index++) {
+                GLMModel oneModel = DKV.getGet(_best_model_ids[index]);
+                coeffs[index] = oneModel._output.beta().clone();
+            }
+            return coeffs;
+        }
+        
+        public double[][] getNormBeta() {
+            int numModel = _best_model_ids.length;
+            double[][] coeffs = new double[numModel][];
+            for (int index=0; index < numModel; index++) {
+                GLMModel oneModel = DKV.getGet(_best_model_ids[index]);
+                coeffs[index] = oneModel._output.getNormBeta().clone();
+            }
+            return coeffs;
         }
         
         @Override
@@ -185,6 +211,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
             } else {
                 _best_r2_values[index] = bestModel.r2();
             }
+            _coefficient_names[index] = bestModel._output.coefficientNames().clone();
             ArrayList<String> coeffNames = new ArrayList<>(Arrays.asList(bestModel._output.coefficientNames()));
             coeffNames.remove(coeffNames.size()-1); // remove intercept as it is not a predictor
             _best_model_predictors[index] = coeffNames.toArray(new String[0]);
@@ -220,4 +247,29 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         return super.readAll_impl(ab, fs);
     }
 
+    public HashMap<String, Double>[] coefficients() {
+        return coefficients(false);
+    }
+    
+    public HashMap<String, Double>[] coefficients(boolean standardize) {
+        int numModel = _output._best_model_ids.length;
+        HashMap<String, Double>[] coeffs = new HashMap[numModel];
+        for (int index=0; index < numModel; index++) {
+            coeffs[index] = coefficients(index+1, standardize);
+        }
+        return coeffs;
+    }
+
+    public HashMap<String, Double> coefficients(int predictorSize) {
+        return coefficients(predictorSize, false);
+    }
+    
+    public HashMap<String, Double> coefficients(int predictorSize, boolean standardize) {
+        int numModel = _output._best_model_ids.length;
+        if (predictorSize <= 0 || predictorSize > numModel)
+            throw new IllegalArgumentException("predictorSize must be between 1 and maximum size of predictor subset" +
+                    " size.");
+        GLMModel oneModel = DKV.getGet(_output._best_model_ids[predictorSize-1]);
+        return oneModel.coefficients(standardize);
+    }
 }
