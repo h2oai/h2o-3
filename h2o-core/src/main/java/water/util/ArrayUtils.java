@@ -101,44 +101,6 @@ public class ArrayUtils {
     return result;
   }
 
-  /***
-   * Find the index of an element val in the sorted array arr.
-   * 
-   * @param arr: sorted array
-   * @param val: value of element we are interested in
-   * @param <T>: data type
-   * @return index of element val or -1 if not found
-   */
-  public static<T extends Comparable<T>> int indexOfSorted(T[] arr, T val) {
-    int highIndex = arr.length-1;
-    int compare0 = val.compareTo(arr[0]); // small shortcut
-    if (compare0 == 0)
-      return 0;
-    int compareLast = val.compareTo(arr[highIndex]);
-    if (compareLast==0)
-      return highIndex;
-    if (val.compareTo(arr[0])<0 || val.compareTo(arr[highIndex])>0) // end shortcut
-      return -1;
-    
-    int count = 0;
-    int numBins = arr.length;
-    int lowIndex = 0;
-
-    while (count < numBins) {
-      int tryBin = (int) Math.floor((highIndex+lowIndex)*0.5);
-      double compareVal = val.compareTo(arr[tryBin]);
-      if (compareVal==0)
-        return tryBin;
-      else if (compareVal>0)
-        lowIndex = tryBin;
-      else
-        highIndex = tryBin;
-
-      count++;
-    }
-    return -1;
-  }
-  
   // return the sqrt of each element of the array.  Will overwrite the original array in this case
   public static double[] sqrtArr(double [] x){
     assert (x != null);
