@@ -1,4 +1,4 @@
-package hex.varimp;
+package water.rapids;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -14,7 +14,6 @@ import water.TestUtil;
 import water.fvec.FVecFactory;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
-import water.rapids.PermutationVarImp;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
