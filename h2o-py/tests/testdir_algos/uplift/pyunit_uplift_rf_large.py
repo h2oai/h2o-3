@@ -5,7 +5,6 @@ import unittest
 sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
 from h2o.estimators import H2OUpliftRandomForestEstimator
-from causalml.dataset import make_uplift_classification
 
 
 class UpliftDrfLargeSmoke(unittest.TestCase):
@@ -13,7 +12,8 @@ class UpliftDrfLargeSmoke(unittest.TestCase):
     @unittest.skipIf(sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] <= 5),
                      "Tested only on >3.5, causalml is not supported on lower python version")
     def test_uplift_random_forest_smoke(self):
-        n_samples = 10_000
+        from causalml.dataset import make_uplift_classification
+        n_samples = 10000
         seed = 12345
 
         h2o.init(strict_version_check=False)

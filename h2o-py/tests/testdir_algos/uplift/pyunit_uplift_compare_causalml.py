@@ -4,8 +4,6 @@ sys.path.insert(1, os.path.join("..", "..", ".."))
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.uplift_random_forest import H2OUpliftRandomForestEstimator
-from causalml.inference.tree import UpliftRandomForestClassifier
-from causalml.metrics import auuc_score
 import unittest
 
 import pandas as pd
@@ -16,6 +14,8 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
     @unittest.skipIf(sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] <= 5), 
                      "Tested only on >3.5, causalml is not supported on lower python version")
     def test_uplift_compare(self):
+        from causalml.inference.tree import UpliftRandomForestClassifier
+        from causalml.metrics import auuc_score
         h2o.init(strict_version_check=False)
         treatment_column = "treatment"
         response_column = "outcome"
