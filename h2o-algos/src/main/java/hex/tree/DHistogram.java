@@ -181,75 +181,7 @@ public final class DHistogram extends Iced<DHistogram> {
       super("column=" + name + " leads to invalid histogram(check numeric range) -> [max=" + maxEx + ", min = " + min + "], step= " + step + ", xbin= " + xbins);
     }
   }
-
-  DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
-             double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
-             Constraints cs, boolean checkFloatSplits) {
-    assert nbins >= 1;
-    assert nbins_cats >= 1;
-    assert maxEx > min : "Caller ensures "+maxEx+">"+min+", since if max==min== the column "+name+" is all constants";
-    if (cs != null) {
-      _pred1 = cs._min;
-      _pred2 = cs._max;
-      if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
-        _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
-        _dist = cs._dist;
-      } else if (!cs.needsGammaNom()) {
-        _vals_dim = 6;
-        _dist = cs._dist;
-      } else {
-        _vals_dim = 7;
-        _dist = cs._dist;
-      }
-    } else {
-      _pred1 = Double.NaN;
-      _pred2 = Double.NaN;
-      _vals_dim = 3;
-      _dist = null;
-    }
-    _isInt = isInt;
-    _name = name;
-    _min = min;
-    _minInt = (int) min;
-    _maxEx = maxEx;             // Set Exclusive max
-    _min2 = Double.MAX_VALUE;   // Set min/max to outer bounds
-    _maxIn= -Double.MAX_VALUE;
-    _intOpt = intOpt;
-    _initNA = initNA;
-    _minSplitImprovement = minSplitImprovement;
-    _histoType = histogramType;
-    _useUplift = false;
-    _upliftMetric = null;
-    _seed = seed;
-    while (_histoType == HistogramType.RoundRobin) {
-      HistogramType[] h = HistogramType.values();
-      _histoType = h[(int)Math.abs(seed++ % h.length)];
-    }
-    if (_histoType== HistogramType.AUTO)
-      _histoType= HistogramType.UniformAdaptive;
-    assert(_histoType!= HistogramType.RoundRobin);
-    _globalQuantilesKey = globalQuantilesKey;
-    // See if we can show there are fewer unique elements than nbins.
-    // Common for e.g. boolean columns, or near leaves.
-    int xbins = isInt == 2 ? nbins_cats : nbins;
-    if (isInt > 0 && maxEx - min <= xbins) {
-      assert ((long) min) == min : "Overflow for integer/categorical histogram: minimum value cannot be cast to long without loss: (long)" + min + " != " + min + "!";                // No overflow
-      xbins = (char) ((long) maxEx - (long) min);  // Shrink bins
-      _step = 1.0f;                           // Fixed step size
-    } else {
-      _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
-      if(_step <= 0 || Double.isInfinite(_step) || Double.isNaN(_step))
-        throw new StepOutOfRangeException(name,_step, xbins, maxEx, min);
-    }
-    _nbin = (char) xbins;
-    assert(_nbin>0);
-    assert(_vals == null);
-    _checkFloatSplits = checkFloatSplits;
-
-    if (LOG.isTraceEnabled()) LOG.trace("Histogram: " + this);
-    // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
-  }
-
+  
   DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean intOpt, boolean initNA,
              double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
              Constraints cs, boolean checkFloatSplits, boolean useUplift, UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType) {
