@@ -2,6 +2,8 @@ package water.rapids;
 
 import hex.glm.GLM;
 import hex.glm.GLMModel;
+import hex.tree.drf.DRF;
+import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
@@ -13,8 +15,12 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.FVecFactory;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
+import water.util.Log;
+import water.util.RandomUtils;
 import water.util.TwoDimTable;
 
 import java.util.*;
@@ -351,4 +357,60 @@ public class PermutationVarImpTest extends TestUtil {
             Scope.exit();
         }
     }
+
+
+    @Test
+    public void testPermVarImpWeights() {
+        try {
+            Scope.enter();
+            Random r = RandomUtils.getRNG(42);
+            double[] resp = new double[10_000];
+            double[] feat1 = new double[resp.length];
+            double[] feat2 = new double[resp.length];
+            double[] weights = new double[resp.length];
+            for (int i = 0; i < resp.length; i++) {
+                if (i < 100) {
+                    weights[i] = 1;
+                    feat1[i] = r.nextDouble();
+                    feat2[i] = r.nextDouble();
+                } else {
+                    weights[i] = 0;
+                    feat1[i] = r.nextDouble(); // keep the same distribution in 0-weighted rows as in 1-weighted 
+                    feat2[i] = 10;             // skew the distribution for 0-weighted rows in column 2
+                }
+                resp[i] = feat1[i] + feat2[i];
+            }
+            Frame fr = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withColNames("c1", "c2", "weight", "response")
+                    .withDataForCol(0, feat1)
+                    .withDataForCol(1, feat2)
+                    .withDataForCol(2, weights)
+                    .withDataForCol(3, resp)
+                    .build();
+
+            DRFModel.DRFParameters p = new DRFModel.DRFParameters();
+            p._train = fr._key;
+            p._response_column = "response";
+            p._weights_column = "weight";
+            p._mtries = 1;
+            p._seed = 0xCAFE;
+            DRFModel m = new DRF(p).trainModel().get();
+            Scope.track_generic(m);
+
+            PermutationVarImp permVarImp = new PermutationVarImp(m, fr);
+            Map<String, Double> estimatedVarImp = permVarImp.calculatePermutationVarImp(
+                    "MSE", fr.vec(p._weights_column).nzCnt(), m._output.features(), 42);
+
+            Log.info("Actual varimp: " + m._output._variable_importances);
+            Log.info("Estimated varimp: " + estimatedVarImp);
+            double viC1 = estimatedVarImp.get("c1");
+            double viC2 = estimatedVarImp.get("c2");
+
+            Assert.assertArrayEquals(new double[]{0.5, 0.5}, new double[]{viC1/(viC1+viC2), viC2/(viC1+viC2)}, 0.1);
+        } finally {
+            Scope.exit();
+        }
+    }
+
 }
