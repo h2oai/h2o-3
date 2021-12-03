@@ -21,7 +21,8 @@ public class MaxRGLMModelV3 extends ModelSchemaV3<MaxRGLMModel, MaxRGLMModelV3, 
         
         @API(help="Key of models containing best 1-predictor model, best 2-predictors model, ....")
         KeyV3.ModelKeyV3[] best_model_ids;
-        
+
+        @API(help="arrays of string arrays containing coefficient names of best 1-predictor model, best 2-predictors model, ....")        
         String[][] coefficient_names;
         
         @Override
