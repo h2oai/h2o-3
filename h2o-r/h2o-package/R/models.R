@@ -1786,9 +1786,9 @@ h2o.coef <- function(object, predictorSize=-1) {
 grabOneModelCoef <- function(modelIDs, index, standardized) {
   oneModel <- h2o.getModel(modelIDs[[index]]$name)
   if (standardized) {
-    return(h2o.coef(oneModel))
-  } else {
     return(h2o.coef_norm(oneModel))
+  } else {
+      return(h2o.coef(oneModel))
   }
 }
 

@@ -20,6 +20,7 @@ testMaxRGLMCoeffs <- function() {
     expect_equal(coeffsTemp, coeffsModel, tolerance=1e-6)
     expect_equal(coeffsNormTemp, coeffsNormModel, tolerance=1e-6)
   }
+  print("Test success and completed!")
 }
 
 doTest("MaxRGLM: test h2o.coef() and h2o.coef_norm()", testMaxRGLMCoeffs)
