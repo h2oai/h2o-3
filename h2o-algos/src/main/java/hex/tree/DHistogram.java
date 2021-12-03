@@ -517,18 +517,19 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     return hs;
   }
-  
+
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean intOpt, boolean hasNAs, 
                                 long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, 
                                 Constraints cs, boolean checkFloatSplits) {
-    UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType = null;
-    boolean useUplift = false;
-    if (parms instanceof UpliftDRFModel.UpliftDRFParameters) {
-      upliftMetricType = ((UpliftDRFModel.UpliftDRFParameters) parms)._uplift_metric;
-      useUplift = true;
-    }
+    boolean useUplift = isUplift(parms);
+    UpliftDRFModel.UpliftDRFParameters.UpliftMetricType upliftMetricType = useUplift ?
+            ((UpliftDRFModel.UpliftDRFParameters) parms)._uplift_metric : null;
     return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, intOpt, hasNAs,
             parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs, checkFloatSplits, useUplift, upliftMetricType);
+  }
+
+  private static boolean isUplift(SharedTreeModel.SharedTreeParameters parms) {
+    return parms instanceof UpliftDRFModel.UpliftDRFParameters;
   }
 
   /**
@@ -540,6 +541,10 @@ public final class DHistogram extends Iced<DHistogram> {
    * @return can we use integer representation for extracted data? 
    */
   public static boolean useIntOpt(Vec v, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
+    if (isUplift(parms)) {
+      // Uplift modelling doesn't support integer optimization (different code path)
+      return false;
+    }
     if (cs != null) {
       // if constraints are not handled on the optimized path to avoid higher code complexity
       // (the benefit of this optimization would be small anyway as constraints introduce overhead)
@@ -594,17 +599,11 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
-    if (_intOpt)
-      updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
-    else
+    if (_intOpt) {
+      assert treatment == null : "Integer-optimized histograms cannot be used when treatment is provided";
+      updateHistoInt(ws, (int[]) cs, ys, rows, hi, lo);
+    } else
       updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, treatment);
-  }
-
-  void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
-    if (_intOpt)
-      updateHistoInt(ws, (int[])cs, ys, rows, hi, lo);
-    else
-      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, null);
   }
 
   /**
