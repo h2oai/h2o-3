@@ -72,7 +72,6 @@ infogramErinHdma <- function() {
     ig2 <- h2o.infogram(y = y, x = x2, 
                        training_frame = train,
                        protected_columns = protected_columns)
-    ig2
     expect_true(sum(ig2@admissible_features==ig1@admissible_features)==length(ig1@admissible_features))
 }
 

@@ -25,13 +25,12 @@ class H2OInfogram(H2OEstimator):
     """
     Information Diagram
 
-    Given a sensitive/unfair predictors list, Infogram will add all predictors that contains information on the 
-     sensitive/unfair predictors list to the sensitive/unfair predictors list.  It will return a set of predictors that
-     do not contain information on the sensitive/unfair list and hence user can build a fair model.  If no sensitive/unfair
-     predictor list is given, Infogram will return a list of core predictors that should be used to build a final model.
-     Infogram can significantly cut down the number of predictors needed to build a model and hence will build a simple
-     model that is more interpretable, less susceptible to overfitting, runs faster while providing similar accuracy
-     as models built using all attributes.
+    The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables 
+    that uniquely and safely drive the response, in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build 
+    a model by identifying only the most valuable, admissible features. When protected variables such as race or gender are present in the data, the admissibility 
+    of a variable is determined by a safety and relevancy index, and thus serves as a diagnostic tool for fairness. The safety of each feature can be quantified and 
+    variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable, given the reduced 
+    feature set.  Admissible models are also less susceptible to overfitting and train faster, while providing similar accuracy as models built using all available features.
     """
 
     algo = "infogram"
@@ -880,8 +879,14 @@ class H2OInfogram(H2OEstimator):
 
     def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=False, server=False):
         """
-        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
-        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
+        Plot the infogram.  By default, it will plot the infogram calculated from training dataset.  
+        Note that the frame rel_cmi_frame contains the following columns:
+        - 0: predictor names
+        - 1: admissible 
+        - 2: admissible index
+        - 3: relevance-index or total information
+        - 4: safety-index or net information, normalized from 0 to 1
+        - 5: safety-index or net information not normalized
 
         :param train: True if infogram is generated from training dataset
         :param valid: True if infogram is generated from validation dataset
@@ -892,20 +897,7 @@ class H2OInfogram(H2OEstimator):
         :param server: True will not generate plot, False will produce plot
         :return: infogram plot if server=True or None if server=False
         """
-        """
-        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
-        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
-        - 0: predictor names
-        - 1: admissible 
-        - 2: admissible index
-        - 3: relevance-index or total information
-        - 4: safety-index or net information, normalized from 0 to 1
-        - 5: safety-index or net information not normalized
 
-        :param valid: True if to plot infogram from validation dataset
-        :param xval: True if to plot infogram from cross-validation hold out dataset
-        :return: plot or None if server=True
-        """
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
 
         if train:

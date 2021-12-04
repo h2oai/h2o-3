@@ -967,7 +967,7 @@ setClass("H2OInfogram", slots = c(model_id = "character",
                                   admissible_score = "H2OFrame", 
                                   admissible_score_valid = "H2OFrameOrNULL", 
                                   admissible_score_xval = "H2OFrameOrNULL"))
-                                  
+
 #' Method on \code{H2OInfogram} object which in this case is to instantiate and initialize it
 #'
 #' @param .Object An \code{H2OInfogram} object
@@ -982,8 +982,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
         (infogram_model@algorithm == "infogram")) {
       .Object@model_id <- infogram_model@model_id
       .Object@algorithm <- infogram_model@algorithm
-      if (!is.null(infogram_model@model$admissible_features) &&
-          !is.list(infogram_model@model$admissible_features)) {
+      if (!is.null(infogram_model@model$admissible_features) && !is.list(infogram_model@model$admissible_features)) {
         .Object@admissible_features <-
         infogram_model@model$admissible_features
       }
