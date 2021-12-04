@@ -953,34 +953,37 @@ setClassUnion("numericOrNULL", c("numeric", "NULL"))
 setClass("H2OInfogram", slots = c(model_id = "character", 
                                   algorithm = "character", 
                                   admissible_features = "CharacterOrNULL",  
-                                  admissible_features_valid = "CharacterOrNULL", 
-                                  admissible_features_xval = "CharacterOrNULL",
                                   net_information_threshold = "numericOrNULL", 
                                   total_information_threshold = "numericOrNULL", 
                                   safety_index_threshold = "numericOrNULL", 
                                   relevance_index_threshold = "numericOrNULL", 
                                   admissible_score = "H2OFrame"))
 
+setGeneric("initialize")
+
 #' Method on \code{H2OInfogram} object which in this case is to instantiate and initialize it
 #'
-#' @param .object A \code{H2OInfogram} object
+#' @param .Object An \code{H2OInfogram} object
 #' @param model_id string returned as part of every H2OModel
-#' @param ... parameters to algorithm, admissible_features, ... 
+#' @param ... additional arguments to pass on
 #' @return A \code{H2OInfogram} object
 #' @export
 setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
   if (!missing(model_id)) {
-    infogram_model = h2o.getModel(model_id)
+    infogram_model <- h2o.getModel(model_id)
     if (is(infogram_model, "H2OModel") &&
-        (infogram_model@algorithm == 'infogram')) {
+        (infogram_model@algorithm == "infogram")) {
       .Object@model_id <- infogram_model@model_id
-      .Object@algorithm <-
-        infogram_model@algorithm
-      if (!is.null(infogram_model@model$admissible_features) &&
-          !is.list(infogram_model@model$admissible_features)) {
+      .Object@algorithm <- infogram_model@algorithm
+      if (!is.null(infogram_model@model$admissible_features) && !is.list(infogram_model@model$admissible_features)) {
         .Object@admissible_features <-
-          infogram_model@model$admissible_features
+        infogram_model@model$admissible_features
       }
+      .Object@net_information_threshold <- infogram_model@parameters$net_information_threshold
+      .Object@total_information_threshold <- infogram_model@parameters$total_information_threshold 
+      .Object@safety_index_threshold <- infogram_model@parameters$safety_index_threshold
+      .Object@relevance_index_threshold <- infogram_model@parameters$relevance_index_threshold
+      .Object@admissible_score <- h2o.getFrame(infogram_model@model$relevance_cmi_key)
       .Object@net_information_threshold <-
         infogram_model@parameters$net_information_threshold
       .Object@total_information_threshold <-
@@ -993,7 +996,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
         h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
       return(.Object)
     } else {
-      stop("Input must be H2OModel with algorithm == infogram.")
+      stop('Input must be H2OModel with algorithm == "infogram".')
     }
   } else {
     stop("A model Id must be used to instantiate a H2OInfogram.")
