@@ -950,26 +950,21 @@ setClassUnion("numericOrNULL", c("numeric", "NULL"))
 #' @slot safety_index_threshold numeric value denoting threshold used for predictor selection
 #' @slot relevance_index_threshold numeric value denoting threshold used for predictor selection
 #' @slot admissible_score \code{H2OFrame} that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw
-#' @slot admissible_features_valid is H2OFrame that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw from validation frame
-#' @slot admissible_score_xval is H2OFrame that contains averages of columns, admissible, admissible_index, relevance, cmi, cmi_raw from cv hold-out
+#' @slot admissible_score_valid \code{H2OFrame} that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw from validation frame
+#' @slot admissible_score_xval \code{H2OFrame} that contains averages of columns, admissible, admissible_index, relevance, cmi, cmi_raw from cv hold-out
 #' @export
-setClass(
-  "H2OInfogram",
-  slots = c(
-    model_id = 'character',
-    algorithm = 'character',
-    admissible_features = 'CharacterOrNULL',
-    admissible_features_valid = "CharacterOrNULL",
-    admissible_features_xval = "CharacterOrNULL",
-    net_information_threshold = 'numericOrNULL',
-    total_information_threshold = 'numericOrNULL',
-    safety_index_threshold = 'numericOrNULL',
-    relevance_index_threshold = 'numericOrNULL',
-    admissible_score = 'H2OFrame',
-    admissible_score_valid = "H2OFrameOrNULL",
-    admissible_score_xval = "H2OFrameOrNULL"
-  )
-)
+setClass("H2OInfogram", slots = c(model_id = "character", 
+                                  algorithm = "character", 
+                                  admissible_features = "CharacterOrNULL",  
+                                  admissible_features_valid = "CharacterOrNULL", 
+                                  admissible_features_xval = "CharacterOrNULL",
+                                  net_information_threshold = "numericOrNULL", 
+                                  total_information_threshold = "numericOrNULL", 
+                                  safety_index_threshold = "numericOrNULL", 
+                                  relevance_index_threshold = "numericOrNULL", 
+                                  admissible_score = "H2OFrame", 
+                                  admissible_score_valid = "H2OFrameOrNULL", 
+                                  admissible_score_xval = "H2OFrameOrNULL"))
 
 #' Method on \code{H2OInfogram} object which in this case is to instantiate and initialize it
 #'
