@@ -1221,7 +1221,7 @@ public class FriedmanPopescusHTest extends TestUtil {
 
         SharedTreeGraph tree = createSharedTreeGraphForTest();
 
-        Vec result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1,2}, 0.1, frame);
+        Vec result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new int[] {0,1,2}, 0.1, frame);
         scope.track(result);
         assertEquals(result.length(), res.length);
         for (int i = 0; i < res.length; i++) {
@@ -1247,7 +1247,7 @@ public class FriedmanPopescusHTest extends TestUtil {
         
         Frame frame1 = new Frame();
         frame1.add(new String[] {"feature0", "feature2"}, new Vec[] {frame.vec(0), frame.vec(2)});
-        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,2}, 0.1, frame1);
+        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new int[] {0,2}, 0.1, frame1);
         scope.track(result);
         assertEquals(result.length(), res.length);
         for (int i = 0; i < res.length; i++) {
@@ -1272,7 +1272,7 @@ public class FriedmanPopescusHTest extends TestUtil {
         
         Frame frame2 = new Frame();
         frame2.add(new String[] {"feature0", "feature1"}, new Vec[] {frame.vec(0), frame.vec(1)});
-        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new Integer[] {0,1}, 0.1, frame2);
+        result = FriedmanPopescusH.partialDependenceTree(tree.subgraphArray.get(0), new int[] {0,1}, 0.1, frame2);
         scope.track(result);
         assertEquals(result.length(), res.length);
         for (int i = 0; i < res.length; i++) {
@@ -1385,7 +1385,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 -1.382180013617986813e-02, 3.244345671239585310e-02, -9.702081839312389107e-04, -1.382180013617986813e-02, -1.382180013617986813e-02, 3.244345671239585310e-02,
                 -1.382180013617986813e-02, -1.382180013617986813e-02, -1.382180013617986813e-02, -9.702081839312389107e-04, 1.615156143003408304e-02, 6.192571362039934330e-02,
                 -1.382180013617986813e-02};
-        checkFValues(new Integer[] {0,1}, frame, new String[]{"feature0", "feature1"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {0,1}, frame, new String[]{"feature0", "feature1"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {4.768910591425756795e-03, 4.768910591425756795e-03, 4.768910591425756795e-03, 4.768910591425756795e-03, 4.768910591425756795e-03,
                 -2.188878791803407567e-02, 4.768910591425756795e-03, 4.768910591425756795e-03, -2.188878791803407567e-02, 4.768910591425756795e-03, 4.768910591425756795e-03,
@@ -1405,7 +1405,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 7.798772619952633323e-02,
 
         };
-        checkFValues(new Integer[] {1,2}, frame, new String[]{"feature1", "feature2"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {1,2}, frame, new String[]{"feature1", "feature2"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {-2.188878791803407567e-02, -6.741245150466762537e-02, 4.768910591425757663e-03, 3.297972219392274890e-02, -2.188878791803407567e-02,
                 3.297972219392274890e-02, -2.188878791803407567e-02, 4.768910591425757663e-03, -6.741245150466762537e-02, -6.741245150466762537e-02, -2.188878791803407567e-02,
@@ -1424,7 +1424,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 -2.188878791803407567e-02, 4.768910591425757663e-03, 4.768910591425757663e-03, 3.297972219392274890e-02, 2.213861966073389642e-02, 1.334595684654562298e-01,
                 -2.188878791803407567e-02,
         };
-        checkFValues(new Integer[] {0,1,2}, frame, frame.names(), 5,  sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {0,1,2}, frame, frame.names(), 5,  sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {-1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02,
                 -1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02, -1.600119057756334978e-02,
@@ -1442,7 +1442,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 
                 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 3.447581725787000895e-02, 
                 3.447581725787000895e-02};
-        checkFValues(new Integer[] {1}, frame, new String[]{"feature1"}, 3,  sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {1}, frame, new String[]{"feature1"}, 3,  sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         double h = FriedmanPopescusH.h(frame, new String[] {"feature0","feature1","feature2"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(h, 0.08603547308125703, 1e-8);
@@ -1456,7 +1456,7 @@ public class FriedmanPopescusHTest extends TestUtil {
         assertEquals(h, 0.2508738347652033, 1e-8);
     }
     
-    void checkFValues(Integer[] modelIds, Frame filteredFrame, String[] cols, int expectedNumCols, SharedTreeSubgraph[][] sharedTreeSubgraphs, double learn_rate, double[] result) {
+    void checkFValues(int[] modelIds, Frame filteredFrame, String[] cols, int expectedNumCols, SharedTreeSubgraph[][] sharedTreeSubgraphs, double learn_rate, double[] result) {
         Frame res = FriedmanPopescusH.computeFValues(modelIds, filteredFrame, cols, learn_rate, sharedTreeSubgraphs);
         scope.track(res);
         assertEquals(res.numCols(),expectedNumCols);
@@ -1519,13 +1519,13 @@ public class FriedmanPopescusHTest extends TestUtil {
                 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00,
                 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00,
                 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00, 0.000000000000000000e+00};
-        checkFValues(new Integer[] {0}, frame, new String[]{"sepal_len"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {0}, frame, new String[]{"sepal_len"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
 
         expectedResult = new double[] {-1.598199002489364418e-05, -1.598199002489364418e-05, -1.598199002489364418e-05, -1.598199002489364418e-05, -1.598199002489364418e-05,
                 -1.598199002489364418e-05, -1.598199002489364418e-05, -1.598199002489364418e-05, 7.292752730092555424e-06, 7.292752730092555424e-06, 7.292752730092555424e-06,
                 7.292752730092555424e-06, 7.292752730092555424e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06,
                 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06};
-        checkFValues(new Integer[] {1}, frame, new String[]{"sepal_wid"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {1}, frame, new String[]{"sepal_wid"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00,
                 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, -9.284181247164067230e-01, -9.284181247164067230e-01, -9.284181247164067230e-01,
@@ -1535,13 +1535,13 @@ public class FriedmanPopescusHTest extends TestUtil {
                 -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01,
                 -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01, -9.309887451596334795e-01,
                 -9.309887451596334795e-01};
-        checkFValues(new Integer[] {2}, frame, new String[]{"petal_len"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {2}, frame, new String[]{"petal_len"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
 
         expectedResult = new double[] {1.998372945075835405e+00, 1.998372945075835405e+00, 1.998372945075835405e+00, 1.998372945075835405e+00, 1.998372945075835405e+00, 1.998372945075835405e+00,
                 -1.001627054924164151e+00, -1.001627054924164151e+00, -1.001627054924164151e+00, -1.001627054924164151e+00, -1.001627054924164151e+00, -1.001627054924164151e+00,
                 -1.001627054924164151e+00, -1.011312200166400332e+00, -9.959003477696179996e-01, -9.959003477696179996e-01, -9.959003477696179996e-01, -9.959003477696179996e-01,
                 -9.959003477696179996e-01, -9.959003477696179996e-01, -9.959003477696179996e-01, -9.959003477696179996e-01};
-        checkFValues(new Integer[] {3}, frame, new String[]{"petal_wid"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {3}, frame, new String[]{"petal_wid"}, 3, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, -1.598199002500466648e-05, 7.292752729981533122e-06,
                 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06,
@@ -1563,7 +1563,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 7.292752730092555424e-06, 7.292752730092555424e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06, 7.292752729981533122e-06,
                 7.292752729981533122e-06, -1.598199002500466648e-05, 7.292752729981533122e-06, -1.598199002500466648e-05, -1.598199002500466648e-05, 7.292752729981533122e-06, 
                 7.292752729981533122e-06, 7.292752729981533122e-06};
-        checkFValues(new Integer[] {0, 1}, frame, new String[]{"sepal_len", "sepal_wid"}, 4,  sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {0, 1}, frame, new String[]{"sepal_len", "sepal_wid"}, 4,  sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00,
                 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00, 1.860171545473183308e+00,
@@ -1586,7 +1586,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 -9.350317669621380778e-01, -9.309887451596335906e-01, -9.309887451596335906e-01, -9.284181247164066120e-01, -9.309887451596335906e-01, -9.309887451596335906e-01,
                 -9.309887451596335906e-01, -9.309887451596335906e-01, -9.309887451596335906e-01, -9.309887451596335906e-01, -9.309887451596335906e-01, -9.309887451596335906e-01,
                 -9.309887451596335906e-01, -9.309887451596335906e-01, -9.309887451596335906e-01};
-        checkFValues(new Integer[] {0, 2}, frame, new String[]{"sepal_len", "petal_len"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {0, 2}, frame, new String[]{"sepal_len", "petal_len"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {-9.284242856777238373e-01, -9.284242856777238373e-01, -9.284242856777238373e-01, -9.350379279234550811e-01, 1.860165384511866193e+00,
                 -9.284242856777238373e-01, -9.284242856777238373e-01, -9.284242856777238373e-01, -9.284242856777238373e-01, -9.284242856777238373e-01, -9.284242856777238373e-01,
@@ -1609,7 +1609,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 1.860165384511866193e+00, -9.309435647766381994e-01, 1.860165384511866193e+00, 1.860165384511866193e+00, 1.860165384511866193e+00, 1.860165384511866193e+00,
                 1.860165384511866193e+00, -9.309435647766381994e-01, -9.309435647766381994e-01, 1.860165384511866193e+00, 1.860165384511866193e+00, 1.860165384511866193e+00,
                 1.860165384511866193e+00, 1.860165384511866193e+00, 1.860165384511866193e+00};
-        checkFValues(new Integer[] {1, 2}, frame, new String[]{"sepal_wid", "petal_len"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {1, 2}, frame, new String[]{"sepal_wid", "petal_len"}, 4, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         expectedResult = new double[] {3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00,
                 3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00, 3.860171545473182864e+00,
@@ -1636,7 +1636,7 @@ public class FriedmanPopescusHTest extends TestUtil {
                 -1.929110513867624555e+00, -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928459326023855169e+00, -1.928199081351590571e+00, -1.942961105380160980e+00,
                 -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928199081351590571e+00,
                 -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928199081351590571e+00, -1.928199081351590571e+00};
-        checkFValues(new Integer[] {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, 6, sharedTreeSubgraphs, params._learn_rate, expectedResult);
+        checkFValues(new int[] {0, 1, 2, 3}, frame, new String[]{"sepal_len","sepal_wid","petal_len","petal_wid"}, 6, sharedTreeSubgraphs, params._learn_rate, expectedResult);
         
         double h = FriedmanPopescusH.h(frame, new String[] {"sepal_len","sepal_wid","petal_len","petal_wid"}, params._learn_rate, sharedTreeSubgraphs);
         assertEquals(1.7358501914626407e-16, h , 1e-15);
