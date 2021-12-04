@@ -950,6 +950,8 @@ setClassUnion("numericOrNULL", c("numeric", "NULL"))
 #' @slot safety_index_threshold numeric value denoting threshold used for predictor selection
 #' @slot relevance_index_threshold numeric value denoting threshold used for predictor selection
 #' @slot admissible_score \code{H2OFrame} that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw
+#' @slot admissible_features_valid is H2OFrame that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw from validation frame
+#' @slot admissible_score_xval is H2OFrame that contains averages of columns, admissible, admissible_index, relevance, cmi, cmi_raw from cv hold-out
 #' @export
 setClass(
   "H2OInfogram",
