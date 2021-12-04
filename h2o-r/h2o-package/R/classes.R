@@ -1019,7 +1019,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
 #' @return A \code{H2OInfogram} object
 #' @export
 H2OInfogram <- function(model_id, ...) {
-  initialize(new("H2OInfogram"), model_id=model_id, ...)
+  initialize(new("H2OInfogram"), model_id = model_id, ...)
 }
 
 #'
