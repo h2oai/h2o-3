@@ -935,6 +935,92 @@ setClass("H2OFrame", contains = c("Keyed", "environment"))
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OFrame"), function(object) attr(object, "id"))
 
+setClassUnion("numericOrNULL", c("numeric", "NULL"))
+setClassUnion("H2OFrameOrNULL", c("H2OFrame", "NULL"))
+setClassUnion("CharacterOrNULL", c("character", "NULL"))
+
+#' H2OInfogram class
+#'
+#' H2OInfogram class contains a subset of what a normal H2OModel will return
+#' @slot model_id string returned as part of every H2OModel
+#' @slot algorithm string denoting the algorithm used to build infogram
+#' @slot admissible_features string array denoting all predictor names which pass the cmi and relelvance threshold
+#' @slot admissible_features_valid string array denoting all predictor names which pass the cmi and relelvance threshold from validation data
+#' @slot admissible_features_xval string array denoting all predictor names which pass the cmi and relelvance threshold from cross-validation hold outs
+#' @slot net_information_threshold numeric value denoting threshold used for predictor selection
+#' @slot total_information_threshold numeric value denoting threshold used for predictor selection
+#' @slot safety_index_threshold numeric value denoting threshold used for predictor selection
+#' @slot relevance_index_threshold nuermic value denoting threshold used for predictor selection
+#' @slot admissible_score \code{H2OFrame} that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw
+#' @slot admissible_features_valid is H2OFrame that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw from validation frame
+#' @slot admissible_score_xval is H2OFrame that contains averages of columns, admissible, admissible_index, relevance, cmi, cmi_raw from cv hold-out
+#' @export
+setClass("H2OInfogram", slots = c(model_id='character', algorithm='character', admissible_features='CharacterOrNULL',  
+                                  admissible_features_valid="CharacterOrNULL", admissible_features_xval="CharacterOrNULL",
+                                  net_information_threshold='numericOrNULL', total_information_threshold='numericOrNULL', 
+                                  safety_index_threshold='numericOrNULL', relevance_index_threshold='numericOrNULL', 
+                                  admissible_score='H2OFrame', admissible_score_valid = "H2OFrameOrNULL", admissible_score_xval="H2OFrameOrNULL"))
+
+#' Method on \code{H2OInfogram} object which in this case is to instantiate and initialize it
+#'
+#' @param .object A \code{H2OInfogram} object
+#' @param model_id string returned as part of every H2OModel
+#' @return A \code{H2OInfogram} object
+#' @export
+setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
+  if (!missing(model_id)) {
+    infogram_model = h2o.getModel(model_id)
+    if (is(infogram_model, "H2OModel") &&
+        (infogram_model@algorithm == 'infogram')) {
+      .Object@model_id <- infogram_model@model_id
+      .Object@algorithm <- infogram_model@algorithm
+      if (!is.null(infogram_model@model$admissible_features) && !is.list(infogram_model@model$admissible_features)) {
+      .Object@admissible_features <-
+        infogram_model@model$admissible_features
+      }
+      .Object@net_information_threshold <- infogram_model@parameters$net_information_threshold
+      .Object@total_information_threshold <- infogram_model@parameters$total_information_threshold 
+      .Object@safety_index_threshold <- infogram_model@parameters$safety_index_threshold
+      .Object@relevance_index_threshold <- infogram_model@parameters$relevance_index_threshold
+      .Object@admissible_score <- h2o.getFrame(infogram_model@model$relevance_cmi_key)
+      if(!is.null(infogram_model@model$admissible_features_valid) && !is.list(infogram_model@model$admissible_features_valid)) {
+        .Object@admissible_features_valid <- infogram_model@model$admissible_features_valid
+      } else {
+      .Object@admissible_features_valid <- NULL
+      }
+      if (!is.null(infogram_model@model$admissible_features_xval) && !is.list(infogram_model@model$admissible_features_xval)) {
+        .Object@admissible_features_xval <- infogram_model@model$admissible_features_xval
+      } else {
+      .Object@admissible_features_xval <- NULL
+      }
+      if (!is.null(infogram_model@model$relevance_cmi_key_valid)) {
+        .Object@admissible_score_valid <- h2o.getFrame(infogram_model@model$relevance_cmi_key_valid)
+      } else {
+        .Object@admissible_score_valid <- NULL
+      }
+      if (!is.null(infogram_model@model$relevance_cmi_key_xval)) {
+        .Object@admissible_score_xval <- h2o.getFrame(infogram_model@model$relevance_cmi_key_xval)
+      } else {
+        .Object@admissible_score_xval <- NULL
+      }
+      return(.Object)
+    } else {
+      stop("Input must be H2OModel with algorithm == infogram.")
+    }
+  } else {
+    stop("A model Id must be used to instantiate a H2OInfogram.")
+  }
+})
+
+#' wrapper function for instantiating H2OInfogram
+#' @param model_id is string of H2OModel object
+#' @param ... parameters to algorithm, admissible_features, ... 
+#' @return A \code{H2OInfogram} object
+#' @export
+H2OInfogram <- function(model_id, ...) {
+  initialize(new("H2OInfogram"), model_id = model_id, ...)
+}
+
 #'
 #' The H2OAutoML class
 #'
