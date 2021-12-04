@@ -949,7 +949,6 @@ setClassUnion("numericOrNULL", c("numeric", "NULL"))
 #' @slot safety_index_threshold numeric value denoting threshold used for predictor selection
 #' @slot relevance_index_threshold nuermic value denoting threshold used for predictor selection
 #' @slot admissible_score \code{H2OFrame} that contains columns, admissible, admissible_index, relevance, cmi, cmi_raw
-#' @aliases H2OInfogram
 #' @export
 setClass(
   "H2OInfogram",
@@ -1010,7 +1009,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
 #' @return A \code{H2OInfogram} object
 #' @export
 H2OInfogram <- function(model_id, ...) {
-  initialize(new("H2OInfogram"), model_id=model_id, ...)
+  initialize(new("H2OInfogram"), model_id = model_id, ...)
 }
 
 #'
