@@ -959,7 +959,6 @@ setClass("H2OInfogram", slots = c(model_id = "character",
                                   relevance_index_threshold = "numericOrNULL", 
                                   admissible_score = "H2OFrame"))
 
-setGeneric("initialize")
 
 #' Method on \code{H2OInfogram} object which in this case is to instantiate and initialize it
 #'
