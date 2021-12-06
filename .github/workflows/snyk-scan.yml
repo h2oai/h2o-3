@@ -89,7 +89,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Check on Snyk scan failures
-        if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || (steps.scan2.outcome != 'skipped' || (steps.scan4.outcome != 'skipped')
+        if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan2.outcome != 'skipped' || steps.scan4.outcome != 'skipped'
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                 Snyk scan for Java dependancies - ${{ steps.scan1.outcome }}
