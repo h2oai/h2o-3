@@ -37,7 +37,7 @@ jobs:
         continue-on-error: true
         run: |
           unset CI # By default GH actions will set it to true. Therfore it will affect isCi flag in build.gradle (line #7)
-          snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
+          # snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -90,8 +90,9 @@ jobs:
 
       - name: Check Snyk scan results
         if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan2.outcome != 'skipped' || steps.scan4.outcome != 'skipped'
+        shell: bash
         run: |
-          if ( "${{ steps.scan1.outcome }}" == "failure" || "${{ steps.scan3.outcome }}" == "failure" || "${{ steps.scan2.outputs.result }}" == "failure" || "${{ steps.scan4.outputs.result }}" == "failure" ); then
+          if [[ "${{ steps.scan1.outcome }}" == "failure" || "${{ steps.scan3.outcome }}" == "failure" || "${{ steps.scan2.outputs.result }}" == "failure" || "${{ steps.scan4.outputs.result }}" == "failure" ]]; then
               echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                     Snyk scan for Java dependancies - ${{ steps.scan1.outcome }}
                     Snyk scan for Python 3.5 dependancies - ${{ steps.scan2.outputs.result }}
