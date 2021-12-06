@@ -1,7 +1,7 @@
 ``categorical_encoding``
 ------------------------
 
-- Available in: GBM, DRF, Deep Learning, K-Means, Aggregator, XGBoost, Isolation Forest, Extended Isolation Forest
+- Available in: GBM, DRF, Deep Learning, K-Means, Aggregator, XGBoost, Isolation Forest, Extended Isolation Forest, Uplift DRF
 - Hyperparameter: yes
 
 Description

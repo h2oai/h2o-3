@@ -17,9 +17,6 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "response_column",
                 "ignored_columns",
                 "ignore_const_cols",
-                "balance_classes",
-                "class_sampling_factors",
-                "max_after_balance_size",
                 "ntrees",
                 "max_depth",
                 "min_rows",
@@ -31,16 +28,11 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
                 "mtries",
                 "sample_rate",
                 "sample_rate_per_class",
-                "checkpoint",
                 "col_sample_rate_change_per_level",
                 "col_sample_rate_per_tree",
                 "histogram_type",
                 "categorical_encoding",
-                "calibrate_model",
-                "calibration_frame",
                 "distribution",
-                "custom_metric_func",
-                "export_checkpoints_dir",
                 "check_constant_response",
                 "treatment_column",
                 "uplift_metric",
@@ -55,18 +47,18 @@ public class UpliftDRFV3 extends SharedTreeV3<UpliftDRF, UpliftDRFV3, UpliftDRFV
         @API(help = "Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
         public double sample_rate;
 
-        @API(help = "Define column which will be use for computing uplift gain to select best split for a tree. The column has to devide dataset into treatment (value 1) and control (value 0) group.", gridable = false, level = API.Level.secondary, required = true,
+        @API(help = "Define the column which will be used for computing uplift gain to select best split for a tree. The column has to divide the dataset into treatment (value 1) and control (value 0) groups.", gridable = false, level = API.Level.secondary, required = true,
                 is_member_of_frames = {"training_frame", "validation_frame"},
                 is_mutually_exclusive_with = {"ignored_columns","response_column", "weights_column"})
         public String treatment_column;
 
-        @API(help = "Divergence metric used to find best split when building an upplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
+        @API(help = "Divergence metric used to find best split when building an uplift tree.", level = API.Level.secondary, values = { "AUTO", "KL", "Euclidean", "ChiSquared"})
         public UpliftDRFParameters.UpliftMetricType uplift_metric;
 
-        @API(help = "AUUC metric used to calculate Area under Uplift.", level = API.Level.secondary, values = { "AUTO", "Qini", "Lift", "Gain"})
+        @API(help = "Metric used to calculate Area Under Uplift Curve.", level = API.Level.secondary, values = { "AUTO", "qini", "lift", "gain"})
         public AUUC.AUUCType auuc_type;
 
-        @API(help = "Number of bins to calculate Area under Uplift.", level = API.Level.secondary)
+        @API(help = "Number of bins to calculate Area Under Uplift Curve.", level = API.Level.secondary)
         public int auuc_nbins;
 
     }

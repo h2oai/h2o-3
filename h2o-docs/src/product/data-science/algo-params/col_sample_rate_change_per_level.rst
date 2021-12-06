@@ -1,7 +1,7 @@
 ``col_sample_rate_change_per_level``
 ------------------------------------
 
-- Available in: GBM, DRF, Isolation Forest
+- Available in: GBM, DRF, Isolation Forest, Uplift DRF
 - Hyperparameter: yes
 
 Description

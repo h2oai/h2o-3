@@ -1303,6 +1303,62 @@ h2o.auuc_table <- function(object, train=FALSE, valid=FALSE) {
     invisible(NULL)
 }
 
+#' Retrieve the thresholds and metric scores table
+#'
+#' Retrieves the thresholds and metric scores table from an \linkS4class{H2OBinomialUpliftMetrics}.
+#' The table contains indices, thresholds, all cumulative uplift values and cumulative number of observations.
+#' If "train" and "valid" parameters are FALSE (default), then the training table is returned. If more
+#' than one parameter is set to TRUE, then a named vector of tables is returned, where the names are "train", "valid".
+#'
+#' @param object An \linkS4class{H2OBinomialUpliftMetrics}
+#' @param train Retrieve the training thresholds and metric scores table
+#' @param valid Retrieve the validation thresholds and metric scores table
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv"
+#' train <- h2o.importFile(f)
+#' train$treatment <- as.factor(train$treatment)
+#' train$conversion <- as.factor(train$conversion)
+#' 
+#' model <- h2o.upliftRandomForest(training_frame=train, x=sprintf("f%s",seq(0:10)), y="conversion",
+#'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
+#'                                        auuc_type="AUTO")
+#' perf <- h2o.performance(model, train=TRUE) 
+#' h2o.thresholds_and_metric_scores(perf)
+#' }
+#' @export
+h2o.thresholds_and_metric_scores <- function(object, train=FALSE, valid=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$thresholds_and_metric_score)
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        if ( !train && !valid ) {
+            metric <- model.parts$tm@metrics$thresholds_and_metric_score
+            if ( !is.null(metric) ) return(metric)
+        }
+        v <- c()
+        v_names <- c()
+        if ( train ) {
+            v <- c(v,model.parts$tm@metrics$thresholds_and_metric_score)
+            v_names <- c(v_names,"train")
+        }
+        if ( valid ) {
+            if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+            else {
+                v <- c(v,model.parts$vm@metrics$thresholds_and_metric_score)
+                v_names <- c(v_names,"valid")
+            }
+        }
+        if ( !is.null(v) ) {
+            names(v) <- v_names
+            if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+        }
+    }
+    warning(paste0("No thresholds_and_metric_score table for ", class(object)))
+    invisible(NULL)
+}
+
 
 #' Internal function that calculates a precise AUC from given
 #' probabilities and actual responses.

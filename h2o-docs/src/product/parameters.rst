@@ -15,6 +15,8 @@ This Appendix provides detailed descriptions of parameters that can be specified
 
    data-science/algo-params/alpha
    data-science/algo-params/auc_type
+   data-science/algo-params/auuc_nbins
+   data-science/algo-params/auuc_type
    data-science/algo-params/balance_classes
    data-science/algo-params/base_models
    data-science/algo-params/beta_constraints
@@ -139,9 +141,11 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ties
    data-science/algo-params/training_frame
    data-science/algo-params/transform
+   data-science/algo-params/treatment_column
    data-science/algo-params/tweedie_link_power
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
+   data-science/algo-params/uplift_metric
    data-science/algo-params/upload_custom_distribution
    data-science/algo-params/upload_custom_metric
    data-science/algo-params/use_all_factor_levels

@@ -1766,7 +1766,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 class H2OBinomialUpliftModelMetrics(MetricsBase):
     """
     This class is available only for Uplift DRF model
-    This class is essentially an API for the AUUC object and Gains Uplift table.
+    This class is essentially an API for the AUUC object
     """
     
     def __init__(self, metric_json, on=None, algo=""):
@@ -1905,6 +1905,35 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model.thresholds()
         """
         return self._metric_json["thresholds_and_metric_scores"]["thresholds"]
+
+    def thresholds_and_metric_scores(self):
+        """
+        Retrieve thresholds and metric scores table.
+        
+        :returns: a thresholds and metric scores table for the specified key(s).
+        
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.thresholds_and_metric_scores()
+        """
+        return self._metric_json["thresholds_and_metric_scores"]
 
     def auuc_table(self):
         """
