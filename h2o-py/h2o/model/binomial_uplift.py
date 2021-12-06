@@ -11,7 +11,7 @@ class H2OBinomialUpliftModel(ModelBase):
 
     def auuc(self, train=False, valid=False, metric=None):
         """
-        Retrieve area under uplift curve (AUUC) value for the specified metrics.
+        Retrieve area under uplift curve (AUUC) value for the specified metrics in model params.
         
         If all are False (default), then return the training metric AUUC value.
         If more than one options is set to True, then return a dictionary of metrics where the 
@@ -19,6 +19,8 @@ class H2OBinomialUpliftModel(ModelBase):
         
         :param bool train: If True, return the AUUC value for the training data.
         :param bool valid: If True, return the AUUC value for the validation data.
+        :param metric: AUUC metric type ("qini", "lift", "gain", default is None which means metric set in parameters) 
+    
         
         :returns: AUUC value for the specified key(s).
 
@@ -44,13 +46,10 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.auuc() # <- Default: return training metric value
         >>> uplift_model.auuc(train=True,  valid=True)
         """
-        if metric is None:
-            return self._metric_json['AUUC']
-        else:
-            assert metric in ['qini', 'lift', 'gain'], "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
-        return self._delegate_to_metrics(metric, method='auuc', train=train, valid=valid)
+        assert metric in [None, 'qini', 'lift', 'gain'], "AUUC metric "+metric+" should be None, 'qini','lift' or 'gain'."
+        return self._delegate_to_metrics(metric=metric, method='auuc', train=train, valid=valid)
 
-    def uplift(self, train=False, valid=False, metric="auto"):
+    def uplift(self, train=False, valid=False, metric="qini"):
         """
         Retrieve uplift values for the specified metrics. 
         
@@ -60,7 +59,7 @@ class H2OBinomialUpliftModel(ModelBase):
         
         :param bool train: If True, return the uplift values for the training data.
         :param bool valid: If True, return the uplift values for the validation data.
-        :param metric: AUUC metric type ("qini", "lift", "gain", default is "auto" which means "qini") 
+        :param metric: Uplift metric type ("qini", "lift", "gain", default is "qini") 
         
         :returns: a list of uplift values for the specified key(s).
 
@@ -86,6 +85,7 @@ class H2OBinomialUpliftModel(ModelBase):
         >>> uplift_model.uplift() # <- Default: return training metric value
         >>> uplift_model.uplift(train=True, metric="gain")
         """
+        assert metric in ['qini', 'lift', 'gain'], "Uplift metric "+metric+" should be 'qini','lift' or 'gain'."
         return self._delegate_to_metrics(metric, method='uplift', train=train, valid=valid)
 
     def n(self, train=False, valid=False):
@@ -237,7 +237,7 @@ class H2OBinomialUpliftModel(ModelBase):
         return self._delegate_to_metrics(method='auuc_table', train=train, valid=valid)
 
     def _delegate_to_metrics(self, method, train=False, valid=False, **kwargs):
-        tm = ModelBase._get_metrics(self, train, valid, xval=None)
+        tm = ModelBase._get_metrics(self, train, valid, xval=None, )
         m = {}
         for k, v in viewitems(tm):
             if v is None:
