@@ -32,12 +32,12 @@ jobs:
           java-version: "8"
           distribution: 'adopt'
       - name: Snyk scan for Java dependancies 
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
         id: scan1
         continue-on-error: true
         run: |
           unset CI # By default GH actions will set it to true. Therfore it will affect isCi flag in build.gradle (line #7)
-          # snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
+          snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -45,7 +45,7 @@ jobs:
         with:
           python-version: "3.5"
       - name: Snyk scan for Python 3.5 dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
         continue-on-error: true
         env:
@@ -64,7 +64,7 @@ jobs:
         with:
           python-version: "2.7"
       - name: Snyk scan for Python 2.7 dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan3
         continue-on-error: true
         env:
@@ -78,7 +78,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
         id: scan4
         continue-on-error: true
         run: |
