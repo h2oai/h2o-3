@@ -10,7 +10,7 @@ on:
 
 jobs:
   snyk_scan_test:
-    #if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -33,7 +33,7 @@ jobs:
           java-version: "8"
           distribution: 'adopt'
       - name: Snyk scan for Java dependancies 
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
         id: scan1
         continue-on-error: true
         run: |
@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: "3.5"
       - name: Snyk scan for Python 3.5 dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan2
         continue-on-error: true
         env:
@@ -65,7 +65,7 @@ jobs:
         with:
           python-version: "2.7"
       - name: Snyk scan for Python 2.7 dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         id: scan3
         continue-on-error: true
         env:
@@ -79,7 +79,7 @@ jobs:
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
+        if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
         id: scan4
         continue-on-error: true
         run: |
@@ -100,7 +100,7 @@ jobs:
           exit 1
           
   snyk_scan_monitor:
-    #if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -120,7 +120,6 @@ jobs:
         with:
           python-version: "3.5"
       - name: Snyk scan for Python 3.5 dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
@@ -128,21 +127,20 @@ jobs:
           pip install -r h2o-docs-theme/requirements.txt
           pip install -r h2o-py/docs-requirements.txt  
           pip install -r h2o-py/requirements.txt          
-          snyk monitor -d --fail-on=all --file=h2o-docs-theme/requirements.txt --package-manager=pip --command=python3 --skip-unresolved   
-          snyk monitor -d --fail-on=all --file=h2o-py/docs-requirements.txt --package-manager=pip --command=python3 --skip-unresolved           
-          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved     
+          snyk monitor -d --fail-on=all --file=h2o-docs-theme/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-docs-theme/requirements.txt    
+          snyk monitor -d --fail-on=all --file=h2o-py/docs-requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-py/docs-requirements.txt          
+          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-py/requirements.txt      
 
       - uses: actions/setup-python@v1
         with:
           python-version: "2.7"
       - name: Snyk scan for Python 2.7 dependancies
-        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           pip install --upgrade setuptools
           pip install -r h2o-py/test-requirements.txt
-          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved          
+          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-py/test-requirements.txt         
 
       - uses: actions/setup-node@v1
         with:
@@ -154,18 +152,18 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      - name: Snyk scan for Java dependancies
-        continue-on-error: true
-        run: |
-          unset CI # By default GH actions will set it to true. Therefore it will set isCi flag in build.gradle to true (line #7)
-          export BUILD_HADOOP=true # To include all the build.gradle files to scan
-          for file in $(find . -name "build.gradle"); do
-            file=${file:2}
-            echo ""
-            echo "##### SCAN $file START #####"
-            echo ""
-            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/snyk-integration/$file -d --skip-unresolved 
-            echo "##### SCAN $file END #####"
-          done
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+#      - name: Snyk scan for Java dependancies
+#        continue-on-error: true
+#        run: |
+#          unset CI # By default GH actions will set it to true. Therefore it will set isCi flag in build.gradle to true (line #7)
+#          export BUILD_HADOOP=true # To include all the build.gradle files to scan
+#          for file in $(find . -name "build.gradle"); do
+#            file=${file:2}
+#            echo ""
+#            echo "##### SCAN $file START #####"
+#            echo ""
+#            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/snyk-integration/$file -d --skip-unresolved 
+#            echo "##### SCAN $file END #####"
+#          done
+#        env:
+#          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
