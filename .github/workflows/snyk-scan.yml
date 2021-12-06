@@ -93,9 +93,9 @@ jobs:
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                 Snyk scan for Java dependancies - ${{ steps.scan1.outcome }}
-                Snyk scan for Python 3.5 dependancies - ${{ steps.scan2.outputs.result || skipped }}
+                Snyk scan for Python 3.5 dependancies - ${{ steps.scan2.outputs.result || 'skipped' }}
                 Snyk scan for Python 2.7 dependancies - ${{ steps.scan3.outcome }}
-                Snyk scan for Node dependancies - ${{ steps.scan4.outputs.result || skipped }}"
+                Snyk scan for Node dependancies - ${{ steps.scan4.outputs.result || 'skipped' }}"
           exit 1
           
   snyk_scan_monitor:
