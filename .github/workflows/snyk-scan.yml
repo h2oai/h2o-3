@@ -1,0 +1,171 @@
+name: Snyk Security Vulnerability Scan
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'master'
+      - 'rel-*'
+      - 'devops/snyk-integration'
+
+jobs:
+  snyk_scan_test:
+    #if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 0 # To fetch all commits history on branch (Refer: https://github.com/tj-actions/changed-files#usage)
+       
+      - name: Check changed Deps files
+        uses: tj-actions/changed-files@v10
+        id: changed-files
+        with:
+          files: | # This will match all the files with below patterns
+            build.gradle$
+            requirements.txt$
+            package.json$
+
+      - uses: snyk/actions/setup@master
+
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "8"
+          distribution: 'adopt'
+      - name: Snyk scan for Java dependancies 
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'build.gradle')
+        id: scan1
+        continue-on-error: true
+        run: |
+          unset CI # By default GH actions will set it to true. Therfore it will affect isCi flag in build.gradle (line #7)
+          snyk test --all-sub-projects -d --fail-on=all --package-manager=gradle
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - uses: actions/setup-python@v1
+        with:
+          python-version: "3.5"
+      - name: Snyk scan for Python 3.5 dependancies
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        id: scan2
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          echo "##[set-output name=result;]$(echo success)" # set default
+          sudo apt-get install -y libkrb5-dev
+          pip install -r h2o-docs-theme/requirements.txt
+          pip install -r h2o-py/docs-requirements.txt  
+          pip install -r h2o-py/requirements.txt          
+          snyk test -d --fail-on=all --file=h2o-docs-theme/requirements.txt --package-manager=pip --command=python3 || echo "##[set-output name=result;]$(echo failure)"
+          snyk test -d --fail-on=all --file=h2o-py/docs-requirements.txt  --package-manager=pip --command=python3 || echo "##[set-output name=result;]$(echo failure)"         
+          snyk test -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved || echo "##[set-output name=result;]$(echo failure)"      
+  
+      - uses: actions/setup-python@v1
+        with:
+          python-version: "2.7"
+      - name: Snyk scan for Python 2.7 dependancies
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        id: scan3
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          pip install --upgrade setuptools
+          pip install -r h2o-py/test-requirements.txt
+          snyk test --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Snyk scan for Node dependancies
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'package.json')
+        id: scan4
+        continue-on-error: true
+        run: |
+          echo "##[set-output name=result;]$(echo success)" # set default
+          snyk test --file=h2o-web/package.json -d --fail-on=all || echo "##[set-output name=result;]$(echo failure)"
+          snyk test --file=h2o-docs-theme/package.json -d --fail-on=all || echo "##[set-output name=result;]$(echo failure)"
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Check on Snyk scan failures
+        if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || ${{ steps.scan4.outputs.result }} == 'failure' || ${{ steps.scan2.outputs.result }} == 'failure'
+        run: |
+          echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
+                Snyk scan for Java dependancies - ${{ steps.scan1.outcome }}
+                Snyk scan for Python 3.5 dependancies - ${{ steps.scan2.outputs.result }}
+                Snyk scan for Python 2.7 dependancies - ${{ steps.scan3.outcome }}
+                Snyk scan for Node dependancies - ${{ steps.scan4.outputs.result }}"
+          exit 1
+          
+  snyk_scan_monitor:
+    #if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Extract github branch/tag name
+        shell: bash
+        run: echo "##[set-output name=ref;]$(echo ${GITHUB_REF##*/})"
+        id: extract_ref
+
+      - uses: snyk/actions/setup@master
+      - uses: actions/setup-java@v1
+        with:
+          java-version: "8"
+          distribution: 'adopt'
+          
+      - uses: actions/setup-python@v1
+        with:
+          python-version: "3.5"
+      - name: Snyk scan for Python 3.5 dependancies
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          sudo apt-get install -y libkrb5-dev
+          pip install -r h2o-docs-theme/requirements.txt
+          pip install -r h2o-py/docs-requirements.txt  
+          pip install -r h2o-py/requirements.txt          
+          snyk monitor -d --fail-on=all --file=h2o-docs-theme/requirements.txt --package-manager=pip --command=python3 --skip-unresolved   
+          snyk monitor -d --fail-on=all --file=h2o-py/docs-requirements.txt --package-manager=pip --command=python3 --skip-unresolved           
+          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved     
+
+      - uses: actions/setup-python@v1
+        with:
+          python-version: "2.7"
+      - name: Snyk scan for Python 2.7 dependancies
+        #if: contains(steps.changed-files.outputs.all_changed_and_modified_files, 'requirements.txt')
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          pip install --upgrade setuptools
+          pip install -r h2o-py/test-requirements.txt
+          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved          
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Snyk scan for Node dependancies
+        run: |
+          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-web/package.json --project-name=H2O-3/snyk-integration/h2o-web/package.json  -d 
+          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-docs-theme/package.json --project-name=H2O-3/snyk-integration/h2o-docs-theme/package.json  -d 
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Snyk scan for Java dependancies
+        continue-on-error: true
+        run: |
+          unset CI # By default GH actions will set it to true. Therefore it will set isCi flag in build.gradle to true (line #7)
+          export BUILD_HADOOP=true # To include all the build.gradle files to scan
+          for file in $(find . -name "build.gradle"); do
+            file=${file:2}
+            echo ""
+            echo "##### SCAN $file START #####"
+            echo ""
+            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/snyk-integration/$file -d --skip-unresolved 
+            echo "##### SCAN $file END #####"
+          done
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
