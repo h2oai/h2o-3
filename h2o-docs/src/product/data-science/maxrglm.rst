@@ -159,49 +159,142 @@ Examples
 ~~~~~~~~
 
 .. tabs::
-	.. code-tab:: r R
+   .. code-tab:: r R
 
-		library(h2o)
+      library(h2o)
+      h2o.init()
 
-		# Import the prostate dataset:
-		prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+      # Import the prostate dataset:
+      prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+      |======================================================================| 100%
 
-		# Set the predictors and response:
-		response <- "GLEASON"
-		predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+      # Set the predictors & response:
+      predictors <- c("AGE", "RACE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
+      response <- "GLEASON"
 
-		# Build and train the model:
-		maxrglm_model <- h2o.maxrglm(y = response, x = predictors, 
-					     seed = 12345, training_frame = prostate, 
-					     max_predictor_number = 2)
+      # Build & train the model:
+      maxrglmModel <- h2o.maxrglm(x = predictors, 
+                                  y = response, 
+                                  training_frame = prostate, 
+                                  seed = 12345, 
+                                  max_predictor_number = 7)
+      |======================================================================| 100%
 
-		# Find the best R2 value:
-		h2o.get_best_r2_values(maxrglm_model)
+      # Retrieve the results (H2OFrame containing best model_ids, best_r2_value, & predictor subsets):
+      results <- h2o.result(maxrglmModel)
+      print(results)
+      model_name                    model_id best_r2_value                   predictor_names
+      1 best 1 predictor(s) model  GLM_model_1637788524625_26     0.2058868  1 CAPSULE
+      2 best 2 predictor(s) model  GLM_model_1637788524625_37     0.2695678  2 CAPSULE, PSA
+      3 best 3 predictor(s) model  GLM_model_1637788524625_66     0.2862530  3 CAPSULE, DCAPS, PSA
+      4 best 4 predictor(s) model GLM_model_1637788524625_105     0.2904461  4 CAPSULE, DPROS, DCAPS, PSA
+      5 best 5 predictor(s) model GLM_model_1637788524625_130     0.2921695  5 CAPSULE, AGE, DPROS, DCAPS, PSA
+      6 best 6 predictor(s) model GLM_model_1637788524625_145     0.2924758  6 CAPSULE, AGE, RACE, DPROS, DCAPS, PSA
+      7 best 7 predictor(s) model GLM_model_1637788524625_152     0.2925563  7 CAPSULE, AGE, RACE, DPROS, DCAPS, PSA, VOL
 
+      # Retrieve the list of coefficients:
+      coeff <- h2o.coef(maxrglmModel)
+      print(coeff)
+      [[1]]
+      Intercept   CAPSULE
+      5.978584  1.007438
+      [[2]]
+      Intercept    CAPSULE        PSA
+      5.83309940 0.81073054 0.01458179
+      [[3]]
+      Intercept    CAPSULE      DCAPS        PSA
+      5.34902149 0.75750144 0.47979555 0.01289096
+      [[4]]
+      Intercept    CAPSULE      DPROS      DCAPS        PSA
+      5.23924958 0.71845861 0.07616614 0.44257893 0.01248512
+      [[5]]
+      Intercept    CAPSULE        AGE      DPROS      DCAPS        PSA
+      4.78548229 0.72070240 0.00687360 0.07827698 0.43777710 0.01245014
+      [[6]]
+      Intercept      CAPSULE          AGE         RACE        DPROS        DCAPS          PSA
+      4.853286962  0.717393309  0.006790891 -0.060686926  0.079288081  0.438470913  0.012572276
+      [[7]]
+      Intercept       CAPSULE           AGE          RACE         DPROS         DCAPS           PSA           VOL
+      4.8526636043  0.7153633278  0.0069487980 -0.0584344031  0.0791810013  0.4353149856  0.0126060611  -0.0005196059
 
+      # Retrieve the list of standardized coefficients:
+      coeff_norm <- h2o.coef_norm(maxrglmModel)
+      [[1]]
+      Intercept   CAPSULE
+      6.3842105 0.4947269
+      [[2]]
+      Intercept   CAPSULE       PSA
+      6.3842105 0.3981290 0.2916004
+      [[3]]
+      Intercept   CAPSULE     DCAPS       PSA
+      6.3842105 0.3719895 0.1490516 0.2577879
+      [[4]]
+      Intercept    CAPSULE      DPROS      DCAPS        PSA
+      6.38421053 0.35281659 0.07617433 0.13749000 0.24967213
+      [[5]]
+      Intercept    CAPSULE        AGE      DPROS      DCAPS        PSA
+      6.38421053 0.35391845 0.04486448 0.07828541 0.13599828 0.24897265
+      [[6]]
+      Intercept     CAPSULE         AGE        RACE       DPROS       DCAPS         PSA
+      6.38421053  0.35229345  0.04432463 -0.01873850  0.07929661  0.13621382  0.25141500
+      [[7]]
+      Intercept      CAPSULE          AGE         RACE        DPROS        DCAPS          PSA          VOL
+      6.384210526  0.351296573  0.045355300 -0.018042981  0.079189523  0.135233408  0.252090622 -0.009533532
 
-	.. code-tab:: python
+   .. code-tab:: python
 
-		import h2o
-		from h2o.estimators import H2OMaxRGLMEstimator
-		h2o.init()
+      import h2o
+      from h2o.estimators import H2OMaxRGLMEstimator
+      h2o.init()
 
-		# Import the prostate dataset:
-		prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+      # Import the prostate dataset:
+      prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate.csv")
+      Parse progress: =======================================  (done)| 100%
 
-		# Set the predictors and response:
-		predictors = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
-		response = "GLEASON"
+      # Set the predictors & response:
+      predictors = ["AGE","RACE","CAPSULE","DCAPS","PSA","VOL","DPROS"]
+      response = "GLEASON"
 
-		# Build and train the model:
-		maxrglm_model = H2OMaxRGLMEstimator(max_predictor_number=2, seed=12345)
-		maxrglm_model.train(x=predictors, y=response, training_frame=prostate)
+      # Build & train the model:
+      maxrglmModel = H2OMaxRGLMEstimator(max_predictor_number=7, seed=12345)
+      maxrglmModel.train(x=predictors, y=response, training_frame=prostate)
+      maxrglm Model Build progress: ======================================= (done)| 100%
 
-		# Find the best R2 value:
-		maxrglm_model.get_best_R2_values()
+      # Retrieve the results (H2OFrame containing best model_ids, best_r2_value, & predictor subsets):
+      results = maxrglmModel.result()
+      print(results)
+      model_name                 model_id                       best_r2_value  predictor_names
+      -------------------------  ---------------------------  ---------------  ------------------------------------------
+      best 1 predictor(s) model  GLM_model_1638380984255_2           0.205887  CAPSULE
+      best 2 predictor(s) model  GLM_model_1638380984255_13          0.269568  CAPSULE, PSA
+      best 3 predictor(s) model  GLM_model_1638380984255_42          0.286253  CAPSULE, DCAPS, PSA
+      best 4 predictor(s) model  GLM_model_1638380984255_81          0.290446  CAPSULE, DPROS, DCAPS, PSA
+      best 5 predictor(s) model  GLM_model_1638380984255_106         0.29217   CAPSULE, AGE, DPROS, DCAPS, PSA
+      best 6 predictor(s) model  GLM_model_1638380984255_121         0.292476  CAPSULE, AGE, RACE, DPROS, DCAPS, PSA
+      best 7 predictor(s) model  GLM_model_1638380984255_128         0.292556  CAPSULE, AGE, RACE, DPROS, DCAPS, PSA, VOL
 
+      [7 rows x 4 columns]
 
-
-
+      # Retrieve the list of coefficients:
+      coeff = maxrglmModel.coef()
+      print(coeff)
+      # [{‘Intercept’: 5.978584176203302, ‘CAPSULE’: 1.0074379937434323}, 
+      # {‘Intercept’: 5.83309940166519, ‘CAPSULE’: 0.8107305373380133, ‘PSA’: 0.01458178860012023}, 
+      # {‘Intercept’: 5.349021488372978, ‘CAPSULE’: 0.757501440465183, ‘DCAPS’: 0.47979554935185015, ‘PSA’: 0.012890961277678725}, 
+      # {‘Intercept’: 5.239249580225221, ‘CAPSULE’: 0.7184586144005665, ‘DPROS’: 0.07616613714619831, ‘DCAPS’: 0.4425789341205361, ‘PSA’: 0.012485121785672872}, 
+      # {‘Intercept’: 4.785482292681689, ‘CAPSULE’: 0.7207023955198935, ‘AGE’: 0.006873599969264931, ‘DPROS’: 0.07827698214607832, ‘DCAPS’: 0.4377770966619996, ‘PSA’: 0.012450143759298283}, 
+      # {‘Intercept’: 4.853286962151182, ‘CAPSULE’: 0.7173933092205801, ‘AGE’: 0.00679089119920351, ‘RACE’: -0.06068692599374028, ‘DPROS’: 0.07928808123744804, ‘DCAPS’: 0.4384709133624667, ‘PSA’: 0.012572275831333262}, 
+      # {‘Intercept’: 4.852663604264297, ‘CAPSULE’: 0.7153633277776693, ‘AGE’: 0.006948797960002643, ‘RACE’: -0.05843440305164041, ‘DPROS’: 0.07918100130777159, ‘DCAPS’: 0.43531498557623927, ‘PSA’: 0.012606061059188276, ‘VOL’: -0.0005196059470357373}]
+      
+      # Retrieve the list of standardized coefficients:
+      coeff_norm = maxrglmModel.coef_norm()
+      print(coeff_norm)
+      # [{‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.49472694682382257}, 
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.39812896270042736, ‘PSA’: 0.29160037716849074}, 
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.37198951914000183, ‘DCAPS’: 0.1490515817762952, ‘PSA’: 0.25778793491797924}, 
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.3528165891390707, ‘DPROS’: 0.07617433400499243, ‘DCAPS’: 0.13749000023165447, ‘PSA’: 0.24967213018482057}, 
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.353918452469022, ‘AGE’: 0.04486447687517968, ‘DPROS’: 0.07828540617010687, ‘DCAPS’: 0.1359982784564225, ‘PSA’: 0.2489726545605919}, 
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.352293445102015, ‘AGE’: 0.044324630838403115, ‘RACE’: -0.018738499858626197, ‘DPROS’: 0.07929661407409055, ‘DCAPS’: 0.1362138170890904, ‘PSA’: 0.2514149995462732}, 
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.35129657330683034, ‘AGE’: 0.04535529952002336, ‘RACE’: -0.018042981011017332, ‘DPROS’: 0.07918952262067014, ‘DCAPS’: 0.13523340776861126, ‘PSA’: 0.25209062209542776, ‘VOL’: -0.009533532448945743}]
 
 
