@@ -6,7 +6,6 @@ on:
     branches:
       - 'master'
       - 'rel-*'
-      - 'devops/snyk-security-scan-integration'
 
 jobs:
   snyk_scan_test:
@@ -127,9 +126,9 @@ jobs:
           pip install -r h2o-docs-theme/requirements.txt
           pip install -r h2o-py/docs-requirements.txt  
           pip install -r h2o-py/requirements.txt          
-          snyk monitor -d --fail-on=all --file=h2o-docs-theme/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-docs-theme/requirements.txt    
-          snyk monitor -d --fail-on=all --file=h2o-py/docs-requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-py/docs-requirements.txt          
-          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-py/requirements.txt      
+          snyk monitor -d --fail-on=all --file=h2o-docs-theme/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-docs-theme/requirements.txt    
+          snyk monitor -d --fail-on=all --file=h2o-py/docs-requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/docs-requirements.txt          
+          snyk monitor -d --fail-on=all --file=h2o-py/requirements.txt --package-manager=pip --command=python3 --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/requirements.txt      
 
       - uses: actions/setup-python@v1
         with:
@@ -140,30 +139,30 @@ jobs:
         run: |
           pip install --upgrade setuptools
           pip install -r h2o-py/test-requirements.txt
-          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/snyk-integration/h2o-py/test-requirements.txt         
+          snyk monitor --file=h2o-py/test-requirements.txt -d --fail-on=all --package-manager=pip --skip-unresolved --remote-repo-url=H2O-3 --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-py/test-requirements.txt         
 
       - uses: actions/setup-node@v1
         with:
           node-version: '12.x'
       - name: Snyk scan for Node dependancies
         run: |
-          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-web/package.json --project-name=H2O-3/snyk-integration/h2o-web/package.json  -d 
-          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-docs-theme/package.json --project-name=H2O-3/snyk-integration/h2o-docs-theme/package.json  -d 
+          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-web/package.json --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-web/package.json  -d 
+          snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=h2o-docs-theme/package.json --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/h2o-docs-theme/package.json  -d 
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-#      - name: Snyk scan for Java dependancies
-#        continue-on-error: true
-#        run: |
-#          unset CI # By default GH actions will set it to true. Therefore it will set isCi flag in build.gradle to true (line #7)
-#          export BUILD_HADOOP=true # To include all the build.gradle files to scan
-#          for file in $(find . -name "build.gradle"); do
-#            file=${file:2}
-#            echo ""
-#            echo "##### SCAN $file START #####"
-#            echo ""
-#            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/snyk-integration/$file -d --skip-unresolved 
-#            echo "##### SCAN $file END #####"
-#          done
-#        env:
-#          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Snyk scan for Java dependancies
+        continue-on-error: true
+        run: |
+          unset CI # By default GH actions will set it to true. Therefore it will set isCi flag in build.gradle to true (line #7)
+          export BUILD_HADOOP=true # To include all the build.gradle files to scan
+          for file in $(find . -name "build.gradle"); do
+            file=${file:2}
+            echo ""
+            echo "##### SCAN $file START #####"
+            echo ""
+            snyk monitor --org=h2oai --remote-repo-url=H2O-3 --file=$file --project-name=H2O-3/${{ steps.extract_ref.outputs.ref }}/$file -d --skip-unresolved 
+            echo "##### SCAN $file END #####"
+          done
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
