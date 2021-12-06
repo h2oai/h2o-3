@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
 import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.ModelSelectionStrategy.Selection;
+import ai.h2o.automl.StepResultState.ResultStatus;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
@@ -23,6 +24,7 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
+import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;
@@ -684,21 +686,32 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 @Override
                 public void compute2() {
                     Countdown countdown = Countdown.fromSeconds(maxAssignedTimeSecs);
-                    ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard.get(), selectionEventLog, countdown);
-                    localExecutor.start();
-                    Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
-                    localExecutor.monitor(innerTraining, SelectionStep.this, job);
+                    Selection selection = null;
+                    try {
+                        ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard.get(), selectionEventLog, countdown);
+                        localExecutor.start();
+                        Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
+                        StepResultState state = localExecutor.monitor(innerTraining, SelectionStep.this, job);
 
-                    Log.debug("Selection leaderboard " + selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
-                    Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
-                    Leaderboard lb = aml().leaderboard();
-                    Log.debug("Selection result for job " + key, ToStringBuilder.reflectionToString(selection));
-                    lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
-                    aml().trackKeys(selection._remove);
-                    lb.addModels(selection._add);
-
-                    result.unlock(job);
-                    result.addModels(selection._add);
+                        if (state.is(ResultStatus.success)) {
+                            Log.debug("Selection leaderboard "+selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
+                            selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
+                            Leaderboard lb = aml().leaderboard();
+                            Log.debug("Selection result for job "+key, ToStringBuilder.reflectionToString(selection));
+                            lb.removeModels(selection._remove, false); // do remove the model immediately from DKV: if it were part of a grid, it prevents the grid from being resumed.
+                            aml().trackKeys(selection._remove);
+                            lb.addModels(selection._add);
+                        } else if (state.is(ResultStatus.failed)) {
+                            throw (RuntimeException)state.error();
+                        } else if (state.is(ResultStatus.cancelled)) {
+                            throw new Job.JobCancelledException();
+                        }
+                    } finally {
+                        result.unlock(job);
+                        if (selection != null) {
+                            result.addModels(selection._add);
+                        }
+                    }
                     tryComplete();
                 }
 

@@ -101,8 +101,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             try {
                 job = step.run();
                 if (job == null) {
-                    skip(step, parentJob);
-                    resultState.addState(new StepResultState(step.getId(), ResultStatus.skipped));
+                    resultState.addState(skip(step, parentJob));
                 } else {
                     resultState.addState(monitor(job, step, parentJob));
                 }
@@ -121,13 +120,14 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         return resultState;
     }
 
-    private void skip(ModelingStep step, Job parentJob) {
+    private StepResultState skip(ModelingStep step, Job parentJob) {
         if (null != parentJob) {
             String desc = step._description;
             Work work = step.getAllocatedWork();
             parentJob.update(work.consume(), "SKIPPED: "+desc);
             Log.info("AutoML; skipping "+desc);
         }
+        return new StepResultState(step.getId(), ResultStatus.skipped);
     }
 
     StepResultState monitor(Job job, ModelingStep step, Job parentJob) {
