@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoML.Constraint;
+import ai.h2o.automl.StepResultState.ResultStatus;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
@@ -24,53 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * i.e. polling jobs and adding their result model(s) to the {@link Leaderboard}.
  */
 class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
-    
-    enum ResultStatus {
-        skipped,
-        cancelled,
-        failed,
-        success,
-    }
-    
-    static final class ResultState {
-        
-        private static final Map<ResultStatus, ResultState> STATES = new HashMap<>();
-        static {
-            for (ResultStatus status : ResultStatus.values()) {
-                STATES.put(status, new ResultState(status));
-            }
-        }
-        
-        private final ResultStatus _status;
-        private final Throwable _error;
-        
-        static ResultState get(ResultStatus status) {
-            return STATES.get(status);
-        }
-        
-        static ResultState fail(Throwable error) {
-            return new ResultState(ResultStatus.failed, error);
-        }
-
-        private ResultState(ResultStatus status) {
-            this(status, null);
-        }
-
-        private ResultState(ResultStatus status, Throwable error) {
-            _status = status;
-            _error = error;
-        }
-        
-        boolean is(ResultStatus status) {
-            return _status == status;
-        }
-        
-        Throwable error() {
-            return _error;
-        }
-    }
 
     static final int DEFAULT_POLLING_INTERVAL_IN_MILLIS = 1000;
+    static final StepResultState.Resolution DEFAULT_STATE_RESOLUTION_STRATEGY = StepResultState.Resolution.optimistic;
     
     static void ensureStopRequestPropagated(Job job, Job parentJob, int pollingIntervalInMillis) {
         if (job == null || parentJob == null) return;
@@ -88,6 +45,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     final Key<Leaderboard> _leaderboardKey;
     final Countdown _runCountdown;
     private int _pollingIntervalInMillis;
+    private StepResultState.Resolution _stateResolutionStrategy;
 
     private transient List<Job> _jobs; // subjobs
     private final AtomicInteger _modelCount = new AtomicInteger();
@@ -102,17 +60,23 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         assert millis > 0;
         _pollingIntervalInMillis = millis;
     }
+    
+    void setStateResolutionStrategy(StepResultState.Resolution strategy) {
+        assert strategy != null;
+        _stateResolutionStrategy = strategy;
+    }
 
     int modelCount() {
         return _modelCount.get();
     }
 
     void start() {
-        start(DEFAULT_POLLING_INTERVAL_IN_MILLIS);
+        start(DEFAULT_POLLING_INTERVAL_IN_MILLIS, DEFAULT_STATE_RESOLUTION_STRATEGY);
     }
     
-    void start(int pollingIntervalInMillis) {
+    void start(int pollingIntervalInMillis, StepResultState.Resolution strategy) {
         setPollingInterval(pollingIntervalInMillis);
+        setStateResolutionStrategy(strategy);
         _jobs = new ArrayList<>();
         _modelCount.set(0);
         _runCountdown.start();
@@ -120,37 +84,40 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     void stop() {
         _runCountdown.stop();
-        if (null == _jobs) return; // already stopped
+        if (_jobs == null) return; // already stopped
         for (Job j : _jobs) j.stop();
         for (Job j : _jobs) j.get(); // Hold until they all completely stop.
         _jobs = null;
     }
 
     @SuppressWarnings("unchecked")
-    ResultState submit(ModelingStep step, Job parentJob) {
-        ResultState resultState = null;
+    StepResultState submit(ModelingStep step, Job parentJob) {
+        StepResultState resultState = new StepResultState(step.getId());
         for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
-            retVal |= submit(it.next(), parentJob);
+            resultState.addState(submit(it.next(), parentJob));
         }
         if (step.canRun()) {
             Job job = null;
             try {
                 job = step.run();
-                if (job==null) {
+                if (job == null) {
                     skip(step, parentJob);
-                    resultState = ResultState.get(ResultStatus.cancelled);
+                    resultState.addState(new StepResultState(step.getId(), ResultStatus.skipped));
                 } else {
-                    resultState = monitor(job, step, parentJob);
+                    resultState.addState(monitor(job, step, parentJob));
                 }
             } catch (Exception e) {
-                resultState = ResultState.fail(e);
+                resultState.addState(new StepResultState(step.getId(), e));
             } finally {
                 step.onDone(job);
             }
-        } else if (step.getAllocatedWork() != null) {
-            step.getAllocatedWork().consume();
-            resultState = ResultState.get(ResultStatus.cancelled);
+        } else {
+            resultState.addState(new StepResultState(step.getId(), ResultStatus.skipped));
+            if (step.getAllocatedWork() != null) {
+                step.getAllocatedWork().consume();
+            }
         }
+        resultState.resolveState(_stateResolutionStrategy);
         return resultState;
     }
 
@@ -163,7 +130,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         }
     }
 
-    ResultState monitor(Job job, ModelingStep step, Job parentJob) {
+    StepResultState monitor(Job job, ModelingStep step, Job parentJob) {
         EventLog eventLog = eventLog();
         String jobDescription = job._result == null ? job._description : job._result+" ["+job._description+"]";
         eventLog.debug(Stage.ModelTraining, jobDescription + " started");
@@ -176,27 +143,27 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
         try {
             while (job.isRunning()) {
-                if (null!=parentJob) {
+                if (parentJob != null) {
                     if (parentJob.stop_requested()) {
-                        eventLog.debug(Stage.ModelTraining, "AutoML job cancelled; skipping " + jobDescription);
+                        eventLog.debug(Stage.ModelTraining, "AutoML job cancelled; skipping "+jobDescription);
                         job.stop();
                     }
                     if (!ignoreTimeout && _runCountdown.timedOut()) {
-                        eventLog.debug(Stage.ModelTraining, "AutoML: out of time; skipping " + jobDescription);
+                        eventLog.debug(Stage.ModelTraining, "AutoML: out of time; skipping "+jobDescription);
                         job.stop();
                     }
                 }
                 long workedSoFar = Math.round(job.progress() * work._weight);
 
-                if (null!=parentJob) {
+                if (parentJob != null) {
                     parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), jobDescription);
                 }
 
-                if (JobType.HyperparamSearch==work._type || JobType.Selection==work._type) {
+                if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
                     ModelContainer<?> container = (ModelContainer) job._result.get();
-                    int totalModelsBuilt = container==null ? 0:container.getModelCount();
+                    int totalModelsBuilt = container == null ? 0 : container.getModelCount();
                     if (totalModelsBuilt > lastTotalModelsBuilt) {
-                        eventLog.debug(Stage.ModelTraining, "Built: " + totalModelsBuilt + " models for " + work._type + " : " + jobDescription);
+                        eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
                         this.addModels(container, step);
                         lastTotalModelsBuilt = totalModelsBuilt;
                     }
@@ -211,30 +178,30 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             }
 
             if (job.isCrashed()) {
-                eventLog.warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
-                return ResultState.fail(job.ex());
-            } else if (job.get()==null) {
-                eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
-                return ResultState.get(ResultStatus.cancelled);
+                eventLog.warn(Stage.ModelTraining, jobDescription+" failed: "+job.ex());
+                return new StepResultState(step.getId(), job.ex());
+            } else if (job.get() == null) {
+                eventLog.info(Stage.ModelTraining, jobDescription+" cancelled");
+                return new StepResultState(step.getId(), ResultStatus.cancelled);
             } else {
                 // pick up any stragglers:
-                if (JobType.HyperparamSearch==work._type || JobType.Selection==work._type) {
-                    eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
+                if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
+                    eventLog.debug(Stage.ModelTraining, jobDescription+" complete");
                     ModelContainer<?> container = (ModelContainer) job.get();
                     int totalModelsBuilt = container.getModelCount();
                     if (totalModelsBuilt > lastTotalModelsBuilt) {
-                        eventLog.debug(Stage.ModelTraining, "Built: " + totalModelsBuilt + " models for " + work._type + " : " + jobDescription);
+                        eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
                         this.addModels(container, step);
                     }
-                } else if (JobType.ModelBuild==work._type) {
-                    eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
+                } else if (JobType.ModelBuild == work._type) {
+                    eventLog.debug(Stage.ModelTraining, jobDescription+" complete");
                     this.addModel((Model) job.get(), step);
                 }
-                return ResultState.get(ResultStatus.success);
+                return new StepResultState(step.getId(), ResultStatus.success);
             }
         } finally {
             // add remaining work
-            if (null!=parentJob) {
+            if (parentJob != null) {
                 parentJob.update(work._weight - lastWorkedSoFar);
             }
             work.consume();
