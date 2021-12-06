@@ -126,7 +126,7 @@ public class HistogramTest extends TestUtil {
       }
       DHistogram.HistoQuantiles hq = new DHistogram.HistoQuantiles(Key.make(), splitPts);
       DKV.put(hq);
-      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,false,false,0,histoType,seed,hq._key,null, false);
+      DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,false,false,0,histoType,seed,hq._key,null, false, false, null);
       hist.init();
       int N=10000000;
       int bin=-1;
@@ -163,7 +163,7 @@ public class HistogramTest extends TestUtil {
     double maxEx = 6.900000000000001;
     long seed = 1234;
     SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
-    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, false,false, 0, histoType, seed, null, null, false);
+    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, false,false, 0, histoType, seed, null, null, false, false, null);
     hist.init();
     assert(hist.binAt(0)==min);
     assert(hist.binAt(nbins-1)<maxEx);
@@ -179,7 +179,7 @@ public class HistogramTest extends TestUtil {
     double maxEx = 6.900000000000001;
     long seed = 1234;
     SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.Random;
-    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, false, false,0, histoType, seed, null, null, false);
+    DHistogram hist = new DHistogram("myhisto", nbins, nbins_cats, isInt, min, maxEx, false, false,0, histoType, seed, null, null, false, false, null);
     hist.init();
     assert(hist.binAt(0)==min);
     assert(hist.binAt(nbins-1)<maxEx);
@@ -196,15 +196,15 @@ public class HistogramTest extends TestUtil {
     long seed = 1234;
     SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal;
     double[] splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
-    Key k = Key.make();
+    Key<DHistogram.HistoQuantiles> k = Key.make();
     DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
-    DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,false,false,0,histoType,seed,k,null, false);
+    DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,false,false,0,histoType,seed,k,null, false, false, null);
     hist.init();
     assert(hist.binAt(0)==min);
     assert(hist.binAt(nbins-1)<maxEx);
     assert(hist.bin(min) == 0);
     assert(hist.bin(maxEx-1e-15) == nbins-1);
-    k.remove();
+    Keyed.remove(k);
   }
 
   @Test public void testShrinking() {

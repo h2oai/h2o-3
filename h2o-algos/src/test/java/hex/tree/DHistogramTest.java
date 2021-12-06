@@ -1,6 +1,5 @@
 package hex.tree;
 
-import hex.tree.uplift.UpliftDRF;
 import hex.tree.uplift.UpliftDRFModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,7 +41,7 @@ public class DHistogramTest extends TestUtil {
       Scope.track_generic(hq);
 
       DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false);
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false, false, null);
       histo.init();
 
       // check that -0.0 was converted to 0.0 by the init method
@@ -64,7 +63,7 @@ public class DHistogramTest extends TestUtil {
       Scope.track_generic(hq);
 
       DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false);
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false, false, null);
       histo.init();
 
       // check that negative zero can be found
@@ -91,7 +90,7 @@ public class DHistogramTest extends TestUtil {
       values[values.length - 1] = maxEx - 1e-8;
 
       DHistogram histoRand = new DHistogram("rand", 20, 1024, (byte) 0, min, maxEx, false, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.Random, 42L, null, null, false);
+              SharedTreeModel.SharedTreeParameters.HistogramType.Random, 42L, null, null, false, false, null);
       histoRand.init();
 
       // project the random split points into regular space (original values of the column)
@@ -104,7 +103,7 @@ public class DHistogramTest extends TestUtil {
       DKV.put(hq);
       Scope.track_generic(hq);
       DHistogram histoQuant = new DHistogram("quant", 20, 1024, (byte) 0, min, maxEx, false, false, -0.001,
-              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false);
+              SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null, false, false, null);
       histoQuant.init();
 
       int[] bins_rand = new int[values.length];
@@ -122,7 +121,7 @@ public class DHistogramTest extends TestUtil {
   @Test
   public void testExtractData_double() {
     DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, false, -0.001,
-            SharedTreeModel.SharedTreeParameters.HistogramType.AUTO, 42L, null, null, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.AUTO, 42L, null, null, false, false, null);
     histo.init();
 
     // init with c1
@@ -148,7 +147,7 @@ public class DHistogramTest extends TestUtil {
   @Test
   public void testExtractData_int() {
     DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, true, false, -0.001,
-            SharedTreeModel.SharedTreeParameters.HistogramType.AUTO, 42L, null, null, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.AUTO, 42L, null, null, false, false, null);
     histo.init();
 
     // init with c1
@@ -189,14 +188,14 @@ public class DHistogramTest extends TestUtil {
 
     // optimization enabled
     DHistogram histoOpt = new DHistogram("intOpt-on", 1000, 1024, (byte) 1, 0, 1000, true, false, -0.001,
-            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 42L, null, null, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 42L, null, null, false, false, null);
     histoOpt.init();
 
     histoOpt.updateHisto(weights, null, dataInt, ys, null, rows, N, 0, null);
 
     // optimization OFF
     DHistogram histo = new DHistogram("intOpt-off", 1000, 1024, (byte) 1, 0, 1000, false, false, -0.001,
-            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 42L, null, null, false);
+            SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 42L, null, null, false, false, null);
     histo.init();
 
     histo.updateHisto(weights, null, data, ys, null, rows, N, 0, null);
@@ -262,6 +261,9 @@ public class DHistogramTest extends TestUtil {
   }
 
   private static class TreeParameters extends SharedTreeModel.SharedTreeParameters {
+    public TreeParameters() {
+    }
+
     @Override
     public String algoName() {
       return null;
