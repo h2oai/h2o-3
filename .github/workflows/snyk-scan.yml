@@ -89,14 +89,14 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Check on Snyk scan failures
-        if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || (${{ steps.scan2.outputs.result || 'skipped' }} == 'failure') || (${{ steps.scan4.outputs.result || 'skipped' }} == 'failure')
+        if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || (steps.scan2.outcome != 'skipped' || (steps.scan4.outcome != 'skipped')
         run: |
           echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                 Snyk scan for Java dependancies - ${{ steps.scan1.outcome }}
                 Snyk scan for Python 3.5 dependancies - ${{ steps.scan2.outputs.result || 'skipped' }}
                 Snyk scan for Python 2.7 dependancies - ${{ steps.scan3.outcome }}
                 Snyk scan for Node dependancies - ${{ steps.scan4.outputs.result || 'skipped' }}"
-          exit 1
+          #exit 1
           
   snyk_scan_monitor:
     if: ${{ github.event_name == 'push' }}
