@@ -91,7 +91,7 @@ jobs:
       - name: Check Snyk scan results
         if: steps.scan1.outcome == 'failure' || steps.scan3.outcome == 'failure' || steps.scan2.outcome != 'skipped' || steps.scan4.outcome != 'skipped'
         run: |
-          if ( ${{ steps.scan1.outcome }} == 'failure' || ${{ steps.scan3.outcome }} == 'failure' || ${{ steps.scan2.outputs.result }} == 'failure' || ${{ steps.scan4.outputs.result }} == 'failure' ); then
+          if ( "${{ steps.scan1.outcome }}" == "failure" || "${{ steps.scan3.outcome }}" == "failure" || "${{ steps.scan2.outputs.result }}" == "failure" || "${{ steps.scan4.outputs.result }}" == "failure" ); then
               echo "[warning] Please solve the fixable security vulnerabilities found in failed steps!
                     Snyk scan for Java dependancies - ${{ steps.scan1.outcome }}
                     Snyk scan for Python 3.5 dependancies - ${{ steps.scan2.outputs.result }}
