@@ -23,8 +23,6 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
-import water.exceptions.H2OAutoMLException;
-import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;
@@ -62,21 +60,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         applyPreprocessing(baseParams);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        try {
-            Job job = GridSearch.startGridSearch(
-                    resultKey,
-                    baseParams,
-                    hyperParams,
-                    new GridSearch.SimpleParametersBuilderFactory<>(),
-                    searchCriteria,
-                    GridSearch.SEQUENTIAL_MODEL_BUILDING
-            );
-            
-            return job;
-        } catch (H2OGridException exception) {
-            aml().eventLog().warn(Stage.ModelTraining, "Skipping model search "+resultKey+" due to exception: "+exception);
-            return null;
-        }
+        return GridSearch.startGridSearch(
+                resultKey,
+                baseParams,
+                hyperParams,
+                new GridSearch.SimpleParametersBuilderFactory<>(),
+                searchCriteria,
+                GridSearch.SEQUENTIAL_MODEL_BUILDING
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -90,22 +81,17 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         builder._parms = params;
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        try {
-            builder.init(false);          // validate parameters
-            if (builder._messages.length > 0) {
-                for (ModelBuilder.ValidationMessage vm : builder._messages) {
-                    if (vm.log_level() == Log.WARN) {
-                        aml().eventLog().warn(Stage.ModelTraining, vm.field()+" param, "+vm.message());
-                    } else if (vm.log_level() == Log.ERRR) {
-                        aml().eventLog().error(Stage.ModelTraining, vm.field()+" param, "+vm.message());
-                    }
+        builder.init(false);          // validate parameters
+        if (builder._messages.length > 0) {
+            for (ModelBuilder.ValidationMessage vm : builder._messages) {
+                if (vm.log_level() == Log.WARN) {
+                    aml().eventLog().warn(Stage.ModelTraining, vm.field()+" param, "+vm.message());
+                } else if (vm.log_level() == Log.ERRR) {
+                    aml().eventLog().error(Stage.ModelTraining, vm.field()+" param, "+vm.message());
                 }
             }
-            return builder.trainModelOnH2ONode();
-        } catch (H2OIllegalArgumentException exception) {
-            aml().eventLog().error(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
-            return null;
         }
+        return builder.trainModelOnH2ONode();
     }
 
     private transient AutoML _aml;

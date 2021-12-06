@@ -17,6 +17,7 @@ import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OAutoMLException;
+import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -654,22 +655,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
     }
     for (ModelingStep step : getExecutionPlan()) {
-        if (!exceededSearchLimits(step)) {
-          StepResultState state = _modelingStepsExecutor.submit(step, job());
-          log.info("AutoML step returned with state: "+state.toString());
-          if (state.is(ResultStatus.success)) {
-            _consecutiveModelFailures.set(0);
-            completed.add(step);
-          } else if (state.is(ResultStatus.failed)) {
-            _consecutiveModelFailures.incrementAndGet();
-            if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
-              throw new H2OAutoMLException("Aborting AutoML after too many consecutive model failures", state.error());
-            }
-            if (state.error() instanceof H2OAutoMLException) {
-              throw (H2OAutoMLException) state.error();
-            }
+      if (!exceededSearchLimits(step)) {
+        StepResultState state = _modelingStepsExecutor.submit(step, job());
+        log.info("AutoML step returned with state: "+state.toString());
+        if (state.is(ResultStatus.success)) {
+          _consecutiveModelFailures.set(0);
+          completed.add(step);
+        } else if (state.is(ResultStatus.failed)) {
+          _consecutiveModelFailures.incrementAndGet();
+          if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+            throw new H2OAutoMLException("Aborting AutoML after too many consecutive model failures", state.error());
+          }
+          if (state.error() instanceof H2OAutoMLException) { // if a step throws this exception, this will immediately abort the entire AutoML run.
+            throw (H2OAutoMLException) state.error();
           }
         }
+      }
     }
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
