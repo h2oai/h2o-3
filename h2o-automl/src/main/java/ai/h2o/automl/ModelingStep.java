@@ -24,7 +24,6 @@ import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
-import water.exceptions.H2OAbstractRuntimeException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;

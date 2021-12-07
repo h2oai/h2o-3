@@ -984,8 +984,39 @@ public class GridTest extends TestUtil {
     }
   }
   
-  @Test
+  @Test(expected = Job.JobCancelledException.class)
   public void test_parallel_grid_cancelled_on_consecutive_model_failures() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parseTestFile("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+      String target = "species";
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.bernoulli});  // incompatible with iris
+        put("_ntrees", new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        put("_max_depth", new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+//        put("_min_rows", new Integer[]{5000000}); // Invalid hyperparameter, causes model training to fail
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = target;
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, 3);
+      try {
+        Scope.track_generic(gs);
+        final Grid grid = gs.get();
+        Scope.track_generic(grid);
+      } finally {
+        assert gs.isCrashed();
+        Throwable cause = gs.ex();
+        assert cause instanceof H2OGridException;
+        assertEquals("Aborting Grid search after too many consecutive model failures.", cause.getMessage());
+      }
+    } finally {
+      Scope.exit();
+    }
 
   }
 

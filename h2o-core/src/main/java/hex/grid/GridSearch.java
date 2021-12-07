@@ -244,13 +244,16 @@ public final class GridSearch<MP extends Model.Parameters> {
     public void onBuildFailure(final ParallelModelBuilder.ModelBuildFailure modelBuildFailure,
                                final ParallelModelBuilder parallelModelBuilder) {
       parallelSearchGridLock.lock();
+      Throwable ex = modelBuildFailure.getThrowable();
       try {
-        grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), modelBuildFailure.getThrowable());
+        grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), ex);
       } finally {
         parallelSearchGridLock.unlock();
       }
-      if (grid.getModelCount() == 0 && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
-        _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", modelBuildFailure.getThrowable()));
+      if (!Grid.isJobCanceled(ex) 
+              && grid.getModelCount() == 0 
+              && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+        _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", ex));
       } else {
         attemptBuildNextModel(parallelModelBuilder, null);
       }

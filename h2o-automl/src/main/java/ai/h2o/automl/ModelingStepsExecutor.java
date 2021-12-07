@@ -92,7 +92,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     @SuppressWarnings("unchecked")
     StepResultState submit(ModelingStep step, Job parentJob) {
-        StepResultState resultState = new StepResultState(step.getId());
+        StepResultState resultState = new StepResultState(step._description);
         for (Iterator<ModelingStep> it = step.iterateSubSteps(); it.hasNext(); ) {
             resultState.addState(submit(it.next(), parentJob));
         }
@@ -106,12 +106,12 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                     resultState.addState(monitor(job, step, parentJob));
                 }
             } catch (Exception e) {
-                resultState.addState(new StepResultState(step.getId(), e));
+                resultState.addState(new StepResultState(step._description, e));
             } finally {
                 step.onDone(job);
             }
         } else {
-            resultState.addState(new StepResultState(step.getId(), ResultStatus.skipped));
+            resultState.addState(new StepResultState(step._description, ResultStatus.skipped));
             if (step.getAllocatedWork() != null) {
                 step.getAllocatedWork().consume();
             }
@@ -127,7 +127,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             parentJob.update(work.consume(), "SKIPPED: "+desc);
             Log.info("AutoML; skipping "+desc);
         }
-        return new StepResultState(step.getId(), ResultStatus.skipped);
+        return new StepResultState(step._description, ResultStatus.skipped);
     }
 
     StepResultState monitor(Job job, ModelingStep step, Job parentJob) {
@@ -179,10 +179,10 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
             if (job.isCrashed()) {
                 eventLog.warn(Stage.ModelTraining, jobDescription+" failed: "+job.ex());
-                return new StepResultState(step.getId(), job.ex());
+                return new StepResultState(step._description, job.ex());
             } else if (job.get() == null) {
                 eventLog.info(Stage.ModelTraining, jobDescription+" cancelled");
-                return new StepResultState(step.getId(), ResultStatus.cancelled);
+                return new StepResultState(step._description, ResultStatus.cancelled);
             } else {
                 // pick up any stragglers:
                 if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
@@ -197,7 +197,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                     eventLog.debug(Stage.ModelTraining, jobDescription+" complete");
                     this.addModel((Model) job.get(), step);
                 }
-                return new StepResultState(step.getId(), ResultStatus.success);
+                return new StepResultState(step._description, ResultStatus.success);
             }
         } finally {
             // add remaining work

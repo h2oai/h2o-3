@@ -99,8 +99,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      *
      * @param params    model parameters which caused model builder failure, can be null
      * @param rawParams array of "raw" parameter values
-     * @params failureDetails  textual description of model building failure
-     * @params stackTrace  stringify stacktrace
+     * @param failureDetails  textual description of model building failure
+     * @param stackTrace  stringify stacktrace
      */
     private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
       assert rawParams != null : "API has to always pass rawParams";
@@ -160,7 +160,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      * <p> Should be used only from <code>GridSearch</code> job.</p>
      *
      * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-     * @params e exception causing a failure
+     * @param e exception causing a failure
      */
     /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
       assert rawParams != null : "Raw parameters should be always != null !";
@@ -264,7 +264,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
 
-  /**
+  /*
    * Ask the Grid for a suggested next hyperparameter value, given an existing Model as a starting
    * point and the complete set of hyperparameter limits. Returning a NaN signals there is no next
    * suggestion, which is reasonable if the obvious "next" value does not exist (e.g. exhausted all
@@ -327,8 +327,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param modelKey Model the failures are related to
    * @param params    model parameters which caused model builder failure, can be null
    * @param rawParams array of "raw" parameter values
-   * @params failureDetails  textual description of model building failure
-   * @params stackTrace  stringify stacktrace
+   * @param t the exception causing a failure
    */
   private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
                                            final Throwable t) {
@@ -362,7 +361,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param params model parameters which caused model builder failure
-   * @params e  exception causing a failure
+   * @param t the exception causing a failure
    */
   void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
     assert params != null : "Model parameters should be always != null !";
@@ -379,7 +378,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-   * @params e exception causing a failure
+   * @param e the exception causing a failure
    */
   void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams, final Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
@@ -598,7 +597,6 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    *
    * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
    * @return Path of the file written
-   * @throws IOException Error serializing the grid.
    */
   public List<String> exportBinary(final String gridExportDir, final boolean exportModels, ModelExportOption... options) {
     Objects.requireNonNull(gridExportDir);
