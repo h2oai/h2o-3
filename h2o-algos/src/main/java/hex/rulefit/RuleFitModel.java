@@ -14,7 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> implements FitRulesCollector {
+public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
     public enum Algorithm {DRF, GBM, AUTO}
 
     public enum ModelType {RULES, RULES_AND_LINEAR, LINEAR}
@@ -178,8 +178,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return true;
     }
     
-    @Override
-    public Frame fitRules(Frame frame, String[] ruleIds) {
+    public Frame predictRules(Frame frame, String[] ruleIds) {
         Frame adaptFrm = new Frame(frame);
         adaptTestForTrain(adaptFrm, true, false);
         List<String> linVarNames = Arrays.asList(glmModel.names()).stream().filter(name -> name.startsWith("linear.")).collect(Collectors.toList());

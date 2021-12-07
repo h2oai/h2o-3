@@ -10,7 +10,7 @@ import water.rapids.vals.ValFrame;
 /**
  * Evaluates validity of the given rules on the given data. 
  */
-public class AstFitRule extends AstPrimitive<AstFitRule> {
+public class AstPredictRule extends AstPrimitive<AstPredictRule> {
 
     @Override
     public String[] args() {
@@ -20,11 +20,11 @@ public class AstFitRule extends AstPrimitive<AstFitRule> {
     @Override
     public int nargs() {
         return 1 + 3;
-    } // (rulefit.fit.rules model frame ruleIds)
+    } // (rulefit.predict.rules model frame ruleIds)
 
     @Override
     public String str() {
-        return "rulefit.fit.rules";
+        return "rulefit.predict.rules";
     }
 
     @Override
@@ -32,7 +32,7 @@ public class AstFitRule extends AstPrimitive<AstFitRule> {
         RuleFitModel model = (RuleFitModel) stk.track(asts[1].exec(env)).getModel();
         Frame frame = stk.track(asts[2].exec(env)).getFrame();
         String[] ruleIds = stk.track(asts[3].exec(env)).getStrs();
-        Frame result = model.fitRules(frame, ruleIds);
+        Frame result = model.predictRules(frame, ruleIds);
         return new ValFrame(result);
     }
 }

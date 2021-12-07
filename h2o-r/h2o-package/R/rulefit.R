@@ -256,7 +256,7 @@ h2o.predict_rules <- function(model, frame, rule_ids) {
     o <- model
     if (is(o, "H2OModel")) {
         if (o@algorithm == "rulefit"){
-            return(.newExpr("rulefit.fit.rules", model@model_id, frame, rule_ids))
+            return(.newExpr("rulefit.predict.rules", model@model_id, frame, rule_ids))
         } else {
             warning(paste0("No calculation available for this model"))
             return(NULL)

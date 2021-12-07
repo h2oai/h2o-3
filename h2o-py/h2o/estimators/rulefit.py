@@ -359,4 +359,4 @@ class H2ORuleFitEstimator(H2OEstimator):
         from h2o.utils.typechecks import assert_is_type
         from h2o.expr import ExprNode
         assert_is_type(frame, H2OFrame)
-        return H2OFrame._expr(expr=ExprNode("rulefit.fit.rules", self, frame, rule_ids))
+        return H2OFrame._expr(expr=ExprNode("rulefit.predict.rules", self, frame, rule_ids))
