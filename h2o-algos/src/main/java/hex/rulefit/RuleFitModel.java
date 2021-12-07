@@ -182,14 +182,15 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     public Frame fitRules(Frame frame, String[] ruleIds) {
         Frame adaptFrm = new Frame(frame);
         adaptTestForTrain(adaptFrm, true, false);
+        List<String> linVarNames = Arrays.asList(glmModel.names()).stream().filter(name -> name.startsWith("linear.")).collect(Collectors.toList());
         
         List<Rule> rules = new ArrayList<>();
         List<String> linearRules = new ArrayList<>();
         for (int i = 0; i < ruleIds.length; i++) {
-            if (ruleIds[i].startsWith("linear.") && isLinearVar(ruleIds[i])) {
+            if (ruleIds[i].startsWith("linear.") && isLinearVar(ruleIds[i], linVarNames)) {
                 linearRules.add(ruleIds[i]);
             } else {
-            rules.add(ruleEnsemble.getRuleByVarName(RuleFitUtils.readRuleId(ruleIds[i])));
+                rules.add(ruleEnsemble.getRuleByVarName(RuleFitUtils.readRuleId(ruleIds[i])));
             }
         }
         RuleEnsemble subEnsemble = new RuleEnsemble(rules.toArray(new Rule[0]));
@@ -204,10 +205,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return result;
     }
     
-    private boolean isLinearVar(String potentialLinVarId) {
-        List<String> linVarNames = Arrays.asList(glmModel.names()).stream().filter(name -> name.startsWith("linear.")).collect(Collectors.toList());
-        for (int i = 0; i < linVarNames.size(); i++) {
-            if (potentialLinVarId.startsWith(linVarNames.get(i)))
+    private boolean isLinearVar(String potentialLinVarId, List<String> linVarNames) {
+        for (String linVarName : linVarNames) {
+            if (potentialLinVarId.startsWith(linVarName))
                 return true;
         }
         return false;
