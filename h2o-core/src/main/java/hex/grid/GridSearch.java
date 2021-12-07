@@ -137,7 +137,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         try {
           // user (or AutoML) may want to cancel a grid search in the middle of the search for various reasons
           //  without wanting to throw away the grid itself with all the models previously trained.
-          if (Grid.isJobCanceled(ex))
+          if (Grid.isJobCanceled(ex) && !_job.isCrashing())
             Log.info("Keeping incomplete grid "+_job._result+" after cancellation of job "+_job._description);
           else  
             Keyed.remove(_job._result); // ensure that grid is cleaned up if it was completed abnormally.
@@ -249,8 +249,8 @@ public final class GridSearch<MP extends Model.Parameters> {
       } finally {
         parallelSearchGridLock.unlock();
       }
-      if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
-        _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures", modelBuildFailure.getThrowable()));
+      if (grid.getModelCount() == 0 && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+        _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", modelBuildFailure.getThrowable()));
       } else {
         attemptBuildNextModel(parallelModelBuilder, null);
       }
@@ -397,8 +397,8 @@ public final class GridSearch<MP extends Model.Parameters> {
               Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
           } else {
             Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
-            if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
-              _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures", e));
+            if (grid.getModelCount() == 0 && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+              _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", e));
             }
           }
 

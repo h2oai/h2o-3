@@ -332,9 +332,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    */
   private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
                                            final Throwable t) {
-      final String failureDetails = isJobCanceled(t) 
-              ? "Job Canceled, keeping the incomplete grid with all the models trained before cancellation." 
-              : t.getMessage();
+      final String failureDetails = isJobCanceled(t) ? "Job Canceled" : t.getMessage();
       final String stackTrace = StringUtils.toString(t);
       final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
       SearchFailure searchFailure = _failures.get(searchedKey);

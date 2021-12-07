@@ -949,7 +949,7 @@ public class GridTest extends TestUtil {
     }
   }
 
-  @Test(expected = H2OGridException.class)
+  @Test(expected = Job.JobCancelledException.class)
   public void test_grid_cancelled_on_consecutive_model_failures() {
     try {
       Scope.enter();
@@ -969,10 +969,16 @@ public class GridTest extends TestUtil {
       params._response_column = target;
 
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
-      Scope.track_generic(gs);
-      final Grid grid = gs.get();
-      Scope.track_generic(grid);
-
+      try {
+        Scope.track_generic(gs);
+        final Grid grid = gs.get();
+        Scope.track_generic(grid);
+      } finally {
+        assert gs.isCrashed();
+        Throwable cause = gs.ex();
+        assert cause instanceof H2OGridException;
+        assertEquals("Aborting Grid search after too many consecutive model failures.", cause.getMessage());
+      }
     } finally {
       Scope.exit();
     }
