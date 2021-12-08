@@ -4,8 +4,8 @@ apply plugin: 'com.github.johnrengelman.shadow'
 description = "H2O HDFS client shadowjar for Hadoop ${ext.hadoopVersion}"
 
 configurations {
-    compile.exclude group: 'org.apache.hadoop'
-    compile.exclude group: 'org.apache.hive'
+    api.exclude group: 'org.apache.hadoop'
+    api.exclude group: 'org.apache.hive'
 }
 
 dependencies {
