@@ -2521,12 +2521,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(preds.vec(0).at(0) == 10);
-    Assert.assertTrue(preds.vec(0).at(1) == 0);
-    Assert.assertTrue(preds.vec(0).at(2) == 0);
-    Assert.assertTrue(preds.vec(0).at(3) == 0);
-    Assert.assertTrue(preds.vec(0).at(4) == 10);
-    Assert.assertTrue(preds.vec(0).at(5) == 10);
+    assertEquals(10, preds.vec(0).at(0), 0);
+    assertEquals(0, preds.vec(0).at(1), 0);
+    assertEquals(0, preds.vec(0).at(2), 0);
+    assertEquals(0, preds.vec(0).at(3), 0);
+    assertEquals(10, preds.vec(0).at(4), 0);
+    assertEquals(10, preds.vec(0).at(5), 0);
     preds.remove();
     gbm.remove();
     df.remove();

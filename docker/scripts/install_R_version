@@ -70,6 +70,16 @@ function checkRInstallLog() {
 echo "Installing dependencies for R ${R_VERSION}"
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); \
   install.packages(c( \
+  'versions' \
+  )) \
+" 2>&1 | tee R.install.0.log
+checkRInstallLog R.install.0.log
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(versions);\
+  install.versions(c('usethis'), c('2.0.1'));
+" 2>&1 | tee R.install.00.log
+checkRInstallLog R.install.00.log
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=1); library(versions);\
+  install.packages(c( \
   'devtools' \
   )) \
 " 2>&1 | tee R.install.1.log
