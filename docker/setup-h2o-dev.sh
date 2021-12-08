@@ -29,7 +29,7 @@ apt-get install -y oracle-java8-installer
 # apt-get install nvidia-381
 
 # Install NodeJS
-curl -sL https://deb.nodesource.com/setup_10.x | bash -
+curl -sL https://deb.nodesource.com/setup_16.x | bash -
 apt-get update -q -y
 apt-get install -y nodejs
 
