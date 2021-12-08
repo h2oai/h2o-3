@@ -218,7 +218,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
 
         EasyPredictModelWrapper makeWrapper() {
             final EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
-                    .setModel(genModel())
+                    .setModel(genModel().internal_threadSafeInstance())
                     .setConvertUnknownCategoricalLevelsToNa(true);
             return new EasyPredictModelWrapper(config);
         }

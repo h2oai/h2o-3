@@ -807,5 +807,17 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       }
     }
   }
-  
+
+  /**
+   * For internal use only - can be removed at any time!
+   * 
+   * Creates a version of the MOJO that can be used by a thread in a multi-threaded environment.
+   * This is a temporary workaround and proper fix should be put in place for the MOJOs that are not currently
+   * thread safe (GAM).
+   */
+  @Deprecated
+  public GenModel internal_threadSafeInstance() {
+    return this;
+  }
+
 }
