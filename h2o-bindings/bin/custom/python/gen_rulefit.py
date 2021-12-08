@@ -1,3 +1,5 @@
+deprecated_params = dict(Lambda='lambda_')
+
 def class_extensions():
     def rule_importance(self):
         """
@@ -18,4 +20,14 @@ doc = dict(
 Builds a RuleFit on a parsed dataset, for regression or 
 classification. 
 """
+)
+
+
+overrides = dict(
+    lambda_=dict(
+        setter="""
+ assert_is_type({pname}, None, numeric, [numeric])
+ self._parms["{sname}"] = {pname}
+ """
+    ),
 )

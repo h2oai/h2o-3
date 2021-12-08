@@ -31,9 +31,10 @@ test.rulefit.titanic <- function() {
     expect_that(h2o.auc(h2o.performance(rfit)), equals(h2o.auc(h2o.performance(rfit, newdata =  train))))
     expect_that(h2o.logloss(h2o.performance(rfit)), equals(h2o.logloss(h2o.performance(rfit, newdata =  train))))
 
-    rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
+    rfit2 <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules", lambda=1e-8)
 
     expect_true(!is.null(rfit@model$validation_metrics))
+    expect_true(length(rfit@model$rule_importance$rule) < length(rfit2@model$rule_importance$rule))
 
 
 }

@@ -167,6 +167,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             glmParameters._weights_column = "linear." + _parms._weights_column;
         }
         glmParameters._auc_type = _parms._auc_type;
+        if (_parms.lambda != null) {
+            glmParameters._lambda = _parms.lambda;
+        }
     }
 
 
@@ -257,7 +260,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         glmParameters._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
                     }
                 } else {
-                    glmParameters._lambda = getOptimalLambda();
+                    if (glmParameters._lambda != null)
+                        glmParameters._lambda = getOptimalLambda();
                 }
 
                 long startGLMTime = System.nanoTime();
