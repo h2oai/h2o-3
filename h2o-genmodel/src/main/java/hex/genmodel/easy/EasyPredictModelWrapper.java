@@ -389,6 +389,25 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   /**
+   * Make a prediction on a new data point.
+   *
+   * This method has the same input as predict. The only difference is that
+   * it returns and array instead of a prediction object.
+   * 
+   * The meaning of the returned values can be decoded by calling getOutputNames
+   * and if any returned values are categorical - method getOutputDomain can be
+   * used to find mapping of indexes to categorical values for the particular column.
+   *
+   * @param data A new data point. Column names are case-sensitive.
+   * @param offset Value of offset (use 0 if the model was trained without offset).
+   * @return An array representing a prediction.
+   * @throws PredictException if prediction cannot be made (eg.: input is invalid)
+   */
+  public double[] predictRaw(RowData data, double offset) throws PredictException {
+    return preamble(m.getModelCategory(), data, offset);
+  }
+
+  /**
    * See {@link #predict(RowData, ModelCategory)}
    */
   public AbstractPrediction predict(RowData data) throws PredictException {
