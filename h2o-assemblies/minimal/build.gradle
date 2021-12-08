@@ -13,15 +13,15 @@ targetCompatibility = 1.8
 
 // Exclude unwanted dependencies
 configurations {
-    compile.exclude module: 'junit'
-    compile.exclude module: 'mockito-all'
-    compile.exclude module: 'zookeeper'
-    compile.exclude module: 'javax.mail.glassfish'
-    compile.exclude module: 'servlet-api'
-    compile.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
-    compile.exclude group: 'org.openjdk.jmh'
-    compile.exclude group: 'log4j'
-    compile.exclude module: 'h2o-logging-impl-classic'
+    api.exclude module: 'junit'
+    api.exclude module: 'mockito-all'
+    api.exclude module: 'zookeeper'
+    api.exclude module: 'javax.mail.glassfish'
+    api.exclude module: 'servlet-api'
+    api.exclude group: 'org.mortbay.jetty' // exclude the whole group, nothing good in there
+    api.exclude group: 'org.openjdk.jmh'
+    api.exclude group: 'log4j'
+    api.exclude module: 'h2o-logging-impl-classic'
 }
 
 // Dependencies

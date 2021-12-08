@@ -6,7 +6,7 @@ description = "H2O Kubernetes Compatibility Library - enables older H2O versions
 sourceCompatibility = 1.8
 
 configurations {
-    compile.exclude group: 'log4j'
+    api.exclude group: 'log4j'
 }
 
 dependencies {

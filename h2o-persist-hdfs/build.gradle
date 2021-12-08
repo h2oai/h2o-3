@@ -2,8 +2,8 @@
 description = "H2O Persist HDFS"
 
 configurations {
-    compile.exclude module: 'servlet-api'
-    testCompile.exclude module: 'servlet-api'
+    api.exclude module: 'servlet-api'
+    testImplementation.exclude module: 'servlet-api'
 }
 
 dependencies {
