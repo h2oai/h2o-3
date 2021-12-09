@@ -17,7 +17,7 @@ final class StepResultState {
     }
 
     enum Resolution {
-        sameAsMain,  // 
+        sameAsMain,  // resolves to the same state as the main step (ignoring other sub-step states).
         optimistic,  // success if any success, otherwise cancelled if any cancelled, otherwise failed if any failure, otherwise skipped.
         pessimistic, // failures if any failure, otherwise cancelled if any cancelled, otherwise success it any success, otherwise skipped.
     }

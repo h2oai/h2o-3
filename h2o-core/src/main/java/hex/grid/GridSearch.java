@@ -429,6 +429,8 @@ public final class GridSearch<MP extends Model.Parameters> {
             ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
           }
         } catch (RuntimeException e) { // Catch everything
+          grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
+          
           if (Job.isCancelledException(e)) {
             assert model == null;
             final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
@@ -447,8 +449,6 @@ public final class GridSearch<MP extends Model.Parameters> {
               _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", e));
             }
           }
-
-          grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
         }
       } catch (IllegalArgumentException e) {
         Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
