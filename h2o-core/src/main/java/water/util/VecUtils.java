@@ -882,6 +882,14 @@ public class VecUtils {
       result += mrt.result;
     }
   }
+  
+  public static class SequenceProduct extends MRTask<SequenceProduct> {
+    @Override public void map(Chunk[] c, NewChunk[] nc) {
+      for (int i = 0; i < c[0]._len; i++) {
+        nc[0].addNum(c[0].atd(i) * c[1].atd(i));
+      }
+    }
+  }
 
   /**
    * Randomly shuffle a Vec using Fisher Yates shuffle 

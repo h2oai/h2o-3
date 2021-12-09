@@ -5,6 +5,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +19,7 @@ public class RuleEnsemble extends Iced {
         this.rules = rules;
     }
     
-    public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees, String[] classNames) {
+    public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees, String[] classNames, String weights) {
         Frame glmTrainFrame = new Frame();
         // filter rules and create a column for each tree
         boolean isMultinomial = classNames != null && classNames.length > 2;
@@ -40,6 +41,17 @@ public class RuleEnsemble extends Iced {
                         continue;
                     RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[]{}));
                     Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
+                    for (Rule rule : ruleEnsemble.rules) {
+                        if (weights != null) {
+                            Frame result = new VecUtils.SequenceProduct()
+                                    .doAll(Vec.T_NUM, frameToMakeCategorical.vec(rule.varName), frame.vec(weights))
+                                    .outputFrame();
+                            rule.support = result.vec(0).sparseRatio();
+                            result.remove();
+                        } else {
+                            rule.support = frameToMakeCategorical.vec(rule.varName).sparseRatio();
+                        }
+                    }
                     try {
                         Decoder mrtask = new Decoder();
                         Vec catCol = mrtask.doAll(1, Vec.T_CAT, frameToMakeCategorical)

@@ -36,6 +36,12 @@ public class RuleFitUtils {
         else
             return rules;
     }
+    
+    static Rule[] sortRules(Rule[] rules) {
+        Comparator<Rule> ruleAbsCoefficientComparator = Comparator.comparingDouble(Rule::getAbsCoefficient).reversed();
+        Arrays.sort(rules, ruleAbsCoefficientComparator);
+        return rules;
+    }
 
     static Rule consolidateRule(Rule rule, boolean remove_duplicates) {
         List<Condition> consolidatedConditions = new ArrayList<>();
@@ -122,7 +128,7 @@ public class RuleFitUtils {
                 .collect(Collectors.groupingBy(rule -> rule.languageRule))
                 .entrySet().stream()
                 .map(e -> e.getValue().stream()
-                        .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient)))
+                        .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient, r1.support)))
                 .map(f -> f.get())
                 .collect(Collectors.toList());
 
