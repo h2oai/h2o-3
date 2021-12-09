@@ -146,7 +146,34 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
     return outputNames;
   }
-  
+
+  /**
+   * Companion method to getOutputNames. For each output column specifies
+   * what is the domain of the column.
+   * 
+   * @return array of domain values for each output column, if the type of the column is not categorical use null
+   */
+  public String[][] getOutputDomains() {
+    final ModelCategory category = getModelCategory();
+    final String[][] outputDomains = new String[getOutputNames().length][];
+    switch (category) {
+      case Binomial:
+      case Multinomial:
+      case Ordinal:
+        outputDomains[0] = getDomainValues(getResponseIdx());
+        break;
+
+      case Regression:
+        outputDomains[0] = null;
+        break;
+
+      default:
+        throw new UnsupportedOperationException("Getting output domains for model category '" +
+                category + "' is not yet supported.");
+    }
+    return outputDomains;
+  }
+
   /** Override this for models that may produce results in different categories. */
   @Override public EnumSet<ModelCategory> getModelCategories() {
     return EnumSet.of(getModelCategory());
@@ -780,5 +807,17 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       }
     }
   }
-  
+
+  /**
+   * For internal use only - can be removed at any time!
+   * 
+   * Creates a version of the MOJO that can be used by a thread in a multi-threaded environment.
+   * This is a temporary workaround and proper fix should be put in place for the MOJOs that are not currently
+   * thread safe (GAM).
+   */
+  @Deprecated
+  public GenModel internal_threadSafeInstance() {
+    return this;
+  }
+
 }

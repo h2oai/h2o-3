@@ -2,26 +2,45 @@ package hex.generic;
 
 import hex.*;
 import hex.genmodel.*;
-import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.kmeans.KMeansMojoModel;
 import hex.genmodel.descriptor.ModelDescriptor;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
-import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.*;
 import water.fvec.*;
+import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RowDataUtils;
 
 import java.io.IOException;
+import java.util.*;
 
 public class GenericModel extends Model<GenericModel, GenericModelParameters, GenericModelOutput> 
         implements Model.Contributions {
 
+    /**
+     * Captures model-specific behaviors
+     */
+    private static final Map<String, ModelBehavior[]> MODEL_BEHAVIORS;
+    static{
+        final Map<String, ModelBehavior[]> behaviors = new HashMap<>();
+        behaviors.put(
+                "gam", new ModelBehavior[]{
+                        ModelBehavior.USE_MOJO_PREDICT // GAM score0 cannot be used directly because it introduces special column in RawData conversion phase
+                }
+        );
+
+        MODEL_BEHAVIORS = Collections.unmodifiableMap(behaviors);
+    }
+
+    /**
+     * name of the algo for MOJO, "pojo" for POJO models
+     */
+    private final String _algoName; 
     private final GenModelSource _genModelSource;
 
     /**
@@ -31,6 +50,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output,
                         MojoModel mojoModel, Key<Frame> mojoSource) {
         super(selfKey, parms, output);
+        _algoName = mojoModel._algoName;
         _genModelSource = new MojoModelSource(mojoSource, mojoModel);
         _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
         if(mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
@@ -41,6 +61,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     public GenericModel(Key<GenericModel> selfKey, GenericModelParameters parms, GenericModelOutput output,
                         GenModel pojoModel, Key<Frame> pojoSource) {
         super(selfKey, parms, output);
+        _algoName = "pojo";
         _genModelSource = new PojoModelSource(pojoSource, pojoModel);
         _output = new GenericModelOutput(ModelDescriptorBuilder.makeDescriptor(pojoModel));
     }
@@ -87,7 +108,122 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                 throw H2O.unimpl();
         }
     }
-    
+
+    @Override
+    protected Frame adaptFrameForScore(Frame fr, boolean computeMetrics, List<Frame> tmpFrames) {
+        if (hasBehavior(ModelBehavior.USE_MOJO_PREDICT)) {
+            // We do not need to adapt the frame in any way, MOJO will handle it itself
+            return fr;
+        } else
+            return super.adaptFrameForScore(fr, computeMetrics, tmpFrames);
+    }
+
+    @Override
+    protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, 
+                                                  boolean computeMetrics, CFuncRef customMetricFunc) {
+        if (hasBehavior(ModelBehavior.USE_MOJO_PREDICT)) {
+            return predictScoreMojoImpl(fr, destination_key, j, computeMetrics);
+        } else
+            return super.predictScoreImpl(fr, adaptFrm, destination_key, j, computeMetrics, customMetricFunc);
+    }
+
+    PredictScoreResult predictScoreMojoImpl(Frame fr, String destination_key, Job<?> j, boolean computeMetrics) {
+        GenModel model = genModel();
+        assert model.isSupervised() : "MOJO Predict only works for supervised models";
+        String[] names = model.getOutputNames();
+        String[][] domains = model.getOutputDomains();
+        byte[] type = new byte[domains.length];
+        for (int i = 0; i < type.length; i++) {
+            type[i] = domains[i] != null ? Vec.T_CAT : Vec.T_NUM; 
+        }
+
+        PredictScoreMojoTask bs = new PredictScoreMojoTask(computeMetrics, j);
+        Frame predictFr = bs.doAll(type, fr).outputFrame(Key.make(destination_key), names, domains);
+        return new PredictScoreResult(bs._mb, predictFr, predictFr);
+    }
+
+    private class PredictScoreMojoTask extends MRTask<PredictScoreMojoTask> {
+        private final boolean _computeMetrics;
+        private final Job<?> _j;
+
+        /** Output parameter: Metric builder */
+        private ModelMetrics.MetricBuilder _mb;
+
+        public PredictScoreMojoTask(boolean computeMetrics, Job<?> j) {
+            _computeMetrics = computeMetrics;
+            _j = j;
+        }
+
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+            if (isCancelled() || (_j != null && _j.stop_requested()))
+                return;
+
+            EasyPredictModelWrapper wrapper = makeWrapper();
+            GenModel model = wrapper.getModel();
+            String[] responseDomain = model.getDomainValues(model.getResponseName());
+            AdaptFrameParameters adaptFrameParameters = makeAdaptFrameParameters();
+            _mb = _computeMetrics ? GenericModel.this.makeMetricBuilder(responseDomain) : null;
+            try {
+                predict(wrapper, adaptFrameParameters, responseDomain, cs, ncs);
+            } catch (PredictException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void predict(EasyPredictModelWrapper wrapper, AdaptFrameParameters adaptFrameParameters, String[] responseDomain,
+                             Chunk[] cs, NewChunk[] ncs) throws PredictException {
+            final byte[] types = _fr.types();
+            final String offsetColumn = adaptFrameParameters.getOffsetColumn();
+            final String weightsColumn = adaptFrameParameters.getWeightsColumn();
+            final String responseColumn = adaptFrameParameters.getResponseColumn();
+            final boolean isClassifier = wrapper.getModel().isClassifier();
+            final float[] yact = new float[1];
+            for (int row = 0; row < cs[0]._len; row++) {
+                RowData rowData = new RowData();
+                RowDataUtils.extractChunkRow(cs, _fr._names, types, row, rowData);
+                double offset = offsetColumn != null && rowData.containsKey(offsetColumn) ? 
+                        (double) rowData.get(offsetColumn) : 0.0;
+                double[] result = wrapper.predictRaw(rowData, offset);
+                for (int i = 0; i < ncs.length; i++) {
+                    ncs[i].addNum(result[i]);
+                }
+                if (_mb != null) {
+                    Object response = responseColumn != null && rowData.containsKey(responseColumn) ?
+                            rowData.get(responseColumn) : null;
+                    if (response == null)
+                        continue;
+                    double weight = weightsColumn != null && rowData.containsKey(weightsColumn) ? 
+                            (double) rowData.get(weightsColumn) : 1.0;
+                    if (isClassifier) {
+                        int idx = ArrayUtils.find(responseDomain, String.valueOf(response));
+                        if (idx < 0)
+                            continue;
+                        yact[0] = (float) idx;
+                    } else 
+                        yact[0] = ((Number) response).floatValue();
+                    _mb.perRow(result, yact, weight, offset, GenericModel.this);
+                }
+            }
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void reduce(PredictScoreMojoTask bs) {
+            super.reduce(bs);
+            if (_mb != null) {
+                _mb.reduce(bs._mb);
+            }
+        }
+
+        EasyPredictModelWrapper makeWrapper() {
+            final EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+                    .setModel(genModel().internal_threadSafeInstance())
+                    .setConvertUnknownCategoricalLevelsToNa(true);
+            return new EasyPredictModelWrapper(config);
+        }
+    }
+
     private ModelMetrics.MetricBuilder unsupportedMetricsBuilder() {
         if (_parms._disable_algo_check) {
             Log.warn("Model category `" + _output._modelCategory + "` currently doesn't support calculating model metrics. " +
@@ -376,6 +512,16 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     public boolean havePojo() {
         GenModel genModel = genModel();
         return genModel instanceof MojoModel;
+    }
+
+    boolean hasBehavior(ModelBehavior b) {
+        if (! MODEL_BEHAVIORS.containsKey(_algoName))
+            return false;
+        return ArrayUtils.find(MODEL_BEHAVIORS.get(_algoName), b) >= 0;
+    }
+
+    enum ModelBehavior {
+        USE_MOJO_PREDICT
     }
 
 }

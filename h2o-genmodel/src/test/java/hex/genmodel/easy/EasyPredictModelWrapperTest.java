@@ -10,8 +10,10 @@ import hex.genmodel.attributes.parameters.FeatureContribution;
 import hex.genmodel.attributes.parameters.KeyValue;
 import hex.genmodel.easy.error.CountingErrorConsumer;
 import hex.genmodel.easy.error.VoidErrorConsumer;
+import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.prediction.*;
+import hex.genmodel.utils.ArrayUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -398,6 +400,21 @@ public class EasyPredictModelWrapperTest {
               Collections.singletonMap("unknownLevel", 1L),
               toSimpleMap(errorConsumer.getUnseenCategoricals("C1"))
       );
+    }
+  }
+
+  @Test
+  public void testPredictRaw() throws PredictException {
+    SupervisedModel rawModel = makeSupervisedModel();
+    EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
+
+    {
+      RowData row = new RowData();
+      row.put("C1", "c1level1");
+      BinomialModelPrediction p = m.predictBinomial(row);
+      double[] raw = m.predictRaw(row, 0);
+      Assert.assertEquals(p.labelIndex, raw[0], 0);
+      Assert.assertArrayEquals(p.classProbabilities, Arrays.copyOfRange(raw, 1, raw.length), 0.0);
     }
   }
 

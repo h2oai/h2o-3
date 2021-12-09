@@ -4,6 +4,7 @@ import sys
 sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
+import tempfile
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 
 
@@ -60,21 +61,31 @@ def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, fa
     x=["C1","C2"]
    
     h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [1,1,1], num_knots=numKnots, 
-                                                standardize=True, Lambda=[0], alpha=[0], max_iterations=3, 
+                                                standardize=True, lambda_=[0], alpha=[0], max_iterations=3, 
                                                 compute_p_values=False, solver="irlsm")
     h2o_model.train(x=x, y=myy, training_frame=train_data)
     pred = h2o_model.predict(test_data)
+    pred_mojo = as_mojo_model(h2o_model).predict(test_data)
     if pred.ncols < model_test_data.ncols:
         ncolT = model_test_data.ncols-1
         model_test_data = model_test_data.drop(ncolT)
     model_test_data.set_names(pred.names)
-    if (family == 'gaussian' or (family == 'AUTO' and actual_family == 'gaussian')):
+    if family == 'gaussian' or (family == 'AUTO' and actual_family == 'gaussian'):
         pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
+        pyunit_utils.compare_frames_local(pred_mojo, model_test_data, prob=1)
     else:
         pred = pred.drop('predict')
+        pred_mojo = pred_mojo.drop('predict')
         model_test_data = model_test_data.drop('predict')
         pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
+        pyunit_utils.compare_frames_local(pred_mojo, model_test_data, prob=1)
     return pred
+
+
+def as_mojo_model(model):
+    mojo_path = tempfile.mkdtemp()
+    mojo_path = model.save_mojo(mojo_path)
+    return h2o.import_mojo(mojo_path)
 
 
 if __name__ == "__main__":
