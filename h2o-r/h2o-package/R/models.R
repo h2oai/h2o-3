@@ -247,9 +247,6 @@ NULL
       params$x <- NULL
       args <- .verify_datacols(params$training_frame, x)
       params$ignored_columns <- setdiff(args$cols_ignore, params$validation_response_column)
-      if (!is.null(params$validation_response_column)) {
-        params$y <- params$validation_response_column
-      }
     }
   }
   # Note: Magic copied from start .h2o.startModelJob

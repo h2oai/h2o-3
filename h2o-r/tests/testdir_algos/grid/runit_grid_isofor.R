@@ -36,6 +36,7 @@ test.grid.isofor <- function() {
   model <-
     h2o.isolationForest(training_frame = train,
                         seed = 1234,
+                        x = 1:4,
                         ntrees = max(ntrees_opts),
                         sample_size = 5)
   predictions <- h2o.predict(model, test)
@@ -52,7 +53,8 @@ test.grid.isofor <- function() {
       x = 1:4,
       training_frame = train,
       hyper_params = hyper_parameters,
-      sample_size = 5
+      sample_size = 5,
+      seed = 42
   )
   summary(standard_grid, show_stack_traces = TRUE)
   
@@ -65,7 +67,8 @@ test.grid.isofor <- function() {
       validation_frame = test,
       hyper_params = hyper_parameters,
       validation_response_column = "label",
-      sample_size = 5
+      sample_size = 5,
+      seed = 42
     )
     summary(validated_grid, show_stack_traces = TRUE)
 
@@ -75,6 +78,7 @@ test.grid.isofor <- function() {
       standard <- h2o.getModel(standard_grid@model_ids[[i]])
       validated <- h2o.getModel(validated_grid@model_ids[[i]])
       expect_equal(standard@model$training_metrics@metrics$mean_score, validated@model$training_metrics@metrics$mean_score)
+      expect_true(h2o.auc(validated, valid=TRUE) > 0.65)
     }
 }
 
