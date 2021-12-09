@@ -64,6 +64,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         // whether to remove rules which are identical to an earlier rule. Defaults to true.
         public boolean _remove_duplicates = true;
         
+        // lambda for lasso
+        public double[] lambda;
+        
 
         public void validate(RuleFit rfit) {
             if (rfit._parms._min_rule_length > rfit._parms._max_rule_length) {

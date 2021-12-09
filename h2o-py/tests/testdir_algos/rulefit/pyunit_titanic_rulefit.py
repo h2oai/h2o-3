@@ -16,6 +16,10 @@ def titanic():
     rfit = H2ORuleFitEstimator(min_rule_length=4, max_rule_length=5, max_num_rules=3, seed=1234, model_type="rules")
     rfit.train(training_frame=train, x=x, y="survived", validation_frame=test)
 
+    rfit2 = H2ORuleFitEstimator(min_rule_length=4, max_rule_length=5, max_num_rules=3, seed=1234, model_type="rules", lambda_=1e-8)
+    rfit2.train(training_frame=train, x=x, y="survived", validation_frame=test)
+    assert len(rfit.rule_importance()['rule']) < len(rfit2.rule_importance()['rule'])
+
     assert rfit.rmse(valid=True) is not None, "validation metrics should be present"
 
 
