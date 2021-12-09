@@ -283,7 +283,11 @@ subprojects {
             apply from: "$rootDir/gradle/animalSniffer.gradle"
         }
         if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            if (isCi) {
+                logger.info("Running in CI mode, tests for $project will be enabled.")
+            } else {
+                logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            }
             project.testSingleNode.enabled = isCi
             project.testMultiNode.enabled = isCi
         }
