@@ -26,6 +26,7 @@ import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
 import static hex.rulefit.RuleFitUtils.consolidateRules;
 import static hex.rulefit.RuleFitUtils.sortRules;
+import static hex.rulefit.RuleFitUtils.deduplicateRules;
 
 
 /**
@@ -265,6 +266,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         glmParameters._lambda = getOptimalLambda();
                 }
 
+                LOG.info("Training GLM...");
                 long startGLMTime = System.nanoTime();
                 GLM job = new GLM(glmParameters);
                 glmModel = job.trainModel().get();
@@ -286,7 +288,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(sortRules(consolidateRules(getRules(glmModel.coefficients(), 
+                model._output._rule_importance = convertRulesToTable(sortRules(deduplicateRules(getRules(glmModel.coefficients(), 
                         ruleEnsemble, model._output.classNames()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2);
 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
