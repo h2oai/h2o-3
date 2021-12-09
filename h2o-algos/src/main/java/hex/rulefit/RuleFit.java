@@ -229,8 +229,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     LOG.info("Extracting rules from trees...");
                     ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
 
-                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees, classNames, _parms._weights_column));
-                    if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees, classNames, _parms._weights_column));
+                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees, classNames, _parms._weights_column, true));
+                    if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees, classNames, _parms._weights_column, false));
                 }
 
                 // prepare linear terms

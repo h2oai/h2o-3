@@ -19,7 +19,7 @@ public class RuleEnsemble extends Iced {
         this.rules = rules;
     }
     
-    public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees, String[] classNames, String weights) {
+    public Frame createGLMTrainFrame(Frame frame, int depth, int ntrees, String[] classNames, String weights, boolean calculateSupport) {
         Frame glmTrainFrame = new Frame();
         // filter rules and create a column for each tree
         boolean isMultinomial = classNames != null && classNames.length > 2;
@@ -41,16 +41,8 @@ public class RuleEnsemble extends Iced {
                         continue;
                     RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[]{}));
                     Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
-                    for (Rule rule : ruleEnsemble.rules) {
-                        if (weights != null) {
-                            Frame result = new VecUtils.SequenceProduct()
-                                    .doAll(Vec.T_NUM, frameToMakeCategorical.vec(rule.varName), frame.vec(weights))
-                                    .outputFrame();
-                            rule.support = result.vec(0).sparseRatio();
-                            result.remove();
-                        } else {
-                            rule.support = frameToMakeCategorical.vec(rule.varName).sparseRatio();
-                        }
+                    if (calculateSupport) {
+                        calculateSupport(ruleEnsemble, frameToMakeCategorical, weights != null ? frame.vec(weights) : null);
                     }
                     try {
                         Decoder mrtask = new Decoder();
@@ -133,5 +125,19 @@ public class RuleEnsemble extends Iced {
     
     public int size() {
         return rules.length;
+    }
+    
+    void calculateSupport(RuleEnsemble ruleEnsemble, Frame frameToMakeCategorical, Vec weights) {
+        for (Rule rule : ruleEnsemble.rules) {
+            if (weights != null) {
+                Frame result = new VecUtils.SequenceProduct()
+                        .doAll(Vec.T_NUM, frameToMakeCategorical.vec(rule.varName), weights)
+                        .outputFrame();
+                rule.support = result.vec(0).sparseRatio();
+                result.remove();
+            } else {
+                rule.support = frameToMakeCategorical.vec(rule.varName).sparseRatio();
+            }
+        }
     }
 }
