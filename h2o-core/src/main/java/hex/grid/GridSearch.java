@@ -658,6 +658,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    * 
    * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
+  @Deprecated
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
           final MP params,
@@ -693,6 +694,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    * 
    * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
+  @Deprecated
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Job> jobKey,
       final Key<Grid> destKey,
@@ -729,6 +731,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    * 
    * @deprecated Prefer use of {@link GridSearch#create(Key, Model.Parameters, Map)})}
    */
+  @Deprecated
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
           final MP params,
@@ -755,6 +758,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    *
    * @deprecated Prefer use of {@link GridSearch#create(Key, Model.Parameters, Map)})}
    */
+  @Deprecated
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
           final MP params,
@@ -777,7 +781,10 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
+   * 
+   * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
+  @Deprecated
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
           final HyperSpaceWalker<MP, ?> hyperSpaceWalker,
@@ -804,6 +811,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    * 
    * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
+  @Deprecated
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Job> jobKey,
       final Key<Grid> destKey,
