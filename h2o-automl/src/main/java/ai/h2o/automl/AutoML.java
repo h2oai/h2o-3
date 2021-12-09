@@ -45,7 +45,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public enum Constraint {
     MODEL_COUNT,
-    TIMEOUT
+    TIMEOUT,
+    FAILURE_COUNT,
   }
 
   public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
@@ -661,7 +662,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           _consecutiveModelFailures.set(0);
           completed.add(step);
         } else if (state.is(ResultStatus.failed)) {
-          if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+          if (!step.ignores(Constraint.FAILURE_COUNT) 
+                  && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
             throw new H2OAutoMLException("Aborting AutoML after too many consecutive model failures", state.error());
           }
           if (state.error() instanceof H2OAutoMLException) { // if a step throws this exception, this will immediately abort the entire AutoML run.
@@ -697,12 +699,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return true;
     }
 
-    if (!ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT) && _runCountdown.timedOut()) {
+    if (!step.ignores(Constraint.TIMEOUT) && _runCountdown.timedOut()) {
       eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: out of time; skipping "+step._description);
       return true;
     }
 
-    if (!ArrayUtils.contains(step._ignoredConstraints, Constraint.MODEL_COUNT) && remainingModels() <= 0) {
+    if (!step.ignores(Constraint.MODEL_COUNT) && remainingModels() <= 0) {
       eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+step._description);
       return true;
     }

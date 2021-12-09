@@ -136,7 +136,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         eventLog.debug(Stage.ModelTraining, jobDescription + " started");
         _jobs.add(job);
 
-        boolean ignoreTimeout = ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT);
+        boolean ignoreTimeout = step.ignores(Constraint.TIMEOUT);
         Work work = step.getAllocatedWork();
         long lastWorkedSoFar = 0;
         long lastTotalModelsBuilt = 0;
@@ -224,8 +224,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         int before = leaderboard.getModelCount();
         leaderboard.addModel(model._key);
         int after = leaderboard.getModelCount();
-        boolean ignoreModelCount = ArrayUtils.contains(step._ignoredConstraints, Constraint.MODEL_COUNT);
-        if (!ignoreModelCount)
+        if (!step.ignores(Constraint.MODEL_COUNT))
             _modelCount.addAndGet(after - before);
     }
 

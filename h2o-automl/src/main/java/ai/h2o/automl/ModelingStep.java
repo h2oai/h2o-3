@@ -154,6 +154,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     public boolean isResumable() {
         return false;
     }
+    
+    public boolean ignores(AutoML.Constraint constraint) {
+        return ArrayUtils.contains(_ignoredConstraints, constraint);
+    }
 
     /**
      * @return true iff we can call {@link #run()} on this modeling step to start a new job.
@@ -475,7 +479,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCustomParams(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
-            if (ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)) {
+            if (ignores(AutoML.Constraint.TIMEOUT)) {
                 parms._max_runtime_secs = 0;
             } else {
                 Work work = getAllocatedWork();
@@ -584,7 +588,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         protected void setSearchCriteria(RandomDiscreteValueSearchCriteria searchCriteria, Model.Parameters baseParms) {
             Work work = getAllocatedWork();
             // for time limit, this is allocated in proportion of the entire work budget.
-            double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
+            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
                     ? 0
                     : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work, _isSamePriorityGroup) / 1e3;
             // SE predicate can be removed if/when we decide to include SEs in the max_models limit
@@ -672,7 +676,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
 
-            double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
+            double maxAssignedTimeSecs = ignores(AutoML.Constraint.TIMEOUT)
                     ? 0
                     : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
 
