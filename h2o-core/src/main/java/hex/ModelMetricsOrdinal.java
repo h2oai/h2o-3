@@ -241,14 +241,6 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
       return mm;
     }
   }
-  
-  public static class GenericIndependentMetricBuilderOrdinal extends IndependentMetricBuilderOrdinal<GenericIndependentMetricBuilderOrdinal> {
-    public GenericIndependentMetricBuilderOrdinal() {}
-    
-    public GenericIndependentMetricBuilderOrdinal(int nclasses, String[] domain) {
-      super(nclasses, domain);
-    }
-  }
 
   public static class IndependentMetricBuilderOrdinal<T extends IndependentMetricBuilderOrdinal<T>> extends IndependentMetricBuilderSupervised<T> {
     double[/*nclasses*/][/*nclasses*/] _cm;

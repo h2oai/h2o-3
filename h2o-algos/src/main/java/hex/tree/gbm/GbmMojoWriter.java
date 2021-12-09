@@ -2,6 +2,9 @@ package hex.tree.gbm;
 
 import hex.Distribution;
 import hex.DistributionFactory;
+import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
+import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.tree.SharedTreeMojoWriter;
 
 import java.io.IOException;
@@ -29,5 +32,10 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
     writekv("distribution", dist._family);
     writekv("link_function", dist._linkFunction.linkFunctionType);
     writekv("init_f", model._output._init_f);
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<GBMModel, GbmMojoModel>();
   }
 }

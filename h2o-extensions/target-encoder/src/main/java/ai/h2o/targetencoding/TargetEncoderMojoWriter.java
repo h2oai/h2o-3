@@ -2,6 +2,7 @@ package ai.h2o.targetencoding;
 
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderOutput;
 import ai.h2o.targetencoding.TargetEncoderModel.TargetEncoderParameters;
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -37,6 +38,11 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
   protected void writeModelData() throws IOException {
     writeTargetEncodingInfo();
     writeTargetEncodingMap();
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
   }
 
   /**

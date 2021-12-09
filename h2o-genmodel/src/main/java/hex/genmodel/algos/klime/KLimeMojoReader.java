@@ -8,6 +8,9 @@ import java.io.IOException;
 public class KLimeMojoReader extends MultiModelMojoReader<KLimeMojoModel> {
 
   @Override
+  protected String getModelMojoReaderClassName() { return null; }
+
+  @Override
   protected void readParentModelData() throws IOException {
     int clusterNum = readkv("cluster_num", 0);
     _model._clusteringModel = getModel((String) readkv("clustering_model"));

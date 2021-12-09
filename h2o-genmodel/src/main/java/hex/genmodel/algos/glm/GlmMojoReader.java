@@ -16,6 +16,9 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.glm.GLMMojoWriter"; }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._useAllFactorLevels = readkv("use_all_factor_levels", false);
 

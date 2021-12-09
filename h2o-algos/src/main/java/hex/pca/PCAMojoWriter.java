@@ -1,5 +1,6 @@
 package hex.pca;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import water.MemoryManager;
 
@@ -37,5 +38,10 @@ public class PCAMojoWriter extends ModelMojoWriter<PCAModel, PCAModel.PCAParamet
       for (double val : row)
         bb.putDouble(val);
     writeblob("eigenvectors_raw", bb.array());
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new ModelMetricsPCA.PCAMetricBuilderFactory();
   }
 }

@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import hex.genmodel.algos.glrm.GlrmLoss;
 
@@ -62,6 +63,11 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
       for (double val : row)
         bb.putDouble(val);
     writeblob("archetypes", bb.array());
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new ModelMetricsGLRM.GLRMMetricBuilderFactory();
   }
 
 }

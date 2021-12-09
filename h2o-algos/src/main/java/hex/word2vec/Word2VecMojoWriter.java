@@ -1,5 +1,6 @@
 package hex.word2vec;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import water.MemoryManager;
 import water.parser.BufferedString;
@@ -42,4 +43,8 @@ public class Word2VecMojoWriter extends ModelMojoWriter<Word2VecModel, Word2VecM
     writeblob("vectors", bb.array());
   }
 
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
+  }
 }

@@ -1,5 +1,6 @@
 package hex.glm;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
@@ -42,4 +43,8 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
       writekv("tweedie_link_power", model._parms._tweedie_link_power);
   }
 
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new GLMMetricBuilderFactory();
+  }
 }

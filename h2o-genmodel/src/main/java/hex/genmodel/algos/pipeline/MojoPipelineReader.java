@@ -16,6 +16,9 @@ public class MojoPipelineReader extends MultiModelMojoReader<MojoPipeline> {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.genmodel.MojoPipelineWriter"; }
+
+  @Override
   protected void readParentModelData() {
     String mainModelAlias = readkv("main_model");
     String[] generatedColumns = readGeneratedColumns();

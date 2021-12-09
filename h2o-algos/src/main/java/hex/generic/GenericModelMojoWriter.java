@@ -1,5 +1,6 @@
 package hex.generic;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import hex.genmodel.utils.IOUtils;
 import water.api.StreamWriteOption;
@@ -29,6 +30,11 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
     @Override
     protected void writeModelData() throws IOException {
         // Do nothing on purpose
+    }
+
+    @Override
+    protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+        throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
     }
 
     @Override

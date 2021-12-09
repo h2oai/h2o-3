@@ -1,5 +1,10 @@
 package hex.tree.drf;
 
+import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
+import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.tree.SharedTreeMojoWriter;
 
 import java.io.IOException;
@@ -22,5 +27,10 @@ public class DrfMojoWriter extends SharedTreeMojoWriter<DRFModel, DRFModel.DRFPa
   protected void writeModelData() throws IOException {
     super.writeModelData();
     writekv("binomial_double_trees", model._parms._binomial_double_trees);
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<DRFModel, DrfMojoModel>();
   }
 }

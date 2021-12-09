@@ -1,6 +1,9 @@
 package hex.tree.isofor;
 
+import com.google.gson.JsonObject;
 import hex.*;
+import hex.genmodel.IMetricBuilder;
+import hex.genmodel.algos.isofor.IsolationForestMojoModel;
 import water.fvec.Frame;
 
 public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements ScoreKeeper.ScoreKeeperAware {

@@ -13,6 +13,7 @@ import hex.genmodel.utils.StringEscapeUtils;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,11 +71,41 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     }
   }
 
+  /**
+   * De-serializes a {@link IMetricBuilder} serving for calculation of model metrics on testing dataset with H2O runtime.
+   * This method requires h2o-core and h2o-algos on classpath.
+   *
+   * @param reader An instance of {@link MojoReaderBackend} to read from existing MOJO. After the model is de-serialized,
+   *               the {@link MojoReaderBackend} instance is automatically closed if it implements {@link Closeable}.
+   * @return De-serialized {@link IMetricBuilder}
+   * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
+   */
+  public static IMetricBuilder readMetricBuilder(MojoReaderBackend reader) throws IOException {
+    Map<String, Object> info = parseModelInfo(reader);
+    if (! info.containsKey("algorithm"))
+      throw new IllegalStateException("Unable to find information about the model's algorithm.");
+    String algo = String.valueOf(info.get("algorithm"));
+    ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
+    MojoModel model = readFrom(reader, true);
+    try {
+      Class writerClass = Class.forName(mmr.getModelMojoReaderClassName());
+      Object mojoWriter = writerClass.getConstructor().newInstance();
+      Method factoryGetter = writerClass.getMethod("getModelBuilderFactory");
+      IMetricBuilderFactory factory = (IMetricBuilderFactory)factoryGetter.invoke(mojoWriter);
+      JsonObject extraInfo = ModelJsonReader.parseModelJson(reader, "experimental/metricBuilderExtraInfo.json");
+      return factory.createBuilder(model, extraInfo);
+    } catch(Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public abstract String getModelName();
 
   //--------------------------------------------------------------------------------------------------------------------
-  // Inheritance interface: ModelMojoWriter subclasses are expected to override these methods to provide custom behavior
+  // Inheritance interface: ModelMojoReader subclasses are expected to override these methods to provide custom behavior
   //--------------------------------------------------------------------------------------------------------------------
+
+  protected abstract String getModelMojoReaderClassName();
 
   protected abstract void readModelData() throws IOException;
 

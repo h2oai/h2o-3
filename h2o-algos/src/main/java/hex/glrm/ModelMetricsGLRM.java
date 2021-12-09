@@ -1,9 +1,12 @@
 package hex.glrm;
 
+import com.google.gson.JsonObject;
 import hex.CustomMetric;
 import hex.Model;
 import hex.ModelMetrics;
 import hex.ModelMetricsUnsupervised;
+import hex.genmodel.IMetricBuilder;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import water.fvec.Frame;
 
 public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
@@ -149,6 +152,24 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       // double caterr = _catcnt > 0 ? _miscls / _catcnt : Double.NaN;
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
       return new ModelMetricsGLRM(null, null, _sumsqe, _miscls, _numcnt, _catcnt, _customMetric);
+    }
+  }
+
+  public static class GLRMMetricBuilderFactory extends ModelMetrics.MetricBuilderFactory<GLRMModel, GlrmMojoModel> {
+    @Override
+    public IMetricBuilder createBuilder(GlrmMojoModel mojoModel, JsonObject extraInfo) {
+      int k = mojoModel._ncolX;
+      int[] permutation = mojoModel._permutation;
+      Object imputeOriginalObject = mojoModel._modelAttributes.getParameterValueByName("impute_original");
+      Boolean imputeOriginal = false;
+      if (imputeOriginalObject != null) {
+        imputeOriginal = (Boolean)imputeOriginalObject;
+      }
+      int ncats = mojoModel._ncats;
+      int nnums = mojoModel._nnums;
+      double[] normSub = mojoModel._normSub;
+      double[] normMul = mojoModel._normMul;
+      return new IndependentGLRMModelMetricsBuilder(k, permutation, ncats, nnums, normSub, normMul, imputeOriginal);
     }
   }
 }

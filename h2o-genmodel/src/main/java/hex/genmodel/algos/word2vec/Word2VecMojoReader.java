@@ -15,6 +15,9 @@ public class Word2VecMojoReader extends ModelMojoReader<Word2VecMojoModel> {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.word2vec.Word2VecMojoWriter"; }
+
+  @Override
   protected void readModelData() throws IOException {
     final int vocabSize = readkv("vocab_size", -1);
     final int vecSize = readkv("vec_size", -1);

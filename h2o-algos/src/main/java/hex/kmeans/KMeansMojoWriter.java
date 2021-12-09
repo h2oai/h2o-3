@@ -1,5 +1,6 @@
 package hex.kmeans;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 
 import java.io.IOException;
@@ -32,6 +33,11 @@ public class KMeansMojoWriter extends ModelMojoWriter<KMeansModel, KMeansModel.K
     writekv("center_num", centers.length);
     for (int i = 0; i < centers.length; i++)
       writekv("center_" + i, centers[i]);
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new KMeansMetricBuilderFactory();
   }
 
 }

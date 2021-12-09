@@ -21,6 +21,9 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "ai.h2o.targetencoding.TargetEncoderMojoWriter"; }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._keepOriginalCategoricalColumns = readkv("keep_original_categorical_columns", false); // defaults to false for legacy TE Mojos
     _model._withBlending = readkv("with_blending");

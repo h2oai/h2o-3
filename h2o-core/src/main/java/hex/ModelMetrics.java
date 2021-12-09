@@ -1,5 +1,10 @@
 package hex;
 
+import com.google.gson.JsonObject;
+import hex.genmodel.IMetricBuilder;
+import hex.genmodel.IMetricBuilderFactory;
+import hex.genmodel.ModelMojoReader;
+import hex.genmodel.MojoModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
@@ -471,7 +476,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
 
   }
   
-  public static abstract class IndependentMetricBuilder<T extends IndependentMetricBuilder<T>> extends Iced<T> {
+  public static abstract class IndependentMetricBuilder<T extends IndependentMetricBuilder<T>> 
+      extends Iced<T> implements IMetricBuilder<T> {
     transient public double[] _work;
     public double _sumsqe;      // Sum-squared-error
     public long _count;
@@ -550,5 +556,11 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     public void setCustomMetric(CustomMetric customMetric) {
       _customMetric = customMetric;
     }
+  }
+  
+  public static abstract class MetricBuilderFactory<TBinaryModel extends Model, TMojoModel extends MojoModel>
+    implements IMetricBuilderFactory<TMojoModel> {
+    
+    public Object extractExtraInfo(TBinaryModel binaryModel) { return null; }
   }
 }

@@ -11,6 +11,9 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
     }
 
     @Override
+    protected String getModelMojoReaderClassName() { return "hex.ensemble.StackedEnsembleMojoWriter"; }
+
+    @Override
     protected void readParentModelData() {
         int baseModelNum = readkv("base_models_num", 0);
         _model._baseModelNum = baseModelNum;

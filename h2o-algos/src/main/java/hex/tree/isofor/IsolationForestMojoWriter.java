@@ -1,5 +1,6 @@
 package hex.tree.isofor;
 
+import hex.ModelMetrics;
 import hex.genmodel.CategoricalEncoding;
 import hex.tree.SharedTreeMojoWriter;
 
@@ -31,6 +32,11 @@ public class IsolationForestMojoWriter extends SharedTreeMojoWriter<IsolationFor
     writekv("max_path_length", model._output._max_path_length);
     writekv("min_path_length", model._output._min_path_length);
     writekv("output_anomaly_flag", model.outputAnomalyFlag());
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new IsolationForestMetricBuilderFactory();
   }
 
 }

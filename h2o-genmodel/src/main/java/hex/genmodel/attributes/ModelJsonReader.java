@@ -27,11 +27,15 @@ public class ModelJsonReader {
 
     /**
      * @param mojoReaderBackend
-     * @return {@link JsonObject} representing the deserialized Json.
+     * @return {@link JsonObject} representing serialized ModelV3 class.
      */
     public static JsonObject parseModelJson(final MojoReaderBackend mojoReaderBackend) {
+        return parseModelJson(mojoReaderBackend, MODEL_DETAILS_FILE);
+    }
+    
+    public static JsonObject parseModelJson(final MojoReaderBackend mojoReaderBackend, final String relativeFilePath) {
 
-        try (BufferedReader fileReader = mojoReaderBackend.getTextFile(MODEL_DETAILS_FILE)) {
+        try (BufferedReader fileReader = mojoReaderBackend.getTextFile(relativeFilePath)) {
             final Gson gson = new GsonBuilder().create();
 
             return gson.fromJson(fileReader, JsonObject.class);
@@ -235,6 +239,14 @@ public class ModelJsonReader {
                 System.err.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
             }
         }
+    }
+    
+    public static double[] readDoubleArray(JsonArray array) {
+        final double[] result = new double[array.size()];
+        for (int i = 0; i < array.size(); i++) {
+            result[i] = array.get(i).getAsDouble();
+        }
+        return result;
     }
 
 

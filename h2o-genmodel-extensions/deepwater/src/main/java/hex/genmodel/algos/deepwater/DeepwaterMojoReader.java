@@ -21,6 +21,11 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() {
+    return "hex.deepwater.DeepwaterMojoWriter";
+  }
+
+  @Override
   protected void readModelData() throws IOException {
     try {
       _model._network = readblob("model_network");

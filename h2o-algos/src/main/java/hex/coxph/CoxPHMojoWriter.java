@@ -1,5 +1,6 @@
 package hex.coxph;
 
+import hex.ModelMetrics;
 import hex.ModelMojoWriter;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.IcedHashMap;
@@ -32,6 +33,11 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
     writekv("cat_offsets", model._output.data_info._catOffsets);
     writekv("use_all_factor_levels", model._output.data_info._useAllFactorLevels);
     writeStrata();
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported."); 
   }
 
   private void writeStrata() throws IOException {

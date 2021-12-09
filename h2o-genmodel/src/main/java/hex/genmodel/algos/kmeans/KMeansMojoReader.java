@@ -12,6 +12,9 @@ public class KMeansMojoReader extends ModelMojoReader<KMeansMojoModel> {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.kmeans.KMeansMojoWriter"; }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._standardize = readkv("standardize");
     if (_model._standardize) {

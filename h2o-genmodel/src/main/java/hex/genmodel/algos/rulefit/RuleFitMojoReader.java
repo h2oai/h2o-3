@@ -6,6 +6,9 @@ import java.io.IOException;
 public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.rulefit.RuleFitMojoWriter"; }
+
+  @Override
   protected void readParentModelData() throws IOException {
     _model._linearModel = getModel((String) readkv("linear_model"));
     int modelType = readkv("model_type");

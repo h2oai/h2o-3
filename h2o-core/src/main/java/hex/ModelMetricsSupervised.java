@@ -1,5 +1,11 @@
 package hex;
 
+import com.google.gson.JsonObject;
+import hex.genmodel.IMetricBuilder;
+import hex.genmodel.MojoModel;
+import hex.genmodel.attributes.ModelAttributes;
+import hex.genmodel.utils.DistributionFamily;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 
 public class ModelMetricsSupervised extends ModelMetrics {
@@ -48,6 +54,75 @@ public class ModelMetricsSupervised extends ModelMetrics {
       _nclasses = nclasses;
       _domain = domain;
       _work = new double[_nclasses+1];
+    }
+  }
+
+  public static class SupervisedMetricBuilderFactory<TBinaryModel extends Model, TMojoModel extends MojoModel>
+    extends MetricBuilderFactory<TBinaryModel, TMojoModel> {
+
+    @Override
+    public IMetricBuilder createBuilder(TMojoModel mojoModel, JsonObject extraInfo) {
+      ModelAttributes attributes =  mojoModel._modelAttributes;
+      String distributionFamilyString = (String)attributes.getParameterValueByName("distribution");
+      DistributionFamily distributionFamily = DistributionFamily.valueOf(distributionFamilyString);
+      String responseColumn = mojoModel._responseColumn;
+      String[] responseDomain = mojoModel.getDomainValues(responseColumn);
+      int numberOfClasses = mojoModel._nclasses;
+      
+      switch (mojoModel._category) {
+        case Binomial:
+          return new ModelMetricsBinomial.IndependentMetricBuilderBinomial(responseDomain, distributionFamily);
+        case Multinomial:
+          Object aucTypeObject = attributes.getParameterValueByName("aucType");
+          MultinomialAucType aucType = MultinomialAucType.NONE;
+          if (aucTypeObject != null) {
+            aucType = MultinomialAucType.valueOf((String)aucTypeObject);
+          }
+          return new ModelMetricsMultinomial.IndependentMetricBuilderMultinomial(numberOfClasses, responseDomain, aucType);
+        case Regression:
+          Distribution distribution = getDistribution(distributionFamily, attributes);
+          return new ModelMetricsRegression.IndependentMetricBuilderRegression(distribution);
+        case Ordinal:
+          return new ModelMetricsOrdinal.IndependentMetricBuilderOrdinal(numberOfClasses, responseDomain);
+        default:
+          throw new RuntimeException(String.format("Model category {0} is not supported for supervised metric calculation.", mojoModel._category));
+      }
+    }
+    
+    private Distribution getDistribution(DistributionFamily distributionFamily, ModelAttributes attributes) {
+      Model.Parameters genericParameters = new Model.Parameters() {
+        @Override
+        public String algoName() { return null; }
+
+        @Override
+        public String fullName() { return null; }
+
+        @Override
+        public String javaName() { return null; }
+
+        @Override
+        public long progressUnits() { return 0; }
+      };
+
+      genericParameters._distribution = distributionFamily;
+      Object huberAlphaObject = attributes.getParameterValueByName("huberAlpha");
+      if (huberAlphaObject != null) {
+        genericParameters._huber_alpha = (Double)huberAlphaObject;
+      }
+      Object quantileAlphaObject = attributes.getParameterValueByName("quantileAlpha");
+      if (quantileAlphaObject != null) {
+        genericParameters._quantile_alpha = (Double)quantileAlphaObject;
+      }
+      Object tweediePowerObject = attributes.getParameterValueByName("tweediePower");
+      if (tweediePowerObject != null) {
+        genericParameters._tweedie_power = (Double)tweediePowerObject;
+      }
+      Object customDistributionFuncObject = attributes.getParameterValueByName("customDistributionFunc");
+      if (customDistributionFuncObject != null) {
+        genericParameters._custom_distribution_func = (String)customDistributionFuncObject;
+      }
+      Distribution distribution = DistributionFactory.getDistribution(genericParameters);
+      return distribution;
     }
   }
 }

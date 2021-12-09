@@ -13,6 +13,9 @@ public class CoxPHMojoReader extends ModelMojoReader<CoxPHMojoModel> {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.coxph.CoxPHMojoWriter"; }
+
+  @Override
   protected void readModelData() throws IOException {
     _model._x_mean_cat = readRectangularDoubleArray("x_mean_cat");
     _model._x_mean_num = readRectangularDoubleArray("x_mean_num");

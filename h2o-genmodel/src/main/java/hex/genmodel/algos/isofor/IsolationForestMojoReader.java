@@ -12,6 +12,9 @@ public class IsolationForestMojoReader extends SharedTreeMojoReader<IsolationFor
   }
 
   @Override
+  protected String getModelMojoReaderClassName() { return "hex.tree.isofor.IsolationForestMojoWriter"; }
+
+  @Override
   protected void readModelData() throws IOException {
     super.readModelData();
     _model._min_path_length = readkv("min_path_length", 0);

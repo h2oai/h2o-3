@@ -309,20 +309,12 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return "auc = " + MathUtils.roundToNDigits(auc(),3) + ", logloss = " + _logloss / _wcount;
     }
   }
-  
-  public static class GenericIndependentMetricBuilderBinomial extends IndependentMetricBuilderBinomial<GenericIndependentMetricBuilderBinomial> {
-    public GenericIndependentMetricBuilderBinomial() {}
-      
-    public GenericIndependentMetricBuilderBinomial(String[] domain, DistributionFamily distributionFamily) { 
-      super(domain, distributionFamily);
-    }
-  }
 
     public static class IndependentMetricBuilderBinomial<T extends IndependentMetricBuilderBinomial<T>> extends IndependentMetricBuilderSupervised<T> {
         protected double _logloss;
         protected AUC2.AUCBuilder _auc;
         protected DistributionFamily _distributionFamily;
-
+    
         public IndependentMetricBuilderBinomial() {}
     
         public IndependentMetricBuilderBinomial(String[] domain, DistributionFamily distributionFamily) {

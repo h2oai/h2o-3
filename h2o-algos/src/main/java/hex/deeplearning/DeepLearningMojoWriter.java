@@ -1,6 +1,9 @@
 package hex.deeplearning;
 
+import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
 import hex.ModelMojoWriter;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 
 import java.io.IOException;
 
@@ -88,5 +91,10 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
       }
     }
     writekv("_orig_projection_array", model._output._orig_projection_array);
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new DeepLearningMetricBuilderFactory();
   }
 }

@@ -1,5 +1,6 @@
 package hex;
 
+import com.google.gson.Gson;
 import hex.genmodel.AbstractMojoWriter;
 import water.api.SchemaServer;
 import water.api.StreamWriteOption;
@@ -82,12 +83,26 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   }
 
   protected abstract void writeModelData() throws IOException;
+  
+  protected abstract ModelMetrics.MetricBuilderFactory getModelBuilderFactory();
+  
+  private void writeMetricBuilderExtraInfo() throws IOException {
+    ModelMetrics.MetricBuilderFactory builderFactory = getModelBuilderFactory();
+    Object extraInfo = builderFactory.extractExtraInfo(model);
+    if (extraInfo != null) {
+      startWritingTextFile("experimental/metricBuilderExtraInfo.json");
+      String json = new Gson().toJson(extraInfo);
+      writeln(json);
+      finishWritingTextFile();
+    }
+  }
 
   @Override
   protected void writeExtraInfo() throws IOException {
     super.writeExtraInfo();
     writeModelDetails();
     writeModelDetailsReadme();
+    writeMetricBuilderExtraInfo();
   }
 
   /** Create file that contains model details in JSON format.

@@ -1,6 +1,9 @@
 package hex.tree.xgboost;
 
+import hex.ModelMetrics;
+import hex.ModelMetricsSupervised;
 import hex.ModelMojoWriter;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.glm.GLMModel;
 
 import java.io.IOException;
@@ -46,5 +49,10 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
       writekv("calib_glm_beta", beta);
     }
     writekv("has_offset", model._output.hasOffset());
+  }
+
+  @Override
+  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<XGBoostModel, XGBoostMojoModel>();
   }
 }

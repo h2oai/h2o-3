@@ -1,6 +1,7 @@
 package hex.ensemble;
 
 import hex.Model;
+import hex.ModelMetrics;
 import hex.MultiModelMojoWriter;
 import water.DKV;
 import water.Key;
@@ -23,6 +24,11 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
             throw new UnsupportedOperationException("Cannot save Stacked Ensemble with metalearner_transform = \"" +
                     model._parms._metalearner_transform.name() + "\" to MOJO.");
         }
+    }
+
+    @Override
+    protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+        throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
     }
 
 

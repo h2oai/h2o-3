@@ -199,14 +199,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       return mm;
     }
   }
-  
-  public static class GenericIndependentMetricBuilderRegression extends IndependentMetricBuilderRegression<GenericIndependentMetricBuilderRegression> {
-    public GenericIndependentMetricBuilderRegression() {}
-    
-    public GenericIndependentMetricBuilderRegression(Distribution dist) {
-      super(dist);
-    }
-  }
 
   public static class IndependentMetricBuilderRegression<T extends IndependentMetricBuilderRegression<T>> extends IndependentMetricBuilderSupervised<T> {
     double _sumdeviance;
