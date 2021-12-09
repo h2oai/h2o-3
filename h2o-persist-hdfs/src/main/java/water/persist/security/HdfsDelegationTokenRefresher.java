@@ -37,7 +37,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
     public final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
 
     public static void setup(Configuration conf, String tmpDir, String uri) throws IOException {
-        boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false);
+        boolean enabled = conf.getBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, false) || conf.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false);
         if (!enabled) {
             log("HDFS Token renewal is not enabled in configuration", null);
             return;
