@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
@@ -128,15 +129,20 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     
     private void appendWarningMessage(String[] hyper_parameter, String checkField) {
       if (hyper_parameter != null && Arrays.asList(hyper_parameter).contains(checkField)) {
-        String warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch.  This is " +
-                "due to the fact that the algo has to run initialization for every alpha value.  Setting the alpha " +
-                "array as a model parameter will skip the initialization and run faster overall.";
-        Log.warn(warningMessage);
-        // Append message
-        String[] m = _warning_details;
-        String[] nm = Arrays.copyOf(m, m.length + 1);
-        nm[m.length] = warningMessage;
-        _warning_details = nm;
+        String warningMessage = null;
+        if ("alpha".equals(checkField)) {
+          warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch. " +
+                  "This is due to the fact that the algo has to run initialization for every alpha value. " +
+                  "Setting the alpha array as a model parameter will skip the initialization and run faster overall.";
+        }
+        if (warningMessage != null) {
+          Log.warn(warningMessage);
+          // Append message
+          String[] m = _warning_details;
+          String[] nm = Arrays.copyOf(m, m.length+1);
+          nm[m.length] = warningMessage;
+          _warning_details = nm;
+        }
       }
     }
 
@@ -335,9 +341,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       final String stackTrace = StringUtils.toString(t);
       final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
       SearchFailure searchFailure = _failures.get(searchedKey);
-      if ((searchFailure == null)) {
+      if (searchFailure == null) {
         searchFailure = new SearchFailure(_params.getClass());
-          _failures.put(searchedKey, searchFailure);
+        _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
       searchFailure.appendWarningMessage(_hyper_names, "alpha");
@@ -440,6 +446,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     }
     searchFailure.appendWarningMessage(_hyper_names, "alpha");
     return searchFailure;
+  }
+  
+  public int countTotalFailures() {
+    return _failures.values().stream().mapToInt(SearchFailure::getFailureCount).sum();
   }
 
   /**

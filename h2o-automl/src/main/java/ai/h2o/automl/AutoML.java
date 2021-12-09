@@ -17,7 +17,6 @@ import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
 import water.exceptions.H2OAutoMLException;
-import water.exceptions.H2OGridException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;

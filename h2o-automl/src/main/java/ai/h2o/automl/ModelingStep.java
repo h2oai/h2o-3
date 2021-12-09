@@ -21,6 +21,7 @@ import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceWalker;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
@@ -58,17 +59,24 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Map<String, Object[]> hyperParams,
             final HyperSpaceSearchCriteria searchCriteria)
     {
+        assert resultKey != null;
+        assert baseParams != null;
+        assert hyperParams.size() > 0;
+        assert searchCriteria != null;
         applyPreprocessing(baseParams);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
                 .setNamedValue("start_"+_provider+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
-        return GridSearch.startGridSearch(
-                resultKey,
-                baseParams,
-                hyperParams,
-                new GridSearch.SimpleParametersBuilderFactory<>(),
-                searchCriteria,
-                GridSearch.SEQUENTIAL_MODEL_BUILDING
-        );
+        return GridSearch.create(
+                resultKey, 
+                HyperSpaceWalker.BaseWalker.WalkerFactory.create(
+                        baseParams, 
+                        hyperParams,
+                        new GridSearch.SimpleParametersBuilderFactory<>(), 
+                        searchCriteria
+                ))
+                .withParallelism(GridSearch.SEQUENTIAL_MODEL_BUILDING)
+                .withMaxConsecutiveFailures(aml()._maxConsecutiveModelFailures)
+                .start();
     }
 
     @SuppressWarnings("unchecked")
@@ -76,6 +84,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Key<M> resultKey,
             final MP params
     ) {
+        assert resultKey != null;
+        assert params != null;
         Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
         applyPreprocessing(params);
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);

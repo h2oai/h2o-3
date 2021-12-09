@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.StepDefinition.Step;
 import hex.Model;
+import hex.ScoreKeeper;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
@@ -17,6 +18,8 @@ import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Lockable;
+import water.Scope;
+import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.runner.CloudSize;
@@ -748,6 +751,33 @@ public class AutoMLTest extends water.TestUtil {
       // Cleanup
       if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
+    }
+  }
+  
+  @Test(expected = H2OAutoMLException.class)
+  public void test_run_fails_after_multiple_consecutive_model_failures() {
+    AutoML aml = null;
+    try {
+      Scope.enter();
+      int seed = 0;
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      Frame fr = Scope.track(parseTestFile("./smalldata/extdata/australia.csv")); //regression task
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "runoffnew";
+      // no model limit
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.lift_top_group);  // stopping metric incompatible with regression
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      Scope.track_generic(aml);
+      aml.get();
+    } catch (Exception e) {
+      assertEquals(1, aml.leaderboard().getModelCount());
+      assertEquals("GLM", aml.leaderboard().getLeader()._parms.algoName()); // our GLM ignores stopping metric, probably due to lambda search.
+      throw e;
+    } finally {
+      Scope.exit();
     }
   }
 }

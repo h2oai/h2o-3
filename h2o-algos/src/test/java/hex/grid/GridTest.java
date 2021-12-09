@@ -6,6 +6,7 @@ import hex.ModelMetrics;
 import hex.faulttolerance.Recovery;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
+import hex.grid.HyperSpaceWalker.BaseWalker.WalkerFactory;
 import hex.tree.CompressedTree;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -968,7 +969,9 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = target;
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.create(null, params, hyperParms)
+              .withMaxConsecutiveFailures(10)
+              .start();
       try {
         Scope.track_generic(gs);
         final Grid grid = gs.get();
@@ -1003,7 +1006,10 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = target;
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, 3);
+      Job<Grid> gs = GridSearch.create(null, params, hyperParms)
+              .withMaxConsecutiveFailures(10)
+              .withParallelism(3)
+              .start();
       try {
         Scope.track_generic(gs);
         final Grid grid = gs.get();

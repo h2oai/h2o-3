@@ -13,7 +13,6 @@ import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -69,38 +68,84 @@ import java.util.concurrent.locks.ReentrantLock;
  * @see #startGridSearch(Key, Key, HyperSpaceWalker, Recovery, int)
  */
 public final class GridSearch<MP extends Model.Parameters> {
-  private static final int DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES = 10;
-  
-  public final Key<Grid> _result;
-  public final Job<Grid> _job;
-  public final Recovery<Grid> _recovery;
-  public final int _parallelism;
-  public int _maxConsecutiveModelFailures = DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES;
 
+  public static <MP extends Model.Parameters> Builder<MP> create(Key<Grid> destKey, HyperSpaceWalker<MP, ?> walker) {
+    assert walker != null;
+    return new Builder<>(destKey, walker);
+  }
+  
+  public static <MP extends Model.Parameters> Builder<MP> create(Key<Grid> destKey, 
+                                                                 final MP params,
+                                                                 final Map<String, Object[]> hyperParams) {
+    assert params != null;
+    assert hyperParams != null;
+    HyperSpaceWalker<MP, ?> walker = BaseWalker.WalkerFactory.create(
+            params, 
+            hyperParams,
+            new SimpleParametersBuilderFactory<>(),
+            new HyperSpaceSearchCriteria.CartesianSearchCriteria()
+    );
+    return create(destKey, walker);
+  } 
+
+  public static class Builder<MP extends Model.Parameters> {
+    
+    private final GridSearch<MP> _gridSearch;
+
+    public Builder(Key<Grid> destKey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+      assert hyperSpaceWalker != null;
+      if (destKey == null) {
+        MP params = hyperSpaceWalker.getParams();
+        destKey = gridKeyName(params.algoName(), params.train());
+      }
+      _gridSearch = new GridSearch<>(destKey, hyperSpaceWalker);
+    }
+    
+    public Builder<MP> withParallelism(int parallelism) {
+      _gridSearch._parallelism = parallelism;
+      return this;
+    }
+    
+    public Builder<MP> withMaxConsecutiveFailures(int maxConsecutiveFailures) {
+      _gridSearch._maxConsecutiveFailures = maxConsecutiveFailures;
+      return this;
+    }
+    
+    public Builder<MP> withJob(Key<Job> jobKey) {
+      return withRecoverableJob(jobKey, null);
+    }
+    
+    public Builder<MP> withRecoverableJob(Key<Job> jobKey, Recovery recovery) {
+      assert _gridSearch._job == null;
+      String algoName = _gridSearch._hyperSpaceWalker.getParams().algoName();
+      final boolean recoverable = recovery != null && H2O.ARGS.auto_recovery_dir != null;
+      _gridSearch._recovery = recovery;
+      _gridSearch._job = new Job<>(jobKey, _gridSearch._result, Grid.class.getName(), algoName+" Grid Search", recoverable);
+      return this;
+    }
+
+    public Job<Grid> start() {
+        if (_gridSearch._job == null) withJob(null);
+        return _gridSearch.start();
+    }  
+  }
+  
+  private Job<Grid> _job;
+  private Recovery<Grid> _recovery;
+  private int _parallelism = SEQUENTIAL_MODEL_BUILDING;
+  private int _maxConsecutiveFailures = Integer.MAX_VALUE;  // for now, disabled by default
+
+  private final Key<Grid> _result;
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
-  private final AtomicInteger _consecutiveModelFailures = new AtomicInteger();
-
-  private GridSearch(
-      final Key<Job> jobKey,
-      final Key<Grid> gridKey, 
-      final HyperSpaceWalker<MP, ?> hyperSpaceWalker, 
-      final Recovery<Grid> recovery, 
-      final int parallelism
-  ) {
+  
+  private GridSearch(Key<Grid> gridKey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
     assert hyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";
     _hyperSpaceWalker = hyperSpaceWalker;
     _result = gridKey;
-    String algoName = hyperSpaceWalker.getParams().algoName();
-    final boolean recoverable = recovery != null && H2O.ARGS.auto_recovery_dir != null;
-    _job = new Job<>(jobKey, gridKey, Grid.class.getName(), algoName + " Grid Search", recoverable);
-    _recovery = recovery;
-    _parallelism = parallelism;
-    // Note: do not validate parameters of created model builders here!
-    // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
-
+  
   Job<Grid> start() {
     final long gridSize = _hyperSpaceWalker.getMaxHyperSpaceSize();
     Log.info("Starting gridsearch: estimated size of search space = " + gridSize);
@@ -225,7 +270,6 @@ public final class GridSearch<MP extends Model.Parameters> {
     @Override
     public void onBuildSuccess(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
-        _consecutiveModelFailures.set(0);
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
         onModel(grid, finishedModel._input_parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
@@ -250,9 +294,9 @@ public final class GridSearch<MP extends Model.Parameters> {
       } finally {
         parallelSearchGridLock.unlock();
       }
-      if (!Grid.isJobCanceled(ex) 
-              && grid.getModelCount() == 0 
-              && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+      if (grid.countTotalFailures() > _maxConsecutiveFailures
+              && grid.getModelCount() == 0
+              && !Grid.isJobCanceled(ex)) {
         _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", ex));
       } else {
         attemptBuildNextModel(parallelModelBuilder, null);
@@ -378,7 +422,6 @@ public final class GridSearch<MP extends Model.Parameters> {
 
           //// build the model!
           model = buildModel(params, grid, ++counter, protoModelKey);
-          _consecutiveModelFailures.set(0);
           if (model != null) {
             model.fillScoringInfo(scoringInfo);
             grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -400,7 +443,7 @@ public final class GridSearch<MP extends Model.Parameters> {
               Log.debug("Model with param checksum " + checksum + " was cancelled before it was installed in DKV.");
           } else {
             Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
-            if (grid.getModelCount() == 0 && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+            if (grid.countTotalFailures() > _maxConsecutiveFailures && grid.getModelCount() == 0) {
               _job.fail(new H2OGridException("Aborting Grid search after too many consecutive model failures.", e));
             }
           }
@@ -612,6 +655,8 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
+   * 
+   * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
@@ -620,7 +665,6 @@ public final class GridSearch<MP extends Model.Parameters> {
           final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
           final HyperSpaceSearchCriteria searchCriteria,
           final int parallelism) {
-
     return startGridSearch(
         null, destKey, params, hyperParams, paramsBuilderFactory, searchCriteria, null, parallelism
     );
@@ -646,6 +690,8 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
+   * 
+   * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Job> jobKey,
@@ -680,20 +726,14 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
-   * @see #startGridSearch(Key, Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria, Recovery, int)
+   * 
+   * @deprecated Prefer use of {@link GridSearch#create(Key, Model.Parameters, Map)})}
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
           final MP params,
           final Map<String, Object[]> hyperParams) {
-    return startGridSearch(
-            destKey,
-            params,
-            hyperParams,
-            new SimpleParametersBuilderFactory<>(),
-            new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
-            GridSearch.SEQUENTIAL_MODEL_BUILDING
-    );
+    return GridSearch.create(destKey, params, hyperParams).start();
   }
 
 
@@ -713,7 +753,7 @@ public final class GridSearch<MP extends Model.Parameters> {
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    *
-   * @see #startGridSearch(Key, Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria, Recovery, int)
+   * @deprecated Prefer use of {@link GridSearch#create(Key, Model.Parameters, Map)})}
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
@@ -721,14 +761,9 @@ public final class GridSearch<MP extends Model.Parameters> {
           final Map<String, Object[]> hyperParams,
           final int parallelism
   ) {
-    return startGridSearch(
-            destKey,
-            params,
-            hyperParams,
-            new SimpleParametersBuilderFactory<>(),
-            new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
-            parallelism
-    );
+    return GridSearch.create(destKey, params, hyperParams)
+            .withParallelism(parallelism)
+            .start();
   }
 
   /**
@@ -748,7 +783,9 @@ public final class GridSearch<MP extends Model.Parameters> {
           final HyperSpaceWalker<MP, ?> hyperSpaceWalker,
           final int parallelism
   ) {
-    return startGridSearch(null, destKey, hyperSpaceWalker, null, parallelism);
+    return GridSearch.create(destKey, hyperSpaceWalker)
+            .withParallelism(parallelism)
+            .start();
   }
 
   /**
@@ -764,6 +801,8 @@ public final class GridSearch<MP extends Model.Parameters> {
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
+   * 
+   * @deprecated Prefer use of {@link GridSearch#create(Key, HyperSpaceWalker)}
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Job> jobKey,
@@ -772,15 +811,12 @@ public final class GridSearch<MP extends Model.Parameters> {
       final Recovery<Grid> recovery,
       final int parallelism
   ) {
-    // Compute key for destination object representing grid
-    MP params = hyperSpaceWalker.getParams();
-    Key<Grid> gridKey = destKey != null ? destKey
-        : gridKeyName(params.algoName(), params.train());
-
-    // Start the search
-    return new GridSearch<>(jobKey, gridKey, hyperSpaceWalker, recovery, parallelism).start();
+    return GridSearch.create(destKey, hyperSpaceWalker)
+            .withParallelism(parallelism)
+            .withRecoverableJob(jobKey, recovery)
+            .start();
   }
-  
+
   public static <MP extends Model.Parameters> Job<Grid> resumeGridSearch(
       final Key<Job> jobKey,
       final Grid<MP> grid,
@@ -798,7 +834,7 @@ public final class GridSearch<MP extends Model.Parameters> {
         grid.getParallelism()
     );
   }
-
+  
   /**
    * The factory is producing a parameters builder which uses reflection to setup field values.
    *
