@@ -206,7 +206,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
       throw H2O.unimpl(String.format("%s does not support feature interactions calculation", model._parms.fullName()));
     }
   }
-
+  
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public PartialDependenceV3 fetchPartialDependence(int version, KeyV3.PartialDependenceKeyV3 s) {
     PartialDependence partialDependence = DKV.getGet(s.key());
