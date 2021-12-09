@@ -92,7 +92,7 @@ public final class GridSearch<MP extends Model.Parameters> {
     
     private final GridSearch<MP> _gridSearch;
 
-    public Builder(Key<Grid> destKey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+    private Builder(Key<Grid> destKey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
       assert hyperSpaceWalker != null;
       if (destKey == null) {
         MP params = hyperSpaceWalker.getParams();
