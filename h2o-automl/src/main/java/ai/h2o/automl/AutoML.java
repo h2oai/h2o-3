@@ -661,7 +661,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           _consecutiveModelFailures.set(0);
           completed.add(step);
         } else if (state.is(ResultStatus.failed)) {
-          _consecutiveModelFailures.incrementAndGet();
           if (_consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
             throw new H2OAutoMLException("Aborting AutoML after too many consecutive model failures", state.error());
           }

@@ -178,7 +178,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             }
 
             if (job.isCrashed()) {
-                eventLog.warn(Stage.ModelTraining, jobDescription+" failed: "+job.ex());
+                eventLog.error(Stage.ModelTraining, jobDescription+" failed: "+job.ex());
                 return new StepResultState(step._description, job.ex());
             } else if (job.get() == null) {
                 eventLog.info(Stage.ModelTraining, jobDescription+" cancelled");

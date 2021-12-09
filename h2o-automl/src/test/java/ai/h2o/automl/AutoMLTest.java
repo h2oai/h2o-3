@@ -22,6 +22,7 @@ import water.Scope;
 import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.logging.LoggingLevel;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
@@ -765,6 +766,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "runoffnew";
       // no model limit
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GLM}; // our GLM ignores stopping metric, probably due to lambda search, ad therefore doesn't fail, making the test logic more complex
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
       autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.lift_top_group);  // stopping metric incompatible with regression
       autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
@@ -773,8 +775,9 @@ public class AutoMLTest extends water.TestUtil {
       Scope.track_generic(aml);
       aml.get();
     } catch (Exception e) {
-      assertEquals(1, aml.leaderboard().getModelCount());
-      assertEquals("GLM", aml.leaderboard().getLeader()._parms.algoName()); // our GLM ignores stopping metric, probably due to lambda search.
+      long count = Arrays.stream(aml.eventLog()._events).filter(ev -> ev.getLevel() == LoggingLevel.ERROR).count();
+      assertEquals(aml._maxConsecutiveModelFailures, count);
+      assertEquals(0, aml.leaderboard().getModelCount());
       throw e;
     } finally {
       Scope.exit();

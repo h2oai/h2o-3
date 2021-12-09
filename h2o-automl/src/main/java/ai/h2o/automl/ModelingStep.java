@@ -552,7 +552,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             try {
                 defaults = baseParms.getClass().newInstance();
             } catch (Exception e) {
-                aml().eventLog().warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
+                aml().eventLog().error(Stage.ModelTraining, "Internal error doing hyperparameter search");
                 throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
             }
 
