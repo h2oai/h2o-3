@@ -8,16 +8,20 @@ import hex.genmodel.algos.gam.GamMojoModel;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
 import hex.glm.GLMModel;
-import hex.glm.IndependentGLMMetricBuilder;
 
 public class GAMMetricBuilderFactory extends ModelMetricsSupervised.SupervisedMetricBuilderFactory<GAMModel, GamMojoModel> {
 
+    public static class GAMMetricExtraInfo {
+        public double[] ymu;
+        public int rank;
+    }
+
     @Override
-    public Object extractExtraInfo(GAMModel binaryModel) {
-        return new Object() {
-            double[] ymu = binaryModel._output._ymu;
-            int rank = binaryModel._output._rank;
-        }; 
+    public GAMMetricExtraInfo extractExtraInfo(GAMModel binaryModel) {
+        GAMMetricExtraInfo extraInfo = new GAMMetricExtraInfo();
+        extraInfo.ymu = binaryModel._output._ymu;
+        extraInfo.rank = binaryModel._output._rank;
+        return extraInfo;
     }
     
     @Override

@@ -52,7 +52,7 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<XGBoostModel, XGBoostMojoModel>();
   }
 }

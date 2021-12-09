@@ -27,7 +27,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
     }
 
     @Override
-    protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
         throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
     }
 

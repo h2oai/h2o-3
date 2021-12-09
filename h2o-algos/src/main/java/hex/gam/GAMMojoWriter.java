@@ -102,7 +102,7 @@ public class GAMMojoWriter extends ModelMojoWriter<GAMModel, GAMModel.GAMParamet
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new GAMMetricBuilderFactory();
   }
 

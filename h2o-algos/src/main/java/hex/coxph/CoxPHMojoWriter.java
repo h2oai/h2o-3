@@ -36,7 +36,7 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported."); 
   }
 

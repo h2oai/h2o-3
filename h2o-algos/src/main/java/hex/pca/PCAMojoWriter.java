@@ -41,7 +41,7 @@ public class PCAMojoWriter extends ModelMojoWriter<PCAModel, PCAModel.PCAParamet
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new ModelMetricsPCA.PCAMetricBuilderFactory();
   }
 }

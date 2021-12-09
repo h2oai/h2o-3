@@ -94,7 +94,7 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new DeepLearningMetricBuilderFactory();
   }
 }

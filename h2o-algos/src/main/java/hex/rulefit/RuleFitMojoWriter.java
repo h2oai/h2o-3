@@ -22,7 +22,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
     }
 
     @Override
-    protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+    public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
         return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<RuleFitModel, RuleFitMojoModel>();
     }
 

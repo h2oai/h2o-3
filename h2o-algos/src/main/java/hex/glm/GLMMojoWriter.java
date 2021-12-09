@@ -2,7 +2,6 @@ package hex.glm;
 
 import hex.ModelMetrics;
 import hex.ModelMojoWriter;
-import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 import java.io.IOException;
 
@@ -44,7 +43,7 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new GLMMetricBuilderFactory();
   }
 }

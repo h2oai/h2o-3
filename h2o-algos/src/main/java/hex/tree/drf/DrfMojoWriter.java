@@ -30,7 +30,7 @@ public class DrfMojoWriter extends SharedTreeMojoWriter<DRFModel, DRFModel.DRFPa
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<DRFModel, DrfMojoModel>();
   }
 }

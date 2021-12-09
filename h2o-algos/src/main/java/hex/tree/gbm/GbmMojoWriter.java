@@ -35,7 +35,7 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<GBMModel, GbmMojoModel>();
   }
 }

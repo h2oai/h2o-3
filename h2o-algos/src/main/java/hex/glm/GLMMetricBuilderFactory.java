@@ -9,13 +9,18 @@ import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
 
 public class GLMMetricBuilderFactory extends ModelMetricsSupervised.SupervisedMetricBuilderFactory<GLMModel, GlmMojoModel> {
+    
+    public static class GLMMetricExtraInfo {
+        public double[] ymu;
+        public int rank;
+    }
 
     @Override
-    public Object extractExtraInfo(GLMModel binaryModel) {
-        return new Object() {
-            double[] ymu = binaryModel._output._ymu;
-            int rank = binaryModel._output.rank();
-        }; 
+    public GLMMetricExtraInfo extractExtraInfo(GLMModel binaryModel) {
+        GLMMetricExtraInfo extraInfo = new GLMMetricExtraInfo();
+        extraInfo.ymu = binaryModel._output._ymu;
+        extraInfo.rank = binaryModel._output.rank();
+        return extraInfo;
     }
     
     @Override

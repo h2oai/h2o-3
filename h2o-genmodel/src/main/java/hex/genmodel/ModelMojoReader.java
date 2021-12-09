@@ -86,13 +86,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       throw new IllegalStateException("Unable to find information about the model's algorithm.");
     String algo = String.valueOf(info.get("algorithm"));
     ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
-    MojoModel model = readFrom(reader, true);
     try {
       Class writerClass = Class.forName(mmr.getModelMojoReaderClassName());
       Object mojoWriter = writerClass.getConstructor().newInstance();
-      Method factoryGetter = writerClass.getMethod("getModelBuilderFactory");
+      Method factoryGetter = writerClass.getDeclaredMethod("getModelBuilderFactory");
       IMetricBuilderFactory factory = (IMetricBuilderFactory)factoryGetter.invoke(mojoWriter);
       JsonObject extraInfo = ModelJsonReader.parseModelJson(reader, "experimental/metricBuilderExtraInfo.json");
+      MojoModel model = readFrom(reader, true);
       return factory.createBuilder(model, extraInfo);
     } catch(Exception e) {
       throw new RuntimeException(e);

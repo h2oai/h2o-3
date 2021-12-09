@@ -84,7 +84,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   protected abstract void writeModelData() throws IOException;
   
-  protected abstract ModelMetrics.MetricBuilderFactory getModelBuilderFactory();
+  public abstract ModelMetrics.MetricBuilderFactory getModelBuilderFactory();
   
   private void writeMetricBuilderExtraInfo() throws IOException {
     ModelMetrics.MetricBuilderFactory builderFactory = getModelBuilderFactory();

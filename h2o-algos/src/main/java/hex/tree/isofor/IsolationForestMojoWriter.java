@@ -35,7 +35,7 @@ public class IsolationForestMojoWriter extends SharedTreeMojoWriter<IsolationFor
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new IsolationForestMetricBuilderFactory();
   }
 

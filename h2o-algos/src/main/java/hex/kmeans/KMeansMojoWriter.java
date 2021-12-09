@@ -36,7 +36,7 @@ public class KMeansMojoWriter extends ModelMojoWriter<KMeansModel, KMeansModel.K
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new KMeansMetricBuilderFactory();
   }
 

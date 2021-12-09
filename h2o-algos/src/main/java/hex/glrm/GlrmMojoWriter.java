@@ -66,7 +66,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
   }
 
   @Override
-  protected ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
     return new ModelMetricsGLRM.GLRMMetricBuilderFactory();
   }
 
