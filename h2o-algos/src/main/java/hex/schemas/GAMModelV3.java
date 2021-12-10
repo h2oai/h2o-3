@@ -38,20 +38,6 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
 
     @API(help="GLM standard error values.  For debugging purposes only")
     double[] glm_std_err;
-    
-    @API(help="Double array storing ratio of number of response in class k over total number of responses for each" +
-            " classes of multinomial/ordinal families, mean response value for all other families")
-    double[] ymu;
-
-    @API(help="Rank: number of non-zero coefficients")
-    int rank;
-
-    public GAMModelOutputV3 fillFromImpl(GAMModel.GAMModelOutput impl) {
-      super.fillFromImpl(impl);
-      ymu = impl._ymu.clone();
-      rank = impl._rank;
-      return this;
-    }
   }
 
   public GAMV3.GAMParametersV3 createParametersSchema() { return new GAMV3.GAMParametersV3();}
