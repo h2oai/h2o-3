@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTreeStats;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.H2O;
@@ -163,8 +164,8 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
                 CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
                 if (LOG.isDebugEnabled()) {
-                    isolationTree.logNodesNumRows();
-                    isolationTree.logNodesHeight();
+                    isolationTree.logNodesNumRows(Level.DEBUG);
+                    isolationTree.logNodesHeight(Level.DEBUG);
                 }
                 _model._output._iTreeKeys[tid] = compressedIsolationTree._key;
                 DKV.put(compressedIsolationTree);
