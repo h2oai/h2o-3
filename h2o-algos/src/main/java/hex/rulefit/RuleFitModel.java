@@ -9,6 +9,10 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
     public enum Algorithm {DRF, GBM, AUTO}
@@ -159,7 +163,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return fs;
     }
 
-    void updateModelMetrics( GLMModel glmModel, Frame fr){
+    void updateModelMetrics(GLMModel glmModel, Frame fr){
         for (Key<ModelMetrics> modelMetricsKey : glmModel._output.getModelMetrics()) {
             // what is null here was already added to RF model from GLM submodel during hex.rulefit.RuleFit.RuleFitDriver.fillModelMetrics
             if (modelMetricsKey.get() != null)
@@ -175,5 +179,39 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
     @Override
     public boolean haveMojo() {
         return true;
+    }
+    
+    public Frame predictRules(Frame frame, String[] ruleIds) {
+        Frame adaptFrm = new Frame(frame);
+        adaptTestForTrain(adaptFrm, true, false);
+        List<String> linVarNames = Arrays.asList(glmModel.names()).stream().filter(name -> name.startsWith("linear.")).collect(Collectors.toList());
+        
+        List<Rule> rules = new ArrayList<>();
+        List<String> linearRules = new ArrayList<>();
+        for (int i = 0; i < ruleIds.length; i++) {
+            if (ruleIds[i].startsWith("linear.") && isLinearVar(ruleIds[i], linVarNames)) {
+                linearRules.add(ruleIds[i]);
+            } else {
+                rules.add(ruleEnsemble.getRuleByVarName(RuleFitUtils.readRuleId(ruleIds[i])));
+            }
+        }
+        RuleEnsemble subEnsemble = new RuleEnsemble(rules.toArray(new Rule[0]));
+        Frame result = subEnsemble.transform(adaptFrm);
+        // linear rules apply to all the rows
+        for (int i = 0; i < linearRules.size(); i++) {
+            result.add(linearRules.get(i), Vec.makeOne(frame.numRows()));
+        }
+        
+        result = new Frame(Key.make(), result.names(), result.vecs());
+        DKV.put(result);
+        return result;
+    }
+    
+    private boolean isLinearVar(String potentialLinVarId, List<String> linVarNames) {
+        for (String linVarName : linVarNames) {
+            if (potentialLinVarId.startsWith(linVarName))
+                return true;
+        }
+        return false;
     }
 }

@@ -27,6 +27,9 @@ def iris():
 
     rfit_predictions = rfit.predict(test)
 
+    frame = rfit.predict_rules(train, ['M0T38N5_Iris-virginica'])
+    assert frame.sum().getrow()[0] == 49.0
+
     import tempfile
     tmpdir = tempfile.mkdtemp()
 
@@ -40,6 +43,14 @@ def iris():
     mojo_predictions = mojo_model.predict(test)
 
     assert pyunit_utils.compare_frames(rfit_predictions, mojo_predictions, 0)
+
+    # test predict_rules also on linear variable input
+    rfit = H2ORuleFitEstimator(min_rule_length=4, max_rule_length=5, max_num_rules=3, seed=1234, model_type="rules_and_linear")
+    rfit.train(training_frame=train, x=x, y=y, validation_frame=test)
+    print(rfit.rule_importance())
+    frame = rfit.predict_rules(train, ['linear.petal_len_Iris-setosa', 'linear.petal_wid_Iris-virginica'])
+    assert frame.sum().getrow()[0] == train.nrows
+    
 
 if __name__ == "__main__":
   pyunit_utils.standalone_test(iris)
