@@ -18,7 +18,7 @@ public class GLMMetricBuilderFactory extends ModelMetricsSupervised.SupervisedMe
     @Override
     public GLMMetricExtraInfo extractExtraInfo(GLMModel binaryModel) {
         GLMMetricExtraInfo extraInfo = new GLMMetricExtraInfo();
-        extraInfo.ymu = binaryModel._output._ymu;
+        extraInfo.ymu = binaryModel._output.ymu();
         extraInfo.rank = binaryModel._output.rank();
         return extraInfo;
     }
