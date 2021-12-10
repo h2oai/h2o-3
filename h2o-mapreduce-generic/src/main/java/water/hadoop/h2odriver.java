@@ -2088,7 +2088,7 @@ public class h2odriver extends Configured implements Tool {
     } else {
       haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     }
-    if ((refreshHiveTokens && !haveHiveToken) || refreshHdfsTokens) {
+    if ((refreshHiveTokens && !haveHiveToken) || refreshHdfsTokens || refreshS3ATokens) {
       if (runAsUser != null) 
         j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
       if (principal != null) 
