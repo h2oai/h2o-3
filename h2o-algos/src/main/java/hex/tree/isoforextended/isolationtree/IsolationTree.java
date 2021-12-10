@@ -20,7 +20,7 @@ public class IsolationTree {
     private final int _extensionLevel;
 
     private int _isolatedPoints = 0;
-    private int _notIsolatedPoints = 0;
+    private long _notIsolatedPoints = 0;
     private int _zeroSplits = 0;
     private int _leaves = 0;
     private int _depth = 0;
@@ -287,7 +287,7 @@ public class IsolationTree {
         return _isolatedPoints;
     }
 
-    public int getNotIsolatedPoints() {
+    public long getNotIsolatedPoints() {
         return _notIsolatedPoints;
     }
 

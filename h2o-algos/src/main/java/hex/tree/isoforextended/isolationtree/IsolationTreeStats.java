@@ -16,8 +16,8 @@ public class IsolationTreeStats {
     public int _maxIsolated = -1;
     public float _meanIsolated;
 
-    public int _minNotIsolated = -1;
-    public int _maxNotIsolated = -1;
+    public long _minNotIsolated = -1;
+    public long _maxNotIsolated = -1;
     public float _meanNotIsolated;
 
     public int _minZeroSplits = -1;
