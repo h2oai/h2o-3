@@ -41,9 +41,7 @@ public class TargetEncoderMojoWriter extends ModelMojoWriter<TargetEncoderModel,
   }
 
   @Override
-  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
-    throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
-  }
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() { return null; }
 
   /**
    * Writes target encoding's extra info

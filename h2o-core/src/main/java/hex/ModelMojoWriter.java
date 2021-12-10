@@ -88,12 +88,14 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   
   private void writeMetricBuilderExtraInfo() throws IOException {
     ModelMetrics.MetricBuilderFactory builderFactory = getModelBuilderFactory();
-    Object extraInfo = builderFactory.extractExtraInfo(model);
-    if (extraInfo != null) {
-      startWritingTextFile("experimental/metricBuilderExtraInfo.json");
-      String json = new Gson().toJson(extraInfo);
-      writeln(json);
-      finishWritingTextFile();
+    if (builderFactory != null) {
+      Object extraInfo = builderFactory.extractExtraInfo(model);
+      if (extraInfo != null) {
+        startWritingTextFile("experimental/metricBuilderExtraInfo.json");
+        String json = new Gson().toJson(extraInfo);
+        writeln(json);
+        finishWritingTextFile();
+      }
     }
   }
 

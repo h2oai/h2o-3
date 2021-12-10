@@ -36,9 +36,7 @@ public class CoxPHMojoWriter extends ModelMojoWriter<CoxPHModel, CoxPHModel.CoxP
   }
 
   @Override
-  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
-    throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported."); 
-  }
+  public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() { return null; }
 
   private void writeStrata() throws IOException {
     final IcedHashMap<AstGroup.G, IcedInt> strataMap = model._output._strataMap;

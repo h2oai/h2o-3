@@ -33,9 +33,7 @@ public class GenericModelMojoWriter extends ModelMojoWriter<GenericModel, Generi
     }
 
     @Override
-    public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
-        throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
-    }
+    public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() { return null; }
 
     @Override
     public void writeTo(final OutputStream os, StreamWriteOption... options) {
