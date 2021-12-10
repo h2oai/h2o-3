@@ -2,6 +2,7 @@ package hex.tree.isoforextended;
 
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +32,7 @@ public class IsolationTreeTest extends TestUtil {
             IsolationTree isolationTree = new IsolationTree(9, 1);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
-            isolationTree.logNodesNumRows();
+            isolationTree.logNodesNumRows(Level.INFO);
 
             long time = end - start;
             if (time > 200) {
@@ -59,7 +60,7 @@ public class IsolationTreeTest extends TestUtil {
             IsolationTree isolationTree = new IsolationTree(16, 31);
             CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(FrameUtils.asDoubles(train), 0xBEEF, 0);
             long end = System.currentTimeMillis();
-            isolationTree.logNodesNumRows();
+            isolationTree.logNodesNumRows(Level.DEBUG);
 
             long time = end - start;
             if (time > 1000) {

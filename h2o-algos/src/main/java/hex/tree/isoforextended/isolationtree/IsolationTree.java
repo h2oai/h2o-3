@@ -1,5 +1,6 @@
 package hex.tree.isoforextended.isolationtree;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
@@ -115,7 +116,7 @@ public class IsolationTree {
     /**
      * Helper method. Print nodes' size of the tree.
      */
-    public void logNodesNumRows() {
+    public void logNodesNumRows(Level level) {
         StringBuilder logMessage = new StringBuilder();
         for (int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] == null)
@@ -123,13 +124,13 @@ public class IsolationTree {
             else
                 logMessage.append(_nodes[i]._numRows + " ");
         }
-        LOG.debug(logMessage.toString());
+        LOG.log(level, logMessage.toString());
     }
 
     /**
      * Helper method. Print height (length of path from root) of each node in trees. Root is 0.
      */
-    public void logNodesHeight() {
+    public void logNodesHeight(Level level) {
         StringBuilder logMessage = new StringBuilder();
         for (int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] == null)
@@ -137,7 +138,7 @@ public class IsolationTree {
             else
                 logMessage.append(_nodes[i]._height + " ");
         }
-        LOG.debug(logMessage.toString());
+        LOG.log(level, logMessage.toString());
     }
 
     /**
