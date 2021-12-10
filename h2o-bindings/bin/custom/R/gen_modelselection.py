@@ -39,6 +39,6 @@ h2o.init()
 prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 prostate <- h2o.uploadFile(path = prostate_path)
 prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-model <- h2o.modelselection(y = "VOL", x = c("CAPSULE", "RACE", "AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"), training_frame = prostate)
+model <- h2o.modelSelection(y = "VOL", x = c("CAPSULE", "RACE", "AGE", "RACE", "DPROS", "DCAPS", "PSA", "GLEASON"), training_frame = prostate)
 """
 )
