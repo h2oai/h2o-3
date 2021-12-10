@@ -31,7 +31,7 @@
  *   RowData row = new RowData();
  *   row.put(new String("CategoricalColumnName"), new String("LevelName"));
  *   row.put(new String("NumericColumnName1"), new String("42.0"));
- *   row.put(new String("NumericColumnName2"), new Double(42.0));
+ *   row.put(new String("NumericColumnName2"), Double.valueOf(42.0));
  *
  *   // Step 3.
  *   BinomialModelPrediction p = model.predictBinomial(row);

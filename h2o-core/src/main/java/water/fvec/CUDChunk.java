@@ -28,7 +28,7 @@ public class CUDChunk extends Chunk {
     int j=0;
     //create the mapping and also store the unique values (as longs)
     for (Map.Entry<Long,Byte> e : hs.entrySet()) {
-      e.setValue(new Byte((byte)(j-128))); //j is in 0...256  -> byte value needs to be in -128...127 for storage
+      e.setValue((byte) (j - 128)); //j is in 0...256  -> byte value needs to be in -128...127 for storage
       UnsafeUtils.set8(_mem, 8 + (j << 3), e.getKey());
       j++;
     }

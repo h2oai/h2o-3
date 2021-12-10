@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.RowData;
@@ -162,10 +161,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           }
 
           // check that the all outliers are found (and nothing else)
-          Assert.assertTrue(outliers.contains(new Long(20)));
-          Assert.assertTrue(outliers.contains(new Long(21)));
-          Assert.assertTrue(outliers.contains(new Long(22)));
-          Assert.assertTrue(outliers.size() == 3);
+          Assert.assertTrue(outliers.contains(20L));
+          Assert.assertTrue(outliers.contains(21L));
+          Assert.assertTrue(outliers.contains(22L));
+          Assert.assertEquals(3, outliers.size());
 
           // check if reconstruction error is the same from model and mojo model too - test case for PUBDEV-6030
           // also check if reconstruction error is calculated correctly if the parameter standardize is set to false 
