@@ -251,8 +251,8 @@ public class AutoSerialTest extends Iced {
 
     public SimpleFreezableTestChild2(int x, int y, String str, int[] intAry, double[] dAry) {
       super(x, y, str);
-      for (int i : intAry) _nums.add(new Double(i));
-      for (double d : dAry) _nums.add(new Double(d));
+      for (int i : intAry) _nums.add((double) i);
+      for (double d : dAry) _nums.add(d);
     }
 
     public final AutoBuffer write_impl(AutoBuffer ab) {
@@ -280,8 +280,8 @@ public class AutoSerialTest extends Iced {
 
     public SimpleFreezableTestChild3(int x, int y, String str, int[] intAry, double[] dAry) {
       super(x, y, str, intAry, dAry);
-      for (int i : intAry) _nums2.add(new Double(i) * 2);
-      for (double d : dAry) _nums2.add(new Double(d) * 2);
+      for (int i : intAry) _nums2.add((double) i * 2);
+      for (double d : dAry) _nums2.add(d * 2);
     }
 
     public static AutoBuffer write_impl(SimpleFreezableTestChild3 self, AutoBuffer ab) {

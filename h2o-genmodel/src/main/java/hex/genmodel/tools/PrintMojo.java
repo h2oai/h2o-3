@@ -364,7 +364,7 @@ public class PrintMojo implements MojoPrinter {
   static class FloatCastingSerializer implements JsonSerializer<Float> {
     @Override 
     public JsonElement serialize(Float src, Type typeOfSrc, JsonSerializationContext context) { 
-      return new JsonPrimitive(new Double(src)); 
+      return new JsonPrimitive(src.doubleValue()); 
     }
   }
 
