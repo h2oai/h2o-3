@@ -281,6 +281,8 @@ test-package-java:
 		h2o-persist-hdfs/build/libs/h2o-persist-hdfs-*.jar \
 		h2o-persist-s3/src/ \
 		h2o-persist-s3/build/libs/h2o-persist-s3-*.jar \
+		h2o-persist-http/src/ \
+		h2o-persist-http/build/libs/h2o-persist-http-*.jar \
 		h2o-security/src/ \
 		h2o-security/build/libs/h2o-security-*.jar \
 		h2o-extensions/xgboost/src/ \
