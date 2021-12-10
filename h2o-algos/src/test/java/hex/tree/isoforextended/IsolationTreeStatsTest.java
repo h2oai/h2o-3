@@ -28,25 +28,25 @@ public class IsolationTreeStatsTest {
     @Test
     public void testIsolationTreeStatsSmoke() {
         when(isolationTree1.getIsolatedPoints()).thenReturn(1);
-        when(isolationTree1.getNotIsolatedPoints()).thenReturn(2);
+        when(isolationTree1.getNotIsolatedPoints()).thenReturn(2l);
         when(isolationTree1.getZeroSplits()).thenReturn(5);
         when(isolationTree1.getLeaves()).thenReturn(5);
         when(isolationTree1.getDepth()).thenReturn(4);
 
         when(isolationTree2.getIsolatedPoints()).thenReturn(0);
-        when(isolationTree2.getNotIsolatedPoints()).thenReturn(0);
+        when(isolationTree2.getNotIsolatedPoints()).thenReturn(0l);
         when(isolationTree2.getZeroSplits()).thenReturn(0);
         when(isolationTree2.getLeaves()).thenReturn(5);
         when(isolationTree2.getDepth()).thenReturn(4);
 
         when(isolationTree3.getIsolatedPoints()).thenReturn(1);
-        when(isolationTree3.getNotIsolatedPoints()).thenReturn(14);
+        when(isolationTree3.getNotIsolatedPoints()).thenReturn(14l);
         when(isolationTree3.getZeroSplits()).thenReturn(1);
         when(isolationTree3.getLeaves()).thenReturn(8);
         when(isolationTree3.getDepth()).thenReturn(4);
 
         when(isolationTree4.getIsolatedPoints()).thenReturn(5);
-        when(isolationTree4.getNotIsolatedPoints()).thenReturn(11);
+        when(isolationTree4.getNotIsolatedPoints()).thenReturn(11l);
         when(isolationTree4.getZeroSplits()).thenReturn(5);
         when(isolationTree4.getLeaves()).thenReturn(7);
         when(isolationTree4.getDepth()).thenReturn(4);
@@ -88,19 +88,19 @@ public class IsolationTreeStatsTest {
     @Test
     public void testFirstExtremeWins() {
         when(isolationTree1.getIsolatedPoints()).thenReturn(1);
-        when(isolationTree1.getNotIsolatedPoints()).thenReturn(1);
+        when(isolationTree1.getNotIsolatedPoints()).thenReturn(1l);
         when(isolationTree1.getZeroSplits()).thenReturn(1);
         when(isolationTree1.getLeaves()).thenReturn(1);
         when(isolationTree1.getDepth()).thenReturn(1);
 
         when(isolationTree2.getIsolatedPoints()).thenReturn(12);
-        when(isolationTree2.getNotIsolatedPoints()).thenReturn(12);
+        when(isolationTree2.getNotIsolatedPoints()).thenReturn(12l);
         when(isolationTree2.getZeroSplits()).thenReturn(12);
         when(isolationTree2.getLeaves()).thenReturn(12);
         when(isolationTree2.getDepth()).thenReturn(12);
 
         when(isolationTree3.getIsolatedPoints()).thenReturn(2);
-        when(isolationTree3.getNotIsolatedPoints()).thenReturn(2);
+        when(isolationTree3.getNotIsolatedPoints()).thenReturn(2l);
         when(isolationTree3.getZeroSplits()).thenReturn(2);
         when(isolationTree3.getLeaves()).thenReturn(2);
         when(isolationTree3.getDepth()).thenReturn(2);
@@ -130,19 +130,19 @@ public class IsolationTreeStatsTest {
     @Test
     public void testZeroIsValidMinimum() {
         when(isolationTree1.getIsolatedPoints()).thenReturn(0);
-        when(isolationTree1.getNotIsolatedPoints()).thenReturn(0);
+        when(isolationTree1.getNotIsolatedPoints()).thenReturn(0l);
         when(isolationTree1.getZeroSplits()).thenReturn(0);
         when(isolationTree1.getLeaves()).thenReturn(0);
         when(isolationTree1.getDepth()).thenReturn(0);
 
         when(isolationTree2.getIsolatedPoints()).thenReturn(12);
-        when(isolationTree2.getNotIsolatedPoints()).thenReturn(12);
+        when(isolationTree2.getNotIsolatedPoints()).thenReturn(12l);
         when(isolationTree2.getZeroSplits()).thenReturn(12);
         when(isolationTree2.getLeaves()).thenReturn(12);
         when(isolationTree2.getDepth()).thenReturn(12);
 
         when(isolationTree3.getIsolatedPoints()).thenReturn(1);
-        when(isolationTree3.getNotIsolatedPoints()).thenReturn(1);
+        when(isolationTree3.getNotIsolatedPoints()).thenReturn(1l);
         when(isolationTree3.getZeroSplits()).thenReturn(1);
         when(isolationTree3.getLeaves()).thenReturn(1);
         when(isolationTree3.getDepth()).thenReturn(1);
