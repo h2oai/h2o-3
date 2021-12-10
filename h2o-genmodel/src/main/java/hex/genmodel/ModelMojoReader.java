@@ -91,6 +91,9 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       Object mojoWriter = writerClass.getConstructor().newInstance();
       Method factoryGetter = writerClass.getDeclaredMethod("getModelBuilderFactory");
       IMetricBuilderFactory factory = (IMetricBuilderFactory)factoryGetter.invoke(mojoWriter);
+      if (factory == null) {
+        throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
+      }
       JsonObject extraInfo = ModelJsonReader.parseModelJson(reader, "experimental/metricBuilderExtraInfo.json");
       MojoModel model = readFrom(reader, true);
       return factory.createBuilder(model, extraInfo);
