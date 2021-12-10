@@ -1,12 +1,15 @@
 package hex.tree.isoforextended.isolationtree;
 
+/**
+ * Inspired by TreeStats
+ */
 public class IsolationTreeStats {
-    public int _minDepth = 0;
-    public int _maxDepth = 0;
+    public int _minDepth  = -1;
+    public int _maxDepth = -1;
     public float _meanDepth;
 
-    public int _minLeaves = 0;
-    public int _maxLeaves = 0;
+    public int _minLeaves = -1;
+    public int _maxLeaves = -1;
     public float _meanLeaves;
 
     public int _minIsolated = -1;
@@ -31,12 +34,11 @@ public class IsolationTreeStats {
 
     public void updateBy(IsolationTree tree) {
         if (tree == null) return;
+        if (_minDepth == -1 || _minDepth > tree.getDepth()) _minDepth = tree.getDepth();
+        if (_maxDepth == -1 || _maxDepth < tree.getDepth()) _maxDepth = tree.getDepth();
 
-        if (_minDepth == 0 || _minDepth > tree.getDepth()) _minDepth = tree.getDepth();
-        if (_maxDepth == 0 || _maxDepth < tree.getDepth()) _maxDepth = tree.getDepth();
-
-        if (_minLeaves == 0 || _minLeaves > tree.getLeaves()) _minLeaves = tree.getLeaves();
-        if (_maxLeaves == 0 || _maxLeaves < tree.getLeaves()) _maxLeaves = tree.getLeaves();
+        if (_minLeaves == -1 || _minLeaves > tree.getLeaves()) _minLeaves = tree.getLeaves();
+        if (_maxLeaves == -1 || _maxLeaves < tree.getLeaves()) _maxLeaves = tree.getLeaves();
 
         if (_minIsolated == -1 || _minIsolated > tree.getIsolatedPoints()) _minIsolated = tree.getIsolatedPoints();
         if (_maxIsolated == -1 || _maxIsolated < tree.getIsolatedPoints()) _maxIsolated = tree.getIsolatedPoints();
