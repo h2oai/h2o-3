@@ -8,7 +8,7 @@ import java.util.Properties;
 
 public class SecurityUtils {
 
-    private static SecureRandom RANDOM = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom();
     private static final String AB = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     private final static String[] keyToolCandidates = new String[]{
@@ -62,9 +62,9 @@ public class SecurityUtils {
             }
         }
 
-        // Unsuported JRE/JDK
-        throw new IllegalStateException("This version of Java is not supported. " +
-                "Please use Oracle/OpenJDK/IBM JDK version 6/7/8 or later");
+        // Unsupported JRE/JDK
+        throw new IllegalStateException("Your Java version doesn't support generating keystore. " +
+                "Please use Oracle/OpenJDK version 8 or later.");
     }
 
     public static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
