@@ -4,12 +4,12 @@ import com.google.gson.JsonObject;
 import hex.ModelMetricsSupervised;
 import hex.MultinomialAucType;
 import hex.genmodel.IMetricBuilder;
-import hex.genmodel.algos.gam.GamMojoModel;
+import hex.genmodel.algos.gam.GamMojoModelBase;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
 import hex.glm.GLMModel;
 
-public class GAMMetricBuilderFactory extends ModelMetricsSupervised.SupervisedMetricBuilderFactory<GAMModel, GamMojoModel> {
+public class GAMMetricBuilderFactory extends ModelMetricsSupervised.SupervisedMetricBuilderFactory<GAMModel, GamMojoModelBase> {
 
     public static class GAMMetricExtraInfo {
         public double[] ymu;
@@ -25,7 +25,7 @@ public class GAMMetricBuilderFactory extends ModelMetricsSupervised.SupervisedMe
     }
     
     @Override
-    public IMetricBuilder createBuilder(GamMojoModel mojoModel, JsonObject extraInfo) {
+    public IMetricBuilder createBuilder(GamMojoModelBase mojoModel, JsonObject extraInfo) {
         if (extraInfo == null) {
             throw new RuntimeException("The mojo model doesn't support calculation of model metrics without H2O runtime, since extra info is missing.");
         }
