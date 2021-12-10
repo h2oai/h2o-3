@@ -345,6 +345,13 @@ def call(final pipelineContext) {
       imageSpecifier: "python-2.7-jdk-16"
     ],
     [
+      // SecurityUtils won't run on Java 16 see PUBDEV-8468 for details, left here as a reminder
+      stageName: 'Java 16 JUnit (SecurityUtils-PUBDEV-8468)', target: 'test-junit-security-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-16"
+    ],
+    [
       stageName: 'Java 17 JUnit', target: 'test-junit-17-jenkins', pythonVersion: '2.7', javaVersion: 17,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
