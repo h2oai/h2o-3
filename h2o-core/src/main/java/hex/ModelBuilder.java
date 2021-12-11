@@ -149,7 +149,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               B mb = (B) prototype.clone();
               mb._job = job;
               mb._result = result;
-              mb.setParams(prototype._parms);
+              mb.setParams(prototype._parms.clone());
               return mb;
             })
             .orElseThrow(() -> {
@@ -187,7 +187,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   
   public void setParams(P parms) {
     _parms = parms;
-    _input_parms = (P)_parms.clone();
+    _input_parms = (P)parms.clone();
   }
 
   /** Training frame: derived from the parameter's training frame, excluding
