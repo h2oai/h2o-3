@@ -778,6 +778,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
       cv_mb._desc = "Cross-Validation model " + (i + 1) + " / " + N;
+      cv_mb.setParams(cv_mb._parms);
 
       // Error-check all the cross-validation Builders before launching any
       cv_mb.init(false);

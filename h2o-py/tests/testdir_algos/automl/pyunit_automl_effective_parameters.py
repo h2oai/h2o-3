@@ -82,6 +82,6 @@ def test_actual_stopping_criteria_propagated_to_models():
 
     
 pu.run_tests([
-    # test_actual_default_input_stopping_rounds,
+    test_actual_default_input_stopping_rounds,
     test_actual_stopping_criteria_propagated_to_models
 ])
