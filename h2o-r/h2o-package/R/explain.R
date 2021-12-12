@@ -36,7 +36,7 @@ with_no_h2o_progress <- function(expr) {
   known_algos <- c("anovaglm", "deeplearning", "drf", "glm", "gam", "modelselection", "gbm", "naivebayes", "stackedensemble",
                    "rulefit", "xgboost", "xrt")
   if (is.character(model_or_model_id)) {
-    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|MaxRGLM|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
+    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|ModelSelection|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
                      "\\L\\1", model_or_model_id, perl = TRUE)
     if (algorithm == "xrt" && !treat_xrt_as_algorithm)
       algorithm <- "drf"

@@ -29,13 +29,14 @@ h2o.get_best_model_predictors<-function(model) {
 
 doc = dict(
     preamble="""
-H2O MaxRGLM is used to build test best model with one predictor, two predictors, ... up to max_predictor_number 
-specified in the algorithm parameters.  The best model is the one with the highest R2 value.
+H2O ModelSelection is used to build the best model with one predictor, two predictors, ... up to max_predictor_number 
+specified in the algorithm parameters when mode=allsubsets.  The best model is the one with the highest R2 value.  When
+mode=maxr, the model returned is no longer guaranteed to have the best R2 value.
 """,
     examples="""
 library(h2o)
 h2o.init()
-# Run MaxRGLM of VOL ~ all predictors
+# Run ModelSelection of VOL ~ all predictors
 prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 prostate <- h2o.uploadFile(path = prostate_path)
 prostate$CAPSULE <- as.factor(prostate$CAPSULE)

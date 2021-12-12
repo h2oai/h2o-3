@@ -22,8 +22,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
     """
     Model Selection
 
-    H2O MaxRGLM is used to build test best model with one predictor, two predictors, ... up to max_predictor_number 
-    specified in the algorithm parameters.  The best model is the one with the highest R2 value.
+    H2O ModelSelection is used to build the best model with one predictor, two predictors, ... up to max_predictor_number 
+    specified in the algorithm parameters when mode=allsubsets.  The best model is the one with the highest R2 value.  When
+    mode=maxr, the model returned is no longer guaranteed to have the best R2 value.
     """
 
     algo = "modelselection"
