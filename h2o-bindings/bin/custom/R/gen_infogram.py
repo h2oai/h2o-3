@@ -142,7 +142,7 @@ doc = dict(
 H2O Infogram
 
 The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables 
-that uniquely and safely drive the response, in supervised learning problems. The infogram can significantly cut down the number of predictors needed to build 
+that uniquely and safely drive the response, in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build 
 a model by identifying only the most valuable, admissible features. When protected variables such as race or gender are present in the data, the admissibility 
 of a variable is determined by a safety and relevancy index, and thus serves as a diagnostic tool for fairness. The safety of each feature can be quantified and 
 variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable, given the reduced 
