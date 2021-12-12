@@ -5,7 +5,7 @@ We introduce some new concepts and tools to aid the design of *admissible learni
 
 Admissible ML introduces two methodological tools: Infogram and L-features. 
 
-- Information diagram (or infogram) is a new graphical feature-exploration method to facilitate the development of admissible ML methods. 
+- Infogram ("information diagram") is a new graphical feature-exploration method to facilitate the development of admissible machine learning methods. 
 - In order to mitigate unfairness, we introduce the concept of L-features, which offers ways to systematically discover the hidden problematic proxy features from a dataset. 
 
 
@@ -45,7 +45,6 @@ The interface is designed to be simple and aligned with the standard modeling in
         # Generate and plot the infogram
         ig <- h2o.infogram(x = x, y = y, training_frame = train)
         plot(ig)
-
 
    .. code-tab:: python
 
@@ -146,8 +145,6 @@ Along with the demographic variables that are included in this dataset, there's 
         ig <- h2o.infogram(y = y, training_frame = train, protected_columns = pcols)
         plot(ig)
 
-
-
    .. code-tab:: python
 
         import h2o
@@ -174,7 +171,7 @@ Along with the demographic variables that are included in this dataset, there's 
         ig.plot()
 
 
-Here's the infogram showing only `PAY_0` and `PAY_2` are the only admissible attributes.
+Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admissible attributes.  Most of the bill or payment features are either redundant or redudant and unsafe.
 
 .. figure:: images/infogram_fair_credit.png
    :alt: H2O Fair Infogram
