@@ -92,11 +92,7 @@ Infogram Output
 Infogram Plot
 ~~~~~~~~~~~~~
 
-The infogram function produces a visual guide to admisibility of the features.  The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.  
-
-
-Core Infogram
-'''''''''''''
+The infogram function produces a visual guide to admisibility of the features.  The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.  Here's an example of the Core Infogram for the iris dataset.
 
 .. figure:: images/infogram_core_iris.png
    :alt: H2O Core Infogram
@@ -104,19 +100,8 @@ Core Infogram
    :align: center
 
 
-Fair Infogram
-'''''''''''''
-
-.. figure:: images/infogram_fair_credit.png
-   :alt: H2O Fair Infogram
-   :scale: 80%
-   :align: center
-
-
-
 Infogram Data 
 ~~~~~~~~~~~~~
-
 
 The infogram function produces and object of type ``H2OInfogram``, which contains several data elements and the plot object.  The most important objects are the following:
 
@@ -132,9 +117,9 @@ The R and Python code below is the quickest way to get started.
 
 Here's an example showing basic usage of the ``h2o.infogram()`` function in *R* and the ``H2OInfogram()`` method in *Python*.  Keep in mind that this code should be run in an environment that can support plots. 
 
-This example below uses a `UCI Credit` <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status (one row per customer).  This is a binary classification problem, aimed to estimate the probabilty of default in order to identify "credible or not credible" customers.
+This example below uses a `UCI Credit <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status.  This is a binary classification problem, aimed to estimate the probabilty of default in order to identify "credible or not credible" customers.
 
-Along with the demographic variables that are included in this dataset, there's a number of payment history variables, includeing previous bill values and payment values.  On the surface, you may assume that payment history could not be correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  This is Example 9 from the [Admissble ML](https://arxiv.org/abs/2108.07380) paper.
+Along with the demographic variables that are included in this dataset, there's a number of payment history variables, including previous bill and payment amounts.  On the surface, you may assume that payment history is not correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  Therefore, even if you remove the protected variables during training, the resulting model will still be desicrimatory if any non-admissible bill/payment variables are included.  This is Example 9 from the `Admissble ML <https://arxiv.org/abs/2108.07380>`__ paper.
 
 
 .. tabs::
@@ -188,6 +173,13 @@ Along with the demographic variables that are included in this dataset, there's 
         ig.train(y=y, x=x, training_frame=train, protected_columns=pcols)
         ig.plot()
 
+
+Here's the infogram showing only `PAY_0` and `PAY_2` are the only admissible attributes.
+
+.. figure:: images/infogram_fair_credit.png
+   :alt: H2O Fair Infogram
+   :scale: 80%
+   :align: center
 
 
 Glossary
