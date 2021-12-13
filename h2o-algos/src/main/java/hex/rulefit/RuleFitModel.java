@@ -69,7 +69,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         public boolean _remove_duplicates = true;
         
         // lambda for lasso
-        public double[] lambda;
+        public double[] _lambda;
         
 
         public void validate(RuleFit rfit) {
