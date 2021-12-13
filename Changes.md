@@ -19,7 +19,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index
 - [[PUBDEV-8383]](https://h2oai.atlassian.net/browse/PUBDEV-8383) - Consolidated Rulefit rules to remove unnecessary splits.
 - [[PUBDEV-8212]](https://h2oai.atlassian.net/browse/PUBDEV-8212) -  Improved the efficiency of job polling in AutoML.
 - [[PUBDEV-8176]](https://h2oai.atlassian.net/browse/PUBDEV-8176) - Deduplicated Rulefit rules in post-processing step.
-- Upgraded to log4j 2.15.0 to address vulnerability CVE-2021-44228.
 
 #### New Feature
 
@@ -36,6 +35,9 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index
 - [[PUBDEV-8432]](https://h2oai.atlassian.net/browse/PUBDEV-8432) -  Updated MaxRGLM examples to use new functions `coef()`, `coef_norm()`, and `result()`.
 - [[PUBDEV-8424]](https://h2oai.atlassian.net/browse/PUBDEV-8424) - Added examples in R/Python on how to get reproducibility information.
 - [[PUBDEV-8361]](https://h2oai.atlassian.net/browse/PUBDEV-8361) - Fixed local build warnings for Python Module documentation.
+
+#### Security
+- Upgraded to log4j 2.15.0 to address vulnerability CVE-2021-44228.
 
 
 ### Zizler (3.34.0.4) - 11/17/2021
