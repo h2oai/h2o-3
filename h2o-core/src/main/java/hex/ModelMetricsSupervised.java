@@ -73,7 +73,7 @@ public class ModelMetricsSupervised extends ModelMetrics {
         case Binomial:
           return new ModelMetricsBinomial.IndependentMetricBuilderBinomial(responseDomain, distributionFamily);
         case Multinomial:
-          Object aucTypeObject = attributes.getParameterValueByName("aucType");
+          Object aucTypeObject = attributes.getParameterValueByName("auc_type");
           MultinomialAucType aucType = MultinomialAucType.NONE;
           if (aucTypeObject != null) {
             aucType = MultinomialAucType.valueOf((String)aucTypeObject);
