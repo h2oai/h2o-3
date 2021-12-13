@@ -75,16 +75,14 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * De-serializes a {@link IMetricBuilder} serving for calculation of model metrics on testing dataset with H2O runtime.
    * This method requires h2o-core and h2o-algos on classpath.
    *
-   * @param reader An instance of {@link MojoReaderBackend} to read from existing MOJO. After the model is de-serialized,
-   *               the {@link MojoReaderBackend} instance is automatically closed if it implements {@link Closeable}.
+   * @param mojoModel De-serialized {@link MojoModel}
+   * @param reader An instance of {@link MojoReaderBackend} to read from existing MOJO. After the model is de-serialized. 
+   *               
    * @return De-serialized {@link IMetricBuilder}
    * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
    */
-  public static IMetricBuilder readMetricBuilder(MojoReaderBackend reader) throws IOException {
-    Map<String, Object> info = parseModelInfo(reader);
-    if (! info.containsKey("algorithm"))
-      throw new IllegalStateException("Unable to find information about the model's algorithm.");
-    String algo = String.valueOf(info.get("algorithm"));
+  public static IMetricBuilder readMetricBuilder(MojoModel mojoModel, MojoReaderBackend reader) throws IOException {
+    String algo = mojoModel._algoName;
     ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
     try {
       Class writerClass = Class.forName(mmr.getModelMojoReaderClassName());
@@ -95,8 +93,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
         throw new UnsupportedOperationException("Calculation of metrics without H2O runtime is not supported.");
       }
       JsonObject extraInfo = ModelJsonReader.parseModelJson(reader, "experimental/metricBuilderExtraInfo.json");
-      MojoModel model = readFrom(reader, true);
-      return factory.createBuilder(model, extraInfo);
+      return factory.createBuilder(mojoModel, extraInfo);
     } catch(Exception e) {
       throw new RuntimeException(e);
     }

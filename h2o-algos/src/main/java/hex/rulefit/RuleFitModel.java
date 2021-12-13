@@ -116,7 +116,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
             case Multinomial:
                 return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain, _parms._auc_type);
             case Regression:
-                return new ModelMetricsRegression.MetricBuilderRegression();
+                Distribution distribution =  DistributionFactory.getDistribution(_parms);
+                return new ModelMetricsRegression.MetricBuilderRegression(distribution);
             default:
                 throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
         }
