@@ -2,6 +2,41 @@
 
 ## H2O
 
+### Zizler (3.34.0.5) - 12/13/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index.html</a>
+
+#### Bug
+- [[PUBDEV-8448]](https://h2oai.atlassian.net/browse/PUBDEV-8448) - Fixed permutation variable importance to correctly work with weights.
+- [[PUBDEV-8426]](https://h2oai.atlassian.net/browse/PUBDEV-8426) - Fixed data removal issue in GAM caused by fitting two different models on the same DataFrame.
+
+#### Improvement
+- [[PUBDEV-8427]](https://h2oai.atlassian.net/browse/PUBDEV-8427) - Added `coef()` and `coef_norm()` functions to MaxRGLM.
+- [[PUBDEV-8408]](https://h2oai.atlassian.net/browse/PUBDEV-8408) - Added ability that labels observations that match rules in Rulefit.
+- [[PUBDEV-8397]](https://h2oai.atlassian.net/browse/PUBDEV-8397) - Updated parquet parser to handle dates allowing H2O `import_file()` to import date columns from Spark DataFrame.
+- [[PUBDEV-8383]](https://h2oai.atlassian.net/browse/PUBDEV-8383) - Consolidated Rulefit rules to remove unnecessary splits.
+- [[PUBDEV-8212]](https://h2oai.atlassian.net/browse/PUBDEV-8212) -  Improved the efficiency of job polling in AutoML.
+- [[PUBDEV-8176]](https://h2oai.atlassian.net/browse/PUBDEV-8176) - Deduplicated Rulefit rules in post-processing step.
+
+#### New Feature
+- [[PUBDEV-8425]](https://h2oai.atlassian.net/browse/PUBDEV-8425) - Added option to mimic the “ActiveProcessorCount” for older JVMs.
+
+#### Task
+- [[PUBDEV-8445]](https://h2oai.atlassian.net/browse/PUBDEV-8445) - Fixed PValue Tweedie test failure.
+- [[PUBDEV-8433]](https://h2oai.atlassian.net/browse/PUBDEV-8433) - Added warning in GLRM for when users set `model_id` and `representation_name` to the same string to help avoid a collision of model and frame using the same key.
+- [[PUBDEV-8430]](https://h2oai.atlassian.net/browse/PUBDEV-8430) - Fixed rotterdam test failure.
+- [[PUBDEV-8429]](https://h2oai.atlassian.net/browse/PUBDEV-8429) - Shortened GLM pyunit tests.
+- [[PUBDEV-8423]](https://h2oai.atlassian.net/browse/PUBDEV-8423) - Shortened beta constraints test by removing profiling tests.
+- [[PUBDEV-8421]](https://h2oai.atlassian.net/browse/PUBDEV-8421) - Added `rank` and `ymu` model outputs to GLM.
+
+#### Docs
+- [[PUBDEV-8451]](https://h2oai.atlassian.net/browse/PUBDEV-8451) - Added link to the Change Log in the User Guide index.
+- [[PUBDEV-8443]](https://h2oai.atlassian.net/browse/PUBDEV-8443) - Updated parameter list for MaxRGLM and outlined that MaxRGLM only support regression.
+- [[PUBDEV-8432]](https://h2oai.atlassian.net/browse/PUBDEV-8432) -  Updated MaxRGLM examples to use new functions `coef()`, `coef_norm()`, and `result()`.
+- [[PUBDEV-8424]](https://h2oai.atlassian.net/browse/PUBDEV-8424) - Added examples in R/Python on how to get reproducibility information.
+- [[PUBDEV-8361]](https://h2oai.atlassian.net/browse/PUBDEV-8361) - Fixed local build warnings for Python Module documentation.
+
+
 ### Zizler (3.34.0.4) - 11/17/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/4/index.html</a>
