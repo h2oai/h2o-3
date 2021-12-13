@@ -127,24 +127,22 @@ public class ModelSelectionUtils {
      * @param predictorNames
      * @param foldColumn
      * @param currSubsetIndices
-     * @param excludePredInd predictor index that is not to be considered.
+     * @param validSubsets Lists containing only valid predictor indices to choose from
      * @return
      */
     public static Frame[] generateMaxRTrainingFrames(ModelSelectionModel.ModelSelectionParameters parms, 
                                                      String[] predictorNames, String foldColumn, 
-                                                     List<Integer> currSubsetIndices, int newPredPos, int excludePredInd) {
+                                                     List<Integer> currSubsetIndices, int newPredPos, List<Integer> validSubsets) {
         int predLength = predictorNames.length;
         List<Frame> trainFramesList = new ArrayList<>();
         List<Integer> changedSubset = new ArrayList<>(currSubsetIndices);
         changedSubset.add(newPredPos, -1);  // value irrelevant
         int[] predIndices = changedSubset.stream().mapToInt(Integer::intValue).toArray();
-        for (int index=0; index < predLength; index++) {
-            if (!currSubsetIndices.contains(index) && excludePredInd != index) {
-                predIndices[newPredPos] = index;
-                Frame trainFrame = generateOneFrame(predIndices, parms, predictorNames, foldColumn);
-                DKV.put(trainFrame);
-                trainFramesList.add(trainFrame);
-            }
+        for (int predIndex : validSubsets) {  // consider valid predictor indices only
+            predIndices[newPredPos] = predIndex;
+            Frame trainFrame = generateOneFrame(predIndices, parms, predictorNames, foldColumn);
+            DKV.put(trainFrame);
+            trainFramesList.add(trainFrame);
         }
         return trainFramesList.stream().toArray(Frame[]::new);
     }
@@ -270,5 +268,15 @@ public class ModelSelectionUtils {
                 coefUsed.add(coefName);
         }
         return coefUsed;
+    }
+    
+    public static void updateValidSubset(List<Integer> validSubset, List<Integer> originalSubset, 
+                                         List<Integer> currSubsetIndices) {
+        List<Integer> onlyInOriginal = new ArrayList<>(originalSubset);
+        onlyInOriginal.removeAll(currSubsetIndices);
+        List<Integer> onlyInCurr = new ArrayList<>(currSubsetIndices);
+        onlyInCurr.removeAll(originalSubset);
+        validSubset.addAll(onlyInOriginal);
+        validSubset.removeAll(onlyInCurr);
     }
 }

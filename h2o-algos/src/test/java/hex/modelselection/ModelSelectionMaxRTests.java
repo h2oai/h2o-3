@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
@@ -289,8 +290,10 @@ public class ModelSelectionMaxRTests extends TestUtil {
     public void assertCorrectReplacement(List<Integer> currSubset, List<String> coefNames, double bestR2,
                                          String[] bestR2Subset, boolean okToBeNull,
                                          ModelSelectionModel.ModelSelectionParameters parms) {
+        List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList()); 
+        validSubset.remove(currSubset);
         GLMModel bestR2Model = replacement(currSubset, coefNames, bestR2, parms, 0,
-                null, null);
+                null, validSubset,null);
         if (bestR2Model == null && okToBeNull) {
             return;
         }
@@ -329,7 +332,9 @@ public class ModelSelectionMaxRTests extends TestUtil {
         String[] bestR2Coeff = bestR2Coeffs[currSubsetIndices.size()-1];
         List<Integer> changedSubset = new ArrayList<>(currSubsetIndices);
         changedSubset.remove(newPredInd);
-        GLMModel bestR2Model = forwardStep(changedSubset, coefNames, newPredInd, -1, parms,
+        List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList());
+        validSubset.removeAll(changedSubset);
+        GLMModel bestR2Model = forwardStep(changedSubset, coefNames, newPredInd, validSubset, parms,
                 null, 0, null);
         String[] modelCoefNames = bestR2Model._output.coefficientNames();
         assertArrayEquals(bestR2Coeff, modelCoefNames);
