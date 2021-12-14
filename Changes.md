@@ -2,6 +2,14 @@
 
 ## H2O
 
+### Zizler (3.34.0.6) - 12/15/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/6/index.html</a>
+
+#### Security
+
+- Fixed CVE-2021-45046 log4j vulnerability.
+
 ### Zizler (3.34.0.5) - 12/13/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/5/index.html</a>
