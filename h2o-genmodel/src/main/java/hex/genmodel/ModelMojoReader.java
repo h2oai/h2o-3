@@ -82,7 +82,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
    */
   public static IMetricBuilder readMetricBuilder(MojoModel mojoModel, MojoReaderBackend reader) throws IOException {
-    String algo = mojoModel._algoName;
+    Map<String, Object> info = parseModelInfo(reader);
+    if (! info.containsKey("algorithm"))
+      throw new IllegalStateException("Unable to find information about the model's algorithm.");
+    String algo = String.valueOf(info.get("algorithm"));
     ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
     try {
       Class writerClass = Class.forName(mmr.getModelMojoReaderClassName());
