@@ -75,7 +75,7 @@ shadowJar {
   exclude 'devpay_products.properties'
   manifest {
     attributes 'Main-Class': 'water.H2OApp'
-    attributes 'Add-Opens': 'java.base/java.lang java.base/java.util java.base/java.lang.reflect java.base/sun.security.ssl'
+    attributes 'Add-Opens': 'java.base/java.lang java.base/java.util java.base/java.lang.reflect'
     attributes 'Multi-Release': 'true'
   }
   transform(com.github.jengelman.gradle.plugins.shadow.transformers.IncludeResourceTransformer.class) {

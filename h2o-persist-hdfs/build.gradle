@@ -17,6 +17,7 @@ dependencies {
     api("com.nimbusds:nimbus-jose-jwt:9.11.3")
 
     testImplementation project(":h2o-test-support")
+    testImplementation "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 
