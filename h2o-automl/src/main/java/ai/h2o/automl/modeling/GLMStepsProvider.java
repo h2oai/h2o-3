@@ -35,7 +35,7 @@ public class GLMStepsProvider
 
             public GLMParameters prepareModelParameters() {
                 GLMParameters params = new GLMParameters();
-                params._lambda_search = true;
+                params._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
                 params._family =
                         aml().getResponseColumn().isBinary() && !(aml().getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
                                 : aml().getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
@@ -55,12 +55,13 @@ public class GLMStepsProvider
 
 
         private final ModelingStep[] defaults = new GLMModelStep[] {
-                new GLMModelStep("def_1", aml()) {
+                new GLMModelStep("def_1", aml()) {},
+                new GLMModelStep("def_2", aml()) {
                     @Override
                     public GLMParameters prepareModelParameters() {
                         GLMParameters params = super.prepareModelParameters();
                         params._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
-                        params._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
+                        params._lambda_search = true;
                         return params;
                     }
                 },

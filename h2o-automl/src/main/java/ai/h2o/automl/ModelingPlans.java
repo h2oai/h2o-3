@@ -97,7 +97,8 @@ final class ModelingPlans {
                     new Step("lr_search", 6, DEFAULT_GRID_TRAINING_WEIGHT)
             ),
             new StepDefinition(Algo.GLM.name(), 
-                    new Step("def_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT)
+                    new Step("def_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT),
+                    new Step("def_2", 4, DEFAULT_GRID_TRAINING_WEIGHT) // giving a mini-grid weight due to alpha+lambda search 
             ),
             new StepDefinition(Algo.DRF.name(), 
                     new Step("def_1", 2, DEFAULT_MODEL_TRAINING_WEIGHT),
