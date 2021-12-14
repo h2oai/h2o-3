@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static hex.anovaglm.ANOVAGLMUtils.extractPredNames;
 import static hex.genmodel.utils.MathUtils.combinatorial;
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
 import static hex.glm.GLMModel.GLMParameters.Family.gaussian;
@@ -171,9 +170,9 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
         void buildMaxRModels(ModelSelectionModel model) {
             List<Integer> currSubsetIndices = new ArrayList<>();
             List<String> coefNames = new ArrayList<>(Arrays.asList(_predictorNames));
-            List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList());
+            List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size() - 1).boxed().collect(Collectors.toList());
             for (int predNum = 1; predNum <= _parms._max_predictor_number; predNum++) { // perform for each subset size
-                GLMModel bestR2Model = forwardStep(currSubsetIndices, coefNames, predNum-1, validSubset, 
+                GLMModel bestR2Model = forwardStep(currSubsetIndices, coefNames, predNum - 1, validSubset,
                         _parms, _foldColumn, _glmNFolds, _foldAssignment); // forward step
                 validSubset.removeAll(currSubsetIndices);
                 _job.update(predNum, "Finished building all models with "+predNum+" predictors.");
@@ -185,7 +184,7 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
                 }
                 Scope.untrack(bestR2Model.getKey());
                 DKV.put(bestR2Model);
-                model._output.updateBestModels(bestR2Model, predNum-1);
+                model._output.updateBestModels(bestR2Model, predNum - 1);
             }
         }
 
@@ -321,10 +320,13 @@ public class ModelSelection extends ModelBuilder<hex.modelselection.ModelSelecti
             for (int index = 0; index < currSubsetSize; index++) {  // go through all predictor position in subset
                 if (index != lastBestR2PosIndex) {
                     ArrayList<Integer> oneLessSubset = new ArrayList<>(currSubsetIndices);
+                    int predIndexRemoved = oneLessSubset.remove(index);
+                    validSubset.add(predIndexRemoved);
                     bestR2Models[index] = forwardStep(oneLessSubset, coefNames, index, validSubset, parms,
                             foldColumn, glmNFolds, foldAssignment);
                     subsetsCombo[index] = oneLessSubset.stream().mapToInt(i->i).toArray();
                     r2PredPosIndex[index] = index;
+                    validSubset.remove(validSubset.indexOf(predIndexRemoved));
                 }
             }
             int bestR2ModelIndex = findBestR2Model(bestR2, bestR2Models);

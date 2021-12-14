@@ -125,32 +125,36 @@ public class ModelSelectionMaxRTests extends TestUtil {
             parms._response_column = "AGE";
             parms._train = trainF._key;
             List<Integer> currSubsetIndices = new ArrayList<>();
+            List<Integer> validSubset = IntStream.rangeClosed(0, 6).boxed().collect(Collectors.toList());
             String[] predictorNames = new String[]{"CAPSULE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"};
             Frame[] trainingFrames1 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 0,-1); // trainingFrames with 1 predictors only
+                    currSubsetIndices, 0,validSubset); // trainingFrames with 1 predictors only
             removeTrainingFrames(trainingFrames1);
             String[][] correctTrainCols1 = new String[][]{{"CAPSULE", "AGE"}, {"RACE", "AGE"},{"DPROS", "AGE"},
                     {"DCAPS", "AGE"},{"PSA", "AGE"},{"VOL", "AGE"},{"GLEASON", "AGE"}};
             assertCorrectTrainingFrames(trainingFrames1, correctTrainCols1);
             currSubsetIndices.add(0);
+            validSubset.removeAll(currSubsetIndices);
             Frame[] trainingFrames2 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 1,-1); // trainingFrames with 2 predictors only
+                    currSubsetIndices, 1,validSubset); // trainingFrames with 2 predictors only
             removeTrainingFrames(trainingFrames2);
             String[][] correctTrainCols2 = new String[][]{{"CAPSULE", "RACE", "AGE"}, {"CAPSULE", "DPROS", "AGE"}, 
                     {"CAPSULE", "DCAPS", "AGE"}, {"CAPSULE", "PSA", "AGE"}, {"CAPSULE", "VOL", "AGE"}, 
                     {"CAPSULE", "GLEASON", "AGE"}};
             assertCorrectTrainingFrames(trainingFrames2, correctTrainCols2);
             currSubsetIndices.add(4);
+            validSubset.removeAll(currSubsetIndices);
             String[][] correctTrainCols3 = new String[][]{{"CAPSULE", "PSA", "RACE", "AGE"}, 
                     {"CAPSULE", "PSA", "DPROS", "AGE"}, {"CAPSULE", "PSA", "DCAPS", "AGE"}, 
                     {"CAPSULE", "PSA", "VOL", "AGE"}, {"CAPSULE", "PSA", "GLEASON", "AGE"}};
             Frame[] trainingFrames3 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 2,-1); // trainingFrames with 3 predictors only
+                    currSubsetIndices, 2,validSubset); // trainingFrames with 3 predictors only
             removeTrainingFrames(trainingFrames3);
             assertCorrectTrainingFrames(trainingFrames3, correctTrainCols3);
             currSubsetIndices.add(6);
+            validSubset.removeAll(currSubsetIndices);
             Frame[] trainingFrames4 = generateMaxRTrainingFrames(parms, predictorNames, null,
-                    currSubsetIndices, 2, -1); // trainingFrames with 3 predictors only
+                    currSubsetIndices, 2, validSubset); // trainingFrames with 3 predictors only
             removeTrainingFrames(trainingFrames4);
             String[][] correctTrainCols4 = new String[][]{{"CAPSULE", "PSA", "GLEASON", "RACE", "AGE"}, 
                     {"CAPSULE", "PSA", "GLEASON", "DPROS", "AGE"}, {"CAPSULE", "PSA", "GLEASON", "DCAPS", "AGE"}, 
@@ -291,7 +295,7 @@ public class ModelSelectionMaxRTests extends TestUtil {
                                          String[] bestR2Subset, boolean okToBeNull,
                                          ModelSelectionModel.ModelSelectionParameters parms) {
         List<Integer> validSubset = IntStream.rangeClosed(0, coefNames.size()-1).boxed().collect(Collectors.toList()); 
-        validSubset.remove(currSubset);
+        validSubset.removeAll(currSubset);
         GLMModel bestR2Model = replacement(currSubset, coefNames, bestR2, parms, 0,
                 null, validSubset,null);
         if (bestR2Model == null && okToBeNull) {
@@ -343,8 +347,9 @@ public class ModelSelectionMaxRTests extends TestUtil {
     public void assertCorrectTrainingFrames(Frame[] trainingFrames, String[][] correctTrainCols) {
         int numFrame = trainingFrames.length;
         for (int frameInd = 0; frameInd < numFrame; frameInd++) {
-            String[] coefNames = trainingFrames[frameInd].names();
-            assertArrayEquals(correctTrainCols[frameInd], coefNames);
+            String[] coefNames = sortStringArray(trainingFrames[frameInd].names());
+            String[] expectedNames = sortStringArray(correctTrainCols[frameInd]);
+            assertArrayEquals(expectedNames, coefNames);
         }
     }
 }

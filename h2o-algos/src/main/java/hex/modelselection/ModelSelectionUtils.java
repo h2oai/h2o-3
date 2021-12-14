@@ -133,7 +133,6 @@ public class ModelSelectionUtils {
     public static Frame[] generateMaxRTrainingFrames(ModelSelectionModel.ModelSelectionParameters parms, 
                                                      String[] predictorNames, String foldColumn, 
                                                      List<Integer> currSubsetIndices, int newPredPos, List<Integer> validSubsets) {
-        int predLength = predictorNames.length;
         List<Frame> trainFramesList = new ArrayList<>();
         List<Integer> changedSubset = new ArrayList<>(currSubsetIndices);
         changedSubset.add(newPredPos, -1);  // value irrelevant
