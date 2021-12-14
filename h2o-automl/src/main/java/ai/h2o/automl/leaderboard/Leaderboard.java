@@ -3,11 +3,17 @@ package ai.h2o.automl.leaderboard;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.utils.DKVUtils;
-import hex.*;
+import hex.Model;
+import hex.ModelContainer;
+import hex.ModelMetrics;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.*;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
+import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.TwoDimTable;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -29,7 +35,7 @@ import java.util.stream.Stream;
  * <p>
  * TODO: make this robust against removal of models from the DKV.
  */
-public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer<Model>{
+public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer<Model> {
 
   /**
    * @param project_name
@@ -84,6 +90,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     DKV.put(leaderboard);
     return leaderboard;
   }
+  
+  private static final Logger log = LoggerFactory.getLogger(Leaderboard.class);
 
   /**
    * Identifier for models that should be grouped together in the leaderboard
@@ -535,7 +543,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
         sortedModelKeys = ModelMetrics.sortModelsByMetric(leaderboardFrame, _sort_metric, sortDecreasing, Arrays.asList(modelKeys));
       }
     } catch (H2OIllegalArgumentException e) {
-      Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
+      log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
       throw e;
     }
     return sortedModelKeys.toArray(new Key[0]);
@@ -571,7 +579,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    */
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
-    Log.debug("Cleaning up leaderboard from models "+Arrays.toString(_model_keys));
+    log.debug("Cleaning up leaderboard from models "+Arrays.toString(_model_keys));
     if (cascade) {
       for (Key<Model> m : _model_keys) {
         Keyed.remove(m, fs, true);

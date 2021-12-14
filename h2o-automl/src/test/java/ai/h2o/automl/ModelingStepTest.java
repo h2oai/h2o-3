@@ -15,6 +15,7 @@ import water.DKV;
 import water.Job;
 import water.Key;
 import water.Keyed;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
@@ -80,13 +81,13 @@ public class ModelingStepTest {
         assertEquals(aml.getBuildSpec().build_control.stopping_criteria.stopping_metric(), model._parms._stopping_metric);
     }
 
-    @Test public void testFailingModelStep() {
+    @Test(expected = H2OIllegalArgumentException.class)
+    public void test_failing_ModelStep_propagates_error() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_model_failing".equals(s._id)).findFirst().get();
-        Job<DummyModel> job = step.run();
-        assertNull(job);
+        step.run();
     }
 
-    @Test public void testGridStep() {
+    @Test public void test_GridStep() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_grid".equals(s._id)).findFirst().get();
         Job<Grid> job = step.run();
         Grid grid = job.get(); toDelete.add(grid);
@@ -99,7 +100,7 @@ public class ModelingStepTest {
         }
     }
 
-    @Test public void testSelectionStepSingleModel() {
+    @Test public void test_SelectionStep_with_single_model() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_exploitation_single".equals(s._id)).findFirst().get();
         Job<Models> job = step.run();
         Models models = job.get(); toDelete.add(models);
@@ -112,7 +113,7 @@ public class ModelingStepTest {
         }
     }
 
-    @Test public void testSelectionStepMultipleModels() {
+    @Test public void test_SelectionStep_with_multiple_models() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_exploitation_multi".equals(s._id)).findFirst().get();
         Job<Models> job = step.run();
         Models models = job.get(); toDelete.add(models);
@@ -125,14 +126,14 @@ public class ModelingStepTest {
         }
     }
     
-    public void testDynamicStepNoSubStepsNoMain() {
+    public void test_DynamicStep_with_no_substeps_and_no_main_step() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_dynamic_nothing".equals(s._id)).findFirst().get();
         assertFalse(step.canRun());
         assertNull(step.run());
         assertFalse(step.iterateSubSteps().hasNext());
     }
     
-    @Test public void testDynamicStepWithSubStepsNoMain() {
+    @Test public void test_DynamicStep_with_substeps_but_no_main_step() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_dynamic_no_main".equals(s._id)).findFirst().get();
         assertFalse(step.canRun());
         assertNull(step.run());
@@ -152,7 +153,7 @@ public class ModelingStepTest {
         }
     }
     
-    @Test public void testDynamicStepWithSubStepsWithMain() {
+    @Test public void test_DynamicStep_with_substeps_and_main_step() {
         ModelingStep step = Arrays.stream(aml.getExecutionPlan()).filter(s -> "dummy_dynamic_substeps_and_main".equals(s._id)).findFirst().get();
         assertTrue(step.canRun());
         assertTrue(step.iterateSubSteps().hasNext());

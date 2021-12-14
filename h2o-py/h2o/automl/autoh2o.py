@@ -4,8 +4,10 @@ import functools as ft
 import h2o
 from h2o.utils.typechecks import assert_is_type
 from ._base import _fetch_state, _fetch_leaderboard
-from ._estimator import H2OAutoML  # keep this to link the estimator for backwards compatibility in module imports
+from ._estimator import H2OAutoML
 from ._output import H2OAutoMLOutput
+
+__all__ = ['H2OAutoML', 'get_automl', 'get_leaderboard']
 
 
 def get_automl(project_name):

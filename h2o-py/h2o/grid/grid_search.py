@@ -11,7 +11,7 @@ import h2o
 from h2o.base import Keyed
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OValueError, H2OJobCancelled
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
@@ -411,16 +411,20 @@ class H2OGridSearch(h2o_meta(Keyed)):
         if self._future:
             self._job = grid
         else:
-            self._handle_build_finish(grid, rest_ver)
+            try:
+                grid.poll()
+                self._handle_build_finish(grid, rest_ver)
+            except H2OJobCancelled:
+                self._handle_build_finish(grid, rest_ver)
+                raise 
 
     def _handle_build_finish(self, grid, rest_ver=None):
-        grid.poll()
-        grid_json = h2o.api("GET /99/Grids/%s" % (grid.dest_key))
+        grid_json = h2o.api("GET /99/Grids/%s" % grid.dest_key)
         failure_messages_stacks = ""
         error_index = 0
         if len(grid_json["warning_details"]) > 0:
             for w_message in grid_json["warning_details"]:
-                warnings.warn(w_message);
+                warnings.warn(w_message)
         if len(grid_json["failure_details"]) > 0:
             print("Errors/Warnings building gridsearch model\n")
             # will raise error if no grid model is returned, store error messages here
