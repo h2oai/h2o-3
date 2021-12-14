@@ -89,6 +89,9 @@ try {
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
 
+                                # FIXME: Version of docutils should be installed in install_python_version to fix PUBDEV-8327 issue
+                                pip install docutils==0.16
+
                                 mkdir -p ${env.BUILD_NUMBER_DIR}
                                 cd ${env.BUILD_NUMBER_DIR}
 
