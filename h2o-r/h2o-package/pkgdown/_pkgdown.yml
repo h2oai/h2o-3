@@ -375,6 +375,7 @@ reference:
       - ModelAccessors
       - names.H2OFrame
       - Ops.H2OFrame
+      - plot.H2OInfogram      
       - plot.H2OModel 
       - plot.H2OTabulate
       - predict.H2OAutoML 
