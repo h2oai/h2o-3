@@ -17,6 +17,7 @@ import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -103,6 +104,24 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             }
         }
         return builder.trainModelOnH2ONode();
+    }
+
+
+    public boolean supportsDistribution(DistributionFamily distributionFamily) {
+        throw new UnsupportedOperationException();
+    }
+
+    protected void setDistributionParameters(Model.Parameters parms) {
+        if (aml().getDistributionFamily().equals(DistributionFamily.custom))
+            parms._custom_distribution_func = aml().getBuildSpec().build_control.custom_distribution_func;
+        if (aml().getDistributionFamily().equals(DistributionFamily.huber))
+            parms._huber_alpha = aml().getBuildSpec().build_control.huber_alpha;
+        if (aml().getDistributionFamily().equals(DistributionFamily.tweedie))
+            parms._tweedie_power = aml().getBuildSpec().build_control.tweedie_power;
+        if (aml().getDistributionFamily().equals(DistributionFamily.quantile))
+            parms._quantile_alpha = aml().getBuildSpec().build_control.quantile_alpha;
+
+        parms.setDistributionFamily(aml().getDistributionFamily());
     }
 
     private transient AutoML _aml;
@@ -497,6 +516,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             return startModel(key, parms);
         }
+
+
+        @Override
+        public boolean supportsDistribution(DistributionFamily distributionFamily) {
+            return Arrays.stream(prepareModelParameters().supportedDistributions())
+                    .anyMatch(dist -> dist.equals(distributionFamily));
+        }
     }
 
     /**
@@ -567,16 +593,16 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
+            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
             setSearchCriteria(searchCriteria, baseParms);
 
             if (null == key) key = makeKey(_provider, true);
             aml().trackKeys(key);
 
-            Log.debug("Hyperparameter search: "+_provider+", time remaining (ms): "+aml().timeRemainingMs());
+            Log.debug("Hyperparameter search: " + _provider + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
-                    ? "No time limitation for "+key
-                    : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
+                    ? "No time limitation for " + key
+                    : "Time assigned for " + key + ": " + searchCriteria.max_runtime_secs() + "s");
             return startSearch(
                     key,
                     baseParms,
@@ -606,6 +632,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     : Math.min(searchCriteria.max_models(), maxAssignedModels));
 
             searchCriteria.set_stopping_rounds(baseParms._stopping_rounds * GRID_STOPPING_ROUND_FACTOR);
+        }
+
+        @Override
+        public boolean supportsDistribution(DistributionFamily distributionFamily) {
+            return Arrays.stream(prepareModelParameters().supportedDistributions())
+                    .anyMatch(dist -> dist.equals(distributionFamily));
         }
     }
 
@@ -783,6 +815,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 }
             }, job._work, job._max_runtime_msecs);
         }
+
+        @Override
+        public boolean supportsDistribution(DistributionFamily distributionFamily) {
+            return true;
+        }
     }
 
 
@@ -860,6 +897,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         protected abstract Collection<ModelingStep> prepareModelingSteps();
+
+        @Override
+        public boolean supportsDistribution(DistributionFamily distributionFamily) {
+            return true;
+        }
     }
 
 }

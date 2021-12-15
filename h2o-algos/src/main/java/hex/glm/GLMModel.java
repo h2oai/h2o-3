@@ -4,6 +4,7 @@ import hex.*;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.util.EffectiveParametersUtils;
@@ -27,6 +28,8 @@ import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.ComputationState.expandToFullArray;
 import static hex.schemas.GLMModelV3.GLMModelOutputV3.calculateVarimpMultinomial;
 import static hex.schemas.GLMModelV3.calculateVarimpBase;
+import static hex.util.DistributionUtils.distributionToFamily;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -732,7 +735,44 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         return new DataInfo.MeanImputer();
       }
     }
-    
+
+    @Override
+    public void setDistributionFamily(DistributionFamily distributionFamily) {
+      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily)))
+        _family = distributionToFamily(distributionFamily);
+    }
+
+    @Override
+    public DistributionFamily getDistributionFamily() {
+      return familyToDistribution(_family);
+    }
+
+    @Override
+    public DistributionFamily[] supportedDistributions() {
+      DistributionFamily[] distributionFamilies = new DistributionFamily[]{
+              DistributionFamily.AUTO,
+              DistributionFamily.bernoulli,
+              DistributionFamily.quasibinomial,
+              DistributionFamily.fractionalbinomial,
+              DistributionFamily.multinomial,
+              DistributionFamily.gaussian,
+              DistributionFamily.poisson,
+              DistributionFamily.gamma,
+              //DistributionFamily.laplace,
+              DistributionFamily.negativebinomial,
+              //DistributionFamily.quantile,
+              //DistributionFamily.huber,
+              //DistributionFamily.modified_huber,
+              DistributionFamily.tweedie,
+              DistributionFamily.ordinal,
+              //DistributionFamily.custom,
+      };
+      if (_lambda_search)
+          distributionFamilies = Arrays.stream(distributionFamilies)
+                  .filter(df -> !df.equals(DistributionFamily.ordinal))
+                  .toArray(DistributionFamily[]::new);
+      return distributionFamilies;
+    }
   } // GLMParameters
 
   public static class GLMWeights {

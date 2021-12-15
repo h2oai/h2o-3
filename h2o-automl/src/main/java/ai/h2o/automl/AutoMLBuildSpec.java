@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.utils.DistributionFamily;
 import hex.grid.HyperSpaceSearchCriteria;
 import water.H2O;
 import water.Iced;
@@ -44,6 +45,13 @@ public class AutoMLBuildSpec extends Iced {
     public float max_after_balance_size = 5.0f;
 
     public int nfolds = -1;
+
+    public DistributionFamily distribution = DistributionFamily.AUTO;
+    public String custom_distribution_func;
+    public double huber_alpha;
+    public double tweedie_power;
+    public double quantile_alpha;
+
     public boolean keep_cross_validation_predictions = false;
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;

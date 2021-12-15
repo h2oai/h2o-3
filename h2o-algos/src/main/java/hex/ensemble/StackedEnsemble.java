@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLMModel;
 import hex.grid.Grid;
 import jsr166y.CountedCompleter;
 import water.DKV;
@@ -19,6 +20,13 @@ import water.util.Log;
 
 import java.util.*;
 import java.util.stream.Stream;
+
+import water.util.ArrayUtils;
+import water.util.Log;
+
+import static hex.genmodel.utils.DistributionFamily.*;
+import static hex.util.DistributionUtils.familyToDistribution;
+
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -90,6 +98,25 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override
   public boolean haveMojo() {
     return true;
+  }
+
+  @Override
+  public int nclasses() {
+    DistributionFamily distribution;
+    if (_parms._metalearner_parameters != null) {
+      if (_parms._metalearner_parameters instanceof GLMModel.GLMParameters)
+        distribution = familyToDistribution(((GLMModel.GLMParameters) _parms._metalearner_parameters)._family);
+      else
+        distribution = _parms._metalearner_parameters._distribution; // quasibinomial
+
+      if (multinomial.equals(distribution) || ordinal.equals(distribution) || AUTO.equals(distribution))
+        return _nclass;
+      if (bernoulli.equals(distribution) || quasibinomial.equals(distribution)
+              || fractionalbinomial.equals(distribution))
+        return 2;
+      return 1;
+    }
+    return super.nclasses();
   }
 
   @Override

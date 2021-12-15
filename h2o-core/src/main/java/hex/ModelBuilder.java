@@ -1501,7 +1501,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
-            if(_parms._distribution == DistributionFamily.quasibinomial){
+            if(_parms.getDistributionFamily() == DistributionFamily.quasibinomial){
               String[] quasiDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
               MRUtils.ClassDistQuasibinomial cdmt =
                       _weights != null ? new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response);

@@ -134,6 +134,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  max_runtime_secs=None,
                  max_runtime_secs_per_model=None,
                  max_models=None,
+                 distribution="AUTO",
                  stopping_metric="AUTO",
                  stopping_tolerance=None,
                  stopping_rounds=3,
@@ -287,6 +288,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
         self.project_name = project_name
         self.nfolds = nfolds
+        self.distribution = distribution
         self.balance_classes = balance_classes
         self.class_sampling_factors = class_sampling_factors
         self.max_after_balance_size = max_after_balance_size
@@ -404,11 +406,32 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     def __validate_frame(self, fr, name=None, required=False):
         return H2OFrame._validate(fr, name, required=required)
 
+    def __validate_distribution(self, distribution):
+        if is_type(distribution, str):
+            return distribution
+        if is_type(distribution, dict):
+            dist = distribution["distribution"]
+            ALLOWED_DISTRIBUTION_PARAMETERS = ('custom_distribution_func', 'huber_alpha',
+                                               'quantile_alpha', 'tweedie_power')
+            distribution = {k: v for k, v in distribution.items() if k in ALLOWED_DISTRIBUTION_PARAMETERS}
+            assert len(distribution) == 1, ("Distribution dictionary should contain distribution and a distribution "
+                "parameter. Allowed distribution parameters: \"" + '", "'.join(ALLOWED_DISTRIBUTION_PARAMETERS) + "\".")
+
+            for k, v in distribution.items():
+                setattr(self, k, v)
+            return dist
+
+
     _extract_params_doc(getdoc(__init__))
     project_name = _aml_property('build_control.project_name', types=(None, str), freezable=True,
                                  validate_fn=__validate_project_name)
     nfolds = _aml_property('build_control.nfolds', types=(int,), freezable=True,
                            validate_fn=__validate_nfolds)
+    distribution = _aml_property('build_control.distribution', types=(str, dict), freezable=True, validate_fn=__validate_distribution)
+    custom_distribution_func = _aml_property('build_control.custom_distribution_func', types=(str,), freezable=True)
+    huber_alpha = _aml_property('build_control.huber_alpha', types=(numeric,), freezable=True)
+    tweedie_power = _aml_property('build_control.tweedie_power', types=(numeric,), freezable=True)
+    quantile_alpha = _aml_property('build_control.quantile_alpha', types=(numeric,), freezable=True)
     balance_classes = _aml_property('build_control.balance_classes', types=(bool,), freezable=True)
     class_sampling_factors = _aml_property('build_control.class_sampling_factors', types=(None, [numeric]), freezable=True)
     max_after_balance_size = _aml_property('build_control.max_after_balance_size', types=(None, numeric), freezable=True)

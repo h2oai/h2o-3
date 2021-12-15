@@ -28,11 +28,6 @@ public class XGBoostSteps extends ModelingSteps {
             params._grow_policy = XGBoostParameters.GrowPolicy.lossguide;
         }
 
-        // setDistribution: no way to identify gaussian, poisson, laplace? using descriptive statistics?
-        params._distribution = aml.getResponseColumn().isBinary() && !(aml.getResponseColumn().isNumeric()) ? DistributionFamily.bernoulli
-                : aml.getResponseColumn().isCategorical() ? DistributionFamily.multinomial
-                : DistributionFamily.AUTO;
-
         params._score_tree_interval = 5;
         params._ntrees = 10000;
 //        params._min_split_improvement = 0.01f;
@@ -55,6 +50,7 @@ public class XGBoostSteps extends ModelingSteps {
                 double[] dist = aml().getClassDistribution();
                 params._scale_pos_weight =  (float) (dist[0] / dist[1]);
             }
+            setDistributionParameters(params);
             return params;
         }
     }
@@ -68,7 +64,9 @@ public class XGBoostSteps extends ModelingSteps {
         }
 
         public XGBoostParameters prepareModelParameters() {
-            return XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
+            XGBoostParameters params = XGBoostSteps.prepareModelParameters(aml(), _emulateLightGBM);
+            setDistributionParameters(params);
+            return params;
         }
     }
 
@@ -119,7 +117,7 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
-
+                    setDistributionParameters(params);
                     return params;
                 }
             },
@@ -138,7 +136,7 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
-
+                    setDistributionParameters(params);
                     return params;
                 }
             },
@@ -157,7 +155,7 @@ public class XGBoostSteps extends ModelingSteps {
                         params._max_leaves = 1 << params._max_depth;
                         params._max_depth = params._max_depth * 2;
                     }
-
+                    setDistributionParameters(params);
                     return params;
                 }
             },

@@ -7,9 +7,11 @@ import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.KeyValue;
 import hex.Model;
+import hex.ScoreKeeper;
 import hex.ensemble.Metalearner;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
@@ -147,6 +149,16 @@ public class StackedEnsembleStepsProvider
                 params.initMetalearnerParams(_metalearnerAlgo);
                 params._metalearner_parameters._keep_cross_validation_models = buildSpec.build_control.keep_cross_validation_models;
                 params._metalearner_parameters._keep_cross_validation_predictions = buildSpec.build_control.keep_cross_validation_predictions;
+                setDistributionParameters(params._metalearner_parameters);
+            }
+
+            @Override
+            public boolean supportsDistribution(DistributionFamily distributionFamily) {
+                StackedEnsembleParameters params = prepareModelParameters();
+                setMetalearnerParameters(params);
+
+                return Arrays.stream(params.supportedDistributions())
+                        .anyMatch(dist -> dist.equals(distributionFamily));
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {

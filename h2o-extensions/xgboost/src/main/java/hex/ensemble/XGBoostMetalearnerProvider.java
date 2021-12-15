@@ -8,16 +8,6 @@ public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMe
     static class XGBoostMetalearner extends Metalearners.MetalearnerWithDistribution {
         public XGBoostMetalearner() {
             super(Algorithm.xgboost.name());
-            _supportedDistributionFamilies = new DistributionFamily[]{
-                    DistributionFamily.AUTO,
-                    DistributionFamily.bernoulli,
-                    DistributionFamily.quasibinomial,
-                    DistributionFamily.multinomial,
-                    DistributionFamily.gaussian,
-                    DistributionFamily.poisson,
-                    DistributionFamily.gamma,
-                    DistributionFamily.tweedie,
-            };
         }
     }
 

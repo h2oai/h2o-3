@@ -319,6 +319,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               + " Please note that the models will still be validated using cross-validation only,"
               + " the validation frame will be used to provide purely informative validation metrics on the trained models.");
     }
+    if (buildSpec.build_control.distribution.equals(DistributionFamily.fractionalbinomial) ||
+            buildSpec.build_control.distribution.equals(DistributionFamily.quasibinomial) ||
+            buildSpec.build_control.distribution.equals(DistributionFamily.ordinal)) {
+      throw new H2OIllegalArgumentException("Distribution " + buildSpec.build_control.distribution.name() + " is not supported in AutoML!");
+    }
   }
 
   private void validateModelBuilding(AutoMLBuildModels modelBuilding) {
@@ -608,15 +613,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private DistributionFamily inferDistribution(Vec response) {
-    int numOfDomains = response.domain() == null ? 0 : response.domain().length;
-    if (numOfDomains == 0)
-      return DistributionFamily.gaussian;
-    if (numOfDomains == 2)
-      return DistributionFamily.bernoulli;
-    if (numOfDomains > 2)
-      return DistributionFamily.multinomial;
+    if (_buildSpec.build_control.distribution == DistributionFamily.AUTO) {
+      int numOfDomains = response.domain() == null ? 0 : response.domain().length;
+      if (numOfDomains == 0)
+        return DistributionFamily.gaussian;
+      if (numOfDomains == 2)
+        return DistributionFamily.bernoulli;
+      if (numOfDomains > 2)
+        return DistributionFamily.multinomial;
 
-    throw new RuntimeException("Number of domains is equal to 1.");
+      throw new RuntimeException("Number of domains is equal to 1.");
+    } else {
+      return _buildSpec.build_control.distribution;
+    }
   }
 
   private void prepareData() {
@@ -689,6 +698,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
     for (ModelingStep step : getExecutionPlan()) {
       if (!exceededSearchLimits(step)) {
+        if (!step.supportsDistribution(_distributionFamily)) {
+          _eventLog.warn(Stage.ModelTraining,"Step " + step._algo.name() + "." + step._id +
+                  " doesn't support " + _distributionFamily.name() + " distribution. Using AUTO distribution instead.");
+        }
         StepResultState state = _modelingStepsExecutor.submit(step, job());
         log.info("AutoML step returned with state: "+state.toString());
         if (state.is(ResultStatus.success)) {

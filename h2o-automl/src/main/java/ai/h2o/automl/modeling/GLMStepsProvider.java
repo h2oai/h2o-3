@@ -4,6 +4,7 @@ import ai.h2o.automl.*;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.Model;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 
@@ -30,10 +31,7 @@ public class GLMStepsProvider
             public GLMParameters prepareModelParameters() {
                 GLMParameters params = new GLMParameters();
                 params._lambda_search = true;
-                params._family =
-                        aml().getResponseColumn().isBinary() && !(aml().getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
-                                : aml().getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
-                                : GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
+                setDistributionParameters(params);
                 return params;
             }
             

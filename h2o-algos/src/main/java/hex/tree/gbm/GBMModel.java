@@ -96,6 +96,26 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     Constraints emptyConstraints(int nCols) {
       return null;
     }
+
+    @Override
+    public DistributionFamily[] supportedDistributions() {
+      return new DistributionFamily[] {
+              DistributionFamily.AUTO,
+              DistributionFamily.bernoulli,
+              DistributionFamily.quasibinomial,
+              DistributionFamily.multinomial,
+              DistributionFamily.gaussian,
+              DistributionFamily.poisson,
+              DistributionFamily.gamma,
+              DistributionFamily.laplace,
+              DistributionFamily.quantile,
+              DistributionFamily.huber,
+          ///     DistributionFamily.modified_huber,
+              DistributionFamily.tweedie,
+             // DistributionFamily.ordinal,
+              DistributionFamily.custom,
+      };
+    }
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {

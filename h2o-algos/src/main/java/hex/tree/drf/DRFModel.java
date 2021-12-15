@@ -1,5 +1,6 @@
 package hex.tree.drf;
 
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.Key;
@@ -20,6 +21,26 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
       _max_depth = 20;
       _min_rows = 1;
+    }
+
+    @Override
+    public DistributionFamily[] supportedDistributions() {
+      return new DistributionFamily[] {
+              DistributionFamily.AUTO,
+              DistributionFamily.bernoulli,
+              // DistributionFamily.quasibinomial,
+              DistributionFamily.multinomial,
+              DistributionFamily.gaussian,
+//              DistributionFamily.poisson,
+//              DistributionFamily.gamma,
+//              DistributionFamily.laplace,
+//              DistributionFamily.quantile,
+//              DistributionFamily.huber,
+//              DistributionFamily.modified_huber,
+//              DistributionFamily.tweedie,
+//              DistributionFamily.ordinal,
+              // DistributionFamily.custom,
+      };
     }
   }
 

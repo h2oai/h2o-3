@@ -38,6 +38,7 @@ public class GBMStepsProvider
                 params._sample_rate = 0.8;
                 params._col_sample_rate = 0.8;
                 params._col_sample_rate_per_tree = 0.8;
+                setDistributionParameters(params);
                 return params;
             }
         }
@@ -50,6 +51,7 @@ public class GBMStepsProvider
             public GBMParameters prepareModelParameters() {
                 GBMParameters params = GBMSteps.prepareModelParameters();
                 params._ntrees = 10000;
+                setDistributionParameters(params);
                 return params;
             }
         }

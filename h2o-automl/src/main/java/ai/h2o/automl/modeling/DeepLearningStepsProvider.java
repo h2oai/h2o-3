@@ -43,6 +43,7 @@ public class DeepLearningStepsProvider
                 params._epochs = 10000; // early stopping takes care of epochs - no need to tune!
                 params._adaptive_rate = true;
                 params._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+                setDistributionParameters(params);
                 return params;
             }
             
@@ -70,6 +71,7 @@ public class DeepLearningStepsProvider
                     public DeepLearningParameters prepareModelParameters() {
                         DeepLearningParameters params = new DeepLearningParameters();  // don't use common params for default DL
                         params._hidden = new int[]{ 10, 10, 10 };
+                        setDistributionParameters(params);
                         return params;
                     }
                 },

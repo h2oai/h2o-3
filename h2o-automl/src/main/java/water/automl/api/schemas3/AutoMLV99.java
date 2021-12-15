@@ -4,6 +4,7 @@ import ai.h2o.automl.AutoML;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.StepDefinition;
+import hex.genmodel.utils.DistributionFamily;
 import water.Iced;
 import water.Key;
 import water.api.API;
