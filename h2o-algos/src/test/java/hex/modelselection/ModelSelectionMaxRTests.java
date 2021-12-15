@@ -9,6 +9,7 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
@@ -38,10 +39,17 @@ public class ModelSelectionMaxRTests extends TestUtil {
     public void testReplacement() {
         Scope.enter();
         try {
-            Frame trainF = parseTestFile("smalldata/model_selection/maxRGaussian10Col10KRows.csv");
+            Frame origF = Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
+            Frame trainF = new Frame(Key.make());
+            String[] predNames = origF.names();
+            int[] coefInd = new int[]{0,2,4,6,8,10,12,14,16,18};
+            for (int index : coefInd) 
+                trainF.add(predNames[index], origF.vec(index));
+            trainF.add("C21", origF.vec("C21"));
+            DKV.put(trainF);
             Scope.track(trainF);
             ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
-            parms._response_column = "response";
+            parms._response_column = "C21";
             parms._family = gaussian;
             parms._max_predictor_number = 5;
             parms._train = trainF._key;
@@ -49,8 +57,8 @@ public class ModelSelectionMaxRTests extends TestUtil {
             ModelSelectionModel modelAllSubsets = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Scope.track_generic(modelAllSubsets);
             String[][] bestR2Coeffs = modelAllSubsets._output.coefficientNames();
-            List<String> coefNames = new ArrayList<>(Arrays.asList("C1", "C3", "C4", "C7", "C8", "C2", "C5", "C6",
-                    "C9", "C10"));
+            List<String> coefNames = new ArrayList<>(Arrays.asList(trainF.names()));
+            coefNames.remove(parms._response_column);
             // test for subset size 2
             String[] expectedCoeff = sortStringArray(bestR2Coeffs[1]);
             assertCorrectReplacement(new ArrayList<>(Arrays.asList(7, 9)), coefNames, 
@@ -86,10 +94,17 @@ public class ModelSelectionMaxRTests extends TestUtil {
     public void testForwardStep() {
         Scope.enter();
         try {
-            Frame trainF = parseTestFile("smalldata/model_selection/maxRGaussian10Col10KRows.csv");
+            Frame origF = Scope.track(parseTestFile("smalldata/glm_test/gaussian_20cols_10000Rows.csv"));
+            Frame trainF = new Frame(Key.make());
+            String[] predNames = origF.names();
+            int[] coefInd = new int[]{0,2,4,6,8,10,12,14,16,18};
+            for (int index : coefInd)
+                trainF.add(predNames[index], origF.vec(index));
+            trainF.add("C21", origF.vec("C21"));
+            DKV.put(trainF);
             Scope.track(trainF);
             ModelSelectionModel.ModelSelectionParameters parms = new ModelSelectionModel.ModelSelectionParameters();
-            parms._response_column = "response";
+            parms._response_column = "C21";
             parms._family = gaussian;
             parms._max_predictor_number = 5;
             parms._train = trainF._key;
@@ -97,8 +112,8 @@ public class ModelSelectionMaxRTests extends TestUtil {
             ModelSelectionModel modelAllSubsets = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Scope.track_generic(modelAllSubsets);
             String[][] bestR2Coeffs = modelAllSubsets._output.coefficientNames();
-            List<String> coefNames = new ArrayList<>(Arrays.asList("C1", "C3", "C4", "C7", "C8", "C2", "C5", "C6",
-                    "C9", "C10"));
+            List<String> coefNames = new ArrayList<>(Arrays.asList(trainF.names()));
+            coefNames.remove(parms._response_column);
             List<ArrayList<Integer>> bestR2CoeffsInd = bestR2CoeffsInd(modelAllSubsets, coefNames);
             // test for best forward model for predictor size of 2, changing out 0, 1st predictor indices
             assertCorrectForwardStep(bestR2Coeffs, bestR2CoeffsInd.get(1), 0, coefNames, parms);
@@ -193,7 +208,8 @@ public class ModelSelectionMaxRTests extends TestUtil {
             Scope.track(resultFrameMaxR);
             Frame resultFrameAllSubset = modelAllsubsets.result();
             Scope.track(resultFrameAllSubset);
-            TestUtil.assertFrameEquals(resultFrameMaxR, resultFrameAllSubset, 1e-6);
+            TestUtil.assertStringVecEquals(resultFrameMaxR.vec(0), resultFrameAllSubset.vec(0));
+            TestUtil.assertVecEquals("", resultFrameMaxR.vec(2), resultFrameAllSubset.vec(2), 1e-6);
             // compare coefficients
             HashMap<String, Double>[] coeffsMaxR = modelMaxR.coefficients();
             HashMap<String, Double>[] coeffsNormMaxR = modelMaxR.coefficients(true);
@@ -273,19 +289,19 @@ public class ModelSelectionMaxRTests extends TestUtil {
             parms._response_column = "C21";
             parms._family = gaussian;
             parms._max_predictor_number = 3;
-            parms._mode = allsubsets;
+            parms._seed=12345;
             parms._train = train._key;
-            parms._nfolds = 3;
-            ModelSelectionModel modelCVAllsubsets = new hex.modelselection.ModelSelection(parms).trainModel().get();
-            Scope.track_generic(modelCVAllsubsets); //  model with validation dataset
             parms._mode = maxr;
+            ModelSelectionModel modelMaxr = new hex.modelselection.ModelSelection(parms).trainModel().get();
+            Scope.track_generic(modelMaxr); //  model with validation dataset
+            double[] modelMaxrR2 = modelMaxr._output._best_r2_values;
+            parms._nfolds = 3;
             ModelSelectionModel modelCVMaxr = new hex.modelselection.ModelSelection(parms).trainModel().get();
             Scope.track_generic(modelCVMaxr); //  model with validation dataset
-            double[] modelCVR2Allsubsets = modelCVAllsubsets._output._best_r2_values;
-            int r2Len = modelCVR2Allsubsets.length;
-            double[] modelCVR2Maxr = modelCVMaxr._output._best_r2_values;
+            double[] modelCVMaxrR2 = modelCVMaxr._output._best_r2_values;
+            int r2Len = modelCVMaxrR2.length;
             for (int index=0; index < r2Len; index++)
-                assertTrue(Math.abs(modelCVR2Allsubsets[index]-modelCVR2Maxr[index]) < 1e-6);
+                assertTrue(Math.abs(modelMaxrR2[index]-modelCVMaxrR2[index]) > 1e-6);
         } finally {
             Scope.exit();
         }
