@@ -1,7 +1,7 @@
 Admissible Machine Learning
 ===========================
 
-We introduce some new concepts and tools to aid the design of *admissible learning algorithms* that are efficient (enjoy good predictive accuracy), fair (prevent discrimination against minority groups), and interpretable (provide mechanistic understanding) to the best possible extent.
+We introduce some new concepts and tools to aid the design of *admissible learning algorithms* that are efficient (enjoy good predictive accuracy), fair (minimize discrimination against minority groups), and interpretable (provide mechanistic understanding) to the best possible extent.
 
 Admissible ML introduces two methodological tools: Infogram and L-features. 
 
@@ -26,7 +26,7 @@ Fair Infogram: A Diagnostic Tool for Fairness
 
 The goal of this tool is to assist identification of admissible features which have little or no information-overlap with sensitive attributes, yet are reasonably predictive for the response.
 
-TO DO: Fix this
+TO DO: Fix/finish this
 
 Safety-index and Inadmissibility. Define the safety-index for variable Xj as
 Fj “ MI`Y,Xj | tS1,...,Squ ̆ (3.5)
@@ -182,15 +182,17 @@ Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admiss
 Glossary
 --------
 
-- **Admissible Machine Learning**: Admissible machine learning is a new technology that can balance fairness, interpretability, and accuracy in the best manner possible.
-- **Core Features or Core Set**: Key features that are driving the response, without redundancy.  High relevance, low redundancy.  TO DO: Insert equation (3.4).  Note: less redundant == high C_j (MI) value.  
+- **Admissible Machine Learning**: Admissible machine learning is a new technology that can balance fairness, interpretability, and accuracy. 
 - **Protected Features**:  User-defined features that are sensitive and need to be protected (legally, or otherwise).  These features (e.g. race, gender, etc) should not drive the prediction of the response.
-- **L-Features (Inadmissible Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. These are variables with small F-values (F-stands for fairness) will be called inadmissible, as they possess little or no informational value beyond their use as a dummy for protected characteristics. The complementary set comprises of the desired, admissible features.
+- **Core Features or Core Set**: Key features that are driving the response, without redundancy.  High relevance, low redundancy. 
 - **Irrelevant Features**: Features on the vertical side of the L. Core infogram only
+mentary set comprises of the desired, admissible features.
 - **Redundant Features**: Features n the horizontal side of the L.
-- **Admissible Features**: The set of features that are found to acceptable to use (high on the safety index).  The converse of inadmissible variables.  Or should this be defined as the intersection of safe + core featuers.
 - **Safety-index**:  This quantifies how much extra information `X_j` carries for `Y` that is not acquired through the sensitive variables.
 - **Relevance-index**: TO DO
+- **Admissible Features**: The set of features that are found to acceptable to use (high on the safety index). 
+- **Inadmissible Features (L-Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. These are variables with small F-values (F-stands for fairness) will be called inadmissible, as they possess little or no informational value beyond their use as a dummy for protected characteristics. 
+
 
 
 
