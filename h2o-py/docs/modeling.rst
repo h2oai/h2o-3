@@ -43,9 +43,9 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OMaxRGLMEstimator`
---------------------------
-.. autoclass:: h2o.estimators.maxrglm.H2OMaxRGLMEstimator
+:mod:`H2OModelSelectionEstimator`
+---------------------------------
+.. autoclass:: h2o.estimators.model_selection.H2OModelSelectionEstimator
     :show-inheritance:
     :members:
 

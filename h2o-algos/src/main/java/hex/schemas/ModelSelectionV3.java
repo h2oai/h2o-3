@@ -1,17 +1,15 @@
 package hex.schemas;
 
 import hex.glm.GLMModel;
-import hex.maxrglm.MaxRGLM;
-import hex.maxrglm.MaxRGLMModel;
+import hex.modelselection.ModelSelection;
+import hex.modelselection.ModelSelectionModel;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
-import water.api.schemas3.ModelSchemaV3;
-import water.api.schemas3.StringPairV3;
 
-public class MaxRGLMV3 extends ModelBuilderSchema<MaxRGLM, MaxRGLMV3, MaxRGLMV3.MaxRGLMParametersV3> {
-    public static final class MaxRGLMParametersV3 extends ModelParametersSchemaV3<MaxRGLMModel.MaxRGLMParameters, 
-            MaxRGLMParametersV3> {
+public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSelectionV3, ModelSelectionV3.ModelSelectionParametersV3> {
+    public static final class ModelSelectionParametersV3 extends ModelParametersSchemaV3<ModelSelectionModel.ModelSelectionParameters,
+            ModelSelectionParametersV3> {
         public static final String[] fields = new String[]{
                 "model_id",
                 "training_frame",
@@ -63,6 +61,7 @@ public class MaxRGLMV3 extends ModelBuilderSchema<MaxRGLM, MaxRGLMV3, MaxRGLMV3.
                 "custom_metric_func",
                 "nparallelism",
                 "max_predictor_number",  // denote maximum number of predictors to build models for
+                "mode" // naive, maxr, backward
         };
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -150,6 +149,10 @@ public class MaxRGLMV3 extends ModelBuilderSchema<MaxRGLM, MaxRGLMV3, MaxRGLMV3.
 
         @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
         public boolean calc_like;
+
+        @API(help = "Mode: used to choose model selection algorithm to use, ", values = {"allsubsets", "maxr"},
+                level = API.Level.critical)
+        public ModelSelectionModel.ModelSelectionParameters.Mode mode;
 
         @API(help="Include constant term in the model", level = API.Level.expert)
         public boolean intercept;

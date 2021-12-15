@@ -33,10 +33,10 @@ with_no_h2o_progress <- function(expr) {
 #' @param treat_xrt_as_algorithm Try to find out if a model is XRT and if so report it as xrt
 #' @return algorithm name
 .get_algorithm <- function(model_or_model_id, treat_xrt_as_algorithm = FALSE) {
-  known_algos <- c("anovaglm", "deeplearning", "drf", "glm", "gam", "maxrglm", "gbm", "naivebayes", "stackedensemble",
+  known_algos <- c("anovaglm", "deeplearning", "drf", "glm", "gam", "modelselection", "gbm", "naivebayes", "stackedensemble",
                    "rulefit", "xgboost", "xrt")
   if (is.character(model_or_model_id)) {
-    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|MaxRGLM|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
+    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|ModelSelection|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
                      "\\L\\1", model_or_model_id, perl = TRUE)
     if (algorithm == "xrt" && !treat_xrt_as_algorithm)
       algorithm <- "drf"
@@ -2588,7 +2588,7 @@ h2o.learning_curve_plot <- function(model,
   metric <- match.arg(arg = if (missing(metric) || tolower(metric) == "auto") "AUTO" else tolower(metric),
                       choices = eval(formals()$metric))
 
-  if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "maxrglm", "deeplearning",
+  if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "modelselection", "deeplearning",
                               "drf", "gbm", "xgboost", "coxph", "isolationforest")) {
     stop("Algorithm ", model@algorithm, " doesn't support learning curve plot!")
   }

@@ -18,15 +18,16 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OMaxRGLMEstimator(H2OEstimator):
+class H2OModelSelectionEstimator(H2OEstimator):
     """
-    Maximum R Square Improvement (MAXR) to GLM
+    Model Selection
 
-    H2O MaxRGLM is used to build test best model with one predictor, two predictors, ... up to max_predictor_number 
-    specified in the algorithm parameters.  The best model is the one with the highest R2 value.
+    H2O ModelSelection is used to build the best model with one predictor, two predictors, ... up to max_predictor_number 
+    specified in the algorithm parameters when mode=allsubsets.  The best model is the one with the highest R2 value.  When
+    mode=maxr, the model returned is no longer guaranteed to have the best R2 value.
     """
 
-    algo = "maxrglm"
+    algo = "modelselection"
     supervised_learning = True
 
     def __init__(self,
@@ -79,6 +80,7 @@ class H2OMaxRGLMEstimator(H2OEstimator):
                  custom_metric_func=None,  # type: Optional[str]
                  nparallelism=0,  # type: int
                  max_predictor_number=1,  # type: int
+                 mode="maxr",  # type: Literal["allsubsets", "maxr"]
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -273,8 +275,11 @@ class H2OMaxRGLMEstimator(H2OEstimator):
                to 1.
                Defaults to ``1``.
         :type max_predictor_number: int
+        :param mode: Mode: used to choose model selection algorithm to use,
+               Defaults to ``"maxr"``.
+        :type mode: Literal["allsubsets", "maxr"]
         """
-        super(H2OMaxRGLMEstimator, self).__init__()
+        super(H2OModelSelectionEstimator, self).__init__()
         self._parms = {}
         self._id = self._parms['model_id'] = model_id
         self.training_frame = training_frame
@@ -325,6 +330,7 @@ class H2OMaxRGLMEstimator(H2OEstimator):
         self.custom_metric_func = custom_metric_func
         self.nparallelism = nparallelism
         self.max_predictor_number = max_predictor_number
+        self.mode = mode
 
     @property
     def training_frame(self):
@@ -1027,12 +1033,25 @@ class H2OMaxRGLMEstimator(H2OEstimator):
         assert_is_type(max_predictor_number, None, int)
         self._parms["max_predictor_number"] = max_predictor_number
 
+    @property
+    def mode(self):
+        """
+        Mode: used to choose model selection algorithm to use,
+
+        Type: ``Literal["allsubsets", "maxr"]``, defaults to ``"maxr"``.
+        """
+        return self._parms.get("mode")
+
+    @mode.setter
+    def mode(self, mode):
+        assert_is_type(mode, None, Enum("allsubsets", "maxr"))
+        self._parms["mode"] = mode
+
 
     def coef_norm(self, predictor_size=None):
         """
         Get the normalized coefficients for all models built with different number of predictors.
 
-        :param self:
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
         """
@@ -1063,7 +1082,6 @@ class H2OMaxRGLMEstimator(H2OEstimator):
         """
         Get the coefficients for all models built with different number of predictors.
 
-        :param self: 
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
         """
@@ -1092,15 +1110,15 @@ class H2OMaxRGLMEstimator(H2OEstimator):
 
     def result(self):
         """
-        Get result frame that contains information about the model building process like for maxrglm and anovaglm.
-        :return: the H2OFrame that contains information about the model building process like for maxrglm and anovaglm.
+        Get result frame that contains information about the model building process like for modelselection and anovaglm.
+        :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
 
     def get_best_R2_values(self):
         """
         Get list of best R2 values of models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors
-        :param self: 
+
         :return: a list of best r2 values
         """
         return self._model_json["output"]["best_r2_values"]
@@ -1109,16 +1127,7 @@ class H2OMaxRGLMEstimator(H2OEstimator):
         """
         Get list of best models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors that have the
         highest r2 values
-        :param self: 
+
         :return: a list of best r2 values
         """
         return self._model_json["output"]["best_model_predictors"]
-
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value

@@ -2,8 +2,7 @@ def class_extensions():
     def coef_norm(self, predictor_size=None):
         """
         Get the normalized coefficients for all models built with different number of predictors.
-        
-        :param self:
+    
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
         """
@@ -34,7 +33,6 @@ def class_extensions():
         """
         Get the coefficients for all models built with different number of predictors.
         
-        :param self: 
         :param predictor_size: predictor subset size, will only return model coefficients of that subset size.
         :return: list of Python Dicts of coefficients for all models built with different predictor numbers
         """
@@ -63,15 +61,15 @@ def class_extensions():
 
     def result(self):
         """
-        Get result frame that contains information about the model building process like for maxrglm and anovaglm.
-        :return: the H2OFrame that contains information about the model building process like for maxrglm and anovaglm.
+        Get result frame that contains information about the model building process like for modelselection and anovaglm.
+        :return: the H2OFrame that contains information about the model building process like for modelselection and anovaglm.
         """
         return H2OFrame._expr(expr=ExprNode("result", ASTId(self.key)))._frame(fill_cache=True)
 
     def get_best_R2_values(self):
         """
         Get list of best R2 values of models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors
-        :param self: 
+
         :return: a list of best r2 values
         """
         return self._model_json["output"]["best_r2_values"]
@@ -80,20 +78,10 @@ def class_extensions():
         """
         Get list of best models with 1 predictor, 2 predictors, ..., max_predictor_number of predictors that have the
         highest r2 values
-        :param self: 
+
         :return: a list of best r2 values
         """
         return self._model_json["output"]["best_model_predictors"]
-    
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
-
 
 extensions = dict(
     __imports__="""
@@ -106,7 +94,6 @@ extensions = dict(
     """,
     __class__=class_extensions,
     __init__validation="""
-if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
 """
 )
 
@@ -128,7 +115,8 @@ self._parms["{sname}"] = {pname}
 
 doc = dict(
     __class__="""
-H2O MaxRGLM is used to build test best model with one predictor, two predictors, ... up to max_predictor_number 
-specified in the algorithm parameters.  The best model is the one with the highest R2 value.
+H2O ModelSelection is used to build the best model with one predictor, two predictors, ... up to max_predictor_number 
+specified in the algorithm parameters when mode=allsubsets.  The best model is the one with the highest R2 value.  When
+mode=maxr, the model returned is no longer guaranteed to have the best R2 value.
 """
 )

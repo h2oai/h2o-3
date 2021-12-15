@@ -81,10 +81,6 @@ public class ANOVAGLM extends ModelBuilder<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLM
     return false;
   }
 
-  public BuilderVisibility buildVisibility() {
-    return BuilderVisibility.Experimental;
-  }
-
   public void init(boolean expensive) {
     super.init(expensive);
     if (expensive) {

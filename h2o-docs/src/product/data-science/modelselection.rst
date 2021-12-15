@@ -1,4 +1,4 @@
-Maximum R Square Improvements (MAXR)
+Model Selection
 ------------------------------------
 
 Introduction
@@ -173,7 +173,7 @@ Examples
       response <- "GLEASON"
 
       # Build & train the model:
-      maxrglmModel <- h2o.maxrglm(x = predictors, 
+      maxrglmModel <- h2o.modelSelection(x = predictors, 
                                   y = response, 
                                   training_frame = prostate, 
                                   seed = 12345, 
@@ -256,7 +256,7 @@ Examples
       response = "GLEASON"
 
       # Build & train the model:
-      maxrglmModel = H2OMaxRGLMEstimator(max_predictor_number=7, seed=12345)
+      maxrglmModel = H2OModelSelectionEstimator(max_predictor_number=7, seed=12345)
       maxrglmModel.train(x=predictors, y=response, training_frame=prostate)
       maxrglm Model Build progress: ======================================= (done)| 100%
 

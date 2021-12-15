@@ -1,4 +1,4 @@
-package hex.maxrglm;
+package hex.modelselection;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel;
@@ -7,7 +7,6 @@ import hex.glm.GLMModel;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.Rapids;
 import water.udf.CFuncRef;
 import water.util.TwoDimTable;
 
@@ -17,10 +16,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.stream.Stream;
 
-public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParameters, 
-        MaxRGLMModel.MaxRGLMModelOutput> {
+public class ModelSelectionModel extends Model<ModelSelectionModel, ModelSelectionModel.ModelSelectionParameters,
+        ModelSelectionModel.ModelSelectionModelOutput> {
     
-    public MaxRGLMModel(Key<MaxRGLMModel> selfKey, MaxRGLMParameters parms, MaxRGLMModelOutput output) {
+    public ModelSelectionModel(Key<ModelSelectionModel> selfKey, ModelSelectionParameters parms, ModelSelectionModelOutput output) {
         super(selfKey, parms, output);
     }
 
@@ -37,7 +36,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        throw new UnsupportedOperationException("MaxRGLM does not support scoring on data.  It only provide " +
+        throw new UnsupportedOperationException("ModelSelection does not support scoring on data.  It only provide " +
                 "information on predictor relevance");
     }
 
@@ -52,7 +51,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         return _output.generateResultFrame();
     }
     
-    public static class MaxRGLMParameters extends Model.Parameters {
+    public static class ModelSelectionParameters extends Model.Parameters {
         public double[] _alpha;
         public double[] _lambda;
         public boolean _standardize = true;
@@ -68,20 +67,25 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         public Key<Frame> _plug_values = null;
         public int _max_predictor_number = 1;
         public int _nparallelism = 0;
+        public Mode _mode = Mode.maxr;  // mode chosen to perform model selection
 
+        public enum Mode {
+            allsubsets, // use combinatorial, exponential runtime
+            maxr; // use sequential replacement
+        }
         @Override
         public String algoName() {
-            return "MaxRGLM";
+            return "ModelSelection";
         }
 
         @Override
         public String fullName() {
-            return "Maximum R Square Improvement (MAXR) to GLM";
+            return "Model Selection";
         }
 
         @Override
         public String javaName() {
-            return MaxRGLMModel.class.getName();
+            return ModelSelectionModel.class.getName();
         }
 
         @Override
@@ -121,7 +125,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         
     }
     
-    public static class MaxRGLMModelOutput extends Model.Output {
+    public static class ModelSelectionModelOutput extends Model.Output {
         GLMModel.GLMParameters.Family _family;
         DataInfo _dinfo;
         String[][] _best_model_predictors; // store for each predictor number, the best model predictors
@@ -129,7 +133,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
         public Key[] _best_model_ids;
         String[][] _coefficient_names;
         
-        public MaxRGLMModelOutput(MaxRGLM b, DataInfo dinfo) {
+        public ModelSelectionModelOutput(hex.modelselection.ModelSelection b, DataInfo dinfo) {
             super(b, dinfo._adaptedFrame);
             _dinfo = dinfo;
         }
@@ -193,7 +197,7 @@ public class MaxRGLMModel extends Model<MaxRGLMModel, MaxRGLMModel.MaxRGLMParame
             for (int index=1; index<=numModels; index++)
                 rowHeaders[index-1] = "with "+index+" predictors";
             
-            _model_summary = new TwoDimTable("MaxRGLM Model Summary", "summary", 
+            _model_summary = new TwoDimTable("ModelSelection Model Summary", "summary", 
                     rowHeaders, names, types, formats, "");
             for (int rIndex=0; rIndex < numModels; rIndex++) {
                 int colInd = 0;
