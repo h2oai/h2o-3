@@ -119,7 +119,8 @@ class MetricsBase(h2o_meta()):
         else:
             print(reported_on.format("test"))
         print()
-        if metric_type not in types_w_anomaly and metric_type not in types_w_uplift:
+        if metric_type not in types_w_anomaly and metric_type not in types_w_uplift and \
+                metric_type not in types_w_clustering:
             print("MSE: " + str(self.mse()))
             print("RMSE: " + str(self.rmse()))
         if metric_type in types_w_mean_absolute_error:
@@ -190,7 +191,10 @@ class MetricsBase(h2o_meta()):
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))
             print("Between Cluster Sum of Square Error: " + str(self.betweenss()))
-            self._metric_json['centroid_stats'].show()
+            if self._metric_json['centroid_stats'] is not None:
+                self._metric_json['centroid_stats'].show()
+            else:
+                print("Centroid stats are not available.")
 
         if metric_type in types_w_dim:
             print("Sum of Squared Error (Numeric): " + str(self.num_err()))

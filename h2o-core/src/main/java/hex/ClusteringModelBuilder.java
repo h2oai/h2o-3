@@ -1,8 +1,7 @@
 package hex;
 
 import water.Job;
-import water.Key;
-import water.util.Log;
+import water.fvec.Frame;
 
 abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P extends ClusteringModel.ClusteringParameters, O extends ClusteringModel.ClusteringOutput> extends ModelBuilder<M,P,O> {
   public boolean isSupervised() { return false; }
@@ -21,5 +20,14 @@ abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P
     super.init(expensive);
     if( _parms._k < 1 || _parms._k > 1e7 ) error("_k", "k must be between 1 and 1e7");
     if( _train != null && _train.numRows() < _parms._k ) error("_k","Cannot make " + _parms._k + " clusters out of " + _train.numRows() + " rows");
+  }
+
+  @Override
+  public void cv_reduceCVBuilders(ModelMetrics.MetricBuilder mbsMain, ModelMetrics.MetricBuilder mbsReduced) {
+    ((ModelMetricsClustering.MetricBuilderClustering) mbsMain).reduceForCV((ModelMetricsClustering.MetricBuilderClustering)mbsReduced);
+  }
+
+  public void cv_makeMainModelMetrics(M mainModel, ModelMetrics.MetricBuilder mbsMain, Frame holdoutPreds){
+    mainModel._output._cross_validation_metrics = ((ModelMetricsClustering.MetricBuilderClustering) mbsMain).makeModelMetricsForCV(mainModel, _parms.train());
   }
 }

@@ -550,6 +550,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
       return table;
     }
+    
+    
   }
 
   // -------------------------------------------------------------------------

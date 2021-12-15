@@ -3204,14 +3204,13 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' Retrieve centroid statistics
 #'
 #' Retrieve the centroid statistics.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training centroid stats value is returned. If more
-#' than one parameter is set to TRUE, then a named list of centroid stats data frames are returned, where the names are "train", "valid"
-#' or "xval".
+#' If "train" and "valid" parameters are FALSE (default), then the training centroid stats value is returned. If more
+#' than one parameter is set to TRUE, then a named list of centroid stats data frames are returned, where the names are "train" or "valid"
+#' For cross validation metrics this statistics are not available.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param train Retrieve the training centroid statistics
 #' @param valid Retrieve the validation centroid statistics
-#' @param xval Retrieve the cross-validation centroid statistics
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3222,9 +3221,9 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' h2o.centroid_stats(km, train = TRUE)
 #' }
 #' @export
-h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE) {
   model.parts <- .model.parts(object)
-  if ( !train && !valid && !xval ) return( model.parts$tm@metrics$centroid_stats )
+  if ( !train && !valid) return( model.parts$tm@metrics$centroid_stats )
   v <- list()
   v_names <- c()
   if ( train ) {
@@ -3236,13 +3235,6 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
     else {
       v[[length(v)+1]] <- model.parts$vm@metrics$centroid_stats
       v_names <- c(v_names,"valid")
-    }
-  }
-  if ( xval ) {
-    if( is.null(model.parts$xm) ) invisible(.warn.no.cross.validation())
-    else {
-      v[[length(v)+1]] <- model.parts$xm@metrics$centroid_stats
-      v_names <- c(v_names,"xval")
     }
   }
   names(v) <- v_names
