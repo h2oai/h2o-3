@@ -87,6 +87,7 @@ h2o.get_admissible_attributes <- function(model) {
 #' @export
 plot.H2OInfogram <- function(x, ...) {
   .check_for_ggplot2() # from explain.R
+  .data <- NULL
   varargs <- list(...)
   if ("title" %in% names(varargs)) {
     title <- varargs$title
@@ -116,13 +117,13 @@ plot.H2OInfogram <- function(x, ...) {
                  "raw")
   ggplot2::ggplot(data = df, ggplot2::aes_(~ig_x, ~ig_y)) +
     ggplot2::geom_point() +
-    ggplot2::geom_polygon(ggplot2::aes(x, y), data = data.frame(
-      x = c(xthresh, xthresh, -Inf, -Inf, Inf, Inf, xthresh),
-      y = c(ythresh, Inf, Inf, -Inf, -Inf, ythresh, ythresh)
+    ggplot2::geom_polygon(ggplot2::aes(.data$x_coordinates, .data$y_coordinates), data = data.frame(
+      x_coordinates = c(xthresh, xthresh, -Inf, -Inf, Inf, Inf, xthresh),
+      y_coordinates = c(ythresh, Inf, Inf, -Inf, -Inf, ythresh, ythresh)
     ), alpha = 0.1, fill = "#CC663E") +
-    ggplot2::geom_path(ggplot2::aes(x, y), data = data.frame(
-      x = c(xthresh, xthresh, NA, xthresh, Inf),
-      y = c(ythresh,     Inf, NA, ythresh, ythresh)
+    ggplot2::geom_path(ggplot2::aes(.data$x_coordinates, .data$y_coordinates), data = data.frame(
+      x_coordinates = c(xthresh, xthresh, NA, xthresh, Inf),
+      y_coordinates = c(ythresh,     Inf, NA, ythresh, ythresh)
     ), color = "red", linetype = "dashed") +
     ggplot2::geom_text(ggplot2::aes_(~ig_x, ~ig_y, label = ~column),
                        data = df[as.logical(df$admissible),], nudge_y = -0.0325,
