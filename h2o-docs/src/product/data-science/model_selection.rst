@@ -188,7 +188,7 @@ The H2O ModelSelection ``mode = maxr`` is implemented using the sequential repla
   
   a. Repeat for predictor in location *0,1,2,...,n*:
 
-    - keep all predictors fixed except in location *k* (*k* will be from *0,1,2,...,n*) and switch out the predictor at location *0* with one predictor from the available predictors. If there are *m* predictors in the available predictor subset, *m* GLM models will be built and the model with the best :math:`R^2` value will be saved;
+    - keep all predictors fixed except in location *k* (*k* will be from *0,1,2,...,n*) and switch out the predictor at location *k* with one predictor from the available predictors. If there are *m* predictors in the available predictor subset, *m* GLM models will be built and the model with the best :math:`R^2` value will be saved;
 
   b. from all the *n* best models found from step 6(a), if the best :math:`R^2` value has improved from the forward step or the previous 6(a), return to 6(a). If no improvement is found, break and just take the best :math:`R^2` model as the one to save.
 
@@ -267,6 +267,7 @@ Examples
 
       # Retrieve the list of standardized coefficients:
       coeff_norm <- h2o.coef_norm(allsubsetsModel)
+      print(coeff_norm)
       [[1]]
       Intercept   CAPSULE
       6.3842105 0.4947269
@@ -289,6 +290,13 @@ Examples
       Intercept      CAPSULE          AGE         RACE        DPROS        DCAPS          PSA          VOL
       6.384210526  0.351296573  0.045355300 -0.018042981  0.079189523  0.135233408  0.252090622 -0.009533532
 
+      # Retrieve the list of standardized coefficients for a subset size of 3:
+      coeff_norm3 <- h2o.coef_norm(allsubsetsModel)
+      print(coeff_norm3)
+      [[3]]
+      Intercept   CAPSULE     DCAPS       PSA
+      6.3842105 0.3719895 0.1490516 0.2577879
+
    .. code-tab:: python
 
       import h2o
@@ -308,7 +316,7 @@ Examples
                                              seed=12345, 
                                              mode="maxr")
       maxrModel.train(x=predictors, y=response, training_frame=prostate)
-      maxrglm Model Build progress: ======================================= (done)| 100%
+      maxr Model Build progress: ======================================= (done)| 100%
 
       # Retrieve the results (H2OFrame containing best model_ids, best_r2_value, & predictor subsets):
       results = maxrModel.result()
@@ -337,7 +345,8 @@ Examples
       # {‘Intercept’: 4.852663604264297, ‘CAPSULE’: 0.7153633277776693, ‘AGE’: 0.006948797960002643, ‘RACE’: -0.05843440305164041, ‘DPROS’: 0.07918100130777159, ‘DCAPS’: 0.43531498557623927, ‘PSA’: 0.012606061059188276, ‘VOL’: -0.0005196059470357373}]
 
       # Retrieve the list of coefficients for a subset size of 3:
-      coeff3 = maxrglmModel.coef(3)
+      coeff3 = maxrModel.coef(3)
+      print(coeff3)
       # {'Intercept': 5.349021488372978, 'CAPSULE': 0.757501440465183, 'DCAPS': 0.47979554935185015, 'PSA': 0.012890961277678725}
       
       # Retrieve the list of standardized coefficients:
@@ -350,6 +359,11 @@ Examples
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.353918452469022, ‘AGE’: 0.04486447687517968, ‘DPROS’: 0.07828540617010687, ‘DCAPS’: 0.1359982784564225, ‘PSA’: 0.2489726545605919}, 
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.352293445102015, ‘AGE’: 0.044324630838403115, ‘RACE’: -0.018738499858626197, ‘DPROS’: 0.07929661407409055, ‘DCAPS’: 0.1362138170890904, ‘PSA’: 0.2514149995462732}, 
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.35129657330683034, ‘AGE’: 0.04535529952002336, ‘RACE’: -0.018042981011017332, ‘DPROS’: 0.07918952262067014, ‘DCAPS’: 0.13523340776861126, ‘PSA’: 0.25209062209542776, ‘VOL’: -0.009533532448945743}]
+
+      # Retrieve the list of standardized coefficients for a subset size of 3:
+      coeff_norm3 = maxrModel.coef_norm(3)
+      print(coeff_norm3)
+      # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.37198951914000183, ‘DCAPS’: 0.1490515817762952, ‘PSA’: 0.25778793491797924}
 
 
 
