@@ -148,7 +148,7 @@ Setting the H2O ModelSelection ``mode = allsubsets`` guarantees the return of th
 
 For each predictor subset size :math:`x`:
 
-- If there are :math:`n` predictors and we are looking at using :math:`x` predictors, all combinations of :math:`x` and :math:`n` predictors are first generated;
+- If there are :math:`n` predictors and we are looking at using :math:`x` predictors, all combinations of :math:`x` from :math:`n` predictors are first generated;
 - for each element in the combination of :math:`x` predictors: generate the training frame, build the model, and look at the :math:`R^2` value of the model;
 - the best :math:`R^2` value, the predictor names, and the ``model_id`` of the best models are stored in arrays as well as H2OFrame;
 - access functions are written in Java/R/Python to extract coefficients associated with the models with the best :math:`R^2` values.
@@ -173,13 +173,11 @@ The H2O ModelSelection ``mode = maxr`` is implemented using the sequential repla
 	b. save the model with the highest :math:`R^2` for all models with predictor subsets *AB, AC, ..., AZ*;
 	c. set the new current *subset = {model with highest* :math:`R^2` *}* and save the best subset (for example, *{AB}*).
 
-4. Replacement for 2 predictor *subset {AB}*:
-	
-	a. choose the first predictor from the remaining predictors *C, D, ..., Z* (skipping predictor A because it's already in *{AB}*) and keep the second predictor as B; now build a GLM model;
-	b. save the model with the highest :math:`R^2` (for example, *{DB}*) for all models built with predictor subsets (*CB, DB, ..., ZB*);
-	c. choose the second predictor from the remaining predictors *C, ..., Z* and keep the first predictor as A; now build a GLM model;
-	d. save the model with the highest :math:`R^2` (for example, *{AZ}*) for all models built with predictor subsets (*AC, AD, ..., AZ*);
-	e. compare the :math:`R^2` value from the models build with *{AB}, {DB},* and *{AZ}*. If *{AB}* still gives the highest :math:`R^2` value, then you're done. If *{DB}* provides the highest :math:`R^2`, repeat steps 4a using *{DB}* until no improvement can be found in :math:`R^2`. Likewise with *{AZ}*: if it provides the highest :math:`R^2`, repeat steps 4c using *{AZ}* until no improvement can be found in :math:`R^2`.
+4. Replacement for 2 predictor subset from best subset chosen from forward step for 2 predictor subsets (i.e. starting from best *subset {AB}* from previous step):
+
+  a. fixing the second predictor, choose a different predictor for the first predictor from the remaining predictors *C, D, ..., Z* (skipping predictor *A* as it was chosed already by forward step; *B* is taken as the second predictor). Then, build a GLM model for each new subset of (*CB, DB, EB, ..., ZB*). Save the model with the highest :math:`R^2` (for example, {*DB*}) from all models built with predictor subsets (*CB, DB, EB, ..., ZB*);
+  b. fixing the first predictor, choose a different second predictor from the remaining predictor subset. Then, build a GLM model for each new subset generated. Save the model with the highest :math:`R^2` from all models built;
+  c. compare the :math:`R^2` value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest :math:`R^2`. If the best model is built with {*AB*}, we are done because steps 4(a) and 4(b) generated no improvement. If the best model is built with {*DB*}, repeat steps 4(a), 4(b), and 4(c) until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.
 
 5. Start with the best :math:`n` predictor subset and forward step for :math:`n` predictor subsets:
 
@@ -187,10 +185,12 @@ The H2O ModelSelection ``mode = maxr`` is implemented using the sequential repla
   b. save the model with the highest :math:`R^2` for all models built with :math:`n+1` predictor subsets;
 
 6. Replacement for :math:`n+1` predictor subsets:
+  
+  a. Repeat for predictor in location *0,1,2,...,n*:
 
-  a. keep :math:`n` predictors constant and only change the predcitors at location *0,1,2,...,n*, build a model with the new predictor subset;
-  b. save the model with the highest :math:`R^2` for all models built with :math:`n+1` predictor subsets;
-  c. if the new :math:`R^2` is better than the previous best :math:`R^2`, go back to 6a. Otherwise, you continue.
+    - keep all predictors fixed except in location *k* (*k* will be from *0,1,2,...,n*) and switch out the predictor at location *0* with one predictor from the available predictors. If there are *m* predictors in the available predictor subset, *m* GLM models will be built and the model with the best :math:`R^2` value will be saved;
+
+  b. from all the *n* best models found from step 6(a), if the best :math:`R^2` value has improved from the forward step or the previous 6(a), return to 6(a). If no improvement is found, break and just take the best :math:`R^2` model as the one to save.
 
 Again, the best :math:`R^2` value, the predictor names, and the ``model_id`` of the best models are stored in arrays as well as H2OFrame. Additionally, coefficients associated with the models built with all the predictor subset sizes are available and accessible as well.
 
@@ -257,6 +257,13 @@ Examples
       [[7]]
       Intercept       CAPSULE           AGE          RACE         DPROS         DCAPS           PSA           VOL
       4.8526636043  0.7153633278  0.0069487980 -0.0584344031  0.0791810013  0.4353149856  0.0126060611  -0.0005196059
+
+      # Retrieve the list of coefficients for a subset size of 3:
+      coeff3 <- h2o.coeff(allsubsetsModel, 3)
+      print(coeff3)
+      [[3]]
+      Intercept    CAPSULE      DCAPS        PSA
+      5.34902149 0.75750144 0.47979555 0.01289096
 
       # Retrieve the list of standardized coefficients:
       coeff_norm <- h2o.coef_norm(allsubsetsModel)
@@ -328,6 +335,10 @@ Examples
       # {‘Intercept’: 4.785482292681689, ‘CAPSULE’: 0.7207023955198935, ‘AGE’: 0.006873599969264931, ‘DPROS’: 0.07827698214607832, ‘DCAPS’: 0.4377770966619996, ‘PSA’: 0.012450143759298283}, 
       # {‘Intercept’: 4.853286962151182, ‘CAPSULE’: 0.7173933092205801, ‘AGE’: 0.00679089119920351, ‘RACE’: -0.06068692599374028, ‘DPROS’: 0.07928808123744804, ‘DCAPS’: 0.4384709133624667, ‘PSA’: 0.012572275831333262}, 
       # {‘Intercept’: 4.852663604264297, ‘CAPSULE’: 0.7153633277776693, ‘AGE’: 0.006948797960002643, ‘RACE’: -0.05843440305164041, ‘DPROS’: 0.07918100130777159, ‘DCAPS’: 0.43531498557623927, ‘PSA’: 0.012606061059188276, ‘VOL’: -0.0005196059470357373}]
+
+      # Retrieve the list of coefficients for a subset size of 3:
+      coeff3 = maxrglmModel.coef(3)
+      # {'Intercept': 5.349021488372978, 'CAPSULE': 0.757501440465183, 'DCAPS': 0.47979554935185015, 'PSA': 0.012890961277678725}
       
       # Retrieve the list of standardized coefficients:
       coeff_norm = maxrModel.coef_norm()
