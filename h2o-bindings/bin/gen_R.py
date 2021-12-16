@@ -273,6 +273,7 @@ def algo_to_modelname(algo):
     if algo == "targetencoder": return "Target Encoder"
     if algo == "gam": return "Generalized Additive Model"
     if algo == "modelselection": return "Model Selection"
+    if algo == "infogram": return "Infogram"
     return algo
 
 

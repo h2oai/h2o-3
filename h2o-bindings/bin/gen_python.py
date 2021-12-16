@@ -338,6 +338,7 @@ def algo_to_classname(algo):
     if algo == "coxph": return "H2OCoxProportionalHazardsEstimator"
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
     if algo == "xgboost": return "H2OXGBoostEstimator"
+    if algo == "infogram": return "H2OInfogram"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"
     if algo == "glrm": return "H2OGeneralizedLowRankEstimator"

@@ -141,6 +141,7 @@ reference:
       - h2o.anovaglm
       - h2o.get_best_r2_values
       - h2o.get_best_model_predictors
+      - h2o.get_admissible_attributes
       - h2o.glm
       - h2o.glrm
       - h2o.grep
@@ -159,6 +160,7 @@ reference:
       - h2o.import_sql_table
       - h2o.importFile
       - h2o.impute
+      - h2o.infogram
       - h2o.init
       - h2o.insertMissingValues
       - h2o.interaction
@@ -353,6 +355,7 @@ reference:
       - H2OCoxPHModelSummary-class
       - H2OFrame-class
       - H2OFrame-Extract
+      - H2OInfogram-class
       - H2OGrid-class
       - H2OLeafNode-class
       - H2OModel-class 
