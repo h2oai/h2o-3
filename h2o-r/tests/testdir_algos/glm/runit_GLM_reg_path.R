@@ -17,7 +17,6 @@ test.glm_reg_path <- function() {
     y = as.matrix(d2[,2])
     m_net = glmnet(x=x,y=y,family='binomial')
     mNetBeta <- as.matrix(m_net$beta)
-    browser()
     for(i in 1:length(regpath$lambdas)){
       coefs_net = mNetBeta[,i]
       coefs_h2o = regpath$coefficients[i,]

@@ -982,7 +982,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
       .Object@total_information_threshold <- infogram_model@parameters$total_information_threshold 
       .Object@safety_index_threshold <- infogram_model@parameters$safety_index_threshold
       .Object@relevance_index_threshold <- infogram_model@parameters$relevance_index_threshold
-      .Object@admissible_score <- h2o.getFrame(infogram_model@model$relevance_cmi_key)
+      .Object@admissible_score <- h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
       .Object@net_information_threshold <-
         infogram_model@parameters$net_information_threshold
       .Object@total_information_threshold <-

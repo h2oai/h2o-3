@@ -308,6 +308,8 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
   }
   
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    if (_output._relevance_cmi_key != null)
+      ab.getKey(_output._relevance_cmi_key, fs);
     return super.readAll_impl(ab, fs);
   }
 }
