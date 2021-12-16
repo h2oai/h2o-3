@@ -22,7 +22,7 @@ clean_up_after = False
 
 algos = ['coxph', 'kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naivebayes', 'glrm', 'svd', 'psvm', 'aggregator',
          'word2vec', 'stackedensemble', 'xgboost', 'isolationforest', 'gam', 'generic', 'targetencoder', 'rulefit', 
-         'extendedisolationforest', 'anovaglm', 'modelselection', 'upliftdrf']
+         'extendedisolationforest', 'anovaglm', 'modelselection', 'upliftdrf', 'infogram']
 
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 },

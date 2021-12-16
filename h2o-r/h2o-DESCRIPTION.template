@@ -91,6 +91,7 @@ Collate:
          'kmeans.R'
          'gam.R'
          'anovaglm.R'
+         'infogram.R'
          'gbm.R'
          'generic.R'
          'glm.R'

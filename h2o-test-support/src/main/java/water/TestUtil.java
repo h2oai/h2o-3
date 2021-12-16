@@ -770,6 +770,20 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
+  public static Frame parseTestFile(Key outputKey, String fname, ParseSetupTransformer transformer, 
+                                    int[] skippedColumns, int psetup) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
+    ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, psetup);
+    if (skippedColumns != null) {
+      guessedSetup.setSkippedColumns(skippedColumns);
+      guessedSetup.setParseColumnIndices(guessedSetup.getNumberColumns(), skippedColumns);
+    }
+
+    if (transformer != null)
+      guessedSetup = transformer.transformSetup(guessedSetup);
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
+  }
+
   /**
    * @deprecated use {@link #parseTestFile(String fname, String na_string, int check_header, byte[] column_types)} instead
    * <p>
