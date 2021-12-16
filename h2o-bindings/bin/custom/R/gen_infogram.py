@@ -11,29 +11,27 @@ extensions = dict(
     set_required_params="""
     parms$training_frame <- training_frame
     args <- .verify_dataxy(training_frame, x, y)
-    if (missing(protected_columns)) { # core infogram
+    if (missing(protected_columns)) { 
+      # core infogram
       if (!missing(safety_index_threshold)) {
-        warning("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.
-            Using default of 0.1 if not set")
+        warning("Should not set safety_index_threshold for Core Infogram runs. Set net_information_threshold instead.")
       }
       if (!missing(relevance_index_threshold)) {
-        warning("Should not set relevance_index_threshold for core infogram runs.  Set total_information_threshold 
-        instead.   Using default of 0.1 if not set")
+        warning("Should not set relevance_index_threshold for Core Infogram runs. Set total_information_threshold instead.")
       }
-    } else { # fair infogram
+    } else { 
+      # fair infogram
       if (!missing(net_information_threshold)) {
-      warning("Should not set net_information_threshold for fair infogram runs, set safety_index_threshold instead.  
-        Using default of 0.1 if not set")
+      warning("Should not set net_information_threshold for Fair Infogram runs, set safety_index_threshold instead.")
       }
       if (!missing(total_information_threshold)) {
-        warning("Should not set total_information_threshold for fair infogram runs, set relevance_index_threshold
-         instead.    Using default of 0.1 if not set")
+        warning("Should not set total_information_threshold for Fair Infogram runs, set relevance_index_threshold instead.")
       }
     }
     
-    if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-    if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-    if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+    if (!missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+    if (!missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+    if (!missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
     parms$ignored_columns <- args$x_ignore
     parms$response_column <- args$y
     """,
@@ -172,8 +170,7 @@ In the Fair Infogram, the admissible features are the strongest, safest drivers 
     df <- as.h2o(iris)
     
     # Infogram
-    ig <- h2o.infogram(y = "Species", training_frame = df)
-    ig  
+    ig <- h2o.infogram(y = "Species", training_frame = df) 
     plot(ig)
     """
 )
