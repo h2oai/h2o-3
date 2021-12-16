@@ -59,6 +59,11 @@ public class CoxPHTest extends Iced<CoxPHTest> {
       assertEquals(10, mm.tiedY());
       assertEquals(model._output._concordance, mm.concordance(), 0.0001);
       
+      String expectedSummary = 
+              "CoxPH Model (summary):\n" +
+              "                         Formula  Likelihood ratio test  Concordance  Number of Observations  Number of Events\n" +
+              "  Surv(start, stop, event) ~ age                5.16919      0.58064                     172                75\n";
+      assertEquals(expectedSummary, model._output._model_summary.toString());
     } finally {
       Scope.exit();
     }

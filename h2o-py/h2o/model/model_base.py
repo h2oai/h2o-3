@@ -564,6 +564,11 @@ class ModelBase(h2o_meta(Keyed)):
             return model["model_summary"]
         print("No model summary for this model")
 
+    def show_summary(self):
+        summary = self.summary()
+        if summary is not None:
+            print(summary)
+
     def show(self):
         """Print innards of model, without regards to type."""
         if self._future:
@@ -583,9 +588,7 @@ class ModelBase(h2o_meta(Keyed)):
         print("Model Key: ", self._id)
         print()
 
-        summary = self.summary()
-        if summary is not None:
-            print(summary)
+        self.show_summary()
 
         # training metrics
         tm = model["training_metrics"]
