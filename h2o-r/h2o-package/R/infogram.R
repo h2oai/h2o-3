@@ -273,7 +273,6 @@ h2o.infogram <- function(x,
 
   if (!missing(algorithm_params))
       parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
-  h2o.show_progress() # enable progress bar explicitly
 
   # Error check and build model
   model <- .h2o.modelJob('infogram', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -446,7 +445,6 @@ h2o.infogram <- function(x,
 
   if (!missing(algorithm_params))
       parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
-  h2o.show_progress() # enable progress bar explicitly
 
   # Build segment-models specific parameters
   segment_parms <- list()

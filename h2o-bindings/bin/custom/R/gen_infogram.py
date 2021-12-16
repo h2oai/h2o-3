@@ -41,7 +41,6 @@ extensions = dict(
     set_params="""
 if (!missing(algorithm_params))
     parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
-h2o.show_progress() # enable progress bar explicitly
 """,
     with_model="""
 # Convert algorithm_params back to list if not NULL, added after obtaining model
