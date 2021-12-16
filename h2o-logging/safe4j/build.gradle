@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly project(":h2o-logging-impl-log4j2")
+
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+}

@@ -51,8 +51,8 @@ include 'h2o-genmodel-ext-deepwater'
 include 'h2o-clustering'
 include 'h2o-logging-impl-classic'
 include 'h2o-logging-impl-log4j2'
+include 'h2o-logging-safe4j'
 include 'h2o-k8s-comp'
-
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->
