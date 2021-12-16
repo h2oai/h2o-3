@@ -37,12 +37,9 @@ public class InfogramUtils {
    */
   public static String[] extractPredictors(InfogramParameters parms, Frame train, String foldColumnName) {
     List<String> colNames = new ArrayList<>(Arrays.asList(train.names()));
-      if (parms._response_column != null)
-        colNames.remove(parms._response_column);
-      if (!(parms._protected_columns == null))
-        colNames.removeAll(Arrays.asList(parms._protected_columns));  // remove sensitive attributes
-      if (foldColumnName != null)
-        colNames.remove(foldColumnName);
+    String[] nonPredictors = parms.getNonPredictors();
+    for (String nonPred : nonPredictors)
+      colNames.remove(nonPred);
     return colNames.toArray(new String[colNames.size()]);
   }
 

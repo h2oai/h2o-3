@@ -213,7 +213,7 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
       List<Double> varimps = new ArrayList<>();
       List<Double> predictorCMI = new ArrayList<>();
       List<Double> predictorCMIRaw = new ArrayList<>();
-      List<String> topKList = new ArrayList<>(Arrays.asList(topKPredictors));
+      List<String> topKList = topKPredictors == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(topKPredictors));
       List<String> admissiblePred = new ArrayList<>();
       String[] varRowHeaders = varImp.getRowHeaders();
 
