@@ -196,9 +196,7 @@ class BuildConfig {
   }
 
   String getReleaseImage() {
-    // FIXME: Version 40 has an issue with Sphinx, temporarily downgrade to 39 for release only 
-    def versionTag = DEFAULT_IMAGE_VERSION_TAG == 40 ? 39 : DEFAULT_IMAGE_VERSION_TAG;
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${versionTag}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopImageVersion() {
