@@ -10,9 +10,6 @@ def test_glm_multinomial_makeGLMModel():
     d[54] = d[54].asfactor()
     mL.train(training_frame=d,x=list(range(0,54)),y=54)
     r = glm.getGLMRegularizationPath(mL)
-    rank = check_nonzero_coefs(r['coefficients'][0])
-    assert rank == mL._model_json["output"]["rank"], "expected rank: {0}, actual rank: {1}." \
-                                                     "".format(rank, mL._model_json["output"]["rank"])
     m2 = glm.makeGLMModel(model=mL,coefs=r['coefficients'][0]) # model generated from setting coefficients to model
     f1 = mL.predict(d)
     f2 = m2.predict(d)
@@ -32,12 +29,6 @@ def test_glm_multinomial_makeGLMModel():
             "Wrong exception was received."
         print("glm Multinomial makeGLMModel test completed!")
 
-def check_nonzero_coefs(coef_dict):
-    nonzero_count = 0
-    for key in coef_dict.keys():
-        if  not(coef_dict[key] == 0.0):
-            nonzero_count=nonzero_count+1
-    return nonzero_count
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_glm_multinomial_makeGLMModel)
 else:
