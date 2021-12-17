@@ -2,6 +2,7 @@ package hex;
 
 import hex.ClusteringModel.ClusteringOutput;
 import hex.ClusteringModel.ClusteringParameters;
+import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -145,17 +146,12 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       assert m instanceof ClusteringModel;
       ModelMetricsClustering mm = new ModelMetricsClustering(m, f, _customMetric);
       setOverallStatToModelMetrics((ClusteringModel) m, f.numRows(), mm);
-      setCentroidsStatToModelMetrics(mm);
+      if(this._size != null && this._within_sumsqe != null) {
+        setCentroidsStatToModelMetrics(mm);
+      }
       return m.addMetrics(mm);
     }
-
-    public ModelMetrics makeModelMetricsForCV(Model m, Frame f) {
-      assert m instanceof ClusteringModel;
-      ModelMetricsClustering mm = new ModelMetricsClustering(m, f, _customMetric);
-      setOverallStatToModelMetrics((ClusteringModel) m, f.numRows(), mm);
-      return m.addMetrics(mm);
-    }
-
+    
     private void setOverallStatToModelMetrics(ClusteringModel clm, long numRows, ModelMetricsClustering mm){
       mm._tot_withinss = _sumsqe;
 
