@@ -50,16 +50,16 @@ The interface is designed to be simple and aligned with the standard modeling in
 
         # Generate and plot the infogram
         ig = H2OInfoGram()
-        ig.train(y = y, training_frame = train)
+        ig.train(x=x, y=y, training_frame=train)
         ig.plot()
 
 
 Parameters
 ~~~~~~~~~~
 
-The infogram function follows the standard modeling interface in H2O, where the user specifies the following data variables: ``x, y, training_frame, validation_frame``.  In addition to the standard set of arguments, the infogram features several new, arguments, which are all optional:
+The infogram function follows the standard modeling interface in H2O, where the user specifies the following data variables: ``x``, ``y``, ``training_frame``, ``validation_frame``.  In addition to the standard set of arguments, the infogram features several new, arguments, which are all optional:
 
-- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise).  These features (e.g. race, gender, etc) should not drive the prediction of the response.
+- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable.  These features (e.g. race, gender, etc) should not drive the prediction of the response.
 
 - **algorithm**: Machine learning algorithm used to build the infogram. Options include:
 
@@ -70,7 +70,7 @@ The infogram function follows the standard modeling interface in H2O, where the 
  - ``"glm"`` (GLM with default parameters)
  - ``"xgboost"`` (if available, XGBoost with default parameters)
 
--  **algorithm_params**: (Optional) With ``algorithm``, you can also specify a list of customized parameters for that algorithm.  For example if we use a GBM, for example, we can specify ``list(max_depth = 10)`` in R and ``{'max_depth': 10}`` in Python.
+-  **algorithm_params**: With ``algorithm``, you can also specify a list of customized parameters for that algorithm.  For example if we use a GBM, for example, we can specify ``list(max_depth = 10)`` in R and ``{'max_depth': 10}`` in Python.
 
 - **net_information_threshold**: A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the corresponding total information is also higher than the ``total_ information_threshold``, that feature will be considered admissible.  The net information is the y-axis of the Core Infogram.
 
@@ -91,12 +91,27 @@ Infogram Output
 Infogram Plot
 ~~~~~~~~~~~~~
 
-The infogram function produces a visual guide to admisibility of the features.  The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.  Here's an example of the Core Infogram for the iris dataset.
+The infogram function produces a visual guide to admisibility of the features.  The visualization engine used in the R interface is the `ggplot2 <https://ggplot2.tidyverse.org/>`__ package and in Python, we use `matplotlib <https://matplotlib.org/>`__.  Here's an example of the Core Infogram for the Iris dataset.
 
 .. figure:: images/infogram_core_iris.png
    :alt: H2O Core Infogram
    :scale: 80%
    :align: center
+
+
+**L-Features.** The highlighted L-shaped area contains features that are either irrelevant or redundant (or both).  Features in the L can be categorized as follows:
+
+- top left: Contains highly unique information, but only a small amout of relevance.
+- origin:  Contains low amount of unique information and low relevance.
+- bottom right:  Contains low amount of unique information, but high relevance.
+
+
+**Admissible Features.**  The features that are not in the L-Features set are the admissible features.  Admissible features in each quadrants have different attributes and value to the model:
+
+- top right: Contains highly unique and relevant information.
+- top left: Contains highly unique, but minimally relevant information.
+- bottom right:  Contains low amount of unique information, but high relevance.
+
 
 
 Infogram Data 
@@ -105,7 +120,12 @@ Infogram Data
 The infogram function produces and object of type ``H2OInfogram``, which contains several data elements and the plot object.  The most important objects are the following:
 
 - ``admissible_features``: A list of the admissible features.
-- ``admissible_score``:  A data.frame storing the admissibility data for each feature, where the rows are the features considered (this will max out at 50 rows/features if ``top_n_features`` is set to the default.  The "admissible index" is the length between the origin and the (x, y) feature location on the infogram plot, normalized to 1.0.  The features are sorted by admissible index value, with the most admissible features at the top of the table, for easy access.  There's a binary indicator column which specifies which features are considered "admissible", given the threshold values.
+
+- ``admissible_score``:  A data frame storing the admissibility data for each feature, where the rows are the features considered (this will max out at 50 rows/features if ``top_n_features`` is set to the default.  The "admissible index" is the length between the origin and the (x, y) feature location on the infogram plot, normalized to 1.0.  The features are sorted by admissible index value, with the most admissible features at the top of the table, for easy access.  There's a binary indicator column which specifies which features are considered "admissible", given the threshold values.
+
+    - test 
+    - test 2
+
 
 
 
@@ -179,19 +199,63 @@ Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admiss
    :align: center
 
 
+Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the mode.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive or the response, not very safe to use in the model.  So you may consider building a model using just the two admissible variables.  To increase accuracy, you could add in some non-admissible, relevant variables, however it will be at a cost to safety, so this is an important to consider. In many cases, the improvement in accuracy might me minimal and not worthy of pursuing.
+
+We can execute two AutoML runs to compare the accuracy of the models built on only admissible features, versus all the non-protected features in the training set (bill/payment features).
+
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Building on the same code as above, we select train an AutoML with all 
+        # non-protected features and a run with only the admissible features:
+
+        # Admissible features
+        acols <- ig@admissible_features
+
+        # Non-protected columns
+        xcols <- setdiff(x, pcols)
+
+        # Admissible AutoML
+        aaml <- h2o.automl(x = acols, y = y, 
+                           training_frame = train,
+                           project_name = "admissible_automl_credit",
+                           max_models = 20, 
+                           seed = 1)
+
+        # AutoML
+        aml <- h2o.automl(x = acols, y = y, 
+                          training_frame = train,
+                          project_name = "automl_credit",
+                          max_models = 20, 
+                          seed = 1)
+
+
+
+   .. code-tab:: python
+ 
+        # Building on the same code as above, we select train an AutoML with all 
+        # non-protected features and a run with only the admissible features:
+
+        # TO DO
+
+
+
+
+
 Glossary
 --------
 
 - **Admissible Machine Learning**: Admissible machine learning is a new technology that can balance fairness, interpretability, and accuracy. 
 - **Protected Features**:  User-defined features that are sensitive and need to be protected (legally, or otherwise).  These features (e.g. race, gender, etc) should not drive the prediction of the response.
 - **Core Features or Core Set**: Key features that are driving the response, without redundancy.  High relevance, low redundancy. 
-- **Irrelevant Features**: Features on the vertical side of the L. Core infogram only
-mentary set comprises of the desired, admissible features.
-- **Redundant Features**: Features n the horizontal side of the L.
+- **Irrelevant Features**: Features on the vertical side of the L, which have low total information or relevance.
+- **Redundant Features**: Features on the bottom side of the L, which have a low amount of unique information to offer.
 - **Safety-index**:  This quantifies how much extra information `X_j` carries for `Y` that is not acquired through the sensitive variables.
 - **Relevance-index**: TO DO
 - **Admissible Features**: The set of features that are found to acceptable to use (high on the safety index). 
-- **Inadmissible Features (L-Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. These are variables with small F-values (F-stands for fairness) will be called inadmissible, as they possess little or no informational value beyond their use as a dummy for protected characteristics. 
+- **Inadmissible Features L-Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. These are variables with small F-values (F-stands for fairness) will be called inadmissible, as they possess little or no informational value beyond their use as a dummy for protected characteristics. 
 
 
 
