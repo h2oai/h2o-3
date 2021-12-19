@@ -13,7 +13,7 @@ import h2o
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.frame import H2OFrame
 import numpy as np
-from h2o.plot import get_matplotlib_pyplot
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result
 from matplotlib.collections import PolyCollection
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
@@ -986,7 +986,7 @@ class H2OInfogram(H2OEstimator):
         fig = plt.gcf()
         if not server:
             plt.show()
-        return fig
+        return decorate_plot_result(figure=fig)
 
     def get_relevance_cmi_frame(self, valid=False, xval=False):
         """
