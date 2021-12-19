@@ -82,28 +82,35 @@
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
-#' @param algorithm Type of algorithm to use to build infogram. Options include 'AUTO' (gbm), 'deeplearning' (Deep Learning with
-#'        default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm'
-#'        (GLM with default parameters), or 'xgboost' (if available, XGBoost with default parameters). Must be one of:
-#'        "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to AUTO.
-#' @param algorithm_params Parameters specified to the chosen algorithm can be passed to infogram using algorithm_params.
-#' @param protected_columns Predictors that are to be excluded from model due to them being discriminatory or inappropriate for whatever
-#'        reason.
-#' @param net_information_threshold Conditional information for core infogram threshold between 0 and 1 that is used to decide whether a
-#'        predictor's conditional information is high enough to be chosen into the admissible feature set.  Default to
-#'        -1 which will be set to 0.1 eventually. Defaults to -1.
-#' @param total_information_threshold Relevance threshold for core infogram between 0 and 1 that is used to decide whether a predictor's relevance
-#'        level is high enough to be chosen into the admissible feature set.  Defaults to -1 which will be set to 0.1
-#'        eventually. Defaults to -1.
-#' @param safety_index_threshold Conditional information for fair infogram threshold between 0 and 1 that is used to decide whether a
-#'        predictor's conditional information is high enough to be chosen into the admissible feature set.  Default to
-#'        -1 which will be set to 0.1 eventually. Defaults to -1.
-#' @param relevance_index_threshold Relevance threshold for fair infogram between 0 and 1 that is used to decide whether a predictor's relevance
-#'        level is high enough to be chosen into the admissible feature set.  Default to -1 which will be set to 0.1
-#'        eventually. Defaults to -1.
-#' @param data_fraction Fraction of training frame to use to build the infogram model.  Defaults to 1.0. Defaults to 1.
-#' @param top_n_features Number of top n variables to consider based on the variable importance.  Defaults to 0.0 which is to consider
-#'        all predictors. Defaults to 50.
+#' @param algorithm Type of machine learning algorithm used to build the infogram. Options include 'AUTO' (gbm), 'deeplearning'
+#'        (Deep Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with
+#'        default parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available, XGBoost with default
+#'        parameters). Must be one of: "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to AUTO.
+#' @param algorithm_params Customized parameters for the machine learning algorithm specified in the algorithm parameter.
+#' @param protected_columns Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
+#'        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
+#' @param net_information_threshold A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
+#'        feature, if the net information is higher than this threshold, and the corresponding total information is also
+#'        higher than the total_information_threshold, that feature will be considered admissible. The net information
+#'        is the y-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param total_information_threshold A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
+#'        feature, if the total information is higher than this threshold, and the corresponding net information is also
+#'        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
+#'        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param safety_index_threshold A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
+#'        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
+#'        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
+#'        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1
+#'        which gets set to 0.1. Defaults to -1.
+#' @param relevance_index_threshold A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only
+#'        used when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is
+#'        higher than this threshold, and the corresponding safety index is also higher than the
+#'        safety_index_threshold``, that feature will be considered admissible.  The relevance index is the x-axis of
+#'        the Fair Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param data_fraction The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater than
+#'        0 and less than or equal to 1.0 is acceptable. Defaults to 1.
+#' @param top_n_features An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
+#'        importance, and the top N are evaluated.  Defaults to 50. Defaults to 50.
 #' @param compute_p_values \code{Logical}. If true will calculate the p-value. Default to false. Defaults to FALSE.
 #' @examples
 #' \dontrun{
