@@ -6,7 +6,9 @@ We introduce some new concepts and tools to aid the design of *admissible learni
 Admissible ML introduces two methodological tools: Infogram and L-features. 
 
 - Infogram ("information diagram") is a new graphical feature-exploration method to facilitate the development of admissible machine learning methods. 
-- In order to mitigate unfairness, we introduce the concept of L-features, which offers ways to systematically discover the hidden problematic proxy features from a dataset. 
+- In order to mitigate unfairness, we introduce the concept of L-features, which offers ways to systematically discover the hidden problematic proxy features from a dataset.  L-features are inadmissible features. 
+
+The Infogram and Admissible Machine Learning is a new research direction in machine learning interpretability and you can find the theoretical foundations as well as several real-life examples of it's utility in the `Admissble ML <https://arxiv.org/abs/2108.07380>`__ paper.  Below we introduce the concepts at a high level and provide an example using the new H2O Infogram implementation.
 
 
 Infogram
@@ -72,7 +74,7 @@ The infogram function follows the standard modeling interface in H2O, where the 
 
 -  **algorithm_params**: With ``algorithm``, you can also specify a list of customized parameters for that algorithm.  For example if we use a GBM, for example, we can specify ``list(max_depth = 10)`` in R and ``{'max_depth': 10}`` in Python.
 
-- **net_information_threshold**: A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the corresponding total information is also higher than the ``total_ information_threshold``, that feature will be considered admissible.  The net information is the y-axis of the Core Infogram.
+- **net_information_threshold**: A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the corresponding total information is also higher than the ``total_information_threshold``, that feature will be considered admissible.  The net information is the y-axis of the Core Infogram.
 
 - **total_information_threshold**: A number between 0 and 1 representing a threshold for total information, defaulting to 0.1.  For a specific feature, if the total information is higher than this threshold, and the corresponding net information is also higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total information is the x-axis of the Core Infogram.
 
@@ -158,12 +160,16 @@ Along with the demographic variables that are included in this dataset, there's 
         y <- "default_payment_next_month"
         x <- setdiff(names(train), y)
 
-        # Protected attributes
+        # Protected columns
         pcols <- c("SEX", "MARRIAGE", "AGE")
 
         # Infogram
-        ig <- h2o.infogram(y = y, training_frame = train, protected_columns = pcols)
+        ig <- h2o.infogram(y = y, x = x, training_frame = train, protected_columns = pcols)
         plot(ig)
+
+        # Admissible score frame
+        asf <- ig@admissible_score
+        asf
 
    .. code-tab:: python
 
@@ -182,16 +188,20 @@ Along with the demographic variables that are included in this dataset, there's 
         x = train.columns
         x.remove(y)
 
-        # Protected attributes
+        # Protected columns
         pcols = ["SEX", "MARRIAGE", "AGE"]        
 
         # Infogram
-        ig = H2OInfogram()
-        ig.train(y=y, x=x, training_frame=train, protected_columns=pcols)
+        ig = H2OInfogram(protected_columns=pcols)
+        ig.train(y=y, x=x, training_frame=train)
         ig.plot()
 
+        # Admissible score frame
+        asf = ig.get_admissible_score_frame()
+        asf
 
-Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admissible attributes.  Most of the bill or payment features are either redundant or redudant and unsafe.
+
+Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admissible attributes, given the default thresholds.  Most of the bill or payment features are either redundant or redudant and unsafe.
 
 .. figure:: images/infogram_fair_credit.png
    :alt: H2O Fair Infogram
@@ -208,40 +218,88 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
 .. tabs::
    .. code-tab:: r R
 
-        # Building on the same code as above, we select train an AutoML with all 
-        # non-protected features and a run with only the admissible features:
+        # Building on the same code as above, we execute AutoML with all un-protected 
+        # features, and then we run AutoML with only the admissible features:
 
         # Admissible features
         acols <- ig@admissible_features
 
-        # Non-protected columns
-        xcols <- setdiff(x, pcols)
+        # Un-protected columns
+        ucols <- setdiff(x, pcols)
 
         # Admissible AutoML
         aaml <- h2o.automl(x = acols, y = y, 
                            training_frame = train,
                            project_name = "admissible_automl_credit",
-                           max_models = 20, 
+                           max_models = 5, 
                            seed = 1)
 
         # AutoML
-        aml <- h2o.automl(x = acols, y = y, 
+        aml <- h2o.automl(x = ucols, y = y, 
                           training_frame = train,
                           project_name = "automl_credit",
-                          max_models = 20, 
+                          max_models = 5, 
                           seed = 1)
 
 
 
    .. code-tab:: python
  
-        # Building on the same code as above, we select train an AutoML with all 
-        # non-protected features and a run with only the admissible features:
+        # Building on the same code as above, we execute AutoML with all un-protected 
+        # features, and then we run AutoML with only the admissible features:
 
-        # TO DO
+        # Admissible columns
+        acols = ig.get_admissible_features()
+        # Un-protected columns
+        ucols = list(set(x).difference(pcols))
+
+        # AutoML
+        from h2o.automl import H2OAutoML
+        
+        # Admissible AutoML
+        aaml = H2OAutoML(max_models=5, seed=1, project_name="admissible_automl_credit")
+        aaml.train(x=acols, y=y, training_frame=train)
+
+        # AutoML
+        aml = H2OAutoML(max_models=5, seed=1, project_name="automl_credit")
+        aml.train(x=ucols, y=y, training_frame=train)
 
 
 
+Utility Functions
+~~~~~~~~~~~~~~~~~
+
+In, R the output is stored in the slots of an ``H2OInfogram`` class object, so this data is easy to view and retreive.  In Python, we provide several handy methods for the ``H2OInfogram`` class to help the user retreive different pieces of information about admissibility.
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Get admissible features
+        acols <- ig@admissible_features
+
+        # Get admisisble score frame
+        adf <- ig@admissible_score
+
+        # View all slot names in the infogram object
+        slotNames(ig)
+
+   .. code-tab:: python
+
+        # Get admissible features
+        acols = ig.get_admissible_features()
+
+        # Get admissible score frame
+        adf = ig.get_admissible_score_frame()
+
+        # Get relevance for admissible features (total information or relevance index)
+        ig.get_admissible_relevance()
+
+        # Get conditional mutual information (CMI) for admissible features
+        # CMI in Core Infogram: net information
+        # CMI in Fair Infogram: safety index
+        ig.get_admissible_cmi()
+        ig.get_admissible_cmi_raw()
 
 
 Glossary
