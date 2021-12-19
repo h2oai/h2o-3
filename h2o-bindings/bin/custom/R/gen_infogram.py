@@ -52,15 +52,6 @@ infogram_model <- new("H2OInfogram", model_id=model@model_id)
 model <- infogram_model                
 """,
     module="""
-#' Extract the admissible attributes/predictors out of the H2O Infogram Model.
-#'
-#' @param model A fitted \linkS4class{H2OInfogram} object.
-#' @export 
-h2o.get_admissible_attributes <- function(model) {
-  if (is(model, "H2OInfogram") && (model@algorithm == "infogram"))
-    return(model@admissible_features)
-}
-
 #' Plot an H2O Infogram
 #'
 #' Plots the Infogram for an H2OInfogram object.

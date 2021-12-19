@@ -141,7 +141,6 @@ reference:
       - h2o.anovaglm
       - h2o.get_best_r2_values
       - h2o.get_best_model_predictors
-      - h2o.get_admissible_attributes
       - h2o.glm
       - h2o.glrm
       - h2o.grep
