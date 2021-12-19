@@ -30,7 +30,7 @@ def test_infogram_personal_loan():
     # make sure frame returning all predictors, relevance and cmi contains correct value
     pred_names, rel = infogram_model.get_all_predictor_relevance()
     x, cmi = infogram_model.get_all_predictor_cmi()
-    predictor_rel_cmi_frame = infogram_model.get_relevance_cmi_frame()  # get relevance and cmi frame
+    predictor_rel_cmi_frame = infogram_model.get_admissible_score_frame()  # get relevance and cmi frame
     assert_list_frame_equal(cmi, rel, predictor_rel_cmi_frame)
 
     # make sure our result matches Deep's

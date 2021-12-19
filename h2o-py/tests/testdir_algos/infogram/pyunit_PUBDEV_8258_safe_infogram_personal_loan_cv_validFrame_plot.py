@@ -27,8 +27,8 @@ def test_infogram_personal_loan_cv_valid():
     infogram_model_cv_v.plot(train=True, valid=True, xval=True, title="Infogram calculated from "
                                                                       "training/validation/xval holdout dataset",
                              server=True) # plot infogram from cv hold out dataset
-    relcmi_train = infogram_model_cv_v.get_relevance_cmi_frame()
-    relcmi_valid = infogram_model_cv_v.get_relevance_cmi_frame(valid=True)
+    relcmi_train = infogram_model_cv_v.get_admissible_score_frame()
+    relcmi_valid = infogram_model_cv_v.get_admissible_score_frame(valid=True)
     assert relcmi_train.nrow==relcmi_valid.nrow
     
 if __name__ == "__main__":
