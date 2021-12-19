@@ -2,6 +2,7 @@ package hex.Infogram;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelBuilderHelper;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel;
@@ -57,8 +58,12 @@ public class InfogramUtils {
     Frame topTrain = extractTrainingFrame(parms, eligiblePredictors, 1, trainFrame);
     generatedFrameKeys.add(topTrain._key);
     parms._infogram_algorithm_parameters._train = topTrain._key;
-    ModelBuilder builder = ModelBuilder.make(parms._infogram_algorithm_parameters);
-    Model builtModel = (Model) builder.trainModel().get();
+    
+    Model.Parameters[] modelParams = buildModelParameters(new Frame[]{topTrain}, parms._infogram_algorithm_parameters,
+            1, parms._algorithm); // generate parameters
+    ModelBuilder[] builders = ModelBuilderHelper.trainModelsParallel(buildModelBuilders(modelParams),
+            1);
+    Model builtModel = builders[0].get();
     Scope.track_generic(builtModel);
     TwoDimTable varImp = extractVarImp(parms._algorithm, builtModel);
     String[] ntopPredictors = new String[parms._top_n_features];
@@ -101,18 +106,20 @@ public class InfogramUtils {
       
       String[] nonPredictors = parms.getNonPredictors();
     List<String> colNames = Arrays.asList(trainFrame.names());
-      boolean cvWeightsPresent = parms._weights_column != null && colNames.contains(parms._weights_column)
-            && parms._weights_column.equals("__internal_cv_weights__");
+      boolean cvWeightsPresent = parms._weights_column != null && colNames.contains("__internal_cv_weights__")
+            && (parms._weights_column.equals("__internal_cv_weights__") || 
+              parms._weights_column.equals("infogram_internal_cv_weights_"));
       for (String nonPredName : nonPredictors) {
-        if ("__internal_cv_weights__".equals(nonPredName) && colNames.contains(parms._weights_column)) {
+        if (("__internal_cv_weights__".equals(nonPredName) || "infogram_internal_cv_weights_".equals(nonPredName)) 
+                && colNames.contains("__internal_cv_weights__")) {
           String cvWeightName = "infogram_internal_cv_weights_"; // switch weights column to turn off cv in algo used to build infogram
-          extractedFrame.add(cvWeightName, trainFrame.vec(nonPredName));
+          extractedFrame.add(cvWeightName, trainFrame.vec("__internal_cv_weights__"));
           parms._weights_column = cvWeightName;
         } else if (nonPredName.equals(parms._fold_column) && colNames.contains(parms._fold_column) && !cvWeightsPresent) {
           extractedFrame.add(nonPredName, trainFrame.vec(nonPredName));
-        } else if (!nonPredName.equals(parms._fold_column)) {
+        } else if (!nonPredName.equals(parms._fold_column) && colNames.contains(nonPredName)) {
           extractedFrame.add(nonPredName, trainFrame.vec(nonPredName));
-        }
+        } 
       }
       
       if (!(parms._fold_column != null && colNames.contains(parms._fold_column) && !cvWeightsPresent))

@@ -50,7 +50,7 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
   }
 
   public static class InfogramParameters extends Model.Parameters {
-    public Algorithm _algorithm = Algorithm.gbm;     // default to GBM
+    public Algorithm _algorithm = Algorithm.AUTO;     // default to GBM
     public String _algorithm_params = new String();  // store user specific parameters for chosen algorithm
     public String[] _protected_columns = null;    // store features to be excluded from final model
     public double _cmi_threshold = 0.1;           // default set by Deep
@@ -246,6 +246,7 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
         double[] distanceCorner = new double[indexLength];
         String[] predNames = new String[indexLength];
         double[] admissible = new double[indexLength];
+        double[] admissibleI = new double[indexLength];
         for (int index = 0; index < indexLength; index++) {
             rel[index] = relevance[indices[index]];
             cmiRaw[index] = cmiRawA[indices[index]];
@@ -253,6 +254,7 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
             predNames[index] = allPredictorNames[indices[index]];
             distanceCorner[index] = admissibleIndex[indices[index]];
             admissible[index] = admissibleA[indices[index]];
+            admissibleI[index] = admissibleIndex[indices[index]];
         }
         System.arraycopy(rel, 0, relevance, 0, indexLength);
         System.arraycopy(cmiNorm, 0, cmi, 0, indexLength);
@@ -260,6 +262,7 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
         System.arraycopy(predNames, 0, allPredictorNames, 0, indexLength);
         System.arraycopy(distanceCorner, 0, admissibleIndex, 0, indexLength);
         System.arraycopy(admissible, 0, admissibleA, 0, indexLength);
+        System.arraycopy(admissibleI, 0, admissibleIndex, 0, indexLength);
     }
   }
 

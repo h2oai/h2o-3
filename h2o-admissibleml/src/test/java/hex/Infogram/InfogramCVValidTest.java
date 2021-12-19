@@ -3,11 +3,10 @@ package hex.Infogram;
 import hex.SplitFrame;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
@@ -228,19 +227,18 @@ public class InfogramCVValidTest  extends TestUtil {
             trainF.setNames(colNames);
             trainF.replace(0, trainF.vec("diagnosis").toCategoricalVec()).remove();
             DKV.put(trainF);
-
             InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
             params._response_column = "diagnosis";
             params._train = trainF._key;
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
-            params._top_n_features = 50;
+            params._top_n_features = 5;
             params._seed = 12345;
-            params._nfolds = 3;
+            params._nfolds = 2;
             params._fold_assignment = Modulo;
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel);
-            assertCorrectCVCore(infogramModel);
+            assertCorrectCVCore(infogramModel, params, trainF);
         } finally {
             Scope.exit();
         }
@@ -370,57 +368,18 @@ public class InfogramCVValidTest  extends TestUtil {
         }
     }
     
-    public static void assertCorrectCVCore(InfogramModel infogramModel) {
-        long[] validNonZeroRows = new long[]{189, 190, 190};
-        double[][] cmiRaw = new double[][]{{0.08169581771332357, 0.0, 0.03425625202438276, 0.008709814751866496, 
-                0.02223534475430533, 0.017992393818269115, 0.0, 0.011487991245001439, 0.009665105118885187, 
-                0.010230352938320308, 0.0, 0.007535040728417819, 0.007333681119888524, 0.0018593870004597335, 0.0, 0.0, 
-                0.0, 4.805351900269983E-4, 0.0, 0.0, 0.0, 0.0, 0.0, 1.4858949061213877E-4, 0.0, 0.0, 0.0, 0.0, 0.0, 
-                0.0}, {0.1414522916051233, 0.12553639426362206, 0.09820559210956681, 0.06337621394604387, 
-                0.053230489048432084, 0.04410121054728933, 0.04333737327471621, 0.042078836523647745, 
-                0.03592426584259201, 0.024528848281659243, 0.02433495028041932, 0.021951752848415218, 
-                0.021742682136737912, 0.018167135927545708, 0.015904480642073615, 0.013632191507119806, 
-                0.011538736943777828, 0.0, 0.0, 0.0, 0.003287932354896661, 0.0, 9.3448875400437E-4, 0.001244023574750841, 
-                6.90450091490824E-4, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.10992489551457041, 0.13260979375398474, 
-                0.12638873978194365, 0.10456709563248978, 0.10171742595787592, 0.08983745180316571, 0.08823522369900783, 
-                0.08218907928568608, 0.07915372669875698, 0.06966478885983651, 0.016696319717939723, 
-                0.055213988611593656, 0.05303174283796519, 0.05120589063028813, 0.04968882046229339, 0.04090258142153935, 
-                0.03833172324109668, 0.03153265030738428, 0.03114401424116675, 0.028193403336733702, 
-                0.013747524723368265, 0.009557942432972588, 0.00882479405476655, 0.007893030913280086, 0.0, 0.0,
-                0.0021635071805015116, 0.0, 0.0, 3.1179824929061795E-5}};
-        String[][] validColNames = new String[][]{{"concave_points_worst", "compactness_worst", "texture_mean",
-                "smoothness_mean", "perimeter_worst", "fractal_dimension_worst", "fractal_dimension_mean",
-                "concave_points_mean", "symmetry_worst", "area_worst", "compactness_se", "concavity_se",
-                "radius_worst", "area_mean", "concavity_mean", "symmetry_mean", "smoothness_worst", "perimeter_se",
-                "area_se", "radius_mean", "texture_worst", "concavity_worst", "radius_se", "fractal_dimension_se",
-                "texture_se", "symmetry_se", "concave_points_se", "compactness_mean", "perimeter_mean",
-                "smoothness_se"}, {"area_se", "area_worst", "perimeter_mean", "radius_worst", "smoothness_worst",
-                "compactness_se", "perimeter_worst", "concavity_worst", "fractal_dimension_worst", "texture_mean",
-                "concave_points_worst", "texture_worst", "concave_points_mean", "symmetry_mean", "concavity_mean",
-                "symmetry_worst", "symmetry_se", "radius_se", "area_mean", "compactness_mean", "texture_se",
-                "perimeter_se", "fractal_dimension_se", "concave_points_se", "radius_mean", "smoothness_se",
-                "compactness_worst", "fractal_dimension_mean", "smoothness_mean", "concavity_se"},
-                {"concave_points_worst", "concave_points_mean", "perimeter_worst", "compactness_mean", "area_se",
-                        "smoothness_se", "fractal_dimension_worst", "compactness_worst", "concavity_worst",
-                        "compactness_se", "concave_points_se", "radius_se", "smoothness_worst",
-                        "fractal_dimension_mean", "symmetry_se", "texture_se", "radius_worst", "texture_mean",
-                        "area_worst", "symmetry_worst", "area_mean", "fractal_dimension_se", "texture_worst",
-                        "perimeter_mean", "perimeter_se", "concavity_se", "smoothness_mean", "concavity_mean",
-                        "radius_mean","symmetry_mean"}};
-        double[] mainRelevance = new double[]{1.0, 0.08948953104223797, 0.02620743317990611, 0.0019399743316518242, 
-                0.6187801783576264, 0.2808010415664416, 0.008630371321150698, 0.003244459766548256, 0.3404628948036715,
-                0.09744553147933943, 0.3302352774810101, 0.003331706365888622, 0.0021346433329991698, 
-                0.006881260287776389, 0.008212149084919634, 0.02578193462145112, 0.02601985020312607, 
-                0.008178699708125306, 0.004138451650723794, 0.004100210323871828, 0.004047798948386242, 
-                0.0037914745065436226, 0.0036801151185893786, 0.003628001817751223, 0.0026430896642307927, 
-                0.001607777138844435, 0.001456217683506916, 6.185385268403536E-4, 5.372569213253213E-4, 
-                2.943118926158916E-4};
-        String[] mainColNames = new String[]{"radius_worst", "texture_worst", "area_se", "fractal_dimension_worst", 
-                "perimeter_worst", "concave_points_mean", "perimeter_mean", "radius_se", "concave_points_worst", 
-                "texture_mean", "area_worst", "smoothness_se", "smoothness_worst", "compactness_se", 
-                "concave_points_se", "concavity_mean", "concavity_worst", "fractal_dimension_se", "symmetry_worst", 
-                "area_mean", "radius_mean", "smoothness_mean", "compactness_mean", "fractal_dimension_mean", 
-                "perimeter_se", "compactness_worst", "symmetry_se", "concavity_se", "symmetry_mean","texture_se"};
+    public static void assertCorrectCVCore(InfogramModel infogramModel, InfogramModel.InfogramParameters params, Frame trainF) {
+        long[] validNonZeroRows = new long[]{285, 284};
+        double[][] cmiRaw = new double[][]{{0,0,0,0,0},{0.1154018143206148, 0.0, 0.059270071809912395, 
+                0.053851119106329115, 0.0}};
+        String[][] validColNames = new String[][]{{"concave_points_worst", "radius_worst", "perimeter_worst",
+                "texture_worst", "area_worst"},{"concave_points_worst", "concave_points_mean", "area_worst", 
+                "radius_worst", "texture_worst"}};
+        double[] mainRelevance = new double[]{0.34372355964840223, 1.0, 0.22668974589585472, 0.04829270617635511, 
+                0.12967891871933077};
+        String[] mainColNames = new String[]{"concave_points_worst", "radius_worst", "concave_points_mean", 
+                "perimeter_worst", "area_worst"};
+        
         Frame relCmiKeyCV = DKV.getGet(infogramModel._output._relevance_cmi_key_xval);
         Scope.track(relCmiKeyCV);
         // check correct validation infogram averaging
@@ -444,7 +403,7 @@ public class InfogramCVValidTest  extends TestUtil {
         ArrayList<String> calculatedColumns = new ArrayList(Arrays.asList(strVec2array(relCmiKeyCV.vec("column"))));
         // manually calculate the cmi_raw from intermediate results collected manually
         int numFold = nObs.length;
-        int numPred = calculatedCmiRaw.length;
+        int numPred = relevance.length;
         double totalNObs = 1.0/sum(nObs);
         double[] cmiRawManual = new double[numPred];
         for (int fIndex=0; fIndex < numFold; fIndex++) {    // compute across each fold
@@ -452,7 +411,8 @@ public class InfogramCVValidTest  extends TestUtil {
             for (int pIndex=0; pIndex < numPred; pIndex++) {    // same column name as calculatedCMI frame
                 String currPredName = calculatedColumns.get(pIndex);
                 int colIndex = colNameList.indexOf(currPredName); // corresponding index from frame
-                cmiRawManual[pIndex] += cmiRaw[fIndex][colIndex]*totalNObs*nObs[fIndex];
+                if (colIndex >= 0)
+                    cmiRawManual[pIndex] += cmiRaw[fIndex][colIndex]*totalNObs*nObs[fIndex];
             }
         }
         assertArrayEquals(calculatedCmiRaw, cmiRawManual, 1e-6);    // compare cmi_raw calculations
@@ -472,12 +432,13 @@ public class InfogramCVValidTest  extends TestUtil {
         double[] manualAdmissible = new double[numPred];
         double[] manualAdmissibleIndex = new double[numPred];
         double[] manualRelevance = new double[numPred];
+        double scale = 1.0/Math.sqrt(2.0);
         for (int pIndex=0; pIndex < numPred; pIndex++) {
             String colName = calculatedColumns.get(pIndex);
             int mainIndex = mainColumns.indexOf(colName);
             manualRelevance[pIndex] = relevance[mainIndex];
             double temp = (1-manualRelevance[pIndex])*(1-manualRelevance[pIndex])+(1-manualCmi[pIndex])*(1-manualCmi[pIndex]);
-            manualAdmissibleIndex[pIndex] = Math.sqrt(temp);
+            manualAdmissibleIndex[pIndex] = Math.sqrt(temp)*scale;
             manualAdmissible[pIndex] = manualRelevance[pIndex]>=0.1 && manualCmi[pIndex]>=0.1?1:0;
 
         }
@@ -593,6 +554,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._top_n_features = 50;
             params._seed = 12345;
             params._nfolds = 2;
+            params._fold_assignment = Modulo;
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel);
@@ -646,23 +608,24 @@ public class InfogramCVValidTest  extends TestUtil {
 
 
     public static void assertCorrectCVSafe(InfogramModel infogramModel) {
-        long[] validNonZeroRows = new long[]{3437, 3470};
-        double[][] cmiRaw = new double[][]{{0.01042522722364736, 0.0, 0.0, 8.172994825386137E-4, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0}};
-        String[][] validColNames = new String[][]{{"days_b_screening_arrest", "end", "event", "juv_fel_count", 
-                "decile_score", "start", "v_decile_score", "priors_count", "juv_other_count", "v_score_text", 
-                "c_charge_degree", "juv_misd_count", "score_text", "priors_count.1", "decile_score.1"}, {"end", 
-                "event", "decile_score", "priors_count", "start", "juv_fel_count", "juv_misd_count", 
-                "days_b_screening_arrest", "c_charge_degree", "v_decile_score", "v_score_text", "juv_other_count", 
-                "score_text", "decile_score.1", "priors_count.1"}};
-        double[] mainRelevance = new double[]{1.0, 0.22232788946634713, 0.010488736091117714, 0.0, 
+        long[] validNonZeroRows = new long[]{3454,3453};
+        double[][] cmiRaw = new double[][]{{0.0112466313376575760, 0, 0.011181541634240677, 0.005919207126032999, 
+                0.003763971206082628, 0.0, 0.0016720556657749963, 2.1858827102438916E-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
+                0.0}, {0.008229504140717436, 0.0, 0.007422460612105386, 0.004307029194700496, 0.003067660070028344, 
+                0.0, 8.305386172429152E-4, 0.0, 0.0, 2.9469488065148042E-5, 0.0, 0.0, 0.0, 0.0, 0.0}};
+        String[][] validColNames = new String[][]{{"c_charge_degree", "end", "juv_misd_count", "juv_fel_count", 
+                "juv_other_count", "event", "days_b_screening_arrest", "start", "priors_count", "decile_score", 
+                "v_decile_score", "score_text", "v_score_text", "priors_count.1", "decile_score.1"}, 
+                {"juv_other_count", "end", "days_b_screening_arrest", "juv_fel_count", "start", "event", 
+                        "juv_misd_count", "decile_score", "priors_count", "v_score_text", "score_text", 
+                        "v_decile_score", "c_charge_degree", "decile_score.1", "priors_count.1"}};
+        double[] mainRelevance = new double[]{1.0,  0.22232788946634713, 0.010488736091117714, 0.0, 
                 0.016795647759374355, 0.0, 0.0018857970710325917, 0.00401633133386085, 0.01452655439713657, 
                 2.574920854711118E-4, 0.004113058086770913, 0.0012933419572252322, 0.0014052131829135543, 
                 0.0022520089083028056, 0.0013904296902873732};
         String[] mainColNames = new String[]{"end", "event", "priors_count", "priors_count.1", "decile_score", 
-                "decile_score.1", "score_text", "v_decile_score", "start", "v_score_text", "days_b_screening_arrest", 
-                "c_charge_degree", "juv_other_count", "juv_misd_count", "juv_fel_count"};
+                "decile_score.1", "score_text", "v_decile_score", "start", "v_score_text", "days_b_screening_arrest",
+                 "c_charge_degree", "juv_other_count", "juv_misd_count", "juv_fel_count"};
         Frame relCmiKeyCV = DKV.getGet(infogramModel._output._relevance_cmi_key_xval);
         Scope.track(relCmiKeyCV);
         // check correct validation infogram averaging
@@ -683,5 +646,51 @@ public class InfogramCVValidTest  extends TestUtil {
         long numRow = relCmi_valid.numRows();
         for (int rowIndex = 1; rowIndex < numRow; rowIndex++)
             assert admissibleIndex.at(rowIndex-1) >= admissibleIndex.at(rowIndex);
+    }
+
+    public static Frame[] splitFrameModulo(Frame train, int nfolds) {
+        Frame[] splitedFrames = new Frame[nfolds];
+        for (int index=0; index < nfolds; index++) {
+            SplitFrameModulo sfm = new SplitFrameModulo(nfolds, index, train);
+            sfm.doAll(train.types(), train);
+            splitedFrames[index] = sfm.outputFrame(Key.make(), train.names(), train.domains());
+            DKV.put(splitedFrames[index]);
+            Scope.track(splitedFrames[index]);
+        }
+        return splitedFrames;
+    }
+    
+    private static class SplitFrameModulo extends MRTask<SplitFrameModulo> {
+        final int _nFold;
+        final int _foldIndex;
+        final boolean[] _isCategorical;
+        
+        public SplitFrameModulo(int nfold, int foldIndex, Frame fr) {
+            _nFold = nfold;
+            _foldIndex = foldIndex;
+            int numCol = fr.numCols();
+            _isCategorical = new boolean[numCol];
+            for (int index=0; index<numCol; index++) {
+                _isCategorical[index] = fr.vec(index).isCategorical();
+            }
+         }
+
+        @Override
+        public void map(Chunk[] chk, NewChunk[] newChunks) {
+            long rowStart = chk[0].start();
+            int numRow = chk[0].len();
+            int numCol = chk.length;
+            for (int rowIndex = 0; rowIndex < numRow; numRow++) {
+                long currRow = rowStart + rowIndex;
+                if (currRow % _nFold == _foldIndex) {
+                    for (int colIndex = 0; colIndex < numCol; colIndex++) {
+                        if (_isCategorical[colIndex])
+                            newChunks[colIndex].addCategorical((int) chk[colIndex].atd(rowIndex));
+                        else
+                            newChunks[colIndex].addNum(chk[colIndex].atd(rowIndex));
+                    }
+                }
+            }
+        }
     }
 }

@@ -14,6 +14,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 import hex.genmodel.utils.DistributionFamily;
 import static hex.Infogram.InfogramModel.InfogramModelOutput.sortCMIRel;
+import static hex.Infogram.InfogramModel.InfogramParameters.Algorithm.AUTO;
+import static hex.Infogram.InfogramModel.InfogramParameters.Algorithm.gbm;
 import static hex.Infogram.InfogramUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.keepFrameKeys;
 import static water.util.ArrayUtils.sort;
@@ -109,18 +111,22 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
   public void calculateMeanInfogramInfo(double[][] cmiRaw, List<List<String>> columns,
                                         long[] nObs) {
     int nFolds = cmiRaw.length;
-    List<String> oneFoldColumns = columns.get(0);  // get column names of first fold
-    _columnsCV = oneFoldColumns.toArray(new String[oneFoldColumns.size()]);
-    int nPreds = cmiRaw[0].length;
+    Set<String> allNames = new HashSet<>(); // store all names
+    for (List<String> oneFold : columns)
+      allNames.addAll(oneFold);
+    List<String> allNamesList = new ArrayList<>(allNames);
+    int nPreds = allNames.size();
     _cmiCV = new double[nPreds];
     _cmiRawCV = new double[nPreds];
     double oneOverNObsSum = 1.0/sum(nObs);
+    int foldPredSize = cmiRaw[0].length;
     for (int fIndex = 0; fIndex < nFolds; fIndex++) {  // get sum of each fold
       List<String> oneFoldC = columns.get(fIndex);
-      for (int pIndex = 0; pIndex < nPreds; pIndex++) { // go through each predictor
-        String colName = oneFoldColumns.get(pIndex);    // use same predictor order as zero fold
-        int currFoldIndex = oneFoldC.indexOf(colName);  // current fold colName order index change
-        _cmiRawCV[pIndex] += cmiRaw[fIndex][currFoldIndex] * nObs[fIndex] * oneOverNObsSum;
+      double scale =  nObs[fIndex] * oneOverNObsSum;
+      for (int pIndex = 0; pIndex < foldPredSize; pIndex++) { // go through each predictor
+        String colName = oneFoldC.get(pIndex);    // use same predictor order as zero fold
+        int allNameIndex = allNamesList.indexOf(colName);  // current fold colName order index change
+        _cmiRawCV[allNameIndex] += cmiRaw[fIndex][pIndex] * scale;
       }
     }
     // normalize CMI and relevane again
@@ -129,6 +135,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
     for (int pIndex = 0; pIndex < nPreds; pIndex++) {
       _cmiCV[pIndex] = _cmiRawCV[pIndex]*oneOverMaxCMI;
     }
+    _columnsCV = allNamesList.stream().toArray(String[]::new);
   }
   
   @Override
@@ -231,6 +238,9 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
         warn("total_information_threshold", "Should not set total_information_threshold for fair" +
                 " infogram runs, set relevance_index_threshold instead.  Using default of 0.1 if not set");
       }
+      
+      if (AUTO.equals(_parms._algorithm))
+        _parms._algorithm = gbm;
     }
 
     // check top k to be between 0 and training dataset column number
@@ -387,13 +397,12 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
     public void copyGenerateAdmissibleIndex(int numRows, List<String> relNames, double[] cmi,
                                             double[] cmi_raw, double[] relevance, double[] admissible_index, 
                                             double[] admissible, String[] all_predictor_names) {
-      double normalizedAdmissibleIndex = 1.0/Math.sqrt(2.0);
       for (int index = 0; index < numRows; index++) { // extract predictor with varimp >= threshold
         int newIndex = relNames.indexOf(all_predictor_names[index]);
         relevance[index] = (double) _varImp.get(newIndex, 1);
         double temp1 = relevance[index];
         double temp2 = cmi[index];
-        admissible_index[index] =  normalizedAdmissibleIndex*Math.sqrt(temp1*temp1+temp2*temp2);
+        admissible_index[index] =  NORMALIZE_ADMISSIBLE_INDEX*Math.sqrt(temp1*temp1+temp2*temp2);
         admissible[index] = (relevance[index] >= _parms._relevance_threshold && cmi[index] >= _parms._cmi_threshold) ? 1 : 0;
       }
       int[] indices = IntStream.range(0, cmi.length).toArray();
@@ -415,26 +424,49 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       return cmiRelFrame._key;
     }
     
+    private void cleanUpCV() {
+      String[] mainModelPredNames = _model._output._all_predictor_names;
+      List<String> cvNames = new ArrayList<>(Arrays.asList(_columnsCV));
+      int nPred = mainModelPredNames.length;
+      String[] newCVNames = new String[nPred];
+      double[] cmiCV = new double[nPred];
+      double[] cmiRawCV = new double[nPred];
+      for (int index=0; index < nPred; index++) {
+        String mainPredNames = mainModelPredNames[index];
+        int cvIndex = cvNames.indexOf(mainPredNames);
+        if (cvIndex >= 0) {
+          newCVNames[index] = mainPredNames;
+          cmiCV[index] = _cmiCV[cvIndex];
+          cmiRawCV[index] = _cmiRawCV[cvIndex];
+        }
+      }
+      _columnsCV = newCVNames.clone();
+      _cmiCV = cmiCV.clone();
+      _cmiRawCV = cmiRawCV.clone();
+    }
+    
     private Key<Frame> setCMIRelFrameCV() {
-      int nPred = _columnsCV.length;
-      double[] admissibleIndex = new double[nPred];
-      double[] admissible = new double[nPred];
-      ArrayList<String> mainModelPredNames = new ArrayList<>(Arrays.asList(_model._output._all_predictor_names));
+      String[] mainModelPredNames = _model._output._all_predictor_names;
       double[] mainModelRelevance = _model._output._relevance;
       double[] relevanceCV = new double[mainModelRelevance.length];
-     
+      int nPred = mainModelPredNames.length;
+      double[] admissibleIndex = new double[nPred];
+      double[] admissible = new double[nPred];
+      
+      cleanUpCV();
+
+      // generate admissible, admissibleIndex referring to cvNames
       for (int index=0; index<nPred; index++) {
-        String colName = _columnsCV[index];
-        int mainIndex = mainModelPredNames.indexOf(colName);
-        relevanceCV[index] = mainModelRelevance[mainIndex];
-        double temp1 = 1-relevanceCV[index];
-        double temp2 = 1-_cmiCV[index];
-        admissibleIndex[index] = Math.sqrt(temp1*temp1+temp2*temp2);
-        admissible[index] = _cmiCV[index]>=_parms._cmi_threshold && relevanceCV[index]>=_parms._relevance_threshold 
-                ? 1 : 0;
+          relevanceCV[index] = mainModelRelevance[index];
+          double temp1 = 1 - relevanceCV[index];
+          double temp2 = 1 - _cmiCV[index];
+          admissibleIndex[index] = Math.sqrt(temp1 * temp1 + temp2 * temp2)*NORMALIZE_ADMISSIBLE_INDEX;
+          admissible[index] = _cmiCV[index] >= _parms._cmi_threshold && relevanceCV[index] >= _parms._relevance_threshold
+                  ? 1 : 0;
       }
-      int[] indices = IntStream.range(0, _cmiCV.length).toArray();
-      sort(indices, admissibleIndex, -1, 1);
+      int[] indices = IntStream.range(0, relevanceCV.length).toArray();
+      _columnsCV = mainModelPredNames.clone();
+      sort(indices, admissibleIndex, -1, -1);
       sortCMIRel(indices, relevanceCV, _cmiRawCV, _cmiCV, _columnsCV, admissibleIndex, admissible);
       Frame cmiRelFrame = generateCMIRelevance(_columnsCV, admissible, admissibleIndex, relevanceCV, _cmiCV,
               _cmiRawCV, _buildCore);

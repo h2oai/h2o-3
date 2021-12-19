@@ -68,7 +68,7 @@
 #' @param algorithm Type of algorithm to use to build infogram. Options include 'AUTO' (gbm), 'deeplearning' (Deep Learning with
 #'        default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm'
 #'        (GLM with default parameters), or 'xgboost' (if available, XGBoost with default parameters). Must be one of:
-#'        "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to gbm.
+#'        "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to AUTO.
 #' @param algorithm_params Parameters specified to the chosen algorithm can be passed to infogram using algorithm_params.
 #' @param protected_columns Predictors that are to be excluded from model due to them being discriminatory or inappropriate for whatever
 #'        reason.

@@ -67,7 +67,7 @@ class H2OInfogram(H2OEstimator):
                  max_runtime_secs=0.0,  # type: float
                  custom_metric_func=None,  # type: Optional[str]
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-                 algorithm="gbm",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
+                 algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
                  algorithm_params=None,  # type: Optional[dict]
                  protected_columns=None,  # type: Optional[List[str]]
                  net_information_threshold=-1.0,  # type: float
@@ -188,7 +188,7 @@ class H2OInfogram(H2OEstimator):
                Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
                parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available, XGBoost with default
                parameters).
-               Defaults to ``"gbm"``.
+               Defaults to ``"auto"``.
         :type algorithm: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
         :param algorithm_params: Parameters specified to the chosen algorithm can be passed to infogram using
                algorithm_params.
@@ -684,7 +684,7 @@ class H2OInfogram(H2OEstimator):
         default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm'
         (GLM with default parameters), or 'xgboost' (if available, XGBoost with default parameters).
 
-        Type: ``Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]``, defaults to ``"gbm"``.
+        Type: ``Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]``, defaults to ``"auto"``.
         """
         return self._parms.get("algorithm")
 
