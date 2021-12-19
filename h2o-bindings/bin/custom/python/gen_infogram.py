@@ -132,16 +132,16 @@ def class_extensions():
         
     def get_admissible_score_frame(self, valid=False, xval=False):
         """
-        Retreive relevance, CMI information in an H2OFrame for training dataset by default
+        Retreive admissible score frame which includes relevance and CMI information in an H2OFrame for training dataset by default
         :param valid: return infogram info on validation dataset if True
         :param xval: return infogram info on cross-validation hold outs if True
         :return: H2OFrame
         """
-        keyString = self._model_json["output"]["relevance_cmi_key"]
+        keyString = self._model_json["output"]["admissible_score_key"]
         if (valid):
-            keyString = self._model_json["output"]["relevance_cmi_key_valid"]
+            keyString = self._model_json["output"]["admissible_score_key_valid"]
         elif (xval):
-            keyString = self._model_json["output"]["relevance_cmi_key_xval"]
+            keyString = self._model_json["output"]["admissible_score_key_xval"]
             
         if keyString is None:
             return None

@@ -77,7 +77,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
   @Override
   public void computeCrossValidation() {
     info("cross-validation", "cross-validation infogram information is stored in frame with key" +
-            " labeled as relevance_cmi_key_cv and the admissible features in admissible_features_cv.");
+            " labeled as admissible_score_key_cv and the admissible features in admissible_features_cv.");
     if (error_count() > 0) {
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(Infogram.this);
     }
@@ -325,13 +325,13 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
         _cmiRelKey = setCMIRelFrame(validPresent);
         _model._output.extractAdmissibleFeatures(DKV.getGet(_cmiRelKey), false, false);
         if (validPresent) {
-          _cmiRelKeyValid = _model._output._relevance_cmi_key_valid;
+          _cmiRelKeyValid = _model._output._admissible_score_key_valid;
           _model._output.extractAdmissibleFeatures(DKV.getGet(_cmiRelKeyValid), true, false);
           _model._output._validNonZeroNumRows = _validNonZeroNumRows;
         }
         if (_cvDone) {                       // CV is enabled and now we are in main model
           _cmiRelKeyCV = setCMIRelFrameCV(); // generate relevance and CMI frame from cv runs
-          _model._output._relevance_cmi_key_xval = _cmiRelKeyCV;
+          _model._output._admissible_score_key_xval = _cmiRelKeyCV;
           _model._output.extractAdmissibleFeatures(DKV.getGet(_cmiRelKeyCV), false, true);
           _parms._nfolds = _nFoldOrig;
           _parms._fold_assignment = _foldAssignmentOrig;
@@ -414,12 +414,12 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       Frame cmiRelFrame = generateCMIRelevance(_model._output._all_predictor_names, _model._output._admissible, 
               _model._output._admissible_index, _model._output._relevance, _model._output._cmi, 
               _model._output._cmi_raw, _buildCore);
-      _model._output._relevance_cmi_key = cmiRelFrame._key;
+      _model._output._admissible_score_key = cmiRelFrame._key;
       if (validPresent) {  // generate relevanceCMI frame for validation dataset
         Frame cmiRelFrameValid = generateCMIRelevance(_model._output._all_predictor_names_valid, 
                 _model._output._admissible_valid, _model._output._admissible_index_valid, 
                 _model._output._relevance_valid, _model._output._cmi_valid, _model._output._cmi_raw_valid, _buildCore);
-        _model._output._relevance_cmi_key_valid = cmiRelFrameValid._key;
+        _model._output._admissible_score_key_valid = cmiRelFrameValid._key;
       }
       return cmiRelFrame._key;
     }

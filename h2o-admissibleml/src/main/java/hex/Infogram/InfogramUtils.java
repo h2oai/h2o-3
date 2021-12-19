@@ -247,7 +247,7 @@ public class InfogramUtils {
 
   public static void extractInfogramInfo(InfogramModel infoModel, double[][] cmiRaw, 
                                          List<List<String>> columns, int foldIndex) {
-    Frame validFrame = DKV.getGet(infoModel._output._relevance_cmi_key_valid);
+    Frame validFrame = DKV.getGet(infoModel._output._admissible_score_key_valid);
     // relCMIFrame contains c1:column, c2:admissible, c3:admissible_index, c4:relevance, c5:cmi, c6 cmi_raw
     cmiRaw[foldIndex] = vec2array(validFrame.vec(_CMI_RAW_INDEX));
     String[] oneColumn = strVec2array(validFrame.vec(_COLUMN_INDEX));

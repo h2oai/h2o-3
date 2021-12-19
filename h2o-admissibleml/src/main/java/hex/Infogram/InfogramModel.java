@@ -170,9 +170,9 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
     public String[] _all_predictor_names_valid;
     public double[] _relevance; // variable importance for all predictors
     public double[] _relevance_valid; // equals to _relevance but may change in order
-    public Key<Frame> _relevance_cmi_key;
-    public Key<Frame> _relevance_cmi_key_valid;
-    public Key<Frame> _relevance_cmi_key_xval;
+    public Key<Frame> _admissible_score_key;
+    public Key<Frame> _admissible_score_key_valid;
+    public Key<Frame> _admissible_score_key_xval;
     public String[] _topKFeatures;
     public long _validNonZeroNumRows;
 
@@ -279,31 +279,31 @@ public class InfogramModel extends Model<InfogramModel, InfogramModel.InfogramPa
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     super.remove_impl(fs, cascade);
-    Keyed.remove(_output._relevance_cmi_key, fs, true);
-    Keyed.remove(_output._relevance_cmi_key_valid, fs, true);
-    Keyed.remove(_output._relevance_cmi_key_xval, fs, true);
+    Keyed.remove(_output._admissible_score_key, fs, true);
+    Keyed.remove(_output._admissible_score_key_valid, fs, true);
+    Keyed.remove(_output._admissible_score_key_xval, fs, true);
     return fs;
   }
 
   @Override
   protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    if (_output._relevance_cmi_key != null)
-      ab.putKey(_output._relevance_cmi_key);
-    if (_output._relevance_cmi_key_valid != null)
-      ab.putKey(_output._relevance_cmi_key_valid);
-    if (_output._relevance_cmi_key_xval != null)
-      ab.putKey(_output._relevance_cmi_key_xval);
+    if (_output._admissible_score_key != null)
+      ab.putKey(_output._admissible_score_key);
+    if (_output._admissible_score_key_valid != null)
+      ab.putKey(_output._admissible_score_key_valid);
+    if (_output._admissible_score_key_xval != null)
+      ab.putKey(_output._admissible_score_key_xval);
     return super.writeAll_impl(ab);
   }
 
   @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    if (_output._relevance_cmi_key != null)
-      ab.getKey(_output._relevance_cmi_key, fs);
-    if (_output._relevance_cmi_key_valid != null)
-      ab.getKey(_output._relevance_cmi_key_valid, fs);
-    if (_output._relevance_cmi_key_xval != null)
-      ab.getKey(_output._relevance_cmi_key_xval, fs);
+    if (_output._admissible_score_key != null)
+      ab.getKey(_output._admissible_score_key, fs);
+    if (_output._admissible_score_key_valid != null)
+      ab.getKey(_output._admissible_score_key_valid, fs);
+    if (_output._admissible_score_key_xval != null)
+      ab.getKey(_output._admissible_score_key_xval, fs);
     return super.readAll_impl(ab, fs);
   }
 }
