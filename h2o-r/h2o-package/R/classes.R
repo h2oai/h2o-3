@@ -990,7 +990,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
       .Object@total_information_threshold <- infogram_model@parameters$total_information_threshold 
       .Object@safety_index_threshold <- infogram_model@parameters$safety_index_threshold
       .Object@relevance_index_threshold <- infogram_model@parameters$relevance_index_threshold
-      .Object@admissible_score <- h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
+      .Object@admissible_score <- h2o.getFrame(infogram_model@model$admissible_score_key$name)
       .Object@net_information_threshold <-
         infogram_model@parameters$net_information_threshold
       .Object@total_information_threshold <-
@@ -1000,7 +1000,7 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
       .Object@relevance_index_threshold <-
         infogram_model@parameters$relevance_index_threshold
       .Object@admissible_score <-
-        h2o.getFrame(infogram_model@model$relevance_cmi_key$name)
+        h2o.getFrame(infogram_model@model$admissible_score_key$name)
       if (!is.null(infogram_model@model$admissible_features_valid) &&
           !is.list(infogram_model@model$admissible_features_valid)) {
         .Object@admissible_features_valid <-
@@ -1015,15 +1015,15 @@ setMethod("initialize", "H2OInfogram", function(.Object, model_id, ...) {
       } else {
         .Object@admissible_features_xval <- NULL
       }
-      if (!is.null(infogram_model@model$relevance_cmi_key_valid)) {
+      if (!is.null(infogram_model@model$admissible_score_key_valid)) {
         .Object@admissible_score_valid <-
-          h2o.getFrame(infogram_model@model$relevance_cmi_key_valid$name)
+          h2o.getFrame(infogram_model@model$admissible_score_key_valid$name)
       } else {
         .Object@admissible_score_valid <- NULL
       }
-      if (!is.null(infogram_model@model$relevance_cmi_key_xval)) {
+      if (!is.null(infogram_model@model$admissible_score_key_xval)) {
         .Object@admissible_score_xval <-
-          h2o.getFrame(infogram_model@model$relevance_cmi_key_xval$name)
+          h2o.getFrame(infogram_model@model$admissible_score_key_xval$name)
       } else {
         .Object@admissible_score_xval <- NULL
       }
