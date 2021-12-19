@@ -901,15 +901,15 @@ class H2OInfogram(H2OEstimator):
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
 
         if train:
-            rel_cmi_frame = self.get_relevance_cmi_frame()            
+            rel_cmi_frame = self.get_admissible_score_frame()
             if rel_cmi_frame is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from training dataset.")
         if valid:
-            rel_cmi_frame_valid = self.get_relevance_cmi_frame(valid=True)
+            rel_cmi_frame_valid = self.get_admissible_score_frame(valid=True)
             if rel_cmi_frame_valid is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from validation dataset.")
         if xval:
-            rel_cmi_frame_xval = self.get_relevance_cmi_frame(xval=True)
+            rel_cmi_frame_xval = self.get_admissible_score_frame(xval=True)
             if rel_cmi_frame_xval is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from xval holdout dataset.")
 
@@ -988,7 +988,7 @@ class H2OInfogram(H2OEstimator):
             plt.show()
         return decorate_plot_result(figure=fig)
 
-    def get_relevance_cmi_frame(self, valid=False, xval=False):
+    def get_admissible_score_frame(self, valid=False, xval=False):
         """
         Retreive relevance, CMI information in an H2OFrame for training dataset by default
         :param valid: return infogram info on validation dataset if True
@@ -1006,7 +1006,7 @@ class H2OInfogram(H2OEstimator):
         else:
             return h2o.get_frame(keyString['name'])
 
-    def get_admissible_attributes(self):
+    def get_admissible_features(self):
         """
         :return: a list of predictor that are considered admissible
         """
