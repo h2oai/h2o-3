@@ -101,8 +101,7 @@ public class InfogramPipingTest extends TestUtil {
   }
 
   public static void assertWarningMessages(ModelBuilder.ValidationMessage[] messages, int expectedWarn) {
-    int numMessage = messages.length;
-    List<String> warnMessage = new ArrayList<String>();
+    List<String> warnMessage = new ArrayList<>();
     for (ModelBuilder.ValidationMessage oneMessage : messages) {
       if (oneMessage.log_level()==2) { // for warning
         warnMessage.add(oneMessage.toString());
@@ -149,9 +148,6 @@ public class InfogramPipingTest extends TestUtil {
   public void testUCICredit() {
     try {
       Scope.enter();
-      List<String> predictorNames = new ArrayList<>(Arrays.asList("LIMIT_BAL", "EDUCATION", "MARRIAGE",
-              "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4",
-              "BILL_AMT5", "BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6"));
       double[] deepCMI = new double[]{0.25225589, 0.04838205, 0.02515363, 1.00000000, 0.65011528, 0.49968050, 
               0.44469423, 0.41195756, 0.35604507, 0.14960576, 0.11973009, 0.10654662, 0.12172179, 0.12809776, 
               0.11255243, 0.28748429, 0.24735238, 0.23491307, 0.19843329, 0.17768404, 0.17737053};
@@ -262,8 +258,7 @@ public class InfogramPipingTest extends TestUtil {
   public void testBreastCancer() {
     try {
       Scope.enter();
-      String[] colNames = new String[]{"diagnosis", "radiu" +
-              "s_mean", "texture_mean", "perimeter_mean", "area_mean",
+      String[] colNames = new String[]{"diagnosis", "radius_mean", "texture_mean", "perimeter_mean", "area_mean",
               "smoothness_mean", "compactness_mean", "concavity_mean", "concave_points_mean", "symmetry_mean",
               "fractal_dimension_mean", "radius_se", "texture_se", "perimeter_se", "area_se", "smoothness_se",
               "compactness_se", "concavity_se", "concave_points_se", "symmetry_se", "fractal_dimension_se",

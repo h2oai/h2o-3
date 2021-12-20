@@ -645,7 +645,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
-      cv_mainModelScores(N, mbs, cvModelBuilders);
+      if (!cvModelBuilders[0].getName().equals("infogram")) // infogram does not support scoring
+        cv_mainModelScores(N, mbs, cvModelBuilders);
 
       _job.setReadyForView(true);
       DKV.put(_job);
@@ -836,18 +837,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      M cvModel = cvModelBuilders[i].dest().get();
-      cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */
-              || _parms._keep_cross_validation_predictions
-              || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
-        String predName = cvModelBuilders[i].getPredictionKey();
-        Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
-        result.makeModelMetrics(cvValid, adaptFr);
-        mbs[i] = result.getMetricBuilder();
-        DKV.put(cvModel);
-      } else {
-        mbs[i] = cvModel.scoreMetrics(adaptFr);
+      if (!cvModelBuilders[i].getName().equals("infogram")) {
+        M cvModel = cvModelBuilders[i].dest().get();
+        cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+        if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+                || _parms._keep_cross_validation_predictions
+                || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
+          String predName = cvModelBuilders[i].getPredictionKey();
+          Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
+          result.makeModelMetrics(cvValid, adaptFr);
+          mbs[i] = result.getMetricBuilder();
+          DKV.put(cvModel);
+        } else {
+          mbs[i] = cvModel.scoreMetrics(adaptFr);
+        }
       }
       // free resources as early as possible
       Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
@@ -857,6 +860,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
+    
     fs.blockForPending();
     return mbs;
   }

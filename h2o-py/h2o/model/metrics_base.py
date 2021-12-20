@@ -1844,7 +1844,8 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model.uplift()
         """
         assert metric in ['AUTO', 'qini', 'lift', 'gain']
-        if metric is "AUTO": 
+       
+        if metric == "AUTO": 
             metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric]
 
@@ -2009,7 +2010,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             a = uplift[len(uplift)-1]/n[len(n)-1]
             rnd = [a * nn for nn in n]
             plt.plot(n, rnd, 'k--', label='random')
-            if metric is "lift":
+            if metric == "lift":
                 plt.legend(loc='upper right')
             else:
                 plt.legend(loc='lower right')
