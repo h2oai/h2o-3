@@ -74,6 +74,7 @@ public class InfogramUtils {
 
   public static TwoDimTable extractVarImp(InfogramParameters.Algorithm algo, Model model) {
     switch (algo) {
+      case AUTO:
       case gbm : return ((GBMModel) model)._output._variable_importances;
       case glm : return ((GLMModel) model)._output._variable_importances;
       case deeplearning : return ((DeepLearningModel) model)._output._variable_importances;
@@ -156,6 +157,7 @@ public class InfogramUtils {
       case glm:
         paramsSchema = new GLMV3.GLMParametersV3();
         break;
+      case AUTO:
       case gbm:
         paramsSchema = new GBMV3.GBMParametersV3();
         break;
