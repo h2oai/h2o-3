@@ -217,6 +217,8 @@ public class InfogramUtils {
     for (Key<Frame> oneFrameKey : generatedFrameKeys)
       if (null != oneFrameKey)
         DKV.remove(oneFrameKey);
+      else 
+        break;
   }
   
   /***

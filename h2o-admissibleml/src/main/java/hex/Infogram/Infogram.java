@@ -286,7 +286,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
 
   private class InfogramDriver extends Driver {
       void prepareModelTrainingFrame() {
-        _generatedFrameKeys = new Key[_parms._top_n_features*3+1];  // should be long enough
+        _generatedFrameKeys = new Key[(_parms._top_n_features+1)*3+2];
         String[] eligiblePredictors = extractPredictors(_parms, _train, _foldColumnOrig);  // exclude senstive attributes if applicable
       _baseOrSensitiveFrame = extractTrainingFrame(_parms, _parms._protected_columns, 1, _parms.train().clone());
       _parms.extraModelSpecificParams(); // copy over model specific parameters to build infogram
