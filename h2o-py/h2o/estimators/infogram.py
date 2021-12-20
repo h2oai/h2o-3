@@ -68,11 +68,11 @@ class H2OInfogram(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
                  algorithm_params=None,  # type: Optional[dict]
-                 protected_columns=None,  # type: Optional[List[str]]
-                 net_information_threshold=-1.0,  # type: float
                  total_information_threshold=-1.0,  # type: float
-                 safety_index_threshold=-1.0,  # type: float
+                 net_information_threshold=-1.0,  # type: float
+                 protected_columns=None,  # type: Optional[List[str]]
                  relevance_index_threshold=-1.0,  # type: float
+                 safety_index_threshold=-1.0,  # type: float
                  data_fraction=1.0,  # type: float
                  top_n_features=50,  # type: int
                  ):
@@ -192,18 +192,6 @@ class H2OInfogram(H2OEstimator):
                parameter.
                Defaults to ``None``.
         :type algorithm_params: dict, optional
-        :param protected_columns: Columns that contain features that are sensitive and need to be protected (legally, or
-               otherwise), if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the
-               response.
-               Defaults to ``None``.
-        :type protected_columns: List[str], optional
-        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information,
-               defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the
-               corresponding total information is also higher than the total_information_threshold, that feature will be
-               considered admissible. The net information is the y-axis of the Core Infogram. Default is -1 which gets
-               set to 0.1.
-               Defaults to ``-1.0``.
-        :type net_information_threshold: float
         :param total_information_threshold: A number between 0 and 1 representing a threshold for total information,
                defaulting to 0.1. For a specific feature, if the total information is higher than this threshold, and
                the corresponding net information is also higher than the threshold ``net_information_threshold``, that
@@ -211,13 +199,18 @@ class H2OInfogram(H2OEstimator):
                is -1 which gets set to 0.1.
                Defaults to ``-1.0``.
         :type total_information_threshold: float
-        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index,
-               defaulting to 0.1.  This is only used when protected_columns is set by the user.  For a specific feature,
-               if the safety index value is higher than this threshold, and the corresponding relevance index is also
-               higher than the relevance_index_threshold, that feature will be considered admissible.  The safety index
-               is the y-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
+        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information,
+               defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the
+               corresponding total information is also higher than the total_information_threshold, that feature will be
+               considered admissible. The net information is the y-axis of the Core Infogram. Default is -1 which gets
+               set to 0.1.
                Defaults to ``-1.0``.
-        :type safety_index_threshold: float
+        :type net_information_threshold: float
+        :param protected_columns: Columns that contain features that are sensitive and need to be protected (legally, or
+               otherwise), if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the
+               response.
+               Defaults to ``None``.
+        :type protected_columns: List[str], optional
         :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index,
                defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific
                feature, if the relevance index value is higher than this threshold, and the corresponding safety index
@@ -225,6 +218,13 @@ class H2OInfogram(H2OEstimator):
                relevance index is the x-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
                Defaults to ``-1.0``.
         :type relevance_index_threshold: float
+        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index,
+               defaulting to 0.1.  This is only used when protected_columns is set by the user.  For a specific feature,
+               if the safety index value is higher than this threshold, and the corresponding relevance index is also
+               higher than the relevance_index_threshold, that feature will be considered admissible.  The safety index
+               is the y-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
+               Defaults to ``-1.0``.
+        :type safety_index_threshold: float
         :param data_fraction: The fraction of training frame to use to build the infogram model. Defaults to 1.0, and
                any value greater than 0 and less than or equal to 1.0 is acceptable.
                Defaults to ``1.0``.
@@ -267,11 +267,11 @@ class H2OInfogram(H2OEstimator):
         self.auc_type = auc_type
         self.algorithm = algorithm
         self.algorithm_params = algorithm_params
-        self.protected_columns = protected_columns
-        self.net_information_threshold = net_information_threshold
         self.total_information_threshold = total_information_threshold
-        self.safety_index_threshold = safety_index_threshold
+        self.net_information_threshold = net_information_threshold
+        self.protected_columns = protected_columns
         self.relevance_index_threshold = relevance_index_threshold
+        self.safety_index_threshold = safety_index_threshold
         self.data_fraction = data_fraction
         self.top_n_features = top_n_features
         self._parms["_rest_version"] = 3
@@ -725,19 +725,27 @@ class H2OInfogram(H2OEstimator):
             self._parms["algorithm_params"] = None
 
     @property
-    def protected_columns(self):
+    def total_information_threshold(self):
         """
-        Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
-        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
+        A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
+        feature, if the total information is higher than this threshold, and the corresponding net information is also
+        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
+        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1.
 
-        Type: ``List[str]``.
+        Type: ``float``, defaults to ``-1.0``.
         """
-        return self._parms.get("protected_columns")
+        return self._parms.get("total_information_threshold")
 
-    @protected_columns.setter
-    def protected_columns(self, protected_columns):
-        assert_is_type(protected_columns, None, [str])
-        self._parms["protected_columns"] = protected_columns
+    @total_information_threshold.setter
+    def total_information_threshold(self, total_information_threshold):
+        if total_information_threshold <= -1: # not set
+            if self._parms["protected_columns"] is None:
+                self._parms["total_information_threshold"] = 0.1
+        else:
+            if self._parms["protected_columns"] is not None: # fair infogram
+                warnings.warn("Should not set total_information_threshold for fair infogram runs.  Set relevance_index_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
+            else:
+                self._parms["total_information_threshold"] = total_information_threshold
 
     @property
     def net_information_threshold(self):
@@ -763,51 +771,19 @@ class H2OInfogram(H2OEstimator):
                 self._parms["net_information_threshold"]=net_information_threshold
 
     @property
-    def total_information_threshold(self):
+    def protected_columns(self):
         """
-        A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
-        feature, if the total information is higher than this threshold, and the corresponding net information is also
-        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
-        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1.
+        Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
+        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
 
-        Type: ``float``, defaults to ``-1.0``.
+        Type: ``List[str]``.
         """
-        return self._parms.get("total_information_threshold")
+        return self._parms.get("protected_columns")
 
-    @total_information_threshold.setter
-    def total_information_threshold(self, total_information_threshold):
-        if total_information_threshold <= -1: # not set
-            if self._parms["protected_columns"] is None:
-                self._parms["total_information_threshold"] = 0.1
-        else:
-            if self._parms["protected_columns"] is not None: # fair infogram
-                warnings.warn("Should not set total_information_threshold for fair infogram runs.  Set relevance_index_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
-            else:
-                self._parms["total_information_threshold"] = total_information_threshold
-
-    @property
-    def safety_index_threshold(self):
-        """
-        A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
-        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
-        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
-        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1 which
-        gets set to 0.1.
-
-        Type: ``float``, defaults to ``-1.0``.
-        """
-        return self._parms.get("safety_index_threshold")
-
-    @safety_index_threshold.setter
-    def safety_index_threshold(self, safety_index_threshold):
-        if safety_index_threshold <= -1: # not set
-            if self._parms["protected_columns"] is not None:
-                self._parms["safety_index_threshold"]=0.1
-        else: # it is set
-            if self._parms["protected_columns"] is not None: # fair infogram
-                self._parms["safety_index_threshold"] = safety_index_threshold
-            else: # core infogram should not have been set
-                warnings.warn("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
+    @protected_columns.setter
+    def protected_columns(self, protected_columns):
+        assert_is_type(protected_columns, None, [str])
+        self._parms["protected_columns"] = protected_columns
 
     @property
     def relevance_index_threshold(self):
@@ -832,6 +808,30 @@ class H2OInfogram(H2OEstimator):
                 self._parms["relevance_index_threshold"] = relevance_index_threshold
             else: # core infogram should not have been set
                 warnings.warn("Should not set relevance_index_threshold for core infogram runs.  Set total_information_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
+
+    @property
+    def safety_index_threshold(self):
+        """
+        A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
+        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
+        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
+        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1 which
+        gets set to 0.1.
+
+        Type: ``float``, defaults to ``-1.0``.
+        """
+        return self._parms.get("safety_index_threshold")
+
+    @safety_index_threshold.setter
+    def safety_index_threshold(self, safety_index_threshold):
+        if safety_index_threshold <= -1: # not set
+            if self._parms["protected_columns"] is not None:
+                self._parms["safety_index_threshold"]=0.1
+        else: # it is set
+            if self._parms["protected_columns"] is not None: # fair infogram
+                self._parms["safety_index_threshold"] = safety_index_threshold
+            else: # core infogram should not have been set
+                warnings.warn("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
 
     @property
     def data_fraction(self):
