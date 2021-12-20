@@ -41,7 +41,8 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
   Key<Frame> _cmiRelKey;
   Key<Frame> _cmiRelKeyValid;
   Key<Frame> _cmiRelKeyCV;
-  List<Key<Frame>> _generatedFrameKeys; // keep track of all keys generated
+  //List<Key<Frame>> _generatedFrameKeys; // keep track of all keys generated
+  Key<Frame>[] _generatedFrameKeys;
   boolean _cvDone = false;  // on when we are inside cv
   private transient InfogramModel _model;
   long _validNonZeroNumRows;
@@ -285,8 +286,8 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
 
   private class InfogramDriver extends Driver {
       void prepareModelTrainingFrame() {
-      _generatedFrameKeys = new ArrayList<>(); // generated infogram model plus one for safe Infogram
-      String[] eligiblePredictors = extractPredictors(_parms, _train, _foldColumnOrig);  // exclude senstive attributes if applicable
+        _generatedFrameKeys = new Key[1];
+        String[] eligiblePredictors = extractPredictors(_parms, _train, _foldColumnOrig);  // exclude senstive attributes if applicable
       _baseOrSensitiveFrame = extractTrainingFrame(_parms, _parms._protected_columns, 1, _parms.train().clone());
       _parms.extraModelSpecificParams(); // copy over model specific parameters to build infogram
       _topKPredictors = extractTopKPredictors(_parms, _parms.train(), eligiblePredictors, _generatedFrameKeys); // extract topK predictors
@@ -544,6 +545,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       Frame trainingFrame = _parms.train();
       int finalFrameInd = startInd + numFrames;
       int frameCount = 0;
+      List<Key<Frame>> frameKeys = new ArrayList<>();
       for (int frameInd = startInd; frameInd < finalFrameInd; frameInd++) {
         trainingFrames[frameCount] = new Frame(_baseOrSensitiveFrame);
         if (_buildCore) {
@@ -557,9 +559,13 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
           if (frameInd < lastModelInd) // add ith predictor
             trainingFrames[frameCount].prepend(_topKPredictors[frameInd], trainingFrame.vec(_topKPredictors[frameInd]));
         }
-        _generatedFrameKeys.add(trainingFrames[frameCount]._key);
+        frameKeys.add(trainingFrames[frameCount]._key);
+        //_generatedFrameKeys.add(trainingFrames[frameCount]._key);
         DKV.put(trainingFrames[frameCount++]);
       }
+      List<Key<Frame>> allFrameKeys = new ArrayList<>(Arrays.asList(_generatedFrameKeys));
+      allFrameKeys.addAll(frameKeys);
+      _generatedFrameKeys = allFrameKeys.stream().toArray(Key[]::new);
       return trainingFrames;
     }
 
@@ -570,6 +576,7 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
    */
   private long generateInfoGrams(ModelBuilder[] builders, Frame[] trainingFrames, int startIndex, int numModels) {
     long nonZeroRows = Long.MAX_VALUE;
+    List<Key<Frame>> frameKeys = new ArrayList<>();
     for (int index = 0; index < numModels; index++) {
       Model oneModel = builders[index].get();  // extract model
       int nclasses = oneModel._output.nclasses();
@@ -578,7 +585,8 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
       Scope.track_generic(oneModel);
       if (oneModel._parms._weights_column != null && Arrays.asList(trainingFrames[index].names()).contains(oneModel._parms._weights_column))
         prediction.add(oneModel._parms._weights_column, trainingFrames[index].vec(oneModel._parms._weights_column));
-      _generatedFrameKeys.add(prediction._key);
+      frameKeys.add(prediction._key);
+     // _generatedFrameKeys.add(prediction._key);
       _cmiRaw[index+startIndex] = new hex.Infogram.EstimateCMI(prediction, nclasses).doAll(prediction)._meanCMI; // calculate raw CMI
       if (_parms.valid() != null) { // generate prediction, cmi on validation frame
         Frame validFrame = _parms.valid();
@@ -590,12 +598,16 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
           else
             predictionValid.add(oneModel._parms._weights_column, validFrame.vec(oneModel._parms._weights_column));
         }
-        _generatedFrameKeys.add(predictionValid._key);
+        frameKeys.add(predictionValid._key);
+       // _generatedFrameKeys.add(predictionValid._key);
         EstimateCMI calCMI = new hex.Infogram.EstimateCMI(predictionValid, nclasses).doAll(predictionValid);
         _cmiRawValid[index + startIndex] = calCMI._meanCMI;
         nonZeroRows = Math.min(nonZeroRows, calCMI._nonZeroRows);
       }
     }
+    List<Key<Frame>> allKeys = new ArrayList<>(Arrays.asList(_generatedFrameKeys));
+    allKeys.addAll(frameKeys);
+    _generatedFrameKeys = allKeys.stream().toArray(Key[]::new);
     return nonZeroRows;
   }
   
@@ -611,7 +623,9 @@ public class Infogram extends ModelBuilder<hex.Infogram.InfogramModel, hex.Infog
         Frame fullFrame = subtractAdd2Frame(_baseOrSensitiveFrame, _parms.train(), _parms._protected_columns,
                 _topKPredictors); // training frame is topKPredictors minus protected_columns
         parms._train = fullFrame._key;
-        _generatedFrameKeys.add(fullFrame._key);
+        List<Key<Frame>> allKeys = new ArrayList<>(Arrays.asList(_generatedFrameKeys));
+        allKeys.add(fullFrame._key);
+        _generatedFrameKeys = allKeys.stream().toArray(Key[]::new);
         ModelBuilder builder = ModelBuilder.make(parms);
         Model fairModel = (Model) builder.trainModel().get();
         _varImp = extractVarImp(_parms._algorithm, fairModel);
