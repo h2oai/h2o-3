@@ -111,7 +111,6 @@
 #'        0 and less than or equal to 1.0 is acceptable. Defaults to 1.
 #' @param top_n_features An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
 #'        importance, and the top N are evaluated.  Defaults to 50. Defaults to 50.
-#' @param compute_p_values \code{Logical}. If true will calculate the p-value. Default to false. Defaults to FALSE.
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -162,8 +161,7 @@ h2o.infogram <- function(x,
                          safety_index_threshold = -1,
                          relevance_index_threshold = -1,
                          data_fraction = 1,
-                         top_n_features = 50,
-                         compute_p_values = FALSE)
+                         top_n_features = 50)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -275,8 +273,6 @@ h2o.infogram <- function(x,
     parms$data_fraction <- data_fraction
   if (!missing(top_n_features))
     parms$top_n_features <- top_n_features
-  if (!missing(compute_p_values))
-    parms$compute_p_values <- compute_p_values
 
   if (!missing(algorithm_params))
       parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
@@ -330,7 +326,6 @@ h2o.infogram <- function(x,
                                          relevance_index_threshold = -1,
                                          data_fraction = 1,
                                          top_n_features = 50,
-                                         compute_p_values = FALSE,
                                          segment_columns = NULL,
                                          segment_models_id = NULL,
                                          parallelism = 1)
@@ -447,8 +442,6 @@ h2o.infogram <- function(x,
     parms$data_fraction <- data_fraction
   if (!missing(top_n_features))
     parms$top_n_features <- top_n_features
-  if (!missing(compute_p_values))
-    parms$compute_p_values <- compute_p_values
 
   if (!missing(algorithm_params))
       parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
