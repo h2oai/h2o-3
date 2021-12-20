@@ -101,7 +101,12 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
-   explain   
+   explain 
+
+.. toctree::
+   :maxdepth: 2
+
+   admissible 
 
 .. toctree::
    :maxdepth: 2
