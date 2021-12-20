@@ -129,10 +129,10 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
 
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
 
-Cross-validation metrics
+Cross-Validation Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To calculate main cross-validation metrics, the metrics from each CV model are aggregated into one. It is impossible to calculate aggregated centroid statistics because each CV model can have a different centroid size (if `estimate_k` is enabled), and the aggregation across all groups of centroids does not make sense. 
+To calculate main cross-validation metrics, the metrics from each CV model are aggregated into one. It is impossible to calculate aggregated centroid statistics because each CV model can have a different centroid size (if ``estimate_k`` is enabled), and the aggregation across all groups of centroids does not make sense. 
 
 That is the reason why centroid statistics are NULL for overall cross-validation metrics. You can still get centroid statistics from each CV model individually. 
 
