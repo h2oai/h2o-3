@@ -87,26 +87,26 @@
 #'        default parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available, XGBoost with default
 #'        parameters). Must be one of: "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to AUTO.
 #' @param algorithm_params Customized parameters for the machine learning algorithm specified in the algorithm parameter.
-#' @param protected_columns Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
-#'        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
-#' @param net_information_threshold A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
-#'        feature, if the net information is higher than this threshold, and the corresponding total information is also
-#'        higher than the total_information_threshold, that feature will be considered admissible. The net information
-#'        is the y-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
 #' @param total_information_threshold A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
 #'        feature, if the total information is higher than this threshold, and the corresponding net information is also
 #'        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
 #'        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
-#' @param safety_index_threshold A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
-#'        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
-#'        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
-#'        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1
-#'        which gets set to 0.1. Defaults to -1.
+#' @param net_information_threshold A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
+#'        feature, if the net information is higher than this threshold, and the corresponding total information is also
+#'        higher than the total_information_threshold, that feature will be considered admissible. The net information
+#'        is the y-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param protected_columns Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
+#'        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
 #' @param relevance_index_threshold A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only
 #'        used when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is
 #'        higher than this threshold, and the corresponding safety index is also higher than the
 #'        safety_index_threshold``, that feature will be considered admissible.  The relevance index is the x-axis of
 #'        the Fair Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param safety_index_threshold A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
+#'        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
+#'        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
+#'        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1
+#'        which gets set to 0.1. Defaults to -1.
 #' @param data_fraction The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater than
 #'        0 and less than or equal to 1.0 is acceptable. Defaults to 1.
 #' @param top_n_features An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
@@ -155,11 +155,11 @@ h2o.infogram <- function(x,
                          auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                          algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost"),
                          algorithm_params = NULL,
-                         protected_columns = NULL,
-                         net_information_threshold = -1,
                          total_information_threshold = -1,
-                         safety_index_threshold = -1,
+                         net_information_threshold = -1,
+                         protected_columns = NULL,
                          relevance_index_threshold = -1,
+                         safety_index_threshold = -1,
                          data_fraction = 1,
                          top_n_features = 50)
 {
@@ -259,16 +259,16 @@ h2o.infogram <- function(x,
     parms$auc_type <- auc_type
   if (!missing(algorithm))
     parms$algorithm <- algorithm
-  if (!missing(protected_columns))
-    parms$protected_columns <- protected_columns
-  if (!missing(net_information_threshold))
-    parms$net_information_threshold <- net_information_threshold
   if (!missing(total_information_threshold))
     parms$total_information_threshold <- total_information_threshold
-  if (!missing(safety_index_threshold))
-    parms$safety_index_threshold <- safety_index_threshold
+  if (!missing(net_information_threshold))
+    parms$net_information_threshold <- net_information_threshold
+  if (!missing(protected_columns))
+    parms$protected_columns <- protected_columns
   if (!missing(relevance_index_threshold))
     parms$relevance_index_threshold <- relevance_index_threshold
+  if (!missing(safety_index_threshold))
+    parms$safety_index_threshold <- safety_index_threshold
   if (!missing(data_fraction))
     parms$data_fraction <- data_fraction
   if (!missing(top_n_features))
@@ -319,11 +319,11 @@ h2o.infogram <- function(x,
                                          auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                          algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost"),
                                          algorithm_params = NULL,
-                                         protected_columns = NULL,
-                                         net_information_threshold = -1,
                                          total_information_threshold = -1,
-                                         safety_index_threshold = -1,
+                                         net_information_threshold = -1,
+                                         protected_columns = NULL,
                                          relevance_index_threshold = -1,
+                                         safety_index_threshold = -1,
                                          data_fraction = 1,
                                          top_n_features = 50,
                                          segment_columns = NULL,
@@ -428,16 +428,16 @@ h2o.infogram <- function(x,
     parms$auc_type <- auc_type
   if (!missing(algorithm))
     parms$algorithm <- algorithm
-  if (!missing(protected_columns))
-    parms$protected_columns <- protected_columns
-  if (!missing(net_information_threshold))
-    parms$net_information_threshold <- net_information_threshold
   if (!missing(total_information_threshold))
     parms$total_information_threshold <- total_information_threshold
-  if (!missing(safety_index_threshold))
-    parms$safety_index_threshold <- safety_index_threshold
+  if (!missing(net_information_threshold))
+    parms$net_information_threshold <- net_information_threshold
+  if (!missing(protected_columns))
+    parms$protected_columns <- protected_columns
   if (!missing(relevance_index_threshold))
     parms$relevance_index_threshold <- relevance_index_threshold
+  if (!missing(safety_index_threshold))
+    parms$safety_index_threshold <- safety_index_threshold
   if (!missing(data_fraction))
     parms$data_fraction <- data_fraction
   if (!missing(top_n_features))
