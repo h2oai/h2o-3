@@ -206,8 +206,8 @@ public class InfogramUtils {
     Vec vCMI = Vec.makeVec(cmi, vg.addVec());
     Vec vCMIRaw = Vec.makeVec(cmiRaw, vg.addVec());
     String[] columnNames = buildCore ? new String[]{"column", "admissible", "admissible_index", "total_information",
-            "net_information", "net_information_raw"} : new String[]{"column", "admissible", "admissible_index",
-            "relevance_index", "safety_index", "safety_index_raw"};
+            "net_information", "cmi_raw"} : new String[]{"column", "admissible", "admissible_index",
+            "relevance_index", "safety_index", "cmi_raw"};
     Frame cmiRelFrame = new Frame(Key.<Frame>make(), columnNames, new Vec[]{vName, vAdm, vAdmIndex, vRel, vCMI, vCMIRaw});
     DKV.put(cmiRelFrame);
     return cmiRelFrame;
