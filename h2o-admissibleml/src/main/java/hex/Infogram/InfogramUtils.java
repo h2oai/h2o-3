@@ -73,6 +73,14 @@ public class InfogramUtils {
     return ntopPredictors;
   }
 
+  public static int findstart(Key<Frame>[] generatedFrameKeys) {
+    int arrLen = generatedFrameKeys.length;
+    for (int index=0; index < arrLen; index++)
+      if (generatedFrameKeys[index] == null)
+        return index;
+    return -1;  // all keys are taken
+  }
+
   public static TwoDimTable extractVarImp(InfogramParameters.Algorithm algo, Model model) {
     switch (algo) {
       case AUTO:
@@ -207,6 +215,7 @@ public class InfogramUtils {
   
   public static void removeFromDKV(Key<Frame>[] generatedFrameKeys) {
     for (Key<Frame> oneFrameKey : generatedFrameKeys)
+      if (null != oneFrameKey)
         DKV.remove(oneFrameKey);
   }
   
