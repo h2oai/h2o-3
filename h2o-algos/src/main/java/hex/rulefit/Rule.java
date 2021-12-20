@@ -91,12 +91,11 @@ public class Rule extends Iced {
         List<SharedTreeNode> leaves = tree.nodesArray.stream().filter(sharedTreeNode -> sharedTreeNode.isLeaf()).collect(Collectors.toList());
         // traverse paths
         for (SharedTreeNode leaf : leaves) {
-            List<Condition> conditions = new ArrayList<>();
             String varName = "M" + modelId + "T" + leaf.getSubgraphNumber() + "N" + leaf.getNodeNumber();
             if (classString != null) {
                 varName += classString;
             }
-            traversePath(leaf, conditions, rules, varName);
+            traversePath(leaf, rules, varName);
         }
         return rules;
     }
@@ -130,6 +129,10 @@ public class Rule extends Iced {
             }
             traversePath(node.getParent(), conditions, rules, varName);
         }
+    }
+
+    private static void traversePath(SharedTreeNode node, Set<Rule> rules, String varName) {
+        traversePath(node, new ArrayList<>(), rules, varName);
     }
     
     private static Condition getConditionByFeatureNameAndOperator(List<Condition> conditions, String featureName, Condition.Operator operator) {
