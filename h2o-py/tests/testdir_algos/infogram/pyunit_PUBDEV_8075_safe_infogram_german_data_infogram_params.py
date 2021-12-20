@@ -37,7 +37,6 @@ def test_infogram_german_data():
     assert deep_cmi.sort() == cmi.sort(), "Expected: {0}, actual: {1}".format(deep_cmi, cmi)
 
     gbm_params = {'ntrees':3}
-    glm_params = {'family':'binomial'}
     infogram_model_gbm_glm = H2OInfogram(seed = 12345, protected_columns=["status_gender", "age"], top_n_features=50, 
                                                   algorithm='gbm', algorithm_params=gbm_params)
     infogram_model_gbm_glm.train(x=x, y=target, training_frame=fr)

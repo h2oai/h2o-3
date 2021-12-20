@@ -59,6 +59,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._train = trainFrame._key;
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
             params._top_n_features = 50;
+            params._algorithm_params = "{\"ntrees\": [8]}";
             params._seed = 12345;
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get(); // model with training dataset only
@@ -137,6 +138,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._train = trainFrame._key;
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
             params._top_n_features = 50;
+            params._algorithm_params = "{\"ntrees\": [8]}";
             params._seed = 12345;
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
@@ -181,6 +183,7 @@ public class InfogramCVValidTest  extends TestUtil {
             InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
             params._response_column = "diagnosis";
             params._train = trainFrame._key;
+            params._algorithm_params = "{\"ntrees\": [8]}";
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
             params._top_n_features = 50;
             params._seed = 12345;
@@ -268,6 +271,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._train = trainF._key;
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
             params._top_n_features = 50;
+            params._algorithm_params = "{\"ntrees\": [8]}";
             params._seed = 12345;
             params._nfolds = 3;
             params._fold_assignment = Modulo;
@@ -318,6 +322,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
             params._ignored_columns = new String[]{"id"};
             params._top_n_features = 50;
+            params._algorithm_params = "{\"ntrees\": [8]}";
             params._seed = 12345;
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get(); // model with training dataset only
@@ -468,6 +473,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._ignored_columns = new String[]{"id"};
             params._top_n_features = 50;
             params._seed = 12345;
+            params._algorithm_params = "{\"ntrees\": [8]}";
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel);
@@ -499,6 +505,7 @@ public class InfogramCVValidTest  extends TestUtil {
             InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
             params._response_column = "two_year_recid";
             params._train = trainFrame._key;
+            params._algorithm_params = "{\"ntrees\": [8]}";
             params._protected_columns = new String[]{"sex","age","race"};
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
             params._ignored_columns = new String[]{"id"};
@@ -584,6 +591,7 @@ public class InfogramCVValidTest  extends TestUtil {
             params._top_n_features = 50;
             params._seed = 12345;
             params._nfolds = 2;
+            params._algorithm_params = "{\"ntrees\": [8]}";
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel);
@@ -646,51 +654,5 @@ public class InfogramCVValidTest  extends TestUtil {
         long numRow = relCmi_valid.numRows();
         for (int rowIndex = 1; rowIndex < numRow; rowIndex++)
             assert admissibleIndex.at(rowIndex-1) >= admissibleIndex.at(rowIndex);
-    }
-
-    public static Frame[] splitFrameModulo(Frame train, int nfolds) {
-        Frame[] splitedFrames = new Frame[nfolds];
-        for (int index=0; index < nfolds; index++) {
-            SplitFrameModulo sfm = new SplitFrameModulo(nfolds, index, train);
-            sfm.doAll(train.types(), train);
-            splitedFrames[index] = sfm.outputFrame(Key.make(), train.names(), train.domains());
-            DKV.put(splitedFrames[index]);
-            Scope.track(splitedFrames[index]);
-        }
-        return splitedFrames;
-    }
-    
-    private static class SplitFrameModulo extends MRTask<SplitFrameModulo> {
-        final int _nFold;
-        final int _foldIndex;
-        final boolean[] _isCategorical;
-        
-        public SplitFrameModulo(int nfold, int foldIndex, Frame fr) {
-            _nFold = nfold;
-            _foldIndex = foldIndex;
-            int numCol = fr.numCols();
-            _isCategorical = new boolean[numCol];
-            for (int index=0; index<numCol; index++) {
-                _isCategorical[index] = fr.vec(index).isCategorical();
-            }
-         }
-
-        @Override
-        public void map(Chunk[] chk, NewChunk[] newChunks) {
-            long rowStart = chk[0].start();
-            int numRow = chk[0].len();
-            int numCol = chk.length;
-            for (int rowIndex = 0; rowIndex < numRow; numRow++) {
-                long currRow = rowStart + rowIndex;
-                if (currRow % _nFold == _foldIndex) {
-                    for (int colIndex = 0; colIndex < numCol; colIndex++) {
-                        if (_isCategorical[colIndex])
-                            newChunks[colIndex].addCategorical((int) chk[colIndex].atd(rowIndex));
-                        else
-                            newChunks[colIndex].addNum(chk[colIndex].atd(rowIndex));
-                    }
-                }
-            }
-        }
     }
 }
