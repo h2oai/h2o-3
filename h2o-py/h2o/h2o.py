@@ -23,6 +23,9 @@ from .exceptions import H2OError, H2ODeprecationWarning
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.infogram import H2OInfogram
+from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
+from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
 from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame

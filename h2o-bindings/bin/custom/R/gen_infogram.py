@@ -6,7 +6,6 @@ def update_param(name, param):
         return param
     return None  # param untouched
 
-
 extensions = dict(
     required_params=['x', 'y', 'training_frame'],  # empty to override defaults in gen_defaults
     set_required_params="""
@@ -51,6 +50,7 @@ h2o.show_progress() # enable progress bar explicitly
 if (!missing(algorithm_params)) {
     model@parameters$algorithm_params <- list(fromJSON(model@parameters$algorithm_params))[[1]] #Need the `[[ ]]` to avoid a nested list
 }
+
 infogram_model <- new("H2OInfogram", model_id=model@model_id)       
 model <- infogram_model                
 """,
