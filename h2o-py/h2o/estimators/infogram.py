@@ -75,7 +75,6 @@ class H2OInfogram(H2OEstimator):
                  relevance_index_threshold=-1.0,  # type: float
                  data_fraction=1.0,  # type: float
                  top_n_features=50,  # type: int
-                 compute_p_values=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -234,9 +233,6 @@ class H2OInfogram(H2OEstimator):
                ranked by variable importance, and the top N are evaluated.  Defaults to 50.
                Defaults to ``50``.
         :type top_n_features: int
-        :param compute_p_values: If true will calculate the p-value. Default to false.
-               Defaults to ``False``.
-        :type compute_p_values: bool
         """
         super(H2OInfogram, self).__init__()
         self._parms = {}
@@ -278,7 +274,6 @@ class H2OInfogram(H2OEstimator):
         self.relevance_index_threshold = relevance_index_threshold
         self.data_fraction = data_fraction
         self.top_n_features = top_n_features
-        self.compute_p_values = compute_p_values
         self._parms["_rest_version"] = 3
 
     @property
@@ -867,20 +862,6 @@ class H2OInfogram(H2OEstimator):
     def top_n_features(self, top_n_features):
         assert_is_type(top_n_features, None, int)
         self._parms["top_n_features"] = top_n_features
-
-    @property
-    def compute_p_values(self):
-        """
-        If true will calculate the p-value. Default to false.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("compute_p_values")
-
-    @compute_p_values.setter
-    def compute_p_values(self, compute_p_values):
-        assert_is_type(compute_p_values, None, bool)
-        self._parms["compute_p_values"] = compute_p_values
 
 
     def _extract_x_from_model(self):
