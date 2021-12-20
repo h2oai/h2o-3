@@ -1,36 +1,39 @@
 Admissible Machine Learning
 ===========================
 
-We introduce some new concepts and tools to aid the design of *admissible learning algorithms* that are efficient (enjoy good predictive accuracy), fair (minimize discrimination against minority groups), and interpretable (provide mechanistic understanding) to the best possible extent.
+We have introduced new concepts and tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent.
 
-Admissible ML introduces two methodological tools: Infogram and L-features. 
+Admissible ML introduces two methodological tools: 
 
-- The Infogram, "information diagram", is a new graphical feature-exploration method to facilitate the development of admissible machine learning methods. 
-- In order to mitigate unfairness, we introduce the concept of L-features, which offers ways to systematically discover the hidden problematic proxy features from a dataset.  L-features are inadmissible features. 
+- **Infogram**, an "information diagram", is a new graphical feature-exploration method that facilitates the development of admissible machine learning methods. 
+- **L-features**, which mitigate unfairness, offer ways to systematically discover the hidden problematic proxy features from a dataset. L-features are inadmissible features. 
 
-The Infogram and Admissible Machine Learning is a new research direction in machine learning interpretability and you can find the theoretical foundations as well as several real-life examples of it's utility in the `Admissble ML <https://arxiv.org/abs/2108.07380>`__ paper.  Below we introduce the concepts at a high level and provide an example using the H2O Infogram implementation.
+The Infogram and Admissible Machine Learning bring a new research direction to machine learning interpretability. You can find the theoretical foundations and several real-life examples of it's utility in the `Admissble ML <https://arxiv.org/abs/2108.07380>`__ paper. Below we introduce the concepts at a high level and provide an example using the H2O Infogram implementation.
 
 
 Infogram
 --------
 
-The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables that uniquely and safely drive the response, in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build a model by identifying only the most valuable, admissible features. When protected variables such as race or gender are present in the data, the admissibility of a variable is determined by a safety and relevancy index, and thus serves as a diagnostic tool for fairness. The safety of each feature can be quantified and variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable, given the reduced feature set. Admissible models are also less susceptible to overfitting and train faster, often while providing similar accuracy as models built using all available features.
+The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables that uniquely and safely drive the response in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build a model by identifying only the most valuable, admissible features. 
+
+When protected variables such as race or gender are present in the data, the admissibility of a variable is determined by a safety and relevancy index which serves as a diagnostic tool for fairness. The safety of each feature can be quantified, and variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable given the reduced feature set. Admissible models are also less susceptible to overfitting and train faster, often while providing similar accuracy as models built using all available features.
 
 Core Infogram
 ~~~~~~~~~~~~~
 
-The infogram is an information-theoretic graphical tool which allows the user to quickly spot the "core" decision-making variables that are driving the response. One of the advantages of this method is that it works even in the presence of correlated features. Identifying the Core Set is a much more difficult undertaking than merely selecting the most predictive features.   There are additional benefits as well: Machine learning models based on "core" feautues show improved stability, especially when there exists considerable correlation among the features.
+The infogram is an information-theoretic graphical tool which allows the user to quickly spot the "core" decision-making variables that are driving the response. Identifying the Core Set is a much more difficult undertaking than merely selecting the most predictive features. One of the main advantages of this method is that it works even in the presence of correlated features. There are additional benefits as well: machine learning models based on "core" features show improved stability, especially when there exists considerable correlation among the features.
 
-The Core Infogram plots all the variables as points on two-dimensional grid of total vs net information. The x-axis is total information, a measure of how much the variable drives the response (the more predictive, the higher the total information). The y-axis is net information, a measure of how unique the variable is. The top right quadrant of the infogram plot is the admissible section; the variables located in this quadrant are the admissible features. In the Core Infogram, the admissible features are the strongest, unique drivers of the response.
+The Core Infogram plots all the variables as points on a two-dimensional grid of **total vs net information**. The x-axis is **total information**, a measure of how much the variable drives the response (the more predictive, the higher the total information). The y-axis is **net information**, a measure of how unique the variable is. The top right quadrant of the infogram plot is the **admissible section**; the variables located in this quadrant are the **admissible features**. In the Core Infogram, the admissible features are the strongest, unique drivers of the response.
 
 Fair Infogram: A Diagnostic Tool for Fairness
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To improve fairness, you must remove any variables that are of a protected class.  It is bad practice, and yet common that modelers remove the protected variables alone.  With potentially correlated features (e.g. zip code, income) still present in the training data, unfair models can be trained, unbeknownst to the data scientist.  This is called "fairness through unawareness."  The proxy attributes (e.g. zip code, income, etc.) share some degree of correlation (information-sharing) with race, gender, or age, and so they must be systematically identified and also removed from the set of training features.  
+To improve fairness, you must remove any variables that are of a protected class.  It is bad practice, yet common, that modelers remove the protected variables alone.  With potentially correlated features (e.g. zip code, income, etc.) still present in the training data, unfair models can be trained, unbeknownst to the data scientist.  This is called "fairness through unawareness."  The proxy attributes (e.g. zip code, income, etc.) share some degree of correlation (information-sharing) with race, gender, or age, so they must be systematically identified and also removed from the set of training features.  
 
-In the Fair Infogram, all non-protected predictor variables will be checked to make sure that if they possess little or no informational value beyond their use as a dummy for protected attributes, then they will be deemed "inadmissible". The Fair Infogram plots all the features as points on two-dimensional grid of relevance vs safety. The x-axis is relevance index, a measure of how much the variable drives the response (the more predictive, the higher the relevance). The y-axis is safety index, a measure of how much extra information the variable has that is not acquired through the protected variables. The admissible features are the strongest, safest drivers of the response.
+In the Fair Infogram, a non-protected predictor variable will be deemed "inadmissable" if it is found to possess little or no informational value beyond its use as a dummy for protected attributes when checked. 
+The Fair Infogram plots all the features as points on a two-dimensional grid of **relevance vs safety**. The x-axis is the **relevance index**, a measure of how much the variable drives the response (the more predictive, the higher the relevance). The y-axis is the **safety index**, a measure of how much extra information the variable has that is not acquired through the protected variables. The **admissible features** are the strongest, safest drivers of the response.
 
-The goal of this tool is to assist identification of admissible features which have little or no information-overlap with protected attributes, yet are reasonably predictive for the response.
+The goal of this tool is to assist the identification of admissible features which have little or no information-overlap with protected attributes, yet are reasonably predictive for the response.
 
 
 Infogram Interface
@@ -57,7 +60,7 @@ The interface is designed to be simple and aligned with the standard modeling in
 Parameters
 ~~~~~~~~~~
 
-The infogram function follows the standard modeling interface in H2O, where the user specifies the following data variables: ``x``, ``y``, ``training_frame``, ``validation_frame``.  In addition to the standard set of arguments, the infogram features several new, arguments, which are all optional:
+The infogram function follows the standard modeling interface in H2O, where the user specifies the following data variables: ``x``, ``y``, ``training_frame``, and ``validation_frame``.  In addition to the standard set of arguments, the infogram features several new arguments, which are all optional:
 
 - **algorithm**: Machine learning algorithm used to build the infogram. Options include:
 
@@ -68,19 +71,19 @@ The infogram function follows the standard modeling interface in H2O, where the 
  - ``"glm"`` (GLM with default parameters)
  - ``"xgboost"`` (if available, XGBoost with default parameters)
 
--  **algorithm_params**: With ``algorithm``, you can also specify a list of customized parameters for that algorithm.  For example if we use a GBM, for example, we can specify ``list(max_depth = 10)`` in R and ``{'max_depth': 10}`` in Python.
+-  **algorithm_params**: With ``algorithm``, you can also specify a list of customized parameters for that algorithm.  For example if we use a GBM, we can specify ``list(max_depth = 10)`` in R and ``{'max_depth': 10}`` in Python.
 
 - **net_information_threshold**: A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the corresponding total information is also higher than the ``total_information_threshold``, that feature will be considered admissible.  The net information is the y-axis of the Core Infogram.
 
 - **total_information_threshold**: A number between 0 and 1 representing a threshold for total information, defaulting to 0.1.  For a specific feature, if the total information is higher than this threshold, and the corresponding net information is also higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total information is the x-axis of the Core Infogram.
 
-- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable.  These features (e.g. race, gender, etc) should not drive the prediction of the response.
+- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable.  These features (e.g. race, gender, etc.) should not drive the prediction of the response.
 
 - **safety_index_threshold**: A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific feature, if the safety index value is higher than this threshold, and the corresponding relevance index is also higher than the ``relevance_index_threshold``, that feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram.
 
 - **relevance_index_threshold**: A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is higher than this threshold, and the corresponding safety index is also higher than the ``safety_index_threshold``, that feature will be considered admissible.  The relevance index is the x-axis of the Fair Infogram.
 
-- **data_fraction**: The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value between 0 and 1.0 is acceptable.
+- **data_fraction**: The fraction of the training frame to use to build the infogram model. Defaults to 1.0, and any value between 0 and 1.0 is acceptable.
 
 - **top_n_features**: An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable importance, and the top N are evaluated.  Defaults to 50.
 
@@ -106,7 +109,7 @@ The infogram function produces a visual guide to admisibility of the features.  
 - bottom right:  Contains low amount of unique information, but high relevance.
 
 
-**Admissible Features.**  The features that are not in the L-Features set are the admissible features.  Admissible features in each quadrants have different attributes and value to the model:
+**Admissible Features.**  The features that are not in the L-Features set are the admissible features.  Admissible features in each quadrant have different attributes and value to the model:
 
 - top right: Contains highly unique and relevant information.
 - top left: Contains highly unique, but minimally relevant information.
@@ -117,19 +120,19 @@ The infogram function produces a visual guide to admisibility of the features.  
 Infogram Data 
 ~~~~~~~~~~~~~
 
-The infogram function produces and object of type ``H2OInfogram``, which contains several data elements and the plot object.  The most important objects are the following:
+The infogram function produces an object of type ``H2OInfogram``, which contains several data elements and the plot object.  The most important objects are the following:
 
 - **admissible_features:** A list of the admissible feature column names.
 
-- **admissible_score:** A data frame storing various admissibility scores for each feature.  The rows of the admissible score frame are the features which were evaluated (this will max out at 50 rows/features if ``top_n_features`` is left at the default).  Core and Fair infograms have different interpretations of conditional information (CMI), so the CMI and relevance columns use different names between the two infogram types.  The frame is sorted by the admissible index column, with the most admissible features at the top of the table, for easy access.  The columns in the admissible score frame are:
+- **admissible_score:** A data frame storing various admissibility scores for each feature.  The rows of the admissible score frame are the features which were evaluated (this will max out at 50 rows/features if ``top_n_features`` is left at the default).  Core and Fair infograms have different interpretations of conditional mutual information (CMI), so the CMI and relevance columns use different names between the two infogram types.  The frame is sorted by the admissible index column, with the most admissible features at the top of the table, for easy access.  The columns in the admissible score frame are:
 
     - **admissible**: Binary indicator of admissibility (1 = admissible, 0 = inadmissible).
-    - **admissible_index**: The the normalized distance between the origin and the (x, y) feature location on the infogram plot.  The rows of the data frame are sorted by this column. 
+    - **admissible_index**: The normalized distance between the origin and the (x, y) feature location on the infogram plot.  The rows of the data frame are sorted by this column. 
     - **total_information_index / relevance_index**: A normalized measure of the relevance of the feature to the response variable.  Higher is more relevant, more predictive, of the response.  For Core infograms, this is Total Information Index and for Fair Infograms, it's referred to as the Relevance Index.
     - **net_information_index / safety_index**: This column contains the normalized conditional mutual information (CMI).  In the case of a Core Infogram, CMI represents how unique the information in the feature is among all the predictors. For Fair Infograms, the safety index represents how safe a feature is to use, with respect to the specified protected columns.
     - **cmi_raw**: Raw conditional mutual information (CMI) value.
 
-If the user provided a ``validation_frame`` or turned on cross-validation (``nfolds``) through the optional ``algorithm_params`` argument, then additional admissible score frames (valid and/or CV) will be generated and stored in the output in addition to default admissible score frame, which is generated using the the ``training_frame``.  Comparing the training and validation infograms could help discern whether there's overfitting. 
+If the user provided a ``validation_frame`` or turned on cross-validation (``nfolds``) through the optional ``algorithm_params`` argument, then additional admissible score frames (valid and/or CV) will be generated and stored in the output in addition to the default admissible score frame, which is generated using the ``training_frame``.  Comparing the training and validation infograms could help discern whether there's overfitting. 
 
 
 Code Examples
@@ -146,7 +149,7 @@ Along with the demographic variables that are included in this dataset, there's 
 Infogram
 ~~~~~~~~
 
-Below the code generates an infogram, and we plot the infogram and view the data in the admissible score frame.
+The code below generates an infogram, and we plot the infogram and view the data in the admissible score frame.
 
 .. tabs::
    .. code-tab:: r R
@@ -224,13 +227,13 @@ Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admiss
    :align: center
 
 
-Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the mode.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive or the response, not very safe to use in the model.  So you may consider building a model using just the two admissible variables.  To increase accuracy, you could add in some non-admissible, relevant variables, however it will be at a cost to safety, so this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
+Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the mode.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  So, you may consider building a model using just the two admissible variables. To increase accruacy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
 
 
 Admissible ML
 ~~~~~~~~~~~~~
 
-We can use the admissible features to train a model.  When interpretability is the goal, you can train an interpretable model such as a decision tree, GLM or GAM, using the admissible features.  However, you can also train a more complex machine learning model such as a Gradient Boosting Machine (GBM) using only the admissible features.
+We can use the admissible features to train a model.  When interpretability is the goal, you can train an interpretable model such as a decision tree, GLM, or GAM using the admissible features.  However, you can also train a more complex machine learning model such as a Gradient Boosting Machine (GBM) using only the admissible features.
 
 .. tabs::
    .. code-tab:: r R
@@ -297,7 +300,7 @@ We can use the admissible features to train a model.  When interpretability is t
 Utility Functions
 ~~~~~~~~~~~~~~~~~
 
-In, R the output is stored in the slots of an ``H2OInfogram`` class object, so this data is easy to view and retreive.  In Python, we provide several handy methods for the ``H2OInfogram`` class to help the user retreive different pieces of information about admissibility.
+In R, the output is stored in the slots of an ``H2OInfogram`` class object, so this data is easy to view and retreive.  In Python, we provide several handy methods for the ``H2OInfogram`` class to help the user retreive different pieces of information about admissibility.
 
 
 .. tabs::
@@ -339,7 +342,7 @@ Glossary
 - **Core Features or Core Set**: In the Core Infogram, these are key features that are driving the response, without redundancy.  High relevance, low redundancy. 
 - **Inadmissible Features (L-Features)**: The highlighted L-shaped area in the Infogram contains features that are either irrelevant or redundant. In the case of the Fair Infogram, these features process little or no informational value beyond their use as a dummy for protected characteristics.
 - **Irrelevant Features**: In the Core Infogram, these are the features on the vertical side of the L, which have low total information (relevance to the response).
-- **Protected Features**:  User-defined features that are sensitive and need to be protected (legally, or otherwise).  These features (e.g. race, gender, etc) should not drive the prediction of the response.
+- **Protected Features**:  User-defined features that are sensitive and need to be protected (legally, or otherwise).  These features (e.g. race, gender, etc.) should not drive the prediction of the response.
 - **Redundant Features**: In the Core Infogram, these are the features on the bottom side of the L, which have a low amount of net (unique) information to offer.
 - **Relevance**: Relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response. For Core infograms, we refer to this as Total Information Index and for Fair Infograms, it's referred to as the Relevance Index.  This is the x-axis of the infogram.
 - **Relevance Index**: A normalized measure of the relevance of the feature to the response variable. Higher is more relevant, more predictive, of the response.
