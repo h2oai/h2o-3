@@ -98,7 +98,7 @@ By default, the following output displays:
 -  Model Summary Model Summary (number of clusters, number of categorical columns, number of iterations, total within sum of squares, total sum of squares, total between the sum of squares. Note that Flow also returns the number of rows.)
 -  Scoring history (duration, number of iterations, number of reassigned observations, number of within cluster sum of squares)
 -  Training metrics (model name, checksum name, frame name, frame checksum name, description if applicable, model category, scoring time, predictions, MSE, RMSE, total within sum of squares, total sum of squares, total between sum of squares)
--  Centroid statistics (centroid number, size, within cluster sum of squares)
+-  Centroid statistics (centroid number, size, within cluster sum of squares). The centroid statistics are not available for overall cross-validation metrics.
 -  Cluster means (centroid number, column)
 
 K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
@@ -129,6 +129,12 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
 
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
 
+Cross-validation metrics
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+To calculate main cross-validation metrics, the metrics from each CV model are aggregated into one. It is impossible to calculate aggregated centroid statistics because each CV model can have a different centroid size (if `estimate_k` is enabled), and the aggregation across all groups of centroids does not make sense. 
+
+That is the reason why centroid statistics are NULL for overall cross-validation metrics. You can still get centroid statistics from each CV model individually. 
 
 Constrained K-Means 
 ~~~~~~~~~~~~~~~~~~~
