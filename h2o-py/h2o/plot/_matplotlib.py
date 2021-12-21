@@ -28,3 +28,13 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
         print("`matplotlib` library is required for this function!")
         return None
 
+
+def get_polycollection(server, raise_if_not_available=False):
+    try:
+        from matplotlib.collections import PolyCollection
+        return PolyCollection
+    except ImportError as e:
+        if raise_if_not_available:
+            raise e
+        print("`matplotlib` library is required for this function!")
+        return None

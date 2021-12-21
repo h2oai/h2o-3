@@ -13,8 +13,8 @@ import h2o
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.frame import H2OFrame
 import numpy as np
-from h2o.plot import get_matplotlib_pyplot, decorate_plot_result
-from matplotlib.collections import PolyCollection
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
+#from matplotlib.collections import PolyCollection
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -897,6 +897,7 @@ class H2OInfogram(H2OEstimator):
         """
 
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
+        polycoll = get_polycollection(server, raise_if_not_available=True)
 
         if train:
             rel_cmi_frame = self.get_admissible_score_frame()
@@ -959,7 +960,7 @@ class H2OInfogram(H2OEstimator):
             plt.legend(loc=2, fancybox=True, framealpha=0.5)
         plt.hlines(y_thresh, xmin=x_thresh, xmax=xmax, colors="red", linestyle="dashed")
         plt.vlines(x_thresh, ymin=y_thresh, ymax=ymax, colors="red", linestyle="dashed")
-        plt.gca().add_collection(PolyCollection(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
+        plt.gca().add_collection(polycoll(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
                                                 color="#CC663E", alpha=0.1, zorder=5))
 
         for i in mask.nonzero()[0]:
