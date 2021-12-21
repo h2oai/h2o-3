@@ -17,7 +17,7 @@ public class Rule extends Iced {
     double coefficient;
     String varName;
     double support;
-    double importance;
+    double globalImportance;
 
     public Rule(Condition[] conditions, double predictionValue, String varName) {
         this.conditions = conditions;
@@ -26,14 +26,14 @@ public class Rule extends Iced {
         this.languageRule = generateLanguageRule();
     }
 
-    public Rule(Condition[] conditions, double predictionValue, String varName,  double coefficient, double support, double importance) {
+    public Rule(Condition[] conditions, double predictionValue, String varName,  double coefficient, double support, double globalImportance) {
         this.conditions = conditions;
         this.predictionValue = predictionValue;
         this.varName = varName; 
         this.coefficient = coefficient;
         this.languageRule = generateLanguageRule();
         this.support = support;
-        this.importance = importance;
+        this.globalImportance = globalImportance;
     }
 
     public void setCoefficient(double coefficient) {

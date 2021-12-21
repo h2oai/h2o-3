@@ -450,13 +450,13 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 String featureName = entry.getKey();
                 if (!entry.getKey().startsWith("linear.")) {
                     rule = ruleEnsemble.getRuleByVarName(getVarName(featureName, classNames));
-                    rule.importance = ruleImportance(lassoWeight, rule.support);
+                    rule.globalImportance = ruleImportance(lassoWeight, rule.support);
                 } else {
                     rule = new Rule(null, lassoWeight, featureName);
                     // linear rule applies to all the rows:
                     rule.support = 1.0;
                     // compute importance for linear feature:
-                    rule.importance = Math.abs(lassoWeight) * train().vec(featureName).sigma();
+                    rule.globalImportance = Math.abs(lassoWeight) * train().vec(featureName).sigma();
                 }
                 rule.setCoefficient(lassoWeight);
                 rules.add(rule);
@@ -524,7 +524,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             }
             table.set(row, col++, (rules[row]).coefficient);
             table.set(row, col++, (rules[row]).support);
-            table.set(row, col++, (rules[row]).importance);
+            table.set(row, col++, (rules[row]).globalImportance);
             table.set(row, col, (rules[row]).languageRule);
         }
 

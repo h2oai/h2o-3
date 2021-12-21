@@ -225,9 +225,9 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         double totalFeatureImportance = 0;
         for (Rule currRule : rulesWithFeature) {
             if (currRule.varName.startsWith("linear.")) {
-                totalFeatureImportance += currRule.importance;
+                totalFeatureImportance += currRule.globalImportance;
             } else {
-                totalFeatureImportance += currRule.importance / currRule.conditions.length;
+                totalFeatureImportance += currRule.globalImportance / currRule.conditions.length;
             }
         }
         return totalFeatureImportance;
