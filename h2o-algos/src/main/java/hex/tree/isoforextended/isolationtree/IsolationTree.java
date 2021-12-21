@@ -5,6 +5,8 @@ import org.apache.log4j.Logger;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 
+import java.util.Random;
+
 /**
  * IsolationTree class implements Algorithm 2 (iTree)
  * Naming convention comes from the Extended Isolation Forest paper.
