@@ -34,7 +34,7 @@ public class RuleFitUtils {
                     .collect(Collectors.groupingBy(rule -> rule.languageRule))
                     .entrySet().stream()
                     .map(e -> e.getValue().stream()
-                            .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient)))
+                            .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient, r1.support)))
                     .map(f -> f.get())
                     .collect(Collectors.toList());
     

@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
-import static hex.rulefit.RuleFitUtils.consolidateRules;
 import static hex.rulefit.RuleFitUtils.sortRules;
 import static hex.rulefit.RuleFitUtils.deduplicateRules;
 
