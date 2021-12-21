@@ -8,6 +8,7 @@ public class MojoRule implements Serializable {
     String _languageRule;
     double _coefficient;
     String _varName;
+    double _support;
 
     public void map(double[] cs, byte[] out) {
         for (MojoCondition c : _conditions) {

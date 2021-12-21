@@ -907,13 +907,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_models = _parms._keep_cross_validation_models ? cvModKeys : null;
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
-
+    
     for (int i = 0; i < N; ++i) {
-      if (i > 0) mbs[0].reduce(mbs[i]);
       cvModKeys[i] = cvModelBuilders[i]._result;
       predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
-
+    
+    cv_makeAggregateModelMetircs(mbs);
+    
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
@@ -937,7 +938,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       int count = Model.deleteAll(predKeys);
       Log.info(count+" CV predictions were removed");
     }
-
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
@@ -981,6 +981,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._total_run_time = _build_model_countdown.elapsedTime();
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
+  }
+  
+  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
+    for (int i = 1; i < mbs.length; ++i) {
+      mbs[0].reduceForCV(mbs[i]);
+    }
   }
 
   private String getPredictionKey() {

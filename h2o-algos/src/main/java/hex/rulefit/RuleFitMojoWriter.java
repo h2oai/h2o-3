@@ -112,6 +112,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
         writekv("language_rule_rule_id_" + ruleId, rule.languageRule);
         writekv("coefficient_rule_id_" + ruleId, rule.coefficient);
         writekv("var_name_rule_id_" + ruleId, rule.varName);
+        writekv("support_rule_id_" + ruleId, rule.support);
     }
 
     void writeCondition(Condition condition, int conditionId, String ruleId) throws IOException {

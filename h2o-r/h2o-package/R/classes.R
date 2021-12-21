@@ -745,7 +745,11 @@ setMethod("show", "H2OClusteringMetrics", function(object) {
     cat("\nTotal Within SS: ", m$tot_withinss)
     cat("\nBetween SS: ", m$betweenss)
     cat("\nTotal SS: ", m$totss, "\n")
-    print(m$centroid_stats)
+    if( !is.null(m$centroid_stats) ){
+      print(m$centroid_stats)
+    } else {
+      cat("Centroid statistics are not available.")
+    }
   } else print(NULL)
 })
 

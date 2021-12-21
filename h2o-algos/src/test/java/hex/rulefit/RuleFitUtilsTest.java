@@ -150,67 +150,20 @@ public class RuleFitUtilsTest extends TestUtil {
             List<String> languageRules = treeRules.stream().map(it -> it.languageRule).sorted().collect(Collectors.toList());
             // Note: this hard-coded list of expected rules is sensitive to changes in the upstream algo
             List<String> expectedRules = Arrays.asList(
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1987})",
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1987, f1988}) & (fYear in {f1988})",
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA)",
-                    "(fYear in {f1987, f1988, f1989, f1990, f1991}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000}) & (fDayOfWeek in {f5, f6, f7})",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance < 348.5)",
-                    "(fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA) & (Distance >= 211.5 or Distance is NA) & (Distance >= 348.5 or Distance is NA)"
+                    "(Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
+                    "(Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(Distance < 348.5) & (Distance >= 211.5 or Distance is NA) & (fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA)",
+                    "(Distance >= 348.5 or Distance is NA) & (fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA)",
+                    "(fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fDayOfWeek in {f5, f6, f7}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fYear in {f1987})",
+                    "(fYear in {f1988})"
             );
             assertEquals(expectedRules, languageRules);
 
             List<Rule> wholeModelRules = Rule.extractRulesListFromModel(isofor, 0, 1);
             assertEquals(wholeModelRules.size(), 8);
 
-        } finally {
-            Scope.exit();
-        }
-    }
-    
-    @Test
-    public void consolidateRulesTest() {
-        try {
-            Scope.enter();
-            Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
-            Condition condition2 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
-            Condition condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
-            Condition[] conditions = new Condition[] {condition1, condition2, condition3};
-
-            Rule rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            Rule consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
-            assertEquals("(PSA < 14.730077743530273 or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
-            
-            condition1 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1, new String[] {"ABC", "AAA"}, new int[] {2, 6},"PSA", true);
-            condition2 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1,  new String[] { "CCC", "BBB", "AAA"}, new int[] {1, 3, 6}, "PSA", false);
-            condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
-            conditions = new Condition[] {condition1, condition2, condition3};
-
-            rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
-            assertEquals("(PSA in {ABC, AAA, CCC, BBB} or PSA is NA) & (DPROS >= 2.5)", consolidatedRule.languageRule);
-
-            condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
-            condition2 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 14.730077743530273, null, null, "PSA", false);
-            condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.LessThan, 2.5, null, null,"DPROS", false);
-            conditions = new Condition[] {condition1, condition2, condition3};
-
-            rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
-            assertEquals("(PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
-
-            condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
-            condition2 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 14.730077743530273, null, null, "PSA", false);
-            condition3 = new Condition(2, Condition.Type.Numerical, Condition.Operator.LessThan, 2.5, null, null,"DPROS", false);
-            Condition condition4 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 10.0, null, null, "PSA", false);
-
-            conditions = new Condition[] {condition1, condition2, condition3, condition4};
-
-            rule = new Rule(conditions, 0.032236840575933456, "somevarname");
-            consolidatedRule = RuleFitUtils.consolidateRule(rule, false);
-            assertEquals("(PSA < 10.0) & (PSA >= 6.5 or PSA is NA) & (DPROS < 2.5)", consolidatedRule.languageRule);
-            
         } finally {
             Scope.exit();
         }
@@ -224,7 +177,7 @@ public class RuleFitUtilsTest extends TestUtil {
             Condition conditionr11 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
             Condition conditionr12 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
             Condition conditionr13 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
-            Condition[] conditions1 = new Condition[] {conditionr11, conditionr13, conditionr12};
+            Condition[] conditions1 = new Condition[] {conditionr11, conditionr12, conditionr13};
 
             Rule rule1 = new Rule(conditions1, 0.032236840575933456, "somevarname1");
             rule1.coefficient = 4.0;
@@ -253,7 +206,7 @@ public class RuleFitUtilsTest extends TestUtil {
             
             Rule[] rulesToDeduplicate = new Rule[] {rule1, rule2, rule3, rule4};
 
-            Rule[] deduplicatedRules = RuleFitUtils.consolidateRules(rulesToDeduplicate, true);
+            Rule[] deduplicatedRules = RuleFitUtils.deduplicateRules(rulesToDeduplicate, true);
             
             assertEquals(3, deduplicatedRules.length);
 
@@ -284,10 +237,6 @@ public class RuleFitUtilsTest extends TestUtil {
 
         ruleId = "M6T10N36_0";
         assertEquals(RuleFitUtils.readRuleId(ruleId), "M6T10N36_0");
-
-        // todo decidde linear beehaviour, but thats not a rule, so maybe return an error
-
-
     }
 
 }

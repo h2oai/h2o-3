@@ -431,6 +431,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       _wY += mb._wY;
       _wYY += mb._wYY;
     }
+    
+    public void reduceForCV(T mb){
+      this.reduce(mb);
+    }
 
     public void postGlobal() {
       postGlobal(null);

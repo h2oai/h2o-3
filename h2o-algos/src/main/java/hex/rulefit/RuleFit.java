@@ -24,7 +24,8 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
-import static hex.rulefit.RuleFitUtils.consolidateRules;
+import static hex.rulefit.RuleFitUtils.sortRules;
+import static hex.rulefit.RuleFitUtils.deduplicateRules;
 
 
 /**
@@ -228,8 +229,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     LOG.info("Extracting rules from trees...");
                     ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
 
-                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees, classNames));
-                    if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees, classNames));
+                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees, classNames, _parms._weights_column, true));
+                    if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees, classNames, _parms._weights_column, false));
                 }
 
                 // prepare linear terms
@@ -264,6 +265,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         glmParameters._lambda = getOptimalLambda();
                 }
 
+                LOG.info("Training GLM...");
                 long startGLMTime = System.nanoTime();
                 GLM job = new GLM(glmParameters);
                 glmModel = job.trainModel().get();
@@ -285,8 +287,8 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(consolidateRules(getRules(glmModel.coefficients(), 
-                        ruleEnsemble, model._output.classNames()), _parms._remove_duplicates), isClassifier() && nclasses() > 2);
+                model._output._rule_importance = convertRulesToTable(sortRules(deduplicateRules(getRules(glmModel.coefficients(), 
+                        ruleEnsemble, model._output.classNames()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2);
 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 
@@ -445,12 +447,12 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     rule = ruleEnsemble.getRuleByVarName(getVarName(entry.getKey(), classNames));
                 } else {
                     rule = new Rule(null, entry.getValue(), entry.getKey());
+                    // linear rule applies to all the rows
+                    rule.support = 1.0;
                 }
                 rule.setCoefficient(entry.getValue());
                 rules.add(rule);
             }
-            Comparator<Rule> ruleAbsCoefficientComparator = Comparator.comparingDouble(Rule::getAbsCoefficient).reversed();
-            rules.sort(ruleAbsCoefficientComparator);
             
             return rules.toArray(new Rule[] {});
         }
@@ -487,6 +489,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         colHeaders.add("coefficient");
         colTypes.add("double");
         colFormat.add("%.5f");
+        colHeaders.add("support");
+        colTypes.add("double");
+        colFormat.add("%.5f");
         colHeaders.add("rule");
         colTypes.add("string");
         colFormat.add("%s");
@@ -504,6 +509,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 table.set(row, col++, segments[segments.length - 1]);
             }
             table.set(row, col++, (rules[row]).coefficient);
+            table.set(row, col++, (rules[row]).support);
             table.set(row, col, (rules[row]).languageRule);
         }
 

@@ -55,4 +55,31 @@ public class VecUtilsTest extends TestUtil {
       if (frame != null) frame.remove();
     }
   }
+  
+  @Test 
+  public void testVecProduct() {
+    double[] data1 = new double[] {1, 2, 3, 4};
+    double[] data2 = new double[] {5, 6, 7, 8};
+
+    Frame frame = null;
+    Frame result = null;
+    try {
+      frame = new TestFrameBuilder().withColNames("C1", "C2")
+              .withName("testFrame")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, data1)
+              .withDataForCol(1, data2)
+              .build();
+      Assert.assertNotNull(frame);
+
+      result = new VecUtils.SequenceProduct().doAll(Vec.T_NUM, frame.vec(0), frame.vec(1)).outputFrame();
+      Assert.assertEquals(result.vec(0).at(0), 5.0, 0);
+      Assert.assertEquals(result.vec(0).at(1), 12.0, 0);
+      Assert.assertEquals(result.vec(0).at(2), 21.0, 0);
+      Assert.assertEquals(result.vec(0).at(3), 32.0, 0);
+    } finally {
+      if (frame != null) frame.remove();
+      if (result != null) result.remove();
+    }
+  }
 }

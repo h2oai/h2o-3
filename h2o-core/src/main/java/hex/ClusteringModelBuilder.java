@@ -1,8 +1,7 @@
 package hex;
 
 import water.Job;
-import water.Key;
-import water.util.Log;
+import water.fvec.Frame;
 
 abstract public class ClusteringModelBuilder<M extends ClusteringModel<M,P,O>, P extends ClusteringModel.ClusteringParameters, O extends ClusteringModel.ClusteringOutput> extends ModelBuilder<M,P,O> {
   public boolean isSupervised() { return false; }
