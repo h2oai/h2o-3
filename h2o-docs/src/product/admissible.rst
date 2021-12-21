@@ -73,11 +73,11 @@ The infogram function follows the standard modeling interface in H2O, where the 
 
 -  **algorithm_params**: With ``algorithm``, you can also specify a list of customized parameters for that algorithm.  For example if we use a GBM, we can specify ``list(max_depth = 10)`` in R and ``{'max_depth': 10}`` in Python.
 
+- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable.  These features (e.g. race, gender, etc.) should not drive the prediction of the response.
+
 - **net_information_threshold**: A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the corresponding total information is also higher than the ``total_information_threshold``, that feature will be considered admissible.  The net information is the y-axis of the Core Infogram.
 
 - **total_information_threshold**: A number between 0 and 1 representing a threshold for total information, defaulting to 0.1.  For a specific feature, if the total information is higher than this threshold, and the corresponding net information is also higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total information is the x-axis of the Core Infogram.
-
-- **protected_columns**: Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if applicable.  These features (e.g. race, gender, etc.) should not drive the prediction of the response.
 
 - **safety_index_threshold**: A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific feature, if the safety index value is higher than this threshold, and the corresponding relevance index is also higher than the ``relevance_index_threshold``, that feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram.
 
@@ -424,7 +424,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
 .. tabs::
    .. code-tab:: r R
 
-        # Building on the HDMA infogram code, we execute AutoML with all un-protected features, 
+        # Building on the HMDA infogram code, we execute AutoML with all un-protected features, 
         # and then we run AutoML with only the admissible features:
 
         # Admissible AutoML
@@ -449,7 +449,7 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
 
    .. code-tab:: python
  
-        # Building on the HDMA infogram code, we execute AutoML with all un-protected features, 
+        # Building on the HMDA infogram code, we execute AutoML with all un-protected features, 
         # and then we run AutoML with only the admissible features:
 
         from h2o.automl import H2OAutoML
