@@ -599,22 +599,25 @@ def metric_accessors():
     assert tot_withinss == tot_withinss1
 
     #   withinss
-    withinss1 = km.withinss(train=True,  valid=False, xval=False)
-    withinss3 = km.withinss(train=False, valid=False, xval=True)
-    withinss = km.withinss(train=True,  valid=False, xval=True)
-    withinss = km.withinss(train=False, valid=False, xval=False) # default: return training metrics
+    withinss1 = km.withinss(train=True,  valid=False)
+    withinss2 = km.withinss(train=True,  valid=True)
+    withinss3 = km.withinss(train=False, valid=False)  # default: return training metrics
+    assert withinss1 == withinss3
+    assert withinss1 != withinss2
 
     #   centroid_stats
-    centroid_stats1 = km.centroid_stats(train=True,  valid=False, xval=False)
-    centroid_stats3 = km.centroid_stats(train=False, valid=False, xval=True)
-    centroid_stats = km.centroid_stats(train=True,  valid=False, xval=True)
-    centroid_stats = km.centroid_stats(train=False, valid=False, xval=False) # default: return training metrics
+    centroid_stats1 = km.centroid_stats(train=True,  valid=False)
+    centroid_stats2 = km.centroid_stats(train=True,  valid=True)
+    centroid_stats3 = km.centroid_stats(train=False, valid=False)  # default: return training metrics
+    assert centroid_stats1 == centroid_stats3
+    assert centroid_stats1 != centroid_stats2
 
     #   size
-    size1 = km.size(train=True,  valid=False, xval=False)
-    size3 = km.size(train=False, valid=False, xval=True)
-    size = km.size(train=True,  valid=False, xval=True)
-    size = km.size(train=False, valid=False, xval=False) # default: return training metrics
+    size1 = km.size(train=True,  valid=False)
+    size2 = km.size(train=True,  valid=True)
+    size3 = km.size(train=False, valid=False)  # default: return training metrics
+    assert size1 == size3
+    assert size1 != size2
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(metric_accessors)

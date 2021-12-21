@@ -2,6 +2,7 @@ package hex;
 
 import hex.ClusteringModel.ClusteringOutput;
 import hex.ClusteringModel.ClusteringParameters;
+import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -17,7 +18,6 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   public double _totss;
   public double _tot_withinss;
   public double _betweenss;
-//  public TwoDimTable _centroid_stats;
 
 
   public double totss() { return _totss; }
@@ -93,7 +93,6 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       _colSumSq = new double[ncol];
       Arrays.fill(_colSum, 0);
       Arrays.fill(_colSumSq, 0);
-
     }
 
     // Compare row (dataRow) against centroid it was assigned to (preds[0])
@@ -105,14 +104,11 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       ClusteringModel clm = (ClusteringModel) m;
       boolean standardize = ((((ClusteringOutput) clm._output)._centers_std_raw) != null);
       double[][] centers = standardize ? ((ClusteringOutput) clm._output)._centers_std_raw: ((ClusteringOutput) clm._output)._centers_raw;
-      double[] sub = standardize ? ((ClusteringOutput) clm._output)._normSub : null;
-      double[] mul = standardize ? ((ClusteringOutput) clm._output)._normMul : null;
 
       int clus = (int)preds[0];
       double [] colSum = new double[_colSum.length];
       double [] colSumSq = new double[_colSumSq.length];
       double sqr = hex.genmodel.GenModel.KMeans_distance(centers[clus], dataRow, ((ClusteringOutput) clm._output)._mode, colSum, colSumSq);
-      // System.out.println(Arrays.toString(colSumSq));
       ArrayUtils.add(_colSum, colSum);
       ArrayUtils.add(_colSumSq, colSumSq);
       _count++;
@@ -134,35 +130,53 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       ArrayUtils.add(_colSumSq, mm._colSumSq);
     }
 
+    /**
+     * Reduce the Metric builder clustering for CV without cluster statistics.
+     *
+     * @param mm metric builder to be reduced
+     */
+    public void reduceForCV(MetricBuilderClustering mm) {
+      super.reduce(mm);
+      ArrayUtils.add(_colSum, mm._colSum);
+      ArrayUtils.add(_colSumSq, mm._colSumSq);
+    }
+
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f) {
       assert m instanceof ClusteringModel;
-      ClusteringModel clm = (ClusteringModel) m;
       ModelMetricsClustering mm = new ModelMetricsClustering(m, f, _customMetric);
-
-      mm._size = _size;
+      setOverallStatToModelMetrics((ClusteringModel) m, f.numRows(), mm);
+      if(this._size != null && this._within_sumsqe != null) {
+        setCentroidsStatToModelMetrics(mm);
+      }
+      return m.addMetrics(mm);
+    }
+    
+    private void setOverallStatToModelMetrics(ClusteringModel clm, long numRows, ModelMetricsClustering mm){
       mm._tot_withinss = _sumsqe;
-      mm._withinss = new double[_size.length];
-      for (int i = 0; i < mm._withinss.length; i++)
-        mm._withinss[i] = _within_sumsqe[i];
 
-      long numRows = f.numRows();
-      if( m._parms._weights_column != null) numRows = _count;
+      if (clm._parms._weights_column != null) numRows = _count;
 
       // Sum-of-square distance from grand mean
-      if ( ((ClusteringParameters) clm._parms)._k == 1 )
+      if (((ClusteringParameters) clm._parms)._k == 1)
         mm._totss = mm._tot_withinss;
       else {
         mm._totss = 0;
         for (int i = 0; i < _colSum.length; i++) {
-          if(((ClusteringOutput)clm._output)._mode[i] == -1)
+          if (((ClusteringOutput) clm._output)._mode[i] == -1)
             mm._totss += _colSumSq[i] - (_colSum[i] * _colSum[i]) / numRows;
           else
             mm._totss += _colSum[i]; // simply add x[i] != modes[i] for categoricals
         }
       }
       mm._betweenss = mm._totss - mm._tot_withinss;
-      return m.addMetrics(mm);
+    }
+    
+    private void setCentroidsStatToModelMetrics(ModelMetricsClustering mm){
+      mm._size = _size;
+      mm._withinss = new double[_size.length];
+      for (int i = 0; i < mm._withinss.length; i++)
+        mm._withinss[i] = _within_sumsqe[i];
     }
   }
 }
