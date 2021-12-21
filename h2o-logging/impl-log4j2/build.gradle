@@ -5,8 +5,8 @@ compileJava {
 }
 
 dependencies {
-    api("org.apache.logging.log4j:log4j-1.2-api:2.16.0")
-    api("org.apache.logging.log4j:log4j-core:2.16.0")
+    api("org.apache.logging.log4j:log4j-1.2-api:2.17.0")
+    api("org.apache.logging.log4j:log4j-core:2.17.0")
 
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
