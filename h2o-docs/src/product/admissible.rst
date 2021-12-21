@@ -1,7 +1,7 @@
 Admissible Machine Learning
 ===========================
 
-We have introduced new concepts and tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent.
+We have developed new tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent.
 
 Admissible ML introduces two methodological tools: 
 
@@ -142,12 +142,17 @@ The R and Python code below is the quickest way to get started.
 
 Here's an example showing basic usage of the ``h2o.infogram()`` function in *R* and the ``H2OInfogram()`` method in *Python*.  Keep in mind that this code should be run in an environment that can support plots. 
 
-This example below uses a `UCI Credit <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status.  This is a binary classification problem, aimed to estimate the probabilty of default in order to identify "credible or not credible" customers.
-
-Along with the demographic variables that are included in this dataset, there's a number of payment history variables, including previous bill and payment amounts.  On the surface, you may assume that payment history is not correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  Therefore, even if you remove the protected variables during training, the resulting model can still be desicrimatory if any non-admissible bill/payment variables are included.  This is Example 9 from the `Admissble ML <https://arxiv.org/abs/2108.07380>`__ paper.
 
 Infogram
 ~~~~~~~~
+
+Infogram Example: UCI Credit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This example below uses a `UCI Credit <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ dataset from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status.  This is a binary classification problem, aimed to estimate the probabilty of default in order to identify "credible or not credible" customers.
+
+Along with the demographic variables that are included in this dataset, there's a number of payment history variables, including previous bill and payment amounts.  On the surface, you may assume that payment history is not correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  Therefore, even if you remove the protected variables during training, the resulting model can still be desicrimatory if any non-admissible bill/payment variables are included.  This is Example 9 from the `Admissble ML <https://arxiv.org/abs/2108.07380>`__ paper.
+
 
 The code below generates an infogram, and we plot the infogram and view the data in the admissible score frame.
 
@@ -219,7 +224,7 @@ The code below generates an infogram, and we plot the infogram and view the data
         asf
 
 
-Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admissible attributes, given the default thresholds.  Most of the bill or payment features are either redundant or redudant and unsafe.
+Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admissible attributes, given the default thresholds.  Most of the bill or payment features either have low predictive value, or low predicted value and are unsafe.
 
 .. figure:: images/infogram_fair_credit.png
    :alt: H2O Fair Infogram
@@ -227,7 +232,117 @@ Here's the infogram which shows that ``PAY_0`` and ``PAY_2`` are the only admiss
    :align: center
 
 
-Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the mode.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  So, you may consider building a model using just the two admissible variables. To increase accruacy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
+Notice the position of ``PAY_0`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the model.  The ``PAY_2`` variable is also reasonably safe to use, but it's not as predictive of the response.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  So, you may consider building a model using just the two admissible variables. To increase accruacy, you could add in some non-admissible, relevant variables; however, since this will be at a cost to safety, this is an important consideration. In many cases, the potential for increased accuracy might be minimal and not worthy of pursuing, or in the case where the safety is a strict requirement, the pursuit is simply not admissible.
+
+
+Infogram Example: HMDA
+^^^^^^^^^^^^^^^^^^^^^^
+
+The `Home Mortgage Disclosure Act (HMDA) <https://en.wikipedia.org/wiki/Home_Mortgage_Disclosure_Act>`__ is a United States federal law that requires certain financial institutions to maintain, report, and publicly disclose loan-level information about mortgages. These data help show whether lenders are serving the housing needs of their communities; they give public officials information that helps them make decisions and policies; and they shed light on lending patterns that could be discriminatory. The public data are modified to protect applicant and borrower privacy.
+
+The mortgage dataset analyzed here is a random sample of consumer-anonymized loans from the
+`HMDA database <https://www.consumerfinance.gov/data-research/hmda/>`__. These loans are a subset of all originated mortgage loans in the 2018 HMDA data that were chosen to represent a relatively comparable group of consumer mortgages.
+
+The dataset has 93k rows, representing people who applied for mortages, and a variety of predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as (derived) sex, ethnicity, race, as well as two columns (encodings) of age.  This is a binary classification problem, aimed at trying to predict whether an applicant will get a "high-priced" loan.  High-priced is defined as: the annual percentage rate (APR) that was charged was 150 basis points (1.5%) or more above a survey-based estimate of other similar loans offered around the time of the given loan.
+
+
+The code below generates an infogram, and we plot the infogram and view the data in the admissible score frame.
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+
+        h2o.init()
+                
+        # Import hmda dataset
+        f <- "https://erin-data.s3.amazonaws.com/misc/hmda_lar_2018_orig_mtg_sample-singleMF-rm-rare.csv"
+        col_types <- list(by.col.name = c("high_priced"), 
+                          types = c("factor"))
+        df <- h2o.importFile(path = f, col.types = col_types)
+
+        splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+        train <- splits[[1]]
+        test <- splits[[2]]
+
+        # Response column and predictor columns
+        y <- "high_priced"
+        x <- c("loan_amount",
+               "loan_to_value_ratio",
+               "loan_term",
+               "intro_rate_period",
+               "property_value",
+               "income",
+               "debt_to_income_ratio")
+
+        # Protected columns
+        pcols <- c("derived_ethnicity",
+                   "derived_race", 
+                   "derived_sex",
+                   "applicant_age",
+                   "applicant_age_above_62")
+
+        # Infogram
+        ig <- h2o.infogram(y = y, x = x, training_frame = train, protected_columns = pcols)
+        plot(ig)
+
+        # Admissible score frame
+        asf <- ig@admissible_score
+        asf
+
+   .. code-tab:: python
+
+        import h2o
+        from h2o.estimators.infogram import H2OInfogram
+
+        h2o.init()
+
+        # Import credit dataset
+        f = "https://erin-data.s3.amazonaws.com/misc/hmda_lar_2018_orig_mtg_sample-singleMF-rm-rare.csv"
+        col_types = {'high_priced': "enum"}
+        df = h2o.import_file(path=f, col_types=col_types)
+
+        # We will split the data so that we can test/compare performance
+        # of admissible vs non-admissible models later
+        train, test = df.split_frame(seed=1)
+
+        # Response column and predictor columns
+        y = "high_priced"
+        x =  ["loan_amount",
+              "loan_to_value_ratio",
+              "loan_term",
+              "intro_rate_period",
+              "property_value",
+              "income",
+              "debt_to_income_ratio"]
+
+        # Protected columns
+        pcols = ["derived_ethnicity",
+                 "derived_race", 
+                 "derived_sex",
+                 "applicant_age",
+                 "applicant_age_above_62"] 
+
+        # Infogram
+        ig = H2OInfogram(protected_columns=pcols)
+        ig.train(y=y, x=x, training_frame=train)
+        ig.plot()
+
+        # Admissible score frame
+        asf = ig.get_admissible_score_frame()
+        asf
+
+
+Here's the infogram which shows that ``loan_to_value_ratio`` , ``property_value`` and ``loan_amount`` are the only admissible attributes, given the default thresholds.  The three features, ``loan_term``, ``intro_rate_perio``, ``income`` and ``debt_to_income_ratio`` either have low predictive value, or low predicted value and are unsafe.
+
+.. figure:: images/infogram_fair_hmda.png
+   :alt: H2O Fair Infogram
+   :scale: 60%
+   :align: center
+
+
+Notice the position of ``loan_to_value_ratio`` in the plot.  This indicates that this is a highly relevant and safe variable to use in the model.  The ``property_value`` and ``loan_amount`` variables are less safe to use and are somewhat predictive of the response, and are also admissible under these settings.  The remaining variables are neither highly predictive of the response nor very safe to use in the model.  In the next two sections below, we will build models comparing admissible machine learning with models trained using inadmissible, un-safe features.
+
 
 
 Admissible ML
@@ -235,10 +350,14 @@ Admissible ML
 
 We can use the admissible features to train a model.  When interpretability is the goal, you can train an interpretable model such as a decision tree, GLM, or GAM using the admissible features.  However, you can also train a more complex machine learning model such as a Gradient Boosting Machine (GBM) using only the admissible features.
 
+
+Using the HMDA infogram example above, we can extend the infogram analysis to evaluate the accuracy between admissible and inadmissible models.  
+
+
 .. tabs::
    .. code-tab:: r R
 
-        # Building on the same code as above, we train and evaluate an Admissible GBM and 
+        # Building on the HMDA code as above, we train and evaluate an Admissible GBM and 
         # compare that with a GBM trained on all un-protected features:
 
         # Admissible features
@@ -252,23 +371,23 @@ We can use the admissible features to train a model.  When interpretability is t
                         training_frame = train,
                         seed = 1)
 
-        # Train a GBM
+        # Train a GBM on all unprotected features
         gbm <- h2o.gbm(x = ucols, y = y, 
                        training_frame = train,
                        seed = 1)
 
         # Admissible GBM test AUC
         h2o.auc(h2o.performance(agbm, test))
-        # 0.7185649
+        # 0.8141841
 
-        # GBM test AUC
-        h2o.auc(h2o.performance(gbm, test))                     
-        # 0.7731285
+        # Inadmissible GBM test AUC
+        h2o.auc(h2o.performance(gbm, test))
+        # 0.8347159
 
 
    .. code-tab:: python
  
-        # Building on the same code as above, we train and evaluate an Admissible GBM and 
+        # Building on the HMDA code as above, we train and evaluate an Admissible GBM and 
         # compare that with a GBM trained on all un-protected features:
 
         # Admissible columns
@@ -283,17 +402,73 @@ We can use the admissible features to train a model.  When interpretability is t
         agbm = H2OGradientBoostingEstimator(seed = 1)
         agbm.train(x=acols, y=y, training_frame=train)
 
-        # Train a GBM
+        # Train a GBM on all unprotected features
         gbm = H2OGradientBoostingEstimator(seed = 1)
         gbm.train(x=ucols, y=y, training_frame=train)
 
         # Admissible GBM test AUC
         agbm.model_performance(test).auc()
-        # 0.7185648682567042
+        # 0.8141841
 
-        # GBM test AUC
+        # Inadmissible GBM test AUC
         gbm.model_performance(test).auc()
-        # 0.7731285073509693
+        # 0.8347159
+
+
+Admissible AutoML
+~~~~~~~~~~~~~~~~~
+
+We can execute two AutoML runs to compare the accuracy of the models built on only admissible features, versus all the non-protected, unsafe features in the training set.  We give each run the same amount of time to execute.  There will be more models generated in the Admissible AutoML context, since the individual models train faster due to there being fewer features in the training set.  Note that since the speed of model training depends on your hardware, the results below will not be reproducible (below are the results for a 40-core machine).  Below we continue the HMDA example.
+
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Building on the HDMA infogram code, we execute AutoML with all un-protected features, 
+        # and then we run AutoML with only the admissible features:
+
+        # Admissible AutoML
+        aaml <- h2o.automl(x = acols, y = y, 
+                           training_frame = train,
+                           max_runtime_secs = 60*10, 
+                           seed = 1)
+
+        # Un-protected AutoML
+        aml <- h2o.automl(x = ucols, y = y, 
+                          training_frame = train,
+                          max_runtime_secs = 60*10, 
+                          seed = 1)
+
+        # Admissible AutoML test AUC
+        h2o.auc(h2o.performance(aaml@leader, test))
+        # 0.8264549
+
+        # Un-protected AutoML test AUC
+        h2o.auc(h2o.performance(aml@leader, test))                     
+        # 0.8501232
+
+   .. code-tab:: python
+ 
+        # Building on the HDMA infogram code, we execute AutoML with all un-protected features, 
+        # and then we run AutoML with only the admissible features:
+
+        from h2o.automl import H2OAutoML
+        
+        # Admissible AutoML
+        aaml = H2OAutoML(max_runtime_secs=60*10, seed=1)
+        aaml.train(x=acols, y=y, training_frame=train)
+
+        # Un-protected AutoML
+        aml = H2OAutoML(max_runtime_secs=60*10, seed=1)
+        aml.train(x=ucols, y=y, training_frame=train)
+
+        # Admissible AutoML test AUC
+        aaml.model_performance(test).auc()
+        # 0.8264549
+
+        # Un-protected AutoML test AUC
+        aml.model_performance(test).auc()
+        # 0.8501232
 
 
 
