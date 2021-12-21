@@ -7,6 +7,7 @@ import water.Iced;
 import water.fvec.Chunk;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Rule extends Iced {
     
@@ -16,6 +17,7 @@ public class Rule extends Iced {
     double coefficient;
     String varName;
     double support;
+    double importance;
 
     public Rule(Condition[] conditions, double predictionValue, String varName) {
         this.conditions = conditions;
@@ -24,13 +26,14 @@ public class Rule extends Iced {
         this.languageRule = generateLanguageRule();
     }
 
-    public Rule(Condition[] conditions, double predictionValue, String varName,  double coefficient, double support) {
+    public Rule(Condition[] conditions, double predictionValue, String varName,  double coefficient, double support, double importance) {
         this.conditions = conditions;
         this.predictionValue = predictionValue;
         this.varName = varName; 
         this.coefficient = coefficient;
         this.languageRule = generateLanguageRule();
         this.support = support;
+        this.importance = importance;
     }
 
     public void setCoefficient(double coefficient) {
@@ -152,6 +155,11 @@ public class Rule extends Iced {
 
     double getAbsCoefficient() {
         return Math.abs(coefficient);
+    }
+    
+    boolean hasFeaturePresent(String feature) {
+        List<Condition> featureConditions = Arrays.asList(conditions).stream().filter(condition -> condition.featureName.equals(feature)).collect(Collectors.toList());
+        return featureConditions.size() > 0 ? true : false;
     }
 
 }

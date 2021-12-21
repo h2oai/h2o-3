@@ -22,10 +22,10 @@ import water.util.TwoDimTable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static hex.ModelMetrics.calcVarImp;
 import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
-import static hex.rulefit.RuleFitUtils.consolidateRules;
-import static hex.rulefit.RuleFitUtils.sortRules;
+import static hex.rulefit.RuleFitUtils.*;
 
 
 /**
@@ -288,6 +288,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                 // TODO: add here coverage_count and coverage percent
                 model._output._rule_importance = convertRulesToTable(sortRules(consolidateRules(getRules(glmModel.coefficients(), 
                         ruleEnsemble, model._output.classNames()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2);
+               
+                // total feature importance:
+                model._output._varimp = model.calculateVarimp(ArrayUtils.remove(train().names(), _parms._response_column));
+                model._output._variable_importance = calcVarImp(model._output._varimp);
 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
                 
@@ -442,16 +446,24 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             List<Rule> rules = new ArrayList<>();
             Rule rule;
             for (Map.Entry<String, Double> entry : filteredRules.entrySet()) {
+                double lassoWeight = entry.getValue();
+                String featureName = entry.getKey();
                 if (!entry.getKey().startsWith("linear.")) {
-                    rule = ruleEnsemble.getRuleByVarName(getVarName(entry.getKey(), classNames));
+                    rule = ruleEnsemble.getRuleByVarName(getVarName(featureName, classNames));
+                    rule.importance = ruleImportance(lassoWeight, rule.support);
                 } else {
-                    rule = new Rule(null, entry.getValue(), entry.getKey());
-                    // linear rule applies to all the rows
+                    rule = new Rule(null, lassoWeight, featureName);
+                    // linear rule applies to all the rows:
                     rule.support = 1.0;
+                    // compute importance for linear feature:
+                    rule.importance = Math.abs(lassoWeight) * train().vec(featureName).sigma();
                 }
-                rule.setCoefficient(entry.getValue());
+                rule.setCoefficient(lassoWeight);
                 rules.add(rule);
             }
+//            todo:  this is not needed here now, but will be when deduplication will be made before glm (mojo change needed)            
+//            Comparator<Rule> ruleAbsCoefficientComparator = Comparator.comparingDouble(Rule::getAbsCoefficient).reversed();
+//            rules.sort(ruleAbsCoefficientComparator);
             
             return rules.toArray(new Rule[] {});
         }
@@ -491,6 +503,9 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         colHeaders.add("support");
         colTypes.add("double");
         colFormat.add("%.5f");
+        colHeaders.add("importance");
+        colTypes.add("double");
+        colFormat.add("%.5f");
         colHeaders.add("rule");
         colTypes.add("string");
         colFormat.add("%s");
@@ -509,6 +524,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             }
             table.set(row, col++, (rules[row]).coefficient);
             table.set(row, col++, (rules[row]).support);
+            table.set(row, col++, (rules[row]).importance);
             table.set(row, col, (rules[row]).languageRule);
         }
 

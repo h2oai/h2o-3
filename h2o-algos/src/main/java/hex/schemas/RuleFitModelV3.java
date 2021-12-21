@@ -14,6 +14,9 @@ public class RuleFitModelV3 extends ModelSchemaV3<RuleFitModel, RuleFitModelV3, 
     @API(help = "The estimated coefficients and language representations (in case it is a rule) for each of the significant baselearners.")
     public TwoDimTableV3 rule_importance;
 
+    @API(help = "Variable importance. Total importance of a feature that occurs as a linear term and possibly within many decision rules")
+    public TwoDimTableV3 variable_importance;
+
     @API(help = "Intercept.")
     public double[] intercept;
   }

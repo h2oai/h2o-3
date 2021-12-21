@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
     public enum Algorithm {DRF, GBM, AUTO}
 
@@ -89,6 +90,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         String[] _linear_names;
 
         public TwoDimTable _rule_importance = null;
+        public TwoDimTable _variable_importance = null;
+        public VarImp _varimp;
 
         Key glmModelKey = null;
 
@@ -213,5 +216,32 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                 return true;
         }
         return false;
+    }
+
+
+    // total importance of a feature that occurs as a linear term and possibly within many decision rules
+    double totalFeatureImportance(String feature) {
+        List<Rule> rulesWithFeature = Arrays.stream(ruleEnsemble.rules).filter(rule -> (rule.hasFeaturePresent(feature) || ("linear." + feature).equals(rule.varName))).collect(Collectors.toList());
+        double totalFeatureImportance = 0;
+        for (Rule currRule : rulesWithFeature) {
+            if (currRule.varName.startsWith("linear.")) {
+                totalFeatureImportance += currRule.importance;
+            } else {
+                totalFeatureImportance += currRule.importance / currRule.conditions.length;
+            }
+        }
+        return totalFeatureImportance;
+    }
+
+    VarImp calculateVarimp(String[] features) {
+        float[] varimp = new float[features.length];
+        String[] names = new String[features.length];
+
+        for (int i = 0; i < features.length; i++) {
+            varimp[i] = (float) totalFeatureImportance(features[i]);
+            names[i] = features[i];
+        }
+
+        return new VarImp(varimp, names);
     }
 }

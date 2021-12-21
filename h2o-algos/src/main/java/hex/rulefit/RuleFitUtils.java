@@ -6,6 +6,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.abs;
+import static java.lang.Math.sqrt;
+
 public class RuleFitUtils {
 
     public static String[] getPathNames(int modelId, int numCols, String[] names) {
@@ -128,7 +131,9 @@ public class RuleFitUtils {
                 .collect(Collectors.groupingBy(rule -> rule.languageRule))
                 .entrySet().stream()
                 .map(e -> e.getValue().stream()
-                        .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName, r1.coefficient + r2.coefficient, r1.support)))
+                        .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName,
+                                r1.coefficient + r2.coefficient, r1.support, 
+                                 ruleImportance(r1.coefficient + r2.coefficient, r1.support))))
                 .map(f -> f.get())
                 .collect(Collectors.toList());
 
@@ -137,8 +142,8 @@ public class RuleFitUtils {
 
         return transform.toArray(new Rule[0]);
     }
-
-    /** 
+    
+    /**
      * Returns a ruleId. 
      * If the ruleId is in form after deduplication:  "M0T0N1, M0T9N56, M9T34N56", meaning contains ", "
      * finds only first rule (other are equivalents)
@@ -149,5 +154,9 @@ public class RuleFitUtils {
         } else {
             return ruleId;
         }
+    }
+
+    static double ruleImportance(double lassoWeight, double support) {
+        return abs(lassoWeight) * sqrt(support * (1 - support));
     }
 }

@@ -38,6 +38,7 @@ def titanic():
     
     assert rfit._model_json["output"]["model_summary"] is not None, "model_summary should be present"
     assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0, "model_summary's content should be present"
+    assert rfit._model_json["output"]["variable_importance"] is not None, "variable_importance should be present"
 
     rfit_predictions = rfit.predict(test)
 
