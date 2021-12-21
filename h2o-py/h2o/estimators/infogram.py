@@ -10,11 +10,9 @@ import ast
 import json
 import warnings
 import h2o
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
-from h2o.frame import H2OFrame
+from h2o.utils.typechecks import is_type
 import numpy as np
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
-#from matplotlib.collections import PolyCollection
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame

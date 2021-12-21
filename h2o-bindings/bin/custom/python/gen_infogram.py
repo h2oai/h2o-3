@@ -240,7 +240,6 @@ import h2o
 from h2o.utils.typechecks import is_type
 import numpy as np
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
-#from matplotlib.collections import PolyCollection
 """,
     __class__=class_extensions
 )
