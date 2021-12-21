@@ -87,6 +87,10 @@ public class RuleFitMojoReader extends MultiModelMojoReader<RuleFitMojoModel> {
     rule._languageRule = readkv("language_rule_rule_id_" + ruleId);
     rule._coefficient = readkv("coefficient_rule_id_" + ruleId);
     rule._varName = readkv("var_name_rule_id_" + ruleId);
+    if (readkv("support_rule_id_" + ruleId) != null) 
+      rule._support = readkv("support_rule_id_" + ruleId);
+    else
+      rule._support = Double.NaN;
     return rule;
   }
   

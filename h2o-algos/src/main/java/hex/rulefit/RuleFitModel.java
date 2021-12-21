@@ -135,7 +135,7 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         Frame linearTest = new Frame();
         try {
             if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
-                linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees, this._output.classNames()));
+                linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees, this._output.classNames(), _parms._weights_column, false));
             }
             if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
                 linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
