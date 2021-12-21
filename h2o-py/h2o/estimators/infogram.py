@@ -68,9 +68,9 @@ class H2OInfogram(H2OEstimator):
                  auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
                  algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
                  algorithm_params=None,  # type: Optional[dict]
+                 protected_columns=None,  # type: Optional[List[str]]
                  total_information_threshold=-1.0,  # type: float
                  net_information_threshold=-1.0,  # type: float
-                 protected_columns=None,  # type: Optional[List[str]]
                  relevance_index_threshold=-1.0,  # type: float
                  safety_index_threshold=-1.0,  # type: float
                  data_fraction=1.0,  # type: float
@@ -192,6 +192,11 @@ class H2OInfogram(H2OEstimator):
                parameter.
                Defaults to ``None``.
         :type algorithm_params: dict, optional
+        :param protected_columns: Columns that contain features that are sensitive and need to be protected (legally, or
+               otherwise), if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the
+               response.
+               Defaults to ``None``.
+        :type protected_columns: List[str], optional
         :param total_information_threshold: A number between 0 and 1 representing a threshold for total information,
                defaulting to 0.1. For a specific feature, if the total information is higher than this threshold, and
                the corresponding net information is also higher than the threshold ``net_information_threshold``, that
@@ -206,11 +211,6 @@ class H2OInfogram(H2OEstimator):
                set to 0.1.
                Defaults to ``-1.0``.
         :type net_information_threshold: float
-        :param protected_columns: Columns that contain features that are sensitive and need to be protected (legally, or
-               otherwise), if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the
-               response.
-               Defaults to ``None``.
-        :type protected_columns: List[str], optional
         :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index,
                defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific
                feature, if the relevance index value is higher than this threshold, and the corresponding safety index
@@ -267,9 +267,9 @@ class H2OInfogram(H2OEstimator):
         self.auc_type = auc_type
         self.algorithm = algorithm
         self.algorithm_params = algorithm_params
+        self.protected_columns = protected_columns
         self.total_information_threshold = total_information_threshold
         self.net_information_threshold = net_information_threshold
-        self.protected_columns = protected_columns
         self.relevance_index_threshold = relevance_index_threshold
         self.safety_index_threshold = safety_index_threshold
         self.data_fraction = data_fraction
@@ -725,6 +725,21 @@ class H2OInfogram(H2OEstimator):
             self._parms["algorithm_params"] = None
 
     @property
+    def protected_columns(self):
+        """
+        Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
+        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
+
+        Type: ``List[str]``.
+        """
+        return self._parms.get("protected_columns")
+
+    @protected_columns.setter
+    def protected_columns(self, protected_columns):
+        assert_is_type(protected_columns, None, [str])
+        self._parms["protected_columns"] = protected_columns
+
+    @property
     def total_information_threshold(self):
         """
         A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
@@ -769,21 +784,6 @@ class H2OInfogram(H2OEstimator):
                 warnings.warn("Should not set net_information_threshold for fair infogram runs.  Set safety_index_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
             else:
                 self._parms["net_information_threshold"]=net_information_threshold
-
-    @property
-    def protected_columns(self):
-        """
-        Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
-        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
-
-        Type: ``List[str]``.
-        """
-        return self._parms.get("protected_columns")
-
-    @protected_columns.setter
-    def protected_columns(self, protected_columns):
-        assert_is_type(protected_columns, None, [str])
-        self._parms["protected_columns"] = protected_columns
 
     @property
     def relevance_index_threshold(self):

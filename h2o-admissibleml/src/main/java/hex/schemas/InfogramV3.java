@@ -56,9 +56,9 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
             // new parameters for INFOGRAMs only
             "algorithm", // choose algo and parameter to generate infogram
             "algorithm_params",
+            "protected_columns",
             "total_information_threshold",
             "net_information_threshold",
-            "protected_columns",
             "relevance_index_threshold",
             "safety_index_threshold",
             "data_fraction",
@@ -128,6 +128,11 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
             level = API.Level.expert, gridable=true)
     public String algorithm_params;
 
+    @API(help = "Columns that contain features that are sensitive and need to be protected (legally, or otherwise), " + 
+            "if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.",
+            level = API.Level.secondary, gridable=true)
+    public String[] protected_columns;    
+
     @API(help = "A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. " + 
             "For a specific feature, if the total information is higher than this threshold, and the corresponding " + 
             "net information is also higher than the threshold ``net_information_threshold``, that feature will be " + 
@@ -142,11 +147,6 @@ public class InfogramV3 extends ModelBuilderSchema<Infogram, InfogramV3, Infogra
             "The net information is the y-axis of the Core Infogram. Default is -1 which gets set to 0.1.",
             level = API.Level.secondary, gridable = true)
     public double net_information_threshold; 
-
-    @API(help = "Columns that contain features that are sensitive and need to be protected (legally, or otherwise), " + 
-            "if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.",
-            level = API.Level.secondary, gridable=true)
-    public String[] protected_columns;
 
     @API(help = "A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is " + 
             "only used when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index " + 
