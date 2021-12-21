@@ -4,8 +4,6 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import hex.tree.isoforextended.isolationtree.IsolationTree;
-import hex.tree.isoforextended.isolationtree.IsolationTreeStats;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import water.DKV;
 import water.H2O;
@@ -16,6 +14,7 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -34,7 +33,6 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
 
     private ExtendedIsolationForestModel _model;
     transient Random _rand;
-    transient IsolationTreeStats isolationTreeStats;
 
     // Called from an http request
     public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
@@ -139,13 +137,11 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                     throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(ExtendedIsolationForest.this);
                 }
                 _rand = RandomUtils.getRNG(_parms._seed);
-                isolationTreeStats = new IsolationTreeStats();
                 _model = new ExtendedIsolationForestModel(dest(), _parms,
                         new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
                 _model.delete_and_lock(_job);
                 buildIsolationTreeEnsemble();
                 _model._output._model_summary = createModelSummaryTable();
-                LOG.info(_model.toString());
             } finally {
                 if(_model != null)
                     _model.unlock(_job);
@@ -164,15 +160,13 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 double[][] subSampleArray = FrameUtils.asDoubles(subSample);
                 CompressedIsolationTree compressedIsolationTree = isolationTree.buildTree(subSampleArray, _parms._seed + _rand.nextInt(), tid);
                 if (LOG.isDebugEnabled()) {
-                    isolationTree.logNodesNumRows(Level.DEBUG);
-                    isolationTree.logNodesHeight(Level.DEBUG);
+                    isolationTree.logNodesNumRows();
                 }
                 _model._output._iTreeKeys[tid] = compressedIsolationTree._key;
                 DKV.put(compressedIsolationTree);
                 _job.update(1);
                 _model.update(_job);
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString());
-                isolationTreeStats.updateBy(isolationTree);
             }
         }
     }
@@ -187,23 +181,6 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         colHeaders.add("Extension Level"); colTypes.add("int"); colFormat.add("%d");
         colHeaders.add("Seed"); colTypes.add("long"); colFormat.add("%d");
 
-        colHeaders.add("Number of trained trees"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Min. Depth"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Max. Depth"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Mean Depth"); colTypes.add("float"); colFormat.add("%d");
-        colHeaders.add("Min. Leaves"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Max. Leaves"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Mean Leaves"); colTypes.add("float"); colFormat.add("%d");
-        colHeaders.add("Min. Isolated Point"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Max. Isolated Point"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Mean Isolated Point"); colTypes.add("float"); colFormat.add("%d");
-        colHeaders.add("Min. Not Isolated Point"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Max. Not Isolated Point"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Mean Not Isolated Point"); colTypes.add("float"); colFormat.add("%d");
-        colHeaders.add("Min. Zero Splits"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Max. Zero Splits"); colTypes.add("long"); colFormat.add("%d");
-        colHeaders.add("Mean Zero Splits"); colTypes.add("float"); colFormat.add("%d");
-
         final int rows = 1;
         TwoDimTable table = new TwoDimTable(
                 "Model Summary", null,
@@ -217,23 +194,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
         table.set(row, col++, _parms._ntrees);
         table.set(row, col++, _parms._sample_size);
         table.set(row, col++, _parms._extension_level);
-        table.set(row, col++, _parms._seed);
-        table.set(row, col++, isolationTreeStats._numTrees);
-        table.set(row, col++, isolationTreeStats._minDepth);
-        table.set(row, col++, isolationTreeStats._maxDepth);
-        table.set(row, col++, isolationTreeStats._meanDepth);
-        table.set(row, col++, isolationTreeStats._minLeaves);
-        table.set(row, col++, isolationTreeStats._maxLeaves);
-        table.set(row, col++, isolationTreeStats._meanLeaves);
-        table.set(row, col++, isolationTreeStats._minIsolated);
-        table.set(row, col++, isolationTreeStats._maxIsolated);
-        table.set(row, col++, isolationTreeStats._meanIsolated);
-        table.set(row, col++, isolationTreeStats._minNotIsolated);
-        table.set(row, col++, isolationTreeStats._maxNotIsolated);
-        table.set(row, col++, isolationTreeStats._meanNotIsolated);
-        table.set(row, col++, isolationTreeStats._minZeroSplits);
-        table.set(row, col++, isolationTreeStats._maxZeroSplits);
-        table.set(row, col, isolationTreeStats._meanZeroSplits);
+        table.set(row, col, _parms._seed);
         return table;
     }
 
