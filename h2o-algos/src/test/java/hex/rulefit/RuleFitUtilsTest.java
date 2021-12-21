@@ -237,10 +237,6 @@ public class RuleFitUtilsTest extends TestUtil {
 
         ruleId = "M6T10N36_0";
         assertEquals(RuleFitUtils.readRuleId(ruleId), "M6T10N36_0");
-
-        // todo decidde linear beehaviour, but thats not a rule, so maybe return an error
-
-
     }
 
 }
