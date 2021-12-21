@@ -7,6 +7,7 @@ import water.Iced;
 import water.fvec.Chunk;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Rule extends Iced {
     
@@ -86,43 +87,60 @@ public class Rule extends Iced {
     
     public static Set<Rule> extractRulesFromTree(SharedTreeSubgraph tree, int modelId, String classString) {
         Set<Rule> rules = new HashSet<>();
-        List<Condition> conditions = new ArrayList<>();
-        traverseNodes(tree.rootNode, conditions, rules, null, modelId, classString);
-        return rules;
-    }
-    
-    private static void traverseNodes(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, Condition conditionToAdd, int modelId, String classString) {
-        if (conditionToAdd != null) {
-            conditions.add(conditionToAdd);
-        }
-        
-        if (node.isLeaf()) {
-            // create Rule
-            String varName = "M" + modelId + "T" + node.getSubgraphNumber() + "N" + node.getNodeNumber();
+        // filter leaves
+        List<SharedTreeNode> leaves = tree.nodesArray.stream().filter(sharedTreeNode -> sharedTreeNode.isLeaf()).collect(Collectors.toList());
+        // traverse paths
+        for (SharedTreeNode leaf : leaves) {
+            String varName = "M" + modelId + "T" + leaf.getSubgraphNumber() + "N" + leaf.getNodeNumber();
             if (classString != null) {
                 varName += classString;
             }
+            traversePath(leaf, rules, varName);
+        }
+        return rules;
+    }
+    
+    private static void traversePath(SharedTreeNode node, List<Condition> conditions, Set<Rule> rules, String varName) {
+        SharedTreeNode parent = node.getParent();
+        if (parent == null) {
+            conditions = conditions.stream().sorted(Comparator.comparing(condition -> condition.featureName)).collect(Collectors.toList());
             rules.add(new Rule(conditions.toArray(new Condition[]{}), node.getPredValue(), varName));
         } else {
-            // traverse
-            int colId = node.getColId();
-            String colName = node.getColName();
-            
-            if (node.getDomainValues() == null) {
-                float splitValue = node.getSplitValue();
-                traverseNodes(node.getRightChild(), new ArrayList<>(conditions), rules, 
-                        new Condition(colId, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, splitValue, null, null, colName, node.getRightChild().isInclusiveNa()), modelId, classString);
-                traverseNodes(node.getLeftChild(), new ArrayList<>(conditions), rules,
-                        new Condition(colId, Condition.Type.Numerical, Condition.Operator.LessThan, splitValue, null, null, colName, node.getLeftChild().isInclusiveNa()), modelId, classString);
+            Condition actualCondition;
+            Condition newCondition;
+            String featureName = parent.getColName();
+            int colId = parent.getColId();
+            if (node.getInclusiveLevels() != null && parent.getDomainValues() != null) {
+                // categorical condition
+                actualCondition = getConditionByFeatureNameAndOperator(conditions, parent.getColName(), Condition.Operator.In);
+                CategoricalThreshold categoricalThreshold = extractCategoricalThreshold(node.getInclusiveLevels(), parent.getDomainValues());
+                newCondition = new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, categoricalThreshold.catThreshold, categoricalThreshold.catThresholdNum, featureName, node.isInclusiveNa());
+                
             } else {
-                String[] domainValues = node.getDomainValues();
-                CategoricalThreshold rightCategoricalThreshold = extractCategoricalThreshold(node.getRightChild().getInclusiveLevels(), domainValues);
-                traverseNodes(node.getRightChild(), new ArrayList<>(conditions), rules, 
-                        new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, rightCategoricalThreshold.catThreshold, rightCategoricalThreshold.catThresholdNum, colName, node.getRightChild().isInclusiveNa()), modelId, classString);
-                CategoricalThreshold leftCategoricalThreshold = extractCategoricalThreshold(node.getLeftChild().getInclusiveLevels(), domainValues);
-                traverseNodes(node.getLeftChild(), new ArrayList<>(conditions), rules,
-                        new Condition(colId, Condition.Type.Categorical, Condition.Operator.In, -1, leftCategoricalThreshold.catThreshold, leftCategoricalThreshold.catThresholdNum, colName, node.getLeftChild().isInclusiveNa()), modelId, classString);
+                float splitValue = parent.getSplitValue();
+                Condition.Operator operator = parent.getLeftChild().equals(node) ? Condition.Operator.LessThan : Condition.Operator.GreaterThanOrEqual;
+                actualCondition = getConditionByFeatureNameAndOperator(conditions, parent.getColName(), operator);
+                newCondition = new Condition(colId, Condition.Type.Numerical, operator, splitValue, null, null, featureName, node.isInclusiveNa());
             }
+            if (actualCondition == null ) {
+                conditions.add(newCondition);
+            } else {
+                actualCondition = actualCondition.expandBy(newCondition);
+            }
+            traversePath(node.getParent(), conditions, rules, varName);
+        }
+    }
+
+    private static void traversePath(SharedTreeNode node, Set<Rule> rules, String varName) {
+        traversePath(node, new ArrayList<>(), rules, varName);
+    }
+    
+    private static Condition getConditionByFeatureNameAndOperator(List<Condition> conditions, String featureName, Condition.Operator operator) {
+        List<Condition> filteredConditions = conditions.stream().filter(condition -> condition.featureName.equals(featureName) && condition.operator.equals(operator)).collect(Collectors.toList());
+        if (filteredConditions.size() != 0) {
+            return filteredConditions.get(0);
+        } else {
+            return null;
         }
     }
     
