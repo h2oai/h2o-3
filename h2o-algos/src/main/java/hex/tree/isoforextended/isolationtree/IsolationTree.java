@@ -1,9 +1,15 @@
 package hex.tree.isoforextended.isolationtree;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import water.util.ArrayUtils;
+import water.util.CollectionUtils;
 import water.util.RandomUtils;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
 /**
  * IsolationTree class implements Algorithm 2 (iTree)
@@ -19,12 +25,6 @@ public class IsolationTree {
     private final int _heightLimit;
     private final int _extensionLevel;
 
-    private int _isolatedPoints = 0;
-    private long _notIsolatedPoints = 0;
-    private int _zeroSplits = 0;
-    private int _leaves = 0;
-    private int _depth = 0;
-
     public IsolationTree(int _heightLimit, int _extensionLevel) {
         this._heightLimit = _heightLimit;
         this._extensionLevel = _extensionLevel;
@@ -35,11 +35,6 @@ public class IsolationTree {
      */
     public CompressedIsolationTree buildTree(double[][] data, final long seed, final int treeNum) {
         int maxNumNodesInTree = (int) Math.pow(2, _heightLimit + 1) - 1;
-        _isolatedPoints = 0;
-        _notIsolatedPoints = 0;
-        _zeroSplits = 0;
-        _leaves = 0;
-        _depth = 0;
         this._nodes = new Node[maxNumNodesInTree];
         CompressedIsolationTree compressedIsolationTree = new CompressedIsolationTree(_heightLimit);
         
@@ -58,15 +53,9 @@ public class IsolationTree {
                 node._height = currentHeight;
                 node._data = null; // attempt to inform Java GC the data are not longer needed
                 compressedIsolationTree.getNodes()[i] = new CompressedLeaf(node);
-                if (nodeData[0].length == 1)
-                    _isolatedPoints++;
-                if (nodeData[0].length > 1)
-                    _notIsolatedPoints += node._numRows;
-                _leaves++;
             } else {
                 if (rightChildIndex(i) < _nodes.length) {
                     currentHeight++;
-                    _depth = currentHeight;
 
                     node._p = ArrayUtils.uniformDistFromArray(nodeData, seed + i);
                     node._n = gaussianVector(
@@ -82,8 +71,6 @@ public class IsolationTree {
                         _nodes[leftChildIndex(i)] = new Node(null, 0, currentHeight);
                         _nodes[leftChildIndex(i)]._external = true;
                         compressedIsolationTree.getNodes()[leftChildIndex(i)] = new CompressedLeaf(_nodes[leftChildIndex(i)]);
-                        _leaves++;
-                        _zeroSplits++;
                     }
                     if (ret.right != null) {
                         _nodes[rightChildIndex(i)] = new Node(ret.right, ret.right[0].length, currentHeight);
@@ -92,12 +79,9 @@ public class IsolationTree {
                         _nodes[rightChildIndex(i)] = new Node(null, 0, currentHeight);
                         _nodes[rightChildIndex(i)]._external = true;
                         compressedIsolationTree.getNodes()[rightChildIndex(i)] = new CompressedLeaf(_nodes[rightChildIndex(i)]);
-                        _leaves++;
-                        _zeroSplits++;
                     }
                 } else {
                     compressedIsolationTree.getNodes()[i] = new CompressedLeaf(node);
-                    _leaves++;
                 }
                 node._data = null; // attempt to inform Java GC the data are not longer needed
             }
@@ -116,7 +100,7 @@ public class IsolationTree {
     /**
      * Helper method. Print nodes' size of the tree.
      */
-    public void logNodesNumRows(Level level) {
+    public void logNodesNumRows() {
         StringBuilder logMessage = new StringBuilder();
         for (int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] == null)
@@ -124,13 +108,13 @@ public class IsolationTree {
             else
                 logMessage.append(_nodes[i]._numRows + " ");
         }
-        LOG.log(level, logMessage.toString());
+        LOG.debug(logMessage.toString());
     }
 
     /**
      * Helper method. Print height (length of path from root) of each node in trees. Root is 0.
      */
-    public void logNodesHeight(Level level) {
+    public void logNodesHeight() {
         StringBuilder logMessage = new StringBuilder();
         for (int i = 0; i < _nodes.length; i++) {
             if (_nodes[i] == null)
@@ -138,7 +122,7 @@ public class IsolationTree {
             else
                 logMessage.append(_nodes[i]._height + " ");
         }
-        LOG.log(level, logMessage.toString());
+        LOG.debug(logMessage.toString());
     }
 
     /**
@@ -273,25 +257,5 @@ public class IsolationTree {
             gaussian[index] = 0.0;
         }
         return gaussian;
-    }
-
-    public int getIsolatedPoints() {
-        return _isolatedPoints;
-    }
-
-    public long getNotIsolatedPoints() {
-        return _notIsolatedPoints;
-    }
-
-    public int getZeroSplits() {
-        return _zeroSplits;
-    }
-
-    public int getLeaves() {
-        return _leaves;
-    }
-
-    public int getDepth() {
-        return _depth;
     }
 }
