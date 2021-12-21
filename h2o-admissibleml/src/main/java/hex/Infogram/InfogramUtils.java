@@ -53,10 +53,11 @@ public class InfogramUtils {
    * Method to run infogram model once in order to get the variable importance of the topK predictors
    */
   public static String[] extractTopKPredictors(InfogramParameters parms, Frame trainFrame,
-                                               String[] eligiblePredictors, List<Key<Frame>> generatedFrameKeys) {
+                                               String[] eligiblePredictors, Key<Frame>[] generatedFrameKeys) {
     if (parms._top_n_features >= eligiblePredictors.length) return eligiblePredictors;
     Frame topTrain = extractTrainingFrame(parms, eligiblePredictors, 1, trainFrame);
-    generatedFrameKeys.add(topTrain._key);
+    generatedFrameKeys[0] = topTrain._key;
+    //generatedFrameKeys.add(topTrain._key);
     parms._infogram_algorithm_parameters._train = topTrain._key;
     
     Model.Parameters[] modelParams = buildModelParameters(new Frame[]{topTrain}, parms._infogram_algorithm_parameters,
@@ -70,6 +71,14 @@ public class InfogramUtils {
     String[] rowHeaders = varImp.getRowHeaders();
     System.arraycopy(rowHeaders, 0, ntopPredictors, 0, parms._top_n_features);
     return ntopPredictors;
+  }
+
+  public static int findstart(Key<Frame>[] generatedFrameKeys) {
+    int arrLen = generatedFrameKeys.length;
+    for (int index=0; index < arrLen; index++)
+      if (generatedFrameKeys[index] == null)
+        return index;
+    return -1;  // all keys are taken
   }
 
   public static TwoDimTable extractVarImp(InfogramParameters.Algorithm algo, Model model) {
@@ -204,9 +213,12 @@ public class InfogramUtils {
     return cmiRelFrame;
   }
   
-  public static void removeFromDKV(List<Key<Frame>> generatedFrameKeys) {
+  public static void removeFromDKV(Key<Frame>[] generatedFrameKeys) {
     for (Key<Frame> oneFrameKey : generatedFrameKeys)
+      if (null != oneFrameKey)
         DKV.remove(oneFrameKey);
+      else 
+        break;
   }
   
   /***

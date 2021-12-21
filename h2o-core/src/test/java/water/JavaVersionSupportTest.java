@@ -37,7 +37,7 @@ public class JavaVersionSupportTest {
         @Parameterized.Parameters
         public static Collection<Object[]> data() {
             return Arrays.asList(new Object[][]{
-                    {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}
+                    {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}
             });
         }
 
@@ -79,7 +79,7 @@ public class JavaVersionSupportTest {
         @Parameterized.Parameters
         public static Collection<Object[]> data() {
             return Arrays.asList(new Object[][]{
-                    {7}, {16}
+                    {7}, {18}
             });
         }
 

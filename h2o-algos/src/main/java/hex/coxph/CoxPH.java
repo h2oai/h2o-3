@@ -729,12 +729,28 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           model._output._concordance = ((ModelMetricsRegressionCoxPH) model._output._training_metrics).concordance();
         }
         
+        model._output._model_summary = generateSummary(model._output);
+        Log.info(model._output._model_summary);
+
         model.update(_job);
       } finally {
         if (model != null) model.unlock(_job);
       }
     }
 
+  }
+
+  private TwoDimTable generateSummary(CoxPHModel.CoxPHOutput output) {
+    String[] names = new String[]{"Formula", "Likelihood ratio test", "Concordance", "Number of Observations", "Number of Events"};
+    String[] types = new String[]{"string", "double", "double", "long", "long"};
+    String[] formats = new String[]{"%s", "%.5f", "%.5f", "%d", "%d"};
+    TwoDimTable summary = new TwoDimTable("CoxPH Model", "summary", new String[]{""}, names, types, formats, "");
+    summary.set(0, 0, output._formula);
+    summary.set(0, 1, output._loglik_test);
+    summary.set(0, 2, output._concordance);
+    summary.set(0, 3, output._n);
+    summary.set(0, 4, output._total_event);
+    return summary;
   }
 
   protected static class CoxPHTask extends CPHBaseTask<CoxPHTask> {
