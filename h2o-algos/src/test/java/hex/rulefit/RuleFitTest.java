@@ -2,6 +2,7 @@ package hex.rulefit;
 
 import hex.ConfusionMatrix;
 import hex.ScoringInfo;
+import hex.VarImp;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -66,6 +67,14 @@ public class RuleFitTest extends TestUtil {
             System.out.println(rfModel._output._rule_importance);
 
             fr2 = rfModel.score(fr);
+
+            //todo: make reading of " M0T44N20, M0T16N22" rules
+            String[] features = new String[] {"M0T6N17", "M0T44N20", "M0T34N20"};
+            double[] probs = new double[] {0.0, 1.0};
+            // on categorical response isnot possible to calculate quantiles -> localVarimp is globalVarimp now
+            // -> todo: should it be possible to calculate local on certain classes predictions?
+            VarImp localVarimp = rfModel.calculateLocalVarimp(features, fr, probs);
+            
 
             Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
 

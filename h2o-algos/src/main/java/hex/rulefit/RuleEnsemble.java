@@ -42,7 +42,9 @@ public class RuleEnsemble extends Iced {
                     RuleEnsemble ruleEnsemble = new RuleEnsemble(filteredRules.toArray(new Rule[]{}));
                     Frame frameToMakeCategorical = ruleEnsemble.transform(frame);
                     if (calculateSupport) {
-                        calculateSupport(ruleEnsemble, frameToMakeCategorical, weights != null ? frame.vec(weights) : null);
+                        for (Rule rule : ruleEnsemble.rules) {
+                            rule.support = calculateSupport(rule, weights != null ? frame.vec(weights) : null, frameToMakeCategorical);
+                        }
                     }
                     try {
                         Decoder mrtask = new Decoder();
@@ -126,18 +128,19 @@ public class RuleEnsemble extends Iced {
     public int size() {
         return rules.length;
     }
-    
-    void calculateSupport(RuleEnsemble ruleEnsemble, Frame frameToMakeCategorical, Vec weights) {
-        for (Rule rule : ruleEnsemble.rules) {
-            if (weights != null) {
-                Frame result = new VecUtils.SequenceProduct()
-                        .doAll(Vec.T_NUM, frameToMakeCategorical.vec(rule.varName), weights)
-                        .outputFrame();
-                rule.support = result.vec(0).sparseRatio();
-                result.remove();
-            } else {
-                rule.support = frameToMakeCategorical.vec(rule.varName).sparseRatio();
-            }
+
+    public static double calculateSupport(Rule rule, Vec weights, Frame frameToMakeCategorical) {
+        double support;
+        Vec binaryVec = frameToMakeCategorical.vec(rule.varName);
+        if (weights != null) {
+            Frame result = new VecUtils.SequenceProduct()
+                    .doAll(Vec.T_NUM, binaryVec, weights)
+                    .outputFrame();
+            support = result.vec(0).sparseRatio();
+            result.remove();
+        } else {
+            support = binaryVec.sparseRatio();
         }
+        return support;
     }
 }

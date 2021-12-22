@@ -290,7 +290,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         ruleEnsemble, model._output.classNames()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2);
                
                 // total feature importance:
-                model._output._varimp = model.calculateVarimp(ArrayUtils.remove(train().names(), _parms._response_column));
+                model._output._varimp = model.calculateTotalVarimp(ArrayUtils.remove(train().names(), _parms._response_column));
                 model._output._variable_importance = calcVarImp(model._output._varimp);
 
                 model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);

@@ -2,18 +2,23 @@ package hex.rulefit;
 
 import hex.*;
 import hex.glm.GLMModel;
+import hex.quantile.Quantile;
+import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static hex.quantile.QuantileModel.CombineMethod.LOW;
 
 public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParameters, RuleFitModel.RuleFitOutput> {
     public enum Algorithm {DRF, GBM, AUTO}
@@ -233,7 +238,8 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         return totalFeatureImportance;
     }
 
-    VarImp calculateVarimp(String[] features) {
+    // this will be called by API or wrapped in something that will return a 2dimtable
+    VarImp calculateTotalVarimp(String[] features) {
         float[] varimp = new float[features.length];
         String[] names = new String[features.length];
 
@@ -243,5 +249,113 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
         }
 
         return new VarImp(varimp, names);
+    }
+    
+   // VarImp calculateGlobalVarimp == calculate localVarimp wirh probs = [0,1]
+
+    // this will be called by API
+    VarImp calculateLocalVarimp(String[] features, Frame frame, double[] probs) {
+        Frame adaptFrm = new Frame(frame);
+        adaptTestForTrain(adaptFrm, true, false);
+
+        Frame linearTest = new Frame();
+        Scope.enter();
+        try {
+            if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.RULES.equals(this._parms._model_type)) {
+                linearTest.add(ruleEnsemble.createGLMTrainFrame(adaptFrm, _parms._max_rule_length - _parms._min_rule_length + 1, _parms._rule_generation_ntrees, this._output.classNames(), _parms._weights_column, false));
+            }
+            if (ModelType.RULES_AND_LINEAR.equals(this._parms._model_type) || ModelType.LINEAR.equals(this._parms._model_type)) {
+                linearTest.add(RuleFitUtils.getLinearNames(adaptFrm.numCols(), adaptFrm.names()), adaptFrm.vecs());
+            } else {
+                linearTest.add(RuleFitUtils.getLinearNames(1, new String[] {this._parms._response_column})[0], adaptFrm.vec(this._parms._response_column));
+            }
+
+            float[] varimp = new float[features.length];
+            String[] names = new String[features.length];
+            Map<String, Rule> rulesWithFeature = Arrays.stream(ruleEnsemble.rules).filter(rule -> ArrayUtils.contains(features, rule.varName)).collect(Collectors.toMap(rule -> rule.varName, rule -> rule) );//toList());//|| (rule.varName.startsWith("linear.") && ArrayUtils.contains(features, rule.varName.substring("linear.".length())))).collect(Collectors.toList());
+            Frame subframeLinear = transformByQuantiles(linearTest, probs,  this.glmModel._parms._response_column);
+            Frame subframeInput = transformByQuantiles(adaptFrm, probs, this._parms._response_column);
+
+            for (int i = 0; i < features.length; i++) {
+                String currFeature = features[i];
+                names[i] = currFeature;
+                if (currFeature.contains("M") && currFeature.contains("T") && currFeature.contains("N"))
+                    currFeature = currFeature.substring(0, currFeature.lastIndexOf("N")).concat(".").concat(currFeature);
+                if (!this.glmModel.coefficients().containsKey(currFeature)) {
+                    throw new RuntimeException("Feature '" + features[i] + "' is not present in input frame.");
+                }
+                double lassoWeight = this.glmModel.coefficients().get(currFeature);
+                if (features[i].startsWith("linear.")) {
+                    // calculate linear predictor varimp
+                    varimp[i] = (float) (Math.abs(lassoWeight) * subframeLinear.vec(features[i]).sigma());
+                } else {
+                    // calculate rule predictor varimp
+                    varimp[i]  = localRuleImportance(rulesWithFeature.get(features[i]), subframeInput, lassoWeight);
+                }
+            }
+
+            subframeLinear.remove();
+            subframeInput.remove();
+
+            return new VarImp(varimp, names);
+        } finally {
+            Frame.deleteTempFrameAndItsNonSharedVecs(linearTest, adaptFrm);
+            Scope.exit(adaptFrm.keys());
+        }
+    }
+    
+    float localRuleImportance(Rule rule, Frame subframe, double lassoWeight) {
+        float result = 0.0f;
+        Frame ruleFiresResult = new RuleEnsemble(new Rule[] {rule}).transform(subframe);
+        double support = RuleEnsemble.calculateSupport(rule,  this._parms._weights_column != null ? 
+                subframe.vec(this._parms._weights_column) : null, ruleFiresResult);
+        Vec ruleFiresResultVec = ruleFiresResult.vec(0);
+        for (int i = 0; i < ruleFiresResultVec.length(); i++) {
+            result += Math.abs(lassoWeight) * (ruleFiresResultVec.at(i) - support);
+        }
+        return result / ruleFiresResultVec.length();
+    }
+
+    Frame transformByQuantiles(Frame frame, double[] probs, String response) {
+        // todo
+        Vec vec = frame.vec(response);
+        if (vec.isBad() || vec.isCategorical() || vec.isString() || vec.isTime() || vec.isUUID()) {
+            return frame;
+        }
+        Frame preds =  this.score(frame);
+        double[] quantiles = calculateQuantiles(/*frame*/ null,/* this.glmModel._parms._response_column*/null, probs, preds.vec(0));
+        Vec sliceVec = Vec.makeZero(frame.numRows());
+        for (int i = 0; i < frame.numRows(); i++) {
+            //todo check this for categoricaL
+            double num = preds.vec(0).at(i);
+            if (num > quantiles[0] && num < quantiles[1]) {
+                sliceVec.set(i, 1.0);
+            }
+        }
+
+        return frame.deepSlice(new Frame(sliceVec), null);
+    }
+
+
+    //todo: 
+    // todo check this for multiclass preds col maybe will be nedded to use current Variable
+    static double[] calculateQuantiles(Frame regDataFrame, String currentVariable, double[] probs, Vec preds) {
+        QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
+        Frame quantileTrain = new Frame(Key.make(), new Vec[] {preds}); //regDataFrame.subframe(new String[]{currentVariable});
+        DKV.put(quantileTrain);
+        parms._train = quantileTrain._key;
+        parms._probs = probs;
+        parms._combine_method = LOW;
+        Job<QuantileModel> job = new Quantile(parms).trainModel();
+        QuantileModel kmm = job.get();
+        job.remove();
+        DKV.remove(kmm._key);
+        double[] quantiles = kmm._output._quantiles[0];
+        // DKV.remove(regDataFrame._key);
+        DKV.remove(quantileTrain._key);
+        quantileTrain.remove();
+        kmm.delete();
+        // regDataFrame._key = null;
+        return quantiles;
     }
 }
