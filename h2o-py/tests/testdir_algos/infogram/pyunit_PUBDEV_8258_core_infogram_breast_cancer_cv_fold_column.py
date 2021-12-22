@@ -24,8 +24,8 @@ def test_infogram_breast_cancer_cv_fold_column():
     n_fold = 3
     infogram_model_cv = H2OInfogram(seed = 12345, top_n_features=50, nfolds=n_fold, fold_assignment="modulo") # model with cross-validation
     infogram_model_cv.train(x=x, y=target, training_frame=fr)
-    relcmi_train_cv = infogram_model_cv.get_relevance_cmi_frame()
-    relcmi_cv_cv = infogram_model_cv.get_relevance_cmi_frame(xval=True)
+    relcmi_train_cv = infogram_model_cv.get_admissible_score_frame()
+    relcmi_cv_cv = infogram_model_cv.get_admissible_score_frame(xval=True)
 
     fold_numbers = fr.modulo_kfold_column(n_folds=n_fold)
     fold_numbers.set_names(["fold_numbers"])
@@ -33,8 +33,8 @@ def test_infogram_breast_cancer_cv_fold_column():
     
     infogram_model_cv_fold_column = H2OInfogram(seed = 12345, top_n_features=50, fold_column="fold_numbers")
     infogram_model_cv_fold_column.train(x=x, y=target, training_frame=fr)
-    relcmi_train_cv_fold_column = infogram_model_cv_fold_column.get_relevance_cmi_frame()
-    relcmi_cv_cv_fold_column = infogram_model_cv_fold_column.get_relevance_cmi_frame(xval=True)
+    relcmi_train_cv_fold_column = infogram_model_cv_fold_column.get_admissible_score_frame()
+    relcmi_cv_cv_fold_column = infogram_model_cv_fold_column.get_admissible_score_frame(xval=True)
     
     # training rel cmi frames should all equal
     print("Comparing infogram data from training dataset")

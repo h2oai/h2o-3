@@ -29,13 +29,13 @@ def test_infogram_personal_loan_cv_fold_column():
     infogram_model_cv_fold_column.train(x=x, y=target, training_frame=fr) # cross-validation, validation
     
     print("compare rel cmi from training dataset")
-    relcmi_train_cv = infogram_model_cv.get_relevance_cmi_frame()
-    relcmi_train_cv_fold_column = infogram_model_cv_fold_column.get_relevance_cmi_frame()
+    relcmi_train_cv = infogram_model_cv.get_admissible_score_frame()
+    relcmi_train_cv_fold_column = infogram_model_cv_fold_column.get_admissible_score_frame()
     pyunit_utils.compare_frames_local(relcmi_train_cv, relcmi_train_cv_fold_column, prob=1.0)
     
     print("compare rel cmi from cross-validation hold out")
-    relcmi_cv_cv = infogram_model_cv.get_relevance_cmi_frame(xval=True)
-    relcmi_cv_cv_fold_column = infogram_model_cv_fold_column.get_relevance_cmi_frame(xval=True)
+    relcmi_cv_cv = infogram_model_cv.get_admissible_score_frame(xval=True)
+    relcmi_cv_cv_fold_column = infogram_model_cv_fold_column.get_admissible_score_frame(xval=True)
     pyunit_utils.compare_frames_local(relcmi_cv_cv, relcmi_cv_cv_fold_column, prob=1.0)
     
 if __name__ == "__main__":

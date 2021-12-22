@@ -27,4 +27,3 @@ def get_matplotlib_pyplot(server, raise_if_not_available=False):
             raise e
         print("`matplotlib` library is required for this function!")
         return None
-

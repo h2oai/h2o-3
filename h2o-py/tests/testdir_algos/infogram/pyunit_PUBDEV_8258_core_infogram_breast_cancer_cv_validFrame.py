@@ -27,23 +27,23 @@ def test_infogram_breast_cancer_cv_fold_column():
     n_fold = 3
     infogram_model_cv_valid = H2OInfogram(seed = 12345, top_n_features=50, nfolds=n_fold, fold_assignment="modulo") # model with cross-validation
     infogram_model_cv_valid.train(x=x, y=target, training_frame=train, validation_frame=test)
-    relcmi_train_cv_valid = infogram_model_cv_valid.get_relevance_cmi_frame()
-    relcmi_cv_cv_valid = infogram_model_cv_valid.get_relevance_cmi_frame(xval=True)
-    relcmi_valid_cv_valid = infogram_model_cv_valid.get_relevance_cmi_frame(valid=True)
+    relcmi_train_cv_valid = infogram_model_cv_valid.get_admissible_score_frame()
+    relcmi_cv_cv_valid = infogram_model_cv_valid.get_admissible_score_frame(xval=True)
+    relcmi_valid_cv_valid = infogram_model_cv_valid.get_admissible_score_frame(valid=True)
     
     infogram_model = H2OInfogram(seed = 12345, top_n_features=50)
     infogram_model.train(x=x, y=target, training_frame=train)
-    relcmi_train = infogram_model.get_relevance_cmi_frame()
+    relcmi_train = infogram_model.get_admissible_score_frame()
     
     infogram_model_valid = H2OInfogram(seed = 12345, top_n_features=50)
     infogram_model_valid.train(x=x, y=target, training_frame=train, validation_frame=test)
-    relcmi_train_valid = infogram_model_valid.get_relevance_cmi_frame()
-    relcmi_valid_valid = infogram_model_valid.get_relevance_cmi_frame(valid=True)
+    relcmi_train_valid = infogram_model_valid.get_admissible_score_frame()
+    relcmi_valid_valid = infogram_model_valid.get_admissible_score_frame(valid=True)
     
     infogram_model_cv = H2OInfogram(seed = 12345, top_n_features=50, nfolds=n_fold, fold_assignment="modulo")
     infogram_model_cv.train(x=x, y=target, training_frame=train)
-    relcmi_train_cv = infogram_model_cv.get_relevance_cmi_frame()
-    relcmi_cv_cv = infogram_model_cv.get_relevance_cmi_frame(xval=True)
+    relcmi_train_cv = infogram_model_cv.get_admissible_score_frame()
+    relcmi_cv_cv = infogram_model_cv.get_admissible_score_frame(xval=True)
     
     # training rel cmi frames should all equal
     print("Comparing infogram data from training dataset")

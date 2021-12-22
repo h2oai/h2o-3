@@ -3,13 +3,30 @@
 #'
 # -------------------------- Infogram -------------------------- #
 #'
-#' Given a protected_columns list, Infogram will add all predictors that contains information on the 
-#'  protected predictors to the protected_columns list.  It will return a set of predictors that
-#'  do not contain information on the sensitive/unfair list and hence user can build a fair model.  If no 
-#'  protected_columns list is given, Infogram will return a list of core predictors that should be used to build a final model.
-#'  Infogram can significantly cut down the number of predictors needed to build a model and hence will build a simple
-#'  model that is more interpretable, less susceptible to overfitting, runs faster while providing similar accuracy
-#'  as models built using all attributes.
+#' H2O Infogram
+#' 
+#' The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables 
+#' that uniquely and safely drive the response, in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build 
+#' a model by identifying only the most valuable, admissible features. When protected variables such as race or gender are present in the data, the admissibility 
+#' of a variable is determined by a safety and relevancy index, and thus serves as a diagnostic tool for fairness. The safety of each feature can be quantified and 
+#' variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable, given the reduced 
+#' feature set.  Admissible models are also less susceptible to overfitting and train faster, while providing similar accuracy as models built using all available features.
+#' 
+#' The infogram allows the user to quickly spot the admissible decision-making variables that are driving the response.  
+#' There are two types of infogram plots: Core and Fair Infogram.
+#' 
+#' The Core Infogram plots all the variables as points on two-dimensional grid of total vs net information.  The x-axis is total information, 
+#' a measure of how much the variable drives the response (the more predictive, the higher the total information). 
+#' The y-axis is net information, a measure of how unique the variable is.  The top right quadrant of the infogram plot is the admissible section; the variables
+#' located in this quadrant are the admissible features.  In the Core Infogram, the admissible features are the strongest, unique drivers of 
+#' the response.
+#' 
+#' If sensitive or protected variables are present in data, the user can specify which attributes should be protected while training using the \code{protected_columns} 
+#' argument. All non-protected predictor variables will be checked to make sure that there's no information pathway to the response through a protected feature, and 
+#' deemed inadmissible if they possess little or no informational value beyond their use as a dummy for protected attributes. The Fair Infogram plots all the features 
+#' as points on two-dimensional grid of relevance vs safety.  The x-axis is relevance index, a measure of how much the variable drives the response (the more predictive, 
+#' the higher the relevance). The y-axis is safety index, a measure of how much extra information the variable has that is not acquired through the protected variables.  
+#' In the Fair Infogram, the admissible features are the strongest, safest drivers of the response.
 #' 
 #'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
@@ -65,38 +82,45 @@
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
 #'        "WEIGHTED_OVO". Defaults to AUTO.
-#' @param algorithm Type of algorithm to use to build infogram. Options include 'AUTO' (gbm), 'deeplearning' (Deep Learning with
-#'        default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm'
-#'        (GLM with default parameters), or 'xgboost' (if available, XGBoost with default parameters). Must be one of:
-#'        "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to AUTO.
-#' @param algorithm_params Parameters specified to the chosen algorithm can be passed to infogram using algorithm_params.
-#' @param protected_columns Predictors that are to be excluded from model due to them being discriminatory or inappropriate for whatever
-#'        reason.
-#' @param net_information_threshold Conditional information for core infogram threshold between 0 and 1 that is used to decide whether a
-#'        predictor's conditional information is high enough to be chosen into the admissible feature set.  Default to
-#'        -1 which will be set to 0.1 eventually. Defaults to -1.
-#' @param total_information_threshold Relevance threshold for core infogram between 0 and 1 that is used to decide whether a predictor's relevance
-#'        level is high enough to be chosen into the admissible feature set.  Defaults to -1 which will be set to 0.1
-#'        eventually. Defaults to -1.
-#' @param safety_index_threshold Conditional information for fair infogram threshold between 0 and 1 that is used to decide whether a
-#'        predictor's conditional information is high enough to be chosen into the admissible feature set.  Default to
-#'        -1 which will be set to 0.1 eventually. Defaults to -1.
-#' @param relevance_index_threshold Relevance threshold for fair infogram between 0 and 1 that is used to decide whether a predictor's relevance
-#'        level is high enough to be chosen into the admissible feature set.  Default to -1 which will be set to 0.1
-#'        eventually. Defaults to -1.
-#' @param data_fraction Fraction of training frame to use to build the infogram model.  Defaults to 1.0. Defaults to 1.
-#' @param top_n_features Number of top n variables to consider based on the variable importance.  Defaults to 0.0 which is to consider
-#'        all predictors. Defaults to 50.
-#' @param compute_p_values \code{Logical}. If true will calculate the p-value. Default to false. Defaults to FALSE.
+#' @param algorithm Type of machine learning algorithm used to build the infogram. Options include 'AUTO' (gbm), 'deeplearning'
+#'        (Deep Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with
+#'        default parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available, XGBoost with default
+#'        parameters). Must be one of: "AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost". Defaults to AUTO.
+#' @param algorithm_params Customized parameters for the machine learning algorithm specified in the algorithm parameter.
+#' @param protected_columns Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
+#'        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
+#' @param total_information_threshold A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
+#'        feature, if the total information is higher than this threshold, and the corresponding net information is also
+#'        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
+#'        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param net_information_threshold A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
+#'        feature, if the net information is higher than this threshold, and the corresponding total information is also
+#'        higher than the total_information_threshold, that feature will be considered admissible. The net information
+#'        is the y-axis of the Core Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param relevance_index_threshold A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only
+#'        used when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is
+#'        higher than this threshold, and the corresponding safety index is also higher than the
+#'        safety_index_threshold``, that feature will be considered admissible.  The relevance index is the x-axis of
+#'        the Fair Infogram. Default is -1 which gets set to 0.1. Defaults to -1.
+#' @param safety_index_threshold A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
+#'        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
+#'        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
+#'        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1
+#'        which gets set to 0.1. Defaults to -1.
+#' @param data_fraction The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater than
+#'        0 and less than or equal to 1.0 is acceptable. Defaults to 1.
+#' @param top_n_features An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
+#'        importance, and the top N are evaluated.  Defaults to 50. Defaults to 50.
 #' @examples
 #' \dontrun{
 #' h2o.init()
 #' 
-#' # Run infogram of CAPSULE ~ AGE + RACE + PSA + DCAPS
-#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate <- h2o.uploadFile(path = prostate_path)
-#' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-#' h2o.infogram(y="CAPSULE", x=c("RACE", "AGE", "PSA", "DCAPS"), training_frame=prostate)
+#' # Convert iris dataset to an H2OFrame    
+#' df <- as.h2o(iris)
+#' 
+#' # Infogram
+#' ig <- h2o.infogram(y = "Species", training_frame = df) 
+#' plot(ig)
 #' 
 #' }
 #' @export
@@ -132,13 +156,12 @@ h2o.infogram <- function(x,
                          algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost"),
                          algorithm_params = NULL,
                          protected_columns = NULL,
-                         net_information_threshold = -1,
                          total_information_threshold = -1,
-                         safety_index_threshold = -1,
+                         net_information_threshold = -1,
                          relevance_index_threshold = -1,
+                         safety_index_threshold = -1,
                          data_fraction = 1,
-                         top_n_features = 50,
-                         compute_p_values = FALSE)
+                         top_n_features = 50)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -158,29 +181,27 @@ h2o.infogram <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if (missing(protected_columns)) { # core infogram
+  if (missing(protected_columns)) { 
+    # core infogram
     if (!missing(safety_index_threshold)) {
-      warning("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.
-          Using default of 0.1 if not set")
+      warning("Should not set safety_index_threshold for Core Infogram runs. Set net_information_threshold instead.")
     }
     if (!missing(relevance_index_threshold)) {
-      warning("Should not set relevance_index_threshold for core infogram runs.  Set total_information_threshold 
-      instead.   Using default of 0.1 if not set")
+      warning("Should not set relevance_index_threshold for Core Infogram runs. Set total_information_threshold instead.")
     }
-  } else { # fair infogram
+  } else { 
+    # fair infogram
     if (!missing(net_information_threshold)) {
-    warning("Should not set net_information_threshold for fair infogram runs, set safety_index_threshold instead.  
-      Using default of 0.1 if not set")
+    warning("Should not set net_information_threshold for Fair Infogram runs, set safety_index_threshold instead.")
     }
     if (!missing(total_information_threshold)) {
-      warning("Should not set total_information_threshold for fair infogram runs, set relevance_index_threshold
-       instead.    Using default of 0.1 if not set")
+      warning("Should not set total_information_threshold for Fair Infogram runs, set relevance_index_threshold instead.")
     }
   }
 
-  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if (!missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if (!missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if (!missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
 
@@ -240,24 +261,21 @@ h2o.infogram <- function(x,
     parms$algorithm <- algorithm
   if (!missing(protected_columns))
     parms$protected_columns <- protected_columns
-  if (!missing(net_information_threshold))
-    parms$net_information_threshold <- net_information_threshold
   if (!missing(total_information_threshold))
     parms$total_information_threshold <- total_information_threshold
-  if (!missing(safety_index_threshold))
-    parms$safety_index_threshold <- safety_index_threshold
+  if (!missing(net_information_threshold))
+    parms$net_information_threshold <- net_information_threshold
   if (!missing(relevance_index_threshold))
     parms$relevance_index_threshold <- relevance_index_threshold
+  if (!missing(safety_index_threshold))
+    parms$safety_index_threshold <- safety_index_threshold
   if (!missing(data_fraction))
     parms$data_fraction <- data_fraction
   if (!missing(top_n_features))
     parms$top_n_features <- top_n_features
-  if (!missing(compute_p_values))
-    parms$compute_p_values <- compute_p_values
 
   if (!missing(algorithm_params))
       parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
-  h2o.show_progress() # enable progress bar explicitly
 
   # Error check and build model
   model <- .h2o.modelJob('infogram', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -302,13 +320,12 @@ h2o.infogram <- function(x,
                                          algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "xgboost"),
                                          algorithm_params = NULL,
                                          protected_columns = NULL,
-                                         net_information_threshold = -1,
                                          total_information_threshold = -1,
-                                         safety_index_threshold = -1,
+                                         net_information_threshold = -1,
                                          relevance_index_threshold = -1,
+                                         safety_index_threshold = -1,
                                          data_fraction = 1,
                                          top_n_features = 50,
-                                         compute_p_values = FALSE,
                                          segment_columns = NULL,
                                          segment_models_id = NULL,
                                          parallelism = 1)
@@ -335,29 +352,27 @@ h2o.infogram <- function(x,
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
-  if (missing(protected_columns)) { # core infogram
+  if (missing(protected_columns)) { 
+    # core infogram
     if (!missing(safety_index_threshold)) {
-      warning("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.
-          Using default of 0.1 if not set")
+      warning("Should not set safety_index_threshold for Core Infogram runs. Set net_information_threshold instead.")
     }
     if (!missing(relevance_index_threshold)) {
-      warning("Should not set relevance_index_threshold for core infogram runs.  Set total_information_threshold 
-      instead.   Using default of 0.1 if not set")
+      warning("Should not set relevance_index_threshold for Core Infogram runs. Set total_information_threshold instead.")
     }
-  } else { # fair infogram
+  } else { 
+    # fair infogram
     if (!missing(net_information_threshold)) {
-    warning("Should not set net_information_threshold for fair infogram runs, set safety_index_threshold instead.  
-      Using default of 0.1 if not set")
+    warning("Should not set net_information_threshold for Fair Infogram runs, set safety_index_threshold instead.")
     }
     if (!missing(total_information_threshold)) {
-      warning("Should not set total_information_threshold for fair infogram runs, set relevance_index_threshold
-       instead.    Using default of 0.1 if not set")
+      warning("Should not set total_information_threshold for Fair Infogram runs, set relevance_index_threshold instead.")
     }
   }
 
-  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
-  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
-  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  if (!missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if (!missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if (!missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
 
@@ -415,24 +430,21 @@ h2o.infogram <- function(x,
     parms$algorithm <- algorithm
   if (!missing(protected_columns))
     parms$protected_columns <- protected_columns
-  if (!missing(net_information_threshold))
-    parms$net_information_threshold <- net_information_threshold
   if (!missing(total_information_threshold))
     parms$total_information_threshold <- total_information_threshold
-  if (!missing(safety_index_threshold))
-    parms$safety_index_threshold <- safety_index_threshold
+  if (!missing(net_information_threshold))
+    parms$net_information_threshold <- net_information_threshold
   if (!missing(relevance_index_threshold))
     parms$relevance_index_threshold <- relevance_index_threshold
+  if (!missing(safety_index_threshold))
+    parms$safety_index_threshold <- safety_index_threshold
   if (!missing(data_fraction))
     parms$data_fraction <- data_fraction
   if (!missing(top_n_features))
     parms$top_n_features <- top_n_features
-  if (!missing(compute_p_values))
-    parms$compute_p_values <- compute_p_values
 
   if (!missing(algorithm_params))
       parms$algorithm_params <- as.character(toJSON(algorithm_params, pretty = TRUE))
-  h2o.show_progress() # enable progress bar explicitly
 
   # Build segment-models specific parameters
   segment_parms <- list()
@@ -448,12 +460,75 @@ h2o.infogram <- function(x,
 }
 
 
-#' Extract the admissible attributes/predictors out of the H2O Infogram Model.
+#' Plot an H2O Infogram
 #'
-#' @param model an H2OInfogram.
-#' @export 
-h2o.get_admissible_attributes<-function(model) {
-  if ( is(model, "H2OInfogram") && (model@algorithm=='infogram'))
-    return(model@admissible_features)
+#' Plots the Infogram for an H2OInfogram object.
+#'
+#' @param x A fitted \linkS4class{H2OInfogram} object.
+#' @param ... additional arguments to pass on.
+#' @return A ggplot2 object.
+#' @seealso \code{\link{h2o.infogram}}
+#' @examples
+#' \dontrun{
+#' h2o.init()
+#' 
+#' # Convert iris dataset to an H2OFrame
+#' train <- as.h2o(iris)
+#' 
+#' # Create and plot infogram
+#' ig <- h2o.infogram(y = "Species", training_frame = train)
+#' plot(ig)
+#' 
+#' }
+#' @export
+plot.H2OInfogram <- function(x, ...) {
+  .check_for_ggplot2() # from explain.R
+  .data <- NULL
+  varargs <- list(...)
+  if ("title" %in% names(varargs)) {
+    title <- varargs$title
+  } else {
+    title <- "Infogram"
+  }
+  if ("total_information" %in% names(x@admissible_score)) {
+    # core infogram
+    xlab <- "Total Information"
+    ylab <- "Net Information"
+    xthresh <- x@total_information_threshold
+    ythresh <- x@net_information_threshold
+  } else {
+    # fair infogram
+    xlab <- "Relevance Index"
+    ylab <- "Safety Index"
+    xthresh <- x@relevance_index_threshold
+    ythresh <- x@safety_index_threshold
+  }
+  df <- as.data.frame(x@admissible_score)
+  # use generic names for x, y for easier ggplot code
+  names(df) <- c("column",
+                 "admissible",
+                 "admissible_index",
+                 "ig_x",
+                 "ig_y",
+                 "raw")
+  ggplot2::ggplot(data = df, ggplot2::aes_(~ig_x, ~ig_y)) +
+    ggplot2::geom_point() +
+    ggplot2::geom_polygon(ggplot2::aes(.data$x_coordinates, .data$y_coordinates), data = data.frame(
+      x_coordinates = c(xthresh, xthresh, -Inf, -Inf, Inf, Inf, xthresh),
+      y_coordinates = c(ythresh, Inf, Inf, -Inf, -Inf, ythresh, ythresh)
+    ), alpha = 0.1, fill = "#CC663E") +
+    ggplot2::geom_path(ggplot2::aes(.data$x_coordinates, .data$y_coordinates), data = data.frame(
+      x_coordinates = c(xthresh, xthresh, NA, xthresh, Inf),
+      y_coordinates = c(ythresh,     Inf, NA, ythresh, ythresh)
+    ), color = "red", linetype = "dashed") +
+    ggplot2::geom_text(ggplot2::aes_(~ig_x, ~ig_y, label = ~column),
+                       data = df[as.logical(df$admissible),], nudge_y = -0.0325,
+                       color = "blue", size = 2.5) +
+    ggplot2::xlab(xlab) +
+    ggplot2::ylab(ylab) +
+    ggplot2::coord_fixed(xlim = c(0, 1.1), ylim = c(0, 1.1), expand = FALSE) +
+    ggplot2::theme_bw() +
+    ggplot2::ggtitle(title) +
+    ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5))
 }
 

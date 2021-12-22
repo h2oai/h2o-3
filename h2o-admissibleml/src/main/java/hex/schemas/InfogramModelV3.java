@@ -49,15 +49,15 @@ public class InfogramModelV3 extends ModelSchemaV3<InfogramModel, InfogramModelV
     public double[] relevance; // variable importance for all predictors
       
     @API(help="Frame key that stores the predictor names, net CMI and relevance.", direction = API.Direction.OUTPUT)
-    KeyV3.FrameKeyV3 relevance_cmi_key;
+    KeyV3.FrameKeyV3 admissible_score_key;
 
     @API(help="Frame key that stores the predictor names, net CMI and relevance calculated from validation dataset.",
             direction = API.Direction.OUTPUT)
-    KeyV3.FrameKeyV3 relevance_cmi_key_valid;
+    KeyV3.FrameKeyV3 admissible_score_key_valid;
 
     @API(help="Frame key that stores the predictor names, net CMI and relevance from cross-validation.", 
             direction = API.Direction.OUTPUT)
-    KeyV3.FrameKeyV3 relevance_cmi_key_xval;
+    KeyV3.FrameKeyV3 admissible_score_key_xval;
   }
 
   public InfogramV3.InfogramParametersV3 createParametersSchema() { return new InfogramV3.InfogramParametersV3(); }

@@ -29,22 +29,22 @@ def test_infogram_personal_loan_cv_valid():
     infogram_model_cv_v.train(x=x, y=target, training_frame=train, validation_frame=test) # cross-validation, validation
     
     print("compare rel cmi from training dataset")
-    relcmi_train = infogram_model.get_relevance_cmi_frame()
-    relcmi_train_v = infogram_model_v.get_relevance_cmi_frame()
-    relcmi_train_cv = infogram_model_cv.get_relevance_cmi_frame()
-    relcmi_train_cv_v = infogram_model_cv_v.get_relevance_cmi_frame()
+    relcmi_train = infogram_model.get_admissible_score_frame()
+    relcmi_train_v = infogram_model_v.get_admissible_score_frame()
+    relcmi_train_cv = infogram_model_cv.get_admissible_score_frame()
+    relcmi_train_cv_v = infogram_model_cv_v.get_admissible_score_frame()
     pyunit_utils.compare_frames_local(relcmi_train, relcmi_train_v, prob=1.0)
     pyunit_utils.compare_frames_local(relcmi_train_cv, relcmi_train_cv_v, prob=1.0)
     pyunit_utils.compare_frames_local(relcmi_train_cv, relcmi_train, prob=1.0)
 
     print("compare rel cmi from validation dataset")
-    relcmi_valid_v = infogram_model_v.get_relevance_cmi_frame(valid=True)
-    relcmi_valid_cv_v = infogram_model_cv_v.get_relevance_cmi_frame(valid=True)
+    relcmi_valid_v = infogram_model_v.get_admissible_score_frame(valid=True)
+    relcmi_valid_cv_v = infogram_model_cv_v.get_admissible_score_frame(valid=True)
     pyunit_utils.compare_frames_local(relcmi_valid_v, relcmi_valid_cv_v, prob=1.0)
     
     print("compare rel cmi from cross-validation hold out")
-    relcmi_cv_cv = infogram_model_cv.get_relevance_cmi_frame(xval=True)
-    relcmi_cv_cv_v = infogram_model_cv_v.get_relevance_cmi_frame(xval=True)
+    relcmi_cv_cv = infogram_model_cv.get_admissible_score_frame(xval=True)
+    relcmi_cv_cv_v = infogram_model_cv_v.get_admissible_score_frame(xval=True)
     pyunit_utils.compare_frames_local(relcmi_cv_cv, relcmi_cv_cv_v, prob=1.0)
     
 if __name__ == "__main__":

@@ -31,8 +31,8 @@ def test_infogram_breast_cancer_cv_fold_column():
     infogram_model_cv_valid.plot(train=True, valid=True, title="infogram from traiing/validation dataset 1", server=True)
     infogram_model_cv_valid.plot(train=True, valid=True, xval=True, title="infogram from training/validation/cv holdout"
                                                                           " dataset 1", server=True)
-    relcmi_valid = infogram_model_cv_valid.get_relevance_cmi_frame(valid=True)
-    relcmi_cv = infogram_model_cv_valid.get_relevance_cmi_frame(xval=True)
+    relcmi_valid = infogram_model_cv_valid.get_admissible_score_frame(valid=True)
+    relcmi_cv = infogram_model_cv_valid.get_admissible_score_frame(xval=True)
     assert relcmi_valid.nrow==relcmi_cv.nrow
 
 if __name__ == "__main__":

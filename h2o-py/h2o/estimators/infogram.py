@@ -10,11 +10,9 @@ import ast
 import json
 import warnings
 import h2o
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
-from h2o.frame import H2OFrame
+from h2o.utils.typechecks import is_type
 import numpy as np
-from h2o.plot import get_matplotlib_pyplot
-from matplotlib.collections import PolyCollection
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
@@ -25,13 +23,12 @@ class H2OInfogram(H2OEstimator):
     """
     Information Diagram
 
-    Given a sensitive/unfair predictors list, Infogram will add all predictors that contains information on the 
-     sensitive/unfair predictors list to the sensitive/unfair predictors list.  It will return a set of predictors that
-     do not contain information on the sensitive/unfair list and hence user can build a fair model.  If no sensitive/unfair
-     predictor list is given, Infogram will return a list of core predictors that should be used to build a final model.
-     Infogram can significantly cut down the number of predictors needed to build a model and hence will build a simple
-     model that is more interpretable, less susceptible to overfitting, runs faster while providing similar accuracy
-     as models built using all attributes.
+    The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables 
+    that uniquely and safely drive the response, in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build 
+    a model by identifying only the most valuable, admissible features. When protected variables such as race or gender are present in the data, the admissibility 
+    of a variable is determined by a safety and relevancy index, and thus serves as a diagnostic tool for fairness. The safety of each feature can be quantified and 
+    variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable, given the reduced 
+    feature set.  Admissible models are also less susceptible to overfitting and train faster, while providing similar accuracy as models built using all available features.
     """
 
     algo = "infogram"
@@ -70,13 +67,12 @@ class H2OInfogram(H2OEstimator):
                  algorithm="auto",  # type: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
                  algorithm_params=None,  # type: Optional[dict]
                  protected_columns=None,  # type: Optional[List[str]]
-                 net_information_threshold=-1.0,  # type: float
                  total_information_threshold=-1.0,  # type: float
-                 safety_index_threshold=-1.0,  # type: float
+                 net_information_threshold=-1.0,  # type: float
                  relevance_index_threshold=-1.0,  # type: float
+                 safety_index_threshold=-1.0,  # type: float
                  data_fraction=1.0,  # type: float
                  top_n_features=50,  # type: int
-                 compute_p_values=False,  # type: bool
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -184,50 +180,57 @@ class H2OInfogram(H2OEstimator):
         :param auc_type: Set default multinomial AUC type.
                Defaults to ``"auto"``.
         :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
-        :param algorithm: Type of algorithm to use to build infogram. Options include 'AUTO' (gbm), 'deeplearning' (Deep
-               Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
-               parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available, XGBoost with default
-               parameters).
+        :param algorithm: Type of machine learning algorithm used to build the infogram. Options include 'AUTO' (gbm),
+               'deeplearning' (Deep Learning with default parameters), 'drf' (Random Forest with default parameters),
+               'gbm' (GBM with default parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available,
+               XGBoost with default parameters).
                Defaults to ``"auto"``.
         :type algorithm: Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]
-        :param algorithm_params: Parameters specified to the chosen algorithm can be passed to infogram using
-               algorithm_params.
+        :param algorithm_params: Customized parameters for the machine learning algorithm specified in the algorithm
+               parameter.
                Defaults to ``None``.
         :type algorithm_params: dict, optional
-        :param protected_columns: Predictors that are to be excluded from model due to them being discriminatory or
-               inappropriate for whatever reason.
+        :param protected_columns: Columns that contain features that are sensitive and need to be protected (legally, or
+               otherwise), if applicable. These features (e.g. race, gender, etc) should not drive the prediction of the
+               response.
                Defaults to ``None``.
         :type protected_columns: List[str], optional
-        :param net_information_threshold: Conditional information for core infogram threshold between 0 and 1 that is
-               used to decide whether a predictor's conditional information is high enough to be chosen into the
-               admissible feature set.  Default to -1 which will be set to 0.1 eventually.
-               Defaults to ``-1.0``.
-        :type net_information_threshold: float
-        :param total_information_threshold: Relevance threshold for core infogram between 0 and 1 that is used to decide
-               whether a predictor's relevance level is high enough to be chosen into the admissible feature set.
-               Defaults to -1 which will be set to 0.1 eventually.
+        :param total_information_threshold: A number between 0 and 1 representing a threshold for total information,
+               defaulting to 0.1. For a specific feature, if the total information is higher than this threshold, and
+               the corresponding net information is also higher than the threshold ``net_information_threshold``, that
+               feature will be considered admissible. The total information is the x-axis of the Core Infogram. Default
+               is -1 which gets set to 0.1.
                Defaults to ``-1.0``.
         :type total_information_threshold: float
-        :param safety_index_threshold: Conditional information for fair infogram threshold between 0 and 1 that is used
-               to decide whether a predictor's conditional information is high enough to be chosen into the admissible
-               feature set.  Default to -1 which will be set to 0.1 eventually.
+        :param net_information_threshold: A number between 0 and 1 representing a threshold for net information,
+               defaulting to 0.1.  For a specific feature, if the net information is higher than this threshold, and the
+               corresponding total information is also higher than the total_information_threshold, that feature will be
+               considered admissible. The net information is the y-axis of the Core Infogram. Default is -1 which gets
+               set to 0.1.
                Defaults to ``-1.0``.
-        :type safety_index_threshold: float
-        :param relevance_index_threshold: Relevance threshold for fair infogram between 0 and 1 that is used to decide
-               whether a predictor's relevance level is high enough to be chosen into the admissible feature set.
-               Default to -1 which will be set to 0.1 eventually.
+        :type net_information_threshold: float
+        :param relevance_index_threshold: A number between 0 and 1 representing a threshold for the relevance index,
+               defaulting to 0.1.  This is only used when ``protected_columns`` is set by the user.  For a specific
+               feature, if the relevance index value is higher than this threshold, and the corresponding safety index
+               is also higher than the safety_index_threshold``, that feature will be considered admissible.  The
+               relevance index is the x-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
                Defaults to ``-1.0``.
         :type relevance_index_threshold: float
-        :param data_fraction: Fraction of training frame to use to build the infogram model.  Defaults to 1.0.
+        :param safety_index_threshold: A number between 0 and 1 representing a threshold for the safety index,
+               defaulting to 0.1.  This is only used when protected_columns is set by the user.  For a specific feature,
+               if the safety index value is higher than this threshold, and the corresponding relevance index is also
+               higher than the relevance_index_threshold, that feature will be considered admissible.  The safety index
+               is the y-axis of the Fair Infogram. Default is -1 which gets set to 0.1.
+               Defaults to ``-1.0``.
+        :type safety_index_threshold: float
+        :param data_fraction: The fraction of training frame to use to build the infogram model. Defaults to 1.0, and
+               any value greater than 0 and less than or equal to 1.0 is acceptable.
                Defaults to ``1.0``.
         :type data_fraction: float
-        :param top_n_features: Number of top n variables to consider based on the variable importance.  Defaults to 0.0
-               which is to consider all predictors.
+        :param top_n_features: An integer specifying the number of columns to evaluate in the infogram.  The columns are
+               ranked by variable importance, and the top N are evaluated.  Defaults to 50.
                Defaults to ``50``.
         :type top_n_features: int
-        :param compute_p_values: If true will calculate the p-value. Default to false.
-               Defaults to ``False``.
-        :type compute_p_values: bool
         """
         super(H2OInfogram, self).__init__()
         self._parms = {}
@@ -263,13 +266,12 @@ class H2OInfogram(H2OEstimator):
         self.algorithm = algorithm
         self.algorithm_params = algorithm_params
         self.protected_columns = protected_columns
-        self.net_information_threshold = net_information_threshold
         self.total_information_threshold = total_information_threshold
-        self.safety_index_threshold = safety_index_threshold
+        self.net_information_threshold = net_information_threshold
         self.relevance_index_threshold = relevance_index_threshold
+        self.safety_index_threshold = safety_index_threshold
         self.data_fraction = data_fraction
         self.top_n_features = top_n_features
-        self.compute_p_values = compute_p_values
         self._parms["_rest_version"] = 3
 
     @property
@@ -680,9 +682,9 @@ class H2OInfogram(H2OEstimator):
     @property
     def algorithm(self):
         """
-        Type of algorithm to use to build infogram. Options include 'AUTO' (gbm), 'deeplearning' (Deep Learning with
-        default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm'
-        (GLM with default parameters), or 'xgboost' (if available, XGBoost with default parameters).
+        Type of machine learning algorithm used to build the infogram. Options include 'AUTO' (gbm), 'deeplearning'
+        (Deep Learning with default parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default
+        parameters), 'glm' (GLM with default parameters), or 'xgboost' (if available, XGBoost with default parameters).
 
         Type: ``Literal["auto", "deeplearning", "drf", "gbm", "glm", "xgboost"]``, defaults to ``"auto"``.
         """
@@ -696,7 +698,7 @@ class H2OInfogram(H2OEstimator):
     @property
     def algorithm_params(self):
         """
-        Parameters specified to the chosen algorithm can be passed to infogram using algorithm_params.
+        Customized parameters for the machine learning algorithm specified in the algorithm parameter.
 
         Type: ``dict``.
         """
@@ -723,8 +725,8 @@ class H2OInfogram(H2OEstimator):
     @property
     def protected_columns(self):
         """
-        Predictors that are to be excluded from model due to them being discriminatory or inappropriate for whatever
-        reason.
+        Columns that contain features that are sensitive and need to be protected (legally, or otherwise), if
+        applicable. These features (e.g. race, gender, etc) should not drive the prediction of the response.
 
         Type: ``List[str]``.
         """
@@ -736,33 +738,12 @@ class H2OInfogram(H2OEstimator):
         self._parms["protected_columns"] = protected_columns
 
     @property
-    def net_information_threshold(self):
-        """
-        Conditional information for core infogram threshold between 0 and 1 that is used to decide whether a predictor's
-        conditional information is high enough to be chosen into the admissible feature set.  Default to -1 which will
-        be set to 0.1 eventually.
-
-        Type: ``float``, defaults to ``-1.0``.
-        """
-        return self._parms.get("net_information_threshold")
-
-    @net_information_threshold.setter
-    def net_information_threshold(self, net_information_threshold):
-        if net_information_threshold <= -1: # not set
-            if self._parms["protected_columns"] is None:
-                self._parms["net_information_threshold"]=0.1
-        else:  # set
-            if self._parms["protected_columns"] is not None: # fair infogram
-                warnings.warn("Should not set net_information_threshold for fair infogram runs.  Set safety_index_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
-            else:
-                self._parms["net_information_threshold"]=net_information_threshold
-
-    @property
     def total_information_threshold(self):
         """
-        Relevance threshold for core infogram between 0 and 1 that is used to decide whether a predictor's relevance
-        level is high enough to be chosen into the admissible feature set.  Defaults to -1 which will be set to 0.1
-        eventually.
+        A number between 0 and 1 representing a threshold for total information, defaulting to 0.1. For a specific
+        feature, if the total information is higher than this threshold, and the corresponding net information is also
+        higher than the threshold ``net_information_threshold``, that feature will be considered admissible. The total
+        information is the x-axis of the Core Infogram. Default is -1 which gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
         """
@@ -780,33 +761,36 @@ class H2OInfogram(H2OEstimator):
                 self._parms["total_information_threshold"] = total_information_threshold
 
     @property
-    def safety_index_threshold(self):
+    def net_information_threshold(self):
         """
-        Conditional information for fair infogram threshold between 0 and 1 that is used to decide whether a predictor's
-        conditional information is high enough to be chosen into the admissible feature set.  Default to -1 which will
-        be set to 0.1 eventually.
+        A number between 0 and 1 representing a threshold for net information, defaulting to 0.1.  For a specific
+        feature, if the net information is higher than this threshold, and the corresponding total information is also
+        higher than the total_information_threshold, that feature will be considered admissible. The net information is
+        the y-axis of the Core Infogram. Default is -1 which gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
         """
-        return self._parms.get("safety_index_threshold")
+        return self._parms.get("net_information_threshold")
 
-    @safety_index_threshold.setter
-    def safety_index_threshold(self, safety_index_threshold):
-        if safety_index_threshold <= -1: # not set
-            if self._parms["protected_columns"] is not None:
-                self._parms["safety_index_threshold"]=0.1
-        else: # it is set
+    @net_information_threshold.setter
+    def net_information_threshold(self, net_information_threshold):
+        if net_information_threshold <= -1: # not set
+            if self._parms["protected_columns"] is None:
+                self._parms["net_information_threshold"]=0.1
+        else:  # set
             if self._parms["protected_columns"] is not None: # fair infogram
-                self._parms["safety_index_threshold"] = safety_index_threshold
-            else: # core infogram should not have been set
-                warnings.warn("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
+                warnings.warn("Should not set net_information_threshold for fair infogram runs.  Set safety_index_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
+            else:
+                self._parms["net_information_threshold"]=net_information_threshold
 
     @property
     def relevance_index_threshold(self):
         """
-        Relevance threshold for fair infogram between 0 and 1 that is used to decide whether a predictor's relevance
-        level is high enough to be chosen into the admissible feature set.  Default to -1 which will be set to 0.1
-        eventually.
+        A number between 0 and 1 representing a threshold for the relevance index, defaulting to 0.1.  This is only used
+        when ``protected_columns`` is set by the user.  For a specific feature, if the relevance index value is higher
+        than this threshold, and the corresponding safety index is also higher than the safety_index_threshold``, that
+        feature will be considered admissible.  The relevance index is the x-axis of the Fair Infogram. Default is -1
+        which gets set to 0.1.
 
         Type: ``float``, defaults to ``-1.0``.
         """
@@ -824,9 +808,34 @@ class H2OInfogram(H2OEstimator):
                 warnings.warn("Should not set relevance_index_threshold for core infogram runs.  Set total_information_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
 
     @property
+    def safety_index_threshold(self):
+        """
+        A number between 0 and 1 representing a threshold for the safety index, defaulting to 0.1.  This is only used
+        when protected_columns is set by the user.  For a specific feature, if the safety index value is higher than
+        this threshold, and the corresponding relevance index is also higher than the relevance_index_threshold, that
+        feature will be considered admissible.  The safety index is the y-axis of the Fair Infogram. Default is -1 which
+        gets set to 0.1.
+
+        Type: ``float``, defaults to ``-1.0``.
+        """
+        return self._parms.get("safety_index_threshold")
+
+    @safety_index_threshold.setter
+    def safety_index_threshold(self, safety_index_threshold):
+        if safety_index_threshold <= -1: # not set
+            if self._parms["protected_columns"] is not None:
+                self._parms["safety_index_threshold"]=0.1
+        else: # it is set
+            if self._parms["protected_columns"] is not None: # fair infogram
+                self._parms["safety_index_threshold"] = safety_index_threshold
+            else: # core infogram should not have been set
+                warnings.warn("Should not set safety_index_threshold for core infogram runs.  Set net_information_threshold instead.  Using default of 0.1 if not set", RuntimeWarning)
+
+    @property
     def data_fraction(self):
         """
-        Fraction of training frame to use to build the infogram model.  Defaults to 1.0.
+        The fraction of training frame to use to build the infogram model. Defaults to 1.0, and any value greater than 0
+        and less than or equal to 1.0 is acceptable.
 
         Type: ``float``, defaults to ``1.0``.
         """
@@ -840,8 +849,8 @@ class H2OInfogram(H2OEstimator):
     @property
     def top_n_features(self):
         """
-        Number of top n variables to consider based on the variable importance.  Defaults to 0.0 which is to consider
-        all predictors.
+        An integer specifying the number of columns to evaluate in the infogram.  The columns are ranked by variable
+        importance, and the top N are evaluated.  Defaults to 50.
 
         Type: ``int``, defaults to ``50``.
         """
@@ -851,20 +860,6 @@ class H2OInfogram(H2OEstimator):
     def top_n_features(self, top_n_features):
         assert_is_type(top_n_features, None, int)
         self._parms["top_n_features"] = top_n_features
-
-    @property
-    def compute_p_values(self):
-        """
-        If true will calculate the p-value. Default to false.
-
-        Type: ``bool``, defaults to ``False``.
-        """
-        return self._parms.get("compute_p_values")
-
-    @compute_p_values.setter
-    def compute_p_values(self, compute_p_values):
-        assert_is_type(compute_p_values, None, bool)
-        self._parms["compute_p_values"] = compute_p_values
 
 
     def _extract_x_from_model(self):
@@ -880,8 +875,14 @@ class H2OInfogram(H2OEstimator):
 
     def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=False, server=False):
         """
-        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
-        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
+        Plot the infogram.  By default, it will plot the infogram calculated from training dataset.  
+        Note that the frame rel_cmi_frame contains the following columns:
+        - 0: predictor names
+        - 1: admissible 
+        - 2: admissible index
+        - 3: relevance-index or total information
+        - 4: safety-index or net information, normalized from 0 to 1
+        - 5: safety-index or net information not normalized
 
         :param train: True if infogram is generated from training dataset
         :param valid: True if infogram is generated from validation dataset
@@ -892,32 +893,20 @@ class H2OInfogram(H2OEstimator):
         :param server: True will not generate plot, False will produce plot
         :return: infogram plot if server=True or None if server=False
         """
-        """
-        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
-        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
-        - 0: predictor names
-        - 1: admissible 
-        - 2: admissible index
-        - 3: relevance-index or total information
-        - 4: safety-index or net information, normalized from 0 to 1
-        - 5: safety-index or net information not normalized
 
-        :param valid: True if to plot infogram from validation dataset
-        :param xval: True if to plot infogram from cross-validation hold out dataset
-        :return: plot or None if server=True
-        """
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
+        polycoll = get_polycollection(server, raise_if_not_available=True)
 
         if train:
-            rel_cmi_frame = self.get_relevance_cmi_frame()            
+            rel_cmi_frame = self.get_admissible_score_frame()
             if rel_cmi_frame is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from training dataset.")
         if valid:
-            rel_cmi_frame_valid = self.get_relevance_cmi_frame(valid=True)
+            rel_cmi_frame_valid = self.get_admissible_score_frame(valid=True)
             if rel_cmi_frame_valid is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from validation dataset.")
         if xval:
-            rel_cmi_frame_xval = self.get_relevance_cmi_frame(xval=True)
+            rel_cmi_frame_xval = self.get_admissible_score_frame(xval=True)
             if rel_cmi_frame_xval is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from xval holdout dataset.")
 
@@ -969,7 +958,7 @@ class H2OInfogram(H2OEstimator):
             plt.legend(loc=2, fancybox=True, framealpha=0.5)
         plt.hlines(y_thresh, xmin=x_thresh, xmax=xmax, colors="red", linestyle="dashed")
         plt.vlines(x_thresh, ymin=y_thresh, ymax=ymax, colors="red", linestyle="dashed")
-        plt.gca().add_collection(PolyCollection(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
+        plt.gca().add_collection(polycoll(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
                                                 color="#CC663E", alpha=0.1, zorder=5))
 
         for i in mask.nonzero()[0]:
@@ -994,27 +983,27 @@ class H2OInfogram(H2OEstimator):
         fig = plt.gcf()
         if not server:
             plt.show()
-        return fig
+        return decorate_plot_result(figure=fig)
 
-    def get_relevance_cmi_frame(self, valid=False, xval=False):
+    def get_admissible_score_frame(self, valid=False, xval=False):
         """
-        Retreive relevance, CMI information in an H2OFrame for training dataset by default
+        Retreive admissible score frame which includes relevance and CMI information in an H2OFrame for training dataset by default
         :param valid: return infogram info on validation dataset if True
         :param xval: return infogram info on cross-validation hold outs if True
         :return: H2OFrame
         """
-        keyString = self._model_json["output"]["relevance_cmi_key"]
+        keyString = self._model_json["output"]["admissible_score_key"]
         if (valid):
-            keyString = self._model_json["output"]["relevance_cmi_key_valid"]
+            keyString = self._model_json["output"]["admissible_score_key_valid"]
         elif (xval):
-            keyString = self._model_json["output"]["relevance_cmi_key_xval"]
+            keyString = self._model_json["output"]["admissible_score_key_xval"]
 
         if keyString is None:
             return None
         else:
             return h2o.get_frame(keyString['name'])
 
-    def get_admissible_attributes(self):
+    def get_admissible_features(self):
         """
         :return: a list of predictor that are considered admissible
         """

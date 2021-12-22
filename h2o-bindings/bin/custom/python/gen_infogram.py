@@ -21,9 +21,15 @@ def class_extensions():
         
     def plot(self, train=True, valid=False, xval=False, figsize=(10, 10), title="Infogram", legend_on=False, server=False):
         """
-        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
-        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
-
+        Plot the infogram.  By default, it will plot the infogram calculated from training dataset.  
+        Note that the frame rel_cmi_frame contains the following columns:
+        - 0: predictor names
+        - 1: admissible 
+        - 2: admissible index
+        - 3: relevance-index or total information
+        - 4: safety-index or net information, normalized from 0 to 1
+        - 5: safety-index or net information not normalized
+        
         :param train: True if infogram is generated from training dataset
         :param valid: True if infogram is generated from validation dataset
         :param xval: True if infogram is generated from cross-validation holdout dataset
@@ -33,32 +39,20 @@ def class_extensions():
         :param server: True will not generate plot, False will produce plot
         :return: infogram plot if server=True or None if server=False
         """
-        """
-        Perform plot function of infogram.  This code is given to us by Tomas Fryda.  By default, it will plot the
-        infogram calculated from training dataset.  Note that the frame rel_cmi_frame contains the following columns:
-        - 0: predictor names
-        - 1: admissible 
-        - 2: admissible index
-        - 3: relevance-index or total information
-        - 4: safety-index or net information, normalized from 0 to 1
-        - 5: safety-index or net information not normalized
         
-        :param valid: True if to plot infogram from validation dataset
-        :param xval: True if to plot infogram from cross-validation hold out dataset
-        :return: plot or None if server=True
-        """
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
+        polycoll = get_polycollection(server, raise_if_not_available=True)
         
         if train:
-            rel_cmi_frame = self.get_relevance_cmi_frame()            
+            rel_cmi_frame = self.get_admissible_score_frame()
             if rel_cmi_frame is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from training dataset.")
         if valid:
-            rel_cmi_frame_valid = self.get_relevance_cmi_frame(valid=True)
+            rel_cmi_frame_valid = self.get_admissible_score_frame(valid=True)
             if rel_cmi_frame_valid is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from validation dataset.")
         if xval:
-            rel_cmi_frame_xval = self.get_relevance_cmi_frame(xval=True)
+            rel_cmi_frame_xval = self.get_admissible_score_frame(xval=True)
             if rel_cmi_frame_xval is None:
                 raise H2OValueError("Cannot locate the H2OFrame containing the infogram data from xval holdout dataset.")
 
@@ -110,7 +104,7 @@ def class_extensions():
             plt.legend(loc=2, fancybox=True, framealpha=0.5)
         plt.hlines(y_thresh, xmin=x_thresh, xmax=xmax, colors="red", linestyle="dashed")
         plt.vlines(x_thresh, ymin=y_thresh, ymax=ymax, colors="red", linestyle="dashed")
-        plt.gca().add_collection(PolyCollection(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
+        plt.gca().add_collection(polycoll(verts=[[(0,0), (0, ymax), (x_thresh, ymax), (x_thresh, y_thresh), (xmax, y_thresh), (xmax, 0)]],
                                                 color="#CC663E", alpha=0.1, zorder=5))
         
         for i in mask.nonzero()[0]:
@@ -135,27 +129,27 @@ def class_extensions():
         fig = plt.gcf()
         if not server:
             plt.show()
-        return fig
+        return decorate_plot_result(figure=fig)
         
-    def get_relevance_cmi_frame(self, valid=False, xval=False):
+    def get_admissible_score_frame(self, valid=False, xval=False):
         """
-        Retreive relevance, CMI information in an H2OFrame for training dataset by default
+        Retreive admissible score frame which includes relevance and CMI information in an H2OFrame for training dataset by default
         :param valid: return infogram info on validation dataset if True
         :param xval: return infogram info on cross-validation hold outs if True
         :return: H2OFrame
         """
-        keyString = self._model_json["output"]["relevance_cmi_key"]
+        keyString = self._model_json["output"]["admissible_score_key"]
         if (valid):
-            keyString = self._model_json["output"]["relevance_cmi_key_valid"]
+            keyString = self._model_json["output"]["admissible_score_key_valid"]
         elif (xval):
-            keyString = self._model_json["output"]["relevance_cmi_key_xval"]
+            keyString = self._model_json["output"]["admissible_score_key_xval"]
             
         if keyString is None:
             return None
         else:
             return h2o.get_frame(keyString['name'])
 
-    def get_admissible_attributes(self):
+    def get_admissible_features(self):
         """
         :return: a list of predictor that are considered admissible
         """
@@ -243,11 +237,9 @@ import ast
 import json
 import warnings
 import h2o
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
-from h2o.frame import H2OFrame
+from h2o.utils.typechecks import is_type
 import numpy as np
-from h2o.plot import get_matplotlib_pyplot
-from matplotlib.collections import PolyCollection
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
 """,
     __class__=class_extensions
 )
@@ -327,12 +319,11 @@ else:
 
 doc = dict(
     __class__="""
-Given a sensitive/unfair predictors list, Infogram will add all predictors that contains information on the 
- sensitive/unfair predictors list to the sensitive/unfair predictors list.  It will return a set of predictors that
- do not contain information on the sensitive/unfair list and hence user can build a fair model.  If no sensitive/unfair
- predictor list is given, Infogram will return a list of core predictors that should be used to build a final model.
- Infogram can significantly cut down the number of predictors needed to build a model and hence will build a simple
- model that is more interpretable, less susceptible to overfitting, runs faster while providing similar accuracy
- as models built using all attributes.
+The infogram is a graphical information-theoretic interpretability tool which allows the user to quickly spot the core, decision-making variables 
+that uniquely and safely drive the response, in supervised classification problems. The infogram can significantly cut down the number of predictors needed to build 
+a model by identifying only the most valuable, admissible features. When protected variables such as race or gender are present in the data, the admissibility 
+of a variable is determined by a safety and relevancy index, and thus serves as a diagnostic tool for fairness. The safety of each feature can be quantified and 
+variables that are unsafe will be considered inadmissible. Models built using only admissible features will naturally be more interpretable, given the reduced 
+feature set.  Admissible models are also less susceptible to overfitting and train faster, while providing similar accuracy as models built using all available features.
 """
 )
