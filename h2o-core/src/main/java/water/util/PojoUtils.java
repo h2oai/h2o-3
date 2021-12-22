@@ -712,14 +712,6 @@ public class PojoUtils {
     return Arrays.deepEquals((Object[])a, (Object[])b);
   }
 
-  /**
-   * Same as Objects.equals(a, b) -- copied here because Objects class does not exist in Java6 (if we ever drop
-   * support for Java6, this method can be removed).
-   */
-  public static boolean equals(Object a, Object b) {
-    return (a == b) || (a != null && b != null && b.equals(a));
-  }
-  
   public static String toJavaDoubleArray(double[] array) {
     if (array == null) {
       return "null";

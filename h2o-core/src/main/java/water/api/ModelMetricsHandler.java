@@ -31,6 +31,12 @@ class ModelMetricsHandler extends Handler {
     public boolean _leaf_node_assignment;
     public int _exemplar_index = -1;
     public String _custom_metric_func;
+    public String _auc_type;
+    public int _top_n;
+    public int _bottom_n;
+    public boolean _compare_abs;
+    public String _auuc_type;
+    public int _auuc_nbins;
 
     // Fetch all metrics that match model and/or frame
     ModelMetricsList fetch() {
@@ -131,6 +137,19 @@ class ModelMetricsHandler extends Handler {
     @API(help = "Predict the feature contributions - Shapley values (optional, only for DRF, GBM and XGBoost models)", json = false)
     public boolean predict_contributions;
 
+    @API(help = "Specify how to output feature contributions in XGBoost - XGBoost by default outputs contributions for 1-hot encoded features, " +
+            "specifying a Compact output format will produce a per-feature contribution", values = {"Original", "Compact"}, json = false)
+    public Model.Contributions.ContributionsOutputFormat predict_contributions_output_format;
+
+    @API(help = "Only for predict_contributions function - sort Shapley values and return top_n highest (optional)", json = false)
+    public int top_n;
+
+    @API(help = "Only for predict_contributions function - sort Shapley values and return bottom_n lowest (optional)", json = false)
+    public int bottom_n;
+
+    @API(help = "Only for predict_contributions function - sort absolute Shapley values (optional)", json = false)
+    public boolean compare_abs;
+
     @API(help = "Retrieve the feature frequencies on paths in trees in tree-based models (optional, only for GBM, DRF and Isolation Forest)", json = false)
     public boolean feature_frequencies;
 
@@ -142,6 +161,15 @@ class ModelMetricsHandler extends Handler {
 
     @API(help = "Reference to custom evaluation function, format: `language:keyName=funcName`", json=false)
     public String custom_metric_func;
+
+    @API(help = "Set default multinomial AUC type. Must be one of: \"AUTO\", \"NONE\", \"MACRO_OVR\", \"WEIGHTED_OVR\", \"MACRO_OVO\", \"WEIGHTED_OVO\". Default is \"NONE\" (optional, only for multinomial classification).", json=false, direction = API.Direction.INPUT)
+    public String auc_type;
+
+    @API(help = "Set default AUUC type for uplift binomial classification. Must be one of: \"AUTO\", \"qini\", \"lift\", \"gain\". Default is \"AUTO\" (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
+    public String auuc_type;
+
+    @API(help = "Set number of bins to calculate AUUC. Must be -1 or higher than 0. Default is -1 which means 1000 (optional, only for uplift binomial classification).", json=false, direction = API.Direction.INPUT)
+    public int auuc_nbins;
 
     // Output fields
     @API(help = "ModelMetrics", direction = API.Direction.OUTPUT)
@@ -162,6 +190,12 @@ class ModelMetricsHandler extends Handler {
       mml._leaf_node_assignment = this.leaf_node_assignment;
       mml._exemplar_index = this.exemplar_index;
       mml._deviances = this.deviances;
+      mml._auc_type = this.auc_type;
+      mml._top_n = this.top_n;
+      mml._bottom_n = this.bottom_n;
+      mml._compare_abs = this.compare_abs;
+      mml._auuc_type = this.auuc_type;
+      mml._auuc_nbins = this.auuc_nbins;
 
       if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
@@ -190,6 +224,12 @@ class ModelMetricsHandler extends Handler {
       this.leaf_node_assignment = mml._leaf_node_assignment;
       this.exemplar_index = mml._exemplar_index;
       this.deviances = mml._deviances;
+      this.auc_type = mml._auc_type;
+      this.top_n = mml._top_n;
+      this.bottom_n = mml._bottom_n;
+      this.compare_abs = mml._compare_abs;
+      this.auuc_type = mml._auuc_type;
+      this.auuc_nbins = mml._auuc_nbins;
 
       if (null != mml._model_metrics) {
         this.model_metrics = new ModelMetricsBaseV3[mml._model_metrics.length];
@@ -256,6 +296,17 @@ class ModelMetricsHandler extends Handler {
     if (customMetricFunc == null) {
       customMetricFunc = parms._model._parms._custom_metric_func;
     }
+    // set user given auc type, used for scoring a testing data fe. from h2o.performance function
+    MultinomialAucType at = parms._model._parms._auc_type;
+    if(s.auc_type != null) {
+      parms._model._parms._auc_type = MultinomialAucType.valueOf(s.auc_type.toUpperCase());
+    }
+    AUUC.AUUCType auucType = parms._model._parms._auuc_type;
+    int auucNbins = parms._model._parms._auuc_nbins;
+    if(s.auuc_type != null){
+      parms._model._parms._auuc_type = AUUC.AUUCType.valueOf(s.auuc_type);
+      parms._model._parms._auuc_nbins = s.auuc_nbins;
+    }
     parms._model.score(parms._frame, parms._predictions_name, null, true, CFuncRef.from(customMetricFunc)).remove(); // throw away predictions, keep metrics as a side-effect
     ModelMetricsListSchemaV3 mm = this.fetch(version, s);
 
@@ -267,7 +318,10 @@ class ModelMetricsHandler extends Handler {
     if (null == mm.model_metrics || 0 == mm.model_metrics.length) {
       Log.warn("Score() did not return a ModelMetrics for model: " + s.model + " on frame: " + s.frame);
     }
-
+    // set original auc type back
+    parms._model._parms._auc_type = at;
+    parms._model._parms._auuc_type = auucType;
+    parms._model._parms._auuc_nbins = auucNbins;
     return mm;
   }
 
@@ -276,6 +330,9 @@ class ModelMetricsHandler extends Handler {
     public String _actuals_frame;
     public String[] _domain;
     public DistributionFamily _distribution;
+    public MultinomialAucType _auc_type;
+    public AUUC.AUUCType _auuc_type;
+    public int _auuc_nbins;
     public ModelMetrics _model_metrics;
   }
 
@@ -289,11 +346,28 @@ class ModelMetricsHandler extends Handler {
     @API(help="Weights Frame.", direction=API.Direction.INOUT)
     public String weights_frame;
 
+    @API(help="Treatment Frame.", direction=API.Direction.INOUT)
+    public String treatment_frame;
+
     @API(help="Domain (for classification).", direction=API.Direction.INOUT)
     public String[] domain;
 
     @API(help="Distribution (for regression).", direction=API.Direction.INOUT, values = { "gaussian", "poisson", "gamma", "laplace" })
     public DistributionFamily distribution;
+    
+    @API(help = "Default AUC type (for multinomial classification).", 
+            valuesProvider = ModelParamsValuesProviders.MultinomialAucTypeSchemeValuesProvider.class,
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public MultinomialAucType auc_type;
+
+    @API(help = "Default AUUC type (for uplift binomial classification).",
+            valuesProvider = ModelParamsValuesProviders.UpliftAuucTypeSchemeValuesProvider.class,
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public AUUC.AUUCType auuc_type;
+
+    @API(help = "Number of bins to calculate AUUC (for uplift binomial classification).",
+            level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true)
+    public int auuc_nbins;
 
     @API(help="Model Metrics.", direction=API.Direction.OUTPUT)
     public ModelMetricsBaseV3 model_metrics;
@@ -316,8 +390,17 @@ class ModelMetricsHandler extends Handler {
     Vec weights = null;
     if (null != s.weights_frame) {
       Frame weightsFrame = DKV.getGet(s.weights_frame);
-      if (null == weightsFrame) throw new H2OKeyNotFoundArgumentException("weights_frame", "make", s.actuals_frame);
+      if (null == weightsFrame) throw new H2OKeyNotFoundArgumentException("weights_frame", "make", s.weights_frame);
       weights = weightsFrame.anyVec();
+    }
+    
+    Vec treatment = null;
+    if(null != s.treatment_frame){
+      Frame treatmentFrame = DKV.getGet(s.treatment_frame);
+      if (null == treatmentFrame) throw new H2OKeyNotFoundArgumentException("treatment_frame", "make", s.treatment_frame);
+     treatment = treatmentFrame.anyVec();
+      if(s.auuc_type == null) s.auuc_type = AUUC.AUUCType.AUTO;
+      if(s.auuc_nbins < -1 || s.auuc_nbins == 0) throw new H2OIllegalArgumentException("auuc_bins", "make", "The value has to be -1 or higher than 0.");
     }
 
     if (s.domain ==null) {
@@ -327,11 +410,16 @@ class ModelMetricsHandler extends Handler {
       ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), weights, s.distribution);
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
-      if (pred.numCols()!=1) {
-        throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
+      if (treatment != null) {
+        ModelMetricsBinomialUplift mm = ModelMetricsBinomialUplift.make(pred.anyVec(), act.anyVec(), treatment, s.domain, s.auuc_type, s.auuc_nbins);
+        s.model_metrics = new ModelMetricsBinomialUpliftV3().fillFromImpl(mm);
+      } else {
+        if (pred.numCols()!=1) {
+          throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
+        }
+        ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
+        s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
       }
-      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
-      s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
     } else if (s.domain.length>2){
       if (pred.numCols()!=s.domain.length) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with " + s.domain.length + " class labels, the predictions_frame must have exactly " + s.domain.length + " columns containing the class-probabilities.");
@@ -341,7 +429,7 @@ class ModelMetricsHandler extends Handler {
         ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
         s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
       } else {
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain);
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain, s.auc_type);
         s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
       }
     } else {
@@ -391,7 +479,14 @@ class ModelMetricsHandler extends Handler {
             throw new H2OIllegalArgumentException("Model type " + parms._model._parms.algoName() + " doesn't support calculating Feature Contributions.");
           }
           Model.Contributions mc = (Model.Contributions) parms._model;
-          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j);
+          Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ?
+                  Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
+          Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions();
+          options.setOutputFormat(outputFormat)
+                  .setTopN(parms._top_n)
+                  .setBottomN(parms._bottom_n)
+                  .setCompareAbs(parms._compare_abs);
+          mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), j, options);
         } else if (s.deep_features_hidden_layer < 0 && s.deep_features_hidden_layer_name == null) {
           parms._model.score(parms._frame, parms._predictions_name, j, false, CFuncRef.from(s.custom_metric_func));
         } else if (s.deep_features_hidden_layer_name != null){
@@ -512,7 +607,10 @@ class ModelMetricsHandler extends Handler {
         Model.Contributions mc = (Model.Contributions) parms._model;
         if (null == parms._predictions_name)
           parms._predictions_name = "contributions_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-        predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name));
+        Model.Contributions.ContributionsOutputFormat outputFormat = null == s.predict_contributions_output_format ? 
+                Model.Contributions.ContributionsOutputFormat.Original : s.predict_contributions_output_format;
+        Model.Contributions.ContributionsOptions options = new Model.Contributions.ContributionsOptions().setOutputFormat(outputFormat);
+        predictions = mc.scoreContributions(parms._frame, Key.make(parms._predictions_name), null, options);
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)

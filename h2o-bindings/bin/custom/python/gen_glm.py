@@ -1,3 +1,13 @@
+options = dict(
+    model_extensions=[
+        'h2o.model.extensions.ScoringHistoryGLM',
+        'h2o.model.extensions.StandardCoef',
+        'h2o.model.extensions.VariableImportance',
+    ],
+)
+deprecated_params = dict(Lambda='lambda_')
+
+
 def update_param(name, param):
     if name == 'distribution':
         param['values'].remove('custom')
@@ -6,15 +16,6 @@ def update_param(name, param):
 
 
 def class_extensions():
-    @property
-    def Lambda(self):
-        """DEPRECATED. Use ``self.lambda_`` instead"""
-        return self._parms["lambda"] if "lambda" in self._parms else None
-
-    @Lambda.setter
-    def Lambda(self, value):
-        self._parms["lambda"] = value
-
     @staticmethod
     def getAlphaBest(model):
         """
@@ -189,9 +190,6 @@ def class_extensions():
 extensions = dict(
     __imports__="""import h2o""",
     __class__=class_extensions,
-    __init__validation="""
-if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-"""
 )
 
 overrides = dict(
@@ -208,6 +206,26 @@ assert_is_type({pname}, None, numeric, [numeric])
 self._parms["{sname}"] = {pname}
 """
     ),
+    beta_constraints=dict(
+        setter="""
+# beta_constraints can be specified as a H2OFrame or python dict
+assert_is_type({pname}, None, dict, H2OFrame)
+if type({pname}) is H2OFrame:
+    self._parms["{sname}"]={pname}
+if type({pname}) is dict:
+    colnames = {pname}.keys()
+    col_names = []
+    upper_bounds = []
+    lower_bounds = []
+    for key in colnames:
+        one_col_bounds = {pname}.get(key)
+        col_names.append(key)
+        upper_bounds.append(one_col_bounds.get('upper_bound'))
+        lower_bounds.append(one_col_bounds.get('lower_bound'))
+    constraints = h2o.H2OFrame(dict([("names",col_names), ("lower_bounds", lower_bounds), ("upper_bounds", upper_bounds)]))
+    self._parms["{sname}"] = constraints[["names", "lower_bounds", "upper_bounds"]]
+"""
+    )
 )
 
 doc = dict(

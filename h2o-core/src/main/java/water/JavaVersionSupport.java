@@ -8,7 +8,7 @@ public class JavaVersionSupport {
     // Make sure that the following is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R.
     // Upgrade of the javassist library should be considered when adding support for a new java version.
     public static final int MIN_SUPPORTED_JAVA_VERSION = 8;
-    public static final int MAX_SUPPORTED_JAVA_VERSION = 14;
+    public static final int MAX_SUPPORTED_JAVA_VERSION = 17;
 
     /**
      * Checks for the version of Java this instance of H2O was ran with and compares it with supported versions.
@@ -41,4 +41,9 @@ public class JavaVersionSupport {
         }
         return false;
     }
+
+    public static String describeSupportedVersions() {
+        return MIN_SUPPORTED_JAVA_VERSION + "-" + MAX_SUPPORTED_JAVA_VERSION;
+    }
+
 }

@@ -34,18 +34,23 @@
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm
+#' @param metalearner_transform Transformation used for the level one frame. Must be one of: "NONE", "Logit". Defaults to NONE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
 #'        enter 0. Defaults to 10000.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -110,13 +115,15 @@ h2o.stackedEnsemble <- function(x,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 metalearner_fold_column = NULL,
                                 metalearner_params = NULL,
+                                metalearner_transform = c("NONE", "Logit"),
                                 max_runtime_secs = 0,
                                 weights_column = NULL,
                                 offset_column = NULL,
                                 seed = -1,
                                 score_training_samples = 10000,
                                 keep_levelone_frame = FALSE,
-                                export_checkpoints_dir = NULL)
+                                export_checkpoints_dir = NULL,
+                                auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=is.null(blending_frame))
@@ -172,6 +179,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(metalearner_transform))
+    parms$metalearner_transform <- metalearner_transform
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(weights_column))
@@ -186,6 +195,8 @@ h2o.stackedEnsemble <- function(x,
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if (!missing(metalearner_params))
       parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))
@@ -210,6 +221,7 @@ h2o.stackedEnsemble <- function(x,
                                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                                 metalearner_fold_column = NULL,
                                                 metalearner_params = NULL,
+                                                metalearner_transform = c("NONE", "Logit"),
                                                 max_runtime_secs = 0,
                                                 weights_column = NULL,
                                                 offset_column = NULL,
@@ -217,6 +229,7 @@ h2o.stackedEnsemble <- function(x,
                                                 score_training_samples = 10000,
                                                 keep_levelone_frame = FALSE,
                                                 export_checkpoints_dir = NULL,
+                                                auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                                 segment_columns = NULL,
                                                 segment_models_id = NULL,
                                                 parallelism = 1)
@@ -277,6 +290,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_assignment <- metalearner_fold_assignment
   if (!missing(metalearner_fold_column))
     parms$metalearner_fold_column <- metalearner_fold_column
+  if (!missing(metalearner_transform))
+    parms$metalearner_transform <- metalearner_transform
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(weights_column))
@@ -291,6 +306,8 @@ h2o.stackedEnsemble <- function(x,
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if (!missing(metalearner_params))
       parms$metalearner_params <- as.character(toJSON(metalearner_params, pretty = TRUE))

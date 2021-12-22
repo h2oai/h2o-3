@@ -1,6 +1,7 @@
 package hex;
 
 import jsr166y.ForkJoinTask;
+import org.apache.log4j.Logger;
 import water.Iced;
 import water.util.IcedAtomicInt;
 
@@ -15,12 +16,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * released the barrier inside.
  */
 public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
+  
+  private static final Logger LOG = Logger.getLogger(ParallelModelBuilder.class);
 
   public static abstract class ParallelModelBuilderCallback<D extends ParallelModelBuilderCallback> extends Iced<D> {
 
     public abstract void onBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder);
 
     public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
+
   }
 
   private final transient ParallelModelBuilderCallback _callback;
@@ -40,13 +44,11 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
    * @param modelBuilders An {@link Collection} of {@link ModelBuilder} to execute in parallel.
    */
   public void run(final Collection<ModelBuilder> modelBuilders) {
-      for (final ModelBuilder modelBuilder : modelBuilders) {
-        _modelInProgressCounter.incrementAndGet();
-
-        // Set the callbacks
-        modelBuilder.setModelBuilderListener(_parallelModelBuiltListener);
-        modelBuilder.trainModel();
-      }
+    if (LOG.isTraceEnabled()) LOG.trace("run with " + modelBuilders.size() + " models");
+    for (final ModelBuilder modelBuilder : modelBuilders) {
+      _modelInProgressCounter.incrementAndGet();
+      modelBuilder.trainModel(_parallelModelBuiltListener);
+    }
   }
 
 
@@ -54,25 +56,19 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
     @Override
     public void onModelSuccess(Model model) {
-      if (! model._parms._is_cv_model) {
-        try {
-          _callback.onBuildSuccess(model, ParallelModelBuilder.this);
-        } finally {
-          _modelInProgressCounter.decrementAndGet();
-        }
+      try {
+        _callback.onBuildSuccess(model, ParallelModelBuilder.this);
+      } finally {
         attemptComplete();
       }
     }
 
     @Override
     public void onModelFailure(Throwable cause, Model.Parameters parameters) {
-      if (! parameters._is_cv_model) {
-        try {
-          final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
-          _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
-        } finally {
-          _modelInProgressCounter.decrementAndGet();
-        }
+      try {
+        final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
+        _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
+      } finally {
         attemptComplete();
       }
     }
@@ -99,9 +95,12 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     }
   }
   
-  private void attemptComplete(){
-    if(_modelInProgressCounter.get() != 0) return;
-    complete(this);
+  private void attemptComplete() {
+    int modelsInProgress = _modelInProgressCounter.decrementAndGet();
+    if (LOG.isTraceEnabled()) LOG.trace("Completed a model, left in progress: " + modelsInProgress);
+    if (modelsInProgress == 0) {
+      complete(this);
+    }
   }
 
 

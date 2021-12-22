@@ -17,7 +17,7 @@ def glm_plot_test():
     glm_mult.train(ignored_columns=["ID"], y="DPROS", training_frame=prostate)
     glm_mult.plot(server=True)
 
-    glm_reg = H2OGeneralizedLinearEstimator(family="gaussian")
+    glm_reg = H2OGeneralizedLinearEstimator(family="gaussian", score_each_iteration=True, generate_scoring_history=True)
     glm_reg.train(ignored_columns=["ID"], y="CAPSULE", training_frame=prostate)
     glm_reg.plot(server=True)
 

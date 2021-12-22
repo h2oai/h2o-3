@@ -1,6 +1,5 @@
 package hex.ensemble;
 
-import hex.DistributionFactory;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ensemble.Metalearner.Algorithm;
@@ -8,6 +7,8 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
+import hex.schemas.*;
+import water.api.Schema;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
@@ -27,12 +28,12 @@ public class Metalearners {
 
     static {
         LocalProvider[] localProviders = new LocalProvider[] {
-                new LocalProvider<>(Algorithm.AUTO, AUTOMetalearner::new),
-                new LocalProvider<>(Algorithm.deeplearning, DLMetalearner::new),
-                new LocalProvider<>(Algorithm.drf, DRFMetalearner::new),
-                new LocalProvider<>(Algorithm.gbm, GBMMetalearner::new),
-                new LocalProvider<>(Algorithm.glm, GLMMetalearner::new),
-                new LocalProvider<>(Algorithm.naivebayes, NaiveBayesMetalearner::new),
+                new LocalProvider<>(Algorithm.AUTO, AUTOMetalearner::new, GLMV3.GLMParametersV3::new),
+                new LocalProvider<>(Algorithm.deeplearning, DLMetalearner::new, DeepLearningV3.DeepLearningParametersV3::new),
+                new LocalProvider<>(Algorithm.drf, DRFMetalearner::new, DRFV3.DRFParametersV3::new),
+                new LocalProvider<>(Algorithm.gbm, GBMMetalearner::new, GBMV3.GBMParametersV3::new),
+                new LocalProvider<>(Algorithm.glm, GLMMetalearner::new, GLMV3.GLMParametersV3::new),
+                new LocalProvider<>(Algorithm.naivebayes, NaiveBayesMetalearner::new, NaiveBayesV3.NaiveBayesParametersV3::new),
         };
         for (MetalearnerProvider provider : localProviders) {
             providersByName.put(provider.getName(), provider);
@@ -49,9 +50,14 @@ public class Metalearners {
         return algo == Algorithm.AUTO ? Algorithm.glm : algo;
     }
 
-    static Model.Parameters createParameters(String name) {
+    public static Model.Parameters createParameters(String name) {
         assertAvailable(name);
         return createInstance(name).createBuilder()._parms;
+    }
+
+    public static Schema createParametersSchema(String name) {
+        assertAvailable(name);
+        return providersByName.get(name).newParametersSchemaInstance();
     }
 
     static Metalearner createInstance(String name) {
@@ -72,10 +78,14 @@ public class Metalearners {
         private Algorithm _algorithm;
         private Supplier<M> _instanceFactory;
 
+        private Supplier<Schema> _parameterSchemaInstanceFactory;
+
         public LocalProvider(Algorithm algorithm,
-                             Supplier<M> instanceFactory) {
+                             Supplier<M> instanceFactory,
+                             Supplier<Schema> parameterSchemaInstanceFactory) {
             _algorithm = algorithm;
             _instanceFactory = instanceFactory;
+            _parameterSchemaInstanceFactory = parameterSchemaInstanceFactory;
         }
 
         @Override
@@ -86,6 +96,11 @@ public class Metalearners {
         @Override
         public M newInstance() {
             return _instanceFactory.get();
+        }
+
+        @Override
+        public Schema newParametersSchemaInstance() {
+            return _parameterSchemaInstanceFactory.get();
         }
     }
 
@@ -208,6 +223,9 @@ public class Metalearners {
         protected void setCustomParams(GLMParameters parms) {
             //add GLM custom params
             super.setCustomParams(parms);
+
+            parms._generate_scoring_history = true;
+            parms._score_iteration_interval = (parms._valid == null) ? 5 : -1;
 
             //specific to AUTO mode
             parms._non_negative = true;

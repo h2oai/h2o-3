@@ -2,11 +2,15 @@ package hex.ensemble;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.MRUtils;
@@ -14,10 +18,12 @@ import water.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -49,7 +55,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       _parms._metalearner_fold_assignment = Random;
     }
   }
-  
+
   public static class StackedEnsembleParameters extends Model.Parameters {
     public String algoName() { return "StackedEnsemble"; }
     public String fullName() { return "Stacked Ensemble"; }
@@ -71,6 +77,33 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     //the training frame used for blending (from which predictions columns are computed)
     public Key<Frame> _blending;
 
+    public enum MetalearnerTransform {
+      NONE,
+      Logit;
+
+      public Frame transform(StackedEnsembleModel model, Frame frame, Key<Frame> destKey) {
+        if (this == Logit) {
+          return new MRTask() {
+            @Override
+            public void map(Chunk[] cs, NewChunk[] ncs) {
+              LinkFunction logitLink = LinkFunctionFactory.getLinkFunction(LinkFunctionType.logit);
+              for (int c = 0; c < cs.length; c++) {
+                for (int i = 0; i < cs[c]._len; i++) {
+                  final double p = Math.min(1 - 1e-9, Math.max(cs[c].atd(i), 1e-9)); // 0 and 1 don't work well with logit
+                  ncs[c].addNum(logitLink.link(p));
+                }
+              }
+            }
+          }.doAll(frame.numCols(), Vec.T_NUM, frame)
+                  .outputFrame(destKey, frame._names, null);
+        } else {
+          throw new RuntimeException();
+        }
+      }
+    }
+
+    public MetalearnerTransform _metalearner_transform = MetalearnerTransform.NONE;
+
     public Metalearner.Algorithm _metalearner_algorithm = Metalearner.Algorithm.AUTO;
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
@@ -90,15 +123,18 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public void initMetalearnerParams(Metalearner.Algorithm algo) {
       _metalearner_algorithm = algo;
       _metalearner_parameters = Metalearners.createParameters(algo.name());
-      if (Metalearners.getActualMetalearnerAlgo(algo) == Metalearner.Algorithm.glm){
-        // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
-        // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
-        ((GLMModel.GLMParameters) _metalearner_parameters)._family = null;
-      }
     }
     
     public final Frame blending() { return _blending == null ? null : _blending.get(); }
 
+    @Override
+    public String[] getNonPredictors() {
+      HashSet<String> nonPredictors = new HashSet<>();
+      nonPredictors.addAll(Arrays.asList(super.getNonPredictors()));
+      if (null != _metalearner_fold_column)
+        nonPredictors.add(_metalearner_fold_column);
+      return nonPredictors.toArray(new String[0]);
+    }
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
@@ -115,7 +151,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // it is then the responsibility of the client code to delete those frames from DKV.
     //This especially useful when building SE models incrementally (e.g. in AutoML).
     //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
-    public Key<Frame>[] _base_model_predictions_keys; 
+    public Key<Frame>[] _base_model_predictions_keys;
+
+    @Override
+    public int nfeatures() {
+      return super.nfeatures() - (_metalearner._parms._fold_column == null ? 0 : 1);
+    }
   }
 
   /**
@@ -128,9 +169,21 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+    final StackedEnsembleParameters.MetalearnerTransform transform; 
+    if (_parms._metalearner_transform != null && _parms._metalearner_transform != StackedEnsembleParameters.MetalearnerTransform.NONE) {
+      if (!(_output.isBinomialClassifier() || _output.isMultinomialClassifier()))
+        throw new H2OIllegalArgumentException("Metalearner transform is supported only for classification!");
+      transform = _parms._metalearner_transform;
+    } else {
+      transform = null;
+    }
     final String seKey = this._key.toString();
-    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + seKey + fr._key));
+    final Key<Frame> levelOneFrameKey = Key.make("preds_levelone_" + seKey + fr._key);
+    Frame levelOneFrame = transform == null ?
+            new Frame(levelOneFrameKey)  // no transform -> this will be the final frame
+            :
+            new Frame();        // transform -> this is only an intermediate result
 
     Model[] usefulBaseModels = Stream.of(_parms._base_models)
             .filter(this::isUsefulBaseModel)
@@ -160,8 +213,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
 
+    if (transform != null) {
+      Frame oldLOF = levelOneFrame;
+      levelOneFrame = transform.transform(this, levelOneFrame, levelOneFrameKey);
+      oldLOF.remove();
+    }
     // Add response column, weights columns to level one frame
-    StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
+    StackedEnsemble.addNonPredictorsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
     // TODO: what if we're running multiple in parallel and have a name collision?
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 
@@ -175,13 +233,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         computeMetrics, 
         CFuncRef.from(_parms._custom_metric_func)
     );
+    ModelMetrics mmStackedEnsemble = null;
     if (computeMetrics) {
       // #score has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
       // We need to be able to look it up by the (this, fr) pair.
       // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
       Key<ModelMetrics>[] mms = metalearner._output.getModelMetrics();
       ModelMetrics lastComputedMetric = mms[mms.length - 1].get();
-      ModelMetrics mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
+      mmStackedEnsemble = lastComputedMetric.deepCloneWithDifferentModelAndFrame(this, fr);
       this.addModelMetrics(mmStackedEnsemble);
       //now that we have the metric set on the SE model, removing the one we just computed on metalearner (otherwise it leaks in client mode)
       for (Key<ModelMetrics> mm : metalearner._output.clearModelMetrics(true)) {
@@ -189,9 +248,29 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(levelOneFrame, adaptFrm);
-    return predictFr;
+    return new StackedEnsemblePredictScoreResult(predictFr, mmStackedEnsemble);
   }
 
+  private class StackedEnsemblePredictScoreResult extends PredictScoreResult {
+    private final ModelMetrics _modelMetrics;
+
+    public StackedEnsemblePredictScoreResult(Frame preds, ModelMetrics modelMetrics) {
+      super(null, preds, preds);
+      _modelMetrics = modelMetrics;
+    }
+
+    @Override
+    public ModelMetrics makeModelMetrics(Frame fr, Frame adaptFrm) {
+      return _modelMetrics;
+    }
+
+    @Override
+    public ModelMetrics.MetricBuilder<?> getMetricBuilder() {
+      throw new UnsupportedOperationException("Stacked Ensemble model doesn't implement MetricBuilder infrastructure code, " +
+              "retrieve your metrics by calling getOrMakeMetrics method.");
+    }
+  }
+  
   /**
    * Is the baseModel's prediction used in the metalearner?
    *
@@ -234,9 +313,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             ? MRUtils.sampleFrame(frame, _parms._score_training_samples, _parms._seed)
             : frame;
     try {
-      Frame pred = this.predictScoreImpl(scoredFrame, new Frame(scoredFrame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-      pred.delete();
-      return ModelMetrics.getFromDKV(this, scoredFrame);
+      Frame adaptedFrame = new Frame(scoredFrame);
+      PredictScoreResult result = predictScoreImpl(scoredFrame, adaptedFrame, null, job, true, CFuncRef.from(_parms._custom_metric_func));
+      result.getPredictions().delete();
+      return result.makeModelMetrics(scoredFrame, adaptedFrame);
     } finally {
       if (scoredFrame != frame) scoredFrame.delete();
     }
@@ -249,8 +329,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // the metalearner was trained on cv preds, not training preds.  So, rather than clone the metalearner
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
-    this._output._training_metrics = doScoreTrainingMetrics(this._parms.train(), job);
-    
+    //
+    // Job set to null since `stop_requested()` due to timeout would invalidate the whole SE at this point
+    // which would be unfortunate since this is the last step of SE training and it also should be relatively fast.
+    this._output._training_metrics = doScoreTrainingMetrics(this._parms.train(), null);
+
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
     this._output._validation_metrics = this._output._metalearner._output._validation_metrics;
@@ -265,18 +348,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     if (null != this._output._metalearner._output._cross_validation_metrics) {
       this._output._cross_validation_metrics = this._output._metalearner._output._cross_validation_metrics
               .deepCloneWithDifferentModelAndFrame(this, this._output._metalearner._parms.train());
-    }
-  }
-
-  private DistributionFamily familyToDistribution(GLMModel.GLMParameters.Family aFamily) {
-    if (aFamily == GLMModel.GLMParameters.Family.binomial) {
-      return DistributionFamily.bernoulli;
-    }
-    try {
-      return Enum.valueOf(DistributionFamily.class, aFamily.toString());
-    }
-    catch (IllegalArgumentException e) {
-      throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + aFamily);
     }
   }
 
@@ -405,9 +476,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   boolean inferDistributionOrFamily(Model aModel) {
     if (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm) { //use family
-      // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
-      // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
-      if (((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != null) {
+      if (((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != GLMModel.GLMParameters.Family.AUTO) {
         return false; // User specified family - no need to infer one; Link will be also used properly if it is specified
       }
       inheritFamilyAndParms(aModel._parms);

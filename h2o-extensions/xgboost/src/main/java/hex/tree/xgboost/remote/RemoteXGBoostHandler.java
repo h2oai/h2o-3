@@ -6,7 +6,10 @@ import hex.schemas.XGBoostExecRespV3;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecReq;
 import org.apache.log4j.Logger;
+import water.BootstrapFreezable;
 import water.H2O;
+import water.Iced;
+import water.TypeMap;
 import water.api.Handler;
 import water.api.StreamingSchema;
 
@@ -30,13 +33,22 @@ public class RemoteXGBoostHandler extends Handler {
         storeExecutor(exec);
         return new XGBoostExecRespV3(exec.modelKey, collectNodes());
     }
-    
-    private final String[] collectNodes() {
+
+    public static class RemoteExecutors extends Iced<RemoteExecutors> implements BootstrapFreezable<RemoteExecutors> {
+        public final String[] _nodes;
+        public final String[] _typeMap;
+        public RemoteExecutors(String[] nodes) {
+            _nodes = nodes;
+            _typeMap = TypeMap.bootstrapClasses();
+        }
+    }
+
+    private RemoteExecutors collectNodes() {
         String[] nodes = new String[H2O.CLOUD.size()];
         for (int i = 0; i < nodes.length; i++) {
             nodes[i] = H2O.CLOUD.members()[i].getIpPortString();
         }
-        return nodes;
+        return new RemoteExecutors(nodes);
     }
 
     @SuppressWarnings("unused")
@@ -73,7 +85,7 @@ public class RemoteXGBoostHandler extends Handler {
         final byte[] dataToSend;
         if (data == null) dataToSend = new byte[0];
         else dataToSend = data;
-        return new StreamingSchema(os -> {
+        return new StreamingSchema((os, options) -> {
             try {
                 IOUtils.copyStream(new ByteArrayInputStream(dataToSend), os);
             } catch (IOException e) {

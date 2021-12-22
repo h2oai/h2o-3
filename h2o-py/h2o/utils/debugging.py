@@ -12,9 +12,6 @@ import re
 import sys
 from types import ModuleType
 
-import colorama
-from colorama import Style, Fore
-
 from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewkeys
@@ -206,8 +203,7 @@ sys.excepthook = _except_hook
 
 
 def _handle_soft_error(exc_type, exc_value, exc_tb):
-    colorama.init()
-    err((Fore.LIGHTRED_EX + "%s: %s" + Style.RESET_ALL) % (exc_type.__name__, exc_value))
+    err("%s: %s" % (exc_type.__name__, exc_value))
 
     # Convert to the list of frames
     tb = exc_tb
@@ -225,15 +221,11 @@ def _handle_soft_error(exc_type, exc_value, exc_tb):
         highlight = getattr(exc_value, "var_name", None) if i == i0 else None
         args_str = _get_args_str(func, highlight=highlight)
         indent_len = len(exc_type.__name__) + len(fullname) + 6
-        line = Fore.LIGHTBLACK_EX + indent + ("in " if i == i0 else "   ")
-        line += (Fore.CYAN + fullname + Fore.LIGHTBLACK_EX if i == i0 else fullname) + "("
+        line = indent + ("in " if i == i0 else "   ")
+        line += fullname + "("
         line += _wrap(args_str + ") line %d" % frames[i].f_lineno, indent=indent_len)
-        line += Style.RESET_ALL
         err(line)
     err()
-
-    colorama.deinit()
-
 
 
 def _get_method_full_name(func):
@@ -316,7 +308,7 @@ def _get_args_str(func, highlight=None):
     if not func: return ""
     s = str(inspect.signature(func))[1:-1]
     if highlight:
-        s = re.sub(r"\b%s\b" % highlight, Style.BRIGHT + Fore.WHITE + highlight + Fore.LIGHTBLACK_EX + Style.NORMAL, s)
+        s = re.sub(r"\b%s\b" % highlight, "**%s**" % highlight, s)
     return s
 
 

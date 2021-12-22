@@ -8,11 +8,14 @@ import hex.grid.HyperSpaceSearchCriteria.CartesianSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.Strategy;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+
+import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
 
@@ -27,21 +30,18 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * <p>The method can optimize based on previousModel, but should be
      * able to handle null-value.</p>
      *
-     * @param previousModel  model generated for the previous point in hyper space, can be null.
-     *
      * @return model parameters for next point in hyper space or null if there is no such point.
      *
      * @throws IllegalArgumentException  when model parameters cannot be constructed
      * @throws java.util.NoSuchElementException if the iteration has no more elements
      */
-    MP nextModelParameters(Model previousModel);
+    MP nextModelParameters();
 
     /**
      * Returns true if the iterator can continue.  Takes into account strategy-specific stopping criteria, if any.
-     * @param previousModel  optional parameter which helps to determine next step, can be null
      * @return  true if the iterator can produce one more model parameters configuration.
      */
-    boolean hasNext(Model previousModel);
+    boolean hasNext();
 
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
@@ -78,6 +78,18 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    */
   String[] getHyperParamNames();
   String[] getAllHyperParamNamesInSubspaces();
+  
+  default String[] getAllHyperParamNames() {
+    String[] hyperNames = getHyperParamNames();
+    String[] allHyperNames = hyperNames;
+    String[] hyperParamNamesSubspace = getAllHyperParamNamesInSubspaces();
+    if (hyperParamNamesSubspace.length > 0) {
+      allHyperNames = ArrayUtils.append(ArrayUtils.remove(hyperNames, SUBSPACES), hyperParamNamesSubspace);
+    }
+    return allHyperNames;
+  }
+  
+  Map<String, Object[]> getHyperParams();
 
   /**
    * Return estimated maximum size of hyperspace, not subject to any early stopping criteria.
@@ -93,6 +105,32 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * @return  return model parameters
    */
   MP getParams();
+
+  /**
+   * Return estimated grid work.
+   * Can return Long.MAX_VALUE if no estimate is available.
+   * @param maxModels
+   * @return estimate of grid work
+   */
+  default long estimateGridWork(long maxModels) {
+    HyperSpaceWalker.HyperSpaceIterator<MP> it = iterator();
+    long gridWork = 0;
+    // if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+    // skip it if no model limit it specified as the entire hyperspace can be extremely large.
+    if (getMaxHyperSpaceSize() > 0 && maxModels > 0) {
+      while (it.hasNext()) {
+        try {
+          Model.Parameters parms = it.nextModelParameters();
+          gridWork += (parms._nfolds > 0 ? (parms._nfolds + 1/*main model*/) : 1) * parms.progressUnits();
+        } catch (Throwable ex) {
+          //swallow invalid combinations
+        }
+      }
+    } else {
+      gridWork = Long.MAX_VALUE;
+    }
+    return gridWork;
+  }
 
   ModelParametersBuilderFactory<MP> getParametersBuilderFactory();
 
@@ -210,7 +248,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       validateParams(_hyperParams, false);
       Arrays.stream(_hyperParamSubspaces).forEach(subspace -> validateParams(subspace, true));
     } // BaseWalker()
-
+    
     @Override
     public String[] getHyperParamNames() {
       return _hyperParamNames;
@@ -218,6 +256,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     
     public String[] getAllHyperParamNamesInSubspaces() {
       return _hyperParamNamesSubspace;
+    }
+
+    @Override
+    public Map<String, Object[]> getHyperParams() {
+      return _hyperParams;
     }
 
     @Override
@@ -384,7 +427,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         private String[] _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
 
         @Override
-        public MP nextModelParameters(Model previousModel) {
+        public MP nextModelParameters() {
           _currentHyperparamIndices = _currentHyperparamIndices == null ?
                   new int[_currentHyperParamNames.length] : nextModelIndices(_currentHyperparamIndices);
           
@@ -409,7 +452,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public boolean hasNext(Model previousModel) {
+        public boolean hasNext() {
           // Checks to see that there is another valid combination of hyper parameters left in the hyperspace.
           if (_currentHyperparamIndices != null) {
             int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
@@ -466,6 +509,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
   class RandomDiscreteValueWalker<MP extends Model.Parameters>
           extends BaseWalker<MP, RandomDiscreteValueSearchCriteria> {
 
+    // Used by HyperSpaceIterator.nextModelIndices to ensure that the space is explored enough before giving up
+    private static final double MIN_NUMBER_OF_SAMPLES = 1e4;
     private Random _random;
     private boolean _set_model_seed_from_search_seed;  // true if model parameter seed is set to default value and false otherwise
 
@@ -510,9 +555,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         private Map<String, Object[]> _currentHyperParams = _hyperParams;
         private String[] _currentHyperParamNames = _hyperParamNames;
 
+        private boolean _exhausted = false;
+
         // TODO: override into a common subclass:
         @Override
-        public MP nextModelParameters(Model previousModel) {
+        public MP nextModelParameters() {
           // NOTE: nextModel checks _visitedHyperparamIndices and does not return a duplicate set of indices.
           // NOTE: in RandomDiscreteValueWalker nextModelIndices() returns a new array each time, rather than
           // mutating the last one.
@@ -546,13 +593,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public boolean hasNext(Model previousModel) {
+        public boolean hasNext() {
           // Note: we compare _currentPermutationNum to max_models, because it counts successfully created models, but
           // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
           //
           // _currentPermutationNum is 1-based
           return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
-                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
+                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models()) &&
+                  !_exhausted
           );
         }
 
@@ -569,11 +617,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
          * criteria.
          */
         private int[] nextModelIndices() {
-          
           int[] hyperparamIndices = new int[_currentHyperParamNames.length];
-          
-          do {
-            if(_hyperParamSubspaces.length != 0) {
+          // To get a new hyper-parameter configuration:
+          // Sample the space until a new configuration is found or stop if none was found
+          // within max(MIN_NUMBER_OF_SAMPLES, _maxHyperSpaceSize) steps
+          for (int j = 0; j < Math.max(MIN_NUMBER_OF_SAMPLES, _maxHyperSpaceSize); j++) {
+            if (_hyperParamSubspaces.length != 0) {
               _currentSubspace = _random.nextInt(_hyperParamSubspaces.length);
               _currentHyperParams = mergeHashMaps(_hyperParams, _hyperParamSubspaces[_currentSubspace]);
               _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
@@ -583,13 +632,21 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               hyperparamIndices[i] = _random.nextInt(_currentHyperParams.get(_currentHyperParamNames[i]).length);
             }
             // check for aliases and loop if we've visited this combo before
-          } while (_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentSubspace)));
-          
-          return hyperparamIndices;
+           if (!_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentSubspace)))
+            return hyperparamIndices;
+          }
+
+          _exhausted = true;
+          return null;
         } // nextModel
 
       }; // anonymous HyperSpaceIterator class
     } // iterator()
 
+    @Override
+    public long estimateGridWork(long maxModels) {
+      // We don't want to randomly sample the whole hyperspace
+      return Long.MAX_VALUE;
+    }
   } // RandomDiscreteValueWalker
 }

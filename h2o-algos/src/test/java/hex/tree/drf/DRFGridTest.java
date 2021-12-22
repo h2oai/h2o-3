@@ -15,10 +15,7 @@ import hex.Model;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.runner.CloudSize;
@@ -38,7 +35,7 @@ public class DRFGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("cylinders");
       fr.add("cylinders", old.toCategoricalVec()); // response to last column
@@ -125,7 +122,7 @@ public class DRFGridTest extends TestUtil {
     Frame fr = null;
     Vec old = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      fr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       fr.remove("name").remove(); // Remove unique id
       old = fr.remove("economy");
       fr.add("economy", old); // response to last column
@@ -176,7 +173,7 @@ public class DRFGridTest extends TestUtil {
     DRFModel drfRebuilt = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove();
       Vec old = fr.remove("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column
@@ -302,7 +299,7 @@ public class DRFGridTest extends TestUtil {
   public void testCollisionOfDRFParamsChecksum() {
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/cars.csv");
+      fr = parseTestFile("smalldata/junit/cars.csv");
       fr.remove("name").remove();
       Vec old = fr.remove("economy (mpg)");
       fr.add("economy (mpg)", old); // response to last column
@@ -334,4 +331,44 @@ public class DRFGridTest extends TestUtil {
       }
     }
   }
+
+  @Test public void testGridJobCancel() {
+    Key<Grid> gridKey = Key.make();
+    Frame fr = null;
+    try {
+      fr = parseTestFile("smalldata/junit/cars.csv");
+      fr.remove("name").remove(); // Remove unique id
+      fr.toCategoricalCol("cylinders");
+      DKV.put(fr);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_max_depth", new Integer[]{5, 6});
+      }};
+
+      DRFModel.DRFParameters params = new DRFModel.DRFParameters();
+      params._train = fr._key;
+      params._response_column = "cylinders";
+      params._ntrees = 10000; // "Infinity"
+
+      Job<Grid> gs = GridSearch.startGridSearch(gridKey, params, hyperParms);
+
+      // Stop the job after 4s 
+      try {
+        Thread.sleep(4 * 1000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      gs.stop();
+
+      gs.get(); // block for result
+    } catch (Exception e) {
+      assertTrue(Job.isCancelledException(e));
+    } finally {
+      if (fr != null) {
+        fr.remove();
+      }
+      Keyed.remove(gridKey);
+    }
+  }
+
 }

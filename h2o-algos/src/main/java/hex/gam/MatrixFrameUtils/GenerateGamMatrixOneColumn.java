@@ -25,7 +25,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   public double[][] _penaltyMat;  // store penalty matrix
   public double[] _knots;
   double[] _maxAbsRowSum; // store maximum row sum
-  double _s_scale;
+  public double _s_scale;
 
   public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
     _splineType = splineType;
@@ -84,27 +84,28 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
     double tempMaxValue = ArrayUtils.maxValue(_maxAbsRowSum);
     _s_scale = tempMaxValue*tempMaxValue/ArrayUtils.rNorm(_penaltyMat, 'i');
     ArrayUtils.mult(_penaltyMat, _s_scale);
-    _s_scale = 1/ _s_scale;
+    _s_scale = 1.0/ _s_scale;
   }
 
-  public void generateZtransp(Frame gamX) {
-    _u = new double[_numKnots];
-    for (int cind = 0; cind < _numKnots; cind++)
-      _u[cind] = gamX.vec(cind).mean();
-    _ZTransp = new double[_numKnots - 1][_numKnots];
-    double mag = ArrayUtils.innerProduct(_u, _u);
-    _u[0] = _u[0] - (_u[0] > 0 ? -1 : 1) * Math.sqrt(mag); // form a = u-v and stored back in _u
-    double twoOmagSq = 2.0 / ArrayUtils.innerProduct(_u, _u);
-    for (int rowIndex = 0; rowIndex < _numKnots; rowIndex++) {  // form Z matrix transpose here
-      for (int colIndex = 0; colIndex < _numKnots; colIndex++) {  // skip the first column
+  public static double[][] generateZTransp(Frame gamX, int numKnots) {
+    double[] u = new double[numKnots];
+    for (int cind = 0; cind < numKnots; cind++)
+      u[cind] = gamX.vec(cind).mean();
+    double[][] ZTransp = new double[numKnots - 1][numKnots];
+    double mag = ArrayUtils.innerProduct(u, u);
+    u[0] = u[0] - (u[0] > 0 ? -1 : 1) * Math.sqrt(mag); // form a = u-v and stored back in _u
+    double twoOmagSq = 2.0 / ArrayUtils.innerProduct(u, u);
+    for (int rowIndex = 0; rowIndex < numKnots; rowIndex++) {  // form Z matrix transpose here
+      for (int colIndex = 0; colIndex < numKnots; colIndex++) {  // skip the first column
         if (colIndex > 0)
-          _ZTransp[colIndex - 1][rowIndex] = (colIndex == rowIndex ? 1 : 0) - _u[rowIndex] * _u[colIndex] * twoOmagSq;
+          ZTransp[colIndex - 1][rowIndex] = (colIndex == rowIndex ? 1 : 0) - u[rowIndex] * u[colIndex] * twoOmagSq;
       }
     }
+    return ZTransp;
   }
   
   public Frame centralizeFrame(Frame fr, String colNameStart, GAMParameters parms) {
-    generateZtransp(fr);
+    _ZTransp = generateZTransp(fr, _numKnots);
     int numCols = fr.numCols();
     int ncolExp = numCols-1;
     DataInfo frInfo = new DataInfo(fr, null, 0, false,  DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,

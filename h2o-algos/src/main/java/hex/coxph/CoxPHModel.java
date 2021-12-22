@@ -32,7 +32,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     final String _strata_column = "__strata";
     public String[] _stratify_by;
 
-    public enum CoxPHTies { efron, breslow }
+    public enum CoxPHTies { efron, breslow}
 
     public CoxPHTies _ties = CoxPHTies.efron;
 
@@ -48,6 +48,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public boolean _calc_cumhaz = true; // support survfit
 
+    /**
+     * If true, computation is performed with local jobs.
+     * {@link MRTask#doAll(Vec, boolean)} and other overloaded variants are during the computation called with runLocal 
+     * set as true.
+     * 
+     * Thus setting effects the main CoxPH computation only. Model metrics computation doesn't honour this setting - 
+     * {@link ModelMetricsRegressionCoxPH#concordance()} computation ignores it.
+     */
     public boolean _single_node_mode = false;
 
     String[] responseCols() {
@@ -154,6 +162,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       _strataMap = strataMap;
     }
 
+    @Override
+    public int nclasses() {
+      return 1;
+    }
+
     private static Frame fullFrame(CoxPH coxPH, Frame adaptFr, Frame train) {
       if (! coxPH._parms.isStratified())
         return adaptFr;
@@ -220,9 +233,17 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     double[] _var_cumhaz_1;
     FrameMatrix _var_cumhaz_2_matrix;
     Key<Frame> _var_cumhaz_2;
+    
+    Key<Frame> _baseline_hazard;
+    FrameMatrix _baseline_hazard_matrix;
+
+    Key<Frame> _baseline_survival;
+    FrameMatrix _baseline_survival_matrix;
 
     CoxPHParameters.CoxPHTies _ties;
     String _formula;
+
+    double _concordance;
   }
 
   public static class FrameMatrix extends Storage.DenseRowMatrix {
@@ -252,7 +273,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
   @Override
   public ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH makeMetricBuilder(String[] domain) {
-    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_input_parms._start_column, _input_parms._stop_column, _input_parms.isStratified(), _input_parms._stratify_by);
+    return new ModelMetricsRegressionCoxPH.MetricBuilderRegressionCoxPH(_parms._start_column, _parms._stop_column, _parms.isStratified(), _parms._stratify_by);
   }
 
   public ModelSchemaV3 schema() { return new CoxPHModelV3(); }
@@ -262,7 +283,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job job, boolean computeMetrics, CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job job, boolean computeMetrics, CFuncRef customMetricFunc) {
     int nResponses = 0;
     for (String col : _parms.responseCols())
       if (adaptFrm.find(col) != -1)
@@ -270,18 +291,18 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
       
     DataInfo scoringInfo = _output.data_info.scoringInfo(_output._names, adaptFrm, nResponses, false);
 
-    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified());
+    CoxPHScore score = new CoxPHScore(scoringInfo, _output, _parms.isStratified(), null != _parms._offset_column);
     final Frame scored = score
                          .doAll(Vec.T_NUM, scoringInfo._adaptedFrame)
-                         .outputFrame(Key.<Frame>make(destination_key), new String[]{"lp"}, null);
-    
+                         .outputFrame(Key.make(destination_key), new String[]{"lp"}, null);
+
+    ModelMetrics.MetricBuilder<?> mb = null;
     if (computeMetrics) {
-      ModelMetricsRegressionCoxPH mm = makeMetricBuilder(null).makeModelMetrics(this, fr, adaptFrm, scored);
+      mb = makeMetricBuilder(null);
     }
-
-    return scored;
+    return new PredictScoreResult(mb, scored, scored);
   }
-
+  
   @Override
   public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
     boolean createStrataVec = _parms.isStratified() && (test.vec(_parms._strata_column) == null);
@@ -308,11 +329,11 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     private int _numStart;
     private boolean _hasStrata;
 
-    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata) {
+    private CoxPHScore(DataInfo dinfo, CoxPHOutput o, boolean hasStrata, boolean hasOffsets) {
       final int strataCount = o._x_mean_cat.length;
       _dinfo = dinfo;
       _hasStrata = hasStrata;
-      _coef = o._coef;
+      _coef = hasOffsets ? ArrayUtils.append(o._coef, 1.0) : o._coef;
       _numStart = o._x_mean_cat[0].length;
       _lpBase = new double[strataCount];
       for (int s = 0; s < strataCount; s++) {
@@ -332,14 +353,14 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
           nc.addNA();
           continue;
         }
-        double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
-        if (Double.isNaN(s)) {
-          // unknown strata
+        final double s = _hasStrata ? chks[_dinfo.responseChunkId(0)].atd(rid) : 0;
+        final boolean unknownStrata = Double.isNaN(s);
+        if (unknownStrata) {
           nc.addNA();
-          continue;
+        } else {
+          final double lp = r.innerProduct(_coef) - _lpBase[(int) s];
+          nc.addNum(lp);
         }
-        double lp = r.innerProduct(_coef) - _lpBase[(int) s];
-        nc.addNum(lp);
       }
     }
   }
@@ -349,12 +370,33 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
   }
 
   protected Futures remove_impl(Futures fs, boolean cascade) {
-    Frame varCumhaz2 = _output._var_cumhaz_2 != null ? _output._var_cumhaz_2.get() : null;
-    if (varCumhaz2 != null)
-      varCumhaz2.remove(fs);
+    remove(fs, _output._var_cumhaz_2);
+    remove(fs, _output._baseline_hazard);
+    remove(fs, _output._baseline_survival);
     super.remove_impl(fs, cascade);
     return fs;
   }
 
+  private void remove(Futures fs, Key<Frame> key) {
+    Frame fr = key != null ? key.get() : null;
+    if (fr != null) {
+      fr.remove(fs);
+    }
+  }
+
+  @Override
+  public CoxPHMojoWriter getMojo() {
+    return new CoxPHMojoWriter(this);
+  }
+
+  @Override
+  public boolean haveMojo() {
+    final boolean hasInteraction = _parms.interactionSpec() != null;
+    if (hasInteraction) {
+      return false;
+    } else {
+      return super.haveMojo();
+    }
+  }
 }
 

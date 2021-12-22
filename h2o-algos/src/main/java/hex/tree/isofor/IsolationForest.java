@@ -252,14 +252,14 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
       // Initially setup as-if an empty-split had just happened
       final DTree tree = ktrees[0];
-      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys(), null), null); // The "root" node
+      new UndecidedNode(tree, -1, DHistogram.initialHist(_train, _ncols, adj_nbins, hcs[0][0], rseed, _parms, getGlobalQuantilesKeys(), null, false), null); // The "root" node
 
       // ----
       // One Big Loop till the ktrees are of proper depth.
       // Adds a layer to the trees each pass.
       final int[] leafs = new int[1];
       for(int depth=0 ; depth<_parms._max_depth; depth++ ) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, ktrees, leafs, hcs, _parms._build_tree_one_node);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }

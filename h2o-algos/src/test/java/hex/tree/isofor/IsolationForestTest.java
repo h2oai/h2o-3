@@ -1,9 +1,6 @@
 package hex.tree.isofor;
 
-import hex.ConfusionMatrix;
-import hex.Model;
-import hex.ModelMetricsBinomial;
-import hex.ScoreKeeper;
+import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
@@ -26,7 +23,6 @@ import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -44,7 +40,7 @@ public class IsolationForestTest extends TestUtil {
   public void testBasic() throws Exception {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/anomaly/ecg_discord_train.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -53,9 +49,13 @@ public class IsolationForestTest extends TestUtil {
       p._min_rows = 1;
       p._sample_size = 5;
 
-      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      IsolationForest isofor = new IsolationForest(p);
+      IsolationForestModel model = isofor.trainModel().get();
       assertNotNull(model);
       Scope.track_generic(model);
+
+      // trained with no warnings
+      assertEquals("", isofor.validationWarnings());
 
       Frame preds = Scope.track(model.score(train));
       assertArrayEquals(new String[]{"predict", "mean_length"}, preds.names());
@@ -74,7 +74,7 @@ public class IsolationForestTest extends TestUtil {
                       "--output", predictorOutCsv.getAbsolutePath(),
                       "--decimal"}, model.toMojo());
       predictor.run();
-      Frame predictorOutFrame = Scope.track(parse_test_file(predictorOutCsv.getAbsolutePath()));
+      Frame predictorOutFrame = Scope.track(parseTestFile(predictorOutCsv.getAbsolutePath()));
       assertTrue(model.testJavaScoring(train, predictorOutFrame, 1e-8));
 
       assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
@@ -87,7 +87,7 @@ public class IsolationForestTest extends TestUtil {
   public void testIFMaximumDepth() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/anomaly/ecg_discord_train.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -109,7 +109,7 @@ public class IsolationForestTest extends TestUtil {
   public void testEarlyStopping() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/anomaly/ecg_discord_train.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -135,7 +135,7 @@ public class IsolationForestTest extends TestUtil {
   public void testEmptyOOB() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/anomaly/ecg_discord_train.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -163,7 +163,7 @@ public class IsolationForestTest extends TestUtil {
   public void testPubDev6483() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/anomaly/ecg_discord_train.csv"));
 
       // should pass with all features
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
@@ -197,7 +197,7 @@ public class IsolationForestTest extends TestUtil {
   public void testVarSplits() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/testng/prostate.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/prostate.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -239,7 +239,7 @@ public class IsolationForestTest extends TestUtil {
   public void testContamination() {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/anomaly/ecg_discord_train.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -262,7 +262,7 @@ public class IsolationForestTest extends TestUtil {
       assertArrayEquals(new long[]{18L, 2L}, preds.vec("predict").bins());
       
       assertTrue(model.testJavaScoring(train, preds, 1e-8));
-
+      
       assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
     } finally {
       Scope.exit();
@@ -273,7 +273,7 @@ public class IsolationForestTest extends TestUtil {
   public void testTrainingWithResponse()  {
     try {
       Scope.enter();
-      Frame train = Scope.track(parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -358,7 +358,7 @@ public class IsolationForestTest extends TestUtil {
             Scope.enter();
             final String response = "CAPSULE";
             final String testFile = "./smalldata/logreg/prostate.csv";
-            Frame fr = parse_test_file(testFile)
+            Frame fr = parseTestFile(testFile)
                     .toCategoricalCol("RACE")
                     .toCategoricalCol("GLEASON")
                     .toCategoricalCol(response);
@@ -399,7 +399,7 @@ public class IsolationForestTest extends TestUtil {
                                 "--output", mojoScoringOutput.getAbsolutePath(),
                                 "--decimal"}, (GenModel) mojoModel);
                 predictor.run();
-                Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                Frame scoredWithMojo = Scope.track(parseTestFile(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                     @Override
                     public ParseSetup transformSetup(ParseSetup guessedSetup) {
                         return guessedSetup.setCheckHeader(1);

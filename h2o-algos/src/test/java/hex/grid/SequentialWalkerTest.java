@@ -1,10 +1,8 @@
 package hex.grid;
 
-import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.tree.gbm.GBMModel;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.Job;
@@ -14,12 +12,12 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -29,7 +27,7 @@ public class SequentialWalkerTest {
     public void test_SequentialWalker() {
         try {
             Scope.enter();
-            final Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(train);
             
             GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
@@ -74,12 +72,33 @@ public class SequentialWalkerTest {
             Scope.exit();
         }
     }
+
+    @Test
+    public void test_SequentialWalker_getHyperParams() {
+        GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+        Object[][] hyperParams = new Object[][] {
+            new Object[] {"_learn_rate", "_score_tree_interval"},
+            new Object[] {       0.5   ,                     2 },
+            new Object[] {       0.2   ,                     4 },
+            new Object[] {       0.1   ,                     8 }
+        };
+        SequentialWalker walker = new SequentialWalker<>(
+            gbmParameters,
+            hyperParams,
+            new GridSearch.SimpleParametersBuilderFactory<>(),
+            new HyperSpaceSearchCriteria.SequentialSearchCriteria()
+        );
+        Map<String, Object[]> exp = new HashMap<>();
+        assertEquals(new HashSet<>(Arrays.asList("_learn_rate", "_score_tree_interval")), walker.getHyperParams().keySet());
+        assertArrayEquals(new Object[] { 0.5, 0.2, 0.1 }, (Object[]) walker.getHyperParams().get("_learn_rate"));
+        assertArrayEquals(new Object[] { 2, 4, 8}, (Object[]) walker.getHyperParams().get("_score_tree_interval"));
+    }
     
     @Test
     public void test_SequentialWalker_supports_early_stopping() {
         try {
             Scope.enter();
-            final Frame train = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame train = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(train);
 
             GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();

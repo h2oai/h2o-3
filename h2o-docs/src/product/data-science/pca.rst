@@ -39,7 +39,7 @@ Defining a PCA Model
    - **mtj_svd_densematrix**: Singular-value decompositions for dense matrix using Matrix Toolkit Java (`MTJ <https://github.com/fommil/matrix-toolkits-java/>`__)
    - **jama**: Eigenvalue decompositions for dense matrix using Java Matrix (`JAMA <http://math.nist.gov/javanumerics/jama/>`__)
 
--  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. This can be a value from 1 to 9 and defaults to 1.
+-  `k <algo-params/k.html>`__: Specify the rank of matrix approximation. This can be a value from 1 to the minimum of (total number of rows, total number of columns) in the dataset. This value defaults to 1.
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations. The value must be between 1 and 1e6 and the default is 1000.
 

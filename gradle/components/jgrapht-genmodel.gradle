@@ -1,0 +1,3 @@
+dependencies {
+    api project(path: ':h2o-genmodel-ext-jgrapht', configuration: 'default')
+}

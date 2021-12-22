@@ -7,14 +7,14 @@ import water.util.IcedBitSet;
  *
  * Designed for Java code generation.
  */
-public interface JCodeSB<T extends JCodeSB> {
+public interface JCodeSB<T extends JCodeSB<T>> {
 
   // Append primitves
   T ps(String s);
 
   T p(String s);
 
-  T p(float s);
+  //T p(float s); - intentionally not included to avoid issues with confusing p(float) and pj(float) - we don't want to output floats that look like doubles in Java code
 
   T p(double s);
 

@@ -1,10 +1,10 @@
 description = "H2O Persist S3"
 
 dependencies {
-  compile project(":h2o-core")
-  compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
+  api project(":h2o-core")
+  api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
 
-  testCompile project(":h2o-test-support")
+  testImplementation project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

@@ -46,4 +46,17 @@ public class MutableOneHotEncoderFVec implements FVec {
     final boolean isHot = _catValues[_catMap[index]] == index;
     return isHot ? 1 : _notHot;
   }
+
+  public void decodeAggregate(float[] encoded, float[] output) {
+    for (int c = 0; c < _di._cats; c++) {
+      float sum = 0;
+      for (int i = _di._catOffsets[c]; i < _di._catOffsets[c + 1]; i++) {
+        sum += encoded[i];
+      }
+      output[c] = sum;
+    }
+    int numStart = _di._catOffsets[_di._cats];
+    if (_di._nums >= 0) 
+      System.arraycopy(encoded, numStart, output, _di._cats, _di._nums);
+  }
 }

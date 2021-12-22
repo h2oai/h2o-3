@@ -1,18 +1,19 @@
 package hex.genmodel.tools;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.ConvertTreeOptions;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
+import water.genmodel.AbstractBuildVersion;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.List;
 
@@ -22,6 +23,8 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
  */
 public class PrintMojo implements MojoPrinter {
+
+  public static final AbstractBuildVersion ABV = AbstractBuildVersion.getBuildVersion();
   
   protected MojoModel genModel;
   protected Format format = Format.dot;
@@ -32,6 +35,7 @@ public class PrintMojo implements MojoPrinter {
   protected String optionalTitle = null;
   protected PrintTreeOptions pTreeOptions;
   protected boolean internal;
+  protected boolean floatToDouble;
   protected final String tmpOutputFileName = "tmpOutputFileName.gv";
 
   public static void main(String[] args) {
@@ -96,6 +100,13 @@ public class PrintMojo implements MojoPrinter {
   }
 
   protected static void usage() {
+    System.out.println("Build git branch: " + ABV.branchName());
+    System.out.println("Build git hash: " + ABV.lastCommitHash());
+    System.out.println("Build git describe: " + ABV.describe());
+    System.out.println("Build project version: " + ABV.projectVersion());
+    System.out.println("Built by: '" + ABV.compiledBy() + "'");
+    System.out.println("Built on: '" + ABV.compiledOn() + "'");
+    System.out.println();
     System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
     System.out.println("The currently supported model types are DRF, GBM and XGBoost.");
     System.out.println();
@@ -225,6 +236,10 @@ public class PrintMojo implements MojoPrinter {
             internal = true;
             break;
 
+          case "--floattodouble":
+            floatToDouble = true;
+            break;
+
           case "-o":
           case "--output":
             i++;
@@ -256,7 +271,7 @@ public class PrintMojo implements MojoPrinter {
     validateArgs();
     PrintStream os;
     if (outputFileName != null) {
-      os = new PrintStream(new FileOutputStream(new File(outputFileName)));
+      os = new PrintStream(new FileOutputStream(outputFileName));
     }
     else {
       os = System.out;
@@ -327,7 +342,7 @@ public class PrintMojo implements MojoPrinter {
     }
     return domainValues;
   }
-  
+
   private void printJson(TreeBackedMojoModel mojo, SharedTreeGraph trees, PrintStream os) {
     Map<String, Object> json = new LinkedHashMap<>();
     json.put("params", getParamsAsJson(mojo));
@@ -336,8 +351,21 @@ public class PrintMojo implements MojoPrinter {
     if (optionalTitle != null) {
       json.put("title", optionalTitle);
     }
-    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+    GsonBuilder gsonBuilder = new GsonBuilder().setPrettyPrinting();
+    if (floatToDouble) {
+      Type floatType = new TypeToken<Float>(){}.getType();
+      JsonSerializer<Float> serializer = new FloatCastingSerializer();
+      gsonBuilder.registerTypeAdapter(floatType, serializer);
+    }
+    Gson gson = gsonBuilder.create();
     os.print(gson.toJson(json));
+  }
+
+  static class FloatCastingSerializer implements JsonSerializer<Float> {
+    @Override 
+    public JsonElement serialize(Float src, Type typeOfSrc, JsonSerializationContext context) { 
+      return new JsonPrimitive(src.doubleValue()); 
+    }
   }
 
   public static class PrintTreeOptions {

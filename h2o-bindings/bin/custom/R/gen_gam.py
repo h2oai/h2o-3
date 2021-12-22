@@ -2,19 +2,15 @@
 extensions = dict(
     required_params=['x', 'y', 'training_frame', 'gam_columns'],  # empty to override defaults in gen_defaults
     validate_required_params="""
-    # If x is missing, then assume user wants to use all columns as features.
+    # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
     if (missing(x)) {
-       if (is.numeric(y)) {
-           x <- setdiff(col(training_frame), y)
-       } else {
-           x <- setdiff(colnames(training_frame), y)
-       }
+        x = NULL
     }
-
     # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
     if (missing(gam_columns)) {
         stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
     }
+    gam_columns <- lapply(gam_columns, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
     """,
     set_required_params="""
     parms$training_frame <- training_frame
@@ -22,7 +18,6 @@ extensions = dict(
     if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
     if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
     if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
-    if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
     parms$ignored_columns <- args$x_ignore
     parms$response_column <- args$y
     parms$gam_columns <- gam_columns
@@ -66,7 +61,15 @@ extensions = dict(
       if(!missing(missing_values_handling))
         parms$missing_values_handling <- missing_values_handling
     """,
-
+    module="""
+    .h2o.fill_gam <- function(model, parameters, allparams) {
+        if (is.null(model$scoring_history))
+            model$scoring_history <- model$glm_scoring_history
+        if (is.null(model$model_summary))
+            model$model_summary <- model$glm_model_summary
+        return(model)
+    }
+"""
 )
 
 doc = dict(

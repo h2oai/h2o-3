@@ -424,7 +424,7 @@ public class ParserTest extends TestUtil {
   }
 
   @Test public void testTimeParse() {
-    Frame fr = parse_test_file("smalldata/junit/bestbuy_train_10k.csv.gz");
+    Frame fr = parseTestFile("smalldata/junit/bestbuy_train_10k.csv.gz");
     fr.delete();
   }
 
@@ -433,7 +433,7 @@ public class ParserTest extends TestUtil {
 @Test public void testStrings() {
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/junit/string_test.csv");
+      fr = parseTestFile("smalldata/junit/string_test.csv");
 
       //check dimensions
       int nlines = (int)fr.numRows();
@@ -484,7 +484,7 @@ public class ParserTest extends TestUtil {
       ard(NaN, NaN, NaN),
       ard(NaN, NaN,   6),
     };
-    Frame fr = parse_test_file("smalldata/junit/is_NA.csv");
+    Frame fr = parseTestFile("smalldata/junit/is_NA.csv");
     testParsed(fr._key,exp, 25);
   }
 
@@ -681,7 +681,7 @@ public class ParserTest extends TestUtil {
       ard( +.6e102,  +.7e102,  +.8e102, 0),
       ard( -.6e102,  -.7e102,  -.8e102, 1)
     };
-    Frame fr = parse_test_file("smalldata/junit/test_parse_mix.csv");
+    Frame fr = parseTestFile("smalldata/junit/test_parse_mix.csv");
     testParsed(fr._key, exp);
   }
 
@@ -942,7 +942,7 @@ public class ParserTest extends TestUtil {
 
   @Test
   public void testPubDev2897() {
-    Frame f = parse_test_file("smalldata/jira/pubdev_2897.csv");
+    Frame f = parseTestFile("smalldata/jira/pubdev_2897.csv");
     try {
       Assert.assertEquals("Frame rows", 5, f.numRows());
       Assert.assertEquals("Frame columns", 3, f.numCols());

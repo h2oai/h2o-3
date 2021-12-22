@@ -14,6 +14,9 @@ This Appendix provides detailed descriptions of parameters that can be specified
    :maxdepth: 2
 
    data-science/algo-params/alpha
+   data-science/algo-params/auc_type
+   data-science/algo-params/auuc_nbins
+   data-science/algo-params/auuc_type
    data-science/algo-params/balance_classes
    data-science/algo-params/base_models
    data-science/algo-params/beta_constraints
@@ -44,6 +47,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/estimate_k
    data-science/algo-params/exclude_algos
    data-science/algo-params/export_checkpoints_dir
+   data-science/algo-params/extension_level
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
@@ -59,6 +63,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/inflection_point
    data-science/algo-params/init1
    data-science/algo-params/init2
+   data-science/algo-params/interaction_constraints
    data-science/algo-params/interaction_pairs
    data-science/algo-params/interactions
    data-science/algo-params/intercept
@@ -84,6 +89,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/max_runtime_secs_per_model
    data-science/algo-params/metalearner_algorithm
    data-science/algo-params/metalearner_params
+   data-science/algo-params/metalearner_transform
    data-science/algo-params/min_prob
    data-science/algo-params/min_rows
    data-science/algo-params/min_sdev
@@ -135,9 +141,11 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/ties
    data-science/algo-params/training_frame
    data-science/algo-params/transform
+   data-science/algo-params/treatment_column
    data-science/algo-params/tweedie_link_power
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
+   data-science/algo-params/uplift_metric
    data-science/algo-params/upload_custom_distribution
    data-science/algo-params/upload_custom_metric
    data-science/algo-params/use_all_factor_levels

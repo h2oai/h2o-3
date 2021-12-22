@@ -18,15 +18,15 @@ ext{
     }
 }
 dependencies {
-    compile 'com.squareup.retrofit2:retrofit:2.8.1'
-    compile 'com.squareup.retrofit2:converter-gson:2.8.1'
-    compile 'com.squareup.okhttp3:okhttp:4.6.0'
-    compile 'com.squareup.okio:okio:2.6.0'
+    api 'com.squareup.retrofit2:retrofit:2.8.1'
+    api 'com.squareup.retrofit2:converter-gson:2.8.1'
+    api 'com.squareup.okhttp3:okhttp:4.6.0'
+    api 'com.squareup.okio:okio:2.6.0'
 
-    testCompile project(":h2o-app")
-    testCompile project(":h2o-web")
-    testCompile project(":h2o-avro-parser")
-    testCompile "junit:junit:${junitVersion}"
+    testImplementation project(":h2o-app")
+    testImplementation project(":h2o-web")
+    testImplementation project(":h2o-avro-parser")
+    testImplementation "junit:junit:${junitVersion}"
 
     // Generator dependencies
     srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")
@@ -56,6 +56,7 @@ task runGenerateRESTAPIBindingsSrc(type: Exec) {
     workingDir binDir
     // Note: by default the generated sources get written to ./h2o-bindings/src-gen/*
     environment "H2O_JARFILE", configurations.srcGenCompile.getSingleFile()
+    environment "H2O_JAVA_VERSION", JavaVersion.current()
     commandLine getOsSpecificCommandLine([pythonexe, "gen_all.py"])
 }
 

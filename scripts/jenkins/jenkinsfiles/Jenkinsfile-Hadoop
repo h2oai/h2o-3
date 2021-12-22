@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && !micro'
+def DEFAULT_NODE_LABEL = 'docker && !mr-0xc8 && (!micro || micro_21)'
 final int HEALTH_CHECK_RETRIES = 5
 
 def defineTestStages = null
@@ -46,6 +46,9 @@ try {
             }
             healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, pipelineContext.getBuildConfig().getHadoopBuildImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
             if (healthCheckPassed) {
+              // Stash git repo to avoid repeated checkout in parallel stages
+              pipelineContext.getUtils().stashGit(this)
+ 
               // Load build script and execute it
               def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
               buildH2O3(pipelineContext)

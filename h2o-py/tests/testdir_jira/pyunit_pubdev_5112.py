@@ -15,7 +15,7 @@ def pubdev_5112():
     model_id = w2v_model.model_id
     model = h2o.get_model(model_id)
 
-    assert model, "Worder2Vec model without a training frame was retrived"
+    assert model, "Worder2Vec model without a training frame was retrieved"
 
     # Only leading column should be of type String
     leading_column_string_error = False

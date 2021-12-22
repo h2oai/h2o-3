@@ -45,40 +45,45 @@ def _get_data(format='numpy', n_classes=2):
 
 def _get_default_args(estimator_cls):
     defaults = dict(
+        # H2OANOVAGLMEstimator=dict(seed=seed),
         H2OAggregatorEstimator=dict(),
         H2OAutoEncoderEstimator=dict(),
         H2OCoxProportionalHazardsEstimator=dict(),
         H2ODeepLearningEstimator=dict(distribution='bernoulli', seed=seed, reproducible=True),
         H2OGenericEstimator=dict(),
+        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_columns=["C1"]),
         H2OGeneralizedLinearEstimator=dict(family='binomial', seed=seed),
         H2OGeneralizedLowRankEstimator=dict(k=2, seed=seed),
         H2OIsolationForestEstimator=dict(seed=seed),
+        H2OExtendedIsolationForestEstimator=dict(seed=seed, sample_size=10),
         H2OKMeansEstimator=dict(seed=seed),
+        # H2OMaxRGLMEstimator=dict(seed=seed),
         H2ONaiveBayesEstimator=dict(seed=seed),
         H2OPrincipalComponentAnalysisEstimator=dict(k=2, seed=seed),
         H2OSingularValueDecompositionEstimator=dict(seed=seed),
         H2OSupportVectorMachineEstimator=dict(seed=seed),
         H2OTargetEncoderEstimator=dict(),
         H2OWord2vecEstimator=dict(),
-        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_columns = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(distribution='bernoulli', seed=seed))
 
 
 def _get_custom_behaviour(estimator_cls):
     custom = dict(
+        # H2OANOVAGLMEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OAutoEncoderEstimator=dict(n_classes=0, preds_as_vector=False, predict_proba=False, score=False),
         # H2ODeepLearningEstimator=dict(scores_may_differ=True),
         H2OGeneralizedLowRankEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OIsolationForestEstimator=dict(predict_proba=False, score=False),
+        H2OExtendedIsolationForestEstimator=dict(predict_proba=False, score=False),
         H2OKMeansEstimator=dict(predict_proba=False, score=False),
+        # H2OMaxRGLMEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OPrincipalComponentAnalysisEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OSingularValueDecompositionEstimator=dict(requires_target=False, preds_as_vector=False, predict_proba=False, score=False),
         H2OTargetEncoderEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
         H2OWord2vecEstimator=dict(preds_as_vector=False, predict_proba=False, score=False),
     )
     return custom.get(estimator_cls.__name__, dict())
-
 
 
 def test_estimator_with_h2o_frames(estimator_cls):
@@ -191,8 +196,9 @@ failing = [
     'H2OCoxProportionalHazardsEstimator',  # NPE at water.fvec.Frame.<init>(Frame.java:168) .... at hex.coxph.CoxPH$CollectTimes.collect(CoxPH.java:805)
     'H2OGenericEstimator',  # maybe should be removed from sklearn API
     'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
-    "H2OTargetEncoderEstimator", # needs dataset with categoricals to work + API polishing (use x, y with defaults)
+    "H2OTargetEncoderEstimator",  # needs dataset with categoricals to work + API polishing (use x, y with defaults)
     'H2OWord2vecEstimator',  # needs a separate test (requires pre_trained model as parameter)
+    'H2OUpliftRandomForestEstimator'  # generic part is not implemented yet
 ]
 estimators = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
               if name.endswith('Estimator') and name not in ['H2OAutoMLEstimator'] + failing]

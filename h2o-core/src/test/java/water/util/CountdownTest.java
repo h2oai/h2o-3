@@ -7,10 +7,14 @@ import static org.junit.Assert.*;
 
 public class CountdownTest {
   
-  private void short_sleep() {
+  private static long short_sleep() {
+    long start = System.currentTimeMillis();
     try {
       Thread.sleep(100);
-    } catch (InterruptedException ignored) {}
+    } catch (InterruptedException ignored) {
+      Thread.currentThread().interrupt();
+    }
+    return System.currentTimeMillis() - start;
   }
   
   @Test
@@ -65,10 +69,10 @@ public class CountdownTest {
     Countdown c = new Countdown(1000);
     assertEquals(0, c.elapsedTime());
     c.start();
-    short_sleep(); //100 millis
-    assertTrue("Elapsed time should have been close to 100 millis, got instead: "+c.elapsedTime(), Math.abs(c.elapsedTime() - 100) < 10);
+    long slept = short_sleep(); //100 millis
+    assertEquals("Elapsed time incorrect", slept, c.elapsedTime(), 10);
     c.stop();
-    assertTrue("Elapsed time should have been close to 100 millis, got instead: "+c.elapsedTime(), Math.abs(c.elapsedTime() - 100) < 10);
+    assertEquals("Elapsed time incorrect", slept, c.elapsedTime(), 10);
     assertEquals(c.elapsedTime(), c.duration());
     c.reset();
     assertEquals(0, c.elapsedTime());
@@ -79,8 +83,8 @@ public class CountdownTest {
     Countdown c = new Countdown(1000);
     assertEquals(1000, c.remainingTime());
     c.start();
-    short_sleep(); //100 millis
-    assertTrue("Remaining time should have been close to 900 millis, got instead: "+c.remainingTime(), Math.abs(1000 - c.remainingTime() - 100) < 10);
+    long slept = short_sleep(); //100 millis
+    assertEquals("Remaining time incorrect", 1000 - slept, c.remainingTime(), 10);
     c.stop();
     assertEquals(0, c.remainingTime());
     c.reset();
@@ -103,9 +107,9 @@ public class CountdownTest {
     } catch (IllegalStateException e) {
       assertTrue(e.getMessage().contains("Countdown was never started or stopped"));
     }
-    short_sleep(); //100 millis
+    long slept = short_sleep(); //100 millis
     c.stop();
-    assertTrue("Duration should have been close to 100 millis, got instead: "+c.duration(), Math.abs(c.duration() - 100) < 10);
+    assertEquals("Duration incorrect ", slept, c.duration(), 10);
     c.reset();
     try {
       c.duration();

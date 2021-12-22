@@ -76,7 +76,8 @@ else
     COVERAGE=""
 fi
 # Command to invoke test.
-JVM="nice $JAVA_CMD $COVERAGE -Xmx${MAX_MEM} -Xms${MAX_MEM} -ea -cp ${JVM_CLASSPATH} ${ADDITIONAL_TEST_JVM_OPTS}"
+# note: we set sys.ai.h2o.activeProcessorCount=4 because multinode tests are running on the same instance - this helps avoid resource contention and speeds tests up  
+JVM="nice $JAVA_CMD $COVERAGE -Xmx${MAX_MEM} -Xms${MAX_MEM} -ea -cp ${JVM_CLASSPATH} -Dsys.ai.h2o.rapids.checkObjectConsistency=true -Dsys.ai.h2o.activeProcessorCount=4 ${ADDITIONAL_TEST_JVM_OPTS}"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests

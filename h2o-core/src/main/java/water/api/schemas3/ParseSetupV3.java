@@ -82,6 +82,9 @@ public class ParseSetupV3 extends RequestSchemaV3<ParseSetup, ParseSetupV3> {
   @API(help = "Names of the columns the persisted dataset has been partitioned by.", direction = API.Direction.INOUT)
   public String[] partition_by;
 
+  @API(help="One ASCII character used to escape other characters.", direction=API.Direction.INOUT)
+  public byte escapechar = ParseSetup.DEFAULT_ESCAPE_CHAR;
+
   @Override
   public ParseSetup fillImpl(ParseSetup impl) {
     ParseSetup parseSetup = fillImpl(impl, new String[] {"parse_type"});

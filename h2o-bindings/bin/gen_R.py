@@ -259,6 +259,7 @@ def algo_to_modelname(algo):
     if algo == "deeplearning": return "Deep Learning - Neural Network"
     if algo == "xgboost": return "XGBoost"
     if algo == "drf": return "Random Forest Model in H2O"
+    if algo == "upliftdrf": return "Uplift Random Forest Model in H2O"
     if algo == "gbm": return "Gradient Boosting Machine"
     if algo == "glm": return "H2O Generalized Linear Models"
     if algo == "glrm": return "Generalized Low Rank Model"
@@ -268,9 +269,11 @@ def algo_to_modelname(algo):
     if algo == "svd": return "Singular Value Decomposition"
     if algo == "stackedensemble": return "H2O Stacked Ensemble"
     if algo == "psvm": return "Support Vector Machine"
-    if algo == "gam": return "Generalized Additive Model"
+    if algo == "anovaglm": return "ANOVA GLM"
     if algo == "targetencoder": return "Target Encoder"
-    if algo == "gam": return "General Additive Model"
+    if algo == "gam": return "Generalized Additive Model"
+    if algo == "modelselection": return "Model Selection"
+    if algo == "infogram": return "Infogram"
     return algo
 
 
@@ -334,10 +337,15 @@ def main():
         if name == "drf":
             module = "randomForest"
             file_name = "randomforest"
+        if name == "upliftdrf":
+            module = "upliftRandomForest"
+            file_name = "upliftrandomforest"
         if name == "isolationforest": module = "isolationForest"
+        if name == "extendedisolationforest": module = "extendedIsolationForest"
         if name == "naivebayes": module = "naiveBayes"
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
+        if name == "modelselection": module = "modelSelection"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
 

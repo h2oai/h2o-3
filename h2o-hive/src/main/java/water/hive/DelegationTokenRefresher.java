@@ -25,6 +25,7 @@ public class DelegationTokenRefresher implements Runnable {
   public static final String H2O_AUTH_USER = "h2o.auth.user";
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
+  public static final String H2O_HIVE_USE_KEYTAB = "h2o.hive.useKeytab";
   public static final String H2O_HIVE_JDBC_URL_PATTERN = "h2o.hive.jdbc.urlPattern";
   public static final String H2O_HIVE_HOST = "h2o.hive.jdbc.host";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
@@ -42,11 +43,12 @@ public class DelegationTokenRefresher implements Runnable {
     }
     String authUser = conf.get(H2O_AUTH_USER);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
-    String authKeytab = conf.get(H2O_AUTH_KEYTAB);
+    boolean useKeytab = conf.getBoolean(H2O_HIVE_USE_KEYTAB, true);
+    String authKeytab = useKeytab ? conf.get(H2O_AUTH_KEYTAB) : null;
     String hiveJdbcUrlPattern = conf.get(H2O_HIVE_JDBC_URL_PATTERN);
     String hiveHost = conf.get(H2O_HIVE_HOST);
     String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
-    String hiveJdbcUrl;
+    final String hiveJdbcUrl;
     if (authKeytab != null) {
       hiveJdbcUrl = HiveTokenGenerator.makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     } else {

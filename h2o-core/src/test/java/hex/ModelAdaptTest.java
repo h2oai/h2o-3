@@ -30,7 +30,7 @@ public class ModelAdaptTest extends TestUtil {
   }
 
   @Test public void testModelAdaptMultinomial() {
-    Frame trn = parse_test_file("smalldata/junit/mixcat_train.csv");
+    Frame trn = parseTestFile("smalldata/junit/mixcat_train.csv");
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
     o.setNames(trn.names(), trn.typesStr());
@@ -38,9 +38,10 @@ public class ModelAdaptTest extends TestUtil {
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
     
-    Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
+    Frame tst = parseTestFile("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
+    
     assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [\"D\"]")!= -1);
     assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
     assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);

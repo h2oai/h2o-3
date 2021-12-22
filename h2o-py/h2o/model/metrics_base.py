@@ -8,12 +8,13 @@ Regression model.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
-@BackwardsCompatible(
+@backwards_compatibility(
     instance_attrs=dict(
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
@@ -98,10 +99,13 @@ class MetricsBase(h2o_meta()):
                                           'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
         types_w_mean_absolute_error = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric',
                                        'ModelMetricsRegression', 'ModelMetricsRegressionGeneric']
+        types_w_mean_per_class_error = ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric',
+                                        'ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric'] + types_w_mult
         types_w_logloss = types_w_bin + types_w_mult+types_w_ord
         types_w_dim = ["ModelMetricsGLRM"]
         types_w_anomaly = ['ModelMetricsAnomaly']
         types_w_cox = ['ModelMetricsRegressionCoxPH']
+        types_w_uplift = ['ModelMetricsBinomialUplift']
 
         print()
         print(metric_type + ": " + self._algo)
@@ -115,7 +119,8 @@ class MetricsBase(h2o_meta()):
         else:
             print(reported_on.format("test"))
         print()
-        if metric_type not in types_w_anomaly:
+        if metric_type not in types_w_anomaly and metric_type not in types_w_uplift and \
+                metric_type not in types_w_clustering:
             print("MSE: " + str(self.mse()))
             print("RMSE: " + str(self.rmse()))
         if metric_type in types_w_mean_absolute_error:
@@ -127,11 +132,8 @@ class MetricsBase(h2o_meta()):
             print("Mean Residual Deviance: " + str(self.mean_residual_deviance()))
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
-        if metric_type in ['ModelMetricsBinomial', 'ModelMetricsBinomialGeneric']:
-            # second element for first threshold is the actual mean per class error
-            print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
-        if metric_type in types_w_mult or metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
-            print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
+        if metric_type in types_w_mean_per_class_error:
+            print("Mean Per-Class Error: %s" % self._mean_per_class_error())
         if metric_type in types_w_glm:
             if metric_type == 'ModelMetricsHGLMGaussianGaussian': # print something for HGLM
                 print("Standard error of fixed columns: "+str(self.hglm_metric("sefe")))
@@ -160,21 +162,39 @@ class MetricsBase(h2o_meta()):
             print("AUC: " + str(self.auc()))
             print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
-            self.confusion_matrix().show()
-            self._metric_json["max_criteria_and_metric_scores"].show()
+            if self.confusion_matrix():
+                self.confusion_matrix().show()
+            if self._metric_json["max_criteria_and_metric_scores"]:
+                self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
+        if metric_type in types_w_mult:
+            print("AUC: " + str(self.auc()))
+            print("AUCPR: " + str(self.aucpr()))
+            # AUC and PR AUC table cannot be computed due domain size
+            if self._metric_json["multinomial_auc_table"] is not None:
+                self._metric_json["multinomial_auc_table"].show()
+            else:
+                print("Multinomial auc values: Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).")
+            if self._metric_json["multinomial_aucpr_table"] is not None:
+                self._metric_json["multinomial_aucpr_table"].show()
+            else:
+                print("Multinomial auc_pr values: Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains).")
         if metric_type in types_w_anomaly:
             print("Anomaly Score: " + str(self.mean_score()))
             print("Normalized Anomaly Score: " + str(self.mean_normalized_score()))
         if (metric_type in types_w_mult) or (metric_type in types_w_ord):
             self.confusion_matrix().show()
             self.hit_ratio_table().show()
+            
         if metric_type in types_w_clustering:
             print("Total Within Cluster Sum of Square Error: " + str(self.tot_withinss()))
             print("Total Sum of Square Error to Grand Mean: " + str(self.totss()))
             print("Between Cluster Sum of Square Error: " + str(self.betweenss()))
-            self._metric_json['centroid_stats'].show()
+            if self._metric_json['centroid_stats'] is not None:
+                self._metric_json['centroid_stats'].show()
+            else:
+                print("Centroid stats are not available.")
 
         if metric_type in types_w_dim:
             print("Sum of Squared Error (Numeric): " + str(self.num_err()))
@@ -182,8 +202,11 @@ class MetricsBase(h2o_meta()):
             
         if metric_type in types_w_cox:
             print("Concordance score: " + str(self.concordance()))
-            print("Concordant count: " + str(self.concordance()))
-            print("Tied cout: " + str(self.concordance()))
+            print("Concordant count: " + str(self.concordant()))
+            print("Tied cout: " + str(self.tied_y()))
+        
+        if metric_type in types_w_uplift:
+            print("AUUC: " + str(self.auuc()))
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
@@ -236,6 +259,7 @@ class MetricsBase(h2o_meta()):
         The number of observations.
 
         :examples:
+        
         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
@@ -312,7 +336,7 @@ class MetricsBase(h2o_meta()):
         return self._metric_json['pr_auc']
 
 
-    @deprecated(replaced_by=aucpr)
+    @deprecated_fn(replaced_by=aucpr)
     def pr_auc(self):
         pass
 
@@ -553,6 +577,10 @@ class MetricsBase(h2o_meta()):
             return self._metric_json["null_degrees_of_freedom"]
         return None
 
+    # private accessor for mean per-class error - the public version is overridden in H2OBinomialModelMetrics with
+    # a method with different return semantics
+    def _mean_per_class_error(self):
+        return self._metric_json['mean_per_class_error']
 
     def mean_per_class_error(self):
         """The mean per class error.
@@ -575,7 +603,7 @@ class MetricsBase(h2o_meta()):
         ...                validation_frame = valid)
         >>> pros_glm.mean_per_class_error()
         """
-        return self._metric_json['mean_per_class_error']
+        return self._mean_per_class_error()
 
     def custom_metric_name(self):
         """Name of custom metric or None."""
@@ -725,6 +753,56 @@ class H2OMultinomialModelMetrics(MetricsBase):
         """
         return self._metric_json['hit_ratio_table']
 
+
+    def multinomial_auc_table(self):
+        """Retrieve the multinomial AUC values.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.multinomial_auc_table()
+        """
+        if self._metric_json['multinomial_auc_table'] is not None:
+            return self._metric_json['multinomial_auc_table']
+        else:
+            return "Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains)."
+
+    def multinomial_aucpr_table(self):
+        """Retrieve the multinomial PR AUC values.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.multinomial_aucpr_table()
+        """
+        if self._metric_json['multinomial_aucpr_table'] is not None:
+            return self._metric_json['multinomial_aucpr_table']
+        else:
+            return "Table is not computed because it is disabled (model parameter 'auc_type' is set to AUTO or NONE) or due to domain size (maximum is 50 domains)."
 
 
 class H2OOrdinalModelMetrics(MetricsBase):
@@ -1320,17 +1398,18 @@ class H2OBinomialModelMetrics(MetricsBase):
                 )
         return metrics
 
-    def plot(self, type="roc", server=False, save_to_file=None, plot=True):
+    @deprecated_params({'save_to_file': 'save_plot_path'})
+    def plot(self, type="roc", server=False, save_plot_path=None, plot=True, **kwargs):
         """
         Produce the desired metric plot.
 
         :param type: the type of metric plot (currently, only ROC curve ('roc') and Precision Recall curve ('pr') are supported).
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
-        :param save_to_file filename to save the plot to
-        :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
+        :param save_plot_path: filename to save the plot to
+        :param plot: True to plot curve, False to get a tuple of values at axis x and y of the plot 
                 (tprs and fprs for AUC, recall and precision for PR)
         
-        :returns: None or values of x and y axis of the plot 
+        :returns: None or values of x and y axis of the plot + the resulting plot (can be accessed using result.figure())
 
         :examples:
 
@@ -1351,19 +1430,16 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
 
         if type == "roc":
-            return self._plot_roc(server, save_to_file, plot)
+            return self._plot_roc(server, save_plot_path, plot)
         elif type == "pr":
-            return self._plot_pr(server, save_to_file, plot)
+            return self._plot_pr(server, save_plot_path, plot)
     
     def _plot_roc(self, server=False, save_to_file=None, plot=True):
         if plot:
-            try:
-                import matplotlib
-                if server: matplotlib.use('Agg')
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("matplotlib is required for this function!")
-                return
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+            fig = plt.figure()
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
             plt.title('Receiver Operating Characteristic Curve')
@@ -1375,22 +1451,20 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(save_to_file)
+                fig.savefig(fname=save_to_file)
+            return decorate_plot_result(res=(self.fprs, self.tprs), figure=fig) 
         else:
-            return self.fprs, self.tprs
+            return decorate_plot_result(res=(self.fprs, self.tprs))
 
     def _plot_pr(self, server=False, save_to_file=None, plot=True):
         recalls = [x[0] for x in self.recall(thresholds='all')]
         precisions = self.tprs
         assert len(precisions) == len(recalls), "Precision and recall arrays must have the same length"
         if plot:
-            try:
-                import matplotlib
-                if server: matplotlib.use('Agg')
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("matplotlib is required for this function!")
-                return
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+            fig = plt.figure()
             plt.xlabel('Recall (TP/(TP+FP))')
             plt.ylabel('Precision (TPR)')
             plt.title('Precision Recall Curve')
@@ -1402,10 +1476,10 @@ class H2OBinomialModelMetrics(MetricsBase):
             if not server: 
                 plt.show()
             if save_to_file is not None:  # only save when a figure is actually plotted
-                plt.savefig(save_to_file)
+                plt.savefig(fname=save_to_file)
+            return decorate_plot_result(res=(recalls, precisions), figure=fig)
         else:
-            return recalls, precisions
-
+            return decorate_plot_result(res=(recalls, precisions))
 
     @property
     def fprs(self):
@@ -1509,8 +1583,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param metrics: A string (or list of strings) among metrics listed in :const:`maximizing_metrics`. Defaults to 'f1'.
         :param thresholds: A value (or list of values) between 0 and 1.
             If None, then the thresholds maximizing each provided metric will be used.
-        :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
-            (if there is only one).
+        :returns: a list of ConfusionMatrix objects (if there are more than one to return), a single ConfusionMatrix
+            (if there is only one) or None if thresholds are metrics scores are missing.
 
         :examples:
 
@@ -1529,6 +1603,10 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...           validation_frame = valid)
         >>> gbm.confusion_matrix(train)
         """
+        thresh2d = self._metric_json['thresholds_and_metric_scores']
+        if thresh2d is None:
+            return None
+
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None:
             metrics = ['f1']
@@ -1560,7 +1638,6 @@ class H2OBinomialModelMetrics(MetricsBase):
             thresholds_list.append(mt)
         first_metrics_thresholds_offset = len(thresholds_list) - len(metrics_thresholds)
 
-        thresh2d = self._metric_json['thresholds_and_metric_scores']
         actual_thresholds = [float(e[0]) for i, e in enumerate(thresh2d.cell_values)]
         cms = []
         for i, t in enumerate(thresholds_list):
@@ -1690,6 +1767,265 @@ class H2OBinomialModelMetrics(MetricsBase):
         return None
 
 
+class H2OBinomialUpliftModelMetrics(MetricsBase):
+    """
+    This class is available only for Uplift DRF model
+    This class is essentially an API for the AUUC object
+    """
+    
+    def __init__(self, metric_json, on=None, algo=""):
+        """
+          Create a new Binomial Metrics object (essentially a wrapper around some json)
+
+          :param metric_json: A blob of json holding all of the needed information
+          :param on: Metrics built on "training_data" or "validation_data" (default is "training_data")
+        """
+        super(H2OBinomialUpliftModelMetrics, self).__init__(metric_json, on, algo)
+        
+    def auuc(self, metric=None):
+        """
+        Retrieve area under uplift curve (AUUC) value.
+        
+        :param metric AUUC metric type (None, "qini", "lift", "gain",
+            default is None which means it takes default metric from model parameters) 
+        :returns: AUUC value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.auuc()
+        """
+        if metric is None:
+            return self._metric_json['AUUC']
+        else:
+            assert metric in ['qini', 'lift', 'gain'], \
+               "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
+            return self._metric_json['auuc_table'][metric][0]
+            
+    def uplift(self, metric="AUTO"):
+        """
+        Retrieve uplift values for each bin. 
+        
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        
+        :returns: a list of uplift values.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.uplift()
+        """
+        assert metric in ['AUTO', 'qini', 'lift', 'gain']
+       
+        if metric == "AUTO": 
+            metric = 'qini'
+        return self._metric_json["thresholds_and_metric_scores"][metric]
+
+    def n(self):
+        """
+        Retrieve numbers of observations in each bin. 
+        
+        :returns: a list of numbers of observation.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.n()
+        """  
+        return self._metric_json["thresholds_and_metric_scores"]["n"]
+    
+    def thresholds(self):
+        """
+        Retrieve prediction thresholds for each bin. 
+        
+        :returns: a list of thresholds.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.thresholds()
+        """
+        return self._metric_json["thresholds_and_metric_scores"]["thresholds"]
+
+    def thresholds_and_metric_scores(self):
+        """
+        Retrieve thresholds and metric scores table.
+        
+        :returns: a thresholds and metric scores table for the specified key(s).
+        
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.thresholds_and_metric_scores()
+        """
+        return self._metric_json["thresholds_and_metric_scores"]
+
+    def auuc_table(self):
+        """
+        Retrieve all types of AUUC in a table.
+         
+        :returns: a table of AUUCs.
+    
+        :examples:
+         
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.auuc_table()
+        """
+        return self._metric_json["auuc_table"]
+
+    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="auto"):
+        """
+        Plot Uplift Curve. 
+        
+        :param server: if True, generate plot inline using matplotlib's "Agg" backend.
+        :param save_to_file filename to save the plot to
+        :param plot True to plot curve, False to get a tuple of values at axis x and y of the plot 
+            (number of observations and uplift values)
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.plot_uplift(plot=True)
+        >>> n, uplift = uplift_model.plot_uplift(plot=False)
+        """
+        if plot:
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return
+            plt.ylabel('Cumulative '+metric)
+            plt.xlabel('Number Targeted')
+            plt.title('Cumulate Uplift Curve - '+metric+"\n"+r'AUUC={0:.4f}'.format(self.auuc(metric)))
+            uplift = self.uplift(metric)
+            n = self.n()
+            plt.plot(n, uplift, 'b-', label='uplift')
+            a = uplift[len(uplift)-1]/n[len(n)-1]
+            rnd = [a * nn for nn in n]
+            plt.plot(n, rnd, 'k--', label='random')
+            if metric == "lift":
+                plt.legend(loc='upper right')
+            else:
+                plt.legend(loc='lower right')
+            plt.grid(True)
+            plt.tight_layout()
+            if not server:
+                plt.show()
+            if save_to_file is not None:  # only save when a figure is actually plotted
+                plt.savefig(save_to_file)
+        else:
+            return self.n(), self.uplift(metric)
 
 
 class H2OAutoEncoderModelMetrics(MetricsBase):

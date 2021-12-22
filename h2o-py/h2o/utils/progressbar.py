@@ -14,11 +14,26 @@ import sys
 import time
 from types import FunctionType, GeneratorType, MethodType
 
-import colorama
-
 from h2o.utils.shared_utils import clamp
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
+
+class _DefaultProgressWidgetFactory(object):
+    """
+    Factory descriptor creating the rendering widgets: 
+    this descriptor is used by default for every progress bar for which no widgets was explicitly provided.
+    """
+
+    def __get__(self, progress_bar, owner=None):  # type: (ProgressBar, type) -> [ProgressBarWidget]
+        if progress_bar is None:  # to be able to replace this factory
+            return self
+        widgets = []
+        if progress_bar._title:
+            widgets.append(PBWString(progress_bar._title+":"))
+        widgets.append(PBWBar())
+        widgets.append(PBWPercentage())
+        return widgets
+      
 
 class ProgressBar(object):
     """
@@ -81,23 +96,23 @@ class ProgressBar(object):
 
     # How long are we allowed to wait after the progress is finished before returning.
     FINISH_DELAY = 0.3
+    
+    DEFAULT_WIDGETS = _DefaultProgressWidgetFactory()
 
     def __init__(self, title=None, widgets=None, maxval=1.0, file_mode=None, hidden=False):
         """
         Initialize the progress bar.
 
-        :param title: name of the progress bar, to be used as the first default widget.
+        :param title: name of the progress bar, to be used as the first default widget if `widgets` is not provided.
+        :param widgets: list of widgets to render. Each widget is an instance of a ProgressBarWidget subclass. 
+            Defaults are: [PBWString(title+":"), PBWBar(), PBWPercentage()].
         :param maxval: when the progress reaches this value, the job is considered finished.
-        :param widgets: list of widgets to render. Each widget is either a constant string, or an
-            instance of a ProgressBarWidget subclass. Defaults are: [title+":", PBWBar(), PBWPercentage()].
         :param file_mode: if True, force file-mode output (i.e. progress is printed without ability to
             overwrite previous output).
         """
-        assert_is_type(title, None, str)
         assert_is_type(maxval, numeric)
         assert_is_type(widgets, None, [str, ProgressBarWidget])
         assert_is_type(file_mode, None, bool)
-
 
         # Fix for PUBDEV-5048. H2O depends on isatty attribute, but some Python Notebooks override stdout and doesn't
         # specify it. The same holds for the encoding attribute bellow
@@ -107,16 +122,17 @@ class ProgressBar(object):
         if not hasattr(sys.stdout, "encoding"):
             sys.stdout.encoding = sys.getdefaultencoding()
 
-        if title is None: title = "Progress"
         if file_mode is None: file_mode = not sys.stdout.isatty()
 
+        self._title = title
         self._maxval = maxval
         self._file_mode = file_mode
         if hidden:
             self._widget = _HiddenWidget()
             self._file_mode = True
         else:
-            self._widget = _ProgressBarCompoundWidget(widgets, title=title, file_mode=file_mode)
+            widgets = widgets or self.DEFAULT_WIDGETS
+            self._widget = _ProgressBarCompoundWidget(widgets, file_mode=file_mode)
 
         # Variables needed for progress model (see docs).
         self._t0 = None  # Time when the model's parameters were computed
@@ -131,8 +147,7 @@ class ProgressBar(object):
         # Timestamp when should the progress be queried next.
         self._next_poll_time = None
 
-
-    def execute(self, progress_fn, print_verbose_info=None):
+    def execute(self, progress_fn, progress_monitor_fn=None):
         """
         Start the progress bar, and return only when the progress reaches 100%.
 
@@ -141,7 +156,7 @@ class ProgressBar(object):
             where delay is the time interval for when the progress should be checked again. This function may at
             any point raise the ``StopIteration(message)`` exception, which will interrupt the progress bar,
             display the ``message`` in red font, and then re-raise the exception.
-        :param print_verbose_info: a callback function called at each iteration
+        :param progress_monitor_fn: a callback function called at each iteration
             with `bar_progression: float` as a single argument.
         :raises StopIteration: if the job is interrupted. The reason for interruption is provided in the exception's
             message. The message will say "cancelled" if the job was interrupted by the user by pressing Ctrl+C.
@@ -194,8 +209,9 @@ class ProgressBar(object):
                 wait_time = min(next_render_time, self._next_poll_time) - now
                 if wait_time > 0:
                     time.sleep(wait_time)
-                    if print_verbose_info is not None:
-                        print_verbose_info(progress)
+                    if progress_monitor_fn is not None:
+                        progress_monitor_fn(progress)
+            status = "done"
         except KeyboardInterrupt:
             # If the user presses Ctrl+C, we interrupt the progress bar.
             status = "cancelled"
@@ -211,7 +227,6 @@ class ProgressBar(object):
         if status == "cancelled":
             # Re-raise the exception, to inform the upstream caller that something unexpected happened.
             raise StopIteration(status)
-
 
     #-------------------------------------------------------------------------------------------------------------------
     #  Private
@@ -236,7 +251,6 @@ class ProgressBar(object):
             # ``self._progress_data``.
             delay = self._guess_next_poll_interval()
         self._next_poll_time = now + clamp(delay, self.MIN_PROGRESS_CHECK_INTERVAL, self.MAX_PROGRESS_CHECK_INTERVAL)
-
 
     def _recalculate_model_parameters(self, now):
         """Compute t0, x0, v0, ve."""
@@ -267,7 +281,6 @@ class ProgressBar(object):
                 # Current speed is too low: finish later, but do not allow ``ve`` to be higher than ``max_speed``
                 ve = max_speed
         self._t0, self._x0, self._v0, self._ve = t0, x0, v0, ve
-
 
     def _estimate_progress_completion_time(self, now):
         """
@@ -305,7 +318,6 @@ class ProgressBar(object):
 
         return t_estimate
 
-
     def _guess_next_poll_interval(self):
         """
         Determine when to query the progress status next.
@@ -316,7 +328,6 @@ class ProgressBar(object):
         time_elapsed = self._progress_data[-1][0] - self._progress_data[0][0]
         real_progress = self._get_real_progress()
         return min(0.2 * time_elapsed, 0.5 + (1 - real_progress)**0.5)
-
 
     def _compute_progress_at_time(self, t):
         """
@@ -329,7 +340,6 @@ class ProgressBar(object):
         vt = ve + z
         xt = clamp(x0 + ve * (t - t0) + (v0 - ve - z) / self.BETA, 0, 1)
         return xt, vt
-
 
     def _get_time_at_progress(self, x_target):
         """
@@ -351,7 +361,6 @@ class ProgressBar(object):
             if abs(x - x_target) < 1e-3: return t
         return time.time() + 100
 
-
     def _draw(self, txt, final=False):
         """Print the rendered string to the stdout."""
         if not self._file_mode:
@@ -365,15 +374,12 @@ class ProgressBar(object):
                 sys.stdout.write("\r")
             sys.stdout.flush()
 
-
     def __repr__(self):
         """Progressbar internal state (for debug purposes)."""
         t0 = self._progress_data[0][0]
         data = ",".join("(%.1f,%.3f)" % (t - t0, w / self._maxval) for t, w in self._progress_data)
         return "<Progressbar x0=%.3f, v0=%.3f, xraw=%.3f; data:[%s]>" % \
             (self._x0, self._v0, self._get_real_progress(), data)
-
-
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -407,7 +413,6 @@ class RenderResult(object):
         self.length = length if length is not None else len(rendered)
         self.next_progress = next_progress
         self.next_time = next_time
-
 
 
 class ProgressBarWidget(object):
@@ -459,7 +464,6 @@ class ProgressBarWidget(object):
         self._file_mode = mode == "file"
 
 
-
 class ProgressBarFlexibleWidget(ProgressBarWidget):
     r"""
     Progress bar widgets deriving from this abstract class indicate that they can expand/shrink freely.
@@ -486,15 +490,13 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
     This widget is designed for internal use only! Its role is to lay out all contained widgets.
     """
 
-    def __init__(self, widgets, title, file_mode):
+    def __init__(self, widgets, file_mode):
         super(ProgressBarWidget, self).__init__()
         self._file_mode = file_mode
         self._width = min(self._get_terminal_size(), 100)
         self._encoding = (sys.stdout.encoding or "").lower()
         wlist = []
-        for widget in (widgets or [title + ":", PBWBar(), PBWPercentage()]):
-            if is_type(widget, str):
-                widget = PBWString(widget)
+        for widget in (widgets or []):
             widget.set_mode("file" if file_mode else "tty")
             widget.set_encoding(self._encoding)
             wlist.append(widget)
@@ -502,7 +504,6 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
         self._widgets = tuple(wlist)
         self._widget_lengths = self._compute_widget_sizes()
         self._rendered = ""
-
 
     def render(self, progress, width=None, status=None):
         """Render the widget."""
@@ -526,7 +527,6 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
         next_time = min(r.next_time for r in results)
         return RenderResult(rendered_str, next_progress=next_progress, next_time=next_time)
 
-
     def _compute_widget_sizes(self):
         """Initial rendering stage, done in order to compute widths of all widgets."""
         wl = [0] * len(self._widgets)
@@ -537,7 +537,7 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
             if isinstance(widget, ProgressBarFlexibleWidget):
                 flex_count += 1
             else:
-                wl[i] = widget.render(1).length
+                wl[i] = widget.render(1, status="init").length
 
         remaining_width = self._width - sum(wl)
         remaining_width -= len(self._widgets) - 1  # account for 1-space interval between widgets
@@ -545,14 +545,15 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
             if self._file_mode:
                 remaining_width = 10 * flex_count
             else:
-                # The window is too small to accomodate the widget: try to split it into several lines, otherwise
+                # The window is too small to accommodate the widget: try to split it into several lines, otherwise
                 # switch to "file mode". If we don't do this, then rendering the widget will cause it to wrap, and
                 # then when we use \r to go to the beginning of the line, only part of the widget will be overwritten,
                 # which means we'll have many (possibly hundreds) of progress bar lines in the end.
                 widget0 = self._widgets[0]
-                if isinstance(widget0, PBWString) and remaining_width + widget0.render(0).length >= 10 * flex_count:
-                    remaining_width += widget0.render(0).length + 1
-                    self._to_render = widget0.render(0).rendered + "\n"
+                r0 = widget0.render(0, status="init")
+                if isinstance(widget0, PBWString) and remaining_width + r0.length >= 10 * flex_count:
+                    remaining_width += r0.length + 1
+                    self._to_render = r0.rendered + "\n"
                     self._widgets = self._widgets[1:]
                 if remaining_width < 10 * flex_count:
                     self._file_mode = True
@@ -563,13 +564,12 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
         for i, widget in enumerate(self._widgets):
             if isinstance(widget, ProgressBarFlexibleWidget):
                 target_length = int(remaining_width / flex_count)
-                result = widget.render(1, target_length)
+                result = widget.render(1, width=target_length, status="init")
                 wl[i] = result.length
                 remaining_width -= result.length
                 flex_count -= 1
 
         return wl
-
 
     @staticmethod
     def _get_terminal_size():
@@ -601,7 +601,6 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
         return int(os.environ.get("COLUMNS", 80))
 
 
-
 #-----------------------------------------------------------------------------------------------------------------------
 # Widgets (implementations)
 #-----------------------------------------------------------------------------------------------------------------------
@@ -617,7 +616,6 @@ class PBWString(ProgressBarWidget):
     def render(self, progress, width=None, status=None):
         """Render the widget."""
         return RenderResult(self._str)
-
 
 
 class PBWBar(ProgressBarFlexibleWidget):
@@ -659,7 +657,7 @@ class PBWBar(ProgressBarFlexibleWidget):
             out += self._bar_symbols[frac_chars - 1] if frac_chars > 0 else ""
             rendered_len = len(out)
             if status:
-                out += colorama.Fore.RED + " (" + status + ")" + colorama.Style.RESET_ALL
+                out += " (%s)" % status
                 rendered_len += 3 + len(status)
             out += " " * (width - 1 - rendered_len)
             out += endl
@@ -691,7 +689,6 @@ class PBWBar(ProgressBarFlexibleWidget):
                 print("Warning: unknown encoding %s" % encoding)
 
 
-
 class PBWPercentage(ProgressBarWidget):
     """
     Simple percentage indicator.
@@ -705,6 +702,3 @@ class PBWPercentage(ProgressBarWidget):
         current_pct = int(progress * 100 + 0.1)
         return RenderResult(rendered="%3d%%" % current_pct, next_progress=(current_pct + 1) / 100)
 
-
-# Initialize colorama
-colorama.init()

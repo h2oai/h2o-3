@@ -40,7 +40,7 @@
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
 #' in the environment before upgrading. It's recommended that users restart R or R studio after upgrading
-#' @seealso \href{http://docs.h2o.ai/h2o/latest-stable/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
+#' @seealso \href{https://docs.h2o.ai/h2o/latest-stable/h2o-r/h2o_package.pdf}{H2O R package documentation} for more details. \code{\link{h2o.shutdown}} for shutting down from R.
 #' @examples
 #' \dontrun{
 #' # Try to connect to a local H2O instance that is already running.
@@ -189,6 +189,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
+    else if (.h2o.__CLIENT_VERSION)
+      stop("Client version of the library cannot be used to start a local H2O instance. Use h2o.connect(ip=\"hostname\", port=number) instead.")
     else if (ip == "localhost" || ip == "127.0.0.1") {
       cat("\nH2O is not running yet, starting it now...\n")
       
@@ -308,7 +310,6 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 #' \dontrun{
 #' library(h2o)
 #' # Try to connect to a H2O instance running at http://localhost:54321/cluster_X
-#' # If not found, start a local H2O instance from R with the default settings.
 #' #h2o.connect(ip = "localhost", port = 54321, context_path = "cluster_X")
 #' # Or
 #' #config = list(ip = "localhost", port = 54321, context_path = "cluster_X")
@@ -333,7 +334,7 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
    do.call(h2o.init, c(startH2O=FALSE, config))
  } else {
    # Pass arguments directly
-   h2o.init(ip=ip, port=port, strict_version_check=strict_version_check,
+   h2o.init(ip=ip, port=port, startH2O=FALSE, strict_version_check=strict_version_check,
             proxy=proxy, https=https, cacert=cacert, insecure=insecure, password=password,
             username=username, use_spnego=use_spnego, cookies=cookies, context_path=context_path)
  }
@@ -348,7 +349,10 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
 h2o.getConnection <- function() {
   conn <- .attemptConnection()
   if (is.null(conn))
-    stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
+    if (.h2o.__CLIENT_VERSION)
+      stop("No active connection to an H2O cluster. Did you run `h2o.connect(ip=\"hostname\", port=number)` ?")
+    else
+      stop("No active connection to an H2O cluster. Did you run `h2o.init()` ?")
   conn
 }
 
@@ -457,6 +461,18 @@ h2o.clusterStatus <- function() {
   temp[,cnames]
 }
 
+#' Triggers auto-recovery resume - this will look into configured recovery dir and resume and
+#' tasks that were interrupted by unexpected cluster stopping.
+#'
+#' @param recovery_dir A \code{character} path to where cluster recovery data is stored, if blank, will use
+#'        cluster's configuration.
+#' @export
+h2o.resume <- function(recovery_dir=NULL) {
+  parms <- list()
+  parms$recovery_dir <- recovery_dir
+  invisible(.h2o.__remoteSend(.h2o.__RESUME, method = "POST", .params = parms))
+}
+
 #
 # Get a session ID at init
 .init.session_id <- function() {
@@ -468,39 +484,36 @@ h2o.clusterStatus <- function() {
 .h2o.pkg.path <- NULL
 .h2o.jar.env <- new.env()    # Dummy variable used to shutdown H2O when R exits
 
-.onLoad <- function(lib, pkg) {
-  .h2o.pkg.path <<- file.path(lib, pkg)
-
-  # installing RCurl requires curl and curl-config, which is typically separately installed
-  rcurl_package_is_installed = length(find.package("RCurl", quiet = TRUE)) > 0L
-  if(!rcurl_package_is_installed) {
-    if(.Platform$OS.type == "unix") {
-      # packageStartupMessage("Checking libcurl version...")
-      curl_path <- Sys.which("curl-config")
-      if(!nzchar(curl_path[[1L]]) || system2(curl_path, args = "--version") != 0L)
-        stop("libcurl not found. Please install libcurl\n",
-             "(version 7.14.0 or higher) from http://curl.haxx.se.\n",
-             "On Linux systems you will often have to explicitly install\n",
-             "libcurl-devel to have the header files and the libcurl library.")
-    }
-  }
-}
+# Note: Moved .onLoad() to zzz.R
 
 .onAttach <- function(libname, pkgname) {
   msg = paste0(
     "\n",
     "----------------------------------------------------------------------\n",
-    "\n",
-    "Your next step is to start H2O:\n",
-    "    > h2o.init()\n",
+    "\n")
+
+  if (.h2o.__CLIENT_VERSION)
+    msg = paste0(msg, "Your next step is to connect to H2O:\n", "    > h2o.connect(ip=\"hostname\", port=number)\n")
+  else
+    msg = paste0(msg, "Your next step is to start H2O:\n", "    > h2o.init()\n")
+
+  msg = paste0(
+    msg,
     "\n",
     "For H2O package documentation, ask for help:\n",
     "    > ??h2o\n",
-    "\n",
-    "After starting H2O, you can use the Web UI at http://localhost:54321\n",
-    "For more information visit https://docs.h2o.ai\n",
-    "\n",
-    "----------------------------------------------------------------------\n")
+    "\n")
+
+    if (!.h2o.__CLIENT_VERSION)
+      msg = paste0(
+        msg,
+        "After starting H2O, you can use the Web UI at http://localhost:54321\n",
+        "For more information visit https://docs.h2o.ai\n")
+
+    msg = paste0(
+      msg,
+      "\n",
+      "----------------------------------------------------------------------\n")
   packageStartupMessage(msg)
 
   # Shut down local H2O when user exits from R ONLY if h2o started from R
@@ -600,12 +613,12 @@ h2o.clusterStatus <- function() {
   if (!is.null(jver_error)) {
     stop(jver_error, "\n",
     "Please download the latest Java SE JDK from the following URL:\n",
-    "https://www.oracle.com/technetwork/java/javase/downloads/index.html")
+    "http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements")
   }
   if(any(grepl("Client VM", jver))) {
     warning("You have a 32-bit version of Java. H2O works best with 64-bit Java.\n",
             "Please download the latest Java SE JDK from the following URL:\n",
-            "https://www.oracle.com/technetwork/java/javase/downloads/index.html")
+            "http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements")
 
     # Set default max_memory to be 1g for 32-bit JVM.
     if(is.null(max_memory)) max_memory = "1g"
@@ -633,8 +646,12 @@ h2o.clusterStatus <- function() {
   if(enable_assertions) args <- c(args, "-ea")
   if(!is.null(jvm_custom_args)) args <- c(args,jvm_custom_args)
 
-  class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
-  args <- c(args, "-cp", class_path, "water.H2OApp")
+  if (!is.null(extra_classpath)) {
+    class_path <- paste0(c(jar_file, extra_classpath), collapse=.Platform$path.sep)
+    args <- c(args, "-cp", class_path, "water.H2OApp")
+  } else {
+    args <- c(args, "-jar", jar_file)
+  }
   args <- c(args, "-name", name)
   args <- c(args, "-ip", ip)
   if (bind_to_localhost) {
@@ -649,6 +666,7 @@ h2o.clusterStatus <- function() {
 
   if(nthreads > 0L) args <- c(args, "-nthreads", nthreads)
   if(!is.null(license)) args <- c(args, "-license", license)
+  args <- c(args, "-allow_unsupported_java")
 
   cat("\n")
   cat(        "Note:  In case of errors look at the following log files:\n")
@@ -728,7 +746,10 @@ h2o.clusterStatus <- function() {
 # or it calls stop() and does not return.
 #
 # It will download a jar file if it needs to.
+#' @importFrom utils flush.console
 .h2o.downloadJar <- function(overwrite = FALSE) {
+  old_options <- options(timeout = max(1000, getOption("timeout")))
+  on.exit(options(old_options))
   if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
 
   # PUBDEV-3534 hook to use arbitrary h2o.jar
@@ -796,12 +817,8 @@ h2o.clusterStatus <- function() {
     # Get MD5 checksum
     md5_url <- paste("https:/", base_url, "h2o.jar.md5", sep = "/")
   }
-  # ttt <- getURLContent(md5_url, binary = FALSE)
-  # tcon <- textConnection(ttt)
-  # md5_check <- readLines(tcon, n = 1)
-  # close(tcon)
   md5_file <- tempfile(fileext = ".md5")
-  download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
+  download.file(url = md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
   md5_check <- readLines(md5_file, n = 1L)
   if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
   unlink(md5_file)
@@ -811,6 +828,7 @@ h2o.clusterStatus <- function() {
   cat("Performing one-time download of h2o.jar from\n")
   cat("    ", h2o_url, "\n")
   cat("(This could take a few minutes, please be patient...)\n")
+  flush.console()
   download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
 
   # Apply sanity checks

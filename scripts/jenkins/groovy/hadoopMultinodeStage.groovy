@@ -1,7 +1,7 @@
 def call(final pipelineContext, final stageConfig) {
     def branch = env.BRANCH_NAME.replaceAll("\\/", "-")
     def buildId = env.BUILD_ID
-    def workDir = "/user/jenkins/workspaces/$branch"
+    def workDir = "/user/jenkins/workspaces/multinode-$branch"
     withCredentials([
             usernamePassword(credentialsId: 'mr-0xd-admin-credentials', usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD'),
             usernamePassword(credentialsId: 'kerberos-credentials', usernameVariable: 'KRB_USERNAME', passwordVariable: 'KRB_PASSWORD')
@@ -36,7 +36,9 @@ def call(final pipelineContext, final stageConfig) {
             hdfs dfs -rm -r -f $workDir
             hdfs dfs -mkdir -p $workDir
             export HDFS_WORKSPACE=$workDir
-    
+            export NAME_NODE=${stageConfig.customData.nameNode}.0xdata.loc
+            export HIVE_HOST=${stageConfig.customData.hiveHost}
+
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target} check-leaks
         """
@@ -62,7 +64,7 @@ def call(final pipelineContext, final stageConfig) {
 }
 
 private GString downloadConfigsScript(Map config) {
-    def apiBase = "http://${config.nameNode}.0xdata.loc:8080/api/v1/clusters/${config.hdpName}/services"
+    def apiBase = "http://${config.configSource}.0xdata.loc:8080/api/v1/clusters/${config.hdpName}/services"
     def krbScript = ""
     if (config.krb) {
         krbScript = """
@@ -106,8 +108,6 @@ private GString startH2OScript(final config, final branch, final buildId) {
     return """
             rm -fv h2o_one_node h2odriver.log
             hdfs dfs -rm -r -f ${cloudingDir}
-            export NAME_NODE=${config.nameNode}.0xdata.loc
-            export HIVE_HOST=${config.hiveHost}
             HIVE_JDBC_JAR=\$(find /usr/hdp/current/hive-client/lib/ | grep -E 'jdbc.*standalone.*jar')
             export HADOOP_CLASSPATH=\$HIVE_JDBC_JAR
             hadoop jar h2o-hadoop-*/h2o-${config.distribution}${config.version}-assembly/build/libs/h2odriver.jar \\
@@ -142,7 +142,7 @@ private String getKillScript() {
         if [ -f h2o_one_node ]; then
             YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
         elif [ -f h2odriver.log ]; then
-            YARN_APPLICATION_ID=\$(cat h2odriver.log | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\\1/')
+            YARN_APPLICATION_ID=\$(cat h2odriver.log | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\\1/' | head -n 1)
         fi
         if [ "\$YARN_APPLICATION_ID" != "" ]; then
             echo "YARN Application ID is \${YARN_APPLICATION_ID}"

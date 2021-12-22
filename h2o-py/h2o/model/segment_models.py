@@ -22,6 +22,7 @@ class H2OSegmentModels(Keyed):
     :param segment_models_id: identifier of this collection of Segment Models
 
     :example:
+    
     >>> segment_models = h2o.model.segment_models.H2OSegmentModels(segment_models_id="my_sm_id")
     >>> segment_models.as_frame()
     """

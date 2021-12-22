@@ -33,7 +33,5 @@ def h2o_H2OFrame_num_valid_substrings():
         else:
             assert False, "h2o.H2OFrame.num_valid_substrings() contains only one argument, path_to_words!"
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_num_valid_substrings())
-else:
-    h2o_H2OFrame_num_valid_substrings()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_num_valid_substrings)

@@ -1,7 +1,7 @@
 ``sample_rate_per_class``
 -------------------------
 
-- Available in: GBM, DRF 
+- Available in: GBM, DRF, Uplift DRF
 - Hyperparameter: yes
 
 Description

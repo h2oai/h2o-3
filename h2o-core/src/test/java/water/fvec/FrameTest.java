@@ -24,7 +24,7 @@ import static water.TestUtil.*;
  * Tests for Frame.java
  */
 @RunWith(H2ORunner.class)
-@CloudSize(2)
+@CloudSize(1)
 public class FrameTest {
   
   @Rule
@@ -63,7 +63,7 @@ public class FrameTest {
     Set<Vec> removedVecs = new HashSet<>();
 
     try {
-      Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+      Frame testData = parseTestFile(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
       Scope.track(testData);
 
       // dataset to split
@@ -91,13 +91,13 @@ public class FrameTest {
   @Test public void testDeepSelectSparse() {
     Scope.enter();
     // dataset to split
-    Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+    Frame testData = parseTestFile(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
     // premade splits from R
-    Frame subset1 = parse_test_file(Key.make("test_deep_select_2"), "smalldata/sparse/data_split_1.svm.zip");
+    Frame subset1 = parseTestFile(Key.make("test_deep_select_2"), "smalldata/sparse/data_split_1.svm.zip");
     // subset2 commented out to save time
-//    Frame subset2 = parse_test_file(Key.make("test_deep_select_3"),"smalldata/sparse/data_split_2.svm");
+//    Frame subset2 = parseTestFile(Key.make("test_deep_select_3"),"smalldata/sparse/data_split_2.svm");
     // predicates (0: runif 1:runif < .5 2: runif >= .5
-    Frame rnd = parse_test_file(Key.make("test_deep_select_4"), "smalldata/sparse/rnd_r.csv");
+    Frame rnd = parseTestFile(Key.make("test_deep_select_4"), "smalldata/sparse/rnd_r.csv");
     Frame x = null;
     Frame y = null;
     try {
@@ -445,6 +445,63 @@ public class FrameTest {
       try (Frame.CSVStream stream = (Frame.CSVStream) fr.toCSV(parms_no_quotes)) {
         String firstLine = IOUtils.lineIterator(stream, Charset.defaultCharset()).nextLine();
         assertEquals("col_0,col_1,col_2,col_3", firstLine);
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testWriteAll() { // shows that writeAll/readAll creates new keys for the Vecs of the imported frame
+    Scope.enter();
+    try {
+      Frame fr = TestFrameCatalog.oneChunkFewRows();
+      Key<Vec>[] origVecKeys = fr.keys().clone();
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      try (AutoBuffer ab = new AutoBuffer(baos, true)) {
+        fr.writeAll(ab);
+      }
+      byte[] frBytes = baos.toByteArray();
+      assertNotNull(frBytes);
+      fr.delete();
+      for (Key<Vec> k : origVecKeys) {
+        assertNull(DKV.get(k));
+      }
+      try (AutoBuffer ab = new AutoBuffer(new ByteArrayInputStream(frBytes))) {
+        Frame reloaded = (Frame) Frame.readAll(ab);
+        Frame frCopy = TestFrameCatalog.oneChunkFewRows();
+        assertFrameEquals(frCopy, reloaded, 0);
+        for (int i = 0; i < origVecKeys.length; i++) { // all Vecs were re-keyed
+          assertNotEquals(origVecKeys[i], frCopy.vec(i)._key);
+        }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testToCSVEscapedQuotes() throws Exception {
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+              .withColNames("Name", "Description", "Location")
+              .withVecTypes(Vec.T_STR, Vec.T_STR, Vec.T_CAT) // One column is categorical intentionally
+              .withDataForCol(0, ar("Panam Palmer", "Judy Alvarez"))
+              .withDataForCol(1, ar("\"The Aldecaldos\" is her tribe", "Queen of \"braindances\""))
+              .withDataForCol(2, ar("Outside of Night City (\"Badlands\")", "Inside the Night City (\"Lizzie's bar\")")) // Notice the single quote there to test it's not escaped
+              .build();
+
+      // The default CSVStreamParams are used intentionally, as all strings and enums should be quoted
+      // by default
+      try (final InputStream csvStream = frame.toCSV(new Frame.CSVStreamParams())) {
+        final String csv = IOUtils.toString(csvStream);
+        assertNotNull(csv);
+        
+        final String expectedOutput= "\"Name\",\"Description\",\"Location\"\n" +
+                "\"Panam Palmer\",\"\"\"The Aldecaldos\"\" is her tribe\",\"Outside of Night City (\"\"Badlands\"\")\"\n" +
+                "\"Judy Alvarez\",\"Queen of \"\"braindances\"\"\",\"Inside the Night City (\"\"Lizzie's bar\"\")\"\n";
+        assertEquals(expectedOutput, csv);
       }
     } finally {
       Scope.exit();

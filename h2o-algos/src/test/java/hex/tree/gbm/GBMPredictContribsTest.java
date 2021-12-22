@@ -33,7 +33,7 @@ public class GBMPredictContribsTest extends TestUtil {
   public void testPredictContribsGaussian() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._distribution = gaussian;
@@ -65,7 +65,7 @@ public class GBMPredictContribsTest extends TestUtil {
   public void testScoreContributionsGaussian() throws IOException, PredictException  {
     try {
       Scope.enter();
-      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      Frame fr = Scope.track(parseTestFile("smalldata/junit/titanic_alt.csv"));
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._distribution = gaussian;
@@ -124,12 +124,12 @@ public class GBMPredictContribsTest extends TestUtil {
     @Override
     protected void setupLocal() {
       SharedTreeSubgraph tree = _model.getSharedTreeSubgraph(_tree, 0);
-      _nodes = tree.nodesArray.toArray(new SharedTreeNode[0]);
+      _nodes = tree.getNodes();
     }
 
     @Override
     public void map(Chunk[] cs) {
-      final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes, _nodes, 0);
+      final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes);
       final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0);
 
       final double[] row = MemoryManager.malloc8d(cs.length);
@@ -151,7 +151,7 @@ public class GBMPredictContribsTest extends TestUtil {
         Assert.assertEquals(expValPred, contribPred, 1e-6);
 
         // compare naive and actual contributions
-        Assert.assertArrayEquals(naiveContribs, ArrayUtils.toDouble(contribs), 1e-6);
+        Assert.assertArrayEquals(naiveContribs, ArrayUtils.toDouble(contribs), 1e-5);
       }
     }
   }

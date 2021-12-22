@@ -19,9 +19,17 @@ test.h2o.retain <- function() {
   h2o.removeAll(retained_elements = c(data, model))
   expect_false(is.null(h2o.getFrame(h2o.getId(data))))
   expect_false(is.null(h2o.getModel(model@model_id)))
-  
+
+  h2o.removeAll(retained_elements = c(h2o.getId(data), model@model_id))
+  expect_false(is.null(h2o.getFrame(h2o.getId(data))))
+  expect_false(is.null(h2o.getModel(model@model_id)))
+
+  h2o.removeAll(retained_elements = c(data, model@model_id))
+  expect_false(is.null(h2o.getFrame(h2o.getId(data))))
+  expect_false(is.null(h2o.getModel(model@model_id)))
+
   h2o.removeAll()
-  
+  expect_equal(length(h2o.ls()$key), 0)
 }
 
 doTest("Test h2o.retain", test.h2o.retain)

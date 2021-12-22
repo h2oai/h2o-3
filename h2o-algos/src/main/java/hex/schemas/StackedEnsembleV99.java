@@ -2,8 +2,10 @@ package hex.schemas;
 
 import com.google.gson.reflect.TypeToken;
 import hex.ensemble.Metalearner.Algorithm;
+import hex.ensemble.Metalearners;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
+import hex.naivebayes.NaiveBayesModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.drf.DRFModel;
 import hex.deeplearning.DeepLearningModel;
@@ -15,6 +17,7 @@ import water.Key;
 import water.Value;
 import water.api.API;
 import water.api.EnumValuesProvider;
+import water.api.Schema;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.FrameV3;
@@ -22,6 +25,7 @@ import water.api.schemas3.FrameV3;
 import com.google.gson.Gson;
 import water.fvec.Frame;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,13 +47,15 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_fold_assignment",
       "metalearner_fold_column",
       "metalearner_params",
+      "metalearner_transform",
       "max_runtime_secs",
       "weights_column",
       "offset_column",
       "seed",
       "score_training_samples",
       "keep_levelone_frame",
-      "export_checkpoints_dir"
+      "export_checkpoints_dir", 
+      "auc_type"
     };
 
     public static class AlgorithmValuesProvider extends EnumValuesProvider<Algorithm> {
@@ -98,6 +104,12 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
             is_mutually_exclusive_with = {"ignored_columns", "response_column"},
             help = "Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.")
     public FrameV3.ColSpecifierV3 metalearner_fold_column;
+
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+            help = "Transformation used for the level one frame.",
+            values = {"NONE", "Logit"}
+    )
+    public StackedEnsembleModel.StackedEnsembleParameters.MetalearnerTransform metalearner_transform;
 
     @API(level = API.Level.secondary,
             help = "Keep level one frame used for metalearner training.")
@@ -148,32 +160,8 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           }
         }
         
-        ModelParametersSchemaV3 paramsSchema;
-        Model.Parameters params;
-        switch (metalearner_algorithm) {
-          case AUTO:
-          case glm:
-            paramsSchema = new GLMV3.GLMParametersV3();
-            params = new GLMModel.GLMParameters();
-            // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
-            // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
-            ((GLMModel.GLMParameters) params)._family = null;
-            break;
-          case gbm:
-            paramsSchema = new GBMV3.GBMParametersV3();
-            params = new GBMModel.GBMParameters();
-            break;
-          case drf:
-            paramsSchema = new DRFV3.DRFParametersV3();
-            params = new DRFModel.DRFParameters();
-            break;
-          case deeplearning:
-            paramsSchema = new DeepLearningV3.DeepLearningParametersV3();
-            params = new DeepLearningModel.DeepLearningParameters();
-            break;
-          default:
-            throw new UnsupportedOperationException("Unknown meta-learner algo: " + metalearner_algorithm);
-        }
+        Schema paramsSchema = Metalearners.createParametersSchema(metalearner_algorithm.name());
+        Model.Parameters params = Metalearners.createParameters(metalearner_algorithm.name());
         
         paramsSchema.init_meta();
         impl._metalearner_parameters = (Model.Parameters) paramsSchema

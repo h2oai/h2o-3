@@ -22,7 +22,7 @@ test.s3.credentials <- function() {
         expect_true(FALSE)
       }, error = function(e){
         msg <- e$message
-        grepl(msg, "The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId;")
+        grepl("The AWS Access Key Id you provided does not exist in our records\\. \\(Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId", msg)
       }
     )
     

@@ -22,7 +22,4 @@ def h2o_H2OFrame_isin():
         + cars.isin(6)).all()
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_isin())
-else:
-    h2o_H2OFrame_isin()
+pyunit_utils.standalone_test(h2o_H2OFrame_isin)

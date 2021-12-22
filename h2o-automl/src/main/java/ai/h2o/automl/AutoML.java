@@ -3,21 +3,25 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.StepResultState.ResultStatus;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
-import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.leaderboard.*;
 import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
+import hex.genmodel.utils.DistributionFamily;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
+import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
@@ -32,7 +36,7 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
 /**
  * H2O AutoML
  *
- * AutoML  is used for automating the machine learning workflow, which includes automatic training and
+ * AutoML is used for automating the machine learning workflow, which includes automatic training and
  * tuning of many models within a user-specified time-limit. Stacked Ensembles will be automatically
  * trained on collections of individual models to produce highly predictive ensemble models which, in most cases,
  * will be the top performing models in the AutoML Leaderboard.
@@ -41,29 +45,18 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public enum Constraint {
     MODEL_COUNT,
-    TIMEOUT
+    TIMEOUT,
+    FAILURE_COUNT,
   }
 
   public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
   public static final String keySeparator = "@@";
+  
+  private static final int DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES = 10; 
 
-  private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
-  private final static ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
-
-  private static StepDefinition[] defaultModelingPlan = {
-          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
-          new StepDefinition(Algo.GLM.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
-          new StepDefinition(Algo.GBM.name(), Alias.defaults),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
-          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), Alias.grids),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
-          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
-          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
-  };
+  private static final boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
+  private static final ThreadLocal<SimpleDateFormat> timestampFormatForKeys = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HHmmss"));
+  private static final Logger log = LoggerFactory.getLogger(AutoML.class);
 
   private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
     final Key<AutoML> amlKey = automl._key;
@@ -72,16 +65,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       @Override
       public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
+        ModelingStep step = aml.session().getModelingStep(model.getKey());
         return new LeaderboardCell[] {
                 new TrainingTime(model),
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
 //                new ModelSize(model._key)
+                new AlgoName(model),
+                new ModelProvider(model, step),
+                new ModelStep(model, step),
+                new ModelGroup(model, step),
         };
       }
     };
   }
 
-  private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   /**
    * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
    *
@@ -89,49 +86,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
    * @return a new running AutoML instance.
    */
   public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
-    Date startTime = new Date();  // this is the one and only startTime for this run
-
-    synchronized (AutoML.class) {
-      // protect against two runs whose startTime is the same second
-      if (lastStartTime != null) {
-        while (Math.abs(lastStartTime.getTime() - startTime.getTime()) < 1e3 ) {
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException ignored) {}
-          startTime = new Date();
-        }
-      }
-      lastStartTime = startTime;
-    }
-
-    AutoML aml = new AutoML(startTime, buildSpec);
-    startAutoML(aml);
+    AutoML aml = new AutoML(buildSpec);
+    aml.submit();
     return aml;
-  }
-
-  /**
-   * Takes in an AutoML instance and starts running it. Progress can be tracked via its job().
-   * @param aml
-   * @deprecated Prefer {@link #startAutoML(AutoMLBuildSpec)} instead.
-   */
-  public static void startAutoML(AutoML aml) {
-    // Currently AutoML can only run one job at a time
-    if (aml._job == null || !aml._job.isRunning()) {
-      H2OJob<AutoML> j = new H2OJob<>(aml, aml._key, aml._runCountdown.remainingTime());
-      aml._job = j._job;
-      aml.eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(aml._startTime))
-              .setNamedValue("creation_epoch", aml._startTime, EventLogEntry.epochFormat.get());
-      j.start(aml._workAllocations.remainingWork());
-      DKV.put(aml);
-    }
-  }
-
-  /**
-   * @deprecated : Please use {@link #AutoML(Key, Date, AutoMLBuildSpec)} constructor instead
-   */
-  @Deprecated
-  public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
-    return new AutoML(key, startTime, buildSpec);
   }
 
   @Override
@@ -153,6 +110,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return _foldColumn; }
   public Vec getWeightsColumn() { return _weightsColumn; }
 
+  public DistributionFamily getDistributionFamily() {
+    return _distributionFamily;
+  }
+
+  public double[] getClassDistribution() {
+    if (_classDistribution == null)
+      _classDistribution = (new MRUtils.ClassDist(_responseColumn)).doAll(_responseColumn).dist();
+    return _classDistribution;
+  }
+
   public StepDefinition[] getActualModelingSteps() { return _actualModelingSteps; }
 
   Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place.
@@ -164,17 +131,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Vec _foldColumn;
   Vec _weightsColumn;
 
+  DistributionFamily _distributionFamily;
+  private double[] _classDistribution;
+
   Date _startTime;
   Countdown _runCountdown;
   Job<AutoML> _job;                  // the Job object for the build of this AutoML.
   WorkAllocations _workAllocations;
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
+  int _maxConsecutiveModelFailures = DEFAULT_MAX_CONSECUTIVE_MODEL_FAILURES;
+  AtomicInteger _consecutiveModelFailures = new AtomicInteger();
   AtomicLong _incrementalSeed = new AtomicLong();
-  private NonBlockingHashMap<String, AtomicInteger> _instanceCounters = new NonBlockingHashMap<>();
+  private String _runId;
 
-  private ModelingStepsRegistry _modelingStepsRegistry;
   private ModelingStepsExecutor _modelingStepsExecutor;
+  private AutoMLSession _session;
   private Leaderboard _leaderboard;
   private EventLog _eventLog;
 
@@ -186,30 +158,51 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
 
+  /**
+   * DO NOT USE explicitly: for schema/reflection only.
+   */
   public AutoML() {
     super(null);
   }
 
+  public AutoML(AutoMLBuildSpec buildSpec) {
+    this(new Date(), buildSpec);
+  }
+  
+  public AutoML(Key<AutoML> key, AutoMLBuildSpec buildSpec) {
+    this(key, new Date(), buildSpec);
+  }
+
+  /**
+   * @deprecated use {@link #AutoML(AutoMLBuildSpec) instead}
+   */
+  @Deprecated
   public AutoML(Date startTime, AutoMLBuildSpec buildSpec) {
     this(null, startTime, buildSpec);
   }
+
+  /**
+   * @deprecated use {@link #AutoML(Key, AutoMLBuildSpec) instead}
+   */
+  @Deprecated
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key == null ? buildSpec.makeKey() : key);
     try {
       _startTime = startTime;
+      _session = AutoMLSession.getInstance(_key.toString());
       _eventLog = EventLog.getOrMake(_key);
       eventLog().info(Stage.Workflow, "Project: "+buildSpec.project());
 
       validateBuildSpec(buildSpec);
       _buildSpec = buildSpec;
       // now that buildSpec is validated, we can assign it: all future logic can now safely access parameters through _buildSpec.
+      _runId = _buildSpec.instanceId();
       _runCountdown = Countdown.fromSeconds(_buildSpec.build_control.stopping_criteria.max_runtime_secs());
       _incrementalSeed.set(_buildSpec.build_control.stopping_criteria.seed());
 
       prepareData();
       initLeaderboard();
       initPreprocessing();
-      planWork();
       _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -304,11 +297,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (modelBuilding.exclude_algos != null && modelBuilding.include_algos != null) {
       throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
     }
-    if (modelBuilding.exploitation_ratio < 0 || modelBuilding.exploitation_ratio > 1) {
+    if (modelBuilding.exploitation_ratio > 1) {
       throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
     }
     if (modelBuilding.modeling_plan == null) {
-      modelBuilding.modeling_plan = defaultModelingPlan;
+      modelBuilding.modeling_plan = ModelingPlans.defaultPlan();
     }
   }
 
@@ -359,7 +352,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   ModelingStep[] getExecutionPlan() {
-    return _executionPlan == null ? (_executionPlan = _modelingStepsRegistry.getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+    return _executionPlan == null ? (_executionPlan = session().getModelingStepsRegistry().getOrderedSteps(_buildSpec.build_models.modeling_plan, this)) : _executionPlan;
+  }
+  
+  void setModelingPlan(StepDefinition[] modelingPlan) {
+    _buildSpec.build_models.modeling_plan = modelingPlan;
   }
   
   void planWork() {
@@ -383,7 +380,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
 
-    _modelingStepsRegistry = new ModelingStepsRegistry();
     WorkAllocations workAllocations = new WorkAllocations();
     for (ModelingStep step: getExecutionPlan()) {
       workAllocations.allocate(step.makeWork());
@@ -400,6 +396,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
+    if (_buildSpec.build_models.exploitation_ratio < 0) return;
     int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
     int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
     double explorationRatio = 1 - _buildSpec.build_models.exploitation_ratio;
@@ -414,15 +411,34 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+  /**
+   * Creates a job for the current AutoML instance and submits it to the task runner.
+   * Calling this on an already running AutoML instance has no effect.
+   */
+  public void submit() {
+    if (_job == null || !_job.isRunning()) {
+      planWork();
+      H2OJob<AutoML> j = new H2OJob<>(this, _key, _runCountdown.remainingTime());
+      _job = j._job;
+      eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.get().format(_startTime))
+              .setNamedValue("creation_epoch", _startTime, EventLogEntry.epochFormat.get());
+      j.start(_workAllocations.remainingWork());
+      DKV.put(this);
+    }
+  }
+
   @Override
   public void run() {
     _modelingStepsExecutor.start();
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.get().format(_runCountdown.start_time()))
             .setNamedValue("start_epoch", _runCountdown.start_time(), EventLogEntry.epochFormat.get());
-    learn();
-    stop();
+    try {
+      learn();
+    } finally {
+      stop();
+    }
   }
-
+  
   @Override
   public void stop() {
     if (null == _modelingStepsExecutor) return; // already stopped
@@ -433,12 +449,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     eventLog().info(Stage.Workflow, "AutoML duration: "+ PrettyPrint.msecs(_runCountdown.duration(), true))
             .setNamedValue("duration_secs", Math.round(_runCountdown.duration() / 1000.));
 
-    Log.info(eventLog().toString("Event Log for AutoML Run " + _key + ":"));
+    log.info("AutoML run summary:");
     for (EventLogEntry event : eventLog()._events)
-      Log.info(event);
-
+      log.info(event.toString());
     if (0 < leaderboard().getModelKeys().length) {
-      Log.info(leaderboard().toLogString());
+      log.info(leaderboard().toLogString());
     } else {
       long max_runtime_secs = (long)_buildSpec.build_control.stopping_criteria.max_runtime_secs();
       eventLog().warn(Stage.Workflow, "Empty leaderboard.\n"
@@ -446,6 +461,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
               +"you may want to increase this value before retrying.");
     }
 
+    session().detach();
     possiblyVerifyImmutability();
     if (!_buildSpec.build_control.keep_cross_validation_predictions) {
       cleanUpModelsCVPreds();
@@ -466,6 +482,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public Model leader() {
     return leaderboard() == null ? null : _leaderboard.getLeader();
+  }
+  
+  public AutoMLSession session() {
+    _session = _session == null ? null : _session._key.get();
+    if (_session != null) _session.attach(this, false);
+    return _session;
   }
 
   public Leaderboard leaderboard() {
@@ -498,7 +520,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public boolean isCVEnabled() {
     return _buildSpec.build_control.nfolds > 0 || _buildSpec.input_spec.fold_column != null;
   }
-
+  
 
   //*****************  Data Preparation Section  *****************//
 
@@ -525,15 +547,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       if (splitRatios != null) {
         Key[] keys = new Key[] {
-            Key.make("automl_training_"+ _origTrainingFrame._key),
-            Key.make("automl_validation_"+ _origTrainingFrame._key),
-            Key.make("automl_leaderboard_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_training_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_validation_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_leaderboard_"+ _origTrainingFrame._key),
         };
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
-                _origTrainingFrame,
-            keys,
-            splitRatios,
-            _buildSpec.build_control.stopping_criteria.seed()
+                _origTrainingFrame, 
+                keys, 
+                splitRatios, 
+                _buildSpec.build_control.stopping_criteria.seed()
         );
         _trainingFrame = splits[0];
 
@@ -551,6 +573,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
     }
   }
+
+  private DistributionFamily inferDistribution(Vec response) {
+    int numOfDomains = response.domain() == null ? 0 : response.domain().length;
+    if (numOfDomains == 0)
+      return DistributionFamily.gaussian;
+    if (numOfDomains == 2)
+      return DistributionFamily.bernoulli;
+    if (numOfDomains > 2)
+      return DistributionFamily.multinomial;
+
+    throw new RuntimeException("Number of domains is equal to 1.");
+  }
+
   private void prepareData() {
     final AutoMLInput input = _buildSpec.input_spec;
     _origTrainingFrame = DKV.getGet(input.training_frame);
@@ -565,13 +600,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       // but cloning to keep an internal ref just in case the original ref gets deleted from client side
       // (can occur in some corner cases with Python GC for example if frame get's out of scope during an AutoML rerun)
       _trainingFrame = new Frame(_origTrainingFrame);
-      _trainingFrame._key = Key.make("automl_training_" + _origTrainingFrame._key);
+      _trainingFrame._key = Key.make(_runId+"_training_" + _origTrainingFrame._key);
       DKV.put(_trainingFrame);
     }
 
     _responseColumn = _trainingFrame.vec(input.response_column);
     _foldColumn = _trainingFrame.vec(input.fold_column);
     _weightsColumn = _trainingFrame.vec(input.weights_column);
+
+    _distributionFamily = inferDistribution(_responseColumn);
 
     eventLog().info(Stage.DataImport,
         "training frame: "+_trainingFrame.toString().replace("\n", " ")+" checksum: "+_trainingFrame.checksum());
@@ -613,44 +650,47 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   //*****************  Training Jobs  *****************//
 
   private void learn() {
-    List<ModelingStep> executed = new ArrayList<>();
+    List<ModelingStep> completed = new ArrayList<>();
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.prepare();
     }
     for (ModelingStep step : getExecutionPlan()) {
-        if (!exceededSearchLimits(step)) {
-          if (_modelingStepsExecutor.submit(step, job())) {
-            executed.add(step);
+      if (!exceededSearchLimits(step)) {
+        StepResultState state = _modelingStepsExecutor.submit(step, job());
+        log.info("AutoML step returned with state: "+state.toString());
+        if (state.is(ResultStatus.success)) {
+          _consecutiveModelFailures.set(0);
+          completed.add(step);
+        } else if (state.is(ResultStatus.failed)) {
+          if (!step.ignores(Constraint.FAILURE_COUNT) 
+                  && _consecutiveModelFailures.incrementAndGet() >= _maxConsecutiveModelFailures) {
+            throw new H2OAutoMLException("Aborting AutoML after too many consecutive model failures", state.error());
+          }
+          if (state.error() instanceof H2OAutoMLException) { // if a step throws this exception, this will immediately abort the entire AutoML run.
+            throw (H2OAutoMLException) state.error();
           }
         }
+      }
     }
     if (_preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) preprocessingStep.dispose();
     }
-    _actualModelingSteps = _modelingStepsRegistry.createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
+    _actualModelingSteps = session().getModelingStepsRegistry().createDefinitionPlanFromSteps(completed.toArray(new ModelingStep[0]));
     eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
   }
 
-
-  private int nextInstanceCounter(String algoName, String type) {
-    String key = algoName+"_"+type;
-    if (!_instanceCounters.containsKey(key)) {
-      synchronized (_instanceCounters) {
-        if (!_instanceCounters.containsKey(key))
-          _instanceCounters.put(key, new AtomicInteger(0));
-      }
-    }
-    return _instanceCounters.get(key).incrementAndGet();
-  }
-
   public Key makeKey(String algoName, String type, boolean with_counter) {
-    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, type) : "";
-    String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
-    return Key.make(prefix + counterStr + "_AutoML_" + timestampFormatForKeys.get().format(_startTime));
+    List<String> tokens = new ArrayList<>();
+    tokens.add(algoName);
+    if (!StringUtils.isNullOrEmpty(type)) tokens.add(type);
+    if (with_counter) tokens.add(Integer.toString(session().nextModelCounter(algoName, type)));
+    tokens.add(_runId);
+    return Key.make(String.join("_", tokens));
   }
 
-  public void trackKey(Key key) {
-    _trackedKeys.put(key, Arrays.toString(Thread.currentThread().getStackTrace()));
+  public void trackKeys(Key... keys) {
+    String whereFrom = Arrays.toString(Thread.currentThread().getStackTrace());
+    for (Key key : keys) _trackedKeys.put(key, whereFrom);
   }
 
   private boolean exceededSearchLimits(ModelingStep step) {
@@ -659,12 +699,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       return true;
     }
 
-    if (!ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT) && _runCountdown.timedOut()) {
+    if (!step.ignores(Constraint.TIMEOUT) && _runCountdown.timedOut()) {
       eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: out of time; skipping "+step._description);
       return true;
     }
 
-    if (!ArrayUtils.contains(step._ignoredConstraints, Constraint.MODEL_COUNT) && remainingModels() <= 0) {
+    if (!step.ignores(Constraint.MODEL_COUNT) && remainingModels() <= 0) {
       eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+step._description);
       return true;
     }
@@ -679,7 +719,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     Key<Job> jobKey = _job == null ? null : _job._key;
-    Log.debug("Cleaning up AutoML "+jobKey);
+    log.debug("Cleaning up AutoML "+jobKey);
     if (_buildSpec != null) {
       // If the Frame was made here (e.g. buildspec contained a path, then it will be deleted
       if (_buildSpec.input_spec.training_frame == null && _origTrainingFrame != null) {
@@ -696,6 +736,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Frame.deleteTempFrameAndItsNonSharedVecs(_trainingFrame, _origTrainingFrame);
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
+    if (session() != null) session().remove(fs, cascade);
     if (cascade && _preprocessing != null) {
       for (PreprocessingStep preprocessingStep : _preprocessing) {
         preprocessingStep.remove();
@@ -717,29 +758,29 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       String[] namesRightNow = _origTrainingFrame.names();
 
       if (_originalTrainingFrameVecs.length != vecsRightNow.length) {
-        Log.warn("Training frame vec count has changed from: " +
+        log.warn("Training frame vec count has changed from: " +
                 _originalTrainingFrameVecs.length + " to: " + vecsRightNow.length);
         warning = true;
       }
       if (_originalTrainingFrameNames.length != namesRightNow.length) {
-        Log.warn("Training frame vec count has changed from: " +
+        log.warn("Training frame vec count has changed from: " +
                 _originalTrainingFrameNames.length + " to: " + namesRightNow.length);
         warning = true;
       }
 
       for (int i = 0; i < _originalTrainingFrameVecs.length; i++) {
         if (!_originalTrainingFrameVecs[i].equals(vecsRightNow[i])) {
-          Log.warn("Training frame vec number " + i + " has changed keys.  Was: " +
+          log.warn("Training frame vec number " + i + " has changed keys.  Was: " +
                   _originalTrainingFrameVecs[i] + " , now: " + vecsRightNow[i]);
           warning = true;
         }
         if (!_originalTrainingFrameNames[i].equals(namesRightNow[i])) {
-          Log.warn("Training frame vec number " + i + " has changed names.  Was: " +
+          log.warn("Training frame vec number " + i + " has changed names.  Was: " +
                   _originalTrainingFrameNames[i] + " , now: " + namesRightNow[i]);
           warning = true;
         }
         if (_originalTrainingFrameChecksums[i] != vecsRightNow[i].checksum()) {
-          Log.warn("Training frame vec number " + i + " has changed checksum.  Was: " +
+          log.warn("Training frame vec number " + i + " has changed checksum.  Was: " +
                   _originalTrainingFrameChecksums[i] + " , now: " + vecsRightNow[i].checksum());
           warning = true;
         }
@@ -758,7 +799,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void cleanUpModelsCVPreds() {
-    Log.info("Cleaning up all CV Predictions for AutoML");
+    log.info("Cleaning up all CV Predictions for AutoML");
     for (Model model : leaderboard().getModels()) {
         model.deleteCrossValidationPreds();
     }

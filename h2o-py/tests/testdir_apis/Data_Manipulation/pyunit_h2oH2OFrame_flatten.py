@@ -14,7 +14,5 @@ def h2o_H2OFrame_flatten():
     g = frame.flatten()
     assert g=="redrum", "h2o.H2OFrame.flatten() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_flatten())
-else:
-    h2o_H2OFrame_flatten()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_flatten)

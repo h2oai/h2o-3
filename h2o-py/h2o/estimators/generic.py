@@ -19,27 +19,40 @@ class H2OGenericEstimator(H2OEstimator):
     """
 
     algo = "generic"
-    param_names = {"model_id", "model_key", "path"}
+    supervised_learning = False
+    _options_ = {'requires_training_frame': False}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 model_key=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 path=None,  # type: Optional[str]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param model_key: Key to the self-contained model archive already uploaded to H2O.
+               Defaults to ``None``.
+        :type model_key: Union[None, str, H2OFrame], optional
+        :param path: Path to file with self-contained model archive.
+               Defaults to ``None``.
+        :type path: str, optional
+        """
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        if model_id is None and path is not None:
+            path_split = path.split('/')
+            model_id = path_split[len(path_split)-1].split('.')[0]
+        self._id = self._parms['model_id'] = model_id
+        self.model_key = model_key
+        self.path = path
 
     @property
     def model_key(self):
         """
         Key to the self-contained model archive already uploaded to H2O.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -63,7 +76,6 @@ class H2OGenericEstimator(H2OEstimator):
     @model_key.setter
     def model_key(self, model_key):
         self._parms["model_key"] = H2OFrame._validate(model_key, 'model_key')
-
 
     @property
     def path(self):
@@ -92,20 +104,14 @@ class H2OGenericEstimator(H2OEstimator):
         self._parms["path"] = path
 
 
-    def _requires_training_frame(self):
-        """
-        Determines if Generic model requires a training frame.
-        :return: False.
-        """
-        return False
-
     @staticmethod
-    def from_file(file=str):
+    def from_file(file=str, model_id=None):
         """
         Creates new Generic model by loading existing embedded model into library, e.g. from H2O MOJO.
         The imported model must be supported by H2O.
 
         :param file: A string containing path to the file to create the model from
+        :param model_id: Model ID
         :return: H2OGenericEstimator instance representing the generic model
 
         :examples:
@@ -120,7 +126,7 @@ class H2OGenericEstimator(H2OEstimator):
         >>> model = H2OGenericEstimator.from_file(original_model_filename)
         >>> model.model_performance()
         """
-        model = H2OGenericEstimator(path = file)
+        model = H2OGenericEstimator(path=file, model_id=model_id)
         model.train()
 
         return model

@@ -6,10 +6,13 @@ import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GbmMojoWriter;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -17,13 +20,9 @@ import java.io.IOException;
 
 import static org.junit.Assert.*;
 
-public class MojoIntegrationTest extends TestUtil{
-
-  @Before
-  public void setUp() throws Exception {
-    stall_till_cloudsize(1);
-  }
-
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class MojoIntegrationTest {
 
   @Test
   public void testMojo_MultilineCategoricals() throws IOException {
@@ -48,6 +47,7 @@ public class MojoIntegrationTest extends TestUtil{
       
       GBM gbm = new GBM(parameters);
       final GBMModel gbmModel = gbm.trainModel().get();
+      Scope.track_generic(gbmModel);
       assertNotNull(gbmModel);
 
       final File originalModelMojoFile = File.createTempFile("mojo", "zip");

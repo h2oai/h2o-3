@@ -55,6 +55,15 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
         "train",
         "Run grid search for " + base + " model."
     );
+
+    context.registerEndpoint(
+        "grid_search_" + lbase + "_resume",
+        "POST /99/Grid/" + lbase + "/resume",
+        GridSearchHandler.class,
+        "resume",
+        "Resume grid search for " + base + " model."
+    );
+
   }
 
 }

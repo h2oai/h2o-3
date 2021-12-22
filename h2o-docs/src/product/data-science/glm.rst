@@ -46,6 +46,10 @@ Defining a GLM Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+- `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a previously trained model. Use this option to build a new model as a continuation of a previously generated model.
+
+  - **Note:** GLM only supports checkpoint for the IRLSM solver. In addition, checkpoint currently does not work when cross-validation is enabled. The solver option must be set explicitly to IRLSM and cannot be set to AUTO or DEFAULT.
+
 -  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions. This option is disabled by default.
@@ -94,13 +98,13 @@ Defining a GLM Model
       - and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
       - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
--  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
+-  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family=["gaussisan"]`` is supported.
 
--  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
-   specified for **Family**) Specify the Tweedie variance power (defaults to 0).
+-  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if ``"tweedie"`` is
+   specified for ``family``) Specify the Tweedie variance power (defaults to 0).
 
--  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
-   for **Family**) Specify the Tweedie link power (defaults to 1).
+-  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if ``"tweedie"`` is specified
+   for ``family``) Specify the Tweedie link power (defaults to 1).
 
 -  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 1e-10.  
 
@@ -417,6 +421,12 @@ Multiclass Classification (Multinomial Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Multinomial family generalization of the binomial model is used for multi-class response variables. Similar to the binomail family, GLM models the conditional probability of observing class "c" given "x". A vector of coefficients exists for each of the output classes. (:math:`\beta` is a matrix.) The probabilities are defined as:
+
+.. math::
+
+   \hat{y}_c = Pr(y = c|x) = \frac{e^{x^\top\beta_c + \beta_{c0}}}{\sum^K_{k=1}(e^{x^\top\beta_k+\beta_{k0}})}
+
+The penalized negative log-likelihood is defined as:
 
 .. math::
 

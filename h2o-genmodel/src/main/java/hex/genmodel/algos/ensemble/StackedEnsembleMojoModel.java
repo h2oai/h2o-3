@@ -8,11 +8,22 @@ import java.util.Arrays;
 public class StackedEnsembleMojoModel extends MojoModel {
 
     MojoModel _metaLearner; //Currently only a GLM. May change to be DRF, GBM, XGBoost, or DL in the future
+    boolean _useLogitMetaLearnerTransform;
     StackedEnsembleMojoSubModel[] _baseModels; //An array of base models
     int _baseModelNum; //Number of base models
 
     public StackedEnsembleMojoModel(String[] columns, String[][] domains, String responseColumn) {
         super(columns, domains, responseColumn);
+    }
+
+    private static double logit(double p) {
+        final double x = p / (1 - p);
+        return  x == 0 ? -19 : Math.max(-19, Math.log(x));
+    }
+
+    private static void logitTransformRow(double[] basePreds){
+        for (int i = 0; i < basePreds.length; i ++)
+            basePreds[i] = logit(Math.min(1 - 1e-9, Math.max(basePreds[i], 1e-9)));
     }
 
     @Override
@@ -27,12 +38,16 @@ public class StackedEnsembleMojoModel extends MojoModel {
                     basePreds[i * _nclasses + j] = _baseModels[i]._mojoModel.score0(_baseModels[i].remapRow(row), basePredsRow)[j + 1];
                 }
             }
+            if (_useLogitMetaLearnerTransform)
+                logitTransformRow(basePreds);
         }else if(_nclasses == 2){ //Binomial
             for(int i = 0; i < _baseModelNum; ++i) {
                 if (_baseModels[i] == null) continue; // skip unused model
                 _baseModels[i]._mojoModel.score0(_baseModels[i].remapRow(row), basePredsRow);
                 basePreds[i] = basePredsRow[2];
             }
+            if (_useLogitMetaLearnerTransform)
+                logitTransformRow(basePreds);
         }else{ //Regression
             for(int i = 0; i < _baseModelNum; ++i) { //Regression
                 if (_baseModels[i] == null) continue; // skip unused model
@@ -52,7 +67,7 @@ public class StackedEnsembleMojoModel extends MojoModel {
     static class StackedEnsembleMojoSubModel implements Serializable {
 
         final MojoModel _mojoModel;
-        final int[] _mapping; // Mapping. If null, no mapping is required.
+        final int[] _mapping;
 
         public StackedEnsembleMojoSubModel(MojoModel mojoModel, int[] mapping) {
             _mojoModel = mojoModel;
@@ -67,14 +82,10 @@ public class StackedEnsembleMojoModel extends MojoModel {
          * @return A new instance of double[] with values re-mapped to order given by the underlying submodel.
          */
         public double[] remapRow(final double[] row) {
-            double[] remappedRow = Arrays.copyOf(row, row.length);
-            if (_mapping == null) return remappedRow; // Null mapping means no remapping is needed.
-
+            double[] remappedRow = new double[_mapping.length];
             for (int i = 0; i < _mapping.length; i++) {
-                if (_mapping[i] == i) continue; // do not copy if the column is not shifted
-                remappedRow[_mapping[i]] = row[i];
+                remappedRow[i] = row[_mapping[i]];
             }
-
             return remappedRow;
         }
     }

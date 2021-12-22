@@ -4,6 +4,7 @@ import org.apache.commons.io.output.NullOutputStream;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.util.ArrayUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -96,7 +97,7 @@ public class AutoBufferTest extends TestUtil {
   }
 
   @Test
-  public void testNameOfClass() throws Exception {
+  public void testNameOfClass() {
 
     byte[] bytes = AutoBuffer.javaSerializeWritePojo(new XYZZY());
     assertEquals("water.AutoBufferTest$XYZZY", AutoBuffer.nameOfClass(bytes));
@@ -110,4 +111,133 @@ public class AutoBufferTest extends TestUtil {
     assertEquals("(no name)", AutoBuffer.nameOfClass(new byte[]{0,0,0,0,0}));
   }
 
+  @Test
+  public void testSerializeBootstrapFreezable() {
+    MyCustomBootstrapFreezable freezable = new MyCustomBootstrapFreezable("payload42");
+    byte[] bytes = AutoBuffer.serializeBootstrapFreezable(freezable);
+    assertNotNull(bytes);
+    byte[] expectedPayload = freezable._data.getBytes();
+    byte[] expectedMessage = ArrayUtils.append(
+            new byte[]{
+                    0, // marker
+                    (byte) (freezable.frozenType() + 1), // +1 because of compressed integer coding, see AutoBuffer#put1
+                    (byte) (expectedPayload.length + 1)  // ditto
+            },
+            expectedPayload
+    );
+    assertArrayEquals(expectedMessage, bytes);
+  }
+
+  @Test
+  public void testDeserializeBootstrapFreezable() {
+    int typeId = new MyCustomBootstrapFreezable("anything").frozenType();
+    String data = "my test data 42"; 
+    byte[] payload = data.getBytes();
+    byte[] bytes = ArrayUtils.append(
+            new byte[]{
+                    0, // marker
+                    (byte) (typeId + 1),         // +1 because of compressed integer coding, see AutoBuffer#put1
+                    (byte) (payload.length + 1)  // ditto
+            },
+            payload
+    );
+    MyCustomBootstrapFreezable freezable = (MyCustomBootstrapFreezable) AutoBuffer.deserializeBootstrapFreezable(bytes);
+    assertEquals(data, freezable._data);
+  }
+
+  @Test
+  public void testMaliciousFreezable() {
+    int typeId = TypeMap.onIce(MaliciousFreezable.class.getName());
+    byte[] payload = "any data - it doesn't matter what is here".getBytes();
+    byte[] bytes = ArrayUtils.append(
+            new byte[]{
+                    0, // marker
+                    (byte) (typeId + 1),         // +1 because of compressed integer coding, see AutoBuffer#put1
+                    (byte) (payload.length + 1)  // ditto
+            },
+            payload
+    );
+    IllegalStateException ise = null;
+    try {
+      AutoBuffer.deserializeBootstrapFreezable(bytes);
+    } catch (IllegalStateException e) {
+      ise = e;
+    } finally {
+      assertEquals("we are safe", MaliciousFreezable.GLOBAL_STATE); // global state was not modified
+    }
+    assertNotNull(ise);
+    assertEquals(
+            "Class with frozenType=" + typeId + " cannot be deserialized because it is not part of the TypeMap.",
+            ise.getMessage()
+    );
+  }
+
+  public static class MyCustomBootstrapFreezable 
+          extends Iced<MyCustomBootstrapFreezable> implements BootstrapFreezable<MyCustomBootstrapFreezable> {
+    private final String _data;
+
+    MyCustomBootstrapFreezable(String data) {
+      _data = data;
+    }
+  }
+
+  public static class MaliciousFreezable implements Freezable<MaliciousFreezable> {
+    public static String GLOBAL_STATE = "we are safe";
+    @Override
+    public AutoBuffer write(AutoBuffer ab) {
+      GLOBAL_STATE = "hacked!";
+      return null;
+    }
+
+    @Override
+    public MaliciousFreezable read(AutoBuffer ab) {
+      GLOBAL_STATE = "hacked!";
+      return null;
+    }
+
+    @Override
+    public AutoBuffer writeJSON(AutoBuffer ab) {
+      GLOBAL_STATE = "hacked!";
+      return null;
+    }
+
+    @Override
+    public MaliciousFreezable readJSON(AutoBuffer ab) {
+      GLOBAL_STATE = "hacked!";
+      return null;
+    }
+
+    @Override
+    public int frozenType() {
+      GLOBAL_STATE = "hacked!";
+      return 0;
+    }
+
+    @Override
+    public byte[] asBytes() {
+      GLOBAL_STATE = "hacked!";
+      return new byte[0];
+    }
+
+    @Override
+    public MaliciousFreezable reloadFromBytes(byte[] ary) {
+      GLOBAL_STATE = "hacked!";
+      return null;
+    }
+
+    @Override
+    public MaliciousFreezable clone() {
+      GLOBAL_STATE = "hacked!";
+      return null;
+    }
+  }
+
+  public static class MyCustomTypeMapExtension implements TypeMapExtension {
+
+    @Override
+    public String[] getBoostrapClasses() {
+      return new String[]{MyCustomBootstrapFreezable.class.getName()};
+    }
+  }
+  
 }

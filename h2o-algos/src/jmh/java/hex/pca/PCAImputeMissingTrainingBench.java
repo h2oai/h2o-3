@@ -8,6 +8,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import water.DKV;
 import water.Key;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.FrameUtils;
 
@@ -16,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import static hex.pca.JMHConfiguration.logLevel;
 import static hex.pca.PCAModel.PCAParameters;
 import static hex.pca.PCAModel.PCAParameters.Method.GramSVD;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 import static water.TestUtil.stall_till_cloudsize;
 
 /**
@@ -57,7 +58,7 @@ public class PCAImputeMissingTrainingBench {
 		long seed = 12345;
 		
 		try {
-			trainingFrame = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+			trainingFrame = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
 			// Add missing values to the training data
 			Frame frame = new Frame(Key.<Frame>make(), trainingFrame.names(), trainingFrame.vecs());
 			DKV.put(frame._key, frame); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up

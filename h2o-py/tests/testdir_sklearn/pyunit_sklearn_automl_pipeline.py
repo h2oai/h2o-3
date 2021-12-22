@@ -56,7 +56,7 @@ def test_binomial_classification_with_h2o_frames():
     data = _get_data(format='h2o', n_classes=2)
     assert isinstance(data.X_train, h2o.H2OFrame)
     pipeline.fit(data.X_train, data.y_train)
-    assert len(pipeline.named_steps.h2oautomlclassifier.estimator.leaderboard) == max_models+2
+    assert len(pipeline.named_steps.h2oautomlclassifier.estimator.leaderboard) >= max_models + 1
 
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, h2o.H2OFrame)
@@ -81,7 +81,7 @@ def test_multinomial_classification_with_numpy_frames():
     data = _get_data(format='numpy', n_classes=3)
     assert isinstance(data.X_train, np.ndarray)
     pipeline.fit(data.X_train, data.y_train)
-    assert len(pipeline.named_steps.h2oautomlclassifier.estimator.leaderboard) == max_models+2
+    assert len(pipeline.named_steps.h2oautomlclassifier.estimator.leaderboard) >= max_models + 1
 
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
@@ -107,7 +107,7 @@ def test_regression_with_numpy_frames():
     data = _get_data(format='numpy', n_classes=0)
     assert isinstance(data.X_train, np.ndarray)
     pipeline.fit(data.X_train, data.y_train)
-    assert len(pipeline.named_steps.h2oautomlregressor.estimator.leaderboard) == max_models+2
+    assert len(pipeline.named_steps.h2oautomlregressor.estimator.leaderboard) >= max_models + 1
 
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
@@ -132,7 +132,7 @@ def test_generic_estimator_for_classification():
     assert isinstance(data.X_train, np.ndarray)
 
     pipeline.fit(data.X_train, data.y_train)
-    assert len(pipeline.named_steps.h2oautomlestimator.estimator.leaderboard) == max_models+2
+    assert len(pipeline.named_steps.h2oautomlestimator.estimator.leaderboard) >= max_models + 1
 
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)
@@ -160,7 +160,7 @@ def test_generic_estimator_for_regression():
     data = _get_data(format='numpy', n_classes=0)
     assert isinstance(data.X_train, np.ndarray)
     pipeline.fit(data.X_train, data.y_train)
-    assert len(pipeline.named_steps.h2oautomlestimator.estimator.leaderboard) == max_models+2
+    assert len(pipeline.named_steps.h2oautomlestimator.estimator.leaderboard) >= max_models + 1
 
     preds = pipeline.predict(data.X_test)
     assert isinstance(preds, np.ndarray)

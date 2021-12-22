@@ -15,7 +15,8 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param gam_columns Predictor column names for gam
+#' @param gam_columns Arrays of predictor column names for gam for smoothers using single or multiple predictors like
+#'        {{'c1'},{'c2','c3'},{'c4'},...}
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
@@ -35,7 +36,9 @@
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
 #'        one of: "AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
 #'        "tweedie", "negativebinomial", "fractionalbinomial". Defaults to AUTO.
@@ -80,6 +83,7 @@
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #'        Defaults to family_default.
+#' @param startval double array to initialize coefficients for GAM.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param cold_start \code{Logical}. Only applicable to multiple alpha/lambda values when calling GLM from GAM.  If false, build
@@ -115,10 +119,15 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param num_knots Number of knots for gam predictors
-#' @param knot_ids String arrays storing frame keys of knots.  One for each gam column specified in gam_columns
-#' @param bs Basis function type for each gam predictors, 0 for cr
-#' @param scale Smoothing parameter for gam predictors
+#' @param knot_ids String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns
+#' @param standardize_tp_gam_cols \code{Logical}. standardize tp (thin plate) predictor columns Defaults to FALSE.
+#' @param scale_tp_penalty_mat \code{Logical}. Scale penalty matrix for tp (thin plate) smoothers as in R Defaults to FALSE.
+#' @param bs Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for thin
+#'        plate regression with SVD.  If specified, must be the same size as gam_columns
+#' @param scale Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns
 #' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -171,6 +180,7 @@ h2o.gam <- function(x,
                     beta_epsilon = 0.0001,
                     gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                    startval = NULL,
                     prior = -1,
                     cold_start = FALSE,
                     lambda_min_ratio = -1,
@@ -190,28 +200,27 @@ h2o.gam <- function(x,
                     custom_metric_func = NULL,
                     num_knots = NULL,
                     knot_ids = NULL,
+                    standardize_tp_gam_cols = FALSE,
+                    scale_tp_penalty_mat = FALSE,
                     bs = NULL,
                     scale = NULL,
-                    keep_gam_cols = FALSE)
+                    keep_gam_cols = FALSE,
+                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
-  # If x is missing, then assume user wants to use all columns as features.
+  # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
   if (missing(x)) {
-     if (is.numeric(y)) {
-         x <- setdiff(col(training_frame), y)
-     } else {
-         x <- setdiff(colnames(training_frame), y)
-     }
+      x = NULL
   }
-
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
   if (missing(gam_columns)) {
       stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
+  gam_columns <- lapply(gam_columns, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
 
   # Validate other args
   # if (!is.null(beta_constraints)) {
@@ -232,7 +241,6 @@ h2o.gam <- function(x,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
-  if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$gam_columns <- gam_columns
@@ -303,6 +311,8 @@ h2o.gam <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(startval))
+    parms$startval <- startval
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -339,12 +349,18 @@ h2o.gam <- function(x,
     parms$knot_ids <- knot_ids
   if (!missing(gam_columns))
     parms$gam_columns <- gam_columns
+  if (!missing(standardize_tp_gam_cols))
+    parms$standardize_tp_gam_cols <- standardize_tp_gam_cols
+  if (!missing(scale_tp_penalty_mat))
+    parms$scale_tp_penalty_mat <- scale_tp_penalty_mat
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -411,6 +427,7 @@ h2o.gam <- function(x,
                                     beta_epsilon = 0.0001,
                                     gradient_epsilon = -1,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
+                                    startval = NULL,
                                     prior = -1,
                                     cold_start = FALSE,
                                     lambda_min_ratio = -1,
@@ -430,9 +447,12 @@ h2o.gam <- function(x,
                                     custom_metric_func = NULL,
                                     num_knots = NULL,
                                     knot_ids = NULL,
+                                    standardize_tp_gam_cols = FALSE,
+                                    scale_tp_penalty_mat = FALSE,
                                     bs = NULL,
                                     scale = NULL,
                                     keep_gam_cols = FALSE,
+                                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -446,19 +466,15 @@ h2o.gam <- function(x,
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
-  # If x is missing, then assume user wants to use all columns as features.
+  # If x is missing, no predictors will be used.  Only the gam columns are present as predictors
   if (missing(x)) {
-     if (is.numeric(y)) {
-         x <- setdiff(col(training_frame), y)
-     } else {
-         x <- setdiff(colnames(training_frame), y)
-     }
+      x = NULL
   }
-
   # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
   if (missing(gam_columns)) {
       stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
+  gam_columns <- lapply(gam_columns, function(x) if(is.character(x) & length(x) == 1) list(x) else x)
 
   # Validate other args
   # if (!is.null(beta_constraints)) {
@@ -479,7 +495,6 @@ h2o.gam <- function(x,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
-  if( !missing(gam_columns) && !is.null(gam_columns)) args$x_ignore <- args$x_ignore[!( args$x_ignore %in% gam_columns )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
   parms$gam_columns <- gam_columns
@@ -548,6 +563,8 @@ h2o.gam <- function(x,
     parms$gradient_epsilon <- gradient_epsilon
   if (!missing(link))
     parms$link <- link
+  if (!missing(startval))
+    parms$startval <- startval
   if (!missing(prior))
     parms$prior <- prior
   if (!missing(cold_start))
@@ -584,12 +601,18 @@ h2o.gam <- function(x,
     parms$knot_ids <- knot_ids
   if (!missing(gam_columns))
     parms$gam_columns <- gam_columns
+  if (!missing(standardize_tp_gam_cols))
+    parms$standardize_tp_gam_cols <- standardize_tp_gam_cols
+  if (!missing(scale_tp_penalty_mat))
+    parms$scale_tp_penalty_mat <- scale_tp_penalty_mat
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))
     parms$scale <- scale
   if (!missing(keep_gam_cols))
     parms$keep_gam_cols <- keep_gam_cols
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -619,3 +642,13 @@ h2o.gam <- function(x,
   segment_models <- .h2o.segmentModelsJob('gam', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+    .h2o.fill_gam <- function(model, parameters, allparams) {
+        if (is.null(model$scoring_history))
+            model$scoring_history <- model$glm_scoring_history
+        if (is.null(model$model_summary))
+            model$model_summary <- model$glm_model_summary
+        return(model)
+    }
+

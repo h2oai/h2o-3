@@ -19,6 +19,7 @@ def call(final stageConfig, final boolean getMakeTarget = false) {
 }
 
 private GString getCommandHadoop(final stageConfig) {
+    def authConf = stageConfig.customData.customAuth ?: "-login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login"
     return """
             rm -fv h2o_one_node h2odriver.log
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
@@ -28,9 +29,11 @@ private GString getCommandHadoop(final stageConfig) {
                 -jks mykeystore.jks \\
                 -notify h2o_one_node \\
                 -flatfile flatfile.lst \\
+                -JJ -Daws.accessKeyId=\$AWS_ACCESS_KEY_ID -JJ -Daws.secretKey=\$AWS_SECRET_ACCESS_KEY \\
                 -ea -proxy \\
+                -form_auth \\
                 -jks mykeystore.jks \\
-                -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\
+                ${authConf} \\
                 > h2odriver.log 2>&1 &
             for i in \$(seq 20); do
               if [ -f 'h2o_one_node' ]; then
@@ -43,6 +46,7 @@ private GString getCommandHadoop(final stageConfig) {
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'
               cat h2odriver.log
+              \$(grep -F 'yarn logs -applicationId' h2odriver.log | head -1 | cut -d"'" -f2)
               exit 1
             fi
             IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
@@ -58,6 +62,7 @@ private GString getCommandStandalone(final stageConfig) {
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -login_conf ${stageConfig.customData.ldapConfigPathStandalone} -ldap_login \\
+                -form_auth \\
                 > standalone_h2o.log 2>&1 & 
             for i in \$(seq 4); do
               if grep "Open H2O Flow in your web browser" standalone_h2o.log

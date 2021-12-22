@@ -16,12 +16,10 @@ import water.util.FileUtils;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.security.KeyStore;
 import java.util.Arrays;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -46,7 +44,9 @@ public class ParseTestEncrypted extends TestUtil {
   public String _encrypted_name;
 
   @Parameterized.Parameters
-  public static Iterable<? extends Object> data() { return Arrays.asList("encrypted.aes.csv", "encrypted.aes.zip"); };
+  public static Iterable<? extends Object> data() { 
+    return Arrays.asList("encrypted.csv.aes", "encrypted.zip.aes", "encrypted.gz.aes"); 
+  }
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -54,9 +54,11 @@ public class ParseTestEncrypted extends TestUtil {
     // KeyStore
     _jks = writeKeyStore(secretKey);
     // Encrypted CSV
-    writeEncrypted(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.aes.csv"), secretKey);
-    // Encrypted CSV in a Zip
-    writeEncryptedZip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.aes.zip"), secretKey);
+    writeEncrypted(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.csv.aes"), secretKey);
+    // CSV in an Encrypted Zip container
+    writeEncryptedZip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.zip.aes"), secretKey);
+    // CSV in an Encrypted Gzip container
+    writeEncryptedGzip(FileUtils.getFile(PLAINTEXT_FILE), tmp.newFile("encrypted.gz.aes"), secretKey);
 
     TestUtil.stall_till_cloudsize(1);
   }
@@ -96,18 +98,32 @@ public class ParseTestEncrypted extends TestUtil {
     }
   }
 
+  private static void writeEncryptedGzip(File source, File target, SecretKey secretKey) throws Exception {
+    File tmpFile = tmp.newFile();
+    try (InputStream sourceIn = new FileInputStream(source); 
+         FileOutputStream fileOut = new FileOutputStream(tmpFile);
+         GZIPOutputStream gzipOutput = new GZIPOutputStream(fileOut)) {
+      IOUtils.copyLarge(sourceIn, gzipOutput);
+    }
+    writeEncrypted(tmpFile, target, secretKey);
+  }
+
   private static void writeEncryptedZip(File source, File target, SecretKey secretKey) throws Exception {
-    FileOutputStream fileOut = new FileOutputStream(target);
+    File tmpFile = tmp.newFile();
+    FileOutputStream tmpOut = new FileOutputStream(tmpFile);
     try {
-      ZipOutputStream zipOut = new ZipOutputStream(fileOut);
+      ZipOutputStream zipOut = new ZipOutputStream(tmpOut);
       ZipEntry ze = new ZipEntry(source.getName());
       zipOut.putNextEntry(ze);
-      encryptFile(source, zipOut, secretKey);
+      try (InputStream sourceIn = new FileInputStream(source)) {
+        IOUtils.copyLarge(sourceIn, zipOut);
+      }
       zipOut.closeEntry();
       zipOut.close();
     } finally {
-      IOUtils.closeQuietly(fileOut);
+      IOUtils.closeQuietly(tmpOut);
     }
+    writeEncrypted(tmpFile, target, secretKey);
   }
 
   private static void encryptFile(File source, OutputStream outputStream, SecretKey secretKey) throws Exception {
@@ -160,7 +176,7 @@ public class ParseTestEncrypted extends TestUtil {
       Frame decrypted = Scope.track(ParseDataset.parse(fKey, new Key[]{encVec._key}, false, guessedSetup));
 
       // 7. Compare with source dataset
-      Frame plaintext = Scope.track(parse_test_file(PLAINTEXT_FILE));
+      Frame plaintext = Scope.track(parseTestFile(PLAINTEXT_FILE));
       assertArrayEquals(plaintext._names, decrypted._names);
       for (String n : plaintext._names) {
         switch (plaintext.vec(n).get_type_str()) {

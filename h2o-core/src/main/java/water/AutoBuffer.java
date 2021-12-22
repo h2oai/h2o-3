@@ -39,7 +39,7 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
  *
  *  @author <a href="mailto:cliffc@h2o.ai"></a>
  */
-public final class AutoBuffer {
+public final class AutoBuffer implements AutoCloseable {
 
   // Maximum size of an array we allow to allocate (the value is designed
   // to mimic the behavior of OpenJDK libraries)
@@ -254,6 +254,10 @@ public final class AutoBuffer {
   /** Read from a persistent Stream (including all TypeMap info) into same
    *  exact rev of H2O). */
   public AutoBuffer( InputStream is ) {
+    this(is, null);
+  }
+  
+  public AutoBuffer(InputStream is, String[] typeMap) {
     _chan = null;
     _h2o = null;
     _firstPage = true;
@@ -264,14 +268,22 @@ public final class AutoBuffer {
     _bb.flip();
     _is = is;
     int b = get1U();
-    if( b==0 ) return;          // No persistence info
-    int magic = get1U();
-    if( b!=0x1C || magic != 0xED ) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
-    checkVersion(getStr());
-    String[] typeMap = getAStr();
+
+    if (typeMap == null) {
+      if (b == 0)
+        return;          // No persistence info
+      int magic = get1U();
+      if (b != 0x1C || magic != 0xED) throw new IllegalArgumentException("Missing magic number 0x1CED at stream start");
+      checkVersion(getStr());
+      typeMap = getAStr();
+      assert typeMap != null;
+    } else {
+      if (b != 0)
+        throw new IllegalStateException("Corrupted communication stream: zero byte expected at the beginning.");
+    }
     _typeMap = new short[typeMap.length];
-    for( int i=0; i<typeMap.length; i++ )
-      _typeMap[i] = (short)(typeMap[i]==null ? 0 : TypeMap.onIce(typeMap[i]));
+    for (int i = 0; i < _typeMap.length; i++)
+      _typeMap[i] = (short) (typeMap[i] == null ? 0 : TypeMap.onIce(typeMap[i]));
   }
 
   private void checkVersion(String version) {
@@ -399,7 +411,10 @@ public final class AutoBuffer {
   // only on the writer-side.
   public static class AutoBufferException extends RuntimeException {
     public final IOException _ioe;
-    AutoBufferException( IOException ioe ) { _ioe = ioe; }
+    AutoBufferException( IOException ioe ) { 
+      super(ioe); 
+      _ioe = ioe; 
+    }
   }
 
   // For reads, just assert all was read and close and release resources.
@@ -407,21 +422,25 @@ public final class AutoBuffer {
   // bytes out.  If the write is to an H2ONode and is short, send via UDP.
   // AutoBuffer close calls order; i.e. a reader close() will block until the
   // writer does a close().
-  public final int close() {
+  @Override
+  public final void close() {
     //if( _size > 2048 ) System.out.println("Z="+_zeros+" / "+_size+", A="+_arys);
-    if( isClosed() ) return 0;            // Already closed
+    if( isClosed() ) return;            // Already closed
     assert _h2o != null || _chan != null || _is != null; // Byte-array backed should not be closed
 
     try {
       if( _chan == null ) {     // No channel?
         if( _read ) {
           if( _is != null ) _is.close();
-          return 0;
+          return;
         } else {                // Write
           // For small-packet write, send via UDP.  Since nothing is sent until
           // now, this close() call trivially orders - since the reader will not
           // even start (much less close()) until this packet is sent.
-          if( _bb.position() < MTU) return udpSend();
+          if( _bb.position() < MTU) {
+            udpSend();
+            return;
+          }
           // oops - Big Write, switch to TCP and finish out there
         }
       }
@@ -470,7 +489,6 @@ public final class AutoBuffer {
 //      TimeLine.record_IOclose(this,_persist); // Profile AutoBuffer connections
       assert isClosed();
     }
-    return 0;
   }
 
   // Need a sock for a big read or write operation.
@@ -764,18 +782,34 @@ public final class AutoBuffer {
   }
 
   public <T extends Freezable> T get() {
-    int id = getInt();
-    if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) id = _typeMap[id];
-    return (T)TypeMap.newFreezable(id).read(this);
+    return getFreezable(null);
   }
+
   public <T extends Freezable> T get(Class<T> tc) {
+    if (tc == null)
+      throw new IllegalArgumentException("Class argument cannot be null");
+    return getFreezable(tc);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends Freezable> T getFreezable(Class<T> tc) {
     int id = getInt();
     if( id == TypeMap.NULL ) return null;
-    if( _is!=null ) id = _typeMap[id];
-    assert tc.isInstance(TypeMap.theFreezable(id)):tc.getName() + " != " + TypeMap.theFreezable(id).getClass().getName() + ", id = " + id;
-    return (T)TypeMap.newFreezable(id).read(this);
+    if( _is!=null ) {
+      id = remapFrozenId(id);
+    }
+    return (T) TypeMap
+            .newFreezable(id, tc)
+            .read(this);
   }
+
+  private int remapFrozenId(int id) {
+    assert _typeMap != null;
+    if (id >= _typeMap.length)
+      throw new IllegalStateException("Class with frozenType=" + id + 
+              " cannot be deserialized because it is not part of the TypeMap.");
+    return _typeMap[id];
+  } 
 
   // Write Key's target IFF the Key is not null; target can be null.
   public AutoBuffer putKey(Key k) {
@@ -1502,7 +1536,34 @@ public final class AutoBuffer {
     channel.write(ab._bb);
     ab.clearForWriting(H2O.MAX_PRIORITY);
   }
-  
+
+  /**
+   * Serializes a BootstrapFreezable into a byte array. Because BootstrapFreezables
+   * have known ids - there is no need to also serialize the TypeMap.
+   * @param o a BootstrapFreezable to serialize
+   * @return byte array representing the object
+   */
+  public static byte[] serializeBootstrapFreezable(BootstrapFreezable<?> o) {
+    ByteArrayOutputStream result;
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         AutoBuffer ab = new AutoBuffer(baos, false)) {
+      ab.put(o);
+      result = baos;
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+    return result.toByteArray();
+  }
+
+  public static BootstrapFreezable<?> deserializeBootstrapFreezable(byte[] bytes) {
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+         AutoBuffer ab = new AutoBuffer(bais, TypeMap.bootstrapClasses())) {
+      return ab.get();
+    } catch (IOException e) {
+      throw Log.throwErr(e);
+    }
+  }
+
   public static byte[] javaSerializeWritePojo(Object o) {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = null;

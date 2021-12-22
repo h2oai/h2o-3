@@ -2,6 +2,7 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.StepDefinition.Step;
 import hex.Model;
+import hex.ScoreKeeper;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.ensemble.StackedEnsembleModel;
@@ -11,15 +12,17 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Lockable;
+import water.Scope;
+import water.exceptions.H2OAutoMLException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.logging.LoggingLevel;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.ArrayUtils;
@@ -29,6 +32,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_GROUP;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
@@ -43,7 +48,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       String target = "CAPSULE";
       int tidx = fr.find(target);
       fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr);
@@ -58,6 +63,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -84,12 +90,13 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.nfolds = 0;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -112,8 +119,8 @@ public class AutoMLTest extends water.TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 62832;
-      final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
-      final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+      final Frame fr = parseTestFile("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+      final Frame test = parseTestFile("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
       
       String target = "CAPSULE";
       int tidx = fr.find(target);
@@ -135,6 +142,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
       aml.get();
@@ -159,7 +167,7 @@ public class AutoMLTest extends water.TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 62832;
-      final Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
+      final Frame train = parseTestFile("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
       String target = "CAPSULE";
       int tidx = train.find(target);
       train.replace(tidx, train.vec(tidx).toCategoricalVec()).remove(); DKV.put(train); deletables.add(train);
@@ -171,6 +179,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
       autoMLBuildSpec.build_models.include_algos = aro(Algo.GBM);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
       aml.get();
@@ -203,13 +212,14 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(1+new Random().nextInt(30));
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -227,15 +237,15 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.DRF, Algo.GLM};
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning, Algo.DRF, Algo.GLM};
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(8);
-//      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(15);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -255,9 +265,9 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-//      fr = parse_test_file("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
+//      fr = parseTestFile("./smalldata/prostate/prostate_complete.csv"); //using slightly larger dataset to make this test useful
 //      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
+      fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv"); //using slightly larger dataset to make this test useful
       autoMLBuildSpec.input_spec.response_column = "diabetesMed";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
 
@@ -268,6 +278,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs_per_model(max_runtime_secs_per_model);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -286,21 +297,21 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void KeepCrossValidationFoldAssignmentEnabledTest() {
+  @Test public void test_keep_cross_validation_enabled() {
     AutoML aml = null;
     Frame fr = null;
     Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
-      aml = AutoML.makeAutoML(Key.make(), new Date(), autoMLBuildSpec);
-      AutoML.startAutoML(aml);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
       leader = aml.leader();
@@ -314,20 +325,20 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void KeepCrossValidationFoldAssignmentDisabledTest() {
+  @Test public void test_keep_cross_validation_fold_assignment_disabled() {
     AutoML aml = null;
     Frame fr = null;
     Model leader = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/AirlinesTrain.csv");
+      fr = parseTestFile("./smalldata/airlines/AirlinesTrain.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
-      aml = AutoML.makeAutoML(Key.make(), new Date(), autoMLBuildSpec);
-      AutoML.startAutoML(aml);
+      aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 
       leader = aml.leader();
@@ -341,24 +352,24 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testWorkPlanWithoutExploitation() {
+  @Test public void test_work_plan_without_exploitation() {
     AutoML aml = null;
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exploitation_ratio = 0;
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
-
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.ONE_LAYERED;
+      aml = new AutoML(autoMLBuildSpec);
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
-        put(Algo.DeepLearning, 1*10+3*20); // models+grids
+        put(Algo.DeepLearning, 1*10+3*15); // models+grids
         put(Algo.DRF, 2*10);
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
-        put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 3*10);
+        put(Algo.XGBoost, 3*10+1*90); // models+grids
+        put(Algo.StackedEnsemble, 2*10);
       }};
       int maxTotalWork = 0;
       for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
@@ -366,7 +377,7 @@ public class AutoMLTest extends water.TestUtil {
           maxTotalWork += entry.getValue();
         }
       }
-
+      aml.planWork();
       assertEquals(maxTotalWork, aml._workAllocations.remainingWork());
 
       autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
@@ -380,29 +391,31 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testWorkPlanWithExploitation() {
+  @Test public void test_work_plan_with_exploitation() {
     AutoML aml = null;
     Frame fr=null;
     try {
       double exploitationRatio = 0.2;
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exploitation_ratio = exploitationRatio;
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.ONE_LAYERED;
+      aml = new AutoML(autoMLBuildSpec);
+      aml.planWork();
 
       Map<Algo, Integer> explorationAllocs = new HashMap<Algo, Integer>(){{
-        put(Algo.DeepLearning, 1*10+3*20); // models+grids
+        put(Algo.DeepLearning, 1*10+3*15); // models+grids
         put(Algo.DRF, 2*10);
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
-        put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 3*10);
+        put(Algo.XGBoost, 3*10+1*90); // models+grids
+        put(Algo.StackedEnsemble, 2*10);
       }};
       Map<Algo, Integer> exploitationAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.GBM, 1*10);
-        put(Algo.XGBoost, 2*20);
+        put(Algo.XGBoost, 1*30);
       }};
       int expectedExplorationWork = explorationAllocs.entrySet().stream().filter(algo -> algo.getKey().enabled()).mapToInt(Map.Entry::getValue).sum();
 
@@ -439,20 +452,21 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
-              new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
+              new StepDefinition(Algo.GBM.name(), "def_1"),                             // 1 model
               new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
-              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20) }),  // 1 model
+              new StepDefinition(Algo.DRF.name(), new Step("XRT", 2, 20)),  // 1 model
               new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),      // 1 grid
               new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids), // 1 grid
-              new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 models
+              new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 groups = 2 models (all SEs are redundant and ignored)
       };
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning};
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
+      System.out.println(aml.leaderboard().toTwoDimTable("step", "group").toString());
 
       assertEquals(5, aml.leaderboard().getModelCount());
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GBMModel.class::isInstance).count());
@@ -460,24 +474,16 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(DRFModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(XGBoostModel.class::isInstance).count());
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
-      assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
+      assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count()); //one for each group
 
       assertNotNull(aml._actualModelingSteps);
       Log.info(Arrays.toString(aml._actualModelingSteps));
       assertArrayEquals(new StepDefinition[] {
-              new StepDefinition(Algo.GBM.name(), new Step[]{
-                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-              }),
-              new StepDefinition(Algo.GLM.name(), new Step[]{
-                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-              }),
-              new StepDefinition(Algo.DRF.name(), new Step[]{
-                      new Step("XRT", 20),
-              }),
-              new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-                      new Step("all", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-              }),
+              new StepDefinition(Algo.GBM.name(), new Step("def_1", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)),
+              new StepDefinition(Algo.GLM.name(), new Step("def_1", DEFAULT_MODEL_GROUP, DEFAULT_MODEL_TRAINING_WEIGHT)),
+              new StepDefinition(Algo.StackedEnsemble.name(), new Step("best_of_family_1", 1, DEFAULT_MODEL_TRAINING_WEIGHT)),
+              new StepDefinition(Algo.DRF.name(), new Step("XRT", 2, 20)),
+              new StepDefinition(Algo.StackedEnsemble.name(), new Step("best_of_family_2", 2, DEFAULT_MODEL_TRAINING_WEIGHT)),
       }, aml._actualModelingSteps);
     } finally {
       if (aml != null) aml.delete();
@@ -490,8 +496,8 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null, test = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
-      test = parse_test_file("./smalldata/logreg/prostate_test.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
+      test = parseTestFile("./smalldata/logreg/prostate_test.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = null;
@@ -499,6 +505,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -517,8 +524,8 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null, test = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
-      test = parse_test_file("./smalldata/logreg/prostate_test.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
+      test = parseTestFile("./smalldata/logreg/prostate_test.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = test._key;
@@ -526,6 +533,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -544,7 +552,7 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = null;
@@ -552,6 +560,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
@@ -569,13 +578,14 @@ public class AutoMLTest extends water.TestUtil {
     Frame fr = null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.validation_frame = null;
       autoMLBuildSpec.input_spec.leaderboard_frame = null;
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       assertEquals(fr.numRows(), aml.getTrainingFrame().numRows());
@@ -587,16 +597,18 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testExcludeAlgos() {
+  @Test public void test_exclude_algos() {
     AutoML aml = null;
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
+      aml = new AutoML(autoMLBuildSpec);
+      aml.planWork();
       for (IAlgo algo : autoMLBuildSpec.build_models.exclude_algos) {
         assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
       }
@@ -611,16 +623,18 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testIncludeAlgos() {
+  @Test public void test_include_algos() {
     AutoML aml = null;
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
-      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
+      aml = new AutoML(autoMLBuildSpec);
+      aml.planWork();
       for (IAlgo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
           assertNotEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
@@ -639,18 +653,19 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testExcludeIncludeAlgos() {
+  @Test public void test_exclude_include_algos() {
     AutoML aml = null;
     Frame fr=null;
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      fr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
       try {
-        aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+        aml = new AutoML(autoMLBuildSpec);
         fail("Should have thrown an H2OIllegalArgumentException for providing both include_algos and exclude_algos");
       } catch (H2OIllegalArgumentException e) {
         assertTrue(e.getMessage().startsWith("Parameters `exclude_algos` and `include_algos` are mutually exclusive"));
@@ -662,7 +677,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Test public void testAlgosHaveDefaultParametersEnforcingReproducibility() {
+  @Test public void test_algos_have_default_parameters_enforcing_reproducibility() {
     AutoML aml=null;
     Frame fr=null;
     try {
@@ -670,13 +685,14 @@ public class AutoMLTest extends water.TestUtil {
       int seed = 0;
       int nfolds = 0;  //this test currently fails if CV is enabled due to PUBDEV-6385 (the final model gets its `stopping_rounds` param reset to 0)
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      fr = parse_test_file("./smalldata/logreg/prostate.csv");
+      fr = parseTestFile("./smalldata/logreg/prostate.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
       autoMLBuildSpec.build_control.nfolds = nfolds;
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -736,6 +752,35 @@ public class AutoMLTest extends water.TestUtil {
       // Cleanup
       if(aml!=null) aml.delete();
       if(fr != null) fr.delete();
+    }
+  }
+  
+  @Test(expected = H2OAutoMLException.class)
+  public void test_run_fails_after_multiple_consecutive_model_failures() {
+    AutoML aml = null;
+    try {
+      Scope.enter();
+      int seed = 0;
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      Frame fr = Scope.track(parseTestFile("./smalldata/extdata/australia.csv")); //regression task
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "runoffnew";
+      // no model limit
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GLM}; // our GLM ignores stopping metric, probably due to lambda search, ad therefore doesn't fail, making the test logic more complex
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.lift_top_group);  // stopping metric incompatible with regression
+      autoMLBuildSpec.build_models.modeling_plan = ModelingPlans.TWO_LAYERED;
+
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      Scope.track_generic(aml);
+      aml.get();
+    } catch (Exception e) {
+      long count = Arrays.stream(aml.eventLog()._events).filter(ev -> ev.getLevel() == LoggingLevel.ERROR).count();
+      assertEquals(aml._maxConsecutiveModelFailures, count);
+      assertEquals(0, aml.leaderboard().getModelCount());
+      throw e;
+    } finally {
+      Scope.exit();
     }
   }
 }

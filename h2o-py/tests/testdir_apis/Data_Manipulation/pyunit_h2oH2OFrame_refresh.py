@@ -29,7 +29,5 @@ def h2o_H2OFrame_refresh():
     assert frame_asin.types == {"asin(A)": "real", "asin(B)": "real", "asin(C)": "int"}, "Expect equal col types " \
                                                                                          "after uniop operation"
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_refresh())
-else:
-    h2o_H2OFrame_refresh()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_refresh)

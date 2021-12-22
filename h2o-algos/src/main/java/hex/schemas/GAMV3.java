@@ -52,6 +52,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "beta_epsilon",
             "gradient_epsilon",
             "link",
+            "startval",  // initial starting values for fixed and randomized coefficients, double array
             "prior",
             "cold_start", // if true, will start GLM model from initial values and conditions
             "lambda_min_ratio",
@@ -74,9 +75,12 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "num_knots",  // array: number of knots for each predictor
             "knot_ids", // string array storing frame keys that contains knot location
             "gam_columns",  // array: predictor column names array
+            "standardize_tp_gam_cols", // standardize TP gam columns before transformation
+            "scale_tp_penalty_mat", // scale penalty matrix
             "bs", // array, name of basis functions used
             "scale", // array, smoothing parameter for GAM,
-            "keep_gam_cols"
+            "keep_gam_cols",
+            "auc_type"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -104,6 +108,9 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help = "Regularization strength", level = Level.critical, gridable = true)
     public double[] lambda;
+
+    @API(help = "double array to initialize coefficients for GAM.", gridable=true)
+    public double[] startval;
 
     @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
     public boolean lambda_search;
@@ -223,20 +230,30 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
     public int[] num_knots;
 
-    @API(help = "Predictor column names for gam", required = true, level = Level.critical, gridable = true)
-    public String[] gam_columns;
+    @API(help = "Arrays of predictor column names for gam for smoothers using single or multiple predictors like " +
+            "{{'c1'},{'c2','c3'},{'c4'},...}", required = true, level = Level.critical, gridable = true)
+    public String[][] gam_columns;
 
-    @API(help = "Smoothing parameter for gam predictors", level = Level.critical, gridable = true)
+    @API(help = "Smoothing parameter for gam predictors.  If specified, must be of the same length as gam_columns",
+            level = Level.critical, gridable = true)
     public double[] scale;
 
-    @API(help = "Basis function type for each gam predictors, 0 for cr", level = Level.critical, gridable = true)
+    @API(help = "Basis function type for each gam predictors, 0 for cr, 1 for thin plate regression with knots, 2 for" +
+            " thin plate regression with SVD.  If specified, must be the same size as gam_columns",
+            level = Level.critical, gridable = true)
     public int[] bs;
     //public BSType bs;
 
     @API(help="Save keys of model matrix", level = Level.secondary, direction = Direction.INPUT)
     public boolean keep_gam_cols; // if true will save keys storing GAM columns
+
+    @API(help="standardize tp (thin plate) predictor columns", level = Level.secondary, direction = Direction.INPUT)
+    public boolean standardize_tp_gam_cols; // if true, will standardize predictor columns before gamification
+
+    @API(help="Scale penalty matrix for tp (thin plate) smoothers as in R", level = Level.secondary, direction = Direction.INPUT)
+    public boolean scale_tp_penalty_mat; // if true, will apply scaling to the penalty matrix CS
     
-    @API(help="String arrays storing frame keys of knots.  One for each gam column specified in gam_columns", 
+    @API(help="String arrays storing frame keys of knots.  One for each gam column set specified in gam_columns", 
             level = Level.secondary, direction = Direction.INPUT)
     public String[] knot_ids;
   }

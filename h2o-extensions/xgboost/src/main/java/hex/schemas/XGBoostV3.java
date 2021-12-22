@@ -42,7 +42,6 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "max_depth",
         "min_rows", "min_child_weight",
         "learn_rate", "eta",
-//        "learn_rate_annealing", //disabled for now
 
         "sample_rate", "subsample",
         "col_sample_rate", "colsample_bylevel",
@@ -85,7 +84,9 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "dmatrix_type",
         "backend",
         "gpu_id",
-        "gainslift_bins"
+        "gainslift_bins",
+        "auc_type",
+        "scale_pos_weight"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
@@ -96,30 +97,27 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="(same as min_child_weight) Fewest allowed (weighted) observations in a leaf.", gridable = true)
     public double min_rows;
-    @API(help="(same as min_rows) Fewest allowed (weighted) observations in a leaf.", gridable = true)
+    @API(help="(same as min_rows) Fewest allowed (weighted) observations in a leaf.", gridable = true, level = API.Level.expert)
     public double min_child_weight;
 
-    @API(help="(same as eta) Learning rate (from 0.0 to 1.0)", gridable = true)
+    @API(help="(same as eta) Learning rate (from 0.0 to 1.0)", gridable = true, level = API.Level.expert)
     public double learn_rate;
     @API(help="(same as learn_rate) Learning rate (from 0.0 to 1.0)", gridable = true)
     public double eta;
 
-//    @API(help="Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999) ", level = API.Level.secondary, gridable = true)
-//    public double learn_rate_annealing;
-
     @API(help = "(same as subsample) Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
     public double sample_rate;
-    @API(help = "(same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)", gridable = true)
+    @API(help = "(same as sample_rate) Row sample rate per tree (from 0.0 to 1.0)", gridable = true, level = API.Level.expert)
     public double subsample;
 
     @API(help="(same as colsample_bylevel) Column sample rate (from 0.0 to 1.0)", gridable = true)
     public double col_sample_rate;
-    @API(help="(same as col_sample_rate) Column sample rate (from 0.0 to 1.0)", gridable = true)
+    @API(help="(same as col_sample_rate) Column sample rate (from 0.0 to 1.0)", gridable = true, level = API.Level.expert)
     public double colsample_bylevel;
 
     @API(help = "(same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
     public double col_sample_rate_per_tree;
-    @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
+    @API(help = "(same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0)", level = API.Level.expert, gridable = true)
     public double colsample_bytree;
 
     @API(help = "Column sample rate per tree node (from 0.0 to 1.0)", level = API.Level.secondary, gridable = true)
@@ -141,7 +139,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
 
     @API(help="(same as gamma) Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.secondary, gridable = true)
     public float min_split_improvement;
-    @API(help="(same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.secondary, gridable = true)
+    @API(help="(same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen", level = API.Level.expert, gridable = true)
     public float gamma;
 
     @API(help = "Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads parameter). Defaults to maximum available", level = API.Level.expert)
@@ -204,10 +202,15 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
     @API(help="Backend. By default (auto), a GPU is used if available.", values = { "auto", "gpu", "cpu" }, level = API.Level.expert, gridable = true)
     public XGBoostParameters.Backend backend;
 
-    @API(help="Which GPU to use. ", level = API.Level.expert, gridable = false)
-    public int gpu_id;
+    @API(help="Which GPU(s) to use. ", level = API.Level.expert, gridable = false)
+    public int[] gpu_id;
 
     @API(help="A set of allowed column interactions.", level= API.Level.expert)
     public String[][] interaction_constraints;
+
+    @API(help="Controls the effect of observations with positive labels in relation to the observations with negative labels on gradient calculation. Useful for imbalanced problems.", level= API.Level.expert, gridable = true)
+    public float scale_pos_weight;
+
   }
+
 }

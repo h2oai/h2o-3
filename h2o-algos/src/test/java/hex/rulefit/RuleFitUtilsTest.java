@@ -13,8 +13,11 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import static hex.tree.TreeUtils.getResponseLevelIndex;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -28,7 +31,7 @@ public class RuleFitUtilsTest extends TestUtil {
     public void testConditionAndRule() {
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            final Frame fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
             Scope.track(fr);
 
             Condition condition = new Condition(0, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2, null, null, "pclass", false );
@@ -76,7 +79,7 @@ public class RuleFitUtilsTest extends TestUtil {
             String[] expectedFileNames = new String[2];
             expectedFileNames[0]="Tree1.png";
             expectedFileNames[1]="Tree0.png";
-            Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/extdata/prostate.csv"));
 
             GBMModel.GBMParameters p = new GBMModel.GBMParameters();
             p._train = train._key;
@@ -92,7 +95,7 @@ public class RuleFitUtilsTest extends TestUtil {
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = gbm._output;
             final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
             SharedTreeSubgraph sharedTreeSubgraph = gbm.getSharedTreeSubgraph(0, treeClass);
-            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
+            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
             Condition condition1 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"GLEASON", false);
@@ -126,7 +129,7 @@ public class RuleFitUtilsTest extends TestUtil {
     public void extractRulesFromTreeFromModelTesCategorical() {
         try {
             Scope.enter();
-            Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+            Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
             IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
             p._train = train._key;
@@ -141,27 +144,22 @@ public class RuleFitUtilsTest extends TestUtil {
             final SharedTreeModel.SharedTreeOutput sharedTreeOutput = isofor._output;
             final int treeClass = getResponseLevelIndex(null, sharedTreeOutput);
             SharedTreeSubgraph sharedTreeSubgraph = isofor.getSharedTreeSubgraph(0, treeClass);
-            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0);
+            Set<Rule> treeRules =  Rule.extractRulesFromTree(sharedTreeSubgraph, 0, null);
             assertEquals(treeRules.size(), 8);
 
-            Condition condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, new int[] {8, 9, 10, 11, 12, 13}, "fYear", false);
-            Condition condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 228.5, null, null, "Distance", false);
-            Condition condition3 = new Condition(2, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f24", "f25", "f26", "f27", "f28", "f29", "f3", "f30", "f31", "f4", "f5", "f6", "f7", "f8", "f9"},
-                    new int[] {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30},"fDayofMonth", true);
-            Condition[] conditions = new Condition[] {condition1, condition2, condition3};
-
-            Rule rule = new Rule(conditions, 2.0, "whatever");
-
-            assertEquals(treeRules.contains(rule),true);
-
-            condition1 = new Condition(0, Condition.Type.Categorical, Condition.Operator.In, -1.0, new String[] {"f1995", "f1996", "f1997", "f1998", "f1999", "f2000"}, new int[] {8, 9, 10, 11, 12, 13}, "fYear", false);
-            condition2 = new Condition(5, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 228.5, null, null,"Distance", true);
-            condition3 = new Condition(5, Condition.Type.Numerical, Condition.Operator.LessThan, 362.5, null, null,"Distance", false);
-            conditions = new Condition[] {condition1, condition2, condition3};
-
-            rule = new Rule(conditions, 2.0, "whatever");
-            
-            assertEquals(treeRules.contains(rule),true);
+            List<String> languageRules = treeRules.stream().map(it -> it.languageRule).sorted().collect(Collectors.toList());
+            // Note: this hard-coded list of expected rules is sensitive to changes in the upstream algo
+            List<String> expectedRules = Arrays.asList(
+                    "(Distance < 211.5) & (fYear in {f1987, f1988, f1989, f1990, f1991, f1992, f1993} or fYear is NA)",
+                    "(Distance < 211.5) & (fYear in {f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(Distance < 348.5) & (Distance >= 211.5 or Distance is NA) & (fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA)",
+                    "(Distance >= 348.5 or Distance is NA) & (fYear in {f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000} or fYear is NA)",
+                    "(fDayOfWeek in {f1, f2, f3, f4} or fDayOfWeek is NA) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fDayOfWeek in {f5, f6, f7}) & (fYear in {f1989, f1990, f1991, f1992, f1993, f1994, f1995, f1996, f1997, f1998, f1999, f2000})",
+                    "(fYear in {f1987})",
+                    "(fYear in {f1988})"
+            );
+            assertEquals(expectedRules, languageRules);
 
             List<Rule> wholeModelRules = Rule.extractRulesListFromModel(isofor, 0, 1);
             assertEquals(wholeModelRules.size(), 8);
@@ -169,6 +167,76 @@ public class RuleFitUtilsTest extends TestUtil {
         } finally {
             Scope.exit();
         }
+    }
+    
+    @Test
+    public void deduplicateRulesTest() {
+        try {
+            Scope.enter();
+
+            Condition conditionr11 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
+            Condition conditionr12 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
+            Condition conditionr13 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions1 = new Condition[] {conditionr11, conditionr12, conditionr13};
+
+            Rule rule1 = new Rule(conditions1, 0.032236840575933456, "somevarname1");
+            rule1.coefficient = 4.0;
+
+            Condition conditionr21 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1, new String[] {"ABC", "AAA"}, new int[] {2, 6},"PSA", true);
+            Condition conditionr22 = new Condition(6, Condition.Type.Categorical, Condition.Operator.In, -1,  new String[] { "CCC", "BBB", "AAA"}, new int[] {1, 3, 6}, "PSA", false);
+            Condition conditionr23 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions2 = new Condition[] {conditionr21, conditionr22, conditionr23};
+
+            Rule rule2 = new Rule(conditions2, 0.032236840575933456, "somevarname2");
+
+            Condition condition31 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 6.5, null, null,"PSA", true);
+            Condition condition32 = new Condition(6, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 14.730077743530273, null, null, "PSA", false);
+            Condition condition33 = new Condition(2, Condition.Type.Numerical, Condition.Operator.LessThan, 2.5, null, null,"DPROS", false);
+            Condition[] conditions3 = new Condition[] {condition31, condition32, condition33};
+
+            Rule rule3 = new Rule(conditions3, 0.032236840575933456, "somevarname3");
+
+            Condition conditionr41 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 6.5, null, null,"PSA", true);
+            Condition conditionr42 = new Condition(6, Condition.Type.Numerical, Condition.Operator.LessThan, 14.730077743530273, null, null, "PSA", false);
+            Condition conditionr43 = new Condition(2, Condition.Type.Numerical, Condition.Operator.GreaterThanOrEqual, 2.5, null, null,"DPROS", false);
+            Condition[] conditions4 = new Condition[] {conditionr41, conditionr42, conditionr43};
+
+            Rule rule4 = new Rule(conditions4, 10.23, "somevarname4");
+            rule4.coefficient = 3.0;
+            
+            Rule[] rulesToDeduplicate = new Rule[] {rule1, rule2, rule3, rule4};
+
+            Rule[] deduplicatedRules = RuleFitUtils.deduplicateRules(rulesToDeduplicate, true);
+            
+            assertEquals(3, deduplicatedRules.length);
+
+            Rule deduplicatedRule = Arrays.asList(deduplicatedRules).stream()
+                    .filter(rule -> rule.coefficient != 0.0)
+                    .findAny()
+                    .orElse(null);
+            
+            assertEquals(deduplicatedRule.coefficient, rule1.coefficient + rule4.coefficient, 0.0);
+            assertEquals("somevarname1, somevarname4", deduplicatedRule.varName);
+            
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    
+    @Test
+    public void testReadRuleId() {
+        String ruleId = "M1T10N8";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), ruleId);
+        
+        ruleId = "M1T10N8, M1T29N8";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), "M1T10N8");
+
+        ruleId = "M3T15N9_0, M5T15N14_0, M4T15N11_0, M8T15N19_0";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), "M3T15N9_0");
+
+        ruleId = "M6T10N36_0";
+        assertEquals(RuleFitUtils.readRuleId(ruleId), "M6T10N36_0");
     }
 
 }

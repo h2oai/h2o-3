@@ -6,8 +6,11 @@ import hex.ScoreKeeper;
 import hex.ScoringInfo;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
+import water.H2O;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -47,6 +50,18 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
     @Override
     public String[] getAllHyperParamNamesInSubspaces() {
         return new String[0];
+    }
+
+    @Override
+    public Map<String, Object[]> getHyperParams() {
+        Map<String, Object[]> result = new HashMap<>();
+        for (int i = 0; i < _hyperParamNames.length; i++) {
+            Object[] values = new Object[_hyperParams.length];
+            for (int j = 0; j < _hyperParams.length; j++)
+                values[j] = _hyperParams[j][i];
+            result.put(_hyperParamNames[i], values);
+        }
+        return result;
     }
 
     @Override
@@ -96,12 +111,12 @@ public class SequentialWalker<MP extends Model.Parameters> implements HyperSpace
             private int _index = -1;
 
             @Override
-            public MP nextModelParameters(Model previousModel) {
+            public MP nextModelParameters() {
                 return getModelParams(_params, _hyperParams[++_index]);
             }
 
             @Override
-            public boolean hasNext(Model previousModel) {
+            public boolean hasNext() {
                 return _index+1 < getMaxHyperSpaceSize();
             }
 

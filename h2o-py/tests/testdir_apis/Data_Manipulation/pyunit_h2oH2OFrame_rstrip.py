@@ -18,7 +18,4 @@ def h2o_H2OFrame_rstrip():
     assert newNames==newStrip, "h2o.H2OFrame.rstrip() command is not working."  # check return result
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_rstrip())
-else:
-    h2o_H2OFrame_rstrip()
+pyunit_utils.standalone_test(h2o_H2OFrame_rstrip)

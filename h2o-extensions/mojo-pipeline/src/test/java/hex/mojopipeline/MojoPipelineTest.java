@@ -124,7 +124,7 @@ public class MojoPipelineTest extends TestUtil {
   }
 
   private static Frame parseCsv(final String dataFile, final MojoFrameMeta meta) {
-    return parse_test_file(dataFile, new ParseSetupTransformer() {
+    return parseTestFile(dataFile, new ParseSetupTransformer() {
       @Override
       public ParseSetup transformSetup(ParseSetup guessedSetup) {
         byte[] columnTypes = guessedSetup.getColumnTypes();

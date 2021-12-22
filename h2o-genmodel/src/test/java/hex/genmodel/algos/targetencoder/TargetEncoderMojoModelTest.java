@@ -83,6 +83,7 @@ public class TargetEncoderMojoModelTest {
     
     targetEncoderMojoModel._columnNameToIdx.clear();
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel.init();
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -156,6 +157,7 @@ public class TargetEncoderMojoModelTest {
 
     targetEncoderMojoModel._columnNameToIdx.clear();
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
+    targetEncoderMojoModel.init();
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -217,6 +219,7 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
     targetEncoderMojoModel._teColumn2HasNAs = new HashMap<>();
     targetEncoderMojoModel._teColumn2HasNAs.put(predictorName, true);
+    targetEncoderMojoModel.init();
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -291,6 +294,7 @@ public class TargetEncoderMojoModelTest {
     targetEncoderMojoModel._columnNameToIdx.put(predictorName, 1);
     targetEncoderMojoModel._teColumn2HasNAs = new HashMap<>();
     targetEncoderMojoModel._teColumn2HasNAs.put(predictorName, false);
+    targetEncoderMojoModel.init();
 
 
     VoidErrorConsumer errorConsumer = new VoidErrorConsumer();
@@ -332,33 +336,6 @@ public class TargetEncoderMojoModelTest {
     assertEquals(expectedPriorProbabilityFromTrainingData, preds[0], 1e-5);
   }
   
-  // We test that order of transformation/predictions is determined by index of teColumn in the input data.
-  @Test
-  public void sortEncodingMapByIndex() {
-    String[] predictors = new String[] {"cat3", "cat1", "cat2"};
-    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(predictors, new String[0][0], null);
-    EncodingMaps encodingMaps = new EncodingMaps();
-    EncodingMap encodingMapForCat1 = new EncodingMap(2);
-    int factorValueForA = 0;
-    int factorValueForB = 1;
-    encodingMapForCat1.add(factorValueForA, new double[]{2,5});
-    encodingMapForCat1.add(factorValueForB, new double[]{3,7});
-
-    encodingMaps.put(predictors[2], encodingMapForCat1);
-    encodingMaps.put(predictors[0], encodingMapForCat1);
-    encodingMaps.put(predictors[1], encodingMapForCat1);
-
-    Map<String, EncodingMap> sortedByColumnIndex = targetEncoderMojoModel.sortByColumnIndex(encodingMaps);
-
-    ArrayList<String> sortedTeColumns = new ArrayList<>();
-    for (Iterator<Map.Entry<String, EncodingMap>> it = sortedByColumnIndex.entrySet().iterator(); it.hasNext(); ) {
-      Map.Entry<String, EncodingMap> entry = it.next();
-      sortedTeColumns.add(entry.getKey());
-    }
-    
-    assertArrayEquals(predictors, sortedTeColumns.toArray(new String[0]));
-  }
-
   private static double[] nanArray(int len) {
     double[] arr = new double[len];
     for (int i = 0; i < len; i++) {

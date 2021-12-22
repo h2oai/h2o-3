@@ -38,12 +38,15 @@ H2O supports the following supervised algorithms:
    data-science/deep-learning
    data-science/drf
    data-science/glm
+   data-science/model_selection
    data-science/gam
+   data-science/anova_glm
    data-science/gbm
    data-science/naive-bayes
    data-science/rulefit
    data-science/stacked-ensembles
    data-science/svm
+   data-science/upliftdrf
    data-science/xgboost
 
 Unsupervised
@@ -59,6 +62,7 @@ H2O supports the following unsupervised algorithms:
    data-science/aggregator
    data-science/glrm
    data-science/if
+   data-science/eif
    data-science/k-means
    data-science/pca
 
@@ -71,3 +75,4 @@ Miscellaneous
    data-science/target-encoding
    data-science/tf-idf
    data-science/word2vec
+   data-science/permutation-variable-importance

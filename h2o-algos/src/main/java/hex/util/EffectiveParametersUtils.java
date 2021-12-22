@@ -1,10 +1,11 @@
 package hex.util;
 
+import hex.AUUC;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
-
+import hex.tree.uplift.UpliftDRFModel;
 
 public class EffectiveParametersUtils {
     
@@ -65,6 +66,13 @@ public class EffectiveParametersUtils {
     ) {
         if (params._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.AUTO) {
             params._categorical_encoding = scheme;
+        }
+    }
+    
+    public static void initUpliftMetric(UpliftDRFModel.UpliftDRFParameters params
+    ) {
+        if (params._uplift_metric == UpliftDRFModel.UpliftDRFParameters.UpliftMetricType.AUTO) {
+            params._uplift_metric = UpliftDRFModel.UpliftDRFParameters.UpliftMetricType.KL;
         }
     }
 }

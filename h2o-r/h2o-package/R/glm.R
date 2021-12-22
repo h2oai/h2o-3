@@ -17,6 +17,8 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param checkpoint Model checkpoint to resume training with.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
@@ -35,7 +37,9 @@
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
 #'        one of: "AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial",
 #'        "poisson", "gamma", "tweedie", "negativebinomial". Defaults to AUTO.
@@ -103,7 +107,6 @@
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param interaction_pairs A list of pairwise (first order) column interactions.
 #' @param obj_reg Likelihood divider in objective value computation, default is 1/nobs Defaults to -1.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
@@ -121,6 +124,10 @@
 #'        balance_classes. Defaults to 5.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param generate_scoring_history \code{Logical}. If set to true, will generate scoring history for GLM.  This may significantly slow down the
+#'        algo. Defaults to FALSE.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -172,6 +179,8 @@ h2o.glm <- function(x,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
+                    checkpoint = NULL,
+                    export_checkpoints_dir = NULL,
                     seed = -1,
                     keep_cross_validation_models = TRUE,
                     keep_cross_validation_predictions = FALSE,
@@ -219,7 +228,6 @@ h2o.glm <- function(x,
                     interactions = NULL,
                     interaction_pairs = NULL,
                     obj_reg = -1,
-                    export_checkpoints_dir = NULL,
                     stopping_rounds = 0,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                     stopping_tolerance = 0.001,
@@ -227,7 +235,9 @@ h2o.glm <- function(x,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
                     max_runtime_secs = 0,
-                    custom_metric_func = NULL)
+                    custom_metric_func = NULL,
+                    generate_scoring_history = FALSE,
+                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -274,6 +284,10 @@ h2o.glm <- function(x,
     parms$model_id <- model_id
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(keep_cross_validation_models))
@@ -362,8 +376,6 @@ h2o.glm <- function(x,
     parms$interaction_pairs <- interaction_pairs
   if (!missing(obj_reg))
     parms$obj_reg <- obj_reg
-  if (!missing(export_checkpoints_dir))
-    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(stopping_rounds))
     parms$stopping_rounds <- stopping_rounds
   if (!missing(stopping_metric))
@@ -380,6 +392,10 @@ h2o.glm <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(generate_scoring_history))
+    parms$generate_scoring_history <- generate_scoring_history
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -413,6 +429,8 @@ h2o.glm <- function(x,
                                     training_frame,
                                     validation_frame = NULL,
                                     nfolds = 0,
+                                    checkpoint = NULL,
+                                    export_checkpoints_dir = NULL,
                                     seed = -1,
                                     keep_cross_validation_models = TRUE,
                                     keep_cross_validation_predictions = FALSE,
@@ -460,7 +478,6 @@ h2o.glm <- function(x,
                                     interactions = NULL,
                                     interaction_pairs = NULL,
                                     obj_reg = -1,
-                                    export_checkpoints_dir = NULL,
                                     stopping_rounds = 0,
                                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                                     stopping_tolerance = 0.001,
@@ -469,6 +486,8 @@ h2o.glm <- function(x,
                                     max_after_balance_size = 5.0,
                                     max_runtime_secs = 0,
                                     custom_metric_func = NULL,
+                                    generate_scoring_history = FALSE,
+                                    auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -520,6 +539,10 @@ h2o.glm <- function(x,
 
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(keep_cross_validation_models))
@@ -608,8 +631,6 @@ h2o.glm <- function(x,
     parms$interaction_pairs <- interaction_pairs
   if (!missing(obj_reg))
     parms$obj_reg <- obj_reg
-  if (!missing(export_checkpoints_dir))
-    parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(stopping_rounds))
     parms$stopping_rounds <- stopping_rounds
   if (!missing(stopping_metric))
@@ -626,6 +647,10 @@ h2o.glm <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(generate_scoring_history))
+    parms$generate_scoring_history <- generate_scoring_history
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

@@ -190,10 +190,9 @@ def wrap(msg, indent='', indent_first=True, width=120):
       :param indent_first: if True then the first line will be indented as well, otherwise not
       :param width: the width of the generated paragraphs.
     """
-    wrapper.width = width
-    wrapper.initial_indent = indent
-    wrapper.subsequent_indent = indent
-    msg = wrapper.fill(msg)
+    wrapper = textwrap.TextWrapper(width=width, initial_indent=indent, subsequent_indent=indent)
+    lines = msg.splitlines()
+    msg = '\n'.join([wrapper.fill(line) for line in lines])
     return msg if indent_first else msg[len(indent):]
 
 
@@ -256,7 +255,7 @@ def endpoints(raw=False):
 
             # For these special cases, the actual input schema is not the one reported by the endpoint, but the schema
             # of the 'parameters' field (which is fake).
-            if (e["class_name"], method) in {("Grid", "train"), ("ModelBuilders", "train"),
+            if (e["class_name"], method) in {("Grid", "train"), ("Grid", "resume"), ("ModelBuilders", "train"),
                                              ("ModelBuilders", "validate_parameters")}:
                 pieces = path.split("/")
                 assert len(pieces) >= 4, "Expected to see algo name in the path: " + path
@@ -451,7 +450,6 @@ def write_to_file(filename, content):
 #-----------------------------------------------------------------------------------------------------------------------
 config = defaultdict(bool)  # will be populated during the init() stage
 pp = pprint.PrettyPrinter(indent=4).pprint  # pretty printer
-wrapper = textwrap.TextWrapper()
 requests_memo = {}  # Simple memoization, so that we don't fetch same data more than once
 classname_pattern = re.compile(r"/(?:\d+|LATEST|EXPERIMENTAL)/(\w+)")
 

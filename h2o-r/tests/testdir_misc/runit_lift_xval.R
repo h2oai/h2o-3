@@ -43,13 +43,14 @@ test.xval.lift <- function(conn){
 	cv1 = h2o.getModel("cv_gbm_cv_1")
 	cv2 = h2o.getModel("cv_gbm_cv_2")
 	
-	#Define and use weights column to build equivalent gbm models 
-	ww[ss]=0
+	#Define and use weights column to build equivalent gbm models
+	ww <- rep(0, rowss) 
+	ww[ss] = 1
 	wi = as.h2o(ww,destination_frame = "weight_col")
 	a = h2o.assign(h2o.cbind(a,wi),key = "bank")
 	gg1 = h2o.gbm(x = myX,y = myY,training_frame = a,weights_column = "x0",ntrees = 5,model_id = "gbm1")
-	ww = rep(0,rowss)
-	ww[ss]=1
+	ww <- rep(1, rowss)
+	ww[ss] <- 0
 	wi = as.h2o(ww,destination_frame = "weight_col")
 	a = h2o.assign(h2o.cbind(a,wi),key = "bank")
 	gg2 = h2o.gbm(x = myX,y = myY,training_frame = a,weights_column = "x1",ntrees = 5,model_id = "gbm2")

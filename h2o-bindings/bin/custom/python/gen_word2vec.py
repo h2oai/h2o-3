@@ -1,11 +1,8 @@
-def class_extensions():
-    def _requires_training_frame(self):
-        """
-        Determines if Word2Vec algorithm requires a training frame.
-        :return: False.
-        """
-        return False
+supervised_learning = False
+options = dict(requires_training_frame=False)
 
+
+def class_extensions():
     @staticmethod
     def from_external(external=H2OFrame):
         """
@@ -29,31 +26,36 @@ def class_extensions():
         w2v_model.train()
         return w2v_model
 
-    def _determine_vec_size(self):
+    @staticmethod
+    def _determine_vec_size(pre_trained):
         """
         Determines vec_size for a pre-trained model after basic model verification.
         """
-        first_column = self.pre_trained.types[self.pre_trained.columns[0]]
+        first_column = pre_trained.types[pre_trained.columns[0]]
 
         if first_column != 'string':
             raise H2OValueError("First column of given pre_trained model %s is required to be a String",
-                                self.pre_trained.frame_id)
+                                pre_trained.frame_id)
 
-        if list(self.pre_trained.types.values()).count('string') > 1:
+        if list(pre_trained.types.values()).count('string') > 1:
             raise H2OValueError("There are multiple columns in given pre_trained model %s with a String type.",
-                                self.pre_trained.frame_id)
+                                pre_trained.frame_id)
 
-        self.vec_size = self.pre_trained.dim[1] - 1;
+        return pre_trained.dim[1] - 1
 
 
 extensions = dict(
-    __init__setparams="""
-elif pname == 'pre_trained':
-    setattr(self, pname, pvalue)
-    self._determine_vec_size();
-    setattr(self, 'vec_size', self.vec_size)
-""",
     __class__=class_extensions,
+)
+
+overrides = dict(
+    pre_trained=dict(
+        setter="""
+pt = self._parms["{sname}"] = H2OFrame._validate({pname}, '{pname}')
+if pt is not None:
+    self.vec_size = H2OWord2vecEstimator._determine_vec_size(pt)
+"""
+    )
 )
 
 examples = dict(

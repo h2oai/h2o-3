@@ -89,12 +89,13 @@ public class ModelAttributes implements Serializable {
         if (mojoModel instanceof GlmOrdinalMojoModel) {
           return new MojoModelMetricsOrdinalGLM();
         } else return new MojoModelMetricsOrdinal();
+      case CoxPH:
+        return new MojoModelMetricsRegressionCoxPH();
       case Unknown:
       case Clustering:
       case AutoEncoder:
       case DimReduction:
       case WordEmbedding:
-      case CoxPH:
       default:
         return new MojoModelMetrics(); // Basic model metrics if nothing else is available
     }
@@ -153,5 +154,14 @@ public class ModelAttributes implements Serializable {
    */
   public ModelParameter[] getModelParameters() {
     return _model_parameters;
+  }
+  
+  public Object getParameterValueByName(String name){
+    for (ModelParameter parameter:_model_parameters) {
+      if(parameter.name.equals(name)){
+        return parameter.actual_value;
+      }
+    }
+    return null;
   }
 }

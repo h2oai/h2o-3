@@ -31,6 +31,8 @@ water.api.schemas3.FrameV3$ColSpecifierV3
 water.api.schemas3.FrameV3$ColV3
 water.api.schemas3.FramesV3
 water.api.schemas3.FramesListV3
+water.api.schemas3.FrameSaveV3
+water.api.schemas3.FrameLoadV3
 water.api.schemas3.GarbageCollectV3
 water.api.schemas3.H2OErrorV3
 water.api.schemas3.H2OModelBuilderErrorV3
@@ -68,6 +70,7 @@ water.api.schemas3.ModelMetricsBinomialGLMV3
 water.api.schemas3.ModelMetricsBinomialGLMGenericV3
 water.api.schemas3.ModelMetricsBinomialV3
 water.api.schemas3.ModelMetricsBinomialGenericV3
+water.api.schemas3.ModelMetricsBinomialUpliftV3
 water.api.schemas3.ModelMetricsClusteringV3
 water.api.schemas3.ModelMetricsHGLMV3
 water.api.schemas3.ModelMetricsHGLMGenericV3
@@ -84,6 +87,7 @@ water.api.schemas3.ModelMetricsOrdinalGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionGLMV3
 water.api.schemas3.ModelMetricsRegressionGLMGenericV3
 water.api.schemas3.ModelMetricsRegressionCoxPHV3
+water.api.schemas3.ModelMetricsRegressionCoxPHGenericV3
 water.api.schemas3.ModelMetricsRegressionV3
 water.api.schemas3.ModelMetricsRegressionGenericV3
 water.api.schemas3.ModelOutputSchemaV3
@@ -167,3 +171,5 @@ water.api.schemas3.CloudLockV3
 water.api.schemas3.SegmentModelsV3
 water.api.schemas3.SegmentModelsParametersV3
 water.api.schemas3.FeatureInteractionV3
+water.api.RecoveryHandler$ResumeV3
+water.api.schemas3.FriedmanPopescusHV3

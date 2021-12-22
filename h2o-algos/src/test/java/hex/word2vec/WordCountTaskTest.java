@@ -57,7 +57,7 @@ public class WordCountTaskTest extends TestUtil {
   public void testWordCountText8() {
     String fName = "bigdata/laptop/text8.gz";
     assumeThat("text8 data available", locateFile(fName), is(notNullValue())); // only run if text8 is present
-    Frame fr = parse_test_file(fName, "NA", 0, new byte[]{Vec.T_STR});
+    Frame fr = parseTestFile(fName, "NA", 0, new byte[]{Vec.T_STR});
     try {
       Map<BufferedString, IcedLong> counts = new WordCountTask().doAll(fr.vec(0))._counts;
       assertEquals(253854, counts.size());

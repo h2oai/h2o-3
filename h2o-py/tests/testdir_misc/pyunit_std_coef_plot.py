@@ -29,7 +29,7 @@ def std_coef_plot_test():
   cars_glm.std_coef_plot(server=True)
   cars_glm.std_coef_plot(num_of_features=2, server=True)
 
-
+    
 if __name__ == "__main__":
   pyunit_utils.standalone_test(std_coef_plot_test)
 else:

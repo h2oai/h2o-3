@@ -1,12 +1,10 @@
 package hex.tree.drf;
 
-import hex.tree.SharedTreeModel;
-import hex.tree.SharedTreeModelWithContributions;
+import hex.tree.*;
 import hex.util.EffectiveParametersUtils;
 import water.Key;
 import water.fvec.NewChunk;
 import water.util.MathUtils;
-import water.util.SBPrintStream;
 
 public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
@@ -50,7 +48,12 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     return new ScoreContributionsTaskDRF(this);    
   }
 
-  @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
+  @Override
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
+    return new ScoreContributionsSoringTaskDRF(this, options);
+  }
+
+  @Override public boolean binomialOpt() { return !_parms._binomial_double_trees; }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
@@ -74,23 +77,12 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     }
     return preds;
   }
-  
-  @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-    if (_output.nclasses() == 1) { // Regression
-      body.ip("preds[0] /= " + _output._ntrees + ";").nl();
-    } else { // Classification
-      if( _output.nclasses()==2 && binomialOpt()) { // Kept the initial prediction for binomial
-        body.ip("preds[1] /= " + _output._ntrees + ";").nl();
-        body.ip("preds[2] = 1.0 - preds[1];").nl();
-      } else {
-        body.ip("double sum = 0;").nl();
-        body.ip("for(int i=1; i<preds.length; i++) { sum += preds[i]; }").nl();
-        body.ip("if (sum>0) for(int i=1; i<preds.length; i++) { preds[i] /= sum; }").nl();
-      }
-      if (_parms._balance_classes)
-        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
-    }
+
+  @Override
+  protected SharedTreePojoWriter makeTreePojoWriter() {
+    CompressedForest compressedForest = new CompressedForest(_output._treeKeys, _output._domains);
+    CompressedForest.LocalCompressedForest localCompressedForest = compressedForest.fetch();
+    return new DrfPojoWriter(this, localCompressedForest._trees);
   }
 
   public class ScoreContributionsTaskDRF extends ScoreContributionsTask {
@@ -110,6 +102,26 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
                 nc[i].addNum(featurePlusBiasRatio - (contribs[i] / _output._ntrees));
             }
         }
+    }
+  }
+
+  public class ScoreContributionsSoringTaskDRF extends ScoreContributionsSortingTask {
+
+    public ScoreContributionsSoringTaskDRF(SharedTreeModel model, ContributionsOptions options) {
+      super(model, options);
+    }
+
+    @Override
+    public void doModelSpecificComputation(float[] contribs) {
+      for (int i = 0; i < contribs.length; i++) {
+        // Prediction of DRF tree ensemble is an average prediction of all trees. So, divide contribs by ntrees
+        if (_output.nclasses() == 1) { //Regression
+          contribs[i] = contribs[i] / _output._ntrees;
+        } else { //Binomial
+          float featurePlusBiasRatio = (float)1 / (_output.nfeatures() + 1); // + 1 for bias term
+          contribs[i] = featurePlusBiasRatio - (contribs[i] / _output._ntrees);
+        }
+      }
     }
   }
 

@@ -6,6 +6,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
@@ -18,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -136,34 +136,6 @@ public class FrameUtilsTest extends TestUtil {
     }
   }
 
-  // This test is used to test some utilities that I have written to make sure they function as planned.
-  @Test
-  public void testIDColumnOperationEncoder() {
-    Scope.enter();
-    Random _rand = new Random();
-    int numRows = 1000;
-    int rowsToTest = _rand.nextInt(numRows);
-    try {
-      FrameTestUtil.Create1IDColumn tempO = new FrameTestUtil.Create1IDColumn(numRows);
-      Frame f = tempO.doAll(tempO.returnFrame()).returnFrame();
-      Scope.track(f);
-
-      ArrayList<Integer> badRows = new FrameTestUtil.CountAllRowsPresented(0, f).doAll(f).findMissingRows();
-      assertEquals("All rows should be present but not!", badRows.size(), 0);
-      long countAppear = new FrameTestUtil.CountIntValueRows(rowsToTest, 0,
-              0, f).doAll(f).getNumberAppear();
-      assertEquals("All values should appear only once.", countAppear, 1);
-
-      // delete a row to make sure it is not found again.
-      f.remove(rowsToTest);  // row containing value rowsToTest is no longer there.
-      countAppear = new FrameTestUtil.CountIntValueRows(2000, 0, 0,
-              f).doAll(f).getNumberAppear();
-      assertEquals("Value of interest should not been found....", countAppear, 0);
-    } finally {
-      Scope.exit();
-    }
-  }
-
   @Test
   public void getColumnIndexByName() {
     Scope.enter();
@@ -190,7 +162,7 @@ public class FrameUtilsTest extends TestUtil {
   public void testEnumLimitedEncoding() {
     Scope.enter();
     try {
-      Frame fr = parse_test_file("./smalldata/prostate/prostate.csv");
+      Frame fr = parseTestFile("./smalldata/prostate/prostate.csv");
       Scope.track(fr);
       fr.toCategoricalCol("AGE");
       
@@ -235,7 +207,7 @@ public class FrameUtilsTest extends TestUtil {
   public void testCalculateWeightMeanSTD() {
     Scope.enter();
     try {
-      Frame trainData = parse_test_file("smalldata/prostate/prostate.csv");
+      Frame trainData = parseTestFile("smalldata/prostate/prostate.csv");
       Scope.track(trainData);
       Vec orig = trainData.remove(trainData.numCols() - 1);
       Vec[] weights = new Vec[2];
@@ -301,6 +273,36 @@ public class FrameUtilsTest extends TestUtil {
     meanSigma[1] = Math.sqrt(scale*(weightedEleSqSum/weightSum-meanSigma[0]*meanSigma[0]));
 
     return meanSigma;
+  }
+
+  @Test
+  public void testFrameAsDoubles() {
+    try {
+      Scope.enter();
+      Frame frame = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
+
+      double[][] res = FrameUtils.asDoubles(frame);
+      assertEquals("Wrong number of columns", 2, res.length);
+      assertEquals("Wrong number of rows", 500, res[0].length);
+      assertEquals("Wrong value in first row and first col", 3.3, res[0][0], 0);
+      assertEquals("Wrong value in first row and second col", 3.3, res[1][0], 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testFrameAsDoublesLarge() {
+    try {
+      Scope.enter();
+      Frame frame = Scope.track(generate_real_only(128, 65536, 0, 0xCAFFE));
+
+      double[][] res = FrameUtils.asDoubles(frame);
+      assertEquals("Wrong number of columns", 128, res.length);
+      assertEquals("Wrong number of rows", 65536, res[0].length);
+    } finally {
+      Scope.exit();
+    }
   }
 
 }

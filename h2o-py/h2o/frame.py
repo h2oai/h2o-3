@@ -26,12 +26,14 @@ from h2o.exceptions import H2OTypeError, H2OValueError, H2ODeprecationWarning
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
+from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
+from h2o.model.model_base import _get_numpy
 
 __all__ = ("H2OFrame", )
 
@@ -74,6 +76,7 @@ class H2OFrame(Keyed):
     :param str separator: (deprecated)
 
     :example:
+    
     >>> python_obj = [1, 2, 2.5, -100.9, 0]
     >>> frame = h2o.H2OFrame(python_obj)
     >>> frame
@@ -228,7 +231,12 @@ class H2OFrame(Keyed):
             else:
                 return
         else:
-            assert_is_type(param, H2OFrame, message=message)
+            assert_is_type(param, str, H2OFrame, message=message)
+            if is_type(param, str):
+                fr = h2o.get_frame(param)
+                if fr is None:
+                    raise ValueError(message)
+                return fr
             return param
 
 
@@ -274,7 +282,7 @@ class H2OFrame(Keyed):
         >>> frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
         >>> frame.key
         """
-        return None if self._ex is None else self._ex._cache._id
+        return None if self._ex is None else self.frame_id
 
 
     @property
@@ -366,6 +374,28 @@ class H2OFrame(Keyed):
             self._frame(fill_cache=True)
         return dict(self._ex._cache.types)
 
+    @property
+    def dtype(self):
+        """
+        Returns the numpy.dtype of the first column of this data frame.
+        Works only for single-column data frames.
+        Used mainly for using H2OFrames in conjunction with scikit-learn APIs.
+
+        :returns: Numpy dtype of the first column
+        """
+        if not len(self.columns) == 1:
+            raise H2OValueError("dtype is only supported for one column frames")
+        np = _get_numpy("H2OFrame.dtype")
+        type_map = {
+            "enum": np.str, 
+            "string": np.str, 
+            "int": np.int, 
+            "real": np.float, 
+            "time": np.str,
+            "uuid": np.str
+        }
+        types_list = list(self.types.values())
+        return np.dtype(type_map[types_list[0]])
 
     @property
     def frame_id(self):
@@ -421,26 +451,29 @@ class H2OFrame(Keyed):
 
 
     def _import_parse(self, path, pattern, destination_frame, header, separator, column_names, column_types, na_strings,
-                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
+                      skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None, escapechar=None):
         if H2OFrame.__LOCAL_EXPANSION_ON_SINGLE_IMPORT__ and is_type(path, str) and "://" not in path:  # fixme: delete those 2 lines, cf. PUBDEV-5717
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path, pattern)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                    skipped_columns, custom_non_data_line_markers, partition_by)
+                    skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self
 
 
-    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None):
+    def _upload_parse(self, path, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns=None,
+                      quotechar=None, escapechar=None):
         ret = h2o.api("POST /3/PostFile", filename=path)
         rawkey = ret["destination_frame"]
-        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns)
+        self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings, skipped_columns,
+                    quotechar=quotechar, escapechar=escapechar)
         return self
 
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
-               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None):
+               na_strings=None, skipped_columns=None, custom_non_data_line_markers=None, partition_by=None, quotechar=None,
+               escapechar=None):
         setup = h2o.parse_setup(rawkey, destination_frame, header, separator, column_names, column_types, na_strings,
-                                skipped_columns, custom_non_data_line_markers, partition_by)
+                                skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
         return self._parse_raw(setup)
 
 
@@ -449,7 +482,6 @@ class H2OFrame(Keyed):
         p = {"destination_frame": None,
              "parse_type": None,
              "separator": None,
-             "single_quotes": None,
              "check_header": None,
              "number_columns": None,
              "chunk_size": None,
@@ -457,8 +489,10 @@ class H2OFrame(Keyed):
              "blocking": False,
              "column_types": None,
              "skipped_columns":None,
-             "custom_non_data_line_markers": setup["custom_non_data_line_markers"],
-             "partition_by": setup["partition_by"]
+             "custom_non_data_line_markers": None,
+             "partition_by": None,
+             "single_quotes": None,
+             "escapechar": None
              }
 
         if setup["column_names"]: p["column_names"] = None
@@ -680,8 +714,6 @@ class H2OFrame(Keyed):
         """
         Detach the Python object from the backend, usually by clearing its key
 
-        :returns: Removed H2OFrame
-        
         :examples: 
 
         >>> from random import randrange
@@ -1667,6 +1699,23 @@ class H2OFrame(Keyed):
         assert_is_type(levels, [str])
         return H2OFrame._expr(expr=ExprNode("setDomain", self, False, levels), cache=self._ex._cache)
 
+    def append_levels(self, levels):
+        """
+        Appends new levels to a domain of a categorical column.
+
+        :param List[str] levels: A list of strings specifying the additional levels.
+        :returns: A single-column H2OFrame with the desired levels.
+
+        :examples:
+
+        >>> import numpy as np
+        >>> import random
+        >>> python_lists = np.random.randint(-5,5, (10000, 1))
+        >>> frame = h2o.H2OFrame(python_obj=python_lists).asfactor()
+        >>> extra_levels = frame.append_levels(["A", "B"])
+        >>> extra_levels
+        """
+        return H2OFrame._expr(expr=ExprNode("appendLevels", self, False, levels), cache=self._ex._cache)
 
     def rename(self, columns=None):
         """
@@ -2184,8 +2233,32 @@ class H2OFrame(Keyed):
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
         >>> iris.get_frame_data()
         """
-        return h2o.api("GET /3/DownloadDataset", data={"frame_id": self.frame_id, "hex_string": False, "escape_quotes" : True})
+        return h2o.api(
+            "GET /3/DownloadDataset", 
+            data={"frame_id": self.frame_id, "hex_string": False, "escape_quotes": True}
+        )
 
+    def save(self, path, force=True):
+        """
+        Store frame data in H2O's native format.
+
+        This will store this frame's data to a file-system location in H2O's native binary format. Stored data can be
+        loaded only with a cluster of the same size and same version the the one which wrote the data. The provided
+        directory must be accessible from all nodes (HDFS, NFS). 
+        
+        :param path: a filesystem location where to write frame data
+        :param force: overwrite already existing files (defaults to true)
+        :returns: Frame data as a string in csv format.
+        
+        :examples:
+        
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris.save("hdfs://namenode/h2o_data")
+        """
+        H2OJob(h2o.api(
+            "POST /3/Frames/%s/save" % self.frame_id, 
+            data={"dir": path, "force": force}
+        ), "Save frame data").poll()
 
     def __getitem__(self, item):
         """
@@ -2209,6 +2282,7 @@ class H2OFrame(Keyed):
         :examples:
         >>> fr[2]              # All rows, 3rd column
         >>> fr[-2]             # All rows, 2nd column from end
+        >>> fr[2:]             # All rows, all columns from the 3rd one
         >>> fr[:, -1]          # All rows, last column
         >>> fr[0:5, :]         # First 5 rows, all columns
         >>> fr[fr[0] > 1, :]   # Only rows where first cell is greater than 1, all columns
@@ -2675,7 +2749,7 @@ class H2OFrame(Keyed):
                     bothNumericTypes = (frame.types[eachKey] in validTypes) and (self.types[eachKey] in validTypes)
                     if not(sametypes) and not(bothNumericTypes):
                         raise H2OValueError("Column types must match for rbind() to work.  First column type {0}.  "
-                                            "Second column type {1})".format(self.types[eachKey], frame.types[eachKey]))
+                                            "Second column type {1}.".format(self.types[eachKey], frame.types[eachKey]))
         fr = H2OFrame._expr(expr=ExprNode("rbind", self, *frames), cache=self._ex._cache)
         fr._ex._cache.nrows = self.nrow + sum(frame.nrow for frame in frames)
         return fr
@@ -2909,7 +2983,7 @@ class H2OFrame(Keyed):
         # This code should be removed / reworked once we have a more consistent strategy of dealing with frames.
         self._ex._eager_frame()
 
-        if by is not None or group_by_frame is not "_":
+        if by is not None or group_by_frame != "_":
             res = H2OFrame._expr(
                 expr=ExprNode("h2o.impute", self, column, method, combine_method, by, group_by_frame, values))._frame()
         else:
@@ -3359,10 +3433,19 @@ class H2OFrame(Keyed):
         if measure is None: measure = "l2"
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
-    def drop_duplicates(self, columns, keep = "first"):
+    def drop_duplicates(self, columns, keep="first"):
+        """
+        Drops duplicated rows across specified columns.
+        
+        :param columns: Columns to compare during the duplicate detection process.
+        :param keep: Which rows to keep. Two possible values: ["first", "last"]. The "first" value (default) keeps
+         the first row and deletes the rest. The "last" value keeps the last row.
+         
+        :returns: A new H2OFrame with rows deduplicated
+        """
         assert_is_type(columns, [int], [str])
-        assert_is_type(keep,  Enum("first", "last"))
-    
+        assert_is_type(keep, Enum("first", "last"))
+
         return H2OFrame._expr(expr=ExprNode("dropdup", self, columns, keep))._frame()
 
     def strdistance(self, y, measure=None, compare_empty=True):
@@ -3401,15 +3484,21 @@ class H2OFrame(Keyed):
 
     def asfactor(self):
         """
-        Convert columns in the current frame to categoricals.
+        Convert column/columns in the current frame to categoricals.
 
         :returns: new H2OFrame with columns of the "enum" type.
 
         :examples:
 
-        >>> h2o = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> h2o['cylinders'] = h2o['cylinders'].asfactor()
-        >>> h2o['cylinders']
+        >>> # Single column
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> df['cylinders'] = h2o['cylinders'].asfactor()
+        >>> df['cylinders'].describe()
+        >>>
+        >>> # Multiple columns
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> df[['cylinders','economy_20mpg']] = df[['cylinders','economy_20mpg']].asfactor()
+        >>> df[['cylinders','economy_20mpg']].describe()
         """
         for colname in self.names:
             t = self.types[colname]
@@ -3746,7 +3835,7 @@ class H2OFrame(Keyed):
             expr=ExprNode("table", self, dense))
 
 
-    def hist(self, breaks="sturges", plot=True, **kwargs):
+    def hist(self, breaks="sturges", plot=True, save_plot_path=None, **kwargs):
         """
         Compute a histogram over a numeric column.
 
@@ -3754,9 +3843,11 @@ class H2OFrame(Keyed):
             or a single number for the number of breaks; or a list containing the split points, e.g:
             ``[-50, 213.2123, 9324834]``. If breaks is "fd", the MAD is used over the IQR in computing bin width.
         :param bool plot: If True (default), then a plot will be generated using ``matplotlib``.
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig.
 
         :returns: If ``plot`` is False, return H2OFrame with these columns: breaks, counts, mids_true,
-            mids, and density; otherwise this method draws a plot and returns nothing.
+            mids, and density; otherwise this method draws a plot and returns H2OFrame and a plot (can be accessed 
+            using result.figure()).
 
         :examples:
 
@@ -3764,6 +3855,7 @@ class H2OFrame(Keyed):
         >>> iris.describe()
         >>> iris[0].hist(breaks=5,plot=False)
         """
+        import matplotlib
         server = kwargs.pop("server") if "server" in kwargs else False
         assert_is_type(breaks, int, [numeric], Enum("sturges", "rice", "sqrt", "doane", "fd", "scott"))
         assert_is_type(plot, bool)
@@ -3773,15 +3865,9 @@ class H2OFrame(Keyed):
         hist = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
 
         if plot:
-            try:
-                import matplotlib
-                if server:
-                    matplotlib.use("Agg")
-                import matplotlib.pyplot as plt
-            except ImportError:
-                print("ERROR: matplotlib is required to make the histogram plot. "
-                      "Set `plot` to False, if a plot is not desired.")
-                return
+            plt = get_matplotlib_pyplot(server)
+            if plt is None:
+                return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
 
             hist["widths"] = hist["breaks"].difflag1()
             # [2:] because we're removing the title and the first row (which consists of NaNs)
@@ -3789,6 +3875,7 @@ class H2OFrame(Keyed):
             widths = [float(c[0]) for c in h2o.as_list(hist["widths"], use_pandas=False)[2:]]
             counts = [float(c[0]) for c in h2o.as_list(hist["counts"], use_pandas=False)[2:]]
 
+            fig = plt.figure()
             plt.xlabel(self.names[0])
             plt.ylabel("Frequency")
             plt.title("Histogram of %s" % self.names[0])
@@ -3804,11 +3891,14 @@ class H2OFrame(Keyed):
             else:
                 plt.bar(left=lefts, height=counts, width=widths, bottom=0)
 
+            if save_plot_path is not None:
+                fig.savefig(fname=save_plot_path)
             if not server:
                 plt.show()
+            return decorate_plot_result(res=hist, figure=fig)    
         else:
             hist["density"] = hist["counts"] / (hist["breaks"].difflag1() * hist["counts"].sum())
-            return hist
+            return decorate_plot_result(res=hist)
 
 
     def isax(self, num_words, max_cardinality, optimize_card=False, **kwargs):
@@ -3843,7 +3933,7 @@ class H2OFrame(Keyed):
         if max_cardinality <= 0: raise H2OValueError("max_cardinality must be greater than 0")
         return H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality, optimize_card))
 
-    def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel):
+    def convert_H2OFrame_2_DMatrix(self, predictors, yresp, h2oXGBoostModel, return_pandas=False):
         '''
         This method requires that you import the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
 
@@ -3851,31 +3941,31 @@ class H2OFrame(Keyed):
         numerical and enum columns alone.  Note that H2O one-hot-encoding introduces a missing(NA)
         column. There can be NAs in any columns.
 
-        Follow the steps below to compare H2OXGBoost and native XGBoost:
+        Follow the steps below to compare H2OXGBoost and native XGBoost::
 
-        1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
-        h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
-        h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
-        h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+            # 1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+            h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
+            h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+            h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
 
-        2. Derive the DMatrix from H2OFrame:
-        nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+            # 2. Derive the DMatrix from H2OFrame:
+            nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
 
-        3. Derive the parameters for native XGBoost:
-        nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+            # 3. Derive the parameters for native XGBoost:
+            nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
 
-        4. Train your native XGBoost model and generate a prediction:
-        nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
-        nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
+            # 4. Train your native XGBoost model and generate a prediction:
+            nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+            nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
 
-        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native 
-        XGBoost.
+            # 5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
 
         :param h2oFrame: H2OFrame to be converted to DMatrix for native XGBoost
         :param predictors: List of predictor columns, can be column names or indices
         :param yresp: response column, can be column index or name
         :param h2oXGBoostModel: H2OXGboost model that are built with the same H2OFrame as input earlier
-        :return: DMatrix that can be an input to a native XGBoost model
+        :param return_pandas: Whether to return `pandas.DataFrame` or DMatrix. Default to `False`
+        :return: DMatrix that can be an input to a native XGBoost model, or `pandas.DataFrame`
 
         :examples:
 
@@ -3969,12 +4059,15 @@ class H2OFrame(Keyed):
         pandaFtrain.drop([yresp], axis=1, inplace=True)
         pandaF = pd.concat([c0, pandaFtrain], axis=1)
         pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
+        if return_pandas:
+            return pandaF
         newX = list(pandaFtrain.columns.values)
-        data = pandaF.as_matrix(newX)
-        label = pandaF.as_matrix([yresp])
+        data = pandaF[newX].values
+        label = pandaF[[yresp]].values
 
-        return xgb.DMatrix(data=csr_matrix(data), label=label) \
-            if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, label=label)
+        return xgb.DMatrix(data=csr_matrix(data), label=label, feature_names=newX) \
+            if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, 
+                                                                                label=label, feature_names=newX)
 
     def pivot(self, index, column, value):
         """
@@ -4436,13 +4529,17 @@ class H2OFrame(Keyed):
     def asnumeric(self):
         """
         Create a new frame with all columns converted to numeric.
+
+        If you want to convert a column that is "enum" type to "numeric"
+        type, convert the column to "character" type first, then to "numeric". Otherwise, the values may be converted to underlying
+        factor values, not the expected mapped values.
         
         :returns: New frame with all columns converted to numeric.
 
         :examples:
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars.asnumeric()
+        >>> cars.ascharacter().asnumeric()
         """
         fr = H2OFrame._expr(expr=ExprNode("as.numeric", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():

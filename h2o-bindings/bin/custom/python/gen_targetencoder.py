@@ -1,9 +1,7 @@
-def class_extensions():
+deprecated_params = dict(k='inflection_point', f='smoothing', noise_level='noise')
 
-    _deprecated_params_ = ['k', 'f', 'noise_level']
-    k = deprecated_property('k', inflection_point)
-    f = deprecated_property('f', smoothing)
-    noise_level = deprecated_property('noise_level', noise)
+
+def class_extensions():
 
     def transform(self, frame, blending=None, inflection_point=None, smoothing=None, noise=None, as_training=False, **kwargs):
         """
@@ -16,7 +14,8 @@ def class_extensions():
         :param float noise: If provided, this overrides the amount of random noise added to the target encoding defined on the model, this helps prevent overfitting.
         :param boolean as_training: Must be set to True when encoding the training frame. Defaults to False.
 
-        :example:
+        :examples:
+        
         >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
         >>> predictors = ["home.dest", "cabin", "embarked"]
         >>> response = "survived"
@@ -67,13 +66,20 @@ extensions = dict(
 import h2o
 import warnings
 from h2o.exceptions import H2ODeprecationWarning
-from h2o.utils.metaclass import deprecated_property
-""",
-    __init__setparams="""
-elif pname in self._deprecated_params_:
-    setattr(self, pname, pvalue)  # property handles the redefinition
+from h2o.utils.typechecks import U
 """,
     __class__=class_extensions,
+)
+
+overrides = dict(
+    columns_to_encode=dict(
+        setter="""
+assert_is_type({pname}, None, [U(str, [str])])
+if {pname}:  # standardize as a nested list
+    {pname} = [[g] if isinstance(g, str) else g for g in {pname}]
+self._parms["{sname}"] = {pname}
+"""
+    )
 )
 
 examples = dict(

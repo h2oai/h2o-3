@@ -43,8 +43,14 @@ for python_version in "${array[@]}"; do
   rm -rf /var/cache/apt/*
 
   echo "###### Installing pip for Python ${python_version} ######"
-  python${python_version} -m easy_install pip
-  #python${python_version} -m pip -U install pip
+  if [[ ${major} == "2" ]] || [[ ${python_version} == "3.5" ]]
+  then
+    curl https://bootstrap.pypa.io/pip/${python_version}/get-pip.py --output get-pip.py
+    python${python_version} get-pip.py
+  else
+    curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+    python${python_version} get-pip.py
+  fi
 
   echo "###### Creating Virtualenv for Python ${python_version} ######"
   python${python_version} -m pip install virtualenv
@@ -54,11 +60,15 @@ for python_version in "${array[@]}"; do
 
   echo "###### Installing dependencies for Python ${python_version} ######"
   su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip uninstall setuptools -y && pip install setuptools" # resinstalling setuptools fixes install issues for sphinx-osexample
+  # FIXME do not grep test-requirements.txt but use pip install -r test-requirements.txt to ensure proper versions
+  # Currently we cannot ensure any version defined in test-requirements.txt
   su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && grep -v \"^#\" test-requirements.txt | sed -r 's/(.*)/\"\\1\"/' | xargs -n 1 -L 1 pip install"
   if [[ ${major} == "3" ]]; then
     su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && grep -v \"^#\" docs-requirements.txt | sed -r 's/(.*)/\"\\1\"/' | xargs -n 1 -L 1 pip install"    
   fi
   su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"
+  echo "###### Show all packages installed for Python ${python_version} ######"
+  su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip freeze"
 done
 
-rm test-requirements.txt
+rm *-requirements*.txt

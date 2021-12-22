@@ -13,7 +13,7 @@ def glm_alpha_lambda_arrays_cv():
         path=pyunit_utils.locate("smalldata/glm_test/gaussian_20cols_10000Rows.csv"))
     enum_columns = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"]
     for cname in enum_columns:
-        h2o_data[cname] = h2o_data[cname]
+        h2o_data[cname] = h2o_data[cname].asfactor()
     myY = "C21"
     myX = h2o_data.names.remove(myY)
     data_frames = h2o_data.split_frame(ratios=[0.8])

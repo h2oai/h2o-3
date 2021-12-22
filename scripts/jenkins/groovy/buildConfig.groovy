@@ -10,18 +10,18 @@ class BuildConfig {
 
   public static final String DOCKER_REGISTRY = 'harbor.h2o.ai'
 
-  private static final String DEFAULT_IMAGE_NAME_PREFIX = 'dev-build-gradle'
-  private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
-  private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
+  private static final String DEFAULT_IMAGE_NAME = 'dev-build-base'
+  private static final String DEFAULT_HADOOP_IMAGE_NAME = 'dev-build-hadoop'
+  private static final String DEFAULT_RELEASE_IMAGE_NAME = 'dev-release'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 36
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 41
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '83'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '84'
 
-  private static final String K8S_TEST_IMAGE_VERSION_TAG = '3' // Change the new Docker image in the K8S YAML template as well
+  private static final String K8S_TEST_IMAGE_VERSION_TAG = '4' // Change the new Docker image in the K8S test YAML templates as well
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -36,24 +36,26 @@ class BuildConfig {
   // always run
   public static final String COMPONENT_ANY = 'any'
   public static final String COMPONENT_HADOOP = 'hadoop'
-  public static final List<String> TEST_PACKAGES_COMPONENTS = [COMPONENT_PY, COMPONENT_R, COMPONENT_JS, COMPONENT_JAVA, COMPONENT_HADOOP]
+  public static final String COMPONENT_MINIMAL = 'minimal' 
+  public static final List<String> TEST_PACKAGES_COMPONENTS = [COMPONENT_PY, COMPONENT_R, COMPONENT_JS, COMPONENT_JAVA, COMPONENT_HADOOP, COMPONENT_MINIMAL]
 
   public static final String H2O_JAR_STASH_NAME = 'h2o-3-stash-jar'
   private static final String TEST_PACKAGE_STASH_NAME_PREFIX = 'h2o-3-stash'
 
   public static final String H2O_OPS_TOKEN = 'h2o-ops-personal-auth-token'
-  public static final String H2O_OPS_CREDS_ID = 'd57016f6-d172-43ea-bea1-1d6c7c1747a0'
+  public static final String H2O_OPS_CREDS_ID = 'h2o-ops-gh-2020'
   private static final String COMMIT_STATE_PREFIX = 'H2O-3 Pipeline'
 
   public static final String RELEASE_BRANCH_PREFIX = 'rel-'
 
+  public static final String DEFAULT_PYTHON_VERSION = '3.6'
   public static final List PYTHON_VERSIONS = ['2.7', '3.5', '3.6', '3.7', '3.8']
   public static final List R_VERSIONS = ['3.3.3', '3.4.1']
 
   public static final String MAKEFILE_PATH = 'scripts/jenkins/Makefile.jenkins'
   public static final String BENCHMARK_MAKEFILE_PATH = 'ml-benchmark/jenkins/Makefile.jenkins'
 
-  private static final List<String> STASH_ALWAYS_COMPONENTS = [COMPONENT_R]
+  private static final List<String> STASH_ALWAYS_COMPONENTS = [COMPONENT_R, COMPONENT_MINIMAL]
 
   private static final String JACOCO_GRADLE_OPT = 'jacocoCoverage'
 
@@ -186,15 +188,15 @@ class BuildConfig {
     if (buildHadoop) {
       return getHadoopBuildImage()
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_IMAGE_NAME_PREFIX}-${getCurrentGradleVersion()}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopBuildImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME_PREFIX}-${getCurrentGradleVersion()}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_HADOOP_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getReleaseImage() {
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME_PREFIX}-${getCurrentGradleVersion()}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/${DEFAULT_RELEASE_IMAGE_NAME}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getHadoopImageVersion() {
@@ -217,7 +219,6 @@ class BuildConfig {
     if (stageConfig.imageSpecifier)
       return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
-    def suffix = ""
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
         component = COMPONENT_PY
@@ -226,15 +227,12 @@ class BuildConfig {
       } else if (stageConfig.additionalTestPackages.contains(COMPONENT_JAVA)) {
         component = COMPONENT_JAVA
       }
-      // handle gpu suffix
-      if (stageConfig.dockerImageSuffix != null) {
-        suffix = "-" + stageConfig.dockerImageSuffix
-      }
     }
     def imageComponentName
     def version
     switch (component) {
       case COMPONENT_JAVA:
+      case COMPONENT_ANY:
         imageComponentName = 'jdk'
         version = stageConfig.javaVersion
         break
@@ -254,15 +252,15 @@ class BuildConfig {
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
 
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}${suffix}:${DEFAULT_IMAGE_VERSION_TAG}"
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
-
+  
   String getDevImageReference(final specifier) {
     return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getStashNameForTestPackage(final String platform) {
-    return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform)
+    return String.format("%s-%s", TEST_PACKAGE_STASH_NAME_PREFIX, platform == 'any' ? 'java' : platform)
   }
 
   List<String> getAdditionalGradleOpts() {

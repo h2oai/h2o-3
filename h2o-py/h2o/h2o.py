@@ -6,7 +6,6 @@ h2o -- module for using H2O services.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from .utils.compatibility import *  # NOQA
 
 import os
 import subprocess
@@ -20,14 +19,22 @@ from .backend import H2OLocalServer
 from .base import Keyed
 from .estimators import create_estimator
 from .estimators.generic import H2OGenericEstimator
-from .exceptions import H2OConnectionError, H2OValueError, H2OError, H2ODeprecationWarning
+from .exceptions import H2OError, H2ODeprecationWarning
+from .estimators.gbm import H2OGradientBoostingEstimator
+from .estimators.glm import H2OGeneralizedLinearEstimator
+from .estimators.xgboost import H2OXGBoostEstimator
+from .estimators.infogram import H2OInfogram
+from .estimators.deeplearning import H2OAutoEncoderEstimator, H2ODeepLearningEstimator
+from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
+from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
-from .utils.metaclass import Deprecated as deprecated
+from .utils.compatibility import *  # NOQA
 from .utils.config import H2OConfigReader
+from .utils.metaclass import deprecated_fn
 from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
@@ -41,7 +48,7 @@ h2oconn = None  # type: H2OConnection
 
 def connect(server=None, url=None, ip=None, port=None,
             https=None, verify_ssl_certificates=None, cacert=None,
-            auth=None, proxy=None, cookies=None, verbose=True, config=None):
+            auth=None, proxy=None, cookies=None, verbose=True, config=None, strict_version_check=False):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -60,7 +67,8 @@ def connect(server=None, url=None, ip=None, port=None,
     :param proxy: Proxy server address.
     :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
-    :param connection_conf: Connection configuration object encapsulating connection parameters.
+    :param config: Connection configuration object encapsulating connection parameters.
+    :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :returns: the new :class:`H2OConnection` object.
 
     :examples:
@@ -75,16 +83,17 @@ def connect(server=None, url=None, ip=None, port=None,
 
     """
     global h2oconn
+    svc = _strict_version_check(strict_version_check, config=config)
     if config:
         if "connect_params" in config:
-            h2oconn = _connect_with_conf(config["connect_params"])
+            h2oconn = _connect_with_conf(config["connect_params"], strict_version_check=svc)
         else:
-            h2oconn = _connect_with_conf(config)
+            h2oconn = _connect_with_conf(config, strict_version_check=svc)
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
                                      auth=auth, verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      proxy=proxy, cookies=cookies,
-                                     verbose=verbose)
+                                     verbose=verbose, strict_version_check=svc)
         if verbose:
             h2oconn.cluster.show_status()
     return h2oconn
@@ -97,6 +106,14 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
     This function is mostly for internal purposes, but may occasionally be useful for direct access to
     the backend H2O server. It has same parameters as :meth:`H2OConnection.request <h2o.backend.H2OConnection.request>`.
 
+    The list of available endpoints can be obtained using::
+    
+        endpoints = [' '.join([r.http_method, r.url_pattern]) for r in h2o.api("GET /3/Metadata/endpoints").routes]
+    
+    For each route, the available parameters (passed as data or json) can be obtained using::
+    
+        parameters = {f.name: f.help for f in h2o.api("GET /3/Metadata/schemas/{route.input_schema}").fields}
+    
     :examples:
 
     >>> res = h2o.api("GET /3/NetworkTest")
@@ -105,7 +122,6 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
     # type checks are performed in H2OConnection class
     _check_connection()
     return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
-
 
 
 def connection():
@@ -117,40 +133,6 @@ def connection():
     >>> temp
     """
     return h2oconn
-
-
-def version_check():
-    """Used to verify that h2o-python module and the H2O server are compatible with each other."""
-    from .__init__ import __version__ as ver_pkg
-    ci = h2oconn.cluster
-    if not ci:
-        raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
-    ver_h2o = ci.version
-    if ver_pkg == "SUBST_PROJECT_VERSION": ver_pkg = "UNKNOWN"
-    if str(ver_h2o) != str(ver_pkg):
-        branch_name_h2o = ci.branch_name
-        build_number_h2o = ci.build_number
-        if build_number_h2o is None or build_number_h2o == "unknown":
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "Upgrade H2O and h2o-Python to latest stable version - "
-                "http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html"
-                "".format(ver_h2o, ver_pkg))
-        elif build_number_h2o == "99999":
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "This is a developer build, please contact your developer."
-                "".format(ver_h2o, ver_pkg))
-        else:
-            raise H2OConnectionError(
-                "Version mismatch. H2O is version {0}, but the h2o-python package is version {1}. "
-                "Install the matching h2o-Python version from - "
-                "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
-                "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
-    # Check age of the install
-    if ci.build_too_old:
-        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
-              "version from http://h2o.ai/download/".format(ci.build_age))
 
 
 def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
@@ -249,7 +231,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
-    check_version = True
+    svc = _strict_version_check(strict_version_check)
     verify_ssl_certificates = not insecure
 
     # Apply the config file if ignore_config=False
@@ -263,13 +245,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
             cookies = config["init.cookies"].split(";")
         if auth is None and "init.username" in config and "init.password" in config:
             auth = (config["init.username"], config["init.password"])
-        if strict_version_check is None:
-            if "init.check_version" in config:
-                check_version = config["init.check_version"].lower() != "false"
-            elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
-                check_version = False
-        else:
-            check_version = strict_version_check
+        svc = _strict_version_check(strict_version_check, config=config)
         # Note: `verify_ssl_certificates` is never None at this point => use `insecure` to check for None/default input)
         if insecure is None and "init.verify_ssl_certificates" in config:
             verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
@@ -284,9 +260,10 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True,
-                                     _msgs=("Checking whether there is an H2O instance running at {url} ",
-                                            "connected.", "not found."))
+                                     auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     msgs=("Checking whether there is an H2O instance running at {url} ",
+                                           "connected.", "not found."),
+                                     strict_version_check=svc)
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
         if port and not str(port).endswith("+") and not kwargs.get("as_port", False):
@@ -304,11 +281,25 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
-                                     cacert=cacert, auth=auth, proxy=proxy,cookies=cookies, verbose=True)
-    if check_version:
-        version_check()
+                                     cacert=cacert, auth=auth, proxy=proxy, cookies=cookies, verbose=True,
+                                     strict_version_check=svc)
     h2oconn.cluster.timezone = "UTC"
     h2oconn.cluster.show_status()
+
+
+def resume(recovery_dir=None):
+    """
+    Triggers auto-recovery resume - this will look into configured recovery dir and resume and
+    tasks that were interrupted by unexpected cluster stopping.
+
+    :param recovery_dir: A path to where cluster recovery data is stored, if blank, will use cluster's configuration.
+    """
+
+    params = {
+        "recovery_dir": recovery_dir
+    }
+    api(endpoint="POST /3/Recovery/resume", data=params)
+
 
 def lazy_import(path, pattern=None):
     """
@@ -339,7 +330,7 @@ def _import_multi(paths, pattern):
 
 
 def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None, skipped_columns=None):
+                na_strings=None, skipped_columns=None, quotechar=None, escapechar=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
 
@@ -369,6 +360,8 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -386,18 +379,21 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    assert_is_type(quotechar, None, U("'", '"'))
     assert (skipped_columns==None) or isinstance(skipped_columns, list), \
         "The skipped_columns should be an list of column names!"
+    assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
 
     check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
-    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns)
+    return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings, skipped_columns,
+                                    quotechar, escapechar)
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None, pattern=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None):
+                partition_by=None, quotechar=None, escapechar=None):
     """
     Import a dataset that is already on the cluster.
 
@@ -418,7 +414,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
-    :param partition_by Names of the column the persisted dataset has been partitioned by.
+    :param partition_by: Names of the column the persisted dataset has been partitioned by.
 
         - "unknown" - this will force the column to be parsed as all NA
         - "uuid"    - the values in the column must be true UUID or will be parsed as NA
@@ -433,9 +429,11 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
     :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
-        directory.
+        directory.  
     :param skipped_columns: an integer list of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a new :class:`H2OFrame` instance.
 
@@ -457,6 +455,8 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
+    assert_is_type(quotechar, None, U("'", '"'))
+    assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
     assert isinstance(skipped_columns, (type(None), list)), "The skipped_columns should be an list of column names!"
     check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
@@ -467,15 +467,17 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return lazy_import(path, pattern)
     else:
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
-                                        skipped_columns, custom_non_data_line_markers, partition_by)
+                                        skipped_columns, custom_non_data_line_markers, partition_by, quotechar, escapechar)
 
 
-def load_grid(grid_file_path):
+def load_grid(grid_file_path, load_params_references=False):
     """
     Loads previously saved grid with all its models from the same folder
 
     :param grid_file_path: A string containing the path to the file with grid saved.
      Grid models are expected to be in the same folder.
+    :param load_params_references: If true will attemt to reload saved objects referenced by grid parameters
+      (e.g. training frame, calibration frame), will fail if grid was saved without referenced objects.
 
     :return: An instance of H2OGridSearch
 
@@ -506,16 +508,23 @@ def load_grid(grid_file_path):
     """
 
     assert_is_type(grid_file_path, str)
-    response = api("POST /3/Grid.bin/import", {"grid_path": grid_file_path})
+    response = api(
+        "POST /3/Grid.bin/import", 
+        {"grid_path": grid_file_path, "load_params_references": load_params_references}
+    )
     return get_grid(response["name"])
 
 
-def save_grid(grid_directory, grid_id):
+def save_grid(grid_directory, grid_id, save_params_references=False, export_cross_validation_predictions=False):
     """
     Export a Grid and it's all its models into the given folder
 
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
-    :param grid_id: A chracter string with identification of the Grid in H2O. 
+    :param grid_id: A character string with identification of the Grid in H2O.
+    :param save_params_references: True if objects referenced by grid parameters
+      (e.g. training frame, calibration frame) should also be saved. 
+    :param export_cross_validation_predictions: A boolean flag indicating whether the models exported from the grid 
+      should be saved with CV Holdout Frame predictions. Default is not to export the predictions.
 
     :examples:
 
@@ -544,8 +553,16 @@ def save_grid(grid_directory, grid_id):
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
-    api("POST /3/Grid.bin/" + grid_id + "/export", {"grid_directory": grid_directory})
+    assert_is_type(save_params_references, bool)
+    assert_is_type(export_cross_validation_predictions, bool)
+    params = {
+        "grid_directory": grid_directory,
+        "save_params_references": save_params_references,
+        "export_cross_validation_predictions": export_cross_validation_predictions
+    }
+    api("POST /3/Grid.bin/" + grid_id + "/export", params)
     return grid_directory + "/" + grid_id
+
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
     """
@@ -690,7 +707,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
 def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None, skipped_columns=None, custom_non_data_line_markers=None,
-                partition_by=None):
+                partition_by=None, quotechar=None, escapechar=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
 
@@ -698,7 +715,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     the data. This method allows a user to perform corrective measures by updating the
     returning dictionary from this method. This dictionary is then fed into `parse_raw` to
     produce the H2OFrame instance.
-
+ 
     :param raw_frames: a collection of imported file frames
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will
         automatically be generated.
@@ -727,6 +744,9 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         of column names to strings which are to be interpreted as missing values.
     :param skipped_columns: an integer lists of column indices to skip and not parsed into the final frame from the import file.
     :param custom_non_data_line_markers: If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, None means that default behaviour for given format will be used
+    :param partition_by: A list of columns the dataset has been partitioned by. None by default.
+    :param quotechar: A hint for the parser which character to expect as quoting character. Only single quote, double quote or None (default) are allowed. None means automatic detection.
+    :param escapechar: (Optional) One ASCII character used to escape other characters.
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
 
@@ -759,15 +779,21 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     assert_is_type(partition_by, None, [str], str)
+    assert_is_type(quotechar, None, U("'", '"'))
+    assert_is_type(escapechar, None, I(str, lambda s: len(s) == 1))
     check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
+    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames],
+              "single_quotes": quotechar == "'"}
     if separator:
         kwargs["separator"] = ord(separator)
+      
+    if escapechar:
+        kwargs["escapechar"] = ord(escapechar)
 
     if custom_non_data_line_markers is not None:
         kwargs["custom_non_data_line_markers"] = custom_non_data_line_markers
@@ -783,14 +809,14 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
         j["destination_frame"] = destination_frame
 
     parse_column_len = len(j["column_types"]) if skipped_columns is None else (len(j["column_types"])-len(skipped_columns))
-    tempColumnNames = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
-    useType = [True]*len(tempColumnNames)
+    temp_column_names = j["column_names"] if j["column_names"] is not None else gen_header(j["number_columns"])
+    use_type = [True]*len(temp_column_names)
     if skipped_columns is not None:
-        useType = [True]*len(tempColumnNames)
+        use_type = [True]*len(temp_column_names)
 
-        for ind in range(len(tempColumnNames)):
+        for ind in range(len(temp_column_names)):
             if ind in skipped_columns:
-                useType[ind]=False
+                use_type[ind]=False
 
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
@@ -805,12 +831,12 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
                 % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
         counter = 0
-        for ind in range(len(tempColumnNames)):
-            if useType[ind]:
-                tempColumnNames[ind]=column_names[counter]
-                counter=counter+1
+        for ind in range(len(temp_column_names)):
+            if use_type[ind]:
+                temp_column_names[ind]=column_names[counter]
+                counter = counter+1
 
-    if (column_types is not None): # keep the column types to include all columns
+    if column_types is not None: # keep the column types to include all columns
         if isinstance(column_types, dict):
             # overwrite dictionary to ordered list of column types. if user didn't specify column type for all names,
             # use type provided by backend
@@ -821,7 +847,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             idx = 0
             column_types_list = []
 
-            for name in tempColumnNames: # column_names may have already been changed
+            for name in temp_column_names: # column_names may have already been changed
                 if name in column_types:
                     column_types_list.append(column_types[name])
                 else:
@@ -837,7 +863,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             column_types_list = j["column_types"]
             counter = 0
             for ind in range(len(j["column_types"])):
-                if useType[ind] and (column_types[counter]!=None):
+                if use_type[ind] and column_types[counter] is not None:
                     column_types_list[ind]=column_types[counter]
                     counter=counter+1
 
@@ -873,7 +899,6 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
             for colidx in skipped_columns:
                 if (colidx < 0): raise ValueError("skipped column index cannot be negative")
                 j["skipped_columns"].append(colidx)
-
 
     # quote column names and column types also when not specified by user
     if j["column_names"]: j["column_names"] = list(map(quoted, j["column_names"]))
@@ -1394,7 +1419,7 @@ def download_all_logs(dirname=".", filename=None, container=None):
     return api("GET /3/Logs/download%s" % type, save_to=save_to)
 
 
-def save_model(model, path="", force=False):
+def save_model(model, path="", force=False, export_cross_validation_predictions=False, filename=None):
     """
     Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
     The owner of the file saved is the user by which H2O cluster was executed.
@@ -1402,6 +1427,9 @@ def save_model(model, path="", force=False):
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
     :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+    :param export_cross_validation_predictions: logical, indicates whether the exported model
+        artifact should also include CV Holdout Frame predictions.  Default is not to export the predictions.
+    :param filename: a filename for the saved model
 
     :returns: the path of the saved model
 
@@ -1418,17 +1446,26 @@ def save_model(model, path="", force=False):
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(force, bool)
-    path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return api("GET /99/Models.bin/%s" % model.model_id, data={"dir": path, "force": force})["dir"]
+    assert_is_type(export_cross_validation_predictions, bool)
+    if filename is None:
+        filename = model.model_id
+    else:
+        assert_is_type(filename, str)
+    path = os.path.join(os.getcwd() if path == "" else path, filename)
+    data = {"dir": path, "force": force, "export_cross_validation_predictions": export_cross_validation_predictions}
+    return api("GET /99/Models.bin/%s" % model.model_id, data=data)["dir"]
 
 
-def download_model(model, path=""):
+def download_model(model, path="", export_cross_validation_predictions=False, filename=None):
     """
     Download an H2O Model object to the machine this python session is currently connected to.
     The owner of the file saved is the user by which python session was executed.
 
     :param model: The model object to download.
     :param path: a path to the directory where the model should be saved.
+    :param export_cross_validation_predictions: logical, indicates whether the exported model
+        artifact should also include CV Holdout Frame predictions.  Default is not to include the predictions.
+    :param filename: a filename for the saved model
 
     :returns: the path of the downloaded model
 
@@ -1440,12 +1477,20 @@ def download_model(model, path=""):
     >>> my_model.train(y = "CAPSULE",
     ...                x = ["AGE", "RACE", "PSA", "GLEASON"],
     ...                training_frame = h2o_df)
-    >>> h2o.download_model(my_model, path='', force=True)
+    >>> h2o.download_model(my_model, path='')
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
-    path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
-    return api("GET /3/Models.fetch.bin/%s" % model.model_id, save_to=path)
+    assert_is_type(export_cross_validation_predictions, bool)
+    if filename is None:
+        filename = model.model_id
+    else:
+        assert_is_type(filename, str)
+    path = os.path.join(os.getcwd() if path == "" else path, filename)
+    return api("GET /3/Models.fetch.bin/%s" % model.model_id,
+               data={"export_cross_validation_predictions": export_cross_validation_predictions}, 
+               save_to=path)
+
 
 def upload_model(path):
     """
@@ -1460,6 +1505,7 @@ def upload_model(path):
     frame_key = response["destination_frame"]
     res = api("POST /99/Models.upload.bin/%s" % "", data={"dir": frame_key})
     return get_model(res["models"][0]["model_id"]["name"])
+
 
 def load_model(path):
     """
@@ -1489,7 +1535,7 @@ def load_model(path):
     return get_model(res["models"][0]["model_id"]["name"])
 
 
-def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True):
+def export_file(frame, path, force=False, sep=",", compression=None, parts=1, header=True, quote_header=True, parallel=False):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
@@ -1506,6 +1552,8 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
         Default is ``parts = 1``, which is to export to a single file.
     :param header: if True, write out column names in the header line.
     :param quote_header: if True, quote column names in the header.
+    :param parallel: use a parallel export to a single file (doesn't apply when num_parts != 1, 
+        might create temporary files in the destination directory).
 
     :examples:
 
@@ -1530,10 +1578,35 @@ def export_file(frame, path, force=False, sep=",", compression=None, parts=1, he
     assert_is_type(compression, str, None)
     assert_is_type(header, bool)
     assert_is_type(quote_header, bool)
+    assert_is_type(parallel, bool)
     H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), 
                data={"path": path, "num_parts": parts, "force": force, 
                      "compression": compression, "separator": ord(sep),
-                     "header": header, "quote_header": quote_header}), "Export File").poll()
+                     "header": header, "quote_header": quote_header, "parallel": parallel}), "Export File").poll()
+
+
+def load_frame(frame_id, path, force=True):
+    """
+    Load frame previously stored in H2O's native format.
+
+    This will load a data frame from file-system location. Stored data can be loaded only with a cluster of the same
+    size and same version the the one which wrote the data. The provided directory must be accessible from all nodes 
+    (HDFS, NFS). Provided frame_id must be the same as the one used when writing the data.
+    
+    :param frame_id: the frame ID of the original frame
+    :param path: a filesystem location where to look for frame data
+    :param force: overwrite an already existing frame (defaults to true)
+    :returns: A Frame object.
+    
+    :examples:
+    
+    >>> iris = h2o.load_frame("iris_weather.hex", "hdfs://namenode/h2o_data")
+    """
+    H2OJob(api(
+        "POST /3/Frames/load",
+        data={"frame_id": frame_id, "dir": path, "force": force}
+    ), "Load frame data").poll()
+    return get_frame(frame_id)
 
 
 def cluster():
@@ -1546,7 +1619,6 @@ def cluster():
     >>> h2o.cluster()
     """
     return h2oconn.cluster if h2oconn else None
-
 
 
 def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
@@ -1847,7 +1919,8 @@ def load_dataset(relative_path):
     raise H2OValueError("Data file %s cannot be found" % relative_path)
 
 
-def make_metrics(predicted, actual, domain=None, distribution=None, weights=None):
+def make_metrics(predicted, actual, domain=None, distribution=None, weights=None, treatment=None, auc_type="NONE",
+                 auuc_type="AUTO", auuc_nbins=-1):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -1856,7 +1929,14 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     :param domain: list of response factors for classification.
     :param distribution: distribution for regression.
     :param H2OFrame weights: an H2OFrame containing observation weights (optional).
-
+    :param H2OFrame treatment: an H2OFrame containing treatment information for uplift binomial classification only.
+    :param auc_type: For multinomial classification you have to specify which type of agregated AUC/AUCPR 
+           will be used to calculate this metric. Possibilities are MACRO_OVO, MACRO_OVR, WEIGHTED_OVO, WEIGHTED_OVR, 
+           NONE and AUTO (OVO = One vs. One, OVR = One vs. Rest). Default is "NONE" (AUC and AUCPR are not calculated).
+    :param auuc_type: For uplift binomial classification you have to specify which type of AUUC will be used to 
+           calculate this metric. Possibilities are gini, lift, gain, AUTO. Default is AUTO which means qini.
+    :param auuc_nbins: For uplift binomial classification you have to specify number of bins to be used 
+           for calculation the AUUC. Default is -1, which means 1000.
     :examples:
 
     >>> fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
@@ -1887,14 +1967,26 @@ def make_metrics(predicted, actual, domain=None, distribution=None, weights=None
     assert_is_type(predicted, H2OFrame)
     assert_is_type(actual, H2OFrame)
     assert_is_type(weights, H2OFrame, None)
+    assert_is_type(treatment, H2OFrame, None)
     assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
+    assert_is_type(auc_type, str)
+    allowed_auc_types = ["MACRO_OVO", "MACRO_OVR", "WEIGHTED_OVO", "WEIGHTED_OVR", "AUTO", "NONE"]
+    assert auc_type in allowed_auc_types, "auc_type should be "+(" ".join([str(type) for type in allowed_auc_types]))
     if domain is None and any(actual.isfactor()):
         domain = actual.levels()[0]
     params = {"domain": domain, "distribution": distribution}
     if weights is not None:
         params["weights_frame"] = weights.frame_id
+    if treatment is not None:
+        params["treatment_frame"] = treatment.frame_id
+        allowed_auuc_types = ["qini", "lift", "gain", "AUTO"]
+        assert auuc_type in allowed_auuc_types, "auuc_type should be "+(" ".join([str(type) for type in allowed_auuc_types]))
+        params["auuc_type"] = auuc_type
+        assert auuc_nbins == -1 or auuc_nbins > 0, "auuc_nbis should be -1 or higner than 0."  
+        params["auuc_nbins"] = auuc_nbins
+    params["auc_type"] = auc_type    
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
               data=params)
     return res["model_metrics"]
@@ -1952,7 +2044,7 @@ def _default_source_provider(obj):
     # First try to get source code via inspect
     try:
         return '    '.join(inspect.getsourcelines(obj)[0])
-    except (OSError, TypeError):
+    except (OSError, TypeError, IOError):
         # It seems like we are in interactive shell and
         # we do not have access to class source code directly
         # At this point we can:
@@ -2134,11 +2226,12 @@ class {}Wrapper({}, DistributionFunc, object):
     return "python:{}={}".format(dest_key, class_name)
 
 
-def import_mojo(mojo_path):
+def import_mojo(mojo_path, model_id=None):
     """
     Imports an existing MOJO model as an H2O model.
     
     :param mojo_path: Path to the MOJO archive on the H2O's filesystem
+    :param model_id: Model ID, default is None
     :return: An H2OGenericEstimator instance embedding given MOJO
 
     :examples:
@@ -2153,18 +2246,19 @@ def import_mojo(mojo_path):
     >>> original_model_filename = model.download_mojo(original_model_filename)
     >>> mojo_model = h2o.import_mojo(original_model_filename)
     """
-    if mojo_path == None:
+    if mojo_path is None:
         raise TypeError("MOJO path may not be None")
-    mojo_estimator = H2OGenericEstimator.from_file(mojo_path)
+    mojo_estimator = H2OGenericEstimator.from_file(mojo_path, model_id)
     print(mojo_estimator)
     return mojo_estimator
 
 
-def upload_mojo(mojo_path):
+def upload_mojo(mojo_path, model_id=None):
     """
     Uploads an existing MOJO model from local filesystem into H2O and imports it as an H2O Generic Model. 
 
     :param mojo_path:  Path to the MOJO archive on the user's local filesystem
+    :param model_id: Model ID, default None
     :return: An H2OGenericEstimator instance embedding given MOJO
 
     :examples:
@@ -2181,7 +2275,7 @@ def upload_mojo(mojo_path):
     """
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
-    mojo_estimator = H2OGenericEstimator(model_key = get_frame(frame_key))
+    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), path=mojo_path, model_id=model_id)
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator
@@ -2192,9 +2286,11 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     Generates string representation of an existing MOJO model. 
 
     :param mojo_path: Path to the MOJO archive on the user's local filesystem
-    :param format: Output format. Possible values: json (default), dot 
-    :param tree_index: Index of tree to print (only work dot format)
-    :return: An string representation of given MOJO in given format
+    :param format: Output format. Possible values: json (default), dot, png 
+    :param tree_index: Index of tree to print
+    :return: An string representation of the MOJO for text output formats, 
+        a path to a directory with the rendered images for image output formats
+        (or a path to a file if only a single tree is outputted)  
 
     :example:
 
@@ -2202,15 +2298,10 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
     >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
     >>> prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-    >>> ntrees = 20
-    >>> learning_rate = 0.1
-    >>> depth = 5
-    >>> min_rows = 10
-    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = ntrees,
-    ...                                        learn_rate = learning_rate,
-    ...                                        max_depth = depth,
-    ...                                        min_rows = min_rows,
-    ...                                        distribution = "bernoulli")
+    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = 5,
+    ...                                        learn_rate = 0.1,
+    ...                                        max_depth = 4,
+    ...                                        min_rows = 10)
     >>> gbm_h2o.train(x = list(range(1,prostate.ncol)),
     ...               y = "CAPSULE",
     ...               training_frame = prostate)
@@ -2220,7 +2311,7 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     """    
     assert_is_type(mojo_path, str)
     assert_is_type(format, str, None)
-    assert_satisfies(format, format in [None, "json", "dot"])
+    assert_satisfies(format, format in [None, "json", "dot", "png"])
     assert_is_type(tree_index, int, None)
 
     ls = H2OLocalServer()
@@ -2228,15 +2319,20 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     java = ls._find_java()
     if format is None:
         format = "json"
-    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format]
+    is_image = format == "png"
+    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
+    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format, 
+           "--output", output_file]
     if tree_index is not None:
         cmd += ["--tree", str(tree_index)]
-    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
     try:
-        with open(output_file, 'w+') as stdout:
-            return_code = subprocess.call(cmd, stdout=stdout)
-            stdout.seek(0)
-            output = stdout.read()
+        return_code = subprocess.call(cmd)
+        if is_image:
+            output = output_file
+        else:
+            with open(output_file, "r") as f:
+                output = f.read()
+            os.unlink(output_file)
     except OSError as e:
         traceback = getattr(e, "child_traceback", None)
         raise H2OError("Unable to print MOJO: %s" % e, traceback)
@@ -2245,82 +2341,181 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     else:
         raise H2OError("Unable to print MOJO: %s" % output)
 
-#-----------------------------------------------------------------------------------------------------------------------
+
+def estimate_cluster_mem(ncols, nrows, num_cols=0, string_cols=0, cat_cols=0, time_cols=0, uuid_cols=0):
+    """
+    Computes an estimate for cluster memory usage in GB.
+    
+    Number of columns and number of rows are required. For a better estimate you can provide a counts of different
+    types of columns in the dataset.
+
+    :param ncols: total number of columns in a dataset. An required parameter, integer, can't be negative
+    :param nrows: total number of rows in a dataset. An required parameter, integer, can't be negative 
+    :param num_cols: number of numeric columns in a dataset. Integer, can't be negative.
+    :param string_cols: number of string columns in a dataset. Integer, can't be negative.
+    :param cat_cols: number of categorical columns in a dataset. Integer, can't be negative.
+    :param time_cols: number of time columns in a dataset. Integer, can't be negative.
+    :param uuid_cols: number of uuid columns in a dataset. Integer, can't be negative.
+    :return: An memory estimate in GB.
+
+    :example:
+
+    >>> from h2o import estimate_cluster_mem
+    >>> ### I will load an parquet file with 18 columns and 2 million lines
+    >>> estimate_cluster_mem(18, 2000000)
+    >>> ### I will load an other parquet file with 16 columns and 2 million lines, I ask for a more precise estimate 
+    >>> ### because I know 12 of 16 columns are categorical and one of 16 columns consist of uuids.
+    >>> estimate_cluster_mem(18, 2000000, cat_cols=12, uuid_cols=1)
+    >>> ### I will load an parquet file with 8 columns and 31 million lines, I ask for a more precise estimate 
+    >>> ### because I know 4 of 8 columns are categorical and 4 of 8 columns consist of numbers.
+    >>> estimate_cluster_mem(ncols=8, nrows=31000000, cat_cols=4, num_cols=4)
+    
+    """
+    import math
+
+    if ncols < 0:
+        raise ValueError("ncols can't be a negative number")
+
+    if nrows < 0:
+        raise ValueError("nrows can't be a negative number")
+
+    if num_cols < 0:
+        raise ValueError("num_cols can't be a negative number")
+
+    if string_cols < 0:
+        raise ValueError("string_cols can't be a negative number")
+
+    if cat_cols < 0:
+        raise ValueError("cat_cols can't be a negative number")
+
+    if time_cols < 0:
+        raise ValueError("time_cols can't be a negative number")
+
+    if uuid_cols < 0:
+        raise ValueError("uuid_cols can't be a negative number")
+
+    base_mem_requirement_mb = 32
+    safety_factor = 4
+    bytes_in_mb = 1024 * 1024
+    bytes_in_gb = 1024 * bytes_in_mb
+
+    known_cols = num_cols + string_cols + uuid_cols + cat_cols + time_cols
+
+    if known_cols > ncols:
+        raise ValueError("There can not be more specific columns then columns in total")
+
+    unknown_cols = ncols - known_cols
+    unknown_size = 8
+    unknown_requirement = unknown_cols * nrows * unknown_size
+    num_size = 8
+    num_requirement = num_cols * nrows * num_size
+    string_size = 128
+    string_requirement = string_size * string_cols * nrows
+    uuid_size = 16
+    uuid_requirement = uuid_size * uuid_cols * nrows
+    cat_size = 2
+    cat_requirement = cat_size * cat_cols * nrows
+    time_size = 8
+    time_requirement = time_size * time_cols * nrows
+    data_requirement = unknown_requirement + num_requirement + string_requirement + uuid_requirement + cat_requirement + time_requirement
+    mem_req = (base_mem_requirement_mb * bytes_in_mb + data_requirement) * safety_factor / bytes_in_gb
+    return math.ceil(mem_req)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
 # Private
-#-----------------------------------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------------------------------------------
 
 def _check_connection():
-    if not h2oconn or not h2oconn.cluster:
-        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
+    if not cluster():
+        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.init()` or `h2o.connect()`?")
+    
+    
+def _strict_version_check(force_version_check=None, config=None):
+    if force_version_check is None:
+        if config is not None and "init.check_version" in config:
+            return config["init.check_version"].lower() != "false"
+        else:
+            return os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK", "false").lower() == "false"
+    return force_version_check
 
-def _connect_with_conf(conn_conf):
+
+def _connect_with_conf(conn_conf, **kwargs):
     conf = conn_conf
     if isinstance(conn_conf, dict):
         conf = H2OConnectionConf(config=conn_conf)
     assert_is_type(conf, H2OConnectionConf)
     return connect(url=conf.url, verify_ssl_certificates=conf.verify_ssl_certificates, cacert=conf.cacert,
-                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose)
+                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose, **kwargs)
 
-#-----------------------------------------------------------------------------------------------------------------------
-#  ALL DEPRECATED METHODS BELOW
-#-----------------------------------------------------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Deprecated functions
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Deprecated since 2015-10-08
-@deprecated(replaced_by=import_file)
+@deprecated_fn(replaced_by=import_file)
 def import_frame():
     pass
 
 # Deprecated since 2015-10-08
-@deprecated("Deprecated (converted to a private method).")
+@deprecated_fn("Deprecated (converted to a private method).")
 def parse():
     """Deprecated."""
     pass
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().show_status()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().show_status()``.")
 def cluster_info():
     """Deprecated."""
     _check_connection()
     cluster().show_status()
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().show_status(True)``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().show_status(True)``.")
 def cluster_status():
     """Deprecated."""
     _check_connection()
     cluster().show_status(True)
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().shutdown()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().shutdown()``.")
 def shutdown(prompt=False):
     """Deprecated."""
     _check_connection()
     cluster().shutdown(prompt)
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().network_test()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().network_test()``.")
 def network_test():
     """Deprecated."""
     _check_connection()
     cluster().network_test()
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().timezone``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().timezone``.")
 def get_timezone():
     """Deprecated."""
     _check_connection()
     return cluster().timezone
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, set ``h2o.cluster().timezone`` instead.")
+@deprecated_fn("Deprecated, set ``h2o.cluster().timezone`` instead.")
 def set_timezone(value):
     """Deprecated."""
     _check_connection()
     cluster().timezone = value
 
 # Deprecated since 2016-08-04
-@deprecated("Deprecated, use ``h2o.cluster().list_timezones()``.")
+@deprecated_fn("Deprecated, use ``h2o.cluster().list_timezones()``.")
 def list_timezones():
     """Deprecated."""
     _check_connection()
     return cluster().list_timezones()
+
+# Deprecated since 2021-07
+@deprecated_fn("Deprecated, use ``h2o.cluster().check_version()`` instead.")
+def version_check():
+    _check_connection()
+    cluster().check_version(strict=True)
+

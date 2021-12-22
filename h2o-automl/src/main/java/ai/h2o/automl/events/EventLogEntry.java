@@ -3,6 +3,7 @@ package ai.h2o.automl.events;
 import ai.h2o.automl.AutoML;
 import water.Iced;
 import water.Key;
+import water.logging.LoggingLevel;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
@@ -14,10 +15,6 @@ import java.util.Date;
 import java.util.Objects;
 
 public class EventLogEntry<V extends Serializable> extends Iced {
-
-  public enum Level {
-    Debug, Info, Warn
-  }
 
   public enum Stage {
     Validation,
@@ -114,12 +111,12 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return longest;
   }
 
-  private final int longestLevel = longest(Level.class); // for formatting
+  private final int longestLevel = longest(LoggingLevel.class); // for formatting
   private final int longestStage = longest(Stage.class); // for formatting
 
   private Key<AutoML> _automlKey;
   private long _timestamp;
-  private Level _level;
+  private LoggingLevel _level;
   private Stage _stage;
   private String _message;
   private String _name;
@@ -132,7 +129,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return _timestamp;
   }
 
-  public Level getLevel() {
+  public LoggingLevel getLevel() {
     return _level;
   }
 
@@ -156,7 +153,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     return _valueFormatter;
   }
 
-  public EventLogEntry(Key<AutoML> automlKey, Level level, Stage stage, String message) {
+  public EventLogEntry(Key<AutoML> automlKey, LoggingLevel level, Stage stage, String message) {
     _automlKey = automlKey;
     _timestamp = System.currentTimeMillis();
     _level = level;

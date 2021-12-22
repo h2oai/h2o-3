@@ -312,7 +312,7 @@ public class AggregatorTest extends TestUtil {
 
   @Ignore
   @Test public void testAirlines() {
-    Frame frame = parse_test_file("smalldata/airlines/allyears2k_headers.zip");
+    Frame frame = parseTestFile("smalldata/airlines/allyears2k_headers.zip");
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
     parms._target_num_exemplars = 500;
@@ -328,7 +328,7 @@ public class AggregatorTest extends TestUtil {
   }
 
   @Test public void testCovtype() {
-    Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
+    Frame frame = parseTestFile("smalldata/covtype/covtype.20k.data");
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
@@ -352,7 +352,7 @@ public class AggregatorTest extends TestUtil {
   }
 
   @Test public void testChunks() {
-    Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
+    Frame frame = parseTestFile("smalldata/covtype/covtype.20k.data");
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
@@ -393,7 +393,7 @@ public class AggregatorTest extends TestUtil {
 
   @Ignore
   @Test public void testCovtypeMemberIndices() {
-    Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
+    Frame frame = parseTestFile("smalldata/covtype/covtype.20k.data");
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
@@ -423,7 +423,7 @@ public class AggregatorTest extends TestUtil {
   }
 
   @Test public void testDomains() {
-    Frame frame = parse_test_file("smalldata/junit/weather.csv");
+    Frame frame = parseTestFile("smalldata/junit/weather.csv");
     for (String s : new String[]{"MaxWindSpeed", "RelHumid9am", "Cloud9am"}) {
       Vec v = frame.vec(s);
       Vec newV = v.toCategoricalVec();
@@ -453,7 +453,7 @@ public class AggregatorTest extends TestUtil {
 
   @Ignore
   @Test public void testMNIST() {
-    Frame frame = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+    Frame frame = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
 
     AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
     parms._train = frame._key;
@@ -473,7 +473,7 @@ public class AggregatorTest extends TestUtil {
     Frame frame=null,output = null, mapping=null;
     AggregatorModel agg = null;
     try{
-      frame = parse_test_file("smalldata/covtype/covtype.20k.data");
+      frame = parseTestFile("smalldata/covtype/covtype.20k.data");
       AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;
       parms._target_num_exemplars = 500;
@@ -498,7 +498,7 @@ public class AggregatorTest extends TestUtil {
     Frame frame=null,output = null, mapping=null;
     AggregatorModel agg = null;
     try{
-      frame = parse_test_file("smalldata/airlines/uuid_airline.csv");
+      frame = parseTestFile("smalldata/airlines/uuid_airline.csv");
       AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;
       parms._target_num_exemplars = 10;

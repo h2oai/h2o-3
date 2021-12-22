@@ -6,6 +6,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
+import hex.tree.TreeStats;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
@@ -23,6 +24,8 @@ import java.util.stream.Collectors;
 
 import static hex.genmodel.utils.ArrayUtils.difference;
 import static hex.genmodel.utils.ArrayUtils.signum;
+import static hex.rulefit.RuleFitUtils.sortRules;
+import static hex.rulefit.RuleFitUtils.deduplicateRules;
 
 
 /**
@@ -76,6 +79,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
     public void init(boolean expensive) {
         super.init(expensive);
         if (expensive) {
+            _parms.validate(this);
             if (_parms._fold_column != null) {
                 _train.remove(_parms._fold_column);
             }
@@ -163,6 +167,10 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         if (_parms._weights_column != null) {
             glmParameters._weights_column = "linear." + _parms._weights_column;
         }
+        glmParameters._auc_type = _parms._auc_type;
+        if (_parms._lambda != null) {
+            glmParameters._lambda = _parms._lambda;
+        }
     }
 
 
@@ -171,10 +179,14 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         // Main worker thread
         @Override
         public void computeImpl() {
+            String[] dataFromRulesCodes = null;
             RuleFitModel model = null;
             GLMModel glmModel;
             List<Rule> rulesList;
             RuleEnsemble ruleEnsemble = null;
+            int ntrees = 0;
+            TreeStats overallTreeStats = new TreeStats();
+            String[] classNames = null;
             init(true);
             if (error_count() > 0)
                 throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(RuleFit.this);
@@ -182,6 +194,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             try {
                 // linearTrain = frame to be used as _train for GLM in 2., will be filled in 1.
                 Frame linearTrain = new Frame(Key.make("paths_frame" + _result));
+                Frame linearValid = (_valid != null ? new Frame(Key.make("valid_paths_frame" + _result)) : null);
                 // store train frame without bad columns to pass it to tree model builders
                 Frame trainAdapted = new Frame(_train);
                 // 1. Rule generation
@@ -203,6 +216,11 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         long endModelTime = System.nanoTime() - startModelTime;
                         LOG.info("Tree model n." + modelId + " trained in " + ((double)endModelTime) / 1E9 + "s.");
                         rulesList.addAll(Rule.extractRulesListFromModel(treeModel, modelId, nclasses()));
+                        overallTreeStats.mergeWith(treeModel._output._treeStats);
+                        ntrees += treeModel._output._ntrees;
+                        if (classNames == null) {
+                            classNames = treeModel._output.classNames();
+                        }
                         treeModel.delete();
                     }
                     long endAllTreesTime = System.nanoTime() - startAllTreesTime;
@@ -211,20 +229,29 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                     LOG.info("Extracting rules from trees...");
                     ruleEnsemble = new RuleEnsemble(rulesList.toArray(new Rule[] {}));
 
-                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees));
+                    linearTrain.add(ruleEnsemble.createGLMTrainFrame(_train, depths.length, treeParameters._ntrees, classNames, _parms._weights_column, true));
+                    if (_valid != null) linearValid.add(ruleEnsemble.createGLMTrainFrame(_valid, depths.length, treeParameters._ntrees, classNames, _parms._weights_column, false));
                 }
 
                 // prepare linear terms
                 if (RuleFitModel.ModelType.RULES_AND_LINEAR.equals(_parms._model_type) || RuleFitModel.ModelType.LINEAR.equals(_parms._model_type)) {
                     String[] names = _train._names;
                     linearTrain.add(RuleFitUtils.getLinearNames(names.length, names), _train.vecs(names));
+                    if (_valid != null) linearValid.add(RuleFitUtils.getLinearNames(names.length, names), _valid.vecs(names));
                 } else {
                     linearTrain.add(glmParameters._response_column, _train.vec(_parms._response_column));
+                    if (_valid != null) linearValid.add(glmParameters._response_column, _valid.vec(_parms._response_column));
                     if (_parms._weights_column != null) {
                         linearTrain.add(glmParameters._weights_column, _train.vec(_parms._weights_column));
+                        if (_valid != null) linearValid.add(glmParameters._weights_column, _valid.vec(_parms._weights_column));
                     }
                 }
+                dataFromRulesCodes = linearTrain.names();
                 DKV.put(linearTrain);
+                if (_valid != null) {
+                    DKV.put(linearValid);
+                    glmParameters._valid = linearValid._key;
+                }
 
                 // 2. Sparse linear model with Lasso
                 glmParameters._train = linearTrain._key;
@@ -234,29 +261,39 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
                         glmParameters._solver = GLMModel.GLMParameters.Solver.COORDINATE_DESCENT;
                     }
                 } else {
-                    glmParameters._lambda = getOptimalLambda();
+                    if (glmParameters._lambda != null)
+                        glmParameters._lambda = getOptimalLambda();
                 }
 
+                LOG.info("Training GLM...");
                 long startGLMTime = System.nanoTime();
                 GLM job = new GLM(glmParameters);
                 glmModel = job.trainModel().get();
                 long endGLMTime = System.nanoTime() - startGLMTime;
                 LOG.info("GLM trained in " + ((double)endGLMTime) / 1E9 + "s.");
                 DKV.put(glmModel);
-
-                DKV.remove(linearTrain._key);
-                DKV.remove(trainAdapted._key);
                 
                 model = new RuleFitModel(dest(), _parms, new RuleFitModel.RuleFitOutput(RuleFit.this), glmModel, ruleEnsemble);
                 
                 model._output.glmModelKey = glmModel._key;
 
+                model._output._linear_names = linearTrain.names();
+
+                DKV.remove(linearTrain._key);
+                if (linearValid != null) DKV.remove(linearValid._key);
+                DKV.remove(trainAdapted._key);
+                
                 // 3. Step 3 (optional): Feature importance
                 model._output._intercept = getIntercept(glmModel);
 
                 // TODO: add here coverage_count and coverage percent
-                model._output._rule_importance = convertRulesToTable(getRules(glmModel.coefficients(), ruleEnsemble));
+                model._output._rule_importance = convertRulesToTable(sortRules(deduplicateRules(getRules(glmModel.coefficients(), 
+                        ruleEnsemble, model._output.classNames()), _parms._remove_duplicates)), isClassifier() && nclasses() > 2);
 
+                model._output._model_summary = generateSummary(glmModel, ruleEnsemble != null ? ruleEnsemble.size() : 0, overallTreeStats, ntrees);
+                
+                model._output._dataFromRulesCodes = dataFromRulesCodes;
+                
                 fillModelMetrics(model, glmModel);
 
                 model.delete_and_lock(_job);
@@ -396,7 +433,7 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         }
 
 
-        Rule[] getRules(HashMap<String, Double> glmCoefficients, RuleEnsemble ruleEnsemble) {
+        Rule[] getRules(HashMap<String, Double> glmCoefficients, RuleEnsemble ruleEnsemble, String[] classNames) {
             // extract variable-coefficient map (filter out intercept and zero betas)
             Map<String, Double> filteredRules = glmCoefficients.entrySet()
                     .stream()
@@ -407,21 +444,36 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             Rule rule;
             for (Map.Entry<String, Double> entry : filteredRules.entrySet()) {
                 if (!entry.getKey().startsWith("linear.")) {
-                    rule = ruleEnsemble.getRuleByVarName(entry.getKey().substring(entry.getKey().lastIndexOf(".") + 1));
+                    rule = ruleEnsemble.getRuleByVarName(getVarName(entry.getKey(), classNames));
                 } else {
                     rule = new Rule(null, entry.getValue(), entry.getKey());
+                    // linear rule applies to all the rows
+                    rule.support = 1.0;
                 }
                 rule.setCoefficient(entry.getValue());
                 rules.add(rule);
             }
-            Comparator<Rule> ruleAbsCoefficientComparator = Comparator.comparingDouble(Rule::getAbsCoefficient).reversed();
-            rules.sort(ruleAbsCoefficientComparator);
             
             return rules.toArray(new Rule[] {});
         }
     }
+    
+    private String getVarName(String ruleKey, String[] classNames) {
+        if (nclasses() > 2) {
+            ruleKey = removeClassNameSuffix(ruleKey, classNames);
+        }
+        return ruleKey.substring(ruleKey.lastIndexOf(".") + 1);
+    }
+    
+    private String removeClassNameSuffix(String ruleKey, String[] classNames) {
+        for (int i = 0; i < classNames.length; i++) {
+            if (ruleKey.endsWith(classNames[i]))
+                return ruleKey.substring(0, ruleKey.length() - classNames[i].length() - 1);
+        }
+        return ruleKey;
+    }
 
-    private TwoDimTable convertRulesToTable(Rule[] rules) {
+    private TwoDimTable convertRulesToTable(Rule[] rules, boolean isMultinomial) {
         List<String> colHeaders = new ArrayList<>();
         List<String> colTypes = new ArrayList<>();
         List<String> colFormat = new ArrayList<>();
@@ -429,7 +481,15 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
         colHeaders.add("variable");
         colTypes.add("string");
         colFormat.add("%s");
+        if (isMultinomial) {
+            colHeaders.add("class");
+            colTypes.add("string");
+            colFormat.add("%s");
+        }
         colHeaders.add("coefficient");
+        colTypes.add("double");
+        colFormat.add("%.5f");
+        colHeaders.add("support");
         colTypes.add("double");
         colFormat.add("%.5f");
         colHeaders.add("rule");
@@ -442,8 +502,14 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
 
         for (int row = 0; row < rows; row++) {
             int col = 0;
-            table.set(row, col++, (rules[row]).varName);
+            String varname = (rules[row]).varName;
+            table.set(row, col++, varname);
+            if (isMultinomial) {
+                String segments[] = varname.split("_");
+                table.set(row, col++, segments[segments.length - 1]);
+            }
             table.set(row, col++, (rules[row]).coefficient);
+            table.set(row, col++, (rules[row]).support);
             table.set(row, col, (rules[row]).languageRule);
         }
 
@@ -457,6 +523,66 @@ public class RuleFit extends ModelBuilder<RuleFitModel, RuleFitModel.RuleFitPara
             return nModelsInParallel(numDepths, 1);
         }
     }
+
+    TwoDimTable generateSummary(GLMModel glmModel, int ruleEnsembleSize, TreeStats overallTreeStats, int ntrees) {
+        List<String> colHeaders = new ArrayList<>();
+        List<String> colTypes = new ArrayList<>();
+        List<String> colFormats = new ArrayList<>();
+
+        TwoDimTable glmModelSummary = glmModel._output._model_summary;
+        String[] glmColHeaders = glmModelSummary.getColHeaders();
+        String[] glmColTypes = glmModelSummary.getColTypes();
+        String[] glmColFormats = glmModelSummary.getColFormats();
+        // linear model info
+        for (int i = 0; i < glmModelSummary.getColDim(); i++) {
+            if (!"Training Frame".equals(glmColHeaders[i])) {
+                colHeaders.add(glmColHeaders[i]);
+                colTypes.add(glmColTypes[i]);
+                colFormats.add(glmColFormats[i]);
+            }
+        }
+        // rule ensemble info
+        colHeaders.add("Rule Ensemble Size"); colTypes.add("long"); colFormats.add("%d");
+        // trees info
+        colHeaders.add("Number of Trees"); colTypes.add("long"); colFormats.add("%d");
+        colHeaders.add("Number of Internal Trees"); colTypes.add("long"); colFormats.add("%d");
+        colHeaders.add("Min. Depth"); colTypes.add("long"); colFormats.add("%d");
+        colHeaders.add("Max. Depth"); colTypes.add("long"); colFormats.add("%d");
+        colHeaders.add("Mean Depth"); colTypes.add("double"); colFormats.add("%.5f");
+        colHeaders.add("Min. Leaves"); colTypes.add("long"); colFormats.add("%d");
+        colHeaders.add("Max. Leaves"); colTypes.add("long"); colFormats.add("%d");
+        colHeaders.add("Mean Leaves"); colTypes.add("double"); colFormats.add("%.5f");
+
+        final int rows = 1;
+        TwoDimTable summary = new TwoDimTable(
+                "Rulefit Model Summary", null,
+                new String[rows],
+                colHeaders.toArray(new String[0]),
+                colTypes.toArray(new String[0]),
+                colFormats.toArray(new String[0]),
+                "");
+        int col = 0, row = 0;
+        for (int i = 0; i < glmModelSummary.getColDim(); i++) {
+            if (!"Training Frame".equals(glmColHeaders[i])) {
+                summary.set(row, col++, glmModelSummary.get(row, i));
+            }
+        }
+        summary.set(row, col++, ruleEnsembleSize);
+        summary.set(row, col++, ntrees);
+        summary.set(row, col++, overallTreeStats._num_trees); //internal number of trees (more for multinomial)
+        summary.set(row, col++, overallTreeStats._min_depth);
+        summary.set(row, col++, overallTreeStats._max_depth);
+        summary.set(row, col++, overallTreeStats._mean_depth);
+        summary.set(row, col++, overallTreeStats._min_leaves);
+        summary.set(row, col++, overallTreeStats._max_leaves);
+        summary.set(row, col++, overallTreeStats._mean_leaves);
+
+        return summary;
+    }
+    
+    @Override
+    public boolean haveMojo() { return true; }
+    
 }
 
 

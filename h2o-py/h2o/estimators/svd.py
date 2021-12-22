@@ -19,22 +19,94 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     """
 
     algo = "svd"
-    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "transform", "svd_method", "nv", "max_iterations", "seed", "keep_u",
-                   "u_name", "use_all_factor_levels", "max_runtime_secs", "export_checkpoints_dir"}
+    supervised_learning = False
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 transform="none",  # type: Literal["none", "standardize", "normalize", "demean", "descale"]
+                 svd_method="gram_s_v_d",  # type: Literal["gram_s_v_d", "power", "randomized"]
+                 nv=1,  # type: int
+                 max_iterations=1000,  # type: int
+                 seed=-1,  # type: int
+                 keep_u=True,  # type: bool
+                 u_name=None,  # type: Optional[str]
+                 use_all_factor_levels=True,  # type: bool
+                 max_runtime_secs=0.0,  # type: float
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[None, str, H2OFrame], optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
+        :type score_each_iteration: bool
+        :param transform: Transformation of training data
+               Defaults to ``"none"``.
+        :type transform: Literal["none", "standardize", "normalize", "demean", "descale"]
+        :param svd_method: Method for computing SVD (Caution: Randomized is currently experimental and unstable)
+               Defaults to ``"gram_s_v_d"``.
+        :type svd_method: Literal["gram_s_v_d", "power", "randomized"]
+        :param nv: Number of right singular vectors
+               Defaults to ``1``.
+        :type nv: int
+        :param max_iterations: Maximum iterations
+               Defaults to ``1000``.
+        :type max_iterations: int
+        :param seed: RNG seed for k-means++ initialization
+               Defaults to ``-1``.
+        :type seed: int
+        :param keep_u: Save left singular vectors?
+               Defaults to ``True``.
+        :type keep_u: bool
+        :param u_name: Frame key to save left singular vectors
+               Defaults to ``None``.
+        :type u_name: str, optional
+        :param use_all_factor_levels: Whether first factor level is included in each categorical expansion
+               Defaults to ``True``.
+        :type use_all_factor_levels: bool
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
+        :type max_runtime_secs: float
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        """
         super(H2OSingularValueDecompositionEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.transform = transform
+        self.svd_method = svd_method
+        self.nv = nv
+        self.max_iterations = max_iterations
+        self.seed = seed
+        self.keep_u = keep_u
+        self.u_name = u_name
+        self.use_all_factor_levels = use_all_factor_levels
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
         self._parms["_rest_version"] = 99
 
     @property
@@ -42,7 +114,7 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -57,13 +129,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -81,7 +152,6 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def ignored_columns(self):
         """
@@ -96,13 +166,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -119,13 +188,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def score_each_iteration(self):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -142,13 +210,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def transform(self):
         """
         Transformation of training data
 
-        One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+        Type: ``Literal["none", "standardize", "normalize", "demean", "descale"]``, defaults to ``"none"``.
 
         :examples:
 
@@ -166,13 +233,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
 
-
     @property
     def svd_method(self):
         """
         Method for computing SVD (Caution: Randomized is currently experimental and unstable)
 
-        One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``).
+        Type: ``Literal["gram_s_v_d", "power", "randomized"]``, defaults to ``"gram_s_v_d"``.
 
         :examples:
 
@@ -188,13 +254,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(svd_method, None, Enum("gram_s_v_d", "power", "randomized"))
         self._parms["svd_method"] = svd_method
 
-
     @property
     def nv(self):
         """
         Number of right singular vectors
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -212,13 +277,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(nv, None, int)
         self._parms["nv"] = nv
 
-
     @property
     def max_iterations(self):
         """
         Maximum iterations
 
-        Type: ``int``  (default: ``1000``).
+        Type: ``int``, defaults to ``1000``.
 
         :examples:
 
@@ -236,13 +300,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(max_iterations, None, int)
         self._parms["max_iterations"] = max_iterations
 
-
     @property
     def seed(self):
         """
         RNG seed for k-means++ initialization
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -258,13 +321,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def keep_u(self):
         """
         Save left singular vectors?
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -279,7 +341,6 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     def keep_u(self, keep_u):
         assert_is_type(keep_u, None, bool)
         self._parms["keep_u"] = keep_u
-
 
     @property
     def u_name(self):
@@ -303,13 +364,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(u_name, None, str)
         self._parms["u_name"] = u_name
 
-
     @property
     def use_all_factor_levels(self):
         """
         Whether first factor level is included in each categorical expansion
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -325,13 +385,12 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         assert_is_type(use_all_factor_levels, None, bool)
         self._parms["use_all_factor_levels"] = use_all_factor_levels
 
-
     @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -348,7 +407,6 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def export_checkpoints_dir(self):

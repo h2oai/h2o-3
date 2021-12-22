@@ -4,7 +4,7 @@ from tests import pyunit_utils
 
 
 def gbm_monotone_tweedie_test():
-    data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/autoclaims.csv")
+    data = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/autoclaims.csv"))
     data = data.drop(['POLICYNO', 'PLCYDATE', 'CLM_FREQ5', 'CLM_FLAG', 'IN_YY'])
     train, test = data.split_frame([0.8], seed=123)
     response = "CLM_AMT5"

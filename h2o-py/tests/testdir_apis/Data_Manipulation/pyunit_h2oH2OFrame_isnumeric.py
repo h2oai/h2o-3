@@ -22,7 +22,4 @@ def h2o_H2OFrame_isnumeric():
     assert sum(clist)==col_num, "h2o.H2OFrame.isnumeric() command is not working."  # check return result
 
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_isnumeric())
-else:
-    h2o_H2OFrame_isnumeric()
+pyunit_utils.standalone_test(h2o_H2OFrame_isnumeric)

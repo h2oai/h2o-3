@@ -1,6 +1,8 @@
 H2O_HADOOP_STARTUP_MODE_HADOOP='ON_HADOOP'
 H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO='ON_HADOOP_WITH_SPNEGO'
+H2O_HADOOP_STARTUP_MODE_HADOOP_HDFS_REFRESH='ON_HADOOP_WITH_HDFS_TOKEN_REFRESH'
 H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
+H2O_HADOOP_STARTUP_MODE_STANDALONE_KEYTAB='STANDALONE_KEYTAB'
 H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER='STEAM_DRIVER'
 H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER='STEAM_MAPPER'
 H2O_HADOOP_STARTUP_MODE_SPARKLING='SPARKLING'
@@ -14,6 +16,23 @@ def call(final pipelineContext, final stageConfig) {
             if [ -n "\$HADOOP_CONF_DIR" ]; then
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
             fi
+
+            if [ "11" = "${stageConfig.javaVersion}" ]; then
+              echo "Installing Java 11 (OpenJDK)"
+              curl -j -k -L https://download.java.net/java/GA/jdk11/13/GPL/openjdk-11.0.1_linux-x64_bin.tar.gz > jdk-linux-x64.tar.gz
+              tar xfz jdk-linux-x64.tar.gz
+              export JAVA_HOME=\$(cd jdk* && pwd)
+              export PATH=\$JAVA_HOME/bin:\$PATH
+              echo "Creating symlinks (substituting Java 8 for Java 11)"
+              rm /usr/lib/jvm/java-8-oracle
+              rm /usr/lib/jvm/java-current-oracle
+              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-oracle
+              ln -s \$JAVA_HOME /usr/lib/jvm/java-8-current
+              echo "\$LDAP_USERNAME: \$LDAP_PASSWORD" > /tmp/hash.login
+            fi
+
+            echo "Checking java version (JAVA_HOME='\$JAVA_HOME')"
+            java -version
 
             . /usr/sbin/hive_version_check.sh
 
@@ -48,12 +67,10 @@ def call(final pipelineContext, final stageConfig) {
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
-        def h2oFolder = stageConfig.stageDir + '/h2o-3'
-        dir(h2oFolder) {
-            retryWithTimeout(60, 3) {
-                echo "###### Checkout H2O-3 ######"
-                checkout scm
-            }
+        dir(stageConfig.stageDir) {
+            echo "###### Unstash H2O-3 Git Repo ######"
+            pipelineContext.getUtils().unstashFiles(this, "git")
+            sh "cd h2o-3 && git checkout ${env.GIT_SHA} && git reset --hard"
         }
         
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
@@ -72,13 +89,15 @@ private String getMakeTargetSuffix(final stageConfig) {
         case H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER:
         case H2O_HADOOP_STARTUP_MODE_SPARKLING:
         case H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING:
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_HDFS_REFRESH:
             return "-hdp"
         case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return "-spnego"
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
+        case H2O_HADOOP_STARTUP_MODE_STANDALONE_KEYTAB:
             return "-standalone"
         default:
-            error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
+            error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported by the makefile (cannot make Makefile target)")
     }
 }
 

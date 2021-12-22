@@ -7,7 +7,9 @@ H2O's core code is written in Java. Inside H2O, a Distributed Key/Value store is
 
 H2O’s REST API allows access to all the capabilities of H2O from an external program or script via JSON over HTTP. The Rest API is used by H2O’s web interface (Flow UI), R binding (H2O-R), and Python binding (H2O-Python).
 
-The speed, quality, ease-of-use, and model-deployment for the various cutting edge Supervised and Unsupervised algorithms like Deep Learning, Tree Ensembles, and GLRM make H2O a highly sought after API for big data data science. 
+The speed, quality, ease-of-use, and model-deployment for the various cutting edge Supervised and Unsupervised algorithms like Deep Learning, Tree Ensembles, and GLRM make H2O a highly sought after API for big data data science.
+
+H2O is licensed under the `Apache License, Version 2.0 <http://www.apache.org/licenses/LICENSE-2.0>`_.
 
 Requirements
 ------------
@@ -21,19 +23,24 @@ At a minimum, we recommend the following for compatibility with H2O:
    -  Ubuntu 12.04
    -  RHEL/CentOS 6 or later
 
--  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
-
-   -  Java 8, 9, 10, 11, 12, 13, 14
-
-      - To build H2O or run H2O tests, the 64-bit JDK is required.
-      - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
-      - Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+-  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required (see `below <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements>`__).
 
    -  Scala 2.10 or later
    -  R version 3 or later
    -  Python 2.7.x, 3.5.x, 3.6.x 
 
 -  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer.
+
+Java Requirements
+~~~~~~~~~~~~~~~~~
+
+H2O can run on Java. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required.
+
+H2O supports the following versions of Java: 
+
+- Java SE 17, 16, 15, 14, 13, 12, 11, 10, 9, 8
+
+Click `here <https://jdk.java.net/archive/>`__ to download the latest supported version.
 
 Additional Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,48 +170,47 @@ At this point, determine whether you want to complete this quick start in either
 
    .. code-tab:: python
 
-    # Before starting Python, run the following commands to install dependencies.
-    # Prepend these commands with `sudo` only if necessary.
-    h2o-3 user$ [sudo] pip install -U requests
-    h2o-3 user$ [sudo] pip install -U tabulate
-    h2o-3 user$ [sudo] pip install -U future
-    h2o-3 user$ [sudo] pip install -U colorama
+      # Before starting Python, run the following commands to install dependencies.
+      # Prepend these commands with `sudo` only if necessary:
+      # h2o-3 user$ [sudo] pip install -U requests
+      # h2o-3 user$ [sudo] pip install -U tabulate
+      # h2o-3 user$ [sudo] pip install -U future
 
-    # Start python
-    h2o-3 user$ python
+      # Start python:
+      # h2o-3 user$ python
 
-    # Run the following command to import the H2O module:
-    >>> import h2o
+      # Run the following commands to import the H2O module:
+      >>> import h2o
 
-    # Run the following command to initialize H2O on your local machine (single-node cluster).
-    >>> h2o.init()
+      # Run the following command to initialize H2O on your local machine (single-node cluster):
+      >>> h2o.init()
 
-    # If desired, run the GLM, GBM, or Deep Learning demo
-    >>> h2o.demo("glm")
-    >>> h2o.demo("gbm")
-    >>> h2o.demo("deeplearning")
+      # If desired, run the GLM, GBM, or Deep Learning demo(s):
+      >>> h2o.demo("glm")
+      >>> h2o.demo("gbm")
+      >>> h2o.demo("deeplearning")
 
-    # Import the Iris (with headers) dataset.
-    >>> path = "smalldata/iris/iris_wheader.csv"
-    >>> iris = h2o.import_file(path=path)
+      # Import the Iris (with headers) dataset:
+      >>> path = "smalldata/iris/iris_wheader.csv"
+      >>> iris = h2o.import_file(path=path)
 
-    # View a summary of the imported dataset.
-    >>> iris.summary
-      sepal_len    sepal_wid    petal_len    petal_wid        class
-    -----------  -----------  -----------  -----------  -----------
-            5.1          3.5          1.4          0.2  Iris-setosa
-            4.9          3            1.4          0.2  Iris-setosa
-            4.7          3.2          1.3          0.2  Iris-setosa
-            4.6          3.1          1.5          0.2  Iris-setosa
-            5            3.6          1.4          0.2  Iris-setosa
-            5.4          3.9          1.7          0.4  Iris-setosa
-            4.6          3.4          1.4          0.3  Iris-setosa
-            5            3.4          1.5          0.2  Iris-setosa
-            4.4          2.9          1.4          0.2  Iris-setosa
-            4.9          3.1          1.5          0.1  Iris-setosa
+      # View a summary of the imported dataset:
+      >>> iris.summary
+      # sepal_len    sepal_wid    petal_len    petal_wid    class
+      # 5.1          3.5          1.4          0.2          Iris-setosa
+      # 4.9          3            1.4          0.2          Iris-setosa
+      # 4.7          3.2          1.3          0.2          Iris-setosa
+      # 4.6          3.1          1.5          0.2          Iris-setosa
+      # 5            3.6          1.4          0.2          Iris-setosa
+      # 5.4          3.9          1.7          0.4          Iris-setosa
+      # 4.6          3.4          1.4          0.3          Iris-setosa
+      # 5            3.4          1.5          0.2          Iris-setosa
+      # 4.4          2.9          1.4          0.2          Iris-setosa
+      # 4.9          3.1          1.5          0.1          Iris-setosa
+      #
+      # [150 rows x 5 columns]
+      # <bound method H2OFrame.summary of >
 
-    [150 rows x 5 columns]
-    <bound method H2OFrame.summary of >
 
 
 Experienced Users

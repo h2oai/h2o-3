@@ -16,22 +16,30 @@
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param validation_frame Id of the validation data frame.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param algorithm The algorithm to use to generate rules. Must be one of: "AUTO", "DRF", "GBM". Defaults to AUTO.
 #' @param min_rule_length Minimum length of rules. Defaults to 3.
 #' @param max_rule_length Maximum length of rules. Defaults to 3.
-#' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected  by
-#'        diminishing returns in model deviance. Defaults to -1.
+#' @param max_num_rules The maximum number of rules to return. defaults to -1 which means the number of rules is selected
+#'        by diminishing returns in model deviance. Defaults to -1.
 #' @param model_type Specifies type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", "linear". Defaults to rules_and_linear.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor. If
+#'        you set weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get
+#'        an accurate prediction, remove all rows with weight == 0.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
-#' @param rule_generation_ntrees specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
+#' @param rule_generation_ntrees Specifies the number of trees to build in the tree model. Defaults to 50. Defaults to 50.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
+#' @param remove_duplicates \code{Logical}. Whether to remove rules which are identical to an earlier rule. Defaults to true. Defaults to
+#'        TRUE.
+#' @param lambda Lambda for LASSO regressor.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -70,6 +78,7 @@ h2o.rulefit <- function(x,
                         y,
                         training_frame,
                         model_id = NULL,
+                        validation_frame = NULL,
                         seed = -1,
                         algorithm = c("AUTO", "DRF", "GBM"),
                         min_rule_length = 3,
@@ -78,10 +87,14 @@ h2o.rulefit <- function(x,
                         model_type = c("rules_and_linear", "rules", "linear"),
                         weights_column = NULL,
                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                        rule_generation_ntrees = 50)
+                        rule_generation_ntrees = 50,
+                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                        remove_duplicates = TRUE,
+                        lambda = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
@@ -102,6 +115,8 @@ h2o.rulefit <- function(x,
 
   if (!missing(model_id))
     parms$model_id <- model_id
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(algorithm))
@@ -120,6 +135,12 @@ h2o.rulefit <- function(x,
     parms$distribution <- distribution
   if (!missing(rule_generation_ntrees))
     parms$rule_generation_ntrees <- rule_generation_ntrees
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
+  if (!missing(remove_duplicates))
+    parms$remove_duplicates <- remove_duplicates
+  if (!missing(lambda))
+    parms$lambda <- lambda
 
   # Error check and build model
   model <- .h2o.modelJob('rulefit', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -128,6 +149,7 @@ h2o.rulefit <- function(x,
 .h2o.train_segments_rulefit <- function(x,
                                         y,
                                         training_frame,
+                                        validation_frame = NULL,
                                         seed = -1,
                                         algorithm = c("AUTO", "DRF", "GBM"),
                                         min_rule_length = 3,
@@ -137,6 +159,9 @@ h2o.rulefit <- function(x,
                                         weights_column = NULL,
                                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                                         rule_generation_ntrees = 50,
+                                        auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
+                                        remove_duplicates = TRUE,
+                                        lambda = NULL,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -147,6 +172,7 @@ h2o.rulefit <- function(x,
   destination_key <- NULL
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
@@ -165,6 +191,8 @@ h2o.rulefit <- function(x,
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
 
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(algorithm))
@@ -183,6 +211,12 @@ h2o.rulefit <- function(x,
     parms$distribution <- distribution
   if (!missing(rule_generation_ntrees))
     parms$rule_generation_ntrees <- rule_generation_ntrees
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
+  if (!missing(remove_duplicates))
+    parms$remove_duplicates <- remove_duplicates
+  if (!missing(lambda))
+    parms$lambda <- lambda
 
   # Build segment-models specific parameters
   segment_parms <- list()
@@ -196,3 +230,47 @@ h2o.rulefit <- function(x,
   segment_models <- .h2o.segmentModelsJob('rulefit', segment_parms, parms, h2oRestApiVersion=3)
   return(segment_models)
 }
+
+
+#' Evaluates validity of the given rules on the given data. Returns a frame with a column per each input rule id, 
+#' representing a flag whether given rule is applied to the observation or not.
+#'
+#' @param model A trained rulefit model.  
+#' @param frame A frame on which rule validity is to be evaluated
+#' @param rule_ids Rule ids to be evaluated against the frame
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' titanic <- h2o.importFile(
+#'  "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+#' )
+#' response = "survived"
+#' predictors <- c("age", "sibsp", "parch", "fare", "sex", "pclass")
+#' titanic[,response] <- as.factor(titanic[,response])
+#' titanic[,"pclass"] <- as.factor(titanic[,"pclass"])
+#' 
+#' splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#' 
+#' rfit <- h2o.rulefit(y = response, x = predictors, training_frame = train, validation_frame = test, 
+#' min_rule_length = 1, max_rule_length = 10, max_num_rules = 100, seed = 1, model_type="rules")
+#' h2o.predict_rules(rfit, train, c("M1T0N7, M1T49N7, M1T16N7", "M1T36N7", "M2T19N19"))
+#' }
+#' @export
+h2o.predict_rules <- function(model, frame, rule_ids) {
+    o <- model
+    if (is(o, "H2OModel")) {
+        if (o@algorithm == "rulefit"){
+            return(.newExpr("rulefit.predict.rules", model@model_id, frame, rule_ids))
+        } else {
+            warning(paste0("No calculation available for this model"))
+            return(NULL)
+        }
+    } else {
+        warning(paste0("No calculation available for ", class(o)))
+        return(NULL)
+    }
+}
+

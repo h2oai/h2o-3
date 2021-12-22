@@ -1,9 +1,0 @@
-exportPattern("^[[:alpha:]]+")
-
-import(h2o)
-importFrom(utils, packageVersion)
-importFrom(stats, predict)
-
-S3method(predict, h2o.ensemble)
-S3method(print, h2o.ensemble)
-S3method(print, h2o.ensemble_performance)

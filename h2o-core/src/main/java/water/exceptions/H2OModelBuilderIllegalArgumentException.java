@@ -27,10 +27,6 @@ public class H2OModelBuilderIllegalArgumentException extends H2OIllegalArgumentE
     return exception;
   }
 
-  public H2OModelBuilderError toH2OError() {
-    return new H2OModelBuilderError(timestamp, null, getMessage(), dev_message, HTTP_RESPONSE_CODE(), values, this);
-  }
-
   public H2OModelBuilderError toH2OError(String error_url) {
     return new H2OModelBuilderError(timestamp, error_url, getMessage(), dev_message, HTTP_RESPONSE_CODE(), values, this);
   }

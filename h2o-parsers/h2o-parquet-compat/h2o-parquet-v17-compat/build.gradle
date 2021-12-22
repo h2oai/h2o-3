@@ -7,25 +7,25 @@ def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
   binding.variables.get("hadoopVersion") : defaultHadoopVersion
 
 dependencies {
-  compile project(":h2o-core")
-  compile(project(":h2o-persist-hdfs")) {
+  api project(":h2o-core")
+  api(project(":h2o-persist-hdfs")) {
     transitive = false
   }
-  compile(project(":h2o-parquet-parser")) {
+  api(project(":h2o-parquet-parser")) {
     transitive = false
   }
   // Parquet support
-  compile("org.apache.parquet:parquet-hadoop:1.7.0")
-  compile("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
+  api("org.apache.parquet:parquet-hadoop:1.7.0")
+  api("org.apache.hadoop:hadoop-common:${parquetHadoopVersion}") {
     transitive = false
   }
 
-  testCompile project(":h2o-test-support")
-  testCompile project(":h2o-parquet-parser-tests")
+  testImplementation project(":h2o-test-support")
+  testImplementation project(":h2o-parquet-parser-tests")
   testRuntimeOnly project(":${defaultWebserverModule}")
-  testCompile("org.apache.parquet:parquet-avro:1.7.0")
+  testImplementation("org.apache.parquet:parquet-avro:1.7.0")
   // We need correct version of MapRe Hadoop to run JUnits
-  testCompile("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
+  testImplementation("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {
     exclude module: "servlet-api"
   }
 }

@@ -31,6 +31,7 @@ public class ScoreKeeper extends Iced {
   public double _r2 = Double.NaN;
   public double _anomaly_score = Double.NaN;
   public double _anomaly_score_normalized = Double.NaN;
+  public double _AUUC;
 
   public ScoreKeeper() {}
 
@@ -98,6 +99,8 @@ public class ScoreKeeper extends Iced {
       _mean_per_class_error = ((ModelMetricsMultinomial)m).mean_per_class_error();
       _hitratio = ((ModelMetricsMultinomial)m)._hit_ratios;
       _r2 = ((ModelMetricsMultinomial)m).r2();
+      _AUC = ((ModelMetricsMultinomial)m).auc();
+      _pr_auc = ((ModelMetricsMultinomial)m).pr_auc();
     } else if (m instanceof ModelMetricsOrdinal) {
       _logloss = ((ModelMetricsOrdinal)m)._logloss;
       _classError = ((ModelMetricsOrdinal)m)._cm.err();
@@ -106,6 +109,8 @@ public class ScoreKeeper extends Iced {
       _r2 = ((ModelMetricsOrdinal)m).r2();
     } else if (m instanceof ScoreKeeperAware) {
       ((ScoreKeeperAware) m).fillTo(this);
+    } else if (m instanceof ModelMetricsBinomialUplift){
+      _AUUC = ((ModelMetricsBinomialUplift)m).auuc();
     }
     if (m._custom_metric != null )
       _custom_metric =  m._custom_metric.value;
@@ -117,31 +122,33 @@ public class ScoreKeeper extends Iced {
     IConvergenceStrategy getConvergenceStrategy();
     double metricValue(ScoreKeeper sk);
   }
-  
+
   public enum StoppingMetric implements IStoppingMetric {
-    AUTO(ConvergenceStrategy.AUTO, false), 
-    deviance(ConvergenceStrategy.LESS_IS_BETTER, false),
-    logloss(ConvergenceStrategy.LESS_IS_BETTER, true),
-    MSE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    RMSE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    MAE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true),
-    AUC(ConvergenceStrategy.MORE_IS_BETTER, true),
-    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true),
-    lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false),
-    misclassification(ConvergenceStrategy.LESS_IS_BETTER, true),
-    mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true),
-    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false),
-    custom(ConvergenceStrategy.LESS_IS_BETTER, false),
-    custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false),
+    AUTO(ConvergenceStrategy.AUTO, false, false),
+    deviance(ConvergenceStrategy.LESS_IS_BETTER, false, false),
+    logloss(ConvergenceStrategy.LESS_IS_BETTER, true, true),
+    MSE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    RMSE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    MAE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    RMSLE(ConvergenceStrategy.LESS_IS_BETTER, true, false),
+    AUC(ConvergenceStrategy.MORE_IS_BETTER, true, true),
+    AUCPR(ConvergenceStrategy.MORE_IS_BETTER, true, true),
+    lift_top_group(ConvergenceStrategy.MORE_IS_BETTER, false, true),
+    misclassification(ConvergenceStrategy.LESS_IS_BETTER, true, true),
+    mean_per_class_error(ConvergenceStrategy.LESS_IS_BETTER, true, true),
+    anomaly_score(ConvergenceStrategy.NON_DIRECTIONAL, false, false),
+    custom(ConvergenceStrategy.LESS_IS_BETTER, false, false),
+    custom_increasing(ConvergenceStrategy.MORE_IS_BETTER, false, false),
     ;
 
     private final ConvergenceStrategy _convergence;
     private final boolean _lowerBoundBy0;
+    private final boolean _classificationOnly;
 
-    StoppingMetric(ConvergenceStrategy convergence, boolean lowerBoundBy0) {
+    StoppingMetric(ConvergenceStrategy convergence, boolean lowerBoundBy0, boolean classificationOnly) {
       _convergence = convergence;
       _lowerBoundBy0 = lowerBoundBy0;
+      _classificationOnly = classificationOnly;
     }
 
     public int direction() {
@@ -150,6 +157,10 @@ public class ScoreKeeper extends Iced {
 
     public boolean isLowerBoundBy0() {
       return _lowerBoundBy0;
+    }
+
+    public boolean isClassificationOnly() {
+      return _classificationOnly;
     }
 
     public ConvergenceStrategy getConvergenceStrategy() {
@@ -226,6 +237,34 @@ public class ScoreKeeper extends Iced {
     public static ProblemType forSupervised(boolean isClassifier) {
       return isClassifier ? classification : regression;
     }
+  }
+
+  /** Based on the given array of ScoreKeeper and stopping criteria what is the best scoring iteration of the last k iterations? */
+  public static int best(ScoreKeeper[] sk, final int k, IStoppingMetric criterion) {
+    int best = sk.length - 1;
+    ScoreKeeper.IConvergenceStrategy cs = criterion.getConvergenceStrategy();
+    if (cs != ConvergenceStrategy.LESS_IS_BETTER && cs != ConvergenceStrategy.MORE_IS_BETTER) {
+      return best;
+    }
+    double bestVal = criterion.metricValue(sk[best]);
+    for (int i = 1; i < k; i++) {
+      int idx = sk.length - i - 1;
+      if (idx < 0)
+        break;
+      double val = criterion.metricValue(sk[idx]);
+      if (cs == ConvergenceStrategy.LESS_IS_BETTER) {
+        if (val < bestVal) {
+          best = idx;
+          bestVal = val;
+        }
+      } else {
+        if (val > bestVal) {
+          best = idx;
+          bestVal = val;
+        }
+      }
+    }
+    return best;
   }
 
   /** Based on the given array of ScoreKeeper and stopping criteria should we stop early? */

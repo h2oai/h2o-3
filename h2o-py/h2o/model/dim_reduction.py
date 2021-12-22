@@ -1,12 +1,13 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-# noinspection PyUnresolvedReferences
-from h2o.utils.compatibility import *  # NOQA
 
 import h2o
+# noinspection PyUnresolvedReferences
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import can_use_pandas
-from .model_base import ModelBase
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from .metrics_base import *  # NOQA
+from .model_base import ModelBase
 
 
 class H2ODimReductionModel(ModelBase):
@@ -93,33 +94,36 @@ class H2ODimReductionModel(ModelBase):
         return h2o.get_frame(j["model_metrics"][0]["predictions"]["frame_id"]["name"])
 
 
-    def screeplot(self, type="barplot", **kwargs):
+    def screeplot(self, type="barplot", server=False, save_plot_path=None):
         """
         Produce the scree plot.
 
         Library ``matplotlib`` is required for this function.
 
         :param str type: either ``"barplot"`` or ``"lines"``.
+        :param bool server: if true set server settings to matplotlib and do not show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        
+        :returns: Object that contains the resulting scree plot (can be accessed like result.figure()).
         """
         # check for matplotlib. exit if absent.
-        is_server = kwargs.pop("server")
-        if kwargs:
-            raise ValueError("Unknown arguments %s to screeplot()" % ", ".join(kwargs.keys()))
-        try:
-            import matplotlib
-            if is_server: matplotlib.use('Agg')
-            import matplotlib.pyplot as plt
-        except ImportError:
-            print("matplotlib is required for this function!")
-            return
-
+        plt = get_matplotlib_pyplot(server)
+        if plt is None:
+            return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+        fig = plt.figure()
         variances = [s ** 2 for s in self._model_json['output']['importance'].cell_values[0][1:]]
         plt.xlabel('Components')
         plt.ylabel('Variances')
         plt.title('Scree Plot')
         plt.xticks(list(range(1, len(variances) + 1)))
+
         if type == "barplot":
             plt.bar(list(range(1, len(variances) + 1)), variances)
         elif type == "lines":
             plt.plot(list(range(1, len(variances) + 1)), variances, 'b--')
-        if not is_server: plt.show()
+
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        if not server:
+            plt.show()
+        return decorate_plot_result(figure=fig)

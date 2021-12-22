@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -15,17 +16,13 @@ import water.util.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
-
-  private ModelBuilderListener _modelBuilderListener;
-
-  public void setModelBuilderListener(final ModelBuilderListener modelBuilderListener) {
-    this._modelBuilderListener = modelBuilderListener;
-  }
 
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
@@ -49,9 +46,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
+  public String _desc = "Main model";
+  
   private Countdown _build_model_countdown;
   private Countdown _build_step_countdown;
-  private void startClock() {
+  final void startClock() {
     _build_model_countdown = Countdown.fromSeconds(_parms._max_runtime_secs);
     _build_model_countdown.start();
   }
@@ -230,7 +229,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
 
     protected Driver(){ super(); }
-    protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
+    
+    private ModelBuilderListener _callback;
+
+    public void setCallback(ModelBuilderListener callback) {
+      this._callback = callback;
+    }
+
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
     // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
     // 2) Train/Valid frame locking and unlocking
@@ -242,6 +247,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         computeImpl();
         computeParameters();
         saveModelCheckpointIfConfigured();
+        notifyModelListeners();
       } finally {
         _parms.read_unlock_frames(_job);
         if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
@@ -253,16 +259,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     @Override
     public void onCompletion(CountedCompleter caller) {
       setFinalState();
-      if (_modelBuilderListener != null) {
-        _modelBuilderListener.onModelSuccess(_result.get());
+      if (_callback != null) {
+        _callback.onModelSuccess(_result.get());
       }
     }
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       setFinalState();
-      if (_modelBuilderListener != null) {
-        _modelBuilderListener.onModelFailure(ex, _parms);
+      if (_callback != null) {
+        _callback.onModelFailure(ex, _parms);
       }
       return true;
     }
@@ -272,8 +278,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public final void computeParameters() {
       M model = _result.get();
       if (model != null) {
-        //set input parameters
+        model.write_lock(_job);
         model.setInputParms(_input_parms);
+        model.update(_job);
+        model.unlock(_job);
       }
     }
   }
@@ -285,7 +293,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
-//      res.unlock(_job == null ? null : _job._key, false); // last resort: dirty way to force unlock to be able to reacquire lock
       res.write_lock(_job);
       res.update(_job);
       res.unlock(_job);
@@ -302,6 +309,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         throw new H2OIllegalArgumentException("export_checkpoints_dir", "saveModelIfConfigured", e);
       }
     }
+  }
+
+  private void notifyModelListeners() {
+    Model<?, ?, ?> model = _result.get();
+    ListenerService.getInstance().report("model_completed", model, _parms);
   }
 
   /**
@@ -355,31 +367,45 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
+    return trainModel(null);
+  }
+
+  final public Job<M> trainModel(final ModelBuilderListener callback) {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
-    if( !nFoldCV() )
-      return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
-
-    // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-    return _job.start(new H2O.H2OCountedCompleter() {
-                        @Override
-                        public void compute2() {
-                          computeCrossValidation();
-                          tryComplete();
-                        }
-                        @Override
-                        public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-                          Log.warn("Model training job "+_job._description+" completed with exception: "+ex);
-                          try {
-                            Keyed.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
-                          } catch (Exception logged) {
-                            Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
+    if (!nFoldCV()) {
+      Driver driver = trainModelImpl();
+      driver.setCallback(callback);
+      return _job.start(driver, _parms.progressUnits(), _parms._max_runtime_secs);
+    } else {
+      // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
+      return _job.start(new H2O.H2OCountedCompleter() {
+                          @Override
+                          public void compute2() {
+                            computeCrossValidation();
+                            tryComplete();
                           }
-                          return true;
-                        }
-                      },
-            (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
+
+                          @Override
+                          public void onCompletion(CountedCompleter caller) {
+                            if (callback != null) callback.onModelSuccess(_result.get());
+                          }
+
+                          @Override
+                          public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+                            Log.warn("Model training job " + _job._description + " completed with exception: " + ex);
+                            if (callback != null) callback.onModelFailure(ex, _parms);
+                            try {
+                              Keyed.remove(_job._result); // ensure there's no incomplete model left for manipulation after crash or cancellation
+                            } catch (Exception logged) {
+                              Log.warn("Exception thrown when removing result from job " + _job._description, logged);
+                            }
+                            return true;
+                          }
+                        },
+          (nFoldWork() + 1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
+    }
   }
 
   /**
@@ -397,7 +423,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
-    if( !nFoldCV() ) trainModelImpl().compute2();
+    if( !nFoldCV() ) submitTrainModelTask().join();
     else computeCrossValidation();
     return _result.get();
   }
@@ -441,6 +467,51 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
 
+  private static class Barrier extends CountedCompleter {
+    @Override public void compute() { }
+  }
+
+  /**
+   * Simple wrapper around model task Driver, its main purpose is to make
+   * sure onExceptionalCompletion is not called after join method finishes (similarly how Job behaves).
+   */
+  class TrainModelTaskController {
+    private final Driver _driver;
+    private final Barrier _barrier;
+
+    TrainModelTaskController(Driver driver, Barrier barrier) {
+      _driver = driver;
+      _barrier = barrier;
+    }
+
+    /**
+     * Block for Driver to finish
+     */
+    void join() {
+      _barrier.join();
+    }
+
+    void cancel(boolean mayInterruptIfRunning) {
+      _driver.cancel(mayInterruptIfRunning);
+    }
+  }
+
+  /**
+   * Submits the model Driver task for execution, blocking on a barrier
+   * that is only completed after the Driver is fully finished (including
+   * possible calls to onExceptionalCompletion).
+   * 
+   * @return controller object that can be used to wait for completion or 
+   *  to cancel the execution.
+   */
+  TrainModelTaskController submitTrainModelTask() {
+    Driver d = trainModelImpl();
+    Barrier b = new Barrier();
+    d.setCompleter(b);
+    H2O.submitTask(d);
+    return new TrainModelTaskController(d, b);
+  }
+
   @Deprecated protected int nModelsInParallel() { return 0; }
   /**
    * How many should be trained in parallel during N-fold cross-validation?
@@ -457,9 +528,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected int nModelsInParallel(int folds, int defaultParallelization) {
     if (!_parms._parallelize_cross_validation) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
     int parallelization = defaultParallelization;
-    if (_train.byteSize() < 1e6) parallelization = folds; //for small data, parallelize over CV models
-    // TODO: apply better heuristic, estimating parallelization based on H2O.getCloudSize() and H2O.ARGS.nthreads
-    return Math.min(parallelization, H2O.getCloudSize()*H2O.ARGS.nthreads);
+    if (_train.byteSize() < 1e6) 
+      parallelization = folds; //for small data, parallelize over CV models
+    return Math.min(parallelization, H2O.ARGS.nthreads);
   }
 
   private double maxRuntimeSecsPerModel(int cvModelsCount, int parallelization) {
@@ -471,12 +542,53 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Work for each requested fold
   protected int nFoldWork() {
-    if( _parms._fold_column == null ) return _parms._nfolds;
-    Vec f = _parms._train.get().vec(_parms._fold_column);
-    Vec fc = VecUtils.toCategoricalVec(f);
-    int N = fc.domain().length;
-    fc.remove();
-    return N;
+    if( _parms._fold_column == null ) 
+      return _parms._nfolds;
+    Vec fold = _parms._train.get().vec(_parms._fold_column);
+    return FoldAssignment.nFoldWork(fold);
+  }
+
+  protected transient ModelTrainingEventsPublisher _eventPublisher;
+  protected transient ModelTrainingCoordinator _coordinator;
+
+  public class ModelTrainingCoordinator {
+
+    private final BlockingQueue<ModelTrainingEventsPublisher.Event> _events;
+    private final ModelBuilder<M, P, O>[] _cvModelBuilders;
+    private int _inProgress;
+
+
+    public ModelTrainingCoordinator(BlockingQueue<ModelTrainingEventsPublisher.Event> events, 
+                                    ModelBuilder<M, P, O>[] cvModelBuilders) {
+      _events = events;
+      _cvModelBuilders = cvModelBuilders;
+      _inProgress = _cvModelBuilders.length;
+    }
+
+    public void initStoppingParameters() {
+      cv_initStoppingParameters();
+    }
+    
+    public void updateParameters() {
+      try {
+        while (_inProgress > 0) {
+          ModelTrainingEventsPublisher.Event e = _events.take();
+          switch (e) {
+            case ALL_DONE:
+              _inProgress--;
+              break;
+            case ONE_DONE:
+              if (cv_updateOptimalParameters(_cvModelBuilders))
+                return;
+              break;
+          }
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("Failed to update model parameters based on result of CV model training", e);
+      }
+      cv_updateOptimalParameters(_cvModelBuilders);
+    }
   }
 
   /**
@@ -493,7 +605,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Scope.enter();
 
       // Step 1: Assign each row to a fold
-      final Vec foldAssignment = cv_AssignFold(N);
+      final FoldAssignment foldAssignment = cv_AssignFold(N);
 
       // Step 2: Make 2*N binary weight vectors
       final Vec[] weights = cv_makeWeights(N, foldAssignment);
@@ -501,19 +613,40 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       cvModelBuilders = cv_makeFramesAndBuilders(N, weights);
 
-      // Step 4: Run all the CV models
-      cv_buildModels(N, cvModelBuilders);
+      // Step 4: Run all the CV models (and optionally train the main model in parallel to the CV training)
+      final boolean buildMainModel;
+      if (useParallelMainModelBuilding(N)) {
+        int parallelization = nModelsInParallel(N);
+        Log.info(_desc + " will be trained in parallel to the Cross-Validation models " +
+                "(up to " + parallelization + " models running at the same time).");
+        BlockingQueue<ModelTrainingEventsPublisher.Event> events = new LinkedBlockingQueue<>();
+        for (ModelBuilder<M, P, O> mb : cvModelBuilders) {
+          mb._eventPublisher = new ModelTrainingEventsPublisher(events);
+        }
+        _coordinator = new ModelTrainingCoordinator(events, cvModelBuilders);
+        final ModelBuilder<M, P, O>[] builders = Arrays.copyOf(cvModelBuilders, cvModelBuilders.length + 1);
+        builders[builders.length - 1] = this;
 
+        new SubModelBuilder(_job, builders, parallelization).bulkBuildModels();
+        buildMainModel = false;
+      } else {
+        cv_buildModels(N, cvModelBuilders);
+        buildMainModel = true;
+      }
+      
       // Step 5: Score the CV models
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
 
-      // Step 6: Build the main model
-      long time_allocated_to_main_model = (long)(maxRuntimeSecsPerModel(N, nModelsInParallel(N)) * 1e3);
-      buildMainModel(time_allocated_to_main_model);
+      if (buildMainModel) {
+        // Step 6: Build the main model
+        long time_allocated_to_main_model = (long) (maxRuntimeSecsPerModel(N, nModelsInParallel(N)) * 1e3);
+        buildMainModel(time_allocated_to_main_model);
+      }
 
       // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
-      cv_mainModelScores(N, mbs, cvModelBuilders);
+      if (!cvModelBuilders[0].getName().equals("infogram")) // infogram does not support scoring
+        cv_mainModelScores(N, mbs, cvModelBuilders);
 
       _job.setReadyForView(true);
       DKV.put(_job);
@@ -544,39 +677,42 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 1: Assign each row to a fold
-  // TODO: Implement better splitting algo (with Strata if response is
-  // categorical), e.g. http://www.lexjansen.com/scsug/2009/Liang_Xie2.pdf
-  public Vec cv_AssignFold(int N) {
+  FoldAssignment cv_AssignFold(int N) {
     assert(N>=2);
     Vec fold = train().vec(_parms._fold_column);
-    if( fold != null ) {
-      if( !fold.isInt() ||
-          (!(fold.min() == 0 && fold.max() == N-1) &&
-           !(fold.min() == 1 && fold.max() == N  ) )) // Allow 0 to N-1, or 1 to N
-        throw new H2OIllegalArgumentException("Fold column must be either categorical or contiguous integers from 0..N-1 or 1..N");
-      return fold;
-    }
-    final long seed = _parms.getOrMakeRealSeed();
-    Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
-    switch( _parms._fold_assignment ) {
-    case AUTO:
-    case Random:     return AstKFold.          kfoldColumn(train().anyVec().makeZero(),N,seed);
-    case Modulo:     return AstKFold.    moduloKfoldColumn(train().anyVec().makeZero(),N     );
-    case Stratified: return AstKFold.stratifiedKFoldColumn(response(),N,seed);
-    default:         throw H2O.unimpl();
+    if (fold != null) {
+      return FoldAssignment.fromUserFoldSpecification(N, fold);
+    } else {
+      final long seed = _parms.getOrMakeRealSeed();
+      Log.info("Creating " + N + " cross-validation splits with random number seed: " + seed);
+      switch (_parms._fold_assignment) {
+        case AUTO:
+        case Random:
+          fold = AstKFold.kfoldColumn(train().anyVec().makeZero(), N, seed);
+          break;
+        case Modulo:
+          fold = AstKFold.moduloKfoldColumn(train().anyVec().makeZero(), N);
+          break;
+        case Stratified:
+          fold = AstKFold.stratifiedKFoldColumn(response(), N, seed);
+          break;
+        default:
+          throw H2O.unimpl();
+      }
+      return FoldAssignment.fromInternalFold(N, fold);
     }
   }
 
   // Step 2: Make 2*N binary weight vectors
-  public Vec[] cv_makeWeights( final int N, Vec foldAssignment ) {
+  Vec[] cv_makeWeights(final int N, FoldAssignment foldAssignment) {
     String origWeightsName = _parms._weights_column;
     Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
-    Frame folds_and_weights = new Frame(foldAssignment, origWeight);
+    Frame folds_and_weights = new Frame(foldAssignment.getAdaptedFold(), origWeight);
     Vec[] weights = new MRTask() {
         @Override public void map(Chunk chks[], NewChunk nchks[]) {
           Chunk fold = chks[0], orig = chks[1];
           for( int row=0; row< orig._len; row++ ) {
-            int foldIdx = (int)fold.at8(row) % N;
+            int foldIdx = (int) fold.atd(row);
             double w = orig.atd(row);
             for( int f = 0; f < N; f++ ) {
               boolean holdout = foldIdx == f;
@@ -586,11 +722,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           }
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
+    if (origWeightsName == null)
+      origWeight.remove(); // Cleanup temp
 
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment}));
-    if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
-    if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
+      DKV.put(foldAssignment.toFrame(Key.make("cv_fold_assignment_" + _result.toString())));
+    foldAssignment.remove(_parms._keep_cross_validation_fold_assignment);
 
     for( Vec weight : weights )
       if( weight.isConst() )
@@ -640,6 +777,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
       cv_mb._input_parms = (P) _parms.clone();
+      cv_mb._desc = "Cross-Validation model " + (i + 1) + " / " + N;
 
       // Error-check all the cross-validation Builders before launching any
       cv_mb.init(false);
@@ -672,63 +810,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   // Step 4: Run all the CV models and launch the main model
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
-    bulkBuildModels("cross-validation", _job, cvModelBuilders, nModelsInParallel(N), 0 /*no job updates*/);
+    makeCVModelBuilder(cvModelBuilders, nModelsInParallel(N)).bulkBuildModels();
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
-
-  /**
-   * Runs given model builders in bulk.
-   *
-   * @param modelType text description of group of models being built (for logging purposes)
-   * @param job parent job (processing will be stopped if stop of a parent job was requested)
-   * @param modelBuilders list of model builders to run in bulk
-   * @param parallelization level of parallelization (how many models can be built at the same time)
-   * @param updateInc update increment (0 = disable updates)
-   */
-  public static void bulkBuildModels(String modelType, Job job, ModelBuilder<?, ?, ?>[] modelBuilders,
-                                     int parallelization, int updateInc) {
-    final int N = modelBuilders.length;
-    H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
-    int nRunning=0;
-    RuntimeException rt = null;
-    for( int i=0; i<N; ++i ) {
-      if (job.stop_requested() ) {
-        Log.info("Skipping build of last "+(N-i)+" out of "+N+" "+modelType+" CV models");
-        stopAll(submodel_tasks);
-        throw new Job.JobCancelledException();
-      }
-      Log.info("Building " + modelType + " model " + (i + 1) + " / " + N + ".");
-      modelBuilders[i].startClock();
-      submodel_tasks[i] = H2O.submitTask(modelBuilders[i].trainModelImpl());
-      if(++nRunning == parallelization) { //piece-wise advance in training the models
-        while (nRunning > 0) try {
-          submodel_tasks[i + 1 - nRunning--].join();
-          if (updateInc > 0) job.update(updateInc); // One job finished
-        } catch (RuntimeException t) {
-          if (rt == null) rt = t;
-        }
-        if(rt != null) throw rt;
-      }
-    }
-    for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      try {
-        final H2O.H2OCountedCompleter task = submodel_tasks[i];
-        assert task != null;
-        task.join();
-      } catch(RuntimeException t){
-        if (rt == null) rt = t;
-      }
-    if(rt != null) throw rt;
+  
+  protected CVModelBuilder makeCVModelBuilder(ModelBuilder<?, ?, ?>[] modelBuilders, int parallelization) {
+    return new CVModelBuilder(_job, modelBuilders, parallelization);
   }
-
-  private static void stopAll(H2O.H2OCountedCompleter[] tasks) {
-    for (H2O.H2OCountedCompleter task : tasks) {
-      if (task != null) {
-        task.cancel(true);
-      }
-    }
-  }
-
+  
   // Step 5: Score the CV models
   public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, Vec[] weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if (_job.stop_requested()) {
@@ -748,28 +837,49 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       Frame cvValid = cvModelBuilders[i].valid();
       Frame adaptFr = new Frame(cvValid);
-      M cvModel = cvModelBuilders[i].dest().get();
-      cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
-      mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */
-              || _parms._keep_cross_validation_predictions
-              || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
-        String predName = cvModelBuilders[i].getPredictionKey();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
-        DKV.put(cvModel);
+      if (!cvModelBuilders[i].getName().equals("infogram")) {
+        M cvModel = cvModelBuilders[i].dest().get();
+        cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
+        if (nclasses() == 2 /* need holdout predictions for gains/lift table */
+                || _parms._keep_cross_validation_predictions
+                || (cvModel.isDistributionHuber() /*need to compute quantiles on abs error of holdout predictions*/)) {
+          String predName = cvModelBuilders[i].getPredictionKey();
+          Model.PredictScoreResult result = cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true, CFuncRef.NOP);
+          result.makeModelMetrics(cvValid, adaptFr);
+          mbs[i] = result.getMetricBuilder();
+          DKV.put(cvModel);
+        } else {
+          mbs[i] = cvModel.scoreMetrics(adaptFr);
+        }
       }
       // free resources as early as possible
-      if (adaptFr != null) {
-        Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
-        DKV.remove(adaptFr._key,fs);
-      }
+      Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, cvValid);
+      DKV.remove(adaptFr._key,fs);
       DKV.remove(cvModelBuilders[i]._parms._train,fs);
       DKV.remove(cvModelBuilders[i]._parms._valid,fs);
       weights[2*i  ].remove(fs);
       weights[2*i+1].remove(fs);
     }
+    
     fs.blockForPending();
     return mbs;
+  }
+
+  private boolean useParallelMainModelBuilding(int nFolds) {
+    int parallelizationLevel = nModelsInParallel(nFolds);
+    return parallelizationLevel > 1 && _parms._parallelize_cross_validation && cv_canBuildMainModelInParallel();
+  }
+
+  protected boolean cv_canBuildMainModelInParallel() {
+    return false;
+  }
+
+  protected boolean cv_updateOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) {
+    throw new UnsupportedOperationException();
+  }
+
+  protected boolean cv_initStoppingParameters() {
+    throw new UnsupportedOperationException();
   }
 
   // Step 6: build the main model
@@ -782,8 +892,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info("Building main model.");
     Log.info("Remaining time for main model (ms): " + max_runtime_millis);
     _build_step_countdown = new Countdown(max_runtime_millis, true);
-    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
-    mm.join();  // wait for completion
+    submitTrainModelTask().join();
     _build_step_countdown = null;
   }
 
@@ -798,13 +907,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_models = _parms._keep_cross_validation_models ? cvModKeys : null;
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
-
+    
     for (int i = 0; i < N; ++i) {
-      if (i > 0) mbs[0].reduce(mbs[i]);
       cvModKeys[i] = cvModelBuilders[i]._result;
       predKeys[i] = Key.make(cvModelBuilders[i].getPredictionKey());
     }
-
+    
+    cv_makeAggregateModelMetircs(mbs);
+    
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || mainModel.isDistributionHuber())) {
       Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
@@ -828,7 +938,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       int count = Model.deleteAll(predKeys);
       Log.info(count+" CV predictions were removed");
     }
-
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
       if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
@@ -838,6 +947,32 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Log.info(mainModel._output._cross_validation_metrics.toString());
     mainModel._output._cross_validation_metrics_summary = makeCrossValidationSummaryTable(cvModKeys);
 
+    // Put cross-validation scoring history to the main model
+    if (mainModel._output._scoring_history != null) { // check if scoring history is supported (e.g., NaiveBayes doesn't)
+      mainModel._output._cv_scoring_history = new TwoDimTable[cvModKeys.length];
+      for (int i = 0; i < cvModKeys.length; i++) {
+        TwoDimTable sh = cvModKeys[i].get()._output._scoring_history;
+        String[] rowHeaders = sh.getRowHeaders();
+        String[] colTypes = sh.getColTypes();
+        int tableSize = rowHeaders.length;
+        int colSize = colTypes.length;
+        TwoDimTable copiedScoringHistory = new TwoDimTable(
+                sh.getTableHeader(),
+                sh.getTableDescription(),
+                sh.getRowHeaders(),
+                sh.getColHeaders(),
+                sh.getColTypes(),
+                sh.getColFormats(),
+                sh.getColHeaderForRowHeaders());
+        for (int rowIndex = 0; rowIndex < tableSize; rowIndex++)  {
+          for (int colIndex = 0; colIndex < colSize; colIndex++) {
+            copiedScoringHistory.set(rowIndex, colIndex,sh.get(rowIndex, colIndex));
+          }
+        }
+        mainModel._output._cv_scoring_history[i] = copiedScoringHistory;
+      }
+    }
+
     if (!_parms._keep_cross_validation_models) {
       int count = Model.deleteAll(cvModKeys);
       Log.info(count+" CV models were removed");
@@ -846,6 +981,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._total_run_time = _build_model_countdown.elapsedTime();
     // Now, the main model is complete (has cv metrics)
     DKV.put(mainModel);
+  }
+  
+  public void cv_makeAggregateModelMetircs(ModelMetrics.MetricBuilder[] mbs){
+    for (int i = 1; i < mbs.length; ++i) {
+      mbs[0].reduceForCV(mbs[i]);
+    }
   }
 
   private String getPredictionKey() {
@@ -907,6 +1048,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _offset; // Handy offset column
   protected transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
+  protected transient Vec _treatment;
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
@@ -914,16 +1056,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){ return _parms._weights_column != null;} // don't look at transient Vec
   public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
-  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
-  public String[] specialColNames() {
-    String[] n = new String[numSpecialCols()];
-    int i=0;
-    if (hasOffsetCol()) n[i++]=_parms._offset_column;
-    if (hasWeightCol()) n[i++]=_parms._weights_column;
-    if (hasFoldCol())   n[i++]=_parms._fold_column;
-    return n;
-  }
-  // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
+  public boolean hasTreatmentCol() { return _parms._treatment_column != null;}
+  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0) + (hasTreatmentCol() ? 1 : 0); }
 
   public boolean havePojo() { return false; }
   public boolean haveMojo() { return false; }
@@ -937,7 +1071,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean validateStoppingMetric() {
     return true;
   }
-  
+
+  protected void checkEarlyStoppingReproducibility() {
+    // nothing by default -> meant to be overridden 
+  }
+
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -1009,6 +1147,30 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _fold = null;
       assert(!hasFoldCol());
     }
+    if(_parms._treatment_column != null) {
+      Vec u = _train.remove(_parms._treatment_column);
+      if(u == null)
+        error("_treatment_column","Treatment column '" + _parms._treatment_column + "' not found in the training frame");
+      else {
+        _treatment = u;
+        if(!u.isCategorical())
+          error("_treatment_column","Invalid treatment column '" + _parms._treatment_column + "', treatment column must be categorical");
+        _weights = u;
+        if(u.naCnt() > 0)
+          error("_treatment_column","Treatment column cannot have missing values.");
+        if(u.isCategorical() && u.domain().length != 2)
+          error("_treatment_column","Treatment column must contains only 0 or 1");
+        if(u.min() != 0)
+          error("_treatment_column","Min. treatment column value must be 0");
+        if(u.max() != 1)
+          error("_treatment_column","Max. treatment column value must be 1");
+        _train.add(_parms._treatment_column, u);
+        ++res;
+      }
+    } else {
+      _treatment = null;
+      assert(!hasTreatmentCol());
+    }
     if(isSupervised() && _parms._response_column != null) {
       _response = _train.remove(_parms._response_column);
       if (_response == null) {
@@ -1021,6 +1183,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column must be different from weights_column");
         if(_response == _fold)
           error("_response_column", "Response column must be different from fold_column");
+        if(_response == _treatment)
+          error("_response_column", "Response column must be different from treatment_column");
         _train.add(_parms._response_column, _response);
         ++res;
       }
@@ -1049,7 +1213,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Drop all-constant and all-bad columns.
     if(_parms._ignore_const_cols)
       new FilterCols(npredictors) {
-        @Override protected boolean filter(Vec v) {
+        @Override protected boolean filter(Vec v, String name) {
           boolean isBad = v.isBad();
           boolean skipConst = ignoreConstColumns() && v.isConst(canLearnFromNAs()); // NAs can have information
           boolean skipString = ignoreStringColumns() && v.isString();
@@ -1133,9 +1297,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
+    return validationMessage(Log.ERRR);
+  }
+
+  public String validationWarnings() {
+    return validationMessage(Log.WARN);
+  }
+
+  private String validationMessage(int level) {
     StringBuilder sb = new StringBuilder();
     for( ValidationMessage vm : _messages )
-      if( vm._log_level == Log.ERRR )
+      if( vm._log_level == level )
         sb.append(vm.toString()).append("\n");
     return sb.toString();
   }
@@ -1155,6 +1327,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Log.log(log_level,field_name + ": " + message);
     }
     public int log_level() { return _log_level; }
+    public String field() { return _field_name; }
+    public String message() { return _message; }
     @Override public String toString() { return Log.LVLS[_log_level] + " on field: " + _field_name + ": " + _message; }
   }
 
@@ -1189,9 +1363,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (expensive)
         error("_train", "Missing training frame");
       return;
+    } else {
+      // Catch the number #1 reason why a junit test is failing non-deterministically on a missing Vec: forgotten DKV update after a Frame is modified locally
+      new ObjectConsistencyChecker(_parms._train).doAllNodes();
     }
-    Frame tr = _train != null?_train:_parms.train();
-    if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
+    Frame tr = _train != null ? _train : _parms.train();
+    if (tr == null) {
+      error("_train", "Missing training frame: "+_parms._train); 
+      return;
+    }
     setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
@@ -1242,11 +1422,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Drop explicitly dropped columns
     if( _parms._ignored_columns != null ) {
-      _train.remove(_parms._ignored_columns);
-      if( expensive ) Log.info("Dropping ignored columns: "+Arrays.toString(_parms._ignored_columns));
+      Set<String> ignoreColumnSet = new HashSet<>(Arrays.asList(_parms._ignored_columns));
+      Collection<String> usedColumns = _parms.getUsedColumns(tr._names);
+      ignoreColumnSet.removeAll(usedColumns);
+      String[] actualIgnoredColumns = ignoreColumnSet.toArray(new String[0]);
+      _train.remove(actualIgnoredColumns);
+      if (expensive) Log.info("Dropping ignored columns: " + Arrays.toString(actualIgnoredColumns));
     }
 
-    if(_parms._checkpoint != null){
+    if(_parms._checkpoint != null) {
       if(DKV.get(_parms._checkpoint) == null){
           error("_checkpoint", "Checkpoint has to point to existing model!");
       }
@@ -1290,6 +1474,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _nclass = init_getNClass();
         if (_parms._check_constant_response && _response.isConst()) {
           error("_response", "Response cannot be constant.");
+        }
+        if(_nclass == 1 && _response.isBinary(true)) {
+          warn("_response", "Response is numeric, so the regression model will be trained. However, the cardinality is equaled to two, so if you want to train a classification model, convert the response column to categorical before training.");
         }
       }
       if (! _parms._balance_classes)
@@ -1406,8 +1593,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                   _parms._weights_column != null ? _train.vec(_parms._weights_column) : v.makeCon(1.0),
                   _train.vec(_parms._response_column));
           double[] meanWeightedResponse  = mrplt.meanWeightedResponse;
-//          for (int i=0;i<len;++i)
-//            Log.info(v.domain()[i] + " -> " + meanWeightedResponse[i]);
 
           // Option 1: Order the categorical column by response to make better splits
           int[] idx=new int[len];
@@ -1419,8 +1604,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           String[] newDomain = new String[len];
           for (int i = 0; i < len; ++i) newDomain[i] = v.domain()[idx[i]];
           vNew.setDomain(newDomain);
-//          for (int i=0;i<len;++i)
-//            Log.info(vNew.domain()[i] + " -> " + meanWeightedResponse[idx[i]]);
           vecs[j] = vNew;
           restructured = true;
         }
@@ -1449,23 +1632,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else if (validateStoppingMetric()){
-      if (isClassifier()) {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
-          error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
-        }
-        if (nclasses()!=2 && (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC || _parms._stopping_metric
-                == ScoreKeeper.StoppingMetric.AUCPR)) {
-          error("_stopping_metric", "Stopping metric cannot be AUC or AUCPR for multinomial " +
-                  "classification.");
-        }
-      } else {
-        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
-                == ScoreKeeper.StoppingMetric.AUCPR)
-        {
-          error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
+    }
+    else { // early stopping is enabled
+      checkEarlyStoppingReproducibility();
+      if (validateStoppingMetric()) {
+        if (isClassifier()) {
+          if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
+            error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
+          }
+        } else {
+          if (_parms._stopping_metric.isClassificationOnly()) {
+            error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric + " for regression.");
+          }
         }
       }
     }
@@ -1687,12 +1865,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     final int _specialVecs; // special vecs to skip at the end
     public FilterCols(int n) {_specialVecs = n;}
 
-    abstract protected boolean filter(Vec v);
+    abstract protected boolean filter(Vec v, String name);
 
     public void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vec(i)) ) rmcolsList.add(i);
+        if( filter(f.vec(i), f._names[i])) rmcolsList.add(i);
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
@@ -1709,28 +1887,73 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   //stitch together holdout predictions into one large Frame
-  private static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key key) {
+  Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key) {
+    int precision = _parms._keep_cross_validation_predictions_precision;
+    if (precision < 0) {
+      precision = isClassifier() ? 8 : 0;
+    }
+    return combineHoldoutPredictions(predKeys, key, precision);
+  }
+
+  static Frame combineHoldoutPredictions(Key<Frame>[] predKeys, Key<Frame> key, int precision) {
     int N = predKeys.length;
     Frame template = predKeys[0].get();
     Vec[] vecs = new Vec[N*template.numCols()];
     int idx=0;
-    for (int i=0;i<N;++i)
-      for (int j=0;j<predKeys[i].get().numCols();++j)
-        vecs[idx++]=predKeys[i].get().vec(j);
-    return new HoldoutPredictionCombiner(N,template.numCols()).doAll(template.types(),new Frame(vecs)).outputFrame(key, template.names(),template.domains());
+    for (Key<Frame> predKey : predKeys)
+      for (int j = 0; j < predKey.get().numCols(); ++j)
+        vecs[idx++] = predKey.get().vec(j);
+    HoldoutPredictionCombiner combiner = makeHoldoutPredictionCombiner(N, template.numCols(), precision);
+    return combiner.doAll(template.types(),new Frame(vecs))
+            .outputFrame(key, template.names(),template.domains());
   }
 
+  static HoldoutPredictionCombiner makeHoldoutPredictionCombiner(int folds, int cols, int precision) {
+    if (precision < 0) {
+      throw new IllegalArgumentException("Precision cannot be negative, got precision = " + precision);
+    } else if (precision == 0) {
+      return new HoldoutPredictionCombiner(folds, cols);
+    } else {
+      return new ApproximatingHoldoutPredictionCombiner(folds, cols, precision);
+    }
+  }
+  
   // helper to combine multiple holdout prediction Vecs (each only has 1/N-th filled with non-zeros) into 1 Vec
-  private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
+  static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
     int _folds, _cols;
     public HoldoutPredictionCombiner(int folds, int cols) { _folds=folds; _cols=cols; }
-    @Override public void map(Chunk[] cs, NewChunk[] nc) {
-      for (int c=0;c<_cols;++c) {
-        double [] vals = new double[cs[0].len()];
-        for (int f=0;f<_folds;++f)
-          for (int row = 0; row < cs[0].len(); ++row)
-            vals[row] += cs[f * _cols + c].atd(row);
-        nc[c].setDoubles(vals);
+    @Override public final void map(Chunk[] cs, NewChunk[] nc) {
+      for (int c = 0; c < _cols; c++) {
+        double[] vals = new double[cs[0].len()];
+        ChunkVisitor.CombiningDoubleAryVisitor visitor = new ChunkVisitor.CombiningDoubleAryVisitor(vals);
+        for (int f = 0; f < _folds; f++) {
+          cs[f * _cols + c].processRows(visitor, 0, vals.length);
+          visitor.reset();
+        }
+        populateChunk(nc[c], vals);
+      }
+    }
+    protected void populateChunk(NewChunk nc, double[] vals) {
+      nc.setDoubles(vals);
+    }
+  }
+
+  static class ApproximatingHoldoutPredictionCombiner extends HoldoutPredictionCombiner {
+    private final int _precision;
+    public ApproximatingHoldoutPredictionCombiner(int folds, int cols, int precision) { 
+      super(folds, cols);
+      _precision = precision;
+    }
+    @Override
+    protected void populateChunk(NewChunk nc, double[] vals) {
+      final long scale = PrettyPrint.pow10i(_precision); 
+      for (double val : vals) {
+        if (Double.isNaN(val))
+          nc.addNA();
+        else {
+          long approx = Math.round(val * scale);
+          nc.addNum(approx, -_precision);
+        }
       }
     }
   }
@@ -1740,9 +1963,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     int N = cvmodels.length;
     int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
     String[] colTypes = new String[N+extra_length];
-    Arrays.fill(colTypes, "string");
+    Arrays.fill(colTypes, "float");
     String[] colFormats = new String[N+extra_length];
-    Arrays.fill(colFormats, "%s");
+    Arrays.fill(colFormats, "%f");
     String[] colNames = new String[N+extra_length];
     colNames[0] = "mean";
     colNames[1] = "sd";
@@ -1757,6 +1980,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     excluded.add("remove");
     excluded.add("cm");
     excluded.add("auc_obj");
+    excluded.add("aucpr");
     List<Method> methods = new ArrayList<>();
     {
       Model m = DKV.getGet(cvmodels[0]);
@@ -1878,6 +2102,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     void cleanUp() {
       FrameUtils.cleanUp(_toDelete);
     }
+  }
+
+  public PojoWriter makePojoWriter(Model<?, ?, ?> genericModel, MojoModel mojoModel) {
+    throw new UnsupportedOperationException("MOJO Model for algorithm '" + mojoModel._algoName +
+            "' doesn't support conversion to POJO.");
   }
 
 }

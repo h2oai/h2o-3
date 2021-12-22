@@ -21,7 +21,7 @@
 #' @param sep The field separator character. Values on each line of
 #'        the file will be separated by this character (default ",").
 #' @param compression How to compress the exported dataset
-#         (default none; gzip, bzip2 and snappy available)
+#'        (default none; gzip, bzip2 and snappy available)
 #' @param parts integer, number of part files to export to. Default is to
 #'        write to a single file. Large data can be exported to multiple
 #'        'part' files, where each part file contains subset of the data.
@@ -188,6 +188,28 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
     .h2o.__remoteSend('SaveToHiveTable', method = "POST", .params = parms, h2oRestApiVersion = 3)
 }
 
+#'
+#' Store frame data in H2O's native format.
+#'
+#' @name h2o.save_frame
+#' @param x An H2OFrame object
+#' @param dir a filesystem location where to write frame data (hdfs, nfs)
+#' @param force \code{logical}. overwrite already existing files (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
+#' }
+#' @export
+h2o.save_frame <- function(x, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__SAVE_FRAME(h2o.getId(x)), dir = dir, force = force, method = "POST")
+    .h2o.__waitOnJob(res$job$key$name)
+}
+
 # ------------------- Save H2O Model to Disk ----------------------------------------------------
 #'
 #' Save an H2O Model Object to Disk
@@ -202,7 +224,11 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #'
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
+#' @param filename string indicating the file name.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @param export_cross_validation_predictions logical, indicates whether the exported model 
+#'        artifacts should also include CV Holdout Frame predictions.  Default is not to export 
+#'        the predictions.
 #' @seealso \code{\link{h2o.loadModel}} for loading a model to H2O from disk
 #' @examples
 #' \dontrun{
@@ -215,12 +241,17 @@ h2o.save_to_hive <- function(data, jdbc_url, table_name, format="csv", table_pat
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModel <- function(object, path="", force=FALSE) {
+h2o.saveModel <- function(object, path="", force=FALSE, export_cross_validation_predictions=FALSE, filename="") {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  path <- file.path(path, object@model_id)
-  res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
+  if(!is.logical(export_cross_validation_predictions) || length(export_cross_validation_predictions) != 1L || is.na(export_cross_validation_predictions)) stop("`export_cross_validation_predictions` must be TRUE or FALSE")
+  if(filename == "")
+    filename <- object@model_id
+  path <- file.path(path, filename)
+  res <- .h2o.__remoteSend(paste0("Models.bin/",object@model_id),dir=path,
+                           force=force,export_cross_validation_predictions=export_cross_validation_predictions,h2oRestApiVersion=99)
   res$dir
 }
 
@@ -259,6 +290,7 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #'
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
+#' @param filename string indicating the file name. (Type of file is always .zip)
 #' @param force logical, indicates how to deal with files that already exist.
 #' @seealso \code{\link{h2o.saveModel}} for saving a model to disk as a binary object.
 #' @examples
@@ -271,11 +303,14 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' # h2o.save_mojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.save_mojo <- function(object, path="", force=FALSE) {
+h2o.save_mojo <- function(object, path="", force=FALSE, filename="") {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  path <- file.path(path, "/" ,object@model_id, ".zip", fsep = "")
+  if(filename == "")
+    filename <- paste0(object@model_id, ".zip")
+  path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models.mojo/",object@model_id),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }
@@ -290,6 +325,7 @@ h2o.save_mojo <- function(object, path="", force=FALSE) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model details will be written to.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @param filename string indicating the file name. (Type of file is always .json)
 #' @examples
 #' \dontrun{
 #' # library(h2o)
@@ -300,11 +336,14 @@ h2o.save_mojo <- function(object, path="", force=FALSE) {
 #' # h2o.saveModelDetails(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
 #' @export
-h2o.saveModelDetails <- function(object, path="", force=FALSE) {
+h2o.saveModelDetails <- function(object, path="", force=FALSE, filename="") {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
+  if(!is.character(filename) || length(filename) != 1L || is.na(filename)) stop("`filename` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")
-  path <- file.path(path, "/" ,object@model_id, ".json", fsep = "")
+  if(filename == "")
+    filename <- paste0(object@model_id, ".json")
+  path <- file.path(path, filename)
   res <- .h2o.__remoteSend(paste0("Models/",object@model_id,"/json"),dir=path,force=force,h2oRestApiVersion=99)
   res$dir
 }
@@ -315,6 +354,10 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'
 #' @param grid_directory A character string containing the path to the folder for the grid to be saved to.
 #' @param grid_id A chracter string with identification of the grid to be saved.
+#' @param save_params_references A logical indicating if objects referenced by grid parameters
+#'                               (e.g. training frame, calibration frame) should also be saved.
+#' @param export_cross_validation_predictions A logical indicating whether exported model
+#'                                            artifacts should also include CV holdout Frame predictions.
 #' @return Returns an object that is a subclass of \linkS4class{H2OGrid}.
 #' @examples
 #' \dontrun{
@@ -342,16 +385,18 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'grid <- h2o.loadGrid(grid_path)
 #' }
 #' @export
-h2o.saveGrid <- function(grid_directory, grid_id){
+h2o.saveGrid <- function(grid_directory, grid_id, save_params_references=FALSE, export_cross_validation_predictions = FALSE) {
   params <- list()
   params[["grid_directory"]] <- grid_directory
+  params[["save_params_references"]] <- save_params_references
+  params[["export_cross_validation_predictions"]] <- export_cross_validation_predictions
   
   url <- paste0("Grid.bin/", grid_id,"/export")
   
-  res <- .h2o.__remoteSend(
+  .h2o.__remoteSend(
     url,
     method = "POST",
-    h2oRestApiVersion = 3,.params = params
+    h2oRestApiVersion = 3, .params = params
   )
   
   paste0(grid_directory,"/",grid_id)

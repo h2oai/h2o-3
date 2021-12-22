@@ -1,6 +1,7 @@
 package water.rapids;
 
 import hex.Model;
+import hex.ObjectConsistencyChecker;
 import water.*;
 import water.fvec.Frame;
 import water.rapids.ast.*;
@@ -8,6 +9,7 @@ import water.rapids.ast.params.AstConst;
 import water.rapids.ast.prims.advmath.*;
 import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.filters.dropduplicates.AstDropDuplicates;
+import water.rapids.ast.prims.internal.AstRunTool;
 import water.rapids.ast.prims.math.*;
 import water.rapids.ast.prims.matrix.*;
 import water.rapids.ast.prims.misc.*;
@@ -50,6 +52,12 @@ import java.util.HashMap;
  * Therefore, the Env class is a stack of values + an API for reference counting.
  */
 public class Env extends Iced {
+
+  /** 
+   * for DEVELOPMENT/TESTING only - can be used to enable DKV object consistency check, this check is generally expensive
+   * and should only be used when hunting down bugs or for running tests on CI
+   */
+  static final boolean DEV_CHECK_OBJECT_CONSISTENCY = H2O.getSysBoolProperty("rapids.checkObjectConsistency", false);
 
   // Session holds the ref-counts across multiple executions.
   public final Session _ses;
@@ -240,6 +248,7 @@ public class Env extends Iced {
     init(new AstIsNa());
     init(new AstIsNumeric());
     init(new AstLevels());
+    init(new AstAppendLevels());
     init(new AstMelt());
     init(new AstMerge());
     init(new AstNaOmit());
@@ -310,10 +319,19 @@ public class Env extends Iced {
     
     // Reset model threshold
     init(new AstModelResetThreshold());
-    
+
+    // Permutation Variable Importance
+    init(new AstPermutationVarImp());
+
     // Filters
     init(new AstDropDuplicates());
+
+    // For internal use only
+    init(new AstRunTool());
     
+    // generate result frame
+    init(new AstResultFrame());
+
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
       init(prim);
@@ -407,6 +425,10 @@ public class Env extends Iced {
     // Now the DKV
     Value value = DKV.get(Key.make(expand(id)));
     if (value != null) {
+      if (DEV_CHECK_OBJECT_CONSISTENCY) {
+        // executed for every id => expensive => should only be enabled in test mode
+        new ObjectConsistencyChecker(value._key).doAllNodes();
+      }
       if (value.isFrame())
         return addGlobals(value.get());
       if (value.isModel())

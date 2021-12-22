@@ -48,7 +48,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
         Scope.enter();
         try {
             // Parse frame into H2O
-            tfr = parse_test_file("./smalldata/junit/weather.csv");
+            tfr = parseTestFile("./smalldata/junit/weather.csv");
             String response = "PressureChange";
             Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
             DKV.put(tfr);
@@ -86,7 +86,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
         Scope.enter();
         try {
             // Parse frame into H2O
-            tfr = parse_test_file("./smalldata/testng/airlines_train.csv");
+            tfr = parseTestFile("./smalldata/testng/airlines_train.csv");
             String response = "IsDepDelayed";
             Scope.track(tfr.replace(tfr.find(response), tfr.vecs()[tfr.find(response)].toCategoricalVec()));
             DKV.put(tfr);
@@ -128,7 +128,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
         Scope.enter();
         try {
             // Parse frame into H2O
-            tfr = parse_test_file("./smalldata/testng/airlines_train.csv", "NA", 1,
+            tfr = parseTestFile("./smalldata/testng/airlines_train.csv", "NA", 1,
                     new byte[]{4,2,2,2,2,4,4,4,3});
             String response = "Distance";
             DKV.put(tfr);
@@ -162,7 +162,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
     public void testXGBoostBinomialClass_noTreeClassSpecified() {
         Scope.enter();
         try {
-            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame frame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(frame);
             String response = "IsDepDelayed";
 
@@ -184,6 +184,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
             final TreeHandler treeHandler = new TreeHandler();
             final TreeV3 args = new TreeV3();
             args.model = new KeyV3.ModelKeyV3(model._key);
+            args.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
             final TreeV3 tree = treeHandler.getTree(3, args);
             assertNotNull(tree);
         } finally {
@@ -195,7 +196,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
     public void testXGBoostRegression_noTreeClassSpecified() {
         Scope.enter();
         try {
-            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame frame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(frame);
             String response = "Distance";
 
@@ -217,6 +218,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
             final TreeHandler treeHandler = new TreeHandler();
             final TreeV3 args = new TreeV3();
             args.model = new KeyV3.ModelKeyV3(model._key);
+            args.plain_language_rules = TreeHandler.PlainLanguageRules.AUTO;
             final TreeV3 tree = treeHandler.getTree(3, args);
             assertNotNull(tree);
         } finally {
@@ -228,7 +230,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
     public void testXGBoostMultinomial_noTreeClassSpecified() {
         Scope.enter();
         try {
-            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            final Frame frame = parseTestFile("./smalldata/testng/airlines_train.csv");
             Scope.track(frame);
             String response = "Origin";
 

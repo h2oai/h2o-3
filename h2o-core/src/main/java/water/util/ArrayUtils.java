@@ -101,36 +101,6 @@ public class ArrayUtils {
     return result;
   }
 
-  public static<T extends Comparable<T>> int indexOf(T[] arr, T val) {
-    int highIndex = arr.length-1;
-    int compare0 = val.compareTo(arr[0]); // small shortcut
-    if (compare0 == 0)
-      return 0;
-    int compareLast = val.compareTo(arr[highIndex]);
-    if (compareLast==0)
-      return highIndex;
-    if (val.compareTo(arr[0])<0 || val.compareTo(arr[highIndex])>0) // end shortcut
-      return -1;
-    
-    int count = 0;
-    int numBins = arr.length;
-    int lowIndex = 0;
-
-    while (count < numBins) {
-      int tryBin = (int) Math.floor((highIndex+lowIndex)*0.5);
-      double compareVal = val.compareTo(arr[tryBin]);
-      if (compareVal==0)
-        return tryBin;
-      else if (compareVal>0)
-        lowIndex = tryBin;
-      else
-        highIndex = tryBin;
-
-      count++;
-    }
-    return -1;
-  }
-  
   // return the sqrt of each element of the array.  Will overwrite the original array in this case
   public static double[] sqrtArr(double [] x){
     assert (x != null);
@@ -292,6 +262,7 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+
   public static double[] add(double[] a, double b) {
     for(int i = 0; i < a.length; i++ ) a[i] += b;
     return a;
@@ -403,6 +374,20 @@ public class ArrayUtils {
     return nums;
   }
 
+  /**
+   *
+   * @param data vector (1 x n)
+   * @param p vector (1 x n)
+   * @param n vector (1 x n)
+   * @return Result of matrix operation (data - p) * n
+   */
+  public static double subAndMul(double[] data, double[] p, double[] n) {
+    double res = 0;
+    for (int col=0; col<data.length; col++)
+      res += (data[col] - p[col]) * n[col];
+    return res;
+  }
+
   public static double[] invert(double[] ary) {
     if(ary == null) return null;
     for(int i=0;i<ary.length;i++) ary[i] = 1. / ary[i];
@@ -423,7 +408,6 @@ public class ArrayUtils {
     }
     return res;
   }
-
   public static double[] diagArray(double[][] ary) {
     if(ary == null) return null;
     int arraylen = ary.length;
@@ -431,6 +415,24 @@ public class ArrayUtils {
     for (int index=0; index < arraylen; index++)
       res[index] = ary[index][index];
     return res;
+  }
+
+  /***
+   * Return the index of an element val that is less than tol array from an element of the array arr.
+   * Note that arr does not need to be sorted.
+   * 
+   * @param arr: double array possibly containing an element of interest.
+   * @param val: val to be found in array arr
+   * @param tol: maximum difference between value of interest val and an element of array
+   * @return the index of element that is within tol away from val or -1 if not found
+   */
+  public static int locate(double[] arr, double val, double tol) {
+    int arrLen = arr.length;
+    for (int index = 0; index < arrLen; index++) {
+      if (Math.abs(arr[index]-val) < tol) 
+        return index;
+    }
+    return -1;
   }
   
   public static double[] multArrVec(double[][] ary, double[] nums, double[] res) {
@@ -492,6 +494,17 @@ public class ArrayUtils {
     return res;
   }
 
+  public static double[][] expandArray(double[][] ary, int newColNum) {
+    if(ary == null) return null;
+    assert ary.length < newColNum : "new array should be greater than original array in second dimension.";
+    int oldMatRow = ary.length;
+    double[][] res = new double[newColNum][newColNum];
+    for(int i = 0; i < oldMatRow; i++) {
+      System.arraycopy(ary[i], 0, res[i], 0, oldMatRow);
+    }
+    return res;
+  }
+
   /***
    * This function will perform transpose of triangular matrices only.  If the original matrix is lower triangular,
    * the return matrix will be upper triangular and vice versa.
@@ -529,7 +542,7 @@ public class ArrayUtils {
   /**
    * Provide array from start to end in steps of 1
    * @param start beginning value (inclusive)
-   * @param end   ending value (exclusive)
+   * @param end   ending value (inclusive)
    * @return specified range of integers
    */
   public static int[] range(int start, int end) {
@@ -666,25 +679,38 @@ public class ArrayUtils {
     }
     return result;
   }
-
+  
   public static String toStringQuotedElements(Object[] a) {
+    return toStringQuotedElements(a, -1);
+  }
+  
+  public static String toStringQuotedElements(Object[] a, int maxItems) {
     if (a == null)
       return "null";
 
-    int iMax = a.length - 1;
-    if (iMax == -1)
+    if (a.length == 0)
       return "[]";
+    
+    int max = a.length;
+    int ellipsisIdx = max+1;
+    if (maxItems > 0 && maxItems < a.length)  {
+      max = maxItems + 1;
+      ellipsisIdx = max / 2;
+    }
 
     StringBuilder b = new StringBuilder();
     b.append('[');
-    for (int i = 0; ; i++) {
-      b.append('"');
-      b.append(a[i]);
-      b.append('"');
-      if (i == iMax)
-        return b.append(']').toString();
-      b.append(", ");
+    for (int i = 0; i < max; i++) {
+      int idx = i == ellipsisIdx ? -1 
+              : i < ellipsisIdx ? i 
+              : a.length - max + i;
+      if (idx >= 0)
+        b.append('"').append(a[idx]).append('"');
+      else
+        b.append("...").append(a.length - maxItems).append(" not listed...");
+      if (i < max-1) b.append(", ");
     }
+    return b.append(']').toString();
   }
 
   public static <T> boolean contains(T[] arr, T target) {
@@ -706,8 +732,16 @@ public class ArrayUtils {
     return false;
   }
 
+  public static byte[] subarray(byte[] a, int off, int len) {
+    return Arrays.copyOfRange(a,off,off+len);
+  }
+  
   public static <T> T[] subarray(T[] a, int off, int len) {
     return Arrays.copyOfRange(a,off,off+len);
+  }
+
+  public static <T> T[][] subarray2DLazy(T[][] a, int columnOffset, int len) {
+    return Arrays.copyOfRange(a, columnOffset, columnOffset + len);
   }
 
   /** Returns the index of the largest value in the array.
@@ -837,29 +871,43 @@ public class ArrayUtils {
     return result;
   }
   public static double minValue(double[] from) {
-    double result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]<result) result = from[i];
-    return result;
+    return Arrays.stream(from).min().getAsDouble();
   }
+
+  /**
+   * Find minimum and maximum in array in the same time
+   *
+   * @return Array with 2 fields. First field is minimum and second field is maximum.
+   */
+  public static double[] minMaxValue(double[] from) {
+    double min = Double.MAX_VALUE;
+    double max = Double.MIN_VALUE;
+    for (int i = 0; i < from.length; ++i) {
+      if (from[i] < min) min = from[i];
+      if (from[i] > max) max = from[i];
+    }
+    return new double[]{min, max};
+  }
+
   public static long maxValue(long[] from) {
-    long result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
-    return result;
+    return Arrays.stream(from).max().getAsLong();
   }
-  public static long maxValue(int[] from) {
-    int result = from[0];
-    for (int i = 1; i<from.length; ++i)
-      if (from[i]>result) result = from[i];
-    return result;
+
+  public static int maxValue(Integer[] from) {
+    return Arrays.stream(from).max(Integer::compare).get();
   }
+  
+  public static int maxValue(int[] from) {
+    return Arrays.stream(from).max().getAsInt();
+  }
+  
   public static long minValue(long[] from) {
     long result = from[0];
     for (int i = 1; i<from.length; ++i)
       if (from[i]<result) result = from[i];
     return result;
   }
+  
   public static long minValue(int[] from) {
     int result = from[0];
     for (int i = 1; i<from.length; ++i)
@@ -1017,6 +1065,26 @@ public class ArrayUtils {
     }
   }
 
+  /**
+   * Generates a random array of n distinct non-negative long values. Values are sorted for reproducibility.  
+   * 
+   * @param n desired size of the array
+   * @param bound (exclusive) upper bound of maximum long-value that can be included 
+   * @param rng random generator
+   * @return long array of length n holding values [0, bound)
+   */
+  public static long[] distinctLongs(int n, long bound, Random rng) {
+    if (n > bound)
+      throw new IllegalArgumentException("argument bound (=" + bound + ") needs to be lower or equal to n (=" + n + ")");
+    if (!(rng instanceof RandomBase))
+      throw new IllegalArgumentException("Random implementation needs to be created by RandomUtils and inherit from RandomBase");
+    Set<Long> rows = new HashSet<>();
+    while (rows.size() < n) {
+      rows.add(((RandomBase) rng).nextLong(bound));
+    }
+    return rows.stream().sorted().mapToLong(Long::longValue).toArray();
+  }
+
   // Generate a n by m array of random numbers drawn from the standard normal distribution
   public static double[][] gaussianArray(int n, int m) { return gaussianArray(n, m, System.currentTimeMillis()); }
   public static double[][] gaussianArray(int n, int m, long seed) {
@@ -1032,6 +1100,12 @@ public class ArrayUtils {
   }
   public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
   public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
+  /**
+   * Make a new array initialized to random Gaussian N(0,1) values with the given seed.
+   *
+   * @param n length of generated vector
+   * @return array with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
+   */
   public static double[] gaussianVector(int n, Random random) {
     if(n <= 0) return null;
     double[] result = new double[n];  // ToDo: Get rid of this new action.
@@ -1039,7 +1113,7 @@ public class ArrayUtils {
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
     return result;
-  }
+  }  
 
   /** Remove the array allocation in this one */
   public static double[] gaussianVector(long seed, double[] vseed) {
@@ -1249,7 +1323,7 @@ public class ArrayUtils {
     return c;
   }
 
-  static public byte[] append( byte[] a, byte[] b ) {
+  static public byte[] append( byte[] a, byte... b ) {
     if( a==null ) return b;
     if( b==null ) return a;
     if( a.length==0 ) return b;
@@ -1305,9 +1379,17 @@ public class ArrayUtils {
     System.arraycopy(b,0,tmp,a.length,b.length);
     return tmp;
   }
+  
   public static int[] append(int[] a, int b) {
     if( a==null || a.length == 0) return  new int[]{b};
     int[] tmp = Arrays.copyOf(a,a.length+1);
+    tmp[a.length] = b;
+    return tmp;
+  }
+  
+  public static double[] append(double[] a, double b) {
+    if( a==null || a.length == 0) return  new double[]{b};
+    double[] tmp = Arrays.copyOf(a,a.length+1);
     tmp[a.length] = b;
     return tmp;
   }
@@ -1479,7 +1561,7 @@ public class ArrayUtils {
     if (idxs.length < cutoff) {
       //hand-rolled insertion sort
       for (int i = 0; i < idxs.length; i++) {
-        for (int j = i; j > 0 && values[idxs[j - 1]] > values[idxs[j]]; j--) {
+        for (int j = i; j > 0 && values[idxs[j - 1]]*increasing > values[idxs[j]]*increasing; j--) {
           int tmp = idxs[j];
           idxs[j] = idxs[j - 1];
           idxs[j - 1] = tmp;
@@ -1492,7 +1574,7 @@ public class ArrayUtils {
       Arrays.sort(d, new Comparator<Integer>() {
         @Override
         public int compare(Integer x, Integer y) {
-          return values[x]*increasing < values[y]*increasing ? -1 : 
+          return values[x]*increasing < values[y]*increasing ? -1 :
                   (values[x]*increasing > values[y]*increasing ? 1 : 0);
         }
       });
@@ -1503,6 +1585,21 @@ public class ArrayUtils {
   public static double [] subtract (double [] a, double [] b) {
     double [] c = MemoryManager.malloc8d(a.length);
     subtract(a,b,c);
+    return c;
+  }
+  
+  public static double [][] subtract (double [][] a, double [][] b) {
+    double [][] c = MemoryManager.malloc8d(a.length, a[0].length);
+    for (int rowIndex = 0; rowIndex < c.length; rowIndex++) {
+      c[rowIndex] = subtract(a[rowIndex], b[rowIndex], c[rowIndex]);
+    }
+    return c;
+  }
+
+  public static int [] subtract (int [] a, int [] b) {
+    int [] c = MemoryManager.malloc4 (a.length);
+    for (int i = 0; i < a.length; i++)
+      c[i] = a[i]-b[i];
     return c;
   }
 
@@ -2044,6 +2141,7 @@ public class ArrayUtils {
     }
     return false;
   }
+  
 
   /**
    * Count number of occurrences of element in given array.
@@ -2061,5 +2159,99 @@ public class ArrayUtils {
         cnt++;
 
     return cnt;
+  }
+
+  public static String findLongestCommonPrefix(String inputArray[]) {
+    String referenceWord = inputArray[0];
+    String result = "";
+    for (int j = 1; j <= referenceWord.length(); j++) {
+      String prefix = referenceWord.substring(0, j);
+      if (isPresentInAllWords(prefix, inputArray) && result.length() < prefix.length()) {
+        result = prefix;
+      }
+    }
+    return result;
+  }
+
+  private static boolean isPresentInAllWords(String prefix, String[] words) {
+    int n = words.length, k;
+    for (k = 1; k < n; k++) {
+      if (!words[k].startsWith(prefix)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   *
+   * @return Array dimension of array.length with values from uniform distribution with bounds taken from array.
+   *         For example first value of the result is from Unif(First column min value, First column max value)
+   */
+  public static double[] uniformDistFromArray(double[][] array, long seed) {
+    double[] p = new double[array.length];
+    Random random = RandomUtils.getRNG(seed);
+
+    for (int col = 0; col < array.length; col++) {
+      double[] minMax = ArrayUtils.minMaxValue(array[col]);
+      double min = minMax[0];
+      double max = minMax[1];
+      p[col] = min + random.nextDouble() * (max - min);
+    }
+
+    return p;
+  }
+
+  /*
+   * Linear interpolation values in the array with Double.NaN values.
+   * The interpolation always starts from the first item of the array. 
+   * The last element of array cannot be Double.NaN.
+   *
+   * @param array input array with Double.NaN values
+   */
+  public static void interpolateLinear(double[] array){
+    assert array.length > 0 && !Double.isNaN(array[array.length-1]): 
+            "Input array length should be > 0 and the first item should not be NaN";
+    if (array.length == 1){
+      return;
+    }
+    List<Integer> nonNullIdx = new ArrayList<>();
+    List<Integer> steps = new ArrayList<>();
+    int tmpStep = 0;
+    for (int i = 0; i < array.length; i++) {
+      if (!Double.isNaN(array[i])) {
+        nonNullIdx.add(i);
+        if (tmpStep != 0) {
+          steps.add(tmpStep);
+        }
+        tmpStep = 0;
+      }
+      else {
+        tmpStep++;
+      }
+    }
+    if(nonNullIdx.size() == 0) return;
+    double start = Double.NaN, end = Double.NaN, step = Double.NaN, mean = Double.NaN;
+    for (int i=0; i<array.length; i++) {
+      // always begin with 0
+      if(i == 0 && Double.isNaN(array[i])) {
+        start = 0;
+        end = array[nonNullIdx.get(0)];
+        step = 1.0 / (double)(steps.get(0) + 1);
+        mean = step;
+        array[i] = start * (1 - mean) + end * mean;
+        mean += step;
+      } else if (!Double.isNaN(array[i]) && nonNullIdx.size() > 1 && steps.size() > 0) {
+        start = array[nonNullIdx.get(0)];
+        end = array[nonNullIdx.get(1)];
+        step = 1.0 / (double)(steps.get(0) + 1);
+        mean = step;
+        nonNullIdx.remove(0);
+        steps.remove(0);
+      } else if (Double.isNaN(array[i])) {
+        array[i] = start * (1 - mean) + end * mean;
+        mean += step;
+      }
+    }
   }
 }

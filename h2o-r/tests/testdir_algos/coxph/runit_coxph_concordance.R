@@ -24,7 +24,7 @@ test.CoxPH.concordance <- function() {
     rConcordance <- unname(summary(rModel)$concordance)[1]
     hexConcordance <- h2o.performance(hexModel, data=tstdataHex)@metrics$concordance
     
-    expect_equal(rConcordance, hexConcordance)
+    expect_equal(rConcordance, hexConcordance, tolerance = 1e-3, scale = 1)
 }
 
 doTest("CoxPH: Predict Test", test.CoxPH.concordance)

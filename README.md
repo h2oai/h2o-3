@@ -142,7 +142,7 @@ Refer to the [h2o-droplets GitHub repository](https://github.com/h2oai/h2o-dropl
 <a name="Building"></a>
 ## 4. Building H2O-3
 
-Getting started with H2O development requires [JDK 1.7](http://www.oracle.com/technetwork/java/javase/downloads/), [Node.js](https://nodejs.org/), [Gradle](https://gradle.org/), [Python](https://www.python.org/) and [R](http://www.r-project.org/).  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
+Getting started with H2O development requires [JDK 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements), [Node.js](https://nodejs.org/), [Gradle](https://gradle.org/), [Python](https://www.python.org/) and [R](http://www.r-project.org/).  We use the Gradle wrapper (called `gradlew`) to ensure up-to-date local versions of Gradle and other dependencies are installed in your development directory.
 
 ### 4.1. Before building
 
@@ -150,7 +150,6 @@ Building `h2o` requires a properly set up R environment with [required packages]
 
 ```
 grip
-colorama
 future
 tabulate
 requests
@@ -244,11 +243,11 @@ open target/docs-website/h2o-docs/index.html
 
 ##### Step 2: Install required Python packages:
 
-    pip install grip 'colorama>=0.3.8' future tabulate wheel
+    pip install grip future tabulate wheel
 
 ##### Step 3: Install JDK
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements) and add the appropriate directory `C:\Program Files\Java\jdk1.7.0_65\bin` with java.exe to PATH in Environment Variables. To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -284,6 +283,8 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+Note that this packages don't cover running tests, they for building H2O only.
+
 Finally, install [Rtools](http://cran.r-project.org/bin/windows/Rtools/), which is a collection of command line tools to facilitate R development on Windows.
 >**NOTE**: During Rtools installation, do **not** install Cygwin.dll.
 
@@ -317,7 +318,7 @@ If you don't have [Homebrew](http://brew.sh/), we recommend installing it.  It m
 
 ##### Step 1. Install JDK
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 1.8+](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirementsl). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -353,6 +354,8 @@ for (pkg in pkgs) {
 ```
 Note that [libcurl](http://curl.haxx.se) is required for installation of the **RCurl** R package.
 
+Note that this packages don't cover running tests, they for building H2O only.
+
 ##### Step 4. Install python and the required packages:
 
 Install python:
@@ -363,9 +366,9 @@ Install pip package manager:
 
     sudo easy_install pip
 
-Next install required pakcages:
+Next install required packages:
 
-    sudo pip install wheel requests 'colorama>=0.3.8' future tabulate  
+    sudo pip install wheel requests future tabulate  
 
 ##### Step 5. Git Clone [h2o-3](https://github.com/h2oai/h2o-3.git)
 
@@ -391,7 +394,7 @@ Note: on a regular machine it may take very long time (about an hour) to run all
 
 ##### Step 2. Install JDK:
 
-Install [Java 8](https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 8](http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#java-requirements). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -432,7 +435,7 @@ Download and update h2o-3 source codes:
 
 ##### Step 1. Install Node.js
 
-    curl -sL https://deb.nodesource.com/setup_10.x | sudo bash -
+    curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
     sudo apt-get install -y nodejs
 
 ##### Steps 2-4. Follow steps 2-4 for Ubuntu 14.04 (above)
@@ -684,26 +687,25 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.32.0.1 - October 2020
+### H2O 3.36.01 - Winter 2021
 
-* RuleFit algorithm
-* GAM Improvements (Cross Validation, MOJO support)
-* Target Encoding for Regression and Multinomial problems
-* Target Encoding minimal integration into AutoML
-* Kubernetes Improvements (Helm Charts)
-* GBM monotone constraints for quantile and tweedie distributions
-* Performance optimizations (lower memory usage)
-* Model Explainability
-* Upgrade XGBoost to 1.2
+* [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) Uplift Trees
+* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - Infogram
+* RuleFit improvements (multinomial support, rule deduplication and consolidation)
+* Backward elimination in MAXR
+* Improved support for CDP (S3A with IDBroker)
+* Support for Java 16 and 17, Python 3.8
 
-### H2O 3.34.0.1 - January 2021
+### H2O 3.38.01 - Spring 2022
 
-* Extended Isolation Forest Algorithm
-* Uplift Trees in GBM
-* Extracting & ranking feature interactions from GBM and XGBoost models
-* Externalized XGBoost on Kubernetes clusters
-* RuleFit MOJO
-* Support for MOJO2 Scoring
+* [[PUBDEV-8074]](https://h2oai.atlassian.net/browse/PUBDEV-8074) Admissible ML - stage 2 (algos)
+* Multi-Output Regression in Deep Learning
+* GAM Improvements (support for Monotonic Splines)
+* XGBoost Upgrade
+* Data Ingest Improvements (Secured Hive in Standalone/K8S)
+* Extended Isolation Forest MOJO
+* Uplift MOJO
+* New features ICE plots
 
 <a name="Community"></a>
 ## 11. Community
@@ -787,6 +789,7 @@ Jan Sterba
 Jan Jendrusak
 Sebastien Poirier
 Tomáš Frýda
+Ard Kelmendi
 ```
 
 <a name="Advisors"></a>

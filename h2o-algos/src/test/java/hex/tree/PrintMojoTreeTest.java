@@ -10,9 +10,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +29,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parseTestFile;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class PrintMojoTreeTest {
 
   @Rule
@@ -36,7 +42,6 @@ public class PrintMojoTreeTest {
 
   @Before
   public void setUp() throws Exception {
-    TestUtil.stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
@@ -50,7 +55,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalPrint() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -59,6 +64,7 @@ public class PrintMojoTreeTest {
       p._ntrees = 1;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -93,7 +99,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalPrint_limitedLevels() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -102,6 +108,7 @@ public class PrintMojoTreeTest {
       p._ntrees = 1;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -132,7 +139,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalPrint_internalRepresentationOutput() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -141,6 +148,7 @@ public class PrintMojoTreeTest {
       p._ntrees = 1;
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -211,6 +219,7 @@ public class PrintMojoTreeTest {
             assertTrue(fileNames.get(i).endsWith(expectedFileNames[i]));
         } 
       } else {
+        assertTrue(Files.size(treeOutputPath) > 0);
         assertTrue(treeOutputPath.endsWith(expectedFileNames[0]));
       }
   }
@@ -227,7 +236,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalJson() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -237,6 +246,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoJSONEqualsFixture(model, "categorical.json");
     } finally {
       Scope.exit();
@@ -247,7 +257,7 @@ public class PrintMojoTreeTest {
   public void testMojoCategoricalOneHotJson() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -259,6 +269,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest" };
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoJSONEqualsFixture(model, "categoricalOneHot.json");
     } finally {
       Scope.exit();
@@ -269,7 +280,7 @@ public class PrintMojoTreeTest {
   public void testMojoGBMJson() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/extdata/prostate.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -280,6 +291,7 @@ public class PrintMojoTreeTest {
       p._max_depth = 3;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoJSONEqualsFixture(model, "gbmProstate.json");
     } finally {
       Scope.exit();
@@ -291,7 +303,7 @@ public class PrintMojoTreeTest {
     try {
       Scope.enter();
       String[] expectedFileNames = {"exampleh2o.png"};
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -301,6 +313,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };
 
       IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoPngGenerated(model, expectedFileNames);
     } finally {
       Scope.exit();
@@ -315,7 +328,7 @@ public class PrintMojoTreeTest {
       expectedFileNames[0]="Tree1_ClassNO.png";
       expectedFileNames[1]="Tree0_ClassNO.png";
       
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/testng/airlines.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -327,6 +340,7 @@ public class PrintMojoTreeTest {
       p._ignored_columns = new String[] { "Origin", "Dest" };
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoPngGenerated(model, expectedFileNames);
     } finally {
       Scope.exit();
@@ -340,7 +354,7 @@ public class PrintMojoTreeTest {
       String[] expectedFileNames = new String[2];
       expectedFileNames[0]="Tree1.png";
       expectedFileNames[1]="Tree0.png";
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+      Frame train = Scope.track(parseTestFile("smalldata/extdata/prostate.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -351,6 +365,7 @@ public class PrintMojoTreeTest {
       p._max_depth = 3;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       assertMojoPngGenerated(model, expectedFileNames);
     } finally {
       Scope.exit();

@@ -3,19 +3,21 @@ package water.util;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import water.H2O;
 import water.exceptions.JCodeSB;
 
 /** Tight/tiny StringBuilder wrapper.
  *  Short short names on purpose; so they don't obscure the printing.
  *  Can't believe this wasn't done long long ago. */
 public final class SB implements JCodeSB<SB> {
+  public final boolean _outputDoubles = H2O.getSysBoolProperty("java.output.doubles", false);
   public final StringBuilder _sb;
   int _indent = 0;
   public SB(        ) { _sb = new StringBuilder( ); }
   public SB(String s) { _sb = new StringBuilder(s); }
   public SB ps( String s ) { _sb.append("\""); pj(s); _sb.append("\""); return this;  }
   public SB p( String s ) { _sb.append(s); return this; }
-  public SB p( float  s ) {
+  private SB p( float  s ) {
     if( Float.isNaN(s) )
       _sb.append( "Float.NaN");
     else if( Float.isInfinite(s) ) {
@@ -54,6 +56,9 @@ public final class SB implements JCodeSB<SB> {
   }
   // Java specific append of float
   public SB pj( float  s ) {
+    if (_outputDoubles) {
+      return pj((double) s);
+    }
     if (Float.isInfinite(s))
       _sb.append("Float.").append(s>0? "POSITIVE_INFINITY" : "NEGATIVE_INFINITY");
     else if (Float.isNaN(s))

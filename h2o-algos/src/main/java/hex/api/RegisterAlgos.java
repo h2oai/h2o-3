@@ -1,6 +1,8 @@
 package hex.api;
 
 import hex.ModelBuilder;
+import hex.anovaglm.ANOVAGLM;
+import hex.modelselection.ModelSelection;
 import hex.psvm.PSVM;
 import hex.tree.TreeHandler;
 import water.api.AlgoAbstractRegister;
@@ -23,14 +25,18 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.drf    .DRF         (true),
             new hex.tree.gbm    .GBM         (true),
             new hex.tree.isofor .IsolationForest(true),
+            new hex.tree.isoforextended .ExtendedIsolationForest(true),
             new hex.aggregator  .Aggregator  (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),
             new hex.coxph       .CoxPH       (true),
             new hex.generic     .Generic     (true),
             new hex.gam         .GAM         (true),
+            new ANOVAGLM(true),
             new PSVM(true),
-            new hex.rulefit     .RuleFit     (true)
+            new hex.rulefit     .RuleFit     (true),
+            new hex.tree.uplift.UpliftDRF    (true),
+            new hex.modelselection .ModelSelection (true)
     };
 
     // "Word2Vec", "Example", "Grep"

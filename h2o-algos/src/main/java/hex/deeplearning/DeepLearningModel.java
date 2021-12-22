@@ -3,8 +3,6 @@ package hex.deeplearning;
 import hex.*;
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.utils.DistributionFamily;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
 import hex.util.EffectiveParametersUtils;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -127,7 +125,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain, get_params()._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       case AutoEncoder: return new ModelMetricsAutoEncoder.MetricBuilderAutoEncoder(_output.nfeatures());
       default: throw H2O.unimpl("Invalid ModelCategory " + _output.getModelCategory());
@@ -402,10 +400,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         _output._training_metrics = mtrain;
         scoringInfo.scored_train = new ScoreKeeper(mtrain);
         hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)mtrain;
-        if (mm1 instanceof ModelMetricsBinomial) {
-          ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
-          scoringInfo.training_AUC = mm._auc;
-        }
         if (fTrain.numRows() != training_rows) {
           _output._training_metrics._description = "Metrics reported on temporary training frame with " + fTrain.numRows() + " samples";
         } else if (fTrain._key != null && fTrain._key.toString().contains("chunks")){
@@ -431,10 +425,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           _output._validation_metrics = mvalid;
           scoringInfo.scored_valid = new ScoreKeeper(mvalid);
           if (mvalid != null) {
-            if (mvalid instanceof ModelMetricsBinomial) {
-              ModelMetricsBinomial mm = (ModelMetricsBinomial) mvalid;
-              scoringInfo.validation_AUC = mm._auc;
-            }
             if (fValid.numRows() != validation_rows) {
               _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + fValid.numRows() + " samples";
               if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
@@ -565,7 +555,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param computeMetrics
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
+  @Override protected PredictScoreResult predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     if (!get_params()._autoencoder) {
       return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics, customMetricFunc);
     } else {
@@ -593,8 +583,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
       Frame of = new Frame(Key.<Frame>make(destination_key), names, f.vecs());
       DKV.put(of);
-      makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
-      return of;
+      ModelMetrics.MetricBuilder<?> mb = makeMetricBuilder(null);
+      return new PredictScoreResult(mb, of, of);
     }
   }
 

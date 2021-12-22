@@ -6,6 +6,9 @@ import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+
+import static water.util.ArrayUtils.findLongestCommonPrefix;
 
 /**
  * Created by tomasnykodym on 1/29/15.
@@ -16,7 +19,7 @@ import java.util.Arrays;
  * Supports sparse data, sparse columns can be transformed to sparse rows on the fly with some (significant) memory overhead,
  * as the data of the whole chunk(s) will be copied.
  *
-*/
+ */
 public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
@@ -62,7 +65,6 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public double[] numNAFill() {return _numNAFill; }
   public double numNAFill(int nid) {return _numNAFill[nid];}
-  
   public void setCatNAFill(int[] catNAFill) {
     _catNAFill = catNAFill;
   }
@@ -126,17 +128,18 @@ public class DataInfo extends Keyed<DataInfo> {
   public boolean _offset;
   public boolean _weights;
   public boolean _fold;
+  public boolean _treatment;
   public Model.InteractionPair[] _interactions; // raw set of interactions
   public Model.InteractionSpec _interactionSpec; // formal specification of interactions
   public int _interactionVecs[]; // the interaction columns appearing in _adaptedFrame
   public int[] _numOffsets; // offset column indices used by numerical interactions: total number of numerical columns is given by _numOffsets[_nums] - _numOffsets[0]
-  public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
+  public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment?1:0);}
+  public int treatmentChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
   public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
-
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
   public int outputChunkId() { return outputChunkId(0);}
-  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + _responses;}
+  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + (_treatment?1:0) + _responses;}
   public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v);}
   public Vec getOutputVec(int i) {return _adaptedFrame.vec(outputChunkId(i));}
   public void setResponse(String name, Vec v){ setResponse(name,v,0);}
@@ -148,7 +151,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int [][] _catLvls; // cat lvls post filter (e.g. by strong rules)
   public final int [][] _intLvls; // interaction lvls post filter (e.g. by strong rules)
 
-  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
+  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; _treatment=false;}
   public String[] _coefNames;
   public int[] _coefOriginalIndices; // 
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
@@ -165,7 +168,15 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
-    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, interactions);
+    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, false, interactions);
+  }
+
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean treatment, Model.InteractionSpec interactions) {
+    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, new MeanImputer(), missingBucket, weight, offset, fold, treatment, interactions);
+  }
+
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
+    this(train, valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, imputer, missingBucket, weight, offset, fold, false, interactions);
   }
 
   /**
@@ -188,7 +199,7 @@ public class DataInfo extends Keyed<DataInfo> {
    *    A. As a list of pairs of column indices.
    *    B. As a list of pairs of column indices with limited enums.
    */
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, Model.InteractionSpec interactions) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, Imputer imputer, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean treatment, Model.InteractionSpec interactions) {
     super(Key.<DataInfo>make());
     assert predictor_transform != null;
     assert response_transform != null;
@@ -196,6 +207,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _offset = offset;
     _weights = weight;
     _fold = fold;
+    _treatment = treatment;
     assert !(skipMissing && imputeMissing) : "skipMissing and imputeMissing cannot both be true";
     _skipMissing = skipMissing;
     _imputeMissing = imputeMissing;
@@ -225,7 +237,7 @@ public class DataInfo extends Keyed<DataInfo> {
     final Vec[] tvecs = train.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0);
+    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0) - (treatment?1:0);
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
@@ -320,7 +332,7 @@ public class DataInfo extends Keyed<DataInfo> {
         numIdx++;
       }
     }
-    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0); i < names.length; ++i) {
+    for(int i = names.length-nResponses - (weight?1:0) - (offset?1:0) - (fold?1:0) - (treatment?1:0); i < names.length; ++i) {
       names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }
@@ -420,6 +432,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _offset = dinfo._offset;
     _weights = dinfo._weights;
     _fold = dinfo._fold;
+    _treatment = dinfo._treatment;
     _valid = false;
     _interactions = null;
     ArrayList<Integer> interactionVecs = new ArrayList<>();
@@ -585,7 +598,7 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
-    dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
+    dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0) - (dinfo._treatment?1:0);
     dinfo._numMeans=new double[nnums];
     dinfo._numNAFill=new double[nnums];
     int colsSize = id+nnums;  // small optimization
@@ -732,6 +745,7 @@ public class DataInfo extends Keyed<DataInfo> {
    *  weight column
    *  offset column
    *  fold column
+   *  treatment column
    *
    * @return expanded number of columns in the underlying frame
    */
@@ -857,7 +871,25 @@ public class DataInfo extends Keyed<DataInfo> {
     _coefOriginalIndices = res;
     return res;
   }
-  
+
+  public final String[] coefOriginalNames() {
+    int[] coefOriginalIndices = coefOriginalColumnIndices();
+    String[] originalNames = new String[coefOriginalIndices[coefOriginalIndices.length - 1]];
+    int i = 0, j = 0;
+    while (i < coefOriginalIndices.length && j < originalNames.length) {
+      List<Integer> coefOriginalIndicesList = new ArrayList<>(coefOriginalIndices.length);
+      for (int value : coefOriginalIndices) coefOriginalIndicesList.add(value);
+      int end = coefOriginalIndicesList.lastIndexOf(coefOriginalIndices[i]);
+      String prefix = findLongestCommonPrefix(Arrays.copyOfRange(coefNames(), i, end + 1));
+      if (".".equals(prefix.substring(prefix.length() - 1))) {
+        prefix = prefix.substring(0, prefix.length() - 1);
+      }
+      originalNames[j] = prefix;
+      i = end + 1;
+      j++;
+    }
+    return originalNames;
+  }
 
   // Return permutation matrix mapping input names to adaptedFrame colnames
   public int[] mapNames(String[] names) {
@@ -1429,6 +1461,7 @@ public class DataInfo extends Keyed<DataInfo> {
     res._weights = _weights && adaptFrame.find(names[weightChunkId()]) != -1;
     res._offset = _offset && adaptFrame.find(names[offsetChunkId()]) != -1;
     res._fold = _fold && adaptFrame.find(names[foldChunkId()]) != -1;
+    res._treatment = _treatment && adaptFrame.find(names[treatmentChunkId()]) != -1;
     if (nResponses != -1) {
       res._responses = nResponses;
     } else {

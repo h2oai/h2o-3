@@ -6,6 +6,7 @@ import water.api.schemas3.JobsV3;
 import water.api.schemas4.input.JobIV4;
 import water.api.schemas4.output.JobV4;
 import water.exceptions.H2ONotFoundArgumentException;
+import water.util.Log;
 
 public class JobsHandler extends Handler {
   /** Impl class for a collection of jobs; only used in the API to make it easier to cons up the jobs array via the magic of PojoUtils.copyProperties.  */
@@ -51,6 +52,17 @@ public class JobsHandler extends Handler {
       throw new IllegalArgumentException("No job with key " + c.job_id.key());
     }
     j.stop(); // Request Job stop
+    long start = System.currentTimeMillis();
+    Log.info("Waiting for job " + c.job_id.key() + " to finish execution.");
+    try {
+      j.get(); // Wait for Job to complete 
+    } catch (Exception e) {
+      if (! Job.isCancelledException(e)) {
+        Log.warn("Job was cancelled with exception", e);
+      }
+    }
+    long took = System.currentTimeMillis() - start;
+    Log.info("Job " + c.job_id.key() + " cancelled (waiting took=" + took + "ms).");
     return c;
   }
 

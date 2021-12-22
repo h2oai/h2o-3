@@ -4,9 +4,7 @@ import hex.genmodel.ModelMojoReader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,6 +12,8 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
   
   public static final String ENCODING_MAP_PATH = "feature_engineering/target_encoding/encoding_map.ini";
   public static final String MISSING_VALUES_PRESENCE_MAP_PATH = "feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini";
+  public static final String INPUT_ENCODING_COLUMNS_MAPPING_PATH = "feature_engineering/target_encoding/input_encoding_columns_map.ini";
+  public static final String INPUT_OUTPUT_COLUMNS_MAPPING_PATH = "feature_engineering/target_encoding/input_output_columns_map.ini";
 
   @Override
   public String getModelName() {
@@ -31,6 +31,9 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     _model._nonPredictors = Arrays.asList((readkv("non_predictors", "")).split(";"));
     _model.setEncodings(parseEncodingMap());
     _model._teColumn2HasNAs = parseTEColumnsToHasNAs();
+    _model._inencMapping = parseInEncColumnsMapping(INPUT_ENCODING_COLUMNS_MAPPING_PATH);
+    _model._inoutMapping = parseInOutColumnsMapping(INPUT_OUTPUT_COLUMNS_MAPPING_PATH);
+    _model.init();
   }
 
   @Override
@@ -81,6 +84,60 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
     }
     return new EncodingMaps(encodingMaps);
   }
+  
+  private List<ColumnsMapping> parseInOutColumnsMapping(String fileName) throws IOException {
+    List<ColumnsMapping> mapping = new ArrayList<>();
+    for (List<String>[] entry : parseColumnsMapping(fileName)) {
+      mapping.add(new ColumnsMapping(
+              entry[0].toArray(new String[0]),
+              entry[1].toArray(new String[0])
+      ));
+    }
+    return mapping;
+  }
+
+  private List<ColumnsToSingleMapping> parseInEncColumnsMapping(String fileName) throws IOException {
+    List<ColumnsToSingleMapping> mapping = new ArrayList<>();
+    for (List<String>[] entry : parseColumnsMapping(fileName)) {
+      mapping.add(new ColumnsToSingleMapping(
+              entry[0].toArray(new String[0]),
+              entry[1].get(0),
+              entry[2] == null ? null : entry[2].toArray(new String[0])
+      ));
+    }
+    return mapping;
+  }
+  
+  private List<List<String>[]> parseColumnsMapping(String fileName) throws IOException {
+    List<List<String>[]> mapping = new ArrayList<>();
+    if (exists(fileName)) {
+      List<String> from = null;
+      List<String> to = null;
+      List<String> toDomain = null;
+      for (String line : readtext(fileName)) {
+        if ("[from]".equals(line)) {
+          if (from != null && to != null) mapping.add(new List[]{from, to, toDomain}); // add previous from-to entry
+          from = new ArrayList<>();
+          to = null;
+          toDomain = null;
+        } else if ("[to]".equals(line)) {
+          to = new ArrayList<>();
+        } else if ("[to_domain]".equals(line)) {
+          toDomain = new ArrayList<>();
+        } else {
+          if (toDomain != null)
+            toDomain.add(line);
+          else if (to != null)
+            to.add(line);
+          else
+            from.add(line);
+        }
+      }
+      if (from != null && to != null) mapping.add(new List[]{from, to, toDomain}); // add trailing from-to entry
+    }
+    return mapping;
+  }
+
 
   private String matchNewSection(String line) {
     Pattern pattern = Pattern.compile("\\[(.*?)\\]");

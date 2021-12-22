@@ -32,45 +32,505 @@ class H2ODeepLearningEstimator(H2OEstimator):
     """
 
     algo = "deeplearning"
-    param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
-                   "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
-                   "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
-                   "weights_column", "offset_column", "balance_classes", "class_sampling_factors",
-                   "max_after_balance_size", "max_confusion_matrix_size", "checkpoint", "pretrained_autoencoder",
-                   "overwrite_with_best_model", "use_all_factor_levels", "standardize", "activation", "hidden",
-                   "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "adaptive_rate", "rho",
-                   "epsilon", "rate", "rate_annealing", "rate_decay", "momentum_start", "momentum_ramp",
-                   "momentum_stable", "nesterov_accelerated_gradient", "input_dropout_ratio", "hidden_dropout_ratios",
-                   "l1", "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale", "initial_weights",
-                   "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power", "huber_alpha",
-                   "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
-                   "classification_stop", "regression_stop", "stopping_rounds", "stopping_metric", "stopping_tolerance",
-                   "max_runtime_secs", "score_validation_sampling", "diagnostics", "fast_mode", "force_load_balance",
-                   "variable_importances", "replicate_training_data", "single_node_mode", "shuffle_training_data",
-                   "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major", "average_activation",
-                   "sparsity_beta", "max_categorical_features", "reproducible", "export_weights_and_biases",
-                   "mini_batch_size", "categorical_encoding", "elastic_averaging", "elastic_averaging_moving_rate",
-                   "elastic_averaging_regularization", "export_checkpoints_dir"}
+    supervised_learning = True
+    _options_ = {'model_extensions': ['h2o.model.extensions.ScoringHistoryDL',
+                                      'h2o.model.extensions.VariableImportance'],
+                 'verbose': True}
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 nfolds=0,  # type: int
+                 keep_cross_validation_models=True,  # type: bool
+                 keep_cross_validation_predictions=False,  # type: bool
+                 keep_cross_validation_fold_assignment=False,  # type: bool
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
+                 fold_column=None,  # type: Optional[str]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 weights_column=None,  # type: Optional[str]
+                 offset_column=None,  # type: Optional[str]
+                 balance_classes=False,  # type: bool
+                 class_sampling_factors=None,  # type: Optional[List[float]]
+                 max_after_balance_size=5.0,  # type: float
+                 max_confusion_matrix_size=20,  # type: int
+                 checkpoint=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 pretrained_autoencoder=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 overwrite_with_best_model=True,  # type: bool
+                 use_all_factor_levels=True,  # type: bool
+                 standardize=True,  # type: bool
+                 activation="rectifier",  # type: Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"]
+                 hidden=[200, 200],  # type: List[int]
+                 epochs=10.0,  # type: float
+                 train_samples_per_iteration=-2,  # type: int
+                 target_ratio_comm_to_comp=0.05,  # type: float
+                 seed=-1,  # type: int
+                 adaptive_rate=True,  # type: bool
+                 rho=0.99,  # type: float
+                 epsilon=1e-08,  # type: float
+                 rate=0.005,  # type: float
+                 rate_annealing=1e-06,  # type: float
+                 rate_decay=1.0,  # type: float
+                 momentum_start=0.0,  # type: float
+                 momentum_ramp=1000000.0,  # type: float
+                 momentum_stable=0.0,  # type: float
+                 nesterov_accelerated_gradient=True,  # type: bool
+                 input_dropout_ratio=0.0,  # type: float
+                 hidden_dropout_ratios=None,  # type: Optional[List[float]]
+                 l1=0.0,  # type: float
+                 l2=0.0,  # type: float
+                 max_w2=3.4028235e+38,  # type: float
+                 initial_weight_distribution="uniform_adaptive",  # type: Literal["uniform_adaptive", "uniform", "normal"]
+                 initial_weight_scale=1.0,  # type: float
+                 initial_weights=None,  # type: Optional[List[Union[None, str, H2OFrame]]]
+                 initial_biases=None,  # type: Optional[List[Union[None, str, H2OFrame]]]
+                 loss="automatic",  # type: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
+                 distribution="auto",  # type: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"]
+                 quantile_alpha=0.5,  # type: float
+                 tweedie_power=1.5,  # type: float
+                 huber_alpha=0.9,  # type: float
+                 score_interval=5.0,  # type: float
+                 score_training_samples=10000,  # type: int
+                 score_validation_samples=0,  # type: int
+                 score_duty_cycle=0.1,  # type: float
+                 classification_stop=0.0,  # type: float
+                 regression_stop=1e-06,  # type: float
+                 stopping_rounds=5,  # type: int
+                 stopping_metric="auto",  # type: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+                 stopping_tolerance=0.0,  # type: float
+                 max_runtime_secs=0.0,  # type: float
+                 score_validation_sampling="uniform",  # type: Literal["uniform", "stratified"]
+                 diagnostics=True,  # type: bool
+                 fast_mode=True,  # type: bool
+                 force_load_balance=True,  # type: bool
+                 variable_importances=True,  # type: bool
+                 replicate_training_data=True,  # type: bool
+                 single_node_mode=False,  # type: bool
+                 shuffle_training_data=False,  # type: bool
+                 missing_values_handling="mean_imputation",  # type: Literal["mean_imputation", "skip"]
+                 quiet_mode=False,  # type: bool
+                 autoencoder=False,  # type: bool
+                 sparse=False,  # type: bool
+                 col_major=False,  # type: bool
+                 average_activation=0.0,  # type: float
+                 sparsity_beta=0.0,  # type: float
+                 max_categorical_features=2147483647,  # type: int
+                 reproducible=False,  # type: bool
+                 export_weights_and_biases=False,  # type: bool
+                 mini_batch_size=1,  # type: int
+                 categorical_encoding="auto",  # type: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"]
+                 elastic_averaging=False,  # type: bool
+                 elastic_averaging_moving_rate=0.9,  # type: float
+                 elastic_averaging_regularization=0.001,  # type: float
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[None, str, H2OFrame], optional
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
+        :type nfolds: int
+        :param keep_cross_validation_models: Whether to keep the cross-validation models.
+               Defaults to ``True``.
+        :type keep_cross_validation_models: bool
+        :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
+               Defaults to ``False``.
+        :type keep_cross_validation_predictions: bool
+        :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
+               Defaults to ``False``.
+        :type keep_cross_validation_fold_assignment: bool
+        :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
+               'Stratified' option will stratify the folds based on the response variable, for classification problems.
+               Defaults to ``"auto"``.
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
+        :type fold_column: str, optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
+        :type score_each_iteration: bool
+        :param weights_column: Column with observation weights. Giving some observation a weight of zero is equivalent
+               to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating
+               that row twice. Negative weights are not allowed. Note: Weights are per-row observation weights and do
+               not increase the size of the data frame. This is typically the number of times a row is repeated, but
+               non-integer values are supported as well. During training, rows with higher weights matter more, due to
+               the larger loss function pre-factor. If you set weight = 0 for a row, the returned prediction frame at
+               that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
+               Defaults to ``None``.
+        :type weights_column: str, optional
+        :param offset_column: Offset column. This will be added to the combination of columns before applying the link
+               function.
+               Defaults to ``None``.
+        :type offset_column: str, optional
+        :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
+               Defaults to ``False``.
+        :type balance_classes: bool
+        :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
+               specified, sampling factors will be automatically computed to obtain class balance during training.
+               Requires balance_classes.
+               Defaults to ``None``.
+        :type class_sampling_factors: List[float], optional
+        :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
+               less than 1.0). Requires balance_classes.
+               Defaults to ``5.0``.
+        :type max_after_balance_size: float
+        :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
+               the Logs.
+               Defaults to ``20``.
+        :type max_confusion_matrix_size: int
+        :param checkpoint: Model checkpoint to resume training with.
+               Defaults to ``None``.
+        :type checkpoint: Union[None, str, H2OEstimator], optional
+        :param pretrained_autoencoder: Pretrained autoencoder model to initialize this model with.
+               Defaults to ``None``.
+        :type pretrained_autoencoder: Union[None, str, H2OEstimator], optional
+        :param overwrite_with_best_model: If enabled, override the final model with the best model found during
+               training.
+               Defaults to ``True``.
+        :type overwrite_with_best_model: bool
+        :param use_all_factor_levels: Use all factor levels of categorical variables. Otherwise, the first factor level
+               is omitted (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder.
+               Defaults to ``True``.
+        :type use_all_factor_levels: bool
+        :param standardize: If enabled, automatically standardize the data. If disabled, the user must provide properly
+               scaled input data.
+               Defaults to ``True``.
+        :type standardize: bool
+        :param activation: Activation function.
+               Defaults to ``"rectifier"``.
+        :type activation: Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout",
+               "maxout_with_dropout"]
+        :param hidden: Hidden layer sizes (e.g. [100, 100]).
+               Defaults to ``[200, 200]``.
+        :type hidden: List[int]
+        :param epochs: How many times the dataset should be iterated (streamed), can be fractional.
+               Defaults to ``10.0``.
+        :type epochs: float
+        :param train_samples_per_iteration: Number of training samples (globally) per MapReduce iteration. Special
+               values are 0: one epoch, -1: all available data (e.g., replicated training data), -2: automatic.
+               Defaults to ``-2``.
+        :type train_samples_per_iteration: int
+        :param target_ratio_comm_to_comp: Target ratio of communication overhead to computation. Only for multi-node
+               operation and train_samples_per_iteration = -2 (auto-tuning).
+               Defaults to ``0.05``.
+        :type target_ratio_comm_to_comp: float
+        :param seed: Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded.
+               Defaults to ``-1``.
+        :type seed: int
+        :param adaptive_rate: Adaptive learning rate.
+               Defaults to ``True``.
+        :type adaptive_rate: bool
+        :param rho: Adaptive learning rate time decay factor (similarity to prior updates).
+               Defaults to ``0.99``.
+        :type rho: float
+        :param epsilon: Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress).
+               Defaults to ``1e-08``.
+        :type epsilon: float
+        :param rate: Learning rate (higher => less stable, lower => slower convergence).
+               Defaults to ``0.005``.
+        :type rate: float
+        :param rate_annealing: Learning rate annealing: rate / (1 + rate_annealing * samples).
+               Defaults to ``1e-06``.
+        :type rate_annealing: float
+        :param rate_decay: Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).
+               Defaults to ``1.0``.
+        :type rate_decay: float
+        :param momentum_start: Initial momentum at the beginning of training (try 0.5).
+               Defaults to ``0.0``.
+        :type momentum_start: float
+        :param momentum_ramp: Number of training samples for which momentum increases.
+               Defaults to ``1000000.0``.
+        :type momentum_ramp: float
+        :param momentum_stable: Final momentum after the ramp is over (try 0.99).
+               Defaults to ``0.0``.
+        :type momentum_stable: float
+        :param nesterov_accelerated_gradient: Use Nesterov accelerated gradient (recommended).
+               Defaults to ``True``.
+        :type nesterov_accelerated_gradient: bool
+        :param input_dropout_ratio: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).
+               Defaults to ``0.0``.
+        :type input_dropout_ratio: float
+        :param hidden_dropout_ratios: Hidden layer dropout ratios (can improve generalization), specify one value per
+               hidden layer, defaults to 0.5.
+               Defaults to ``None``.
+        :type hidden_dropout_ratios: List[float], optional
+        :param l1: L1 regularization (can add stability and improve generalization, causes many weights to become 0).
+               Defaults to ``0.0``.
+        :type l1: float
+        :param l2: L2 regularization (can add stability and improve generalization, causes many weights to be small.
+               Defaults to ``0.0``.
+        :type l2: float
+        :param max_w2: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier).
+               Defaults to ``3.4028235e+38``.
+        :type max_w2: float
+        :param initial_weight_distribution: Initial weight distribution.
+               Defaults to ``"uniform_adaptive"``.
+        :type initial_weight_distribution: Literal["uniform_adaptive", "uniform", "normal"]
+        :param initial_weight_scale: Uniform: -value...value, Normal: stddev.
+               Defaults to ``1.0``.
+        :type initial_weight_scale: float
+        :param initial_weights: A list of H2OFrame ids to initialize the weight matrices of this model with.
+               Defaults to ``None``.
+        :type initial_weights: List[Union[None, str, H2OFrame]], optional
+        :param initial_biases: A list of H2OFrame ids to initialize the bias vectors of this model with.
+               Defaults to ``None``.
+        :type initial_biases: List[Union[None, str, H2OFrame]], optional
+        :param loss: Loss function.
+               Defaults to ``"automatic"``.
+        :type loss: Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]
+        :param distribution: Distribution function
+               Defaults to ``"auto"``.
+        :type distribution: Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+               "quantile", "huber"]
+        :param quantile_alpha: Desired quantile for Quantile regression, must be between 0 and 1.
+               Defaults to ``0.5``.
+        :type quantile_alpha: float
+        :param tweedie_power: Tweedie power for Tweedie regression, must be between 1 and 2.
+               Defaults to ``1.5``.
+        :type tweedie_power: float
+        :param huber_alpha: Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must
+               be between 0 and 1).
+               Defaults to ``0.9``.
+        :type huber_alpha: float
+        :param score_interval: Shortest time interval (in seconds) between model scoring.
+               Defaults to ``5.0``.
+        :type score_interval: float
+        :param score_training_samples: Number of training set samples for scoring (0 for all).
+               Defaults to ``10000``.
+        :type score_training_samples: int
+        :param score_validation_samples: Number of validation set samples for scoring (0 for all).
+               Defaults to ``0``.
+        :type score_validation_samples: int
+        :param score_duty_cycle: Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).
+               Defaults to ``0.1``.
+        :type score_duty_cycle: float
+        :param classification_stop: Stopping criterion for classification error fraction on training data (-1 to
+               disable).
+               Defaults to ``0.0``.
+        :type classification_stop: float
+        :param regression_stop: Stopping criterion for regression error (MSE) on training data (-1 to disable).
+               Defaults to ``1e-06``.
+        :type regression_stop: float
+        :param stopping_rounds: Early stopping based on convergence of stopping_metric. Stop if simple moving average of
+               length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
+               Defaults to ``5``.
+        :type stopping_rounds: int
+        :param stopping_metric: Metric to use for early stopping (AUTO: logloss for classification, deviance for
+               regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be
+               used in GBM and DRF with the Python client.
+               Defaults to ``"auto"``.
+        :type stopping_metric: Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+               "misclassification", "mean_per_class_error", "custom", "custom_increasing"]
+        :param stopping_tolerance: Relative tolerance for metric-based stopping criterion (stop if relative improvement
+               is not at least this much)
+               Defaults to ``0.0``.
+        :type stopping_tolerance: float
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
+        :type max_runtime_secs: float
+        :param score_validation_sampling: Method used to sample validation dataset for scoring.
+               Defaults to ``"uniform"``.
+        :type score_validation_sampling: Literal["uniform", "stratified"]
+        :param diagnostics: Enable diagnostics for hidden layers.
+               Defaults to ``True``.
+        :type diagnostics: bool
+        :param fast_mode: Enable fast mode (minor approximation in back-propagation).
+               Defaults to ``True``.
+        :type fast_mode: bool
+        :param force_load_balance: Force extra load balancing to increase training speed for small datasets (to keep all
+               cores busy).
+               Defaults to ``True``.
+        :type force_load_balance: bool
+        :param variable_importances: Compute variable importances for input features (Gedeon method) - can be slow for
+               large networks.
+               Defaults to ``True``.
+        :type variable_importances: bool
+        :param replicate_training_data: Replicate the entire training dataset onto every node for faster training on
+               small datasets.
+               Defaults to ``True``.
+        :type replicate_training_data: bool
+        :param single_node_mode: Run on a single node for fine-tuning of model parameters.
+               Defaults to ``False``.
+        :type single_node_mode: bool
+        :param shuffle_training_data: Enable shuffling of training data (recommended if training data is replicated and
+               train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes).
+               Defaults to ``False``.
+        :type shuffle_training_data: bool
+        :param missing_values_handling: Handling of missing values. Either MeanImputation or Skip.
+               Defaults to ``"mean_imputation"``.
+        :type missing_values_handling: Literal["mean_imputation", "skip"]
+        :param quiet_mode: Enable quiet mode for less output to standard output.
+               Defaults to ``False``.
+        :type quiet_mode: bool
+        :param autoencoder: Auto-Encoder.
+               Defaults to ``False``.
+        :type autoencoder: bool
+        :param sparse: Sparse data handling (more efficient for data with lots of 0 values).
+               Defaults to ``False``.
+        :type sparse: bool
+        :param col_major: #DEPRECATED Use a column major weight matrix for input layer. Can speed up forward
+               propagation, but might slow down backpropagation.
+               Defaults to ``False``.
+        :type col_major: bool
+        :param average_activation: Average activation for sparse auto-encoder. #Experimental
+               Defaults to ``0.0``.
+        :type average_activation: float
+        :param sparsity_beta: Sparsity regularization. #Experimental
+               Defaults to ``0.0``.
+        :type sparsity_beta: float
+        :param max_categorical_features: Max. number of categorical features, enforced via hashing. #Experimental
+               Defaults to ``2147483647``.
+        :type max_categorical_features: int
+        :param reproducible: Force reproducibility on small data (will be slow - only uses 1 thread).
+               Defaults to ``False``.
+        :type reproducible: bool
+        :param export_weights_and_biases: Whether to export Neural Network weights and biases to H2O Frames.
+               Defaults to ``False``.
+        :type export_weights_and_biases: bool
+        :param mini_batch_size: Mini-batch size (smaller leads to better fit, larger can speed up and generalize
+               better).
+               Defaults to ``1``.
+        :type mini_batch_size: int
+        :param categorical_encoding: Encoding scheme for categorical features
+               Defaults to ``"auto"``.
+        :type categorical_encoding: Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+               "sort_by_response", "enum_limited"]
+        :param elastic_averaging: Elastic averaging between compute nodes can improve distributed model convergence.
+               #Experimental
+               Defaults to ``False``.
+        :type elastic_averaging: bool
+        :param elastic_averaging_moving_rate: Elastic averaging moving rate (only if elastic averaging is enabled).
+               Defaults to ``0.9``.
+        :type elastic_averaging_moving_rate: float
+        :param elastic_averaging_regularization: Elastic averaging regularization strength (only if elastic averaging is
+               enabled).
+               Defaults to ``0.001``.
+        :type elastic_averaging_regularization: float
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        :param auc_type: Set default multinomial AUC type.
+               Defaults to ``"auto"``.
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        """
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.nfolds = nfolds
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.fold_assignment = fold_assignment
+        self.fold_column = fold_column
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.weights_column = weights_column
+        self.offset_column = offset_column
+        self.balance_classes = balance_classes
+        self.class_sampling_factors = class_sampling_factors
+        self.max_after_balance_size = max_after_balance_size
+        self.max_confusion_matrix_size = max_confusion_matrix_size
+        self.checkpoint = checkpoint
+        self.pretrained_autoencoder = pretrained_autoencoder
+        self.overwrite_with_best_model = overwrite_with_best_model
+        self.use_all_factor_levels = use_all_factor_levels
+        self.standardize = standardize
+        self.activation = activation
+        self.hidden = hidden
+        self.epochs = epochs
+        self.train_samples_per_iteration = train_samples_per_iteration
+        self.target_ratio_comm_to_comp = target_ratio_comm_to_comp
+        self.seed = seed
+        self.adaptive_rate = adaptive_rate
+        self.rho = rho
+        self.epsilon = epsilon
+        self.rate = rate
+        self.rate_annealing = rate_annealing
+        self.rate_decay = rate_decay
+        self.momentum_start = momentum_start
+        self.momentum_ramp = momentum_ramp
+        self.momentum_stable = momentum_stable
+        self.nesterov_accelerated_gradient = nesterov_accelerated_gradient
+        self.input_dropout_ratio = input_dropout_ratio
+        self.hidden_dropout_ratios = hidden_dropout_ratios
+        self.l1 = l1
+        self.l2 = l2
+        self.max_w2 = max_w2
+        self.initial_weight_distribution = initial_weight_distribution
+        self.initial_weight_scale = initial_weight_scale
+        self.initial_weights = initial_weights
+        self.initial_biases = initial_biases
+        self.loss = loss
+        self.distribution = distribution
+        self.quantile_alpha = quantile_alpha
+        self.tweedie_power = tweedie_power
+        self.huber_alpha = huber_alpha
+        self.score_interval = score_interval
+        self.score_training_samples = score_training_samples
+        self.score_validation_samples = score_validation_samples
+        self.score_duty_cycle = score_duty_cycle
+        self.classification_stop = classification_stop
+        self.regression_stop = regression_stop
+        self.stopping_rounds = stopping_rounds
+        self.stopping_metric = stopping_metric
+        self.stopping_tolerance = stopping_tolerance
+        self.max_runtime_secs = max_runtime_secs
+        self.score_validation_sampling = score_validation_sampling
+        self.diagnostics = diagnostics
+        self.fast_mode = fast_mode
+        self.force_load_balance = force_load_balance
+        self.variable_importances = variable_importances
+        self.replicate_training_data = replicate_training_data
+        self.single_node_mode = single_node_mode
+        self.shuffle_training_data = shuffle_training_data
+        self.missing_values_handling = missing_values_handling
+        self.quiet_mode = quiet_mode
+        self.autoencoder = autoencoder
+        self.sparse = sparse
+        self.col_major = col_major
+        self.average_activation = average_activation
+        self.sparsity_beta = sparsity_beta
+        self.max_categorical_features = max_categorical_features
+        self.reproducible = reproducible
+        self.export_weights_and_biases = export_weights_and_biases
+        self.mini_batch_size = mini_batch_size
+        self.categorical_encoding = categorical_encoding
+        self.elastic_averaging = elastic_averaging
+        self.elastic_averaging_moving_rate = elastic_averaging_moving_rate
+        self.elastic_averaging_regularization = elastic_averaging_regularization
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.auc_type = auc_type
 
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -97,13 +557,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -126,13 +585,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def nfolds(self):
         """
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -153,13 +611,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
 
-
     @property
     def keep_cross_validation_models(self):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -167,13 +624,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
         >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_models=True,
-        ...                                   seed=1234)
+        ...                                    nfolds=5,
+        ...                                    seed=1234)
         >>> cars_dl.train(x=predictors,
         ...               y=response,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
+        ...               training_frame=cars)
         >>> print(cars_dl.cross_validation_models())
         """
         return self._parms.get("keep_cross_validation_models")
@@ -183,13 +639,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_models, None, bool)
         self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
-
     @property
     def keep_cross_validation_predictions(self):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -197,12 +652,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
         >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True,
+        ...                                    nfolds=5,
         ...                                    seed=1234)
         >>> cars_dl.train(x=predictors,
         ...               y=response,
-        ...               training_frame=train)
+        ...               training_frame=cars)
         >>> print(cars_dl.cross_validation_predictions())
         """
         return self._parms.get("keep_cross_validation_predictions")
@@ -212,13 +667,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_predictions, None, bool)
         self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
-
     @property
     def keep_cross_validation_fold_assignment(self):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -226,13 +680,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
         >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_fold_assignment=True,
+        ...                                    nfolds=5,
         ...                                    seed=1234)
         >>> cars_dl.train(x=predictors,
         ...               y=response,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
+        ...               training_frame=cars)
         >>> print(cars_dl.cross_validation_fold_assignment())
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
@@ -242,14 +695,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
-
     @property
     def fold_assignment(self):
         """
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -273,7 +725,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def fold_assignment(self, fold_assignment):
         assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
-
 
     @property
     def fold_column(self):
@@ -306,7 +757,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def response_column(self):
         """
@@ -320,7 +770,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def ignored_columns(self):
@@ -336,13 +785,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -368,13 +816,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def score_each_iteration(self):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -396,7 +843,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def weights_column(self):
         """
@@ -404,7 +850,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
         weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
         frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
-        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor. If you set
+        weight = 0 for a row, the returned prediction frame at that row is zero and this is incorrect. To get an
+        accurate prediction, remove all rows with weight == 0.
 
         Type: ``str``.
 
@@ -428,7 +876,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
-
 
     @property
     def offset_column(self):
@@ -460,13 +907,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(offset_column, None, str)
         self._parms["offset_column"] = offset_column
 
-
     @property
     def balance_classes(self):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -489,7 +935,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def balance_classes(self, balance_classes):
         assert_is_type(balance_classes, None, bool)
         self._parms["balance_classes"] = balance_classes
-
 
     @property
     def class_sampling_factors(self):
@@ -523,14 +968,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(class_sampling_factors, None, [float])
         self._parms["class_sampling_factors"] = class_sampling_factors
 
-
     @property
     def max_after_balance_size(self):
         """
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``, defaults to ``5.0``.
 
         :examples:
 
@@ -556,13 +1000,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(max_after_balance_size, None, float)
         self._parms["max_after_balance_size"] = max_after_balance_size
 
-
     @property
     def max_confusion_matrix_size(self):
         """
         [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``, defaults to ``20``.
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -571,13 +1014,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
 
-
     @property
     def checkpoint(self):
         """
         Model checkpoint to resume training with.
 
-        Type: ``str``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -610,13 +1052,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
 
-
     @property
     def pretrained_autoencoder(self):
         """
         Pretrained autoencoder model to initialize this model with.
 
-        Type: ``str``.
+        Type: ``Union[None, str, H2OEstimator]``.
 
         :examples:
 
@@ -659,13 +1100,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(pretrained_autoencoder, None, str, H2OEstimator)
         self._parms["pretrained_autoencoder"] = pretrained_autoencoder
 
-
     @property
     def overwrite_with_best_model(self):
         """
         If enabled, override the final model with the best model found during training.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -690,14 +1130,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(overwrite_with_best_model, None, bool)
         self._parms["overwrite_with_best_model"] = overwrite_with_best_model
 
-
     @property
     def use_all_factor_levels(self):
         """
         Use all factor levels of categorical variables. Otherwise, the first factor level is omitted (without loss of
         accuracy). Useful for variable importances and auto-enabled for autoencoder.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -726,13 +1165,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(use_all_factor_levels, None, bool)
         self._parms["use_all_factor_levels"] = use_all_factor_levels
 
-
     @property
     def standardize(self):
         """
         If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -754,14 +1192,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(standardize, None, bool)
         self._parms["standardize"] = standardize
 
-
     @property
     def activation(self):
         """
         Activation function.
 
-        One of: ``"tanh"``, ``"tanh_with_dropout"``, ``"rectifier"``, ``"rectifier_with_dropout"``, ``"maxout"``,
-        ``"maxout_with_dropout"``  (default: ``"rectifier"``).
+        Type: ``Literal["tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout",
+        "maxout_with_dropout"]``, defaults to ``"rectifier"``.
 
         :examples:
 
@@ -783,13 +1220,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(activation, None, Enum("tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"))
         self._parms["activation"] = activation
 
-
     @property
     def hidden(self):
         """
         Hidden layer sizes (e.g. [100, 100]).
 
-        Type: ``List[int]``  (default: ``[200, 200]``).
+        Type: ``List[int]``, defaults to ``[200, 200]``.
 
         :examples:
 
@@ -813,13 +1249,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(hidden, None, [int])
         self._parms["hidden"] = hidden
 
-
     @property
     def epochs(self):
         """
         How many times the dataset should be iterated (streamed), can be fractional.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``, defaults to ``10.0``.
 
         :examples:
 
@@ -843,14 +1278,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(epochs, None, numeric)
         self._parms["epochs"] = epochs
 
-
     @property
     def train_samples_per_iteration(self):
         """
         Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
         available data (e.g., replicated training data), -2: automatic.
 
-        Type: ``int``  (default: ``-2``).
+        Type: ``int``, defaults to ``-2``.
 
         :examples:
 
@@ -880,14 +1314,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(train_samples_per_iteration, None, int)
         self._parms["train_samples_per_iteration"] = train_samples_per_iteration
 
-
     @property
     def target_ratio_comm_to_comp(self):
         """
         Target ratio of communication overhead to computation. Only for multi-node operation and
         train_samples_per_iteration = -2 (auto-tuning).
 
-        Type: ``float``  (default: ``0.05``).
+        Type: ``float``, defaults to ``0.05``.
 
         :examples:
 
@@ -916,13 +1349,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(target_ratio_comm_to_comp, None, numeric)
         self._parms["target_ratio_comm_to_comp"] = target_ratio_comm_to_comp
 
-
     @property
     def seed(self):
         """
         Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -945,13 +1377,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def adaptive_rate(self):
         """
         Adaptive learning rate.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -973,13 +1404,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(adaptive_rate, None, bool)
         self._parms["adaptive_rate"] = adaptive_rate
 
-
     @property
     def rho(self):
         """
         Adaptive learning rate time decay factor (similarity to prior updates).
 
-        Type: ``float``  (default: ``0.99``).
+        Type: ``float``, defaults to ``0.99``.
 
         :examples:
 
@@ -1001,13 +1431,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(rho, None, numeric)
         self._parms["rho"] = rho
 
-
     @property
     def epsilon(self):
         """
         Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress).
 
-        Type: ``float``  (default: ``1e-08``).
+        Type: ``float``, defaults to ``1e-08``.
 
         :examples:
 
@@ -1031,13 +1460,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(epsilon, None, numeric)
         self._parms["epsilon"] = epsilon
 
-
     @property
     def rate(self):
         """
         Learning rate (higher => less stable, lower => slower convergence).
 
-        Type: ``float``  (default: ``0.005``).
+        Type: ``float``, defaults to ``0.005``.
 
         :examples:
 
@@ -1071,13 +1499,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(rate, None, numeric)
         self._parms["rate"] = rate
 
-
     @property
     def rate_annealing(self):
         """
         Learning rate annealing: rate / (1 + rate_annealing * samples).
 
-        Type: ``float``  (default: ``1e-06``).
+        Type: ``float``, defaults to ``1e-06``.
 
         :examples:
 
@@ -1114,13 +1541,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(rate_annealing, None, numeric)
         self._parms["rate_annealing"] = rate_annealing
 
-
     @property
     def rate_decay(self):
         """
         Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1157,13 +1583,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(rate_decay, None, numeric)
         self._parms["rate_decay"] = rate_decay
 
-
     @property
     def momentum_start(self):
         """
         Initial momentum at the beginning of training (try 0.5).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1195,13 +1620,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(momentum_start, None, numeric)
         self._parms["momentum_start"] = momentum_start
 
-
     @property
     def momentum_ramp(self):
         """
         Number of training samples for which momentum increases.
 
-        Type: ``float``  (default: ``1000000``).
+        Type: ``float``, defaults to ``1000000.0``.
 
         :examples:
 
@@ -1233,13 +1657,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(momentum_ramp, None, numeric)
         self._parms["momentum_ramp"] = momentum_ramp
 
-
     @property
     def momentum_stable(self):
         """
         Final momentum after the ramp is over (try 0.99).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1271,13 +1694,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(momentum_stable, None, numeric)
         self._parms["momentum_stable"] = momentum_stable
 
-
     @property
     def nesterov_accelerated_gradient(self):
         """
         Use Nesterov accelerated gradient (recommended).
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -1314,13 +1736,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(nesterov_accelerated_gradient, None, bool)
         self._parms["nesterov_accelerated_gradient"] = nesterov_accelerated_gradient
 
-
     @property
     def input_dropout_ratio(self):
         """
         Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1343,7 +1764,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def input_dropout_ratio(self, input_dropout_ratio):
         assert_is_type(input_dropout_ratio, None, numeric)
         self._parms["input_dropout_ratio"] = input_dropout_ratio
-
 
     @property
     def hidden_dropout_ratios(self):
@@ -1378,13 +1798,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(hidden_dropout_ratios, None, [numeric])
         self._parms["hidden_dropout_ratios"] = hidden_dropout_ratios
 
-
     @property
     def l1(self):
         """
         L1 regularization (can add stability and improve generalization, causes many weights to become 0).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1408,13 +1827,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(l1, None, numeric)
         self._parms["l1"] = l1
 
-
     @property
     def l2(self):
         """
         L2 regularization (can add stability and improve generalization, causes many weights to be small.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1438,13 +1856,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(l2, None, numeric)
         self._parms["l2"] = l2
 
-
     @property
     def max_w2(self):
         """
         Constraint for squared sum of incoming weights per unit (e.g. for Rectifier).
 
-        Type: ``float``  (default: ``3.4028235e+38``).
+        Type: ``float``, defaults to ``3.4028235e+38``.
 
         :examples:
 
@@ -1473,13 +1890,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(max_w2, None, float)
         self._parms["max_w2"] = max_w2
 
-
     @property
     def initial_weight_distribution(self):
         """
         Initial weight distribution.
 
-        One of: ``"uniform_adaptive"``, ``"uniform"``, ``"normal"``  (default: ``"uniform_adaptive"``).
+        Type: ``Literal["uniform_adaptive", "uniform", "normal"]``, defaults to ``"uniform_adaptive"``.
 
         :examples:
 
@@ -1503,13 +1919,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(initial_weight_distribution, None, Enum("uniform_adaptive", "uniform", "normal"))
         self._parms["initial_weight_distribution"] = initial_weight_distribution
 
-
     @property
     def initial_weight_scale(self):
         """
         Uniform: -value...value, Normal: stddev.
 
-        Type: ``float``  (default: ``1``).
+        Type: ``float``, defaults to ``1.0``.
 
         :examples:
 
@@ -1533,13 +1948,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(initial_weight_scale, None, numeric)
         self._parms["initial_weight_scale"] = initial_weight_scale
 
-
     @property
     def initial_weights(self):
         """
         A list of H2OFrame ids to initialize the weight matrices of this model with.
 
-        Type: ``List[H2OFrame]``.
+        Type: ``List[Union[None, str, H2OFrame]]``.
 
         :examples:
 
@@ -1567,16 +1981,15 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_weights.setter
     def initial_weights(self, initial_weights):
-        assert_is_type(initial_weights, None, [H2OFrame, None])
+        assert_is_type(initial_weights, None, [None, str, H2OFrame])
         self._parms["initial_weights"] = initial_weights
-
 
     @property
     def initial_biases(self):
         """
         A list of H2OFrame ids to initialize the bias vectors of this model with.
 
-        Type: ``List[H2OFrame]``.
+        Type: ``List[Union[None, str, H2OFrame]]``.
 
         :examples:
 
@@ -1604,17 +2017,16 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_biases.setter
     def initial_biases(self, initial_biases):
-        assert_is_type(initial_biases, None, [H2OFrame, None])
+        assert_is_type(initial_biases, None, [None, str, H2OFrame])
         self._parms["initial_biases"] = initial_biases
-
 
     @property
     def loss(self):
         """
         Loss function.
 
-        One of: ``"automatic"``, ``"cross_entropy"``, ``"quadratic"``, ``"huber"``, ``"absolute"``, ``"quantile"``
-        (default: ``"automatic"``).
+        Type: ``Literal["automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"]``, defaults to
+        ``"automatic"``.
 
         :examples:
 
@@ -1638,14 +2050,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(loss, None, Enum("automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"))
         self._parms["loss"] = loss
 
-
     @property
     def distribution(self):
         """
         Distribution function
 
-        One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
-        ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace",
+        "quantile", "huber"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -1669,13 +2080,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
 
-
     @property
     def quantile_alpha(self):
         """
         Desired quantile for Quantile regression, must be between 0 and 1.
 
-        Type: ``float``  (default: ``0.5``).
+        Type: ``float``, defaults to ``0.5``.
 
         :examples:
 
@@ -1700,13 +2110,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(quantile_alpha, None, numeric)
         self._parms["quantile_alpha"] = quantile_alpha
 
-
     @property
     def tweedie_power(self):
         """
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
-        Type: ``float``  (default: ``1.5``).
+        Type: ``float``, defaults to ``1.5``.
 
         :examples:
 
@@ -1735,13 +2144,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(tweedie_power, None, numeric)
         self._parms["tweedie_power"] = tweedie_power
 
-
     @property
     def huber_alpha(self):
         """
         Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
 
-        Type: ``float``  (default: ``0.9``).
+        Type: ``float``, defaults to ``0.9``.
 
         :examples:
 
@@ -1767,13 +2175,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(huber_alpha, None, numeric)
         self._parms["huber_alpha"] = huber_alpha
 
-
     @property
     def score_interval(self):
         """
         Shortest time interval (in seconds) between model scoring.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``, defaults to ``5.0``.
 
         :examples:
 
@@ -1795,13 +2202,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(score_interval, None, numeric)
         self._parms["score_interval"] = score_interval
 
-
     @property
     def score_training_samples(self):
         """
         Number of training set samples for scoring (0 for all).
 
-        Type: ``int``  (default: ``10000``).
+        Type: ``int``, defaults to ``10000``.
 
         :examples:
 
@@ -1823,13 +2229,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(score_training_samples, None, int)
         self._parms["score_training_samples"] = score_training_samples
 
-
     @property
     def score_validation_samples(self):
         """
         Number of validation set samples for scoring (0 for all).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -1853,13 +2258,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(score_validation_samples, None, int)
         self._parms["score_validation_samples"] = score_validation_samples
 
-
     @property
     def score_duty_cycle(self):
         """
         Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).
 
-        Type: ``float``  (default: ``0.1``).
+        Type: ``float``, defaults to ``0.1``.
 
         :examples:
 
@@ -1881,13 +2285,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(score_duty_cycle, None, numeric)
         self._parms["score_duty_cycle"] = score_duty_cycle
 
-
     @property
     def classification_stop(self):
         """
         Stopping criterion for classification error fraction on training data (-1 to disable).
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -1911,13 +2314,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(classification_stop, None, numeric)
         self._parms["classification_stop"] = classification_stop
 
-
     @property
     def regression_stop(self):
         """
         Stopping criterion for regression error (MSE) on training data (-1 to disable).
 
-        Type: ``float``  (default: ``1e-06``).
+        Type: ``float``, defaults to ``1e-06``.
 
         :examples:
 
@@ -1946,14 +2348,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(regression_stop, None, numeric)
         self._parms["regression_stop"] = regression_stop
 
-
     @property
     def stopping_rounds(self):
         """
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
-        Type: ``int``  (default: ``5``).
+        Type: ``int``, defaults to ``5``.
 
         :examples:
 
@@ -1984,7 +2385,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(stopping_rounds, None, int)
         self._parms["stopping_rounds"] = stopping_rounds
 
-
     @property
     def stopping_metric(self):
         """
@@ -1992,9 +2392,8 @@ class H2ODeepLearningEstimator(H2OEstimator):
         for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python
         client.
 
-        One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
-        ``"custom_increasing"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group",
+        "misclassification", "mean_per_class_error", "custom", "custom_increasing"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -2025,13 +2424,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
-
     @property
     def stopping_tolerance(self):
         """
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -2062,13 +2460,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(stopping_tolerance, None, numeric)
         self._parms["stopping_tolerance"] = stopping_tolerance
 
-
     @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -2092,13 +2489,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
 
-
     @property
     def score_validation_sampling(self):
         """
         Method used to sample validation dataset for scoring.
 
-        One of: ``"uniform"``, ``"stratified"``  (default: ``"uniform"``).
+        Type: ``Literal["uniform", "stratified"]``, defaults to ``"uniform"``.
 
         :examples:
 
@@ -2122,13 +2518,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(score_validation_sampling, None, Enum("uniform", "stratified"))
         self._parms["score_validation_sampling"] = score_validation_sampling
 
-
     @property
     def diagnostics(self):
         """
         Enable diagnostics for hidden layers.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -2152,13 +2547,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(diagnostics, None, bool)
         self._parms["diagnostics"] = diagnostics
 
-
     @property
     def fast_mode(self):
         """
         Enable fast mode (minor approximation in back-propagation).
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -2182,13 +2576,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(fast_mode, None, bool)
         self._parms["fast_mode"] = fast_mode
 
-
     @property
     def force_load_balance(self):
         """
         Force extra load balancing to increase training speed for small datasets (to keep all cores busy).
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -2212,13 +2605,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(force_load_balance, None, bool)
         self._parms["force_load_balance"] = force_load_balance
 
-
     @property
     def variable_importances(self):
         """
         Compute variable importances for input features (Gedeon method) - can be slow for large networks.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -2247,13 +2639,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(variable_importances, None, bool)
         self._parms["variable_importances"] = variable_importances
 
-
     @property
     def replicate_training_data(self):
         """
         Replicate the entire training dataset onto every node for faster training on small datasets.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -2279,13 +2670,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(replicate_training_data, None, bool)
         self._parms["replicate_training_data"] = replicate_training_data
 
-
     @property
     def single_node_mode(self):
         """
         Run on a single node for fine-tuning of model parameters.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2308,14 +2698,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(single_node_mode, None, bool)
         self._parms["single_node_mode"] = single_node_mode
 
-
     @property
     def shuffle_training_data(self):
         """
         Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is
         close to #nodes x #rows, of if using balance_classes).
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2338,13 +2727,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(shuffle_training_data, None, bool)
         self._parms["shuffle_training_data"] = shuffle_training_data
 
-
     @property
     def missing_values_handling(self):
         """
         Handling of missing values. Either MeanImputation or Skip.
 
-        One of: ``"mean_imputation"``, ``"skip"``  (default: ``"mean_imputation"``).
+        Type: ``Literal["mean_imputation", "skip"]``, defaults to ``"mean_imputation"``.
 
         :examples:
 
@@ -2368,13 +2756,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(missing_values_handling, None, Enum("mean_imputation", "skip"))
         self._parms["missing_values_handling"] = missing_values_handling
 
-
     @property
     def quiet_mode(self):
         """
         Enable quiet mode for less output to standard output.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2399,13 +2786,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(quiet_mode, None, bool)
         self._parms["quiet_mode"] = quiet_mode
 
-
     @property
     def autoencoder(self):
         """
         Auto-Encoder.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2427,13 +2813,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(autoencoder, None, bool)
         self._parms["autoencoder"] = autoencoder
 
-
     @property
     def sparse(self):
         """
         Sparse data handling (more efficient for data with lots of 0 values).
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2456,14 +2841,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(sparse, None, bool)
         self._parms["sparse"] = sparse
 
-
     @property
     def col_major(self):
         """
         #DEPRECATED Use a column major weight matrix for input layer. Can speed up forward propagation, but might slow
         down backpropagation.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
         """
         return self._parms.get("col_major")
 
@@ -2472,13 +2856,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(col_major, None, bool)
         self._parms["col_major"] = col_major
 
-
     @property
     def average_activation(self):
         """
         Average activation for sparse auto-encoder. #Experimental
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -2501,13 +2884,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(average_activation, None, numeric)
         self._parms["average_activation"] = average_activation
 
-
     @property
     def sparsity_beta(self):
         """
         Sparsity regularization. #Experimental
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -2539,13 +2921,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(sparsity_beta, None, numeric)
         self._parms["sparsity_beta"] = sparsity_beta
 
-
     @property
     def max_categorical_features(self):
         """
         Max. number of categorical features, enforced via hashing. #Experimental
 
-        Type: ``int``  (default: ``2147483647``).
+        Type: ``int``, defaults to ``2147483647``.
 
         :examples:
 
@@ -2570,13 +2951,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(max_categorical_features, None, int)
         self._parms["max_categorical_features"] = max_categorical_features
 
-
     @property
     def reproducible(self):
         """
         Force reproducibility on small data (will be slow - only uses 1 thread).
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2604,13 +2984,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(reproducible, None, bool)
         self._parms["reproducible"] = reproducible
 
-
     @property
     def export_weights_and_biases(self):
         """
         Whether to export Neural Network weights and biases to H2O Frames.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2634,13 +3013,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(export_weights_and_biases, None, bool)
         self._parms["export_weights_and_biases"] = export_weights_and_biases
 
-
     @property
     def mini_batch_size(self):
         """
         Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).
 
-        Type: ``int``  (default: ``1``).
+        Type: ``int``, defaults to ``1``.
 
         :examples:
 
@@ -2670,14 +3048,13 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(mini_batch_size, None, int)
         self._parms["mini_batch_size"] = mini_batch_size
 
-
     @property
     def categorical_encoding(self):
         """
         Encoding scheme for categorical features
 
-        One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
-        ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder",
+        "sort_by_response", "enum_limited"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -2707,13 +3084,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
 
-
     @property
     def elastic_averaging(self):
         """
         Elastic averaging between compute nodes can improve distributed model convergence. #Experimental
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -2737,13 +3113,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(elastic_averaging, None, bool)
         self._parms["elastic_averaging"] = elastic_averaging
 
-
     @property
     def elastic_averaging_moving_rate(self):
         """
         Elastic averaging moving rate (only if elastic averaging is enabled).
 
-        Type: ``float``  (default: ``0.9``).
+        Type: ``float``, defaults to ``0.9``.
 
         :examples:
 
@@ -2767,13 +3142,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(elastic_averaging_moving_rate, None, numeric)
         self._parms["elastic_averaging_moving_rate"] = elastic_averaging_moving_rate
 
-
     @property
     def elastic_averaging_regularization(self):
         """
         Elastic averaging regularization strength (only if elastic averaging is enabled).
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -2796,7 +3170,6 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def elastic_averaging_regularization(self, elastic_averaging_regularization):
         assert_is_type(elastic_averaging_regularization, None, numeric)
         self._parms["elastic_averaging_regularization"] = elastic_averaging_regularization
-
 
     @property
     def export_checkpoints_dir(self):
@@ -2830,6 +3203,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``, defaults to
+        ``"auto"``.
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
+
 
 
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
@@ -2845,6 +3233,9 @@ class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     >>> model = H2OAutoEncoderEstimator()
     >>> model.train(x=range(4), training_frame=fr)
     """
+
+    supervised_learning = False
+
     def __init__(self, **kwargs):
         super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
         self._parms['autoencoder'] = True

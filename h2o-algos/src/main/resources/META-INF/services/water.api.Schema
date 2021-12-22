@@ -86,6 +86,10 @@ hex.schemas.Word2VecSynonymsV3
 hex.schemas.Word2VecTransformV3
 hex.schemas.Word2VecV3
 hex.schemas.Word2VecV3$Word2VecParametersV3
+hex.schemas.ExtendedIsolationForestModelV3
+hex.schemas.ExtendedIsolationForestModelV3$ExtendedIsolationForestModelOutputV3
+hex.schemas.ExtendedIsolationForestV3
+hex.schemas.ExtendedIsolationForestV3$ExtendedIsolationForestParametersV3
 water.api.ModelMetricsAnomalyV3
 water.api.ModelMetricsGLRMV99
 water.api.ModelMetricsPCAV3
@@ -94,3 +98,15 @@ hex.schemas.RuleFitModelV3
 hex.schemas.RuleFitModelV3$RuleFitModelOutputV3
 hex.schemas.RuleFitV3$RuleFitParametersV3
 hex.schemas.RuleFitV3
+hex.schemas.ANOVAGLMModelV3
+hex.schemas.ANOVAGLMModelV3$ANOVAGLMModelOutputV3
+hex.schemas.ANOVAGLMV3$ANOVAGLMParametersV3
+hex.schemas.ANOVAGLMV3
+hex.schemas.ModelSelectionModelV3
+hex.schemas.ModelSelectionModelV3$ModelSelectionModelOutputV3
+hex.schemas.ModelSelectionV3
+hex.schemas.ModelSelectionV3$ModelSelectionParametersV3
+hex.schemas.UpliftDRFModelV3
+hex.schemas.UpliftDRFModelV3$UpliftDRFModelOutputV3
+hex.schemas.UpliftDRFV3
+hex.schemas.UpliftDRFV3$UpliftDRFParametersV3

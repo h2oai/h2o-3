@@ -141,7 +141,7 @@ public class NewChunkSpeedTest extends TestUtil {
       for (int loop = 0; loop < numLoops; loop++) {
         Scope.enter();
         try {
-          Frame f = parse_test_file(filenames[index]);
+          Frame f = parseTestFile(filenames[index]);
           assertTrue(f.numRows() == 100000);
           Scope.track(f);
         } finally {

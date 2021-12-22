@@ -22,7 +22,7 @@ public class XGBoostJavaVariableImportance implements XGBoostVariableImportance 
 
     @Override
     public Map<String, FeatureScore> getFeatureScores(byte[] boosterBytes) {
-        Predictor predictor = PredictorFactory.makePredictor(boosterBytes, false);
+        Predictor predictor = PredictorFactory.makePredictor(boosterBytes, null, false);
         Map<String, FeatureScore> featureScore = new HashMap<>();
         if (!(predictor.getBooster() instanceof GBTree)) {
             return featureScore;

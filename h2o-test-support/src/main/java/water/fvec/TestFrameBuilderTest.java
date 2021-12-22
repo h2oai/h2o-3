@@ -5,6 +5,11 @@ import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.parser.BufferedString;
+import water.util.ArrayUtils;
+import water.util.FrameUtils;
+import water.util.VecUtils;
+
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -253,5 +258,55 @@ public class TestFrameBuilderTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
+  @Test
+  public void testSequenceIntDataForCol() {
+    Scope.enter();
+    try {
+      Frame f = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM)
+              .withSequenceIntDataForCol(0, 0, 10)
+              .build();
+      assertEquals("Unexpected number of rows", 10, f.numRows());
+      assertArrayEquals("It is not a valid sequence column",
+              new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+              FrameUtils.asInts(f.vec(0)));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test(expected = AssertionError.class)
+  public void testSequenceIntDataForColBadInput() {
+    Scope.enter();
+    try {
+      new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM)
+              .withSequenceIntDataForCol(0, 0, 0)
+              .build();
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testUUID(){
+    Scope.enter();
+    try {
+      UUID expectedUUID = UUID.randomUUID();
+      Frame f = new TestFrameBuilder()
+              .withVecTypes(Vec.T_UUID)
+              .withDataForCol(0, ar(expectedUUID.toString(), null))
+              .build();
+      assertEquals(2, f.numRows());
+      assertArrayEquals(new byte[]{Vec.T_UUID}, f.types());
+      assertEquals(expectedUUID.getLeastSignificantBits(), f.vec(0).at16l(0));
+      assertEquals(expectedUUID.getMostSignificantBits(), f.vec(0).at16h(0));
+      assertTrue(f.vec(0).isNA(1));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
 }

@@ -2,6 +2,39 @@ package hex.genmodel.easy.prediction;
 
 public class AnomalyDetectionPrediction extends AbstractPrediction {
 
+  /**
+   * Only available when MojoModel has contamination parameter defined otherwise is null.
+   */
+  public Boolean isAnomaly;
+
+  /**
+   * Mean path length of data in the trees. Smaller number means more anomalous point, higher number means more normal point.
+   */
+  public double score;
+
+  /**
+   * Higher number means more anomalous point, smaller number means more normal point.
+   */
+  public double normalizedScore;
+
+  /**
+   * Only valid for tree-based models, null for all other mojo models.
+   */
+  public String[] leafNodeAssignments;
+
+  /**
+   * Ditto, available in MOJO 1.3 and newer
+   */
+  public int[] leafNodeAssignmentIds;
+
+  /**
+   * Staged predictions of tree algorithms (prediction probabilities of trees per iteration).
+   * The output structure is for tree Tt and class Cc:
+   * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
+   * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
+   */
+  public double[] stageProbabilities;
+
   @SuppressWarnings("unused")
   public AnomalyDetectionPrediction() {
   }
@@ -16,21 +49,6 @@ public class AnomalyDetectionPrediction extends AbstractPrediction {
       score = preds[1];
     }
   }
-
-  public Boolean isAnomaly;
-  public double score;
-  public double normalizedScore;
-
-  public String[] leafNodeAssignments;  // only valid for tree-based models, null for all other mojo models
-  public int[] leafNodeAssignmentIds;   // ditto, available in MOJO 1.3 and newer
-
-  /**
-   * Staged predictions of tree algorithms (prediction probabilities of trees per iteration).
-   * The output structure is for tree Tt and class Cc:
-   * Binomial models: [probability T1.C1, probability T2.C1, ..., Tt.C1] where Tt.C1 correspond to the the probability p0
-   * Multinomial models: [probability T1.C1, probability T1.C2, ..., Tt.Cc]
-   */
-  public double[] stageProbabilities;
 
   public double[] toPreds() {
     if (isAnomaly != null) {

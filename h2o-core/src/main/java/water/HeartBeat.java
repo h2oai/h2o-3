@@ -7,7 +7,7 @@ import water.init.JarHash;
  * Struct holding H2ONode health info.
  * @author <a href="mailto:cliffc@h2o.ai"></a>
  */
-public class HeartBeat extends Iced<HeartBeat> {
+public class HeartBeat extends Iced<HeartBeat> implements BootstrapFreezable<HeartBeat> {
   char _hb_version;             // Incrementing counter for sorting timelines better.
   int _cloud_hash;              // Cloud-membership hash
   int _cloud_name_hash;         // Hash of this cloud's name

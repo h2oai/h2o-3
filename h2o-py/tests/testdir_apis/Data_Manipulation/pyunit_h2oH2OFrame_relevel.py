@@ -22,7 +22,5 @@ def h2o_H2OFrame_relevel():
     assert allLevels != newLevels, "h2o.H2OFrame.relevel() command is not working." # should not equal
     assert newLevels[0][0]==allLevels[0][lastLevels], "h2o.H2OFrame.relevel() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_relevel())
-else:
-    h2o_H2OFrame_relevel()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_relevel)

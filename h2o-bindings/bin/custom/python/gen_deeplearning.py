@@ -1,3 +1,12 @@
+options = dict(
+    verbose=True,
+    model_extensions=[
+        'h2o.model.extensions.ScoringHistoryDL',
+        'h2o.model.extensions.VariableImportance',
+    ],
+)
+
+
 def module_extensions():
     class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
         """
@@ -12,6 +21,9 @@ def module_extensions():
         >>> model = H2OAutoEncoderEstimator()
         >>> model.train(x=range(4), training_frame=fr)
         """
+
+        supervised_learning = False
+        
         def __init__(self, **kwargs):
             super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
             self._parms['autoencoder'] = True
@@ -24,14 +36,14 @@ extensions = dict(
 overrides = dict(
     initial_biases=dict(
         setter="""
-assert_is_type({pname}, None, [H2OFrame, None])
+assert_is_type({pname}, None, [None, str, H2OFrame])
 self._parms["{sname}"] = {pname}
 """
     ),
 
     initial_weights=dict(
         setter="""
-assert_is_type({pname}, None, [H2OFrame, None])
+assert_is_type({pname}, None, [None, str, H2OFrame])
 self._parms["{sname}"] = {pname}
 """
     ),
@@ -532,13 +544,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
 >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_fold_assignment=True,
+...                                    nfolds=5,
 ...                                    seed=1234)
 >>> cars_dl.train(x=predictors,
 ...               y=response,
-...               training_frame=train,
-...               validation_frame=valid)
+...               training_frame=cars)
 >>> print(cars_dl.cross_validation_fold_assignment())
 """,
     keep_cross_validation_models="""
@@ -546,13 +557,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
 >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_models=True,
-...                                   seed=1234)
+...                                    nfolds=5,
+...                                    seed=1234)
 >>> cars_dl.train(x=predictors,
 ...               y=response,
-...               training_frame=train,
-...               validation_frame=valid)
+...               training_frame=cars)
 >>> print(cars_dl.cross_validation_models())
 """,
     keep_cross_validation_predictions="""
@@ -560,12 +570,12 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
 >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_predictions=True,
+...                                    nfolds=5,
 ...                                    seed=1234)
 >>> cars_dl.train(x=predictors,
 ...               y=response,
-...               training_frame=train)
+...               training_frame=cars)
 >>> print(cars_dl.cross_validation_predictions())
 """,
     l1="""

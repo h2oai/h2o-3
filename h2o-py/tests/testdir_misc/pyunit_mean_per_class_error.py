@@ -7,11 +7,9 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.grid import H2OGridSearch
 
 
-def pyunit_mean_per_class_error():
+def test_mean_per_class_error_binomial():
     gbm = H2OGradientBoostingEstimator(nfolds=3, fold_assignment="Random", seed=1234)
-
-    ## Binomial
-    cars = h2o.import_file("/users/arno/h2o-3/smalldata/junit/cars_20mpg.csv")
+    cars = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
     r = cars[0].runif(seed=1234)
     train = cars[r > .2]
@@ -20,18 +18,18 @@ def pyunit_mean_per_class_error():
     predictors = ["displacement","power","weight","acceleration","year"]
     gbm.distribution = "bernoulli"
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
-    print(gbm)
+    # print(gbm)
     mpce = gbm.mean_per_class_error([0.5,0.8]) ## different thresholds
-    assert (abs(mpce[0][1] - 0.004132231404958664) < 1e-5)
-    assert (abs(mpce[1][1] - 0.021390374331550777) < 1e-5)
+    assert (abs(mpce[0][1] - 0.008264) < 1e-5)
+    assert (abs(mpce[1][1] - 0.018716) < 1e-5)
 
     ## score on train first
     print(gbm.model_performance(train).mean_per_class_error(thresholds=[0.3,0.5]))
 
 
-
-    ## Multinomial
-    cars = h2o.import_file("/users/arno/h2o-3/smalldata/junit/cars_20mpg.csv")
+def test_mean_per_class_error_multinomial():
+    gbm = H2OGradientBoostingEstimator(nfolds=3, fold_assignment="Random", seed=1234)
+    cars = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
     cars["cylinders"] = cars["cylinders"].asfactor()
     r = cars[0].runif(seed=1234)
     train = cars[r > .2]
@@ -40,16 +38,29 @@ def pyunit_mean_per_class_error():
     predictors = ["displacement","power","weight","acceleration","year"]
     gbm.distribution="multinomial"
     gbm.train(x=predictors,y=response_col, training_frame=train, validation_frame=valid)
-    print(gbm)
+    # print(gbm)
+    print(gbm.__class__.__mro__)
     mpce = gbm.mean_per_class_error(train=True)
     assert( mpce == 0 )
     mpce = gbm.mean_per_class_error(valid=True)
-    assert(abs(mpce - 0.207142857143 ) < 1e-5)
+    # assert(abs(mpce - 0.207142857143 ) < 1e-5)
+    assert(abs(mpce - 0.407142857143 ) < 1e-5)
     mpce = gbm.mean_per_class_error(xval=True)
-    assert(abs(mpce - 0.350071715433 ) < 1e-5)
+    # assert(abs(mpce - 0.350071715433 ) < 1e-5)
+    assert(abs(mpce - 0.35127653471 ) < 1e-5)
 
 
-
+def test_mean_per_class_error_grid():
+    gbm = H2OGradientBoostingEstimator(nfolds=3, fold_assignment="Random", seed=1234)
+    cars = h2o.import_file(pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
+    cars["cylinders"] = cars["cylinders"].asfactor()
+    r = cars[0].runif(seed=1234)
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+    response_col = "cylinders"
+    predictors = ["displacement","power","weight","acceleration","year"]
+    gbm.distribution="multinomial"
+    
     ## Early stopping
     gbm.stopping_rounds=2
     gbm.stopping_metric="mean_per_class_error"
@@ -92,9 +103,10 @@ def pyunit_mean_per_class_error():
 
     print(grid) ## sorted by logloss
     print(grid.get_grid("mean_per_class_error"))
-    
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(pyunit_mean_per_class_error)
-else:
-    pyunit_mean_per_class_error
+
+pyunit_utils.run_tests([
+    test_mean_per_class_error_binomial,
+    test_mean_per_class_error_multinomial,
+    test_mean_per_class_error_grid
+])

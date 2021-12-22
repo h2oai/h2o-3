@@ -11,14 +11,14 @@ public class WorkAllocationsTest {
 
     private WorkAllocations makeAllocations() {
         return new WorkAllocations()
-                .allocate(new Work("gbm1", GBM, ModelBuild, 10))
-                .allocate(new Work("gbm2", GBM, ModelBuild, 20))
-                .allocate(new Work("drf1", DRF, ModelBuild, 10))
-                .allocate(new Work("gbm_grid1", GBM, HyperparamSearch, 100))
-                .allocate(new Work("drf_grid1", DRF, HyperparamSearch, 60))
-                .allocate(new Work("gbm3", GBM, ModelBuild, 30))
-                .allocate(new Work("gbm4", GBM, ModelBuild, 40))
-                .allocate(new Work("gbm_grid2", GBM, HyperparamSearch, 200));
+                .allocate(new Work("gbm1", GBM, ModelBuild, 1, 10))
+                .allocate(new Work("gbm2", GBM, ModelBuild, 1, 20))
+                .allocate(new Work("drf1", DRF, ModelBuild, 1, 10))
+                .allocate(new Work("gbm_grid1", GBM, HyperparamSearch, 1, 100))
+                .allocate(new Work("drf_grid1", DRF, HyperparamSearch, 1, 60))
+                .allocate(new Work("gbm3", GBM, ModelBuild, 1, 30))
+                .allocate(new Work("gbm4", GBM, ModelBuild, 1, 40))
+                .allocate(new Work("gbm_grid2", GBM, HyperparamSearch, 1, 200));
     }
 
     @Test
@@ -41,7 +41,7 @@ public class WorkAllocationsTest {
     @Test(expected = IllegalStateException.class)
     public void test_cannot_allocate_new_work_after_freeze() {
         WorkAllocations allocations = makeAllocations().freeze();
-        allocations.allocate(new Work("", GBM, ModelBuild, 10));
+        allocations.allocate(new Work("", GBM, ModelBuild, 1, 10));
     }
 
     @Test(expected = IllegalStateException.class)

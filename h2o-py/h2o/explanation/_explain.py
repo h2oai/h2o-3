@@ -1,21 +1,19 @@
 # -*- encoding: utf-8 -*-
 
 import random
+import warnings
+from collections import OrderedDict, Counter, defaultdict
 from contextlib import contextmanager
-from collections import OrderedDict, Counter
+
+try:
+    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but only with unicode support)
+except:
+    from io import StringIO  # py3
 
 import h2o
 import numpy as np
-import matplotlib
-import matplotlib.colors
-import matplotlib.figure
-
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    # Possibly failed due to missing tkinter in old matplotlib in python 2.7
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+from h2o.exceptions import H2OValueError
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, is_decorated_plot_result
 
 
 def _display(object):
@@ -24,7 +22,9 @@ def _display(object):
     :param object: An object to be displayed.
     :returns: the input
     """
-    if isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg":
+    import matplotlib.figure
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    if (isinstance(object, matplotlib.figure.Figure) and matplotlib.get_backend().lower() != "agg") or is_decorated_plot_result(object):
         plt.show()
     else:
         try:
@@ -35,6 +35,9 @@ def _display(object):
     if isinstance(object, matplotlib.figure.Figure):
         plt.close(object)
         print("\n")
+    if (is_decorated_plot_result(object) and (object.figure() is not None)):
+        plt.close(object.figure())
+        print("\n")
     return object
 
 
@@ -44,6 +47,8 @@ def _dont_display(object):
     :param object: that should not be displayed
     :returns: input
     """
+    import matplotlib.figure
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(object, matplotlib.figure.Figure):
         plt.close()
     return object
@@ -161,9 +166,11 @@ def no_progress():
     progress = h2o.job.H2OJob.__PROGRESS_BAR__
     if progress:
         h2o.no_progress()
-    yield
-    if progress:
-        h2o.show_progress()
+    try:
+        yield
+    finally:
+        if progress:
+            h2o.show_progress()
 
 
 class NumpyFrame:
@@ -231,6 +238,7 @@ class NumpyFrame:
         Is column a factor/categorical column?
 
         :param column: string containing the column name
+        
         :returns: boolean
         """
         return column in self._factors or self._get_column_and_factor(column)[0] in self._factors
@@ -241,6 +249,7 @@ class NumpyFrame:
         Get a dictionary mapping a factor to its numerical representation in the NumpyFrame
 
         :param column: string containing the column name
+        
         :returns: dictionary
         """
         fact = self._factors[column]
@@ -252,6 +261,7 @@ class NumpyFrame:
         Get a dictionary mapping numerical representation of a factor to the category names.
 
         :param column: string containing the column name
+        
         :returns: dictionary
         """
         fact = self._factors[column]
@@ -425,10 +435,20 @@ class NumpyFrame:
             yield col, self.get(col, with_categorical_names)
 
 
+def _get_domain_mapping(model):
+    """
+    Get a mapping between columns and their domains.
+
+    :return: Dictionary containing a mapping column -> factors
+    """
+    output = model._model_json["output"]
+    return dict(zip(output["names"], output["domains"]))
+
+
 def _shorten_model_ids(model_ids):
     import re
-    regexp = re.compile("(.*)_AutoML_\\d{8}_\\d{6}(.*)")
-    shortened_model_ids = [regexp.sub("\\1\\2", model_id) for model_id in model_ids]
+    regexp = re.compile(r"(.*)_AutoML_[\d_]+((?:_.*)?)$")  # nested group needed for Py2
+    shortened_model_ids = [regexp.sub(r"\1\2", model_id) for model_id in model_ids]
     if len(set(shortened_model_ids)) == len(set(model_ids)):
         return shortened_model_ids
     return model_ids
@@ -451,14 +471,14 @@ def _get_algorithm(model,  treat_xrt_as_algorithm=False):
                 algo = "drf"
             return algo
         else:
-            model = h2o.get_model()
+            model = h2o.get_model(model)
     if treat_xrt_as_algorithm and model.algo == "drf":
         if model.actual_params.get("histogram_type") == "Random":
             return "xrt"
     return model.algo
 
 
-def _first_of_family(models, all_stackedensembles=True):
+def _first_of_family(models, all_stackedensembles=False):
     # type: (Union[str, h2o.model.ModelBase], bool) -> Union[str, h2o.model.ModelBase]
     """
     Get first of family models
@@ -530,7 +550,8 @@ def shap_summary_plot(
         alpha=1,  # type: float
         colormap=None,  # type: str
         figsize=(12, 12),  # type: Union[Tuple[float], List[float]]
-        jitter=0.35  # type: float
+        jitter=0.35,  # type: float
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP summary plot
@@ -552,9 +573,11 @@ def shap_summary_plot(
     :param colormap: colormap to use instead of the default blue to red colormap
     :param figsize: figure size; passed directly to matplotlib
     :param jitter: amount of jitter used to show the point density
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -577,7 +600,8 @@ def shap_summary_plot(
     >>> # Create SHAP summary plot
     >>> gbm.shap_summary_plot(test)
     """
-
+    import matplotlib.colors
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     blue_to_red = matplotlib.colors.LinearSegmentedColormap.from_list("blue_to_red",
                                                                       ["#00AAEE", "#FF1166"])
 
@@ -585,6 +609,9 @@ def shap_summary_plot(
         colormap = blue_to_red
     else:
         colormap = plt.get_cmap(colormap)
+
+    if top_n_features < 0:
+        top_n_features = float("inf")
 
     # to prevent problems with data sorted in some logical way
     # (overplotting with latest result which might have different values
@@ -647,7 +674,9 @@ def shap_summary_plot(
     plt.title("SHAP Summary plot for \"{}\"".format(model.model_id))
     plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def shap_explain_row_plot(
@@ -658,7 +687,8 @@ def shap_explain_row_plot(
         top_n_features=10,  # type: int
         figsize=(16, 9),  # type: Union[List[float], Tuple[float]]
         plot_type="barplot",  # type: str
-        contribution_type="both"  # type: str
+        contribution_type="both",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     SHAP local explanation
@@ -680,9 +710,11 @@ def shap_explain_row_plot(
     :param plot_type: either "barplot" or "breakdown"
     :param contribution_type: One of "positive", "negative", or "both".
                               Used only for plot_type="barplot".
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -705,6 +737,10 @@ def shap_explain_row_plot(
     >>> # Create SHAP row explanation plot
     >>> gbm.shap_explain_row_plot(test, row_index=0)
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+
+    if top_n_features < 0:
+        top_n_features = float("inf")
 
     row = frame[row_index, :]
     with no_progress():
@@ -773,8 +809,11 @@ def shap_explain_row_plot(
             prediction
         ))
         plt.gca().set_axisbelow(True)
+        plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
     elif plot_type == "breakdown":
         if columns is None:
@@ -812,10 +851,10 @@ def shap_explain_row_plot(
                  color=contributions["color"])
         plt.axvline(prediction, label="Prediction")
         plt.axvline(bias, linestyle="dotted", color="gray", label="Bias")
-
         plt.vlines(contributions["cummulative_value"][1:],
-                   ymin=[y - 0.4 for y in range(contributions["value"].shape[0])],
-                   ymax=[y + 1.4 for y in range(contributions["value"].shape[0])])
+                   ymin=[y - 0.4 for y in range(contributions["value"].shape[0] - 1)],
+                   ymax=[y + 1.4 for y in range(contributions["value"].shape[0] - 1)],
+                   color="k")
 
         plt.legend()
         plt.grid(True)
@@ -825,8 +864,11 @@ def shap_explain_row_plot(
         plt.xlabel("SHAP value")
         plt.ylabel("Feature")
         plt.gca().set_axisbelow(True)
+        plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def _get_top_n_levels(column, top_n):
@@ -870,6 +912,7 @@ def _add_histogram(frame, column, add_rug=True, add_histogram=True, levels_order
     :param add_histogram: if True, adds histogram
     :returns: None
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     ylims = plt.ylim()
     nf = NumpyFrame(frame[column])
 
@@ -916,6 +959,7 @@ def pd_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):
     """
     Plot partial dependence plot.
@@ -934,9 +978,11 @@ def pd_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name; used to get just the first color to keep the api and color scheme similar with
                      pd_multi_plot
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                   
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -959,6 +1005,7 @@ def pd_plot(
     >>> # Create partial dependence plot
     >>> gbm.pd_plot(test, column="alcohol")
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     is_factor = frame[column].isfactor()[0]
     if is_factor:
         if frame[column].nlevels()[0] > max_levels:
@@ -971,6 +1018,9 @@ def pd_plot(
 
     if target is not None and not isinstance(target, list):
         target = [target]
+
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
 
     color = plt.get_cmap(colormap)(0)
     with no_progress():
@@ -1020,12 +1070,15 @@ def pd_plot(
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        plt.tight_layout()
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def pd_multi_plot(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.model_base]]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.model_base]]
         frame,  # type: h2o.H2OFrame
         column,  # type: str
         best_of_family=True,  # type: bool
@@ -1034,7 +1087,8 @@ def pd_multi_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="Dark2",  # type: str
-        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."]  # type: List[str]
+        markers=["o", "v", "s", "P", "*", "D", "X", "^", "<", ">", "."],  # type: List[str]
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     Plot partial dependencies of a variable across multiple models.
@@ -1043,7 +1097,7 @@ def pd_multi_plot(
     on the response. The effect of a variable is measured in change in the mean response.
     PDP assumes independence between the feature for which is the PDP computed and the rest.
 
-    :param models: H2O AutoML object, or list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
     :param column: string containing column name
     :param best_of_family: if True, show only the best models per family
@@ -1055,9 +1109,11 @@ def pd_multi_plot(
     :param colormap: colormap name
     :param markers: List of markers to use for factors, when it runs out of possible markers the last in
                     this list will get reused
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig                
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1080,15 +1136,19 @@ def pd_multi_plot(
     >>> # Create a partial dependence plot
     >>> aml.pd_multi_plot(test, column="alcohol")
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if target is not None:
         if isinstance(target, (list, tuple)):
             if len(target) > 1:
                 raise ValueError("Only one target can be specified!")
             target = target[0]
         target = [target]
-    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        all_models = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
-            .as_data_frame(use_pandas=False, header=False)]
+
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
+
+    if _is_automl_or_leaderboard(models):
+        all_models = _get_model_ids_from_automl_or_leaderboard(models)
     else:
         all_models = models
 
@@ -1160,8 +1220,11 @@ def pd_multi_plot(
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        plt.tight_layout(rect=[0, 0, 0.8, 1])
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def ice_plot(
@@ -1172,6 +1235,7 @@ def ice_plot(
         max_levels=30,  # type: int
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
+        save_plot_path=None # type: Optional[str]
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1189,9 +1253,11 @@ def ice_plot(
     :param max_levels: maximum number of factor levels to show
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -1214,12 +1280,17 @@ def ice_plot(
     >>> # Create the individual conditional expectations plot
     >>> gbm.ice_plot(test, column="alcohol")
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if target is not None:
         if isinstance(target, (list, tuple)):
             if len(target) > 1:
                 raise ValueError("Only one target can be specified!")
             target = target[0]
         target = [target]
+
+    if frame.type(column) == "string":
+        raise ValueError("String columns are not supported!")
+
     with no_progress():
         frame = frame.sort(model.actual_params["response_column"])
         is_factor = frame[column].isfactor()[0]
@@ -1285,18 +1356,64 @@ def ice_plot(
         plt.grid(True)
         if is_factor:
             plt.xticks(rotation=45, rotation_mode="anchor", ha="right")
+        plt.tight_layout(rect=[0, 0, 0.85, 1])
         fig = plt.gcf()
-        return fig
+        if save_plot_path is not None:
+            plt.savefig(fname=save_plot_path)
+        return decorate_plot_result(figure=fig)
 
 
 def _has_varimp(model):
-    # type: (Union[str, h2o.model.ModelBase]) -> bool
+    # type: (h2o.model.ModelBase) -> bool
     """
     Does model have varimp?
     :param model: model or a string containing model_id
     :returns: bool
     """
-    return _get_algorithm(model) not in ["stackedensemble", "naivebayes"]
+    assert isinstance(model, h2o.model.ModelBase)
+    # check for cases when variable importance is disabled or
+    # when a model is stopped sooner than calculating varimp (xgboost can rarely have no varimp).
+    output = model._model_json["output"]
+    return output.get("variable_importances") is not None
+
+
+def _is_automl_or_leaderboard(obj):
+    # type: (object) -> bool
+    """
+    Is obj an H2OAutoML object or a leaderboard?
+    :param obj: object to test
+    :return: bool
+    """
+    return (
+            isinstance(obj, h2o.automl._base.H2OAutoMLBaseMixin) or
+            (isinstance(obj, h2o.H2OFrame) and "model_id" in obj.columns)
+    )
+
+
+def _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard, filter_=lambda _: True):
+    # type: (object) -> List[str]
+    """
+    Get model ids from H2OAutoML object or leaderboard
+    :param automl_or_leaderboard: AutoML
+    :return: List[str]
+    """
+    leaderboard = (automl_or_leaderboard.leaderboard
+                   if isinstance(automl_or_leaderboard, h2o.automl._base.H2OAutoMLBaseMixin)
+                   else automl_or_leaderboard)
+    return [model_id[0] for model_id in leaderboard[:, "model_id"].as_data_frame(use_pandas=False, header=False)
+            if filter_(model_id[0])]
+
+
+def _get_models_from_automl_or_leaderboard(automl_or_leaderboard, filter_=lambda _: True):
+    # type: (object) -> Generator[h2o.model.ModelBase, None, None]
+    """
+    Get model ids from H2OAutoML object or leaderboard
+    :param automl_or_leaderboard: AutoML
+    :param filter_: a predicate used to filter model_ids. Signature of the filter is (model) -> bool.
+    :return: Generator[h2o.model.ModelBase, None, None]
+    """
+    models = (h2o.get_model(model_id) for model_id in _get_model_ids_from_automl_or_leaderboard(automl_or_leaderboard))
+    return (model for model in models if filter_(model))
 
 
 def _get_xy(model):
@@ -1306,9 +1423,16 @@ def _get_xy(model):
     :param model: H2O Model
     :returns: tuple (x, y)
     """
+    names = model._model_json["output"]["original_names"] or model._model_json["output"]["names"]
     y = model.actual_params["response_column"]
-    x = [feature for feature in model._model_json["output"]["names"]
-         if feature not in y]
+    not_x = [
+                y,
+                # if there is no fold column, fold_column is set to None, thus using "or {}" instead of the second argument of dict.get
+                (model.actual_params.get("fold_column") or {}).get("column_name"),
+                (model.actual_params.get("weights_column") or {}).get("column_name"),
+                (model.actual_params.get("offset_column") or {}).get("column_name"),
+             ] + (model.actual_params.get("ignored_columns") or [])
+    x = [feature for feature in names if feature not in not_x]
     return x, y
 
 
@@ -1329,14 +1453,26 @@ def _consolidate_varimps(model):
     consolidated_varimps = {k: v for k, v in varimp.items() if k in x}
     to_process = {k: v for k, v in varimp.items() if k not in x}
 
+    domain_mapping = _get_domain_mapping(model)
+    encoded_cols = ["{}.{}".format(name, domain)
+                    for name, domains in domain_mapping.items()
+                    if domains is not None
+                    for domain in domains + ["missing(NA)"]]
+    if len(encoded_cols) > len(set(encoded_cols)):
+        duplicates = encoded_cols[:]
+        for x in set(encoded_cols):
+            duplicates.remove(x)
+        warnings.warn("Ambiguous encoding of the column x category pairs: {}".format(set(duplicates)))
+
+    varimp_to_col = {"{}.{}".format(name, domain): name
+                     for name, domains in domain_mapping.items()
+                     if domains is not None
+                     for domain in domains + ["missing(NA)"]
+                     }
     for feature in to_process.keys():
-        col_parts = feature.split(".")
-        for i in range(1, len(col_parts) + 1)[::-1]:
-            if ".".join(col_parts[:i]) in x:
-                column = ".".join(col_parts[:i])
-                consolidated_varimps[column] = consolidated_varimps.get(column, 0) + to_process[
-                    feature]
-                break
+        if feature in varimp_to_col:
+            column = varimp_to_col[feature]
+            consolidated_varimps[column] = consolidated_varimps.get(column, 0) + to_process[feature]
         else:
             raise RuntimeError("Cannot find feature {}".format(feature))
 
@@ -1350,6 +1486,45 @@ def _consolidate_varimps(model):
             consolidated_varimps[col] = 0
 
     return consolidated_varimps
+
+
+# This plot is meant to be used only in the explain module.
+# It provides the same capabilities as `model.varimp_plot` but without
+# either forcing "Agg" backend or showing the plot.
+# It also mimics the look and feel of the rest of the explain plots.
+def _varimp_plot(model, figsize, num_of_features=None, save_plot_path=None):
+    # type: (h2o.model.ModelBase, Tuple[Float, Float], Optional[int]) -> matplotlib.pyplot.Figure
+    """
+    Variable importance plot.
+    :param model: H2O model
+    :param figsize: Figure size
+    :param num_of_features: Maximum number of variables to plot. Defaults to 10.
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :return: object that contains the resulting figure (can be accessed using result.figure())
+    """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    importances = model.varimp(use_pandas=False)
+    feature_labels = [tup[0] for tup in importances]
+    val = [tup[2] for tup in importances]
+    pos = range(len(feature_labels))[::-1]
+    if num_of_features is None:
+        num_of_features = min(len(val), 10)
+
+    plt.figure(figsize=figsize)
+    plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
+             height=0.8, color="#1F77B4", edgecolor="none")
+    plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
+    plt.ylim([min(pos[0:num_of_features]) - 1, max(pos[0:num_of_features]) + 1])
+    plt.title("Variable Importance for \"{}\"".format(model.model_id))
+    plt.xlabel("Variable Importance")
+    plt.ylabel("Variable")
+    plt.grid()
+    plt.gca().set_axisbelow(True)
+    plt.tight_layout()
+    fig = plt.gcf()
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
 
 
 def _interpretable(model):
@@ -1413,11 +1588,12 @@ def _calculate_clustering_indices(matrix):
 
 
 def varimp_heatmap(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
-        top_n=20,  # type: int
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
+        top_n=None,  # type: Option[int]
         figsize=(16, 9),  # type: Tuple[float]
         cluster=True,  # type: bool
-        colormap="RdYlBu_r"  # type: str
+        colormap="RdYlBu_r",  # type: str
+        save_plot_path=None # type: str
 ):
     # type: (...) -> plt.Figure
     """
@@ -1431,14 +1607,16 @@ def varimp_heatmap(
     encoded features and return a single variable importance for the original categorical
     feature. By default, the models and variables are ordered by their similarity.
 
-    :param models: H2O AutoML object or list of H2O models
-    :param top_n: use just top n models (applies only when used with H2OAutoML)
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
+    :param top_n: DEPRECATED. use just top n models (applies only when used with H2OAutoML)
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param cluster: if True, cluster the models and variables
     :param colormap: colormap to use
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1461,27 +1639,51 @@ def varimp_heatmap(
     >>> # Create the variable importance heatmap
     >>> aml.varimp_heatmap()
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
-            .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
-        models = [
-            h2o.get_model(model_id)
-            for model_id in model_ids[:min(top_n, len(model_ids))]
-        ]
+        models = _check_deprecated_top_n_argument(models, top_n)
+    varimps, model_ids,  x = varimp(models=models, cluster=cluster, use_pandas=False)
+
+    plt.figure(figsize=figsize)
+    plt.imshow(varimps, cmap=plt.get_cmap(colormap))
+    plt.xticks(range(len(model_ids)), model_ids,
+               rotation=45, rotation_mode="anchor", ha="right")
+    plt.yticks(range(len(x)), x)
+    plt.colorbar()
+    plt.xlabel("Model Id")
+    plt.ylabel("Feature")
+    plt.title("Variable Importance Heatmap")
+    plt.grid(False)
+    fig = plt.gcf()
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
+
+
+def varimp(
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
+        cluster=True,  # type: bool
+        use_pandas=True  # type: bool
+):
+    # type: (...) -> Union[pandas.DataFrame, Tuple[numpy.ndarray, List[str], List[str]]]
+    """
+        Get data that are used to build varimp_heatmap plot.
+
+        :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
+        :param cluster: if True, cluster the models and variables
+        :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a triple (varimps, model_ids, variable_names)
+        :returns: either pandas DataFrame (if use_pandas == True) or a triple (varimps, model_ids, variable_names)
+    """
+    if _is_automl_or_leaderboard(models):
+        models = list(_get_models_from_automl_or_leaderboard(models, filter_=_has_varimp))
     else:
-        top_n = len(models)
-    # Filter out models that don't have varimp
-    models = [model for model in models if _has_varimp(model)]
-    models = models[:min(len(models), top_n)]
+        # Filter out models that don't have varimp
+        models = [model for model in models if _has_varimp(model)]
     if len(models) == 0:
         raise RuntimeError("No model with variable importance")
-
     varimps = [_consolidate_varimps(model) for model in models]
-
     x, y = _get_xy(models[0])
-
     varimps = np.array([[varimp[col] for col in x] for varimp in varimps])
-
     if cluster and len(models) > 2:
         order = _calculate_clustering_indices(varimps)
         x = [x[i] for i in order]
@@ -1493,28 +1695,23 @@ def varimp_heatmap(
     else:
         varimps = varimps.transpose()
 
-    plt.figure(figsize=figsize)
-    plt.imshow(varimps, cmap=plt.get_cmap(colormap))
-    plt.xticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]),
-               rotation=45, rotation_mode="anchor", ha="right")
-    plt.yticks(range(len(x)), x)
-    plt.colorbar()
-    plt.xlabel("Model Id")
-    plt.ylabel("Feature")
-    plt.title("Variable Importance Heatmap")
-    plt.grid(False)
-    fig = plt.gcf()
-    return fig
+    model_ids = _shorten_model_ids([model.model_id for model in models])
+    if use_pandas:
+        import pandas
+        return pandas.DataFrame(varimps, columns=model_ids, index=x)
+
+    return varimps, model_ids, x
 
 
 def model_correlation_heatmap(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
-        top_n=20,  # type: int
+        top_n=None,  # type: Optional[int]
         cluster_models=True,  # type: bool
         triangular=True,  # type: bool
         figsize=(13, 13),  # type: Tuple[float]
-        colormap="RdYlBu_r"  # type: str
+        colormap="RdYlBu_r",  # type: str
+        save_plot_path=None # type: str
 ):
     # type: (...) -> plt.Figure
     """
@@ -1524,16 +1721,18 @@ def model_correlation_heatmap(
     For classification, frequency of identical predictions is used. By default, models
     are ordered by their similarity (as computed by hierarchical clustering).
 
-    :param models: H2OAutoML object or a list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
-    :param top_n: show just top n models (applies only when used with H2OAutoML)
+    :param top_n: DEPRECATED. show just top n models (applies only when used with H2OAutoML).
     :param cluster_models: if True, cluster the models
     :param triangular: make the heatmap triangular
     :param figsize: figsize: figure size; passed directly to matplotlib
     :param colormap: colormap to use
-    :returns: a matplotlib figure object
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :returns: object that contains the resulting figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1556,51 +1755,18 @@ def model_correlation_heatmap(
     >>> # Create the model correlation heatmap
     >>> aml.model_correlation_heatmap(test)
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
-            .as_data_frame(use_pandas=False, header=False)]
-        models = [
-            h2o.get_model(model_id)
-            for model_id in model_ids[:min(top_n, len(model_ids))]
-        ]
-    else:
-        top_n = len(models)
-
-    is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
-
-    models = models[:min(len(models), top_n)]
-    predictions = np.empty((len(models), frame.nrow),
-                           dtype=np.object if is_classification else np.float)
-    with no_progress():
-        for idx, model in enumerate(models):
-            predictions[idx, :] = np.array(model.predict(frame)["predict"]
-                                           .as_data_frame(use_pandas=False, header=False)) \
-                .reshape(frame.nrow)
-
-    if is_classification:
-        corr = np.zeros((len(models), len(models)))
-        for i in range(len(models)):
-            for j in range(len(models)):
-                if i <= j:
-                    corr[i, j] = (predictions[i, :] == predictions[j, :]).mean()
-                    corr[j, i] = corr[i, j]
-    else:
-        corr = np.corrcoef(predictions)
-
-    if cluster_models:
-        order = _calculate_clustering_indices(corr)
-        corr = corr[order, :]
-        corr = corr[:, order]
-        models = [models[i] for i in order]
+        models = _check_deprecated_top_n_argument(models, top_n)
+    corr, model_ids = model_correlation(models, frame, cluster_models, use_pandas=False)
 
     if triangular:
         corr = np.where(np.triu(np.ones_like(corr), k=1).astype(bool), float("nan"), corr)
 
     plt.figure(figsize=figsize)
     plt.imshow(corr, cmap=plt.get_cmap(colormap), clim=(0.5, 1))
-    plt.xticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]),
-               rotation=45, rotation_mode="anchor", ha="right")
-    plt.yticks(range(len(models)), _shorten_model_ids([model.model_id for model in models]))
+    plt.xticks(range(len(model_ids)), model_ids, rotation=45, rotation_mode="anchor", ha="right")
+    plt.yticks(range(len(model_ids)), model_ids)
     plt.colorbar()
     plt.title("Model Correlation")
     plt.xlabel("Model Id")
@@ -1613,13 +1779,77 @@ def model_correlation_heatmap(
         if _interpretable(t.get_text()):
             t.set_color("red")
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
+
+
+def _check_deprecated_top_n_argument(models, top_n):
+    if top_n is not None:
+        import warnings
+        from h2o.exceptions import H2ODeprecationWarning
+        warnings.warn("Setting the `top_n` parameter is deprecated, use a leaderboard (sub)frame "
+                      "instead, e.g., aml.leaderboard.head({}).".format(top_n), category=H2ODeprecationWarning)
+        models = models.leaderboard.head(top_n)
+    else:
+        models = models.leaderboard.head(20)
+    return models
+
+
+def model_correlation(
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
+        frame,  # type: h2o.H2OFrame
+        cluster_models=True,  # type: bool
+        use_pandas=True  # type: bool
+):
+    # type: (...) -> Union[pandas.DataFrame, Tuple[numpy.ndarray, List[str]]]
+    """
+    Get data that are used to build model_correlation_heatmap plot.
+
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
+    :param frame: H2OFrame
+    :param cluster_models: if True, cluster the models
+    :param use_pandas: if True, try to return pandas DataFrame. Otherwise return a tuple (correlation_matrix, model_ids)
+    :returns: either pandas DataFrame (if use_pandas == True) or a tuple (correlation_matrix, model_ids)
+    """
+    if _is_automl_or_leaderboard(models):
+        models = list(_get_models_from_automl_or_leaderboard(models))
+    is_classification = frame[models[0].actual_params["response_column"]].isfactor()[0]
+    predictions = []
+    with no_progress():
+        for idx, model in enumerate(models):
+            predictions.append(model.predict(frame)["predict"])
+
+    if is_classification:
+        corr = np.zeros((len(models), len(models)))
+        for i in range(len(models)):
+            for j in range(len(models)):
+                if i <= j:
+                    corr[i, j] = (predictions[i] == predictions[j]).mean()[0]
+                    corr[j, i] = corr[i, j]
+    else:
+        corr = np.genfromtxt(StringIO(predictions[0].cbind(predictions[1:]).cor().get_frame_data()),
+                             delimiter=",", missing_values="", skip_header=True)
+    if cluster_models:
+        order = _calculate_clustering_indices(corr)
+        corr = corr[order, :]
+        corr = corr[:, order]
+        models = [models[i] for i in order]
+
+    model_ids = _shorten_model_ids([model.model_id for model in models])
+
+    if use_pandas:
+        import pandas
+        return pandas.DataFrame(corr, columns=model_ids, index=model_ids)
+
+    return corr, model_ids
 
 
 def residual_analysis_plot(
         model,  # type: h2o.model.ModelBase
         frame,  # type: h2o.H2OFrame
-        figsize=(16, 9)  # type: Tuple[float]
+        figsize=(16, 9),  # type: Tuple[float]
+        save_plot_path=None # type: Optional[str]
 ):
     # type: (...) -> plt.Figure
     """
@@ -1634,10 +1864,12 @@ def residual_analysis_plot(
 
     :param model: H2OModel
     :param frame: H2OFrame
-    :param figsize: figsize: figure size; passed directly to matplotlib
-    :returns: a matplotlib figure object
+    :param figsize: figure size; passed directly to matplotlib
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig  
+    :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>>
@@ -1660,6 +1892,7 @@ def residual_analysis_plot(
     >>> # Create the residual analysis plot
     >>> gbm.residual_analysis_plot(test)
     """
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     _, y = _get_xy(model)
 
     with no_progress():
@@ -1693,22 +1926,332 @@ def residual_analysis_plot(
     plt.xlim(xlims)
     plt.ylim(ylims)
 
+    plt.tight_layout()
     fig = plt.gcf()
-    return fig
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+    return decorate_plot_result(figure=fig)
+
+
+def learning_curve_plot(
+        model,  # type: h2o.model.ModelBase
+        metric="AUTO",  # type: str
+        cv_ribbon=None,  # type: Optional[bool]
+        cv_lines=None,  # type: Optional[bool]
+        figsize=(16,9),  # type: Tuple[float]
+        colormap=None,  # type: Optional[str]
+        save_plot_path=None # type: Optional[str]
+):
+    # type: (...) -> plt.Figure
+    """
+    Learning curve
+
+    Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
+    learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+    showing Training, Validation, Training on CV Models, and Cross-validation error.
+
+    :param model: an H2O model
+    :param metric: a stopping metric
+    :param cv_ribbon: if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
+                      if None, it will attempt to automatically determine if this is suitable visualisation
+    :param cv_lines: if True, plot scoring history for individual CV models, if None, it will attempt to
+                     automatically determine if this is suitable visualisation
+    :param figsize: figure size; passed directly to matplotlib
+    :param colormap: colormap to use
+    :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+    :return: object that contains the resulting figure (can be accessed using result.figure())
+
+    :examples:
+    
+    >>> import h2o
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>>
+    >>> h2o.init()
+    >>>
+    >>> # Import the wine dataset into H2O:
+    >>> f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+    >>> df = h2o.import_file(f)
+    >>>
+    >>> # Set the response
+    >>> response = "quality"
+    >>>
+    >>> # Split the dataset into a train and test set:
+    >>> train, test = df.split_frame([0.8])
+    >>>
+    >>> # Train a GBM
+    >>> gbm = H2OGradientBoostingEstimator()
+    >>> gbm.train(y=response, training_frame=train)
+    >>>
+    >>> # Create the learning curve plot
+    >>> gbm.learning_curve_plot()
+    """
+    if model.algo == "stackedensemble":
+        model = model.metalearner()
+
+    if model.algo not in ("stackedensemble", "glm", "gam", "glrm", "deeplearning",
+                          "drf", "gbm", "xgboost", "coxph", "isolationforest"):
+        raise H2OValueError("Algorithm {} doesn't support learning curve plot!".format(model.algo))
+
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+
+    metric_mapping = {'anomaly_score': 'mean_anomaly_score',
+                      'custom': 'custom',
+                      'custom_increasing': 'custom',
+                      'deviance': 'deviance',
+                      'logloss': 'logloss',
+                      'rmse': 'rmse',
+                      'mae': 'mae',
+                      'auc': 'auc',
+                      'aucpr': 'pr_auc',
+                      'lift_top_group': 'lift',
+                      'misclassification': 'classification_error',
+                      'objective': 'objective',
+                      'convergence': 'convergence',
+                      'negative_log_likelihood': 'negative_log_likelihood',
+                      'sumetaieta02': 'sumetaieta02'}
+    inverse_metric_mappping = {v: k for k, v in metric_mapping.items()}
+    inverse_metric_mappping["custom"] = "custom, custom_increasing"
+
+    # Using the value from output to keep it simple - only one version required - (no need to use pandas for small data)
+    scoring_history = model._model_json["output"]["scoring_history"] or model._model_json["output"].get("glm_scoring_history")
+    if scoring_history is None:
+        raise RuntimeError("Could not retrieve scoring history for {}".format(model.algo))
+    scoring_history = _preprocess_scoring_history(model, scoring_history)
+
+    allowed_metrics = []
+    allowed_timesteps = []
+    if model.algo in ("glm", "gam"):
+        if model.actual_params["lambda_search"]:
+            import h2o.two_dim_table
+            allowed_timesteps = ["iteration"]
+        elif model.actual_params.get("HGLM"):
+            allowed_timesteps = ["iterations", "duration"]
+        else:
+            allowed_timesteps = ["iterations", "duration"]
+
+        allowed_metrics = ["deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
+                           "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae"]
+        allowed_metrics = [m for m in allowed_metrics
+                           if m in scoring_history.col_header or
+                              "training_{}".format(m) in scoring_history.col_header or
+                              "{}_train".format(m) in scoring_history.col_header]
+    elif model.algo == "glrm":
+        allowed_metrics = ["objective"]
+        allowed_timesteps = ["iterations"]
+    elif model.algo in ("deeplearning", "drf", "gbm", "xgboost"):
+        model_category = model._model_json["output"]["model_category"]
+        if "Binomial" == model_category:
+            allowed_metrics = ["logloss", "auc", "classification_error", "rmse", "lift", "pr_auc"]
+        elif model_category in ["Multinomial", "Ordinal"]:
+            allowed_metrics = ["logloss", "classification_error", "rmse", "pr_auc", "auc"]
+        elif "Regression" == model_category:
+            allowed_metrics = ["rmse", "deviance", "mae"]
+        if model.algo in ["drf", "gbm"]:
+            allowed_metrics += ["custom"]
+    elif model.algo == "coxph":
+        allowed_metrics = ["loglik"]
+        allowed_timesteps = ["iterations"]
+    elif model.algo == "isolationforest":
+        allowed_timesteps = ["number_of_trees"]
+        allowed_metrics = ["mean_anomaly_score"]
+
+    if model.algo == "deeplearning":
+        allowed_timesteps = ["epochs", "iterations", "samples"]
+    elif model.algo in ["drf", "gbm", "xgboost"]:
+        allowed_timesteps = ["number_of_trees"]
+
+    if metric.lower() == "auto":
+        metric = allowed_metrics[0]
+    else:
+        metric = metric_mapping.get(metric.lower())
+
+    if metric not in allowed_metrics:
+        raise H2OValueError("for {}, metric must be one of: {}".format(
+            model.algo.upper(),
+            ", ".join(inverse_metric_mappping[m.lower()] for m in allowed_metrics)
+        ))
+
+    timestep = allowed_timesteps[0]
+
+    if "deviance" == metric and model.algo in ["glm", "gam"] and not model.actual_params.get("HGLM", False):
+        training_metric = "deviance_train"
+        validation_metric = "deviance_test"
+    elif metric in ("objective", "convergence", "loglik", "mean_anomaly_score"):
+        training_metric = metric
+        validation_metric = "UNDEFINED"
+    else:
+        training_metric = "training_{}".format(metric)
+        validation_metric = "validation_{}".format(metric)
+
+    selected_timestep_value = None
+    if "number_of_trees" == timestep:
+        selected_timestep_value = model.actual_params["ntrees"]
+    elif timestep in ["iteration", "iterations"]:
+        if "coxph" == model.algo:
+            selected_timestep_value = model._model_json["output"]["iter"]
+        else:
+            selected_timestep_value = model.summary()["number_of_iterations"][0]
+    elif "epochs" == timestep:
+        selected_timestep_value = model.actual_params["epochs"]
+
+    if colormap is None:
+        col_train, col_valid = "#785ff0", "#ff6000"
+        col_cv_train, col_cv_valid = "#648fff", "#ffb000"
+    else:
+        col_train, col_valid, col_cv_train, col_cv_valid = plt.get_cmap(colormap, 4)(list(range(4)))
+
+    # Get scoring history with only filled in entries
+    scoring_history = _preprocess_scoring_history(model, scoring_history, training_metric)
+
+    plt.figure(figsize=figsize)
+    plt.grid(True)
+
+    if model._model_json["output"].get("cv_scoring_history"):
+        if cv_ribbon or cv_ribbon is None:
+            cvsh_train = defaultdict(list)
+            cvsh_valid = defaultdict(list)
+            for cvsh in model._model_json["output"]["cv_scoring_history"]:
+                cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
+                for i in range(len(cvsh[timestep])):
+                    cvsh_train[cvsh[timestep][i]].append(cvsh[training_metric][i])
+                if validation_metric in cvsh.col_header:
+                    for i in range(len(cvsh[timestep])):
+                        cvsh_valid[cvsh[timestep][i]].append(cvsh[validation_metric][i])
+            mean_train = np.array(sorted(
+                [(k, np.mean(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))
+            sd_train = np.array(sorted(
+                [(k, np.std(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))[:, 1]
+
+            len_train = np.array(sorted(
+                [(k, len(v)) for k, v in cvsh_train.items()],
+                key=lambda k: k[0]
+            ))[:, 1]
+            if len(len_train) > 1 and (cv_ribbon or len_train.mean() > 2 and np.mean(len_train[:-1] == len_train[1:]) >= 0.5):
+                plt.plot(mean_train[:, 0], mean_train[:, 1], c=col_cv_train,
+                         label="Training (CV Models)")
+                plt.fill_between(mean_train[:, 0],
+                                 mean_train[:, 1] - sd_train,
+                                 mean_train[:, 1] + sd_train,
+                                 color=col_cv_train, alpha=0.25)
+                if len(cvsh_valid) > 0:
+                    mean_valid = np.array(sorted(
+                        [(k, np.mean(v)) for k, v in cvsh_valid.items()],
+                        key=lambda k: k[0]
+                    ))
+                    sd_valid = np.array(sorted(
+                        [(k, np.std(v)) for k, v in cvsh_valid.items()],
+                        key=lambda k: k[0]
+                    ))[:, 1]
+                    plt.plot(mean_valid[:, 0], mean_valid[:, 1], c=col_cv_valid,
+                             label="Cross-validation")
+                    plt.fill_between(mean_valid[:, 0],
+                                     mean_valid[:, 1] - sd_valid,
+                                     mean_valid[:, 1] + sd_valid,
+                                     color=col_cv_valid, alpha=0.25)
+            else:
+                cv_lines = cv_lines is None or cv_lines
+
+        if cv_lines:
+            for cvsh in model._model_json["output"]["cv_scoring_history"]:
+                cvsh = _preprocess_scoring_history(model, cvsh, training_metric)
+                plt.plot(cvsh[timestep],
+                         cvsh[training_metric],
+                         label="Training (CV Models)",
+                         c=col_cv_train,
+                         linestyle="dotted")
+                if validation_metric in cvsh.col_header:
+                    plt.plot(cvsh[timestep],
+                             cvsh[validation_metric],
+                             label="Cross-validation",
+                             c=col_cv_valid,
+                             linestyle="dotted"
+                             )
+
+    plt.plot(scoring_history[timestep],
+             scoring_history[training_metric],
+             "o-",
+             label="Training",
+             c=col_train)
+    if validation_metric in scoring_history.col_header:
+        plt.plot(scoring_history[timestep],
+                 scoring_history[validation_metric],
+                 "o-",
+                 label="Validation",
+                 c=col_valid)
+
+    if selected_timestep_value is not None:
+        plt.axvline(x=selected_timestep_value, label="Selected\n{}".format(timestep), c="#2FBB24")
+
+    plt.title("Learning Curve\nfor {}".format(_shorten_model_ids([model.model_id])[0]))
+    plt.xlabel(timestep)
+    plt.ylabel(metric)
+    handles, labels = plt.gca().get_legend_handles_labels()
+    labels_and_handles = dict(zip(labels, handles))
+    labels_and_handles_ordered = OrderedDict()
+    for lbl in ["Training", "Training (CV Models)", "Validation", "Cross-validation", "Selected\n{}".format(timestep)]:
+        if lbl in labels_and_handles:
+            labels_and_handles_ordered[lbl] = labels_and_handles[lbl]
+    plt.legend(list(labels_and_handles_ordered.values()), list(labels_and_handles_ordered.keys()))
+    
+    if save_plot_path is not None:
+        plt.savefig(fname=save_plot_path)
+
+    return decorate_plot_result(figure=plt.gcf())
+
+
+def _preprocess_scoring_history(model, scoring_history, training_metric=None):
+    empty_columns = [all(row[col_idx] == "" for row in scoring_history.cell_values)
+                     for col_idx in range(len(scoring_history.col_header))]
+
+    scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+        table_header=scoring_history._table_header,
+        table_description=scoring_history._table_description,
+        col_header=[ch for i, ch in enumerate(scoring_history.col_header) if not empty_columns[i]],
+        col_types=[ct for i, ct in enumerate(scoring_history.col_types) if not empty_columns[i]],
+        cell_values=[[v for i, v in enumerate(vals) if not empty_columns[i]]
+                     for vals in scoring_history.cell_values])
+
+    if model.algo in ("glm", "gam") and model.actual_params["lambda_search"]:
+        alpha_best = model._model_json["output"]["alpha_best"]
+        alpha_idx = scoring_history.col_header.index("alpha")
+        iteration_idx = scoring_history.col_header.index("iteration")
+        scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+            table_header=scoring_history._table_header,
+            table_description=scoring_history._table_description,
+            col_header=scoring_history.col_header,
+            col_types=scoring_history.col_types,
+            cell_values=sorted([list(v) for v in scoring_history.cell_values if v[alpha_idx] == alpha_best],
+                               key=lambda row: row[iteration_idx]))
+
+    if training_metric is not None:
+        # Remove empty metric values, e.g., from GLM when score_each_iteration = False
+        training_metric_idx = scoring_history.col_header.index(training_metric)
+        scoring_history = h2o.two_dim_table.H2OTwoDimTable(
+            table_header=scoring_history._table_header,
+            table_description=scoring_history._table_description,
+            col_header=scoring_history.col_header,
+            col_types=scoring_history.col_types,
+            cell_values=[list(v) for v in scoring_history.cell_values if v[training_metric_idx] != ""])
+
+    return scoring_history
 
 
 def _is_tree_model(model):
     # type: (Union[str, h2o.model.ModelBase]) -> bool
     """
     Is the model a tree model id?
-    :param model: model or astring containing a model_id
+    :param model: model or a string containing a model_id
     :returns: bool
     """
     return _get_algorithm(model) in ["drf", "gbm", "xgboost"]
 
 
 def _get_tree_models(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        models,  # type: Union[h2o.H2OFrame, List[h2o.model.ModelBase]]
         top_n=float("inf")  # type: Union[float, int]
 ):
     # type: (...) -> List[h2o.model.ModelBase]
@@ -1719,11 +2262,8 @@ def _get_tree_models(
     :param top_n: maximum number of tree models to return
     :returns: list of tree models
     """
-    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        model_ids = [model_id[0] for model_id in models.leaderboard[:, "model_id"]
-            .as_data_frame(use_pandas=False, header=False)
-                     if _is_tree_model(model_id[0])
-                     ]
+    if _is_automl_or_leaderboard(models):
+        model_ids = _get_model_ids_from_automl_or_leaderboard(models, filter_=_is_tree_model)
         return [
             h2o.get_model(model_id)
             for model_id in model_ids[:min(top_n, len(model_ids))]
@@ -1757,8 +2297,8 @@ def _get_leaderboard(
     :param top_n: show just top n models in the leaderboard
     :returns: H2OFrame
     """
-    if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
-        leaderboard = h2o.automl.get_leaderboard(models, extra_columns="ALL")
+    if _is_automl_or_leaderboard(models):
+        leaderboard = models if isinstance(models, h2o.H2OFrame) else h2o.automl.get_leaderboard(models, extra_columns="ALL")
         leaderboard = leaderboard.head(rows=min(leaderboard.nrow, top_n))
         if row_index is not None:
             model_ids = [m[0] for m in
@@ -1772,28 +2312,33 @@ def _get_leaderboard(
         return leaderboard
     else:
         METRICS = [
-            "MSE",
-            "RMSE",
-            "mae",
-            "rmsle",
+            "AUC",
+            "mean_residual_deviance",
             "mean_per_class_error",
             "logloss",
+            "pr_auc",
+            "RMSE",
+            "MSE",
+            "mae",
+            "rmsle",
         ]
+        import math
         from collections import defaultdict
-
+        task = None
         result = defaultdict(list)
         predictions = []
         with no_progress():
             for model in models:
                 result["model_id"].append(model.model_id)
                 perf = model.model_performance(frame)
+                task = perf._metric_json.get("model_category")
                 for metric in METRICS:
                     result[metric.lower()].append(perf._metric_json.get(metric))
                 if row_index is not None:
                     predictions.append(model.predict(frame[row_index, :]))
             for metric in METRICS:
-                if not any(result[metric]):
-                    del result[metric]
+                if not any(result[metric.lower()]) or not all([not math.isnan(float(m)) for m in result[metric.lower()]]):
+                    del result[metric.lower()]
             leaderboard = h2o.H2OFrame(result)[["model_id"] + [m.lower()
                                                                for m in METRICS
                                                                if m.lower() in result]]
@@ -1802,7 +2347,11 @@ def _get_leaderboard(
                 for pr in predictions[1:]:
                     preds = preds.rbind(pr)
                 leaderboard = leaderboard.cbind(preds)
-            return leaderboard.sort("mse").head(rows=min(top_n, leaderboard.nrow))
+            sort_metric = "mse" if task is None else \
+                "auc" if task.lower() == "binomial" else \
+                "logloss" if task.lower() == "multinomial" else \
+                "mean_residual_deviance"
+            return leaderboard.sort(sort_metric).head(rows=min(top_n, leaderboard.nrow))
 
 
 def _process_explanation_lists(
@@ -1841,7 +2390,7 @@ def _process_explanation_lists(
 
 
 def _process_models_input(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List, h2o.model.ModelBase]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List, h2o.model.ModelBase]
         frame,  # type: h2o.H2OFrame
 ):
     # type: (...) -> Tuple[bool, List, bool, bool, bool, List, List]
@@ -1853,16 +2402,28 @@ def _process_models_input(
     :returns: tuple (is_aml, models_to_show, classification, multinomial_classification,
                     multiple_models, targets, tree_models_to_show)
     """
-    is_aml = isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin)
-    if is_aml:
-        models_to_show = [models.leader]
-        multiple_models = models.leaderboard.nrow > 1
+    is_aml = False
+    if _is_automl_or_leaderboard(models):
+        is_aml = True
+        if isinstance(models, h2o.automl._base.H2OAutoMLBaseMixin):
+            models_to_show = [models.leader]
+            models = models.leaderboard
+        else:
+            models_to_show = [h2o.get_model(models[0, "model_id"])]
+        if _has_varimp(models_to_show[0]):
+            models_with_varimp = models_to_show
+        else:
+            model_with_varimp = next(_get_models_from_automl_or_leaderboard(models, filter_=_has_varimp), None)
+            models_with_varimp = [] if model_with_varimp is None else [model_with_varimp]
+        multiple_models = models.nrow > 1
     elif isinstance(models, h2o.model.ModelBase):
         models_to_show = [models]
         multiple_models = False
+        models_with_varimp = [models] if _has_varimp(models) else []
     else:
         models_to_show = models
         multiple_models = len(models) > 1
+        models_with_varimp = [model for model in models if _has_varimp(model)]
     tree_models_to_show = _get_tree_models(models, 1 if is_aml else float("inf"))
     y = _get_xy(models_to_show[0])[1]
     classification = frame[y].isfactor()[0]
@@ -1871,7 +2432,7 @@ def _process_models_input(
     if multinomial_classification:
         targets = [[t] for t in frame[y].levels()[0]]
     return is_aml, models_to_show, classification, multinomial_classification, \
-           multiple_models, targets, tree_models_to_show
+           multiple_models, targets, tree_models_to_show, models_with_varimp
 
 
 def _custom_args(user_specified, **kwargs):
@@ -1893,7 +2454,7 @@ def _custom_args(user_specified, **kwargs):
 
 
 def explain(
-        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, List[h2o.model.ModelBase]]
+        models,  # type: Union[h2o.automl._base.H2OAutoMLBaseMixin, h2o.H2OFrame, List[h2o.model.ModelBase]]
         frame,  # type: h2o.H2OFrame
         columns=None,  # type: Optional[Union[List[int], List[str]]]
         top_n_features=5,  # type: int
@@ -1915,7 +2476,7 @@ def explain(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object, H2OModel, or list of H2O models
+    :param models: a list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)
     :param frame: H2OFrame
     :param columns: either a list of columns or column indices to show. If specified
                     parameter top_n_features will be ignored.
@@ -1929,6 +2490,7 @@ def explain(
     :returns: H2OExplanation containing the model explanations including headers and descriptions
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -1954,20 +2516,17 @@ def explain(
     >>> # Create the leader model explanation
     >>> aml.leader.explain(test)
     """
-    is_aml, models_to_show, classification, multinomial_classification, multiple_models, \
-    targets, tree_models_to_show = _process_models_input(models, frame)
+    plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
+    (is_aml, models_to_show, classification, multinomial_classification, multiple_models, targets,
+     tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
+
+    if top_n_features < 0:
+        top_n_features = float("inf")
 
     if columns is not None and isinstance(columns, list):
         columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]
     else:
         columns_of_interest = None
-
-    models_with_varimp = [model for model in models_to_show if _has_varimp(model)]
-
-    if len(models_with_varimp) == 0 and is_aml:
-        models_with_varimp = [model_id[0] for model_id in models.leaderboard["model_id"]
-            .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
-        models_with_varimp = [h2o.get_model(models_with_varimp[0])]
 
     possible_explanations = [
         "leaderboard",
@@ -2010,14 +2569,11 @@ def explain(
                 result["confusion_matrix"]["subexplanations"][model.model_id]["header"] = display(
                     Header(model.model_id, 2))
                 result["confusion_matrix"]["subexplanations"][model.model_id]["plots"] = H2OExplanation()
-                if multinomial_classification:
-                    result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
-                        model.confusion_matrix(
-                            **_custom_args(plot_overrides.get("confusion_matrix"),
-                                           data=frame)))
-                else:
-                    result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
-                        model.confusion_matrix())
+                result["confusion_matrix"]["subexplanations"][model.model_id]["plots"][model.model_id] = display(
+                        model.model_performance(
+                            **_custom_args(plot_overrides.get("confusion_matrix"), test_data=frame)
+                        ).confusion_matrix()
+                )
     else:
         if "residual_analysis" in explanations:
             result["residual_analysis"] = H2OExplanation()
@@ -2039,11 +2595,7 @@ def explain(
         result["varimp"]["description"] = display(Description("variable_importance"))
         result["varimp"]["plots"] = H2OExplanation()
         for model in models_with_varimp:
-            model.varimp_plot(server=True, **plot_overrides.get("varimp_plot", dict()))
-            varimp_plot = plt.gcf()  # type: plt.Figure
-            varimp_plot.set_figwidth(figsize[0])
-            varimp_plot.set_figheight(figsize[1])
-            varimp_plot.gca().set_title("Variable Importance for \"{}\"".format(model.model_id))
+            varimp_plot = _varimp_plot(model, figsize, **plot_overrides.get("varimp_plot", dict()))
             result["varimp"]["plots"][model.model_id] = display(varimp_plot)
         if columns_of_interest is None:
             varimps = _consolidate_varimps(models_with_varimp[0])
@@ -2052,6 +2604,13 @@ def explain(
     else:
         if columns_of_interest is None:
             columns_of_interest = _get_xy(models_to_show[0])[0]
+    # Make sure that there are no string columns to explain as they are not supported by pdp
+    # Usually those columns would not be used by algos so this just makes sure to exclude them
+    # if user specifies top_n=float('inf') or columns_of_interest=x etc.
+    dropped_string_columns = [col for col in columns_of_interest if frame.type(col) == "string"]
+    if len(dropped_string_columns) > 0:
+        warnings.warn("Dropping string columns as they are not supported: {}".format(dropped_string_columns))
+        columns_of_interest = [col for col in columns_of_interest if frame.type(col) != "string"]
 
     if is_aml or len(models_to_show) > 1:
         if "varimp_heatmap" in explanations:
@@ -2138,9 +2697,9 @@ def explain(
         result["ice"]["description"] = display(Description("ice"))
         result["ice"]["plots"] = H2OExplanation()
         for column in columns_of_interest:
-            result["ice"]["plots"][columns] = H2OExplanation()
+            result["ice"]["plots"][column] = H2OExplanation()
             for model in models_to_show:
-                result["ice"]["plots"][columns][model] = H2OExplanation()
+                result["ice"]["plots"][column][model.model_id] = H2OExplanation()
                 for target in targets:
                     ice = display(
                         ice_plot(
@@ -2153,9 +2712,9 @@ def explain(
                                 colormap=sequential_colormap
                             )))
                     if target is None:
-                        result["ice"]["plots"][columns][model] = ice
+                        result["ice"]["plots"][column][model.model_id] = ice
                     else:
-                        result["ice"]["plots"][columns][model][target[0]] = ice
+                        result["ice"]["plots"][column][model.model_id][target[0]] = ice
 
     return result
 
@@ -2182,7 +2741,7 @@ def explain_row(
     or a variable importance plot.  Most of the explanations are visual (plots).
     These plots can also be created by individual utility functions/methods as well.
 
-    :param models: H2OAutoML object, H2OModel, or list of H2O models
+    :param models: H2OAutoML object, supervised H2O model, or list of supervised H2O models
     :param frame: H2OFrame
     :param row_index: row index of the instance to inspect
     :param columns: either a list of columns or column indices to show. If specified
@@ -2199,6 +2758,7 @@ def explain_row(
     :returns: H2OExplanation containing the model explanations including headers and descriptions
 
     :examples:
+    
     >>> import h2o
     >>> from h2o.automl import H2OAutoML
     >>>
@@ -2224,15 +2784,8 @@ def explain_row(
     >>> # Create the leader model explanation
     >>> aml.leader.explain_row(test, row_index=0)
     """
-    is_aml, models_to_show, _, multinomial_classification, multiple_models, \
-    targets, tree_models_to_show = _process_models_input(models, frame)
-
-    models_with_varimp = [model for model in models_to_show if _has_varimp(model)]
-
-    if len(models_with_varimp) == 0 and is_aml:
-        models_with_varimp = [model_id[0] for model_id in models.leaderboard["model_id"]
-            .as_data_frame(use_pandas=False, header=False) if _has_varimp(model_id[0])]
-        models_with_varimp = [h2o.get_model(models_with_varimp[0])]
+    (is_aml, models_to_show, _, multinomial_classification, multiple_models,
+     targets, tree_models_to_show, models_with_varimp) = _process_models_input(models, frame)
 
     if columns is not None and isinstance(columns, list):
         columns_of_interest = [frame.columns[col] if isinstance(col, int) else col for col in columns]
@@ -2245,6 +2798,14 @@ def explain_row(
             import warnings
             warnings.warn("No model with variable importance. Selecting all features to explain.")
             columns_of_interest = _get_xy(models_to_show[0])[0]
+
+    # Make sure that there are no string columns to explain as they are not supported by pdp
+    # Usually those columns would not be used by algos so this just makes sure to exclude them
+    # if user specifies top_n=float('inf') or columns_of_interest=x etc.
+    dropped_string_columns = [col for col in columns_of_interest if frame.type(col) == "string"]
+    if len(dropped_string_columns) > 0:
+        warnings.warn("Dropping string columns as they are not supported: {}".format(dropped_string_columns))
+        columns_of_interest = [col for col in columns_of_interest if frame.type(col) != "string"]
 
     possible_explanations = ["leaderboard", "shap_explain_row", "ice"]
 

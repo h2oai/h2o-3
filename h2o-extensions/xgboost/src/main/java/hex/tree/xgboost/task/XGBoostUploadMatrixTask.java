@@ -5,9 +5,11 @@ import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.exec.XGBoostHttpClient;
 import hex.tree.xgboost.matrix.SparseMatrixDimensions;
+import water.BootstrapFreezable;
 import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
 import org.apache.log4j.Logger;
 import water.H2O;
+import water.Iced;
 import water.LocalMR;
 import water.MrFun;
 import water.fvec.Chunk;
@@ -16,7 +18,6 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.VecUtils;
 
-import java.io.Serializable;
 import java.util.Optional;
 
 import static hex.tree.xgboost.XGBoostUtils.sumChunksLength;
@@ -99,7 +100,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         LOG.debug("Matrix upload finished in " + ((System.currentTimeMillis() - start) / 1000d));
     }
 
-    public static class MatrixData implements Serializable {
+    public static class MatrixData extends Iced<MatrixData> implements BootstrapFreezable<MatrixData> {
         public final float[] resp;
         public final float[] weights;
         public final float[] offsets;
@@ -121,7 +122,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         }
     }
     
-    public static class DenseMatrixDimensions implements Serializable {
+    public static class DenseMatrixDimensions extends Iced<DenseMatrixDimensions> implements BootstrapFreezable<DenseMatrixDimensions> {
         public final int rows;
         public final int cols;
         public final int[] rowOffsets;
@@ -150,7 +151,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         return writeFun.getTotalRows();
     }
 
-    public static class DenseMatrixChunk implements Serializable {
+    public static class DenseMatrixChunk extends Iced<DenseMatrixChunk> implements BootstrapFreezable<DenseMatrixChunk> {
         public final int id;
         public final float[] data;
 
@@ -266,7 +267,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
         return ArrayUtils.sum(fun._actualRows);
     }
     
-    public static class SparseMatrixChunk implements Serializable {
+    public static class SparseMatrixChunk extends Iced<SparseMatrixChunk> implements BootstrapFreezable<SparseMatrixChunk> {
         public final int id;
         public final long[] rowHeader;
         public final float[] data;

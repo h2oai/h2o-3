@@ -18,6 +18,11 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
   private final S[] stats;
   private final float expectedTreeValue;
 
+  @SuppressWarnings("unchecked")
+  public TreeSHAP(N[] nodes) {
+    this(nodes, (S[]) nodes, 0);
+  }
+
   public TreeSHAP(N[] nodes, S[] stats, int rootNodeId) {
     this.rootNodeId = rootNodeId;
     this.nodes = nodes;
@@ -68,9 +73,11 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
                 / ((i + 1) * one_fraction);
         next_one_portion = tmp - unique_path.get(i).pweight * zero_fraction * (unique_depth - i)
                 / (float) (unique_depth + 1);
-      } else {
+      } else if (zero_fraction != 0) {
         unique_path.get(i).pweight = (unique_path.get(i).pweight * (unique_depth + 1))
                 / (zero_fraction * (unique_depth - i));
+      } else {
+        unique_path.get(i).pweight = 0;
       }
     }
 
@@ -143,8 +150,10 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
       final int hot_index = node.next(feat);
       final int cold_index = hot_index == node.getLeftChildIndex() ? node.getRightChildIndex() : node.getLeftChildIndex();
       final float w = nodeStat.getWeight();
-      final float hot_zero_fraction = stats[hot_index].getWeight() / w;
-      final float cold_zero_fraction = stats[cold_index].getWeight() / w;
+      // if w == 0 then weights in child nodes are 0 as well (are identical) -> that is why we split hot and cold evenly (0.5 fraction)
+      final float zero_weight_fraction = 0.5f;
+      final float hot_zero_fraction = w != 0 ? stats[hot_index].getWeight() / w : zero_weight_fraction;
+      final float cold_zero_fraction = w != 0 ? stats[cold_index].getWeight() / w : zero_weight_fraction;
       float incoming_zero_fraction = 1;
       float incoming_one_fraction = 1;
 
@@ -183,8 +192,8 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
               split_index, condition, condition_feature, cold_condition_fraction);
     }
   }
-
-  public static class PathPointer {
+  
+  public static class PathPointer implements TreeSHAPPredictor.Workspace {
     PathElement[] path;
     int position;
 
@@ -214,6 +223,11 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
     void reset() {
       path[0].reset();
     }
+
+    @Override
+    public int getSize() {
+      return path.length;
+    }
   }
 
   @Override
@@ -224,7 +238,7 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
   @Override
   public float[] calculateContributions(final R feat,
                                         float[] out_contribs, int condition, int condition_feature,
-                                        Object workspace) {
+                                        TreeSHAP.Workspace workspace) {
 
     // find the expected value of the tree's predictions
     if (condition == 0) {
@@ -274,7 +288,9 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
 
   private static <N extends INode, S extends INodeStat> float nodeMeanValue(N[] nodes, S[] stats, int node) {
     final N n = nodes[node];
-    if (n.isLeaf()) {
+    if (stats[node].getWeight() == 0) {
+      return 0;
+    } else if (n.isLeaf()) {
       return n.getLeafValue();
     } else {
       return (stats[n.getLeftChildIndex()].getWeight() * nodeMeanValue(nodes, stats, n.getLeftChildIndex()) +

@@ -726,7 +726,7 @@ Using the previous example, run the following to retrieve the logloss value.
 AUC (Area Under the ROC Curve)
 ##############################
 
-This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing. H2O uses the trapezoidal rule to approximate the area under the ROC curve. 
+This model metric is used to evaluate how well a binary classification model is able to distinguish between true positives and false positives. An AUC of 1 indicates a perfect classifier, while an AUC of .5 indicates a poor classifier, whose performance is no better than random guessing.
 
 H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
 
@@ -756,14 +756,13 @@ Using the previous example, run the following to retrieve the AUC.
         airlines_gbm.auc(train=True, valid=True, xval=False)
         {u'train': 0.7857920674306693, u'valid': 0.7414970113257631}
 
+
 AUCPR (Area Under the Precision-Recall Curve)
 #############################################
 
 This model metric is used to evaluate how well a binary classification model is able to distinguish between precision recall pairs or points. These values are obtained using different thresholds on a probabilistic or other continuous-output classifier. AUCPR is an average of the precision-recall weighted by the probability of a given threshold.
 
 The main difference between AUC and AUCPR is that AUC calculates the area under the ROC curve and AUCPR calculates the area under the Precision Recall curve. The Precision Recall curve does not care about True Negatives. For imbalanced data, a large quantity of True Negatives usually overshadows the effects of changes in other metrics like False Positives. The AUCPR will be much more sensitive to True Positives, False Positives, and False Negatives than AUC. As such, AUCPR is recommended over AUC for highly imbalanced data.
-
-**Note**: The metric function of AUCPR *only* runs with command ``model.pr_auc``. This is different than the ``stopping_metric`` which can be set equal to "AUCPR".
 
 **Example**
 
@@ -773,23 +772,349 @@ Using the previous example, run the following to retrieve the AUCPR.
    .. code-tab:: r R
 
         # retrieve the AUCPR for the performance object:
-        h2o.pr_auc(perf)
+        h2o.aucpr(perf)
         [1] 0.7609887
 
         # retrieve the AUCPR for both the training and validation data:
-        h2o.pr_auc(airlines_gbm, train = TRUE, valid = TRUE, xval = FALSE)
+        h2o.aucpr(airlines_gbm, train = TRUE, valid = TRUE, xval = FALSE)
             train     valid 
         0.8019599 0.7609887
 
    .. code-tab:: python
     
         # retrieve the AUCPR for the performance object:
-        perf.pr_auc()
+        perf.aucpr()
         0.7609887253334723
 
         # retrieve the AUCPR for both the training and validation data:
-        airlines_gbm.pr_auc(train=True, valid=True, xval=False)
+        airlines_gbm.aucpr(train=True, valid=True, xval=False)
         {u'train': 0.801959918132391, u'valid': 0.7609887253334723}
+
+
+Multinomial AUC (Area Under the ROC Curve)
+##########################################
+
+This model metric is used to evaluate how well a multinomial classification model is able to distinguish between true positives and false positives across all domains. The metric is composed of these outputs:
+
+  **One class versus one class (OVO) AUCs** - calculated for all pairwise combination of classes ((number of classes × number of classes / 2) - number of classes results)
+  
+  **One class versus rest classes (OVR) AUCs** - calculated for all combination one class and rest of classes (number of classes results)
+
+  **Macro average OVR AUC** - Uniformly weighted average of all OVO AUCs
+
+.. math::
+
+   \frac{1}{c}\sum_{j=1}^{c} \text{AUC}(j, rest_j)
+
+where :math:`c` is the number of classes and :math:`\text{AUC}(j, rest_j)` is the
+AUC with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class. The result AUC is normalized by number of classes.
+
+ 
+   **Weighted average OVR AUC** - Prevalence weighted average of all OVR AUCs
+
+.. math::
+
+  \frac{1}{\sum_{j=1}^{c} p(j)} \sum_{j=1}^{c} p(j) \text{AUC}(j, rest_j)
+
+where :math:`c` is the number of classes, :math:`\text{AUC}(j, rest_j)` is the
+AUC with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`).
+The result AUC is normalized by sum of all weights.
+
+  **Macro average OVO AUC** - Uniformly weighted average of all OVO AUCs
+
+.. math::
+
+   \frac{2}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
+
+where :math:`c` is the number of classes and :math:`\text{AUC}(j, k)` is the
+AUC with class :math:`j` as the positive class and class :math:`k` as the
+negative class. The result AUC is normalized by number of all class combinations.
+ 
+  **Weighted average OVO AUC** - Prevalence weighted average of all OVO AUCs
+
+.. math::
+
+   \frac{2}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUC}(j | k) + \text{AUC}(k | j))
+
+where :math:`c` is the number of classes, :math:`\text{AUC}(j, k)` is the
+AUC with class :math:`j` as the positive class and class :math:`k` as the
+negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes). 
+The result AUC is normalized by sum of all weights.
+
+Result Multinomial AUC table could look for three classes like this:
+
+**Note** Macro and weighted average values could be the same if the classes are same distributed. 
+
++--------------+--------------------+---------------------+----------+
+| type         | first_class_domain | second_class_domain | auc      |
++==============+====================+=====================+==========+
+| 1 vs Rest    | 1                  | None                | 0.996891 |
++--------------+--------------------+---------------------+----------+
+| 2 vs Rest    | 2                  | None                | 0.996844 |
++--------------+--------------------+---------------------+----------+
+| 3 vs Rest    | 3                  | None                | 0.987593 |
++--------------+--------------------+---------------------+----------+
+| Macro OVR    | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVR | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 2       | 1                  | 2                   | 0.969807 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 3       | 1                  | 3                   | 1.000000 |
++--------------+--------------------+---------------------+----------+
+| 2 vs 3       | 2                  | 3                   | 0.995536 |
++--------------+--------------------+---------------------+----------+
+| Macro OVO    | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVO | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+
+
+**Default value of AUC**
+
+Multinomial AUC metric can be used for early stopping and during grid search as binomial AUC. 
+In case of Multinomial AUC only one value need to be specified. The AUC calculation is disabled (set to ``NONE``) by default. 
+However this option can be changed using ``auc_type`` model parameter to any other average type of AUC and AUCPR - ``MACRO_OVR``, ``WEIGHTED_OVR``, ``MACRO_OVO``, ``WEIGHTED_OVO``.
+
+**Example**
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors <- c("displacement", "power", "weight", "acceleration", "year")
+        response <- "cylinders"
+        cars[,response] <- as.factor(cars[response])
+
+        # split into train and validation sets
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
+
+        # build and train the model:
+        cars_gbm <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = train,
+                            validation_frame = valid,
+                            distribution = "multinomial",
+                            seed = 1234)
+
+        # get result on training data from h2o
+        h2o_auc_table <- cars_gbm.multinomial_auc_table(train)
+        print(h2o_auc_table)
+
+        # get default value
+        h2o_default_auc <- cars_gbm.auc()
+        print(h2o_default_auc)
+
+   .. code-tab:: python
+   
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
+
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "cylinders"
+        cars[response] = cars[response].asfactor()
+
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+
+        # train a GBM model
+        cars_gbm = H2OGradientBoostingEstimator(distribution = "multinomial", seed = 1234)
+        cars_gbm.train(x = predictors, 
+                       y = response, 
+                       training_frame = train, 
+                       validation_frame = valid)
+
+        # get result on training data from h2o
+        h2o_auc_table = cars_gbm.multinomial_auc_table(train)
+        print(h2o_auc_table)
+
+        # get default value
+        h2o_default_auc = cars_gbm.auc()
+        print(h2o_default_auc)
+
+**Notes**
+- Calculation of this metric can be very expensive on time and memory when the domain is big. So it is disabled by default.
+- To enable it setup system property ``sys.ai.h2o.auc.maxClasses`` to a number.
+
+
+Multinomial AUCPR (Area Under the Precision-Recall Curve)
+#########################################################
+
+This model metric is used to evaluate how well a multinomial classification model is able to distinguish between precision recall pairs or points across all domains. The metric is composed of these outputs:
+
+  **One class versus one class (OVO) AUCPRs** - calculated for all pairwise AUCPR combination of classes ((number of classes × number of classes / 2) - number of classes results)
+  
+  **One class versus rest classes (OVR) AUCPRs** - calculated for all combination one class and rest of classes AUCPR (number of classes results)
+
+  **Macro average OVR AUCPR** - Uniformly weighted average of all OVR AUCPRs
+
+.. math::
+
+   \frac{1}{c}\sum_{j=1}^{c} \text{AUCPR}(j, rest_j)
+
+where :math:`c` is the number of classes and :math:`\text{AUCPR}(j, rest_j)` is the
+AUCPR with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class. The result AUCPR is normalized by number of classes.
+
+ 
+   **Weighted average OVR AUCPR** - Prevalence weighted average of all OVR AUCPRs
+
+.. math::
+
+  \frac{1}{\sum_{j=1}^{c} p(j)} \sum_{j=1}^{c} p(j) \text{AUCPR}(j, rest_j)
+
+where :math:`c` is the number of classes, :math:`\text{AUCPR}(j, rest_j)` is the
+AUCPR with class :math:`j` as the positive class and rest classes :math:`rest_j` as the
+negative class and :math:`p(j)` is the prevalence of class :math:`j` (number of positives of class :math:`j`). 
+The result AUCPR is normalized by sum of all weights.
+
+  **Macro average OVO AUCPR** - Uniformly weighted average of all OVO AUCPRs
+
+.. math::
+
+   \frac{2}{c}\sum_{j=1}^{c}\sum_{k \neq j}^{c} \frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
+
+where :math:`c` is the number of classes and :math:`\text{AUCPR}(j, k)` is the
+AUCPR with class :math:`j` as the positive class and class :math:`k` as the
+negative class. The result AUCPR is normalized by number of all class combinations.
+ 
+  **Weighted average OVO AUCPR** - Prevalence weighted average of all OVO AUCPRs
+
+.. math::
+
+   \frac{2}{\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)}\sum_{j=1}^{c}\sum_{k \neq j}^c p(j \cup k)\frac{1}{2}(\text{AUCPR}(j | k) + \text{AUCPR}(k | j))
+
+where :math:`c` is the number of classes, :math:`\text{AUCPR}(j, k)` is the
+AUCPR with class :math:`j` as the positive class and class :math:`k` as the
+negative class and :math:`p(j \cup k)` is prevalence of class :math:`j` and class :math:`k` (sum of positives of both classes).
+The result AUCPR is normalized by sum of all weights.
+
+Result Multinomial AUCPR table could look for three classes like this:
+
+**Note** Macro and weighted average values could be the same if the classes are same distributed. 
+
++--------------+--------------------+---------------------+----------+
+| type         | first_class_domain | second_class_domain | aucpr    |
++==============+====================+=====================+==========+
+| 1 vs Rest    | 1                  | None                | 0.996891 |
++--------------+--------------------+---------------------+----------+
+| 2 vs Rest    | 2                  | None                | 0.996844 |
++--------------+--------------------+---------------------+----------+
+| 3 vs Rest    | 3                  | None                | 0.987593 |
++--------------+--------------------+---------------------+----------+
+| Macro OVR    | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVR | None               | None                | 0.993776 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 2       | 1                  | 2                   | 0.969807 |
++--------------+--------------------+---------------------+----------+
+| 1 vs 3       | 1                  | 3                   | 1.000000 |
++--------------+--------------------+---------------------+----------+
+| 2 vs 3       | 2                  | 3                   | 0.995536 |
++--------------+--------------------+---------------------+----------+
+| Macro OVO    | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+| Weighted OVO | None               | None                | 0.988447 |
++--------------+--------------------+---------------------+----------+
+
+
+**Default value of AUCPR**
+
+Multinomial AUCPR metric can be also used for early stopping and during grid search as binomial AUCPR. 
+In case of Multinomial AUCPR only one value need to be specified. The AUCPR calculation is disabled (set to ``NONE``) by default. 
+However this option can be changed using ``auc_type`` model parameter to any other average type of AUC and AUCPR - ``MACRO_OVR``, ``WEIGHTED_OVR``, ``MACRO_OVO``, ``WEIGHTED_OVO``.
+
+**Example**
+
+.. tabs::
+   .. code-tab:: r R
+
+        library(h2o)
+        h2o.init()
+
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors <- c("displacement", "power", "weight", "acceleration", "year")
+        response <- "cylinders"
+        cars[,response] <- as.factor(cars[response])
+
+        # split into train and validation sets
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
+
+        # build and train the model:
+        cars_gbm <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = train,
+                            validation_frame = valid,
+                            distribution = "multinomial",
+                            seed = 1234)
+
+        # get result on training data from h2o
+        h2o_aucpr_table <- cars_gbm.multinomial_aucpr_table(train)
+        print(h2o_aucpr_table)
+
+        # get default value
+        h2o_default_aucpr <- cars_gbm.aucpr()
+        print(h2o_default_aucpr)
+
+   .. code-tab:: python
+   
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
+
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "cylinders"
+        cars[response] = cars[response].asfactor()
+
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+
+        # train a GBM model
+        cars_gbm = H2OGradientBoostingEstimator(distribution = "multinomial", seed = 1234)
+        cars_gbm.train(x = predictors, 
+                       y = response, 
+                       training_frame = train, 
+                       validation_frame = valid)
+
+        # get result on training data from h2o
+        h2o_aucpr_table = cars_gbm.multinomial_aucpr_table(train)
+        print(h2o_aucpr_table)
+
+        # get default value
+        h2o_default_aucpr = cars_gbm.aucpr()
+        print(h2o_default_aucpr)
+
+**Notes**
+- Calculation of this metric can be very expensive on time and memory when the domain is big. So it is disabled by default.
+- To enable it setup system property ``sys.ai.h2o.auc.maxClasses`` to a number of maximum allowed classes.
 
 Kolmogorov-Smirnov (KS) Metric 
 ##############################
@@ -856,17 +1181,17 @@ Certain metrics are more sensitive to outliers. When a metric is sensitive to ou
 
 Usually our model is very good. We have an absolute error less than 1 day about 70% of the time. There is one instance, however, where our model did very poorly. We have one prediction that was 30 days off.
 
-Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: ``MSE`` and ``RMSE``.
+Instances like this will more heavily penalize metrics that are sensitive to outliers. If you do not care about these outliers in poor performance as long as you typically have a very accurate prediction, then you would want to select a metric that is robust to outliers. You can see this reflected in the behavior of the metrics: ``MAE`` and ``RMSE``.
 
 +--------------+--------+--------+
-|              | MSE    | RMSE   |
+|              | MAE    | RMSE   |
 +==============+========+========+
 | Outlier      | 0.99   | 2.64   |
 +--------------+--------+--------+
 | No Outlier   | 0.80   | 1.0    |
 +--------------+--------+--------+
 
-Calculating the ``RMSE`` and ``MSE`` on our error data, the ``RMSE`` is more than twice as large as the ``MSE`` because ``RMSE`` is sensitive to outliers. If you remove the one outlier record from our calculation, ``RMSE`` drops down significantly.
+Calculating the ``RMSE`` and ``MAE`` on our error data, the ``RMSE`` is more than twice as large as the ``MAE`` because ``RMSE`` is sensitive to outliers. If you remove the one outlier record from our calculation, ``RMSE`` drops down significantly.
 
 Performance Units
 #################
@@ -1263,7 +1588,7 @@ Model Performance Graphs
 Confusion Matrix
 ''''''''''''''''
 
-A confusion matrix is a table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. In H2O, the actual results display in the columns and the predictions display in the rows; correct predictions are highlighted in yellow. In the example below, ``0`` was predicted correctly 902 times, while ``8`` was predicted correctly 822 times and ``0`` was predicted as ``4`` once.
+A confusion matrix is a table depicting performance of algorithm in terms of false positives, false negatives, true positives, and true negatives. In H2O, the actual results display in the rows and the predictions display in the columns; correct predictions are highlighted in yellow. In the example below, ``0`` was predicted correctly 902 times, while ``8`` was predicted correctly 822 times and ``0`` was predicted as ``4`` once.
 
 .. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
@@ -1472,6 +1797,82 @@ Examples:
         perf = pros_gbm.model_performance(test)
         perf.plot(type = "roc")
 
+AUCPR Curve
+'''''''''''
+
+The area under the precision-recall curve graph represents how well a binary classification model is able to distinguish between precision recall pairs or points. The AUCPR does not care about True Negatives and is much more sensitive to True Positives, False Positives, and False Negatives than AUC.
+
+.. figure:: images/aucpr_curve.png
+  :alt: Precision Recall Curve
+  :scale: 35%
+
+Examples:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # import the prostate dataset:
+        pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+        # set the factors:
+        pros[, 2] <- as.factor(pros[, 2])
+        pros[, 4] <- as.factor(pros[, 4])
+        pros[, 5] <- as.factor(pros[, 5])
+        pros[, 6] <- as.factor(pros[, 6])
+        pros[, 9] <- as.factor(pros[, 9])
+
+        # set the predictors and response column:
+        predictors <- c("AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
+        response <- "CAPSULE"
+
+        # split the data into training and validation sets:
+        pros_splits <- h2o.splitFrame(data = pros, ratio = 0.8, seed = 1234)
+        train <- pros_splits[[1]]
+        valid <- pros_splits[[2]]
+
+        # build and train the model:
+        glm_model <- h2o.glm(x=predictors, y=response, 
+                             family="binomial", lambda=0, 
+                             compute_p_values=TRUE, 
+                             training_frame=train, 
+                             validation_frame=valid)
+
+        # build the precision recall curve:
+        perf <- h2o.performance(glm_model, valid)
+        plot(perf, type = "pr")
+
+
+   .. code-tab:: python
+
+        # import H2OGeneralizedLinearEstimator and the prostate dataset:
+        from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+        # set the factors:
+        pros[1] = pros[1].asfactor()
+        pros[3] = pros[3].asfactor()
+        pros[4] = pros[4].asfactor()
+        pros[5] = pros[5].asfactor()
+        pros[8] = pros[8].asfactor()
+
+        # set the predictors and response column:
+        predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        response = "CAPSULE"
+
+        # split the data into training and validation sets:
+        train, valid = pros.split_frame(ratios=[.8], seed=1234)
+
+        # build and train the model:
+        glm_model = H2OGeneralizedLinearEstimator(family= "binomial",
+                                                  lambda_ = 0,
+                                                  compute_p_values = True)
+        glm_model.train(predictors, response, training_frame=train, validation_frame=valid)
+
+        # build the precision recall curve:
+        perf = glm_model.model_performance(valid)
+        perf.plot(type = "pr")
+
+
 Hit Ratio
 '''''''''
 
@@ -1602,6 +2003,143 @@ Examples:
 
         # build the standardized coefficient magnitudes plot:
         glm.std_coef_plot()
+
+
+Gains/Lift 
+''''''''''
+
+Gains/Lift evaluates the prediction ability of a binary classification model. The chart is computed using the prediction probability and the true response labels. The Gains/Lift chart shows the effectiveness of the current model(s) compared to a baseline, allowing users to quickly identify the most useful model. 
+
+The accuracy of the baseline is evaluated when no model is used. For instance, if there are :math:`x\%` positive responses in the dataset, when you grab :math:`10\%` of the dataset, you can assume that there are :math:`10\%` of the :math:`x\%` positive responses in the :math:`10\%` of the dataset that you chose. If :math:`x=10` and there are :math:`10\%` positive responses in the dataset, when you choose :math:`10\%` of a dataset, you can expect there to be :math:`1\%` of the positive responses in the :math:`10\%` of the dataset you chose.
+
+To compute Gains/Lift, H2O applies the model to the original dataset to find the response probability. The data is divided into groups by quantile thresholds of the response probability. The default number of groups is 16; if there are fewer than sixteen unique probability values, then the number of groups is reduced to the number of unique quantile thresholds. 
+
+**An example**: a response model predicts who will respond to a marketing campaign. If you have a response model, you can make more detailed predictions. You use the response model to assign a score to all 100,000 customers and predict the results of contacting only the top 10,000 customers, the top 20,000 customers, and so on. You do this by:
+
+- taking the dataset, sending it through your model, and obtaining a list of predicted output which is the probability of positive response;
+- sorting your dataset according to the output of your model which is the probability of positive response (this probability can also be called the **score**) from highest to lowest;
+    
+    - In this case, the first bin contains the top 10,000 customers with the highest response probability, the second bin contains the next 100,00 customers with the highest response probability, and so on.
+
+**Cumulative gains and lift charts** are a graphical representation of the advantage of using a predictive model to choose which customers to target/contact. On the cumulative gains chart, the y-axis shows the percentage of positive responses out of a total possible positive responses. The x-axis shows the percentage of customers contacted. The lift chart shows how much more likely you are to receive responses than if you contacted a random sample of customers.
+
+Example:
+
+.. tabs::
+    .. code-tab:: r R
+
+        # Import the airlines dataset:
+        airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model <- h2o.gbm(x = c("Origin", "Distance"), 
+                         y = "IsDepDelayed", 
+                         training_frame = airlines, 
+                         ntrees = 1, 
+                         gainslift_bins = 20)
+
+        # Plot the Gains/Lift chart:
+        gain_table <- model@model$training_metrics@metrics$gains_lift_table
+        plot(gain_table$cumulative_data_fraction,
+             gain_table$cumulative_capture_rate,'l', 
+             ylim = c(0,1.5), col = "dodgerblue3",
+             xlab = "cumulative data fraction",
+             ylab = "cumulative capture rate, cumulative lift",
+             main = "Gains/Lift")
+        lines(gain_table$cumulative_data_fraction,
+              gain_table$cumulative_lift, col = "orange")
+
+    .. code-tab:: python
+
+        from h2o.estimators import H2OGradientBoostingEstimator
+        from h2o.utils.ext_dependencies import get_matplotlib_pyplot
+        from matplotlib.collections import PolyCollection
+
+        # Import the airlines dataset:
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model.train(x=["Origin","Distance"], 
+                    y="IsDepDelayed", 
+                    training_frame=airlines)
+
+        # Plot the Gains/Lift chart:
+        gl = model.gains_lift()
+        X = gl['cumulative_data_fraction']
+        Y = gl['cumulative_capture_rate']
+        YC = gl['cumulative_lift']
+
+        plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
+        plt.figure(figsize=(10,10))
+        plt.grid(True)
+        plt.plot(X, Y, zorder=10, label='cumulative capture rate')
+        plt.plot(X, YC, zorder=10, label='cumulative lift')
+        plt.legend(loc=4, fancybox=True, framealpha=0.5)
+        plt.xlim(0, 1)
+        plt.ylim(0, 1.5)
+        plt.xlabel('cumulative data fraction')
+        plt.ylabel('cumulative capture rate, cumulative lift')
+        plt.title('Gains/Lift')
+        fig = plt.gcf()
+        plt.show()
+
+.. figure:: images/gainslift_plot.png
+    :alt: Gains/Lift Plot
+    :scale: 30%
+
+In addition to the chart, a **Gains/Lift table** is also available. This table reports the following for each group:
+
+- **Cumulative data fractions**: fraction of data used to calculate gain and lift at
+- **Lower threshold**: the lowest score output of the dataset in the data fraction bin
+- **Response rate**: ratio of the number of the positive classes and the number of data in the current data fraction
+- **Cumulative response rate**: for the first bin, it is the number of positive response over 10,000 (assume each bin contains 100,000 rows); for the second bin, it is the ratio of the sum of positive response over the first and second bins and 20,000; for the third bin, it is the ratio of the sum of positive response over the first, second, and third bins and 30,000
+- **Average response rate**: ratio of the total number of positive classes and the total number of data rows in the dataset
+- **Lift**: ratio of response rate of the current data fraction and average response rate
+- **Cumulative lift**: ratio of cumulative response rate and average response rate
+- **Score**: the average of all the classifier output probabilities for each individual data fraction bin
+- **Capture rate**: for each data fraction it is the ratio of positive classes in each bin divided by the total number of positive classes in the dataset
+- **Cumulative capture rate**: for the first bin, it is just the capture rate; the second bin is the ratio of (sum of number of positive classes for the first two bins) and the total number of positive classes in your dataset
+- **Gain**: :math:`100\times(\text{lift for current data fraction}-1)`
+- **Cumulative Gain**: :math:`100\times(\text{cumulative lift for current data fraction}-1)`
+- `Kolmogorov-Smirnov (KS) Metric`_
+
+Examples:
+
+.. tabs::
+      .. code-tab:: r R
+
+          # Import the airlines dataset:
+          airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+          # Build and train the model:
+          model <- h2o.gbm(x = c("Origin", "Distance"), 
+                           y = "IsDepDelayed", 
+                           training_frame = airlines, 
+                           ntrees = 1, 
+                           gainslift_bins = 20)
+
+          # Print the Gains/Lift table:
+          print(h2o.gainsLift(model))
+
+      .. code-tab:: python
+
+        from h2o.estimators import H2OGradientBoostingEstimator
+
+        # Import the airlines dataset:
+        airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+        # Build and train the model:
+        model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+        model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
+
+        # Print the Gains/Lift table for the model:
+        print(model.gains_lift())
+
+.. figure:: images/gainslift_table.png
+  :alt: Gains/Lift Table
+  :scale: 150%
+
 
 Partial Dependence Plots
 ''''''''''''''''''''''''

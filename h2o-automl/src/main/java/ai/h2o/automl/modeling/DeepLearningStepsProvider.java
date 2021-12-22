@@ -5,14 +5,10 @@ import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.grid.Grid;
-import water.Job;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class DeepLearningStepsProvider
         implements ModelingStepsProvider<DeepLearningStepsProvider.DeepLearningSteps>
@@ -20,9 +16,11 @@ public class DeepLearningStepsProvider
 
     public static class DeepLearningSteps extends ModelingSteps {
 
+        static final String NAME = Algo.DeepLearning.name();
+        
         static abstract class DeepLearningModelStep extends ModelingStep.ModelStep<DeepLearningModel> {
-            public DeepLearningModelStep(String id, int weight, AutoML autoML) {
-                super(Algo.DeepLearning, id, weight, autoML);
+            public DeepLearningModelStep(String id, AutoML autoML) {
+                super(NAME, Algo.DeepLearning, id, autoML);
             }
             
             @Override
@@ -36,18 +34,16 @@ public class DeepLearningStepsProvider
 
         static abstract class DeepLearningGridStep extends ModelingStep.GridStep<DeepLearningModel> {
 
-            DeepLearningGridStep(String id, int weight, AutoML autoML) {
-                super(Algo.DeepLearning, id, weight, autoML);
+            DeepLearningGridStep(String id, AutoML autoML) {
+                super(NAME, Algo.DeepLearning, id, autoML);
             }
 
-            DeepLearningParameters prepareModelParameters() {
-                DeepLearningParameters dlParameters = new DeepLearningParameters();
-
-                dlParameters._epochs = 10000; // early stopping takes care of epochs - no need to tune!
-                dlParameters._adaptive_rate = true;
-                dlParameters._activation = DeepLearningParameters.Activation.RectifierWithDropout;
-
-                return dlParameters;
+            public DeepLearningParameters prepareModelParameters() {
+                DeepLearningParameters params = new DeepLearningParameters();
+                params._epochs = 10000; // early stopping takes care of epochs - no need to tune!
+                params._adaptive_rate = true;
+                params._activation = DeepLearningParameters.Activation.RectifierWithDropout;
+                return params;
             }
             
             @Override
@@ -58,40 +54,36 @@ public class DeepLearningStepsProvider
                 return config;
             }
 
-            Map<String, Object[]> prepareSearchParams() {
+            public Map<String, Object[]> prepareSearchParameters() {
                 Map<String, Object[]> searchParams = new HashMap<>();
-
                 searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
                 searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
                 searchParams.put("_input_dropout_ratio", new Double[] { 0.0, 0.05, 0.1, 0.15, 0.2 });
-
                 return searchParams;
             }
         }
 
 
-        private ModelingStep[] defaults = new DeepLearningModelStep[] {
-                new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+        private final ModelingStep[] defaults = new DeepLearningModelStep[] {
+                new DeepLearningModelStep("def_1", aml()) {
                     @Override
-                    protected Job<DeepLearningModel> startJob() {
-                        DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
-                        dlParameters._hidden = new int[]{ 10, 10, 10 };
-                        return trainModel(dlParameters);
+                    public DeepLearningParameters prepareModelParameters() {
+                        DeepLearningParameters params = new DeepLearningParameters();  // don't use common params for default DL
+                        params._hidden = new int[]{ 10, 10, 10 };
+                        return params;
                     }
                 },
         };
 
-        private ModelingStep[] grids = new DeepLearningGridStep[] {
-                new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
+        private final ModelingStep[] grids = new DeepLearningGridStep[] {
+                new DeepLearningGridStep("grid_1", aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
-
-                        Map<String, Object[]> searchParams = prepareSearchParams();
+                    public Map<String, Object[]> prepareSearchParameters() {
+                        Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
-                                {50},
-                                {200},
-                                {500}
+                                {  20 },
+                                {  50 },
+                                { 100 }
                         });
                         searchParams.put("_hidden_dropout_ratios", new Double[][] {
                                 { 0.0 },
@@ -101,20 +93,17 @@ public class DeepLearningStepsProvider
                                 { 0.4 },
                                 { 0.5 }
                         });
-
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return searchParams;
                     }
                 },
-                new DeepLearningGridStep("grid_2", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
+                new DeepLearningGridStep("grid_2", aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
-
-                        Map<String, Object[]> searchParams = prepareSearchParams();
+                    public Map<String, Object[]> prepareSearchParameters() {
+                        Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
-                                {50, 50},
-                                {200, 200},
-                                {500, 500}
+                                {  20,  20 },
+                                {  50,  50 },
+                                { 100, 100 }
                         });
                         searchParams.put("_hidden_dropout_ratios", new Double[][] {
                                 { 0.0, 0.0 },
@@ -124,19 +113,17 @@ public class DeepLearningStepsProvider
                                 { 0.4, 0.4 },
                                 { 0.5, 0.5 }
                         });
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return searchParams;
                     }
                 },
-                new DeepLearningGridStep("grid_3", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
+                new DeepLearningGridStep("grid_3", aml()) {
                     @Override
-                    protected Job<Grid> startJob() {
-                        DeepLearningParameters dlParameters = prepareModelParameters();
-
-                        Map<String, Object[]> searchParams = prepareSearchParams();
+                    public Map<String, Object[]> prepareSearchParameters() {
+                        Map<String, Object[]> searchParams = super.prepareSearchParameters();
                         searchParams.put("_hidden", new Integer[][] {
-                                {50, 50, 50},
-                                {200, 200, 200},
-                                {500, 500, 500}
+                                {  20,  20,  20 },
+                                {  50,  50,  50 },
+                                { 100, 100, 100 }
                         });
                         searchParams.put("_hidden_dropout_ratios", new Double[][] {
                                 { 0.0, 0.0, 0.0 },
@@ -146,14 +133,18 @@ public class DeepLearningStepsProvider
                                 { 0.4, 0.4, 0.4 },
                                 { 0.5, 0.5, 0.5 }
                         });
-
-                        return hyperparameterSearch(dlParameters, searchParams);
+                        return searchParams;
                     }
                 },
         };
 
         public DeepLearningSteps(AutoML autoML) {
             super(autoML);
+        }
+
+        @Override
+        public String getProvider() {
+            return NAME;
         }
 
         @Override
@@ -169,7 +160,7 @@ public class DeepLearningStepsProvider
 
     @Override
     public String getName() {
-        return Algo.DeepLearning.name();
+        return DeepLearningSteps.NAME;
     }
 
     @Override

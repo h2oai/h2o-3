@@ -38,7 +38,7 @@ public class CheckSumTest extends TestUtil {
         String fname = "./smalldata/stackedensembles/stacking_fold.csv";
         try {
             Scope.enter();
-            Frame train = parse_test_file(fname);
+            Frame train = parseTestFile(fname);
             DKV.put(train);
             int resp = train.find("response");
             Scope.track(train.replace(resp, train.vecs()[resp].toCategoricalVec()));

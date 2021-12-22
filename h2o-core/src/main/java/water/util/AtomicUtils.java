@@ -13,16 +13,6 @@ public abstract class AtomicUtils {
       assert idx >= 0 && idx < ary.length;
       return _Fbase + idx * _Fscale;
     }
-    static public void setMin( float fs[], int i, float min ) {
-      float old = fs[i];
-      while( min < old && !_unsafe.compareAndSwapInt(fs,rawIndex(fs,i), Float.floatToRawIntBits(old), Float.floatToRawIntBits(min) ) )
-        old = fs[i];
-    }
-    static public void setMax( float fs[], int i, float max ) {
-      float old = fs[i];
-      while( max > old && !_unsafe.compareAndSwapInt(fs,rawIndex(fs,i), Float.floatToRawIntBits(old), Float.floatToRawIntBits(max) ) )
-        old = fs[i];
-    }
     static public void add( float ds[], int i, float y ) {
       long adr = rawIndex(ds,i);
       float old = ds[i];

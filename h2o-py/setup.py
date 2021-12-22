@@ -86,7 +86,7 @@ setup(
     ]},
 
     # run-time dependencies
-    install_requires=["requests", "tabulate", "future", "colorama>=0.3.8"],
+    install_requires=["requests", "tabulate", "future"],
 
     # optional dependencies
     extras_require={

@@ -1,6 +1,10 @@
 package water.init;
 
+import hex.faulttolerance.Recovery;
+import water.H2O;
+
 import java.net.InetAddress;
+import java.util.Optional;
 
 /**
  * This class is a small shim between a main java program (such as a
@@ -65,6 +69,15 @@ public abstract class AbstractEmbeddedH2OConfig {
   }
 
   /**
+   * Must be called by subclass when clouding is finished.
+   */
+  protected final void cloudingFinished() {
+    if (H2O.SELF.isLeaderNode()) {
+      Recovery.autoRecover(Optional.ofNullable(H2O.ARGS.auto_recovery_dir));
+    }
+  }
+
+  /**
    * Tell the embedding software that H2O wants the process to exit.
    * This should not return.  The embedding software should do any
    * required cleanup and then call exit with the status.
@@ -77,4 +90,13 @@ public abstract class AbstractEmbeddedH2OConfig {
    * Print debug information.
    */
   public abstract void print();
+
+  /**
+   * Indicates whether we should disable REST API access on non-leader nodes.
+   * @return false by default == all nodes will be accessible 
+   */
+  public boolean disableNonLeaderNodeAccess() {
+    return false;
+  }
+
 }

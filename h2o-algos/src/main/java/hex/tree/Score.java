@@ -4,18 +4,21 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
+import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 import water.udf.CFuncRef;
 
 /** Score the tree columns, and produce a confusion matrix and AUC
  */
 public class Score extends CMetricScoringTask<Score> {
+
+  private static final Logger LOG = Logger.getLogger(Score.class);
+  
   final SharedTree _bldr;
   final boolean _is_train;      // Scoring on pre-scored training data vs full-score data
   final boolean _oob;           // Computed on OOB
@@ -25,7 +28,8 @@ public class Score extends CMetricScoringTask<Score> {
   final boolean _computeGainsLift;
   final ScoreIncInfo _sii;      // Incremental scoring (on a validation dataset), null indicates full scoring
   final Frame _preds;           // Prediction cache (typically not too many Vecs => it is not too costly embed the object in MRTask)
-  
+  final ScoreExtension _ext;    // Optional extension to customize scoring (eg. for Uplift)
+
   /** Output parameter: Metric builder */
   ModelMetrics.MetricBuilder _mb;
 
@@ -47,6 +51,7 @@ public class Score extends CMetricScoringTask<Score> {
     _preds = computeGainsLift ? preds : null; // don't keep the prediction cache if we don't need to compute gainslift
     assert _kresp != null || !_bldr.isSupervised();
     assert (! _is_train) || (_sii == null);
+    _ext = _bldr.makeScoreExtension();
   }
 
   @Override public void map(Chunk allchks[]) {
@@ -59,7 +64,7 @@ public class Score extends CMetricScoringTask<Score> {
     } else {
       ys = new C0DChunk(0, chks[0]._len); // Dummy response to simplify code
     }
-    SharedTreeModel m = _bldr._model;
+    SharedTreeModel<?, ?, ?> m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
     // Because of adaption - the validation training set has at least as many
@@ -82,7 +87,8 @@ public class Score extends CMetricScoringTask<Score> {
     final double[] tmp = _is_train && _bldr._ntrees > 0 ? null : new double[_bldr._ncols];
 
     // Score all Rows
-    float [] val= new float[1];
+    final int[] responseComplements = _ext == null ? new int[0] : _ext.getResponseComplements(m);
+    final float[] val = new float[1 + responseComplements.length];
     for( int row=0; row<ys._len; row++ ) {
       if( ys.isNA(row) ) continue; // Ignore missing response vars only if it was actual NA
       // Ignore rows that were never out-of-bag (= were always used to build trees so far) 
@@ -102,7 +108,9 @@ public class Score extends CMetricScoringTask<Score> {
         for( int i=0; i< tmp.length; i++ )
           tmp[i] = chks[i].atd(row);
 
-      if (nclass > 2) { // Fill in prediction for multinomial
+      if (_ext != null) {
+        cdists[0] = _ext.getPrediction(cdists);
+      } else if (nclass > 2) { // Fill in prediction for multinomial
         cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
       } else if (nclass == 2) {
         // for binomial the predicted class is not needed
@@ -111,6 +119,11 @@ public class Score extends CMetricScoringTask<Score> {
         cdists[0] = -1;
       }
       val[0] = (float)ys.atd(row);
+      if (responseComplements.length > 0) {
+        for (int i = 0; i < responseComplements.length; i++) {
+          val[1 + i] = (float) chks[responseComplements[i]].atd(row);
+        }
+      }
       _mb.perRow(cdists, val, weight, offset, m);
 
       if (_preds != null) {
@@ -158,14 +171,14 @@ public class Score extends CMetricScoringTask<Score> {
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
   private ModelMetrics makeModelMetrics(SharedTreeModel model, Frame fr, Frame adaptedFr, Frame preds) {
     ModelMetrics mm;
-    if (model._output.nclasses() == 2 && _computeGainsLift) {
+    if ((model._output.nclasses() == 2 && _computeGainsLift) || _ext != null) {
       assert preds != null : "Predictions were pre-created";
       mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
     } else {
       boolean calculatePreds = preds == null && model.isDistributionHuber();
       // FIXME: PUBDEV-4992 we should avoid doing full scoring!
       if (calculatePreds) {
-        Log.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");
+        LOG.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");
         preds = model.score(fr);
       }
       mm = _mb.makeModelMetrics(model, fr, null, preds);
@@ -193,4 +206,23 @@ public class Score extends CMetricScoringTask<Score> {
       _predsAryOffset = predsAryOffset;
     }
   }
+
+  public static abstract class ScoreExtension extends Iced<ScoreExtension> {
+
+    /**
+     * Get prediction from per class-probabilities or algo-specific data
+     *
+     * @param cdist prediction array
+     * @return prediction
+     */
+    protected abstract double getPrediction(double[] cdist);
+
+    /**
+     * Return indices of columns that need to be extracted from Frame chunks in addition to response
+     * @param m instance of SharedTreeModel
+     * @return training frame column indices
+     */
+    protected abstract int[] getResponseComplements(SharedTreeModel<?, ?, ?> m);
+  }
+
 }

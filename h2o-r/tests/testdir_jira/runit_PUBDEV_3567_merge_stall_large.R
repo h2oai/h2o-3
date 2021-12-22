@@ -63,7 +63,7 @@ performMergingTest <- function(frameAData, frameBData, frameA, frameB, methodS, 
 }
 
 checkResults <- function(frame1, frame2) {
-  compareFrames(frame1, frame2, prob=1)
+  expect_equal(as.data.frame(frame1), as.data.frame(frame2))
   h2o.rm(frame1)
   h2o.rm(frame2)
 }

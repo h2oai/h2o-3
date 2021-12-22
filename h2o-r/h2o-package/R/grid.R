@@ -21,7 +21,7 @@
 #' @param ...  arguments describing parameters to use with algorithm (i.e., x, y, training_frame).
 #'        Look at the specific algorithm - h2o.gbm, h2o.glm, h2o.kmeans, h2o.deepLearning - for available parameters.
 #' @param hyper_params  List of lists of hyper parameters (i.e., \code{list(ntrees=c(1,2), max_depth=c(5,7))}).
-#' @param is_supervised  (Optional) If specified then override the default heuristic which decides if the given algorithm
+#' @param is_supervised [Deprecated] It is not possible to override default behaviour. (Optional) If specified then override the default heuristic which decides if the given algorithm
 #'        name and parameters specify a supervised or unsupervised algorithm.
 #' @param do_hyper_params_check  Perform client check for specified hyper parameters. It can be time expensive for
 #'        large hyper space.
@@ -37,7 +37,10 @@
 #'        max_models = 42, max_runtime_secs = 28800)} or \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", 
 #'        stopping_tolerance = 0.001, stopping_rounds = 10)} or \code{list(strategy = "RandomDiscrete", stopping_metric = 
 #'        "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
-#' @param export_checkpoints_dir Directory to automatically export grid in binary form to.
+#' @param export_checkpoints_dir Directory to automatically export grid and its models to.
+#' @param recovery_dir When specified the grid and all necessary data (frames, models) will be saved to this
+#'        directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
+#'        can be reloaded from this directory via \code{h2o.loadGrid} and training can be resumed
 #' @param parallelism Level of Parallelism during grid model building. 1 = sequential building (default).
 #'        Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models built in parallel.
 #' @importFrom jsonlite toJSON
@@ -67,10 +70,14 @@ h2o.grid <- function(algorithm,
                      do_hyper_params_check = FALSE,
                      search_criteria = NULL,
                      export_checkpoints_dir = NULL,
+                     recovery_dir = NULL,
                      parallelism = 1)
 {
+  if (!is.null(is_supervised)) {
+    warning("Parameter is_supervised is deprecated. It is not possible to override default behaviour.")
+  }
   #Unsupervised algos to account for in grid (these algos do not need response)
-  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
+  unsupervised_algos <- c("kmeans", "pca", "svd", "glrm", "extendedisolationforest")
   # Parameter list
   dots <- list(...)
   # Add x, y, and training_frame
@@ -149,19 +156,20 @@ h2o.grid <- function(algorithm,
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
   
   # Set directory for checkpoints export
-  if(!is.null(export_checkpoints_dir)){
-    params$export_checkpoints_dir = export_checkpoints_dir
+  if(!is.null(export_checkpoints_dir)) {
+    params$export_checkpoints_dir <- export_checkpoints_dir
   }
-  
-  # Set directory for checkpoints export
-  if(!is.null(parallelism)){
-    params$parallelism = parallelism
+  if(!is.null(recovery_dir)) {
+    params$recovery_dir <- recovery_dir
+  }
+  if(!is.null(parallelism)) {
+    params$parallelism <- parallelism
   }
 
   if( !is.null(search_criteria)) {
       # Append grid search criteria in JSON form. 
       # jsonlite unfortunately doesn't handle scalar values so we need to serialize ourselves.
-      keys = paste0("\"", names(search_criteria), "\"", "=")
+      keys <- paste0("\"", names(search_criteria), "\"", "=")
       vals <- lapply(search_criteria, function(val) { if(is.numeric(val)) val else paste0("\"", val, "\"") })
       body <- paste0(paste0(keys, vals), collapse=",")
       js <- paste0("{", body, "}", collapse="")
@@ -179,6 +187,37 @@ h2o.grid <- function(algorithm,
   .h2o.__waitOnJob(job_key)
 
   h2o.getGrid(grid_id = grid_id)
+}
+
+#'
+#' Resume previously stopped grid training.
+#'
+#' @param grid_id ID of existing grid search
+#' @param recovery_dir When specified the grid and all necessary data (frames, models) will be saved to this
+#'        directory (use HDFS or other distributed file-system). Should the cluster crash during training, the grid
+#'        can be reloaded from this directory via \code{h2o.loadGrid} and training can be resumed
+#' @param ...  Additional parameters to modify the resumed Grid.
+#' @export
+h2o.resumeGrid <- function(grid_id, recovery_dir=NULL, ...) {
+    grid <- h2o.getGrid(grid_id = grid_id)
+    model_id <- grid@model_ids[[1]]
+    model <- h2o.getModel(model_id = model_id)
+    algorithm <- model@algorithm
+    params <- list(...)
+    detach <- params$detach
+    params$detach <- NULL
+    params$grid_id <- grid_id
+    params$recovery_dir <- recovery_dir
+    res <- .h2o.__remoteSend(.h2o.__GRID_RESUME(algorithm), h2oRestApiVersion = 99, .params = params, method = "POST")
+    grid_id <- res$job$dest$name
+    if (is.null(detach) || !detach) {
+        # Wait for grid job to finish
+        job_key <- res$job$key$name
+        .h2o.__waitOnJob(job_key)
+        h2o.getGrid(grid_id = grid_id)
+    } else {
+        grid_id
+    }
 }
 
 #' Get a grid object from H2O distributed K/V store. 
@@ -222,8 +261,14 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing, verbose = FALSE) {
   failure_details <- lapply(json$failure_details, function(msg) { msg })
   failure_stack_traces <- lapply(json$failure_stack_traces, function(msg) { msg })
   failed_raw_params <- if (is.list(json$failed_raw_params)) matrix(nrow=0, ncol=0) else json$failed_raw_params
+  warning_details <- lapply(json$warning_details, function(msg) { msg })
 
   # print out the failure/warning messages from Java if it exists
+  if (length(warning_details) > 0)  {
+    for (index in 1:length(warning_details)) {
+      warning(warning_details[[index]])
+    }
+  }
   if (length(failure_details) > 0) {
     warning("Some models were not built due to a failure, for more details run `summary(grid_object, show_stack_traces = TRUE)`")
     if (verbose) {

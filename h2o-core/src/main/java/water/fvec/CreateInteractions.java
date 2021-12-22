@@ -165,7 +165,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         final Vec B = source_frame.vecs()[idx2];
 
         // Pass 1: compute unique domains of all interaction features
-        createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(A, B);
+        createInteractionDomain pass1 = new createInteractionDomain(A._key.equals(B._key), _ci._interactOnNA).doAll(A, B);
 
         // Create a new Vec based on the domain
         final Vec vec = source_frame.anyVec().makeZero(makeDomain(pass1._unsortedMap, A.domain(), B.domain()));
@@ -187,7 +187,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
         assert (C.domain().length == keys.length || C.domain().length == keys.length + 1); // domain might contain _other
 
         // Pass 2: fill Vec values
-        new fillInteractionCategoricals(idx1 == idx2, keys).doAll(A, B, C);
+        new fillInteractionCategoricals(A._key.equals(B._key), keys).doAll(A, B, C);
         tmp = C;
 
         // remove temporary vec

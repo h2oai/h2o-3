@@ -34,7 +34,7 @@ public class CsvParserTest extends TestUtil {
       byte quoteType = '\'';
       byte delimiter = ',';
       // Japanese alphabet is represented as up to 3 bytes per character.
-      String[] strings = CsvParser.determineTokens("'C1', 'C2', '契約状態1709'", delimiter, quoteType);
+      String[] strings = CsvParser.determineTokens("'C1', 'C2', '契約状態1709'", delimiter, quoteType, (byte)'\\');
       assertEquals(3, strings.length);
       assertEquals("C1", strings[0]);
       assertEquals("C2", strings[1]);
@@ -82,6 +82,98 @@ public class CsvParserTest extends TestUtil {
 
       assertEquals(1, outWriter.lineNum());
       assertEquals("'abcd'", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    @Test
+    public void testParseEscapeCharDoubleQuotes() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 1;
+      parseSetup._single_quotes = false;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      parseSetup._escapechar = '\\';
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"\\\"ab\\\\cd\\\"\""), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(1, outWriter.lineNum());
+      assertEquals("\"ab\\cd\"", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    @Test
+    public void testParseCharDoubleQuotes_customEscape() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 1;
+      parseSetup._single_quotes = false;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      parseSetup._escapechar = '*';
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+      
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("\"*\"ab**cd*\"\""), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(1, outWriter.lineNum());
+      assertEquals("\"ab*cd\"", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    @Test
+    public void testCustomEscape() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 1;
+      parseSetup._single_quotes = false;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      parseSetup._escapechar = '*';
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("*\"**testing*\\\\*example*\""), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(1, outWriter.lineNum());
+      assertEquals("\"*testing\\\\example\"", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    @Test
+    public void testParseEscapeCharSingleQuotes() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 1;
+      parseSetup._single_quotes = true;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      parseSetup._escapechar = '\\';
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("'\\'ab\\\\cd\\''"), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(1, outWriter.lineNum());
+      assertEquals("'ab\\cd'", outWriter._data[1][0]);
       assertFalse(outWriter.hasErrors());
     }
 
@@ -213,31 +305,43 @@ public class CsvParserTest extends TestUtil {
       parseSetup._column_names = new String[]{"PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"};
       parseSetup._number_columns = 12;
       parseSetup._nonDataLineMarkers = new byte[0];
-      CsvParser csvParser = new CsvParser(parseSetup, null);
-
-      final String parsedString = "102,0,3,\"Petroff, Mr. Pastcho (\"\"Pentcho\"\")\",male,,0,0,349215,7.8958,,S";
-      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0); // first two lines of airlines training dataset
-      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
-      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
-
-      assertEquals(1, outWriter.lineNum());
-      assertEquals(0, outWriter._invalidLines);
-      assertFalse(outWriter.hasErrors());
-
-      final StringTokenizer stringTokenizer = new StringTokenizer(parsedString, ",");
-
-      for (int lineIndex = 1; lineIndex < 2; lineIndex++) {
-        for (int colIndex = 0; colIndex < parseSetup._number_columns; colIndex++) {
-          assertNotNull(outWriter._data[lineIndex][colIndex]);
-          assertFalse(outWriter._data[lineIndex][colIndex].isEmpty());
+      
+      ParseSetup customEscapeCharParseSetup = parseSetup;
+      customEscapeCharParseSetup._escapechar = '*';
+      
+      ParseSetup[] parseSetups = new ParseSetup[] {parseSetup, customEscapeCharParseSetup};
+      String[] parsedStrings = new String[] {
+              "102,0,3,\"Petroff, Mr. Pastcho (\"\"Pentcho\"\")\",male,,0,0,349215,7.8958,,S",
+              "102,0,3,\"Petroff, Mr. Pastcho (\"\"Pentcho*\")\",male,,0,0,349215,7.8958,,S"
+      };
+      
+      for (int i = 0; i < 2; i++) {
+        CsvParser csvParser = new CsvParser(parseSetups[i], null);
+  
+        final String parsedString = parsedStrings[i];
+        final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0); // first two lines of airlines training dataset
+        final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+        final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+  
+        assertEquals(1, outWriter.lineNum());
+        assertEquals(0, outWriter._invalidLines);
+        assertFalse(outWriter.hasErrors());
+  
+        final StringTokenizer stringTokenizer = new StringTokenizer(parsedString, ",");
+  
+        for (int lineIndex = 1; lineIndex < 2; lineIndex++) {
+          for (int colIndex = 0; colIndex < parseSetup._number_columns; colIndex++) {
+            assertNotNull(outWriter._data[lineIndex][colIndex]);
+            assertFalse(outWriter._data[lineIndex][colIndex].isEmpty());
+          }
         }
+  
+        //Make sure internal quotes are parsed well
+        assertEquals(12, outWriter._data[1].length);
+        assertEquals("NA", outWriter._data[1][5]);
+        assertEquals("NA", outWriter._data[1][10]);
+        assertEquals("Petroff, Mr. Pastcho (\"Pentcho\")", outWriter._data[1][3]);
       }
-
-      //Make sure internal quotes are parsed well
-      assertEquals(12, outWriter._data[1].length);
-      assertEquals("NA", outWriter._data[1][5]);
-      assertEquals("NA", outWriter._data[1][10]);
-      assertEquals("Petroff, Mr. Pastcho (\"Pentcho\")", outWriter._data[1][3]);
     }
 
     @Test
@@ -250,36 +354,42 @@ public class CsvParserTest extends TestUtil {
       parseSetup._column_names = new String[]{"PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"};
       parseSetup._number_columns = 12;
       parseSetup._nonDataLineMarkers = new byte[0];
-      CsvParser csvParser = new CsvParser(parseSetup, null);
-
-      final String parsedString = "1,0,3,\"Braund, Mr. Owen Harris\",male,22,1,0,A/5 21171,7.25,,S\r\n"
-              + "2,1,1,\"Cumings, Mrs. John Bradley (Florence Briggs Thayer)\",female,38,1,0,PC 17599,71.2833,C85,C";
-      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0); // first two lines of airlines training dataset
-      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
-      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
-
-      assertEquals(2, outWriter.lineNum());
-      assertEquals(0, outWriter._invalidLines);
-      assertFalse(outWriter.hasErrors());
-
-      for (int lineIndex = 1; lineIndex < 3; lineIndex++) {
-        for (int colIndex = 0; colIndex < parseSetup._number_columns; colIndex++) {
-          assertNotNull(outWriter._data[lineIndex][colIndex]);
-          assertFalse(outWriter._data[lineIndex][colIndex].isEmpty());
+      
+      for (int i = 0; i < 2; i++) {
+        if (i == 1) {
+          parseSetup._escapechar = '*';
         }
+        CsvParser csvParser = new CsvParser(parseSetup, null);
+  
+        final String parsedString = "1,0,3,\"Braund, Mr. Owen Harris\",male,22,1,0,A/5 21171,7.25,,S\r\n"
+                + "2,1,1,\"Cumings, Mrs. John Bradley (Florence Briggs Thayer)\",female,38,1,0,PC 17599,71.2833,C85,C";
+        final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0); // first two lines of airlines training dataset
+        final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+        final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+  
+        assertEquals(2, outWriter.lineNum());
+        assertEquals(0, outWriter._invalidLines);
+        assertFalse(outWriter.hasErrors());
+  
+        for (int lineIndex = 1; lineIndex < 3; lineIndex++) {
+          for (int colIndex = 0; colIndex < parseSetup._number_columns; colIndex++) {
+            assertNotNull(outWriter._data[lineIndex][colIndex]);
+            assertFalse(outWriter._data[lineIndex][colIndex].isEmpty());
+          }
+        }
+  
+        //Make sure internal quotes are parsed well
+        assertEquals(12, outWriter._data[1].length);
+        assertEquals("A/5 21171", outWriter._data[1][8]);
+        assertEquals("NA", outWriter._data[1][10]);
+        assertEquals("Braund, Mr. Owen Harris", outWriter._data[1][3]);
+  
+        //Make sure internal quotes are parsed well
+        assertEquals(12, outWriter._data[1].length);
+        assertEquals("PC 17599", outWriter._data[2][8]);
+        assertEquals("C85", outWriter._data[2][10]);
+        assertEquals("Cumings, Mrs. John Bradley (Florence Briggs Thayer)", outWriter._data[2][3]);
       }
-
-      //Make sure internal quotes are parsed well
-      assertEquals(12, outWriter._data[1].length);
-      assertEquals("A/5 21171", outWriter._data[1][8]);
-      assertEquals("NA", outWriter._data[1][10]);
-      assertEquals("Braund, Mr. Owen Harris", outWriter._data[1][3]);
-
-      //Make sure internal quotes are parsed well
-      assertEquals(12, outWriter._data[1].length);
-      assertEquals("PC 17599", outWriter._data[2][8]);
-      assertEquals("C85", outWriter._data[2][10]);
-      assertEquals("Cumings, Mrs. John Bradley (Florence Briggs Thayer)", outWriter._data[2][3]);
     }
 
     @Test
@@ -330,6 +440,48 @@ public class CsvParserTest extends TestUtil {
       assertEquals(3, outWriter._nlines); // First line is headers, third line is skipped
     }
 
+    @Test
+    public void customEscapeIkea() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.HAS_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR, Vec.T_NUM, Vec.T_NUM};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 3;
+      parseSetup._single_quotes = false;
+      parseSetup._nonDataLineMarkers = new byte[0]; // Non data line markers are set to null, thus defaults should be used
+      CsvParser parser = new CsvParser(parseSetup, null);
+      
+      final String expectedThirdLine = "SLAGBORD, \"Bergslagen\", IKEA:s 1700-tals serie";
+
+      String parsedString = "SEARCH_TERM,ACTUAL_URL\n"
+        + "\"bra tv bord\",\"http://www.ikea.com/se/sv/catalog/categories/departments/living_room/10475/?se%7cps%7cnonbranded%7cvardagsrum%7cgoogle%7ctv_bord\"\n"
+        + "\"tv p\\xc3\\xa5 hjul\",\"http://www.ikea.com/se/sv/catalog/categories/departments/living_room/10475/?se%7cps%7cnonbranded%7cvardagsrum%7cgoogle%7ctv_bord\"\n"
+        + "\"SLAGBORD, \\\"Bergslagen\\\", IKEA:s 1700-tals serie\",\"http://www.ikea.com/se/sv/catalog/categories/departments/living_room/10475/?se%7cps%7cnonbranded%7cvardagsrum%7cgoogle%7ctv_bord\"";
+      Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0);
+      ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
+      assertEquals(3, outWriter._ncols);
+      assertEquals(expectedThirdLine, outWriter._data[3][0]);
+      assertEquals(3, outWriter._nlines); // First line is headers, third line is skipped
+      
+      parseSetup._escapechar = '*';
+      parser = new CsvParser(parseSetup, null);
+
+      parsedString = "SEARCH_TERM,ACTUAL_URL\n"
+              + "\"bra tv bord\",\"http://www.ikea.com/se/sv/catalog/categories/departments/living_room/10475/?se%7cps%7cnonbranded%7cvardagsrum%7cgoogle%7ctv_bord\"\n"
+              + "\"tv p\\xc3\\xa5 hjul\",\"http://www.ikea.com/se/sv/catalog/categories/departments/living_room/10475/?se%7cps%7cnonbranded%7cvardagsrum%7cgoogle%7ctv_bord\"\n"
+              + "\"SLAGBORD, *\"Bergslagen*\", IKEA:s 1700-tals serie\",\"http://www.ikea.com/se/sv/catalog/categories/departments/living_room/10475/?se%7cps%7cnonbranded%7cvardagsrum%7cgoogle%7ctv_bord\"";
+      byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0);
+      parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
+      assertEquals(3, outWriter._ncols);
+      assertEquals(expectedThirdLine, outWriter._data[3][0]);
+      assertEquals(3, outWriter._nlines); // First line is headers, third line is skipped
+      
+    }
+
     /**
      * PUBDEV-6408 - CSV - ArrayIndexOutOfBounds when quotes are parsed
      */
@@ -354,6 +506,34 @@ public class CsvParserTest extends TestUtil {
 
       assertEquals(1, outWriter.lineNum());
       assertEquals("abcde,", outWriter._data[1][0]);
+      assertFalse(outWriter.hasErrors());
+    }
+
+    /**
+     * Mixed single quote presence - some tokens are enclosed in single quotes, some are not.
+     * Single quotes explicitly enabled.
+     * The single-quoted token has a delimiter inside.
+     */
+    @Test
+    public void testParseSingleQuotesMixed() {
+      ParseSetup parseSetup = new ParseSetup();
+      parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+      parseSetup._check_header = ParseSetup.NO_HEADER;
+      parseSetup._separator = ',';
+      parseSetup._column_types = new byte[]{Vec.T_STR};
+      parseSetup._column_names = new String[]{"Name"};
+      parseSetup._number_columns = 2;
+      parseSetup._single_quotes = true;
+      parseSetup._nonDataLineMarkers = new byte[0];
+      CsvParser csvParser = new CsvParser(parseSetup, null);
+
+      final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf("C1, C2\n'quo,ted',unquoted"), 0);
+      final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+      final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+      assertEquals(2, outWriter.lineNum());
+      assertEquals("quo,ted", outWriter._data[2][0]);
+      assertEquals("unquoted", outWriter._data[2][1]);
       assertFalse(outWriter.hasErrors());
     }
   }
@@ -407,7 +587,7 @@ public class CsvParserTest extends TestUtil {
     public void testAirlinesTrain() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/airlines_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(24421, frame.numRows()); // 24,423 rows in total. Last row is empty, first one is header
@@ -421,7 +601,7 @@ public class CsvParserTest extends TestUtil {
     public void testAirQuality() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/airquality_train1.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/airquality_train1.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(77, frame.numRows()); // 79 rows in total. Last row is empty, first one is header
@@ -435,7 +615,7 @@ public class CsvParserTest extends TestUtil {
     public void testCars() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/cars_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/cars_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(331, frame.numRows()); // 333 rows in total. Last row is empty, first one is header
@@ -449,7 +629,7 @@ public class CsvParserTest extends TestUtil {
     public void testHiggs5k() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/higgs_train_5k.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/higgs_train_5k.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(5000, frame.numRows()); //5002 rows in total. Last row is empty, first one is header
@@ -463,7 +643,7 @@ public class CsvParserTest extends TestUtil {
     public void testHousing() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/housing_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/housing_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(413, frame.numRows()); // 415 rows in total. Last row is empty, first one is header
@@ -477,7 +657,7 @@ public class CsvParserTest extends TestUtil {
     public void testInsurance() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/insurance_gamma_dense_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/insurance_gamma_dense_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(45, frame.numRows()); // 47 rows in total. Last row is empty, first one is header
@@ -491,7 +671,7 @@ public class CsvParserTest extends TestUtil {
     public void testIris() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/testng/iris.csv", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/testng/iris.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(150, frame.numRows()); // 152 rows in total. Last row is empty, first one is header
@@ -505,7 +685,7 @@ public class CsvParserTest extends TestUtil {
     public void testAgaricus() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/agaricus.txt.train", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/xgboost/demo/data/agaricus.txt.train", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(6513, frame.numRows()); // 6514 rows in total. Last row is empty, no header.
@@ -519,7 +699,7 @@ public class CsvParserTest extends TestUtil {
     public void testFeatmap() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("./smalldata/xgboost/demo/data/featmap.txt", setupTransformer);
+        final Frame frame = parseTestFile("./smalldata/xgboost/demo/data/featmap.txt", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(126, frame.numRows()); // 127 lines in total, no header, last row empty
@@ -533,7 +713,7 @@ public class CsvParserTest extends TestUtil {
     public void testDiabetes() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("smalldata/diabetes/diabetes_train.csv", setupTransformer);
+        final Frame frame = parseTestFile("smalldata/diabetes/diabetes_train.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(50001, frame.numRows()); // 50,003 rows in total. Last row is empty, first one is header.
@@ -583,7 +763,7 @@ public class CsvParserTest extends TestUtil {
     public void testMultilineQuotes() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_multiline.csv", setupTransformer);
+        final Frame frame = parseTestFile("smalldata/csv-test/quoted_multiline.csv", setupTransformer);
         Scope.track(frame);
         Log.info(frame.toString());
         assertEquals(44, frame.numRows());
@@ -597,7 +777,7 @@ public class CsvParserTest extends TestUtil {
     public void testQuotedNoHeader() {
       try {
         Scope.enter();
-        final Frame frame = TestUtil.parse_test_file("smalldata/csv-test/quoted_no_header.csv", setupTransformer);
+        final Frame frame = parseTestFile("smalldata/csv-test/quoted_no_header.csv", setupTransformer);
         Log.info(frame.toString());
         Scope.track(frame);
         assertEquals(6, frame.numRows());
@@ -611,7 +791,7 @@ public class CsvParserTest extends TestUtil {
             return guessedSetup;
           }
         };
-        final Frame smallChunkSizeResultFrame = TestUtil.parse_test_file("smalldata/csv-test/quoted_no_header.csv", smallChunkSizeTransformer);
+        final Frame smallChunkSizeResultFrame = parseTestFile("smalldata/csv-test/quoted_no_header.csv", smallChunkSizeTransformer);
         Scope.track(smallChunkSizeResultFrame);
         Log.info(smallChunkSizeResultFrame.toString());
         assertEquals(6, smallChunkSizeResultFrame.numRows());

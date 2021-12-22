@@ -19,16 +19,19 @@ check.kmeans_converge <- function() {
   miters <- 10
 
   heading(paste("Run k-means with k =", ncent, "and max_iterations =", miters))
-  cross1.km <- h2o.kmeans(training_frame = cross.hex, k = ncent, max_iterations = miters)
+  cross1.km <- h2o.kmeans(training_frame = cross.hex, k = ncent, max_iterations = miters, seed=42)
   print(cross1.km)
+  centers <- as.h2o(getCenters(cross1.km))
+  print(centers)
 
   heading("Run k-means with user_points = final cluster centers and max_iterations = 1")
-  init_centers <- as.h2o(getCenters(cross1.km))
-  cross2.km <- h2o.kmeans(training_frame = cross.hex, user_points = init_centers, max_iterations = 1)
+  cross2.km <- h2o.kmeans(training_frame = cross.hex, user_points = centers, max_iterations = 1, seed=42)
   print(cross2.km)
-
+  centers2 <- as.h2o(getCenters(cross2.km))
+  print(centers2)
+    
   heading("Check k-means converged or maximum iterations reached")
-  avg_change <- sum((getCenters(cross1.km) - getCenters(cross2.km))^2)/ncent
+  avg_change <- sum((centers - centers2)^2)/ncent
   expect_true(avg_change < 1e-6 || getIterations(cross1.km) > miters)
 }
 

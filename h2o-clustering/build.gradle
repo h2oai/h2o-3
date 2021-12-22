@@ -1,0 +1,30 @@
+apply plugin: 'java-library'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'org.nanohttpd:nanohttpd:2.3.1'
+    api 'org.nanohttpd:nanohttpd-webserver:2.3.1'
+    api 'org.nanohttpd:nanohttpd-nanolets:2.3.1'
+    compileOnly project(":h2o-core") // This module is intended to be put on H2O's classpath separately
+    compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
+
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation 'com.github.stefanbirkner:system-rules:1.19.0'
+    testImplementation project(":h2o-test-support")
+    testImplementation "commons-io:commons-io:2.4"
+    testRuntimeOnly project(":${defaultWebserverModule}")
+}
+
+// Independently distributed/put on existing classpath with H2O already present. Therefore,
+// the artifact produced must carry it's own dependencies.
+jar {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from {
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

@@ -33,7 +33,7 @@ public class GLRMGridTest extends TestUtil {
     Grid<GLRMModel.GLRMParameters> grid = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       // Hyper-space
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
@@ -97,7 +97,7 @@ public class GLRMGridTest extends TestUtil {
     Grid<GLRMModel.GLRMParameters> grid = null;
     Frame fr = null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
 
       // Hyper-space
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{

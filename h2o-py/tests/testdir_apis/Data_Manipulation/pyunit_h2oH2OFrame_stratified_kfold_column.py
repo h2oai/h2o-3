@@ -18,7 +18,5 @@ def h2o_H2OFrame_stratified_kfold_column():
     assert ((newframe==0).sum()+(newframe==1).sum()+(newframe==2).sum())==h2oframe.nrow, \
         "h2o.H2OFrame.stratified_kfold_column() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_stratified_kfold_column())
-else:
-    h2o_H2OFrame_stratified_kfold_column()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_stratified_kfold_column)

@@ -21,6 +21,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "training_frame",
             "validation_frame",
             "nfolds",
+            "checkpoint",
+            "export_checkpoints_dir",
             "seed",
             "keep_cross_validation_models",
             "keep_cross_validation_predictions",
@@ -70,7 +72,6 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "interactions",
             "interaction_pairs",
             "obj_reg",
-            "export_checkpoints_dir",
             "stopping_rounds",
             "stopping_metric",
             "stopping_tolerance",
@@ -80,7 +81,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_after_balance_size",
             "max_confusion_matrix_size",
             "max_runtime_secs",
-            "custom_metric_func"
+            "custom_metric_func",
+            "generate_scoring_history",
+            "auc_type"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
@@ -248,6 +251,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
+    @API(help="If set to true, will generate scoring history for GLM.  This may significantly slow down the algo.", 
+            level = Level.secondary, direction = Direction.INPUT)
+    public boolean generate_scoring_history;  // if enabled, will generate scoring history for iterations specified in
+                                              // scoring_iteration_interval and score_every_iteration
     /////////////////////
   }
 }

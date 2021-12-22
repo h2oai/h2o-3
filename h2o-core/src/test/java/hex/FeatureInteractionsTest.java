@@ -22,68 +22,69 @@ public class FeatureInteractionsTest {
         SharedTreeNode node_0 = sharedTreeSubgraph.makeRootNode();
         node_0.setInclusiveNa(true);
         node_0.setWeight(10);
-        node_0.setSquaredError(1);
+        node_0.setGain(1);
         node_0.setColName("AA");
         node_0.setSplitValue(0);
         SharedTreeNode node_1L = sharedTreeSubgraph.makeLeftChildNode(node_0);
         node_1L.setWeight(5);
-        node_1L.setSquaredError(1);
+        node_1L.setGain(1);
         node_1L.setColName("BB");
         node_1L.setSplitValue(0);
         SharedTreeNode node_1R = sharedTreeSubgraph.makeRightChildNode(node_0);
         node_1R.setWeight(5);
-        node_1R.setSquaredError(1);
+        node_1R.setGain(1);
         node_1R.setColName("CC");
         node_1R.setSplitValue(0);
         SharedTreeNode node_2LL = sharedTreeSubgraph.makeLeftChildNode(node_1L);
         node_2LL.setWeight(2);
-        node_2LL.setSquaredError(1);
+        node_2LL.setGain(1);
         node_2LL.setPredValue(1000.000f);
         SharedTreeNode node_2LR = sharedTreeSubgraph.makeRightChildNode(node_1L);
         node_2LR.setWeight(3);
-        node_2LR.setSquaredError(1);
+        node_2LR.setGain(1);
         node_2LR.setPredValue(1100.000f);
         SharedTreeNode node_2RL = sharedTreeSubgraph.makeLeftChildNode(node_1R);
         node_2RL.setWeight(2);
-        node_2RL.setSquaredError(1);
+        node_2RL.setGain(1);
         node_2RL.setPredValue(1110.0000f);
         SharedTreeNode node_2RR = sharedTreeSubgraph.makeRightChildNode(node_1R);
         node_2RR.setWeight(3);
         node_2RR.setSquaredError(1);
+        node_2RR.setGain(1);
         node_2RR.setPredValue(1111.000f);
 
         sharedTreeSubgraph = sharedTreeGraph.makeSubgraph("B");
         node_0 = sharedTreeSubgraph.makeRootNode();
         node_0.setInclusiveNa(true);
         node_0.setWeight(10);
-        node_0.setSquaredError(1);
+        node_0.setGain(1);
         node_0.setColName("AA");
         node_0.setSplitValue(1);
         node_1L = sharedTreeSubgraph.makeLeftChildNode(node_0);
         node_1L.setWeight(5);
-        node_1L.setSquaredError(1);
+        node_1L.setGain(1);
         node_1L.setColName("BB");
         node_1L.setSplitValue(1);
         node_1R = sharedTreeSubgraph.makeRightChildNode(node_0);
         node_1R.setWeight(5);
-        node_1R.setSquaredError(1);
+        node_1R.setGain(1);
         node_1R.setColName("CC");
         node_1R.setSplitValue(1);
         node_2LL = sharedTreeSubgraph.makeLeftChildNode(node_1L);
         node_2LL.setWeight(2);
-        node_2LL.setSquaredError(1);
+        node_2LL.setGain(1);
         node_2LL.setPredValue(1000.000f);
         node_2LR = sharedTreeSubgraph.makeRightChildNode(node_1L);
         node_2LR.setWeight(3);
-        node_2LR.setSquaredError(1);
+        node_2LR.setGain(1);
         node_2LR.setPredValue(1100.000f);
         node_2RL = sharedTreeSubgraph.makeLeftChildNode(node_1R);
         node_2RL.setWeight(2);
-        node_2RL.setSquaredError(1);
+        node_2RL.setGain(1);
         node_2RL.setPredValue(1110.000f);
         node_2RR = sharedTreeSubgraph.makeRightChildNode(node_1R);
         node_2RR.setWeight(3);
-        node_2RR.setSquaredError(1);
+        node_2RR.setGain(1);
         node_2RR.setPredValue(1111.000f);
         
         return sharedTreeGraph;
@@ -98,7 +99,7 @@ public class FeatureInteractionsTest {
 
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(0).rootNode,
                 interactionPath1, 0, 0 ,1,0,0, featureInteractions1, memo1,
-                10,10,-1,0);
+                10,10,-1,0, false);
 
         assertEquals(featureInteractions1.entrySet().size(), 5);
 
@@ -144,10 +145,10 @@ public class FeatureInteractionsTest {
         
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(0).rootNode,
                 interactionPath1, 0, 0 ,1,0,0, featureInteractions1, memo1, 
-                10,10,-1,0);
+                10,10,-1,0, false);
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(1).rootNode,
                 interactionPath2, 0, 0 ,1,0,0, featureInteractions2, memo2,
-                10,10,-1,1);
+                10,10,-1,1, false);
         
         featureInteractions1.mergeWith(featureInteractions2);
 
@@ -194,7 +195,7 @@ public class FeatureInteractionsTest {
 
         FeatureInteractions.collectFeatureInteractions(sharedTreeGraph.subgraphArray.get(0).rootNode,
                 interactionPath1, 0, 0 ,1,0,0, featureInteractions1, memo1,
-                10,10,-1,0);
+                10,10,-1,0, true);
 
         TwoDimTable[] featureInteractionTable = featureInteractions1.getAsTable();
 

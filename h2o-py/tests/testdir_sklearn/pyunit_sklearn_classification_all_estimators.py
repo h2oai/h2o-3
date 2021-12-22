@@ -42,8 +42,8 @@ def _get_default_args(estimator_cls):
     defaults = dict(
         H2OCoxProportionalHazardsClassifier=dict(),
         H2ODeepLearningClassifier=dict(seed=seed, reproducible=True),
+        H2OGeneralizedAdditiveClassifier=dict(family='binomial', seed=seed, gam_columns=["C1"]),
         H2OGeneralizedLinearClassifier=dict(family='binomial', seed=seed),
-        H2OGeneralizedAdditiveClassifier=dict(family='binomial', seed=seed, gam_columns = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
 
@@ -145,7 +145,7 @@ def make_tests(classifier):
 
 
 failing = [
-    'H2OStackedEnsembleClassifier',  # needs a separate test (requires models as parameters)
+    'H2OStackedEnsembleClassifier', 'H2OUpliftRandomForestClassifier'  # needs a separate test (requires models as parameters)
 ]
 classifiers = [cls for name, cls in inspect.getmembers(h2o.sklearn, inspect.isclass)
                if name.endswith('Classifier') and name not in ['H2OAutoMLClassifier']+failing]

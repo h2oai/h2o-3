@@ -63,6 +63,7 @@ public abstract class Parser extends Iced {
 
   protected final byte CHAR_DECIMAL_SEP = '.';
   protected final byte CHAR_SEPARATOR;
+  protected final byte CHAR_ESCAPE;
 
   protected static final long LARGEST_DIGIT_NUMBER = Long.MAX_VALUE/10;
   protected static boolean isEOL(byte c) { return (c == CHAR_LF) || (c == CHAR_CR); }
@@ -72,6 +73,7 @@ public abstract class Parser extends Iced {
   protected final Key<Job> _jobKey;
   protected Parser( ParseSetup setup, Key<Job> jobKey ) {
     _setup = setup;  CHAR_SEPARATOR = setup._separator; _jobKey = jobKey;
+    CHAR_ESCAPE = setup._escapechar;
     if (_setup!=null && _setup._number_columns > 0) {
       _keepColumns = new boolean[_setup._number_columns];
       for (int colIdx = 0; colIdx < _setup._number_columns; colIdx++)

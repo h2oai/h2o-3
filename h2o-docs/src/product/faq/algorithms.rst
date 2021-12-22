@@ -150,3 +150,11 @@ or
 
 .. figure:: ../images/Flow_Summary_ConvertToEnum.png
    :alt: Summary - Convert to Enum
+
+
+How to correctly interpret split values and predictions of tree-based POJOs?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+H2O tree-based models (GBM, DRF, XGBoost) can be exported as POJO scoring artifacts. The resulting Java code by default uses a 32-bit floating point representation of numeric split points and predictions. This needs to be taken into account when trying to interpret what the POJO is doing or when trying to translate the Java code into another representation. 
+
+POJO split point interpretation is demonstrated in this `Python notebook <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/gbm_pojo_splits.ipynb>`__. This notebook also shows how to instruct H2O to use 64-bit floating numbers in generated POJOs and how to create such POJOs from MOJOs.

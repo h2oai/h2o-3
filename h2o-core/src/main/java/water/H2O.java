@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
   public static final int H2O_DEFAULT_PORT = 54321;
-
+  
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
   //-------------------------------------------------------------------------------------------------------------------
@@ -117,7 +119,7 @@ final public class H2O {
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
-            "          (The default is " + (char)Runtime.getRuntime().availableProcessors() + ".)\n" +
+            "          (The default is " + (char)H2ORuntime.availableProcessors() + ".)\n" +
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
@@ -277,6 +279,14 @@ final public class H2O {
     public String decrypt_tool = null;
 
     //-----------------------------------------------------------------------------------
+    // Kerberos
+    //-----------------------------------------------------------------------------------
+
+    public String principal = null;
+    public String keytab_path = null;
+    public String hdfs_token_refresh_interval = null;
+
+    //-----------------------------------------------------------------------------------
     // Networking
     //-----------------------------------------------------------------------------------
     /** -port=####; Specific Browser/API/HTML port */
@@ -348,7 +358,7 @@ final public class H2O {
     public boolean cleaner = false;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
+    public short nthreads= (short)H2ORuntime.availableProcessors();
 
     /** -log_dir=/path/to/dir; directory to save logs in */
     public String log_dir;
@@ -359,6 +369,9 @@ final public class H2O {
     /** -disable_web; disable Jetty and REST API interface */
     public boolean disable_web = false;
 
+    /** -disable_net; do not listen to incoming traffic and do not try to discover other nodes, for single node deployments */
+    public boolean disable_net = false;
+
     /** -disable_flow; disable access to H2O Flow, keep REST API interface available to clients */
     public boolean disable_flow = false;
     
@@ -368,6 +381,8 @@ final public class H2O {
     /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
     public boolean allow_clients = false;
 
+    public boolean allow_unsupported_java = false;
+
     /** If this timeout is set to non 0 value, stop the cluster if there hasn't been any rest api request to leader
      * node after the given timeout. Unit is milliseconds.
      */
@@ -375,6 +390,9 @@ final public class H2O {
     
     /** specifies a file to write when the node is up */
     public String notify_local;
+
+    /** what the is ratio of available off-heap memory to maximum JVM heap memory */
+    public double off_heap_memory_ratio = 0;
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -388,8 +406,17 @@ final public class H2O {
     /** -aws_credentials=aws_credentials; properties file for aws credentials */
     public String aws_credentials = null;
 
+    /** -configure_s3_using_s3a; use S3A(FileSystem) to configure S3 client */
+    public boolean configure_s3_using_s3a = false;
+    
     /** --ga_hadoop_ver=ga_hadoop_ver; Version string for Hadoop */
     public String ga_hadoop_ver = null;
+
+    //-----------------------------------------------------------------------------------
+    // Recovery
+    //-----------------------------------------------------------------------------------
+    /** -auto_recovery_dir=hdfs://path/to/recovery; Where to store {@link hex.faulttolerance.Recoverable} job data */
+    public String auto_recovery_dir;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -462,7 +489,7 @@ final public class H2O {
     System.out.println("ERROR: " + message);
     System.out.println("");
     printHelp();
-    H2O.exit(1);
+    H2O.exitQuietly(1); // argument parsing failed -> we might have inconsistent ARGS and not be able to initialize logging 
   }
 
   public static class OptString {
@@ -575,13 +602,21 @@ final public class H2O {
       }
       else if (s.matches("allow_clients")) {
         trgt.allow_clients = true;
-      } else if (s.matches("rest_api_ping_timeout")) {
+      }
+      else if (s.matches("allow_unsupported_java")) {
+        trgt.allow_unsupported_java = true;
+      } 
+      else if (s.matches("rest_api_ping_timeout")) {
         i = s.incrementAndCheck(i, args);
         trgt.rest_api_ping_timeout = s.parseInt(args[i]);
       }
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
         trgt.notify_local = args[i];
+      }
+      else if (s.matches("off_heap_memory_ratio")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.off_heap_memory_ratio = Double.parseDouble(args[i]);
       }
       else if (s.matches("user_name")) {
         i = s.incrementAndCheck(i, args);
@@ -601,6 +636,9 @@ final public class H2O {
       }
       else if (s.matches("disable_web")) {
         trgt.disable_web = true;
+      }
+      else if (s.matches("disable_net")) {
+        trgt.disable_net = true;
       }
       else if (s.matches("disable_flow")) {
         trgt.disable_flow = true;
@@ -633,6 +671,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.aws_credentials = args[i];
       }
+      else if (s.matches("configure_s3_using_s3a")) {
+        trgt.configure_s3_using_s3a = true;
+      }
       else if (s.matches("ga_hadoop_ver")) {
         i = s.incrementAndCheck(i, args);
         trgt.ga_hadoop_ver = args[i];
@@ -640,6 +681,10 @@ final public class H2O {
       else if (s.matches("ga_opt_out")) {
         // JUnits pass this as a system property, but it usually a flag without an arg
         if (i+1 < args.length && args[i+1].equals("yes")) i++;
+      }
+      else if (s.matches("auto_recovery_dir")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.auto_recovery_dir = args[i];
       }
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
@@ -724,8 +769,21 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.decrypt_tool = args[i];
       }
+      else if (s.matches("principal")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.principal = args[i];
+      }
+      else if (s.matches("keytab")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.keytab_path = args[i];
+      }
+      else if (s.matches("hdfs_token_refresh_interval")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.hdfs_token_refresh_interval = args[i];
+      }
       else if (s.matches("no_latest_check")) {
         // ignored
+        Log.trace("Invoked with 'no_latest_check' option (NOOP in current release).");
       }
       else if(s.matches(("client_disconnect_timeout"))){
         i = s.incrementAndCheck(i, args);
@@ -927,14 +985,15 @@ final public class H2O {
         H2O.exit(-1);
       }
     }
-    if (embeddedH2OConfig == null) { return; }
-    embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
+    if (embeddedH2OConfig != null) {
+      embeddedH2OConfig.notifyAboutCloudSize(ip, port, leaderIp, leaderPort, size);
+    }
   }
 
 
   public static void closeAll() {
     try { H2O.getWebServer().stop(); } catch( Exception ignore ) { }
-    try { NetworkInit._tcpSocket.close(); } catch( IOException ignore ) { }
+    try { NetworkInit.close(); } catch( IOException ignore ) { }
     PersistManager PM = H2O.getPM();
     if( PM != null ) PM.getIce().cleanUp();
   }
@@ -947,6 +1006,17 @@ final public class H2O {
     // Log subsystem might be still caching message, let it know to flush the cache and start logging even if we don't have SELF yet
     Log.notifyAboutProcessExiting();
 
+    exitQuietly(status);
+  }
+
+  /**
+   * Notify embedding software instance H2O wants to exit.  Shuts down a single Node.
+   * Exit without logging any buffered messages, invoked when H2O arguments are not correctly parsed
+   * and we might thus not be able to successfully initialize the logging subsystem.
+   * 
+   * @param status H2O's requested process exit value.
+   */
+  private static void exitQuietly(int status) {
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
@@ -954,7 +1024,7 @@ final public class H2O {
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
   }
-
+  
   /** Cluster shutdown itself by sending a shutdown UDP packet. */
   public static void shutdown(int status) {
     if(status == 0) H2O.orderlyShutdown();
@@ -1215,7 +1285,7 @@ final public class H2O {
   public static final AtomicLong START_TIME_MILLIS = new AtomicLong(); // When did main() run
 
   // Used to gate default worker threadpool sizes
-  public static final int NUMCPUS = Runtime.getRuntime().availableProcessors();
+  public static final int NUMCPUS = H2ORuntime.availableProcessors();
 
   // Best-guess process ID
   public static final long PID;
@@ -1227,7 +1297,10 @@ final public class H2O {
   private static final ExtensionManager extManager = ExtensionManager.getInstance();
 
   /**
-   * Retrieves a value of an H2O system property
+   * Retrieves a value of an H2O system property.
+   * 
+   * H2O system properties have {@link OptArgs#SYSTEM_PROP_PREFIX} prefix.
+   * 
    * @param name property name
    * @param def default value
    * @return value of the system property or default value if property was not defined
@@ -1235,7 +1308,17 @@ final public class H2O {
   public static String getSysProperty(String name, String def) {
     return System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + name, def);
   }
-
+  
+  /**
+   * Retrieves a boolean value of an H2O system property.
+   *
+   * H2O system properties have {@link OptArgs#SYSTEM_PROP_PREFIX} prefix.
+   *
+   * @param name property name
+   * @param def default value
+   * @return value of the system property as boolean or default value if property was not defined. False returned if 
+   *    the system property value is set but it is not "true" or any upper/lower case variant of it.
+   */
   public static boolean getSysBoolProperty(String name, boolean def) {
     return Boolean.parseBoolean(getSysProperty(name, String.valueOf(def)));
   }
@@ -1273,7 +1356,7 @@ final public class H2O {
     Log.fatal(msg);
     if (null != cause) Log.fatal(cause);
     Log.fatal("Stacktrace: ");
-    Log.fatal(Arrays.toString(Thread.currentThread().getStackTrace()));
+    Log.fatal(new Exception(msg));
 
     // H2O fail() exists because of coding errors - but what if usage of fail() was itself a coding error?
     // Property "suppress.shutdown.on.failure" can be used in the case when someone is seeing shutdowns on production
@@ -1759,7 +1842,7 @@ final public class H2O {
     Log.info("Processed H2O arguments: ", Arrays.toString(arguments));
 
     Runtime runtime = Runtime.getRuntime();
-    Log.info("Java availableProcessors: " + runtime.availableProcessors());
+    Log.info("Java availableProcessors: " + H2ORuntime.availableProcessors());
     Log.info("Java heap totalMemory: " + PrettyPrint.bytes(runtime.totalMemory()));
     Log.info("Java heap maxMemory: " + PrettyPrint.bytes(runtime.maxMemory()));
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
@@ -1783,10 +1866,12 @@ final public class H2O {
       H2O.addNodeToFlatfile(SELF);
     }
 
-    Log.info("H2O cloud name: '" + ARGS.name + "' on " + SELF +
-            (H2O.isFlatfileEnabled()
-                    ? (", discovery address " + CLOUD_MULTICAST_GROUP + ":" + CLOUD_MULTICAST_PORT)
-                    : ", static configuration based on -flatfile " + ARGS.flatfile));
+    if (!H2O.ARGS.disable_net) {
+      Log.info("H2O cloud name: '" + ARGS.name + "' on " + SELF +
+              (H2O.isFlatfileEnabled()
+                      ? ", static configuration based on -flatfile " + ARGS.flatfile
+                      : (", discovery address " + CLOUD_MULTICAST_GROUP + ":" + CLOUD_MULTICAST_PORT)));
+    }
 
     if (!H2O.ARGS.disable_web) {
       Log.info("If you have trouble connecting, try SSH tunneling from your local machine (e.g., via port 55555):\n" +
@@ -1809,6 +1894,15 @@ final public class H2O {
   /** Starts the worker threads, receiver threads, heartbeats and all other
    *  network related services.  */
   private static void startNetworkServices() {
+    // Start the Persistent meta-data cleaner thread, which updates the K/V
+    // mappings periodically to disk. There should be only 1 of these, and it
+    // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
+    // an initial histogram state.
+    Cleaner.THE_CLEANER.start();
+
+    if (H2O.ARGS.disable_net)
+      return;
+
     // We've rebooted the JVM recently. Tell other Nodes they can ignore task
     // prior tasks by us. Do this before we receive any packets
     UDPRebooted.T.reboot.broadcast();
@@ -1818,16 +1912,9 @@ final public class H2O {
     // down. Started soon, so we can start parsing multi-cast UDP packets
     new MultiReceiverThread().start();
 
-    // Start the Persistent meta-data cleaner thread, which updates the K/V
-    // mappings periodically to disk. There should be only 1 of these, and it
-    // never shuts down.  Needs to start BEFORE the HeartBeatThread to build
-    // an initial histogram state.
-    Cleaner.THE_CLEANER.start();
-
     // Start the TCPReceiverThread, to listen for TCP requests from other Cloud
     // Nodes. There should be only 1 of these, and it never shuts down.
-    new TCPReceiverThread(NetworkInit._tcpSocket).start();
-
+    NetworkInit.makeReceiverThread().start();
   }
 
   @Deprecated
@@ -1942,6 +2029,9 @@ final public class H2O {
   public final int size() { return _memary.length; }
   public final H2ONode leader() {
     return _memary[0];
+  }
+  public final H2ONode leaderOrNull() {
+    return _memary.length > 0 ? _memary[0] : null;
   }
 
   // Find the node index for this H2ONode, or a negative number on a miss
@@ -2125,21 +2215,52 @@ final public class H2O {
     }
   }
 
+  private static boolean JAVA_CHECK_PASSED = false;
+
   /**
    * Check if the Java version is not supported
    *
    * @return true if not supported
    */
-  public static boolean checkUnsupportedJava() {
+  public static boolean checkUnsupportedJava(String[] args) {
+    if (JAVA_CHECK_PASSED)
+      return false;
     if (Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.noJavaVersionCheck")) {
       return false;
+    } 
+    boolean unsupported = runCheckUnsupportedJava(args);
+    if (!unsupported) {
+      JAVA_CHECK_PASSED = true;
     }
+    return unsupported;
+  }
 
+  static boolean runCheckUnsupportedJava(String[] args) {
     if (!JavaVersionSupport.runningOnSupportedVersion()) {
-      System.err.println(String.format("Only Java versions %d-%d are supported, system version is %s",
-              JavaVersionSupport.MIN_SUPPORTED_JAVA_VERSION,
-              JavaVersionSupport.MAX_SUPPORTED_JAVA_VERSION,
-              System.getProperty("java.version")));
+      Throwable error = null;
+      boolean allowUnsupported = ArrayUtils.contains(args, "-allow_unsupported_java");
+      if (allowUnsupported) {
+        boolean checkPassed = false;
+        try {
+          checkPassed = dynamicallyInvokeJavaSelfCheck();
+        } catch (Throwable t) {
+          error = t;
+        }
+        if (checkPassed) {
+          Log.warn("H2O is running on a version of Java (" + System.getProperty("java.version") + ") that was not certified at the time of the H2O release. " + 
+                  "For production use please use a certified Java version (versions " + JavaVersionSupport.describeSupportedVersions() + " are officially supported).");
+          return false;
+        }
+      }
+      System.err.printf("Only Java versions %s are supported, system version is %s%n",
+              JavaVersionSupport.describeSupportedVersions(),
+              System.getProperty("java.version"));
+      if (ARGS.allow_unsupported_java) {
+        System.err.println("H2O was invoked with flag -allow_unsupported_java, however, " +
+                "we found out that your Java version doesn't meet the requirements to run H2O. Please use a supported Java version.");
+      }
+      if (error != null)
+        error.printStackTrace(System.err);
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2148,7 +2269,35 @@ final public class H2O {
       return true;
     }
     return false;
-  } 
+  }
+
+  /**
+   * Dynamically invoke water.JavaSelfCheck#checkCompatibility. The call is dynamic in order to prevent
+   * classloading issues to even load this class.
+   *
+   * @return true if Java-compatibility self-check passes successfully
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
+   * @throws InvocationTargetException
+   * @throws IllegalAccessException
+   */
+  static boolean dynamicallyInvokeJavaSelfCheck() throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    Class<?> cls = Class.forName("water.JavaSelfCheck");
+    Method m = cls.getDeclaredMethod("checkCompatibility");
+    return (Boolean) m.invoke(null);
+  }
+
+  /**
+   * Any system property starting with `ai.h2o.` and containing any more `.` does not match
+   * this pattern and is therefore ignored. This is mostly to prevent system properties
+   * serving as configuration for H2O's dependencies (e.g. `ai.h2o.org.eclipse.jetty.LEVEL` ).
+   */
+  static boolean isArgProperty(String name) {
+    final String prefix = "ai.h2o.";
+    if (!name.startsWith(prefix))
+      return false;
+    return name.lastIndexOf('.') < prefix.length(); 
+  }
 
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
@@ -2159,7 +2308,7 @@ final public class H2O {
 
    long time0 = System.currentTimeMillis();
 
-   if (checkUnsupportedJava())
+   if (checkUnsupportedJava(args))
      throw new RuntimeException("Unsupported Java version");
 
     // Record system start-time.
@@ -2170,8 +2319,8 @@ final public class H2O {
     // effectively overwriting the earlier args.
     ArrayList<String> args2 = new ArrayList<>(Arrays.asList(args));
     for( Object p : System.getProperties().keySet() ) {
-      String s = (String)p;
-      if( s.startsWith("ai.h2o.") ) {
+      String s = (String) p;
+      if(isArgProperty(s)) {
         args2.add("-" + s.substring(7));
         // hack: Junits expect properties, throw out dummy prop for ga_opt_out
         if (!s.substring(7).equals("ga_opt_out") && !System.getProperty(s).isEmpty())
@@ -2197,7 +2346,7 @@ final public class H2O {
     long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
     if( ARGS.version ) {
-      Log.flushBufferedMessages();
+      Log.flushBufferedMessagesToStdout();
       exit(0);
     }
 
@@ -2473,5 +2622,18 @@ final public class H2O {
   public static URI downloadLogs(String destinationDir, String logContainer) {
     return LogsHandler.downloadLogs(destinationDir, LogArchiveContainer.valueOf(logContainer));
   }
-  
+
+  /**
+   * Is this H2O cluster running in our continuous integration environment?
+   * 
+   * This information can be used to enable extended error output or force shutdown in case
+   * an error is encountered. Use responsibly.
+   * 
+   * @return true, if running in CI
+   */
+  static boolean isCI() {
+    return AbstractBuildVersion.getBuildVersion().isDevVersion() 
+            && "jenkins".equals(System.getProperty("user.name"));
+  }
+
 }

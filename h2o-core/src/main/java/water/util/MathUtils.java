@@ -17,6 +17,12 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 public class MathUtils {
+
+  /**
+   *  Euler–Mascheroni constant (also called Euler's constant)
+   */
+  public static final double EULER_MASCHERONI_CONSTANT = 0.5772156649;
+
   public static double weightedSigma(long nobs, double wsum, double xSum, double xxSum) {
     double reg = 1.0/wsum;
     return nobs <= 1? 0 : Math.sqrt(xxSum*reg - (xSum*xSum) * reg * reg);
@@ -30,6 +36,21 @@ public class MathUtils {
       return l;
     }
     return y * Math.log(y) - y + .5*Math.log(2*Math.PI*y);
+  }
+
+  public static int combinatorial(int num, int d) {
+    if (num < 0 || d < 0)
+      throw new H2OIllegalArgumentException("argument to combinatorial must be >= 0!");
+    int denom1 = num-d;
+    int maxDenom = Math.max(d, denom1);
+    int minDenom = Math.min(d, denom1);
+    int prodNum = 1;
+    for (int index = maxDenom+1; index <= num; index++)
+      prodNum *= index;
+    int prodDenom = 1;
+    for (int index = 1; index <= minDenom; index++)
+      prodDenom *= index;
+    return (prodNum/prodDenom);
   }
 
   static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
@@ -275,6 +296,10 @@ public class MathUtils {
   public static int log2(long n) {
     return 63 - Long.numberOfLeadingZeros(n);
   }
+  private static final double LOG2 = Math.log(2);
+  public static double log2(double x) {
+    return Math.log(x) / LOG2;
+  }
 
   public static float[] div(float[] nums, float n) {
     assert !Float.isInfinite(n) : "Trying to divide " + Arrays.toString(nums) + " by  " + n; // Almost surely not what you want
@@ -377,17 +402,34 @@ public class MathUtils {
     return Math.abs(actual - expected) <= (n-1) * Math.ulp(actual) * absum;
   }
 
-  /** Compare 2 doubles within a tolerance
+  /** 
+   * Compare 2 doubles within a tolerance. True iff the numbers difference within a absolute tolerance or
+   * within an relative tolerance.
+   * 
    *  @param a double
    *  @param b double
-   *  @param abseps - Absolute allowed tolerance
-   *  @param releps - Relative allowed tolerance
+   *  @param absoluteTolerance - Absolute allowed tolerance
+   *  @param relativeTolerance - Relative allowed tolerance
    *  @return true if equal within tolerances  */
-  public static boolean compare(double a, double b, double abseps, double releps) {
-    return
-      Double.compare(a, b) == 0 || // check for equality
-      Math.abs(a-b)/Math.max(a,b) < releps ||  // check for small relative error
-      Math.abs(a - b) <= abseps; // check for small absolute error
+  public static boolean compare(double a, double b, double absoluteTolerance, double relativeTolerance) {
+    assert absoluteTolerance >= 0;
+    assert relativeTolerance >= 0;
+    
+    final boolean equal = Double.compare(a, b) == 0;
+    
+    if (equal) {
+      return true;
+    }
+    
+    final double absoluteError = Math.abs(a - b);
+    
+    if (absoluteError <= absoluteTolerance) {
+      return true;
+    }
+    
+    final double relativeError = Math.abs(absoluteError / Math.max(Math.abs(a), Math.abs(b)));
+
+    return relativeError < relativeTolerance;
   }
 
   // some common Vec ops
@@ -772,5 +814,14 @@ public class MathUtils {
       }
     }
     return transposed;
+  }
+
+  /**
+   * Compute harmonic number estimated by natural logarithm
+   */
+  public static double harmonicNumberEstimation(long value) {
+    if (value <= 0)
+      return 0;
+    return Math.log(value) + EULER_MASCHERONI_CONSTANT;
   }
 }

@@ -2,6 +2,7 @@ package water.init;
 
 import water.H2O;
 import water.H2ONode;
+import water.TCPReceiverThread;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.StringUtils;
@@ -30,14 +31,18 @@ import java.util.Set;
  */
 public class NetworkInit {
 
-  public static ServerSocketChannel _tcpSocket;
+  private static ServerSocketChannel _tcpSocket;
 
   public static H2OHttpViewImpl h2oHttpView;
 
   public static InetAddress findInetAddressForSelf() throws Error {
     if (H2O.SELF_ADDRESS != null)
       return H2O.SELF_ADDRESS;
-    else
+    else {
+      if (H2O.ARGS.disable_web && H2O.ARGS.disable_net) {
+        //  if we don't need an address just use loopback as a filler, SELF_ADDRESS always needs to be defined
+        return InetAddress.getLoopbackAddress();
+      }
       try {
         return HostnameGuesser.findInetAddressForSelf(H2O.ARGS.ip, H2O.ARGS.network);
       } catch (HostnameGuesser.HostnameGuessingException e) {
@@ -47,6 +52,7 @@ public class NetworkInit {
           Log.err(e.getMessage());
         H2O.exit(-1);
       }
+    }
     assert false; // should never be reached
     return null;
   }
@@ -93,11 +99,13 @@ public class NetworkInit {
                       : new ServerSocket(H2O.API_PORT, -1, getInetAddress(H2O.ARGS.web_ip));
           apiSocket.setReuseAddress(true);
         }
-        InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
-        // Bind to the TCP socket also
-        _tcpSocket = ServerSocketChannel.open();
-        _tcpSocket.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
-        _tcpSocket.socket().bind(isa);
+        if (!H2O.ARGS.disable_net) {
+          InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, H2O.H2O_PORT);
+          // Bind to the TCP socket also
+          _tcpSocket = ServerSocketChannel.open();
+          _tcpSocket.socket().setReceiveBufferSize(water.AutoBuffer.TCP_BUF_SIZ);
+          _tcpSocket.socket().bind(isa);
+        }
 
         // Warning: There is a ip:port race between socket close and starting Jetty
         if (!H2O.ARGS.disable_web) {
@@ -176,6 +184,18 @@ public class NetworkInit {
       Log.throwErr(e);
     }
     H2O.CLOUD_MULTICAST_PORT = NetworkUtils.getMulticastPort(hash);
+  }
+
+  public static TCPReceiverThread makeReceiverThread() {
+    return new TCPReceiverThread(NetworkInit._tcpSocket);
+  }
+
+  public static void close() throws IOException {
+    ServerSocketChannel tcpSocket = _tcpSocket;
+    if (tcpSocket != null) {
+      _tcpSocket = null;
+      tcpSocket.close();
+    }
   }
 
   public static H2OHttpConfig webServerConfig(H2O.OptArgs args) {
@@ -272,6 +292,8 @@ public class NetworkInit {
   // multicast port (or all the individuals we can find, if multicast is
   // disabled).
   public static void multicast( ByteBuffer bb , byte priority) {
+    if (H2O.ARGS.disable_net)
+      return;
     try { multicast2(bb, priority); }
     catch (Exception ie) {}
   }

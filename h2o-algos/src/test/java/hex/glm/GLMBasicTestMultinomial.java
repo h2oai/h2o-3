@@ -38,8 +38,9 @@ public class GLMBasicTestMultinomial extends TestUtil {
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-    _covtype = parse_test_file("smalldata/covtype/covtype.20k.data");
+    _covtype = parseTestFile("smalldata/covtype/covtype.20k.data");
     _covtype.replace(_covtype.numCols()-1,_covtype.lastVec().toCategoricalVec()).remove();
+    DKV.put(_covtype);
     Key[] keys = new Key[]{Key.make("train"),Key.make("test")};
     H2O.submitTask(new FrameSplitter(_covtype, new double[]{.8},keys,null)).join();
     _train = DKV.getGet(keys[0]);
@@ -82,6 +83,35 @@ public class GLMBasicTestMultinomial extends TestUtil {
     for (int index = 1; index < coeffLen; index++)  // check to make sure sorting is done correctly
       Assert.assertTrue(magnitudes[indices[index-1]]+" should be >= "+magnitudes[indices[index]],
               magnitudes[indices[index-1]] >= magnitudes[indices[index]]);
+  }
+
+  /***
+   * This test is written to make sure no leaked vectors for my fix to the rollup stats absent bug.  No assert
+   * statement is needed.  This test just needs to run to completion.
+   */
+  @Test
+  public void testRollupBug() {
+    try {
+      Scope.enter();
+      Frame df = parseTestFile("smalldata/glm_test/rollup_stat_test.csv");
+      df.replace(df.numCols()-1,df.vec("RACE").toCategoricalVec()).remove();
+      Scope.track(df);
+      DKV.put(df);
+      GLMModel.GLMParameters params = new GLMModel.GLMParameters();
+      params._response_column = "RACE";
+      params._alpha = new double[]{0.5, 1};
+      params._standardize = false;
+      params._generate_scoring_history = true;
+      params._score_iteration_interval = 5;
+      params._non_negative = true;
+      params._nfolds = 5;
+      params._seed = 7;
+      params._train = df._key;
+      GLMModel model = new GLM(params).trainModel().get();
+      Scope.track_generic(model);
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
@@ -271,7 +301,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
                 0.01013967640490087, -0.03999288928633559, 0.012385348397898913, -0.0017922461738315199,
                 -1.159667420372168};
         try {
-          train = parse_test_file("smalldata/glm_test/multinomial_3_class.csv");
+          train = parseTestFile("smalldata/glm_test/multinomial_3_class.csv");
           Scope.track(train);
           params._response_column = "response";
           params._train = train._key;

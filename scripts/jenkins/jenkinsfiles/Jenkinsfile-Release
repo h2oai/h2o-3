@@ -17,7 +17,7 @@ try {
 
                 env.GRADLE_OPTS = "-Xmx4g -XX:MaxPermSize=512m"
 
-                env.PYTHON_VERSION = '3.5'
+                env.PYTHON_VERSION = '3.6'
                 env.R_VERSION = '3.4.1'
 
                 sh 'printenv | sort'
@@ -47,14 +47,15 @@ try {
                     setReleaseJobProperties(pipelineContext)
 
                     pipelineContext.getBuildSummary().addDetailsSection(this)
-                    final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo 'version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
+                    final String version = sh(script: "cd ${env.BUILD_NUMBER_DIR} && cat gradle.properties | grep -Eo '^version=[0-9\\.]+' | grep -Eo '[0-9\\.]+'", returnStdout: true).trim()
                     String releaseContent = """
                         <ul>
                             <li><strong>Version:</strong> ${version}.${currentBuild.number}</li>
                             <li><strong>Node:</strong> ${env.NODE_NAME}</li>
                             <li><strong>Test Release:</strong> ${params.TEST_RELEASE}</li>
                             <li><strong>Nexus Upload:</strong> ${params.UPLOAD_NEXUS}</li>
-                            <li><strong>PyPI Upload:</strong> ${params.UPLOAD_PYPI}</li>
+                            <li><strong>Build PyPI:</strong> ${params.BUILD_PYPI}</li>
+                            <li><strong>PyPI Upload:</strong> ${params.UPLOAD_TO_PYPI}</li>
                             <li><strong>Build Conda:</strong> ${params.BUILD_CONDA}</li>
                             <li><strong>Anaconda Upload:</strong> ${params.UPLOAD_TO_ANACONDA}</li>
                             <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
@@ -88,6 +89,9 @@ try {
                                 echo "Activating Python ${env.PYTHON_VERSION}"
                                 . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
 
+                                # FIXME: Version of docutils should be installed in install_python_version to fix PUBDEV-8327 issue
+                                pip install docutils==0.16
+
                                 mkdir -p ${env.BUILD_NUMBER_DIR}
                                 cd ${env.BUILD_NUMBER_DIR}
 
@@ -99,6 +103,7 @@ try {
                                 which java
                                 java -version
                                 du -h
+                                pip freeze
 
                                 # Update the build number.
                                 mkdir -p ci
@@ -133,7 +138,7 @@ try {
                                     chmod -w \$GRADLE_USER_HOME/gradle.properties
                                 fi
                                 ./gradlew build -x test
-                                ./gradlew buildH2oDevDist
+                                ./gradlew -PvalidateRelease buildH2oDevDist
                             """
                             }
                         }
@@ -214,126 +219,6 @@ try {
                     } catch (Exception e) {
                         pipelineContext.getBuildSummary().markStageFailed(this, PUBLISH_STAGE_NAME)
                         throw e
-                    }
-                }
-
-             def HELM_STAGE_NAME = 'Publish HELM to S3'
-                stage(HELM_STAGE_NAME) {
-                    try {
-                        pipelineContext.getBuildSummary().addStageSummary(this, HELM_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                        pipelineContext.getBuildSummary().setStageDetails(this, HELM_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                        
-                        // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
-                        THREE_DIGITS_VERSION = sh (
-                            script: "echo ${env.PROJECT_VERSION} | sed \"s/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g\"",
-                            returnStdout: true
-                        ).trim()
-                        
-                        if (params.TEST_RELEASE) {
-                            CHART_NAME = "h2o-test-3"
-                            BUCKET = "h2oai-test-charts"
-                            VERSION = THREE_DIGITS_VERSION
-                        } else{
-                            if(env.NIGHTLY_BUILD){
-                                CHART_NAME = "h2o-3-nightly"
-                                BUCKET = "h2oai-nightly-charts"
-                                VERSION = THREE_DIGITS_VERSION
-                            } else {
-                                CHART_NAME = "h2o-3"
-                                BUCKET = "h2oai-charts"
-                                VERSION = THREE_DIGITS_VERSION
-                            }
-                        }
-                        
-                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                aws s3 cp s3://${BUCKET}/index.yaml index.yaml
-                            """
-                        }
-                        
-                        withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
-                            insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                sed -i "s/name: h2o-3/name: ${CHART_NAME}/" Chart.yaml
-                                helm package . --app-version ${VERSION} --version ${VERSION}
-                                mkdir h2o-3
-                                mv ${CHART_NAME}-${VERSION}.tgz h2o-3/
-                                helm repo index . --merge index.yaml
-                            """
-                            }
-                        }
-                        
-                        insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
-                                aws s3 cp h2o-3/${CHART_NAME}-${VERSION}.tgz s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz --acl public-read
-                                aws s3 cp index.yaml s3://${BUCKET}/index.yaml --acl public-read
-                            """
-                        }
-
-                        pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
-                    } catch (Exception e) {
-                        pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
-                        throw e
-                    }
-                }
-
-                def BUILD_H2O_DOCKER_STAGE_NAME = 'Build H2O Docker container'
-                if (params.BUILD_H2O_DOCKER) {
-                    stage(BUILD_H2O_DOCKER_STAGE_NAME) {
-                        try {
-                            pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                            pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
-                            withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')]) {
-                                if (params.TEST_RELEASE) {
-                                    env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
-                                    // Test release goes to opsh2oai namespace
-                                    env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
-                                    // the most recent test build is always latest
-                                    env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
-
-                                    sh """
-                                      cd ${env.BUILD_NUMBER_DIR}
-                                      make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
-                                    """
-                                } else {
-                                    env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-open-source-k8s"
-                                    // Normal releases go to h2oai/ namespace
-                                    if (env.NIGHTLY_BUILD) {
-                                        // If the build is not a test build and is nightly, then re-write the latest nightly
-                                        env["DOCKER_IMAGE_TAG"] = "nightly"
-                                        sh """
-                                          cd ${env.BUILD_NUMBER_DIR}
-                                          make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
-                                        """
-                                    } else {
-                                        env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
-                                        if (params.UPDATE_LATEST) {
-                                            // If the build is not a test build and is an ordinary release, update the version tag.
-                                            // The "latest" tag means stable. If UPDATE_LATEST is set to true, also update the latest docker tag.
-                                            env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
-                                            sh """
-                                              cd ${env.BUILD_NUMBER_DIR}
-                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
-                                            """
-                                        } else {
-                                            // If the build is not a test build and is an ordinary release, update the latest tag.
-                                            // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
-                                            sh """
-                                              cd ${env.BUILD_NUMBER_DIR}
-                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
-                                            """
-                                        }
-                                    }
-                                }
-                            }
-                            pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_H2O_DOCKER_STAGE_NAME)
-                        } catch (Exception e) {
-                            pipelineContext.getBuildSummary().markStageFailed(this, BUILD_H2O_DOCKER_STAGE_NAME)
-                            throw e
-                        }
                     }
                 }
 
@@ -425,13 +310,13 @@ EOF
                 if (params.TEST_RELEASE || env.BRANCH_NAME.startsWith(pipelineContext.getBuildConfig().RELEASE_BRANCH_PREFIX)) {
                     prepareH2OVersionCheckScript(env.PROJECT_VERSION)
 
-                    if (params.UPLOAD_PYPI) {
+                    if (params.BUILD_PYPI) {
                         // create and upload PyPI package
-                        def UPLOAD_TO_PYPI_STAGE_NAME = 'Upload to PyPI'
-                        stage(UPLOAD_TO_PYPI_STAGE_NAME) {
+                        def BUILD_PYPI_STAGE_NAME = 'Build PyPI Package'
+                        stage(BUILD_PYPI_STAGE_NAME) {
                             try {
-                                pipelineContext.getBuildSummary().addStageSummary(this, UPLOAD_TO_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
-                                pipelineContext.getBuildSummary().setStageDetails(this, UPLOAD_TO_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                pipelineContext.getBuildSummary().addStageSummary(this, BUILD_PYPI_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, BUILD_PYPI_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                                 withCredentials([usernamePassword(credentialsId: 'pypi-credentials', usernameVariable: 'TWINE_USERNAME', passwordVariable: 'TWINE_PASSWORD')]) {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         sh """
@@ -443,19 +328,23 @@ EOF
 
                                             s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
 
-                                            if [ "\$TEST_RELEASE" = true ]; then
-                                                echo '****** WARNING! Upload to PyPI suppressed ******'
+                                            if [ "\$UPLOAD_TO_PYPI" = true ]; then
+                                                if [ "\$TEST_RELEASE" = true ]; then
+                                                    echo '****** WARNING! Upload to PyPI suppressed ******'
+                                                else
+                                                    echo '****** Upload to PyPI ******'
+                                                    twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                                fi
                                             else
-                                                echo '****** Upload to PyPI ******'
-                                                twine upload dist/h2o-${env.PROJECT_VERSION}.tar.gz
+                                                echo '****** WARNING! Upload PyPI Conda suppressed ******'
                                             fi
                                         """
                                     }
                                 }
-                                pipelineContext.getBuildSummary().markStageSuccessful(this, UPLOAD_TO_PYPI_STAGE_NAME)
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_PYPI_STAGE_NAME)
                             } catch (Exception e) {
-                                pipelineContext.getBuildSummary().markStageFailed(this, UPLOAD_TO_PYPI_STAGE_NAME)
-                                throw e
+                                pipelineContext.getBuildSummary().markStageFailed(this, BUILD_PYPI_STAGE_NAME)
+                                e.printStackTrace()
                             }
                         }
                     }
@@ -463,9 +352,10 @@ EOF
                     if (params.BUILD_CONDA) {
 
                         final def condaS3Dir = "${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/Conda"
+                        final def pyVersions = pipelineContext.getBuildConfig().PYTHON_VERSIONS.findAll { Double.parseDouble(it) >= 3.6 }
 
                         // build for all Python versions
-                        for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                        for (pyVersion in pyVersions) {
                             def uploadToCondaStageName = "Build Py${pyVersion} Conda Packages"
                             stage(uploadToCondaStageName) {
                                 withCredentials([usernamePassword(credentialsId: 'anaconda-credentials', usernameVariable: 'ANACONDA_USERNAME', passwordVariable: 'ANACONDA_PASSWORD')]) {
@@ -479,8 +369,7 @@ EOF
                                                 cp -r ${env.BUILD_NUMBER_DIR}/h2o-py/conda ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
                                                 cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main/conda
                                                 # Create conda package for current platform
-                                                conda config --append channels conda-forge
-                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion}
+                                                conda build h2o --output-folder "." --no-anaconda-upload --py ${pyVersion} --channel conda-forge
                                                 # Get name of the package
                                                 CONDA_PKG_CURRENT_ARCH_PATH=\$(conda build h2o --py ${pyVersion} --output-folder "." --output | tail -1)
                                                 PKG_NAME=\$(basename \$CONDA_PKG_CURRENT_ARCH_PATH)
@@ -511,13 +400,13 @@ EOF
                                         pipelineContext.getBuildSummary().markStageSuccessful(this, uploadToCondaStageName)
                                     } catch (Exception e) {
                                         pipelineContext.getBuildSummary().markStageFailed(this, uploadToCondaStageName)
-                                        throw e
+                                        e.printStackTrace()
                                     }
                                 }
                             }
                         }
 
-                        for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                        for (pyVersion in pyVersions) {
                             def checkCondaOfflineStageName = "Check Py${pyVersion} Conda Package Offline"
                             def condaPkgPyVersion = pyVersion.replaceAll('\\.','')
                             def pkgName = "h2o-${env.PROJECT_VERSION}-py${condaPkgPyVersion}*.tar.bz2"
@@ -527,7 +416,7 @@ EOF
                                 try {
                                     insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS') {
                                         echo "Check Conda package for Python ${pyVersion}"
-                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests colorama"
+                                        sh "conda create -y -n py${pyVersion} python=${pyVersion} tabulate future requests"
                                         sh "s3cmd get ${condaS3Dir}/linux-64/${pkgName}"
                                         sh """
                                                 bash -c \"\"\"
@@ -542,14 +431,14 @@ EOF
                                     pipelineContext.getBuildSummary().markStageSuccessful(this, checkCondaOfflineStageName)
                                 } catch (Exception e) {
                                     pipelineContext.getBuildSummary().markStageFailed(this, checkCondaOfflineStageName)
-                                    throw e
+                                    e.printStackTrace()
                                 }
                             }
                         }
 
                         // check that Conda package for each Python version reports correct H2O version
                         if (params.UPLOAD_TO_ANACONDA && !params.TEST_RELEASE) {
-                            for (pyVersion in pipelineContext.getBuildConfig().PYTHON_VERSIONS) {
+                            for (pyVersion in pyVersions) {
                                 def checkCondaStageName = "Check Py${pyVersion} Conda Package"
                                 stage(checkCondaStageName) {
                                     pipelineContext.getBuildSummary().addStageSummary(this, checkCondaStageName, env.BUILD_NUMBER_DIR)
@@ -572,12 +461,138 @@ EOF
                                         pipelineContext.getBuildSummary().markStageSuccessful(this, checkCondaStageName)
                                     } catch (Exception e) {
                                         pipelineContext.getBuildSummary().markStageFailed(this, checkCondaStageName)
-                                        throw e
+                                        e.printStackTrace()
                                     }
                                 }
                             }
                         } else {
                             echo 'Marked as TEST_RELEASE, don\'t check Conda packages from anaconda.org'
+                        }
+                    }
+
+                    def HELM_STAGE_NAME = 'Publish HELM to S3'
+                    stage(HELM_STAGE_NAME) {
+                        try {
+                            pipelineContext.getBuildSummary().addStageSummary(this, HELM_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                            pipelineContext.getBuildSummary().setStageDetails(this, HELM_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                            
+                            // Helm automatically installs latest chart if version is unspecified by the user, therefore there is no need for a latest tag
+                            THREE_DIGITS_VERSION = sh (
+                                script: "echo ${env.PROJECT_VERSION} | sed \"s/[0-9]*\\.\\([0-9]*\\.[0-9]*\\.[0-9]\\)*/\\1/g\"",
+                                returnStdout: true
+                            ).trim()
+                            
+                            if (params.TEST_RELEASE) {
+                                CHART_NAME = "h2o-test-3"
+                                BUCKET = "h2oai-test-charts"
+                                VERSION = THREE_DIGITS_VERSION
+                            } else{
+                                if(env.NIGHTLY_BUILD){
+                                    CHART_NAME = "h2o-3-nightly"
+                                    BUCKET = "h2oai-nightly-charts"
+                                    VERSION = THREE_DIGITS_VERSION
+                                } else {
+                                    CHART_NAME = "h2o-3"
+                                    BUCKET = "h2oai-charts"
+                                    VERSION = THREE_DIGITS_VERSION
+                                }
+                            }
+                            
+                            insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    aws s3 cp s3://${BUCKET}/index.yaml index.yaml
+                                """
+                            }
+                            
+                            withCredentials([file(credentialsId: 'release-gradle.properties', variable: 'GRADLE_PROPERTIES_PATH'), file(credentialsId: 'release-secret-key-ring-file', variable: 'RING_FILE_PATH')]) {
+                                insideDocker([], pipelineContext.getBuildConfig().getReleaseImage(), pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 2, 'HOURS', "-v ${GRADLE_PROPERTIES_PATH}:${GRADLE_PROPERTIES_PATH} -v ${RING_FILE_PATH}:${RING_FILE_PATH}") {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    sed -i "s/name: h2o-3/name: ${CHART_NAME}/" Chart.yaml
+                                    helm package . --app-version ${VERSION} --version ${VERSION}
+                                    mkdir h2o-3
+                                    mv ${CHART_NAME}-${VERSION}.tgz h2o-3/
+                                    helm repo index . --merge index.yaml
+                                """
+                                }
+                            }
+                            
+                            insideDocker([], pipelineContext.getBuildConfig().AWSCLI_IMAGE, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), 3, 'HOURS') {
+                                sh """
+                                    cd ${env.BUILD_NUMBER_DIR}/h2o-helm/
+                                    aws s3 cp h2o-3/${CHART_NAME}-${VERSION}.tgz s3://${BUCKET}/h2o-3/${CHART_NAME}-${VERSION}.tgz --acl public-read
+                                    aws s3 cp index.yaml s3://${BUCKET}/index.yaml --acl public-read
+                                """
+                            }
+    
+                            pipelineContext.getBuildSummary().markStageSuccessful(this, HELM_STAGE_NAME)
+                        } catch (Exception e) {
+                            pipelineContext.getBuildSummary().markStageFailed(this, HELM_STAGE_NAME)
+                            e.printStackTrace()
+                        }
+                    }
+    
+                    def BUILD_H2O_DOCKER_STAGE_NAME = 'Build H2O Docker container'
+                    if (params.BUILD_H2O_DOCKER) {
+                        stage(BUILD_H2O_DOCKER_STAGE_NAME) {
+                            try {
+                                pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
+                                pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
+                                withCredentials([
+                                      usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME'),
+                                      string(credentialsId: 'H2O_RED_HAT_REGISTRY_KEY', variable: 'H2O_RED_HAT_REGISTRY_KEY'),
+                                      string(credentialsId: 'H2O_RED_HAT_PID', variable: 'H2O_RED_HAT_PID'),
+                                      string(credentialsId: 'H2O_RED_HAT_APIKEY', variable: 'H2O_RED_HAT_APIKEY')
+                                      ]) {
+                                    if (params.TEST_RELEASE) {
+                                        env["DOCKER_IMAGE_NAME"] = "opsh2oai/h2o-open-source-k8s-test"
+                                        // Test release goes to opsh2oai namespace
+                                        env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                        // the most recent test build is always latest
+                                        env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
+    
+                                        sh """
+                                          cd ${env.BUILD_NUMBER_DIR}
+                                          make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                        """
+                                    } else {
+                                        env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-open-source-k8s"
+                                        // Normal releases go to h2oai/ namespace
+                                        if (env.NIGHTLY_BUILD) {
+                                            // If the build is not a test build and is nightly, then re-write the latest nightly
+                                            env["DOCKER_IMAGE_TAG"] = "nightly"
+                                            sh """
+                                              cd ${env.BUILD_NUMBER_DIR}
+                                              make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
+                                            """
+                                        } else {
+                                            env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
+                                            if (params.UPDATE_LATEST) {
+                                                // If the build is not a test build and is an ordinary release, update the version tag.
+                                                // The "latest" tag means stable. If UPDATE_LATEST is set to true, also update the latest docker tag.
+                                                env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                                sh """
+                                                  cd ${env.BUILD_NUMBER_DIR}
+                                                  make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build-latest h2o-k8s-docker-push-latest
+                                                """
+                                            } else {
+                                                // If the build is not a test build and is an ordinary release, update the latest tag.
+                                                // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
+                                                // Push to Red Hat either way
+                                                sh """
+                                                  cd ${env.BUILD_NUMBER_DIR}
+                                                  make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
+                                                """
+                                            }
+                                        }
+                                    }
+                                }
+                                pipelineContext.getBuildSummary().markStageSuccessful(this, BUILD_H2O_DOCKER_STAGE_NAME)
+                            } catch (Exception e) {
+                                pipelineContext.getBuildSummary().markStageFailed(this, BUILD_H2O_DOCKER_STAGE_NAME)
+                                e.printStackTrace()
+                            }
                         }
                     }
                 }
@@ -623,9 +638,10 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
-            booleanParam(defaultValue: true, description: 'If set build conda packages and upload them to S3', name: 'BUILD_CONDA'),
-            booleanParam(defaultValue: false, description: 'If set and building rel- branch, publish to Anaconda.', name: 'UPLOAD_TO_ANACONDA'),
+            booleanParam(defaultValue: true, description: 'If set, build PyPI package and upload it to S3', name: 'BUILD_PYPI'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to PyPI', name: 'UPLOAD_TO_PYPI'),
+            booleanParam(defaultValue: true, description: 'If set, build conda packages and upload them to S3', name: 'BUILD_CONDA'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set and building rel- branch, publish to Anaconda', name: 'UPLOAD_TO_ANACONDA'),
             booleanParam(defaultValue: true, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
         ])
     ]
@@ -671,8 +687,8 @@ Configuration:
     Test Release:           | ${params.TEST_RELEASE}
     S3 Bucket:              | ${env.S3_ROOT}
     Publish to Nexus:       | ${params.UPLOAD_NEXUS}
-    Publish to PyPI:        | ${params.UPLOAD_PYPI}
-    Publish to Conda:       | ${params.UPLOAD_CONDA}
+    Publish to PyPI:        | ${params.UPLOAD_TO_PYPI}
+    Publish to Conda:       | ${params.UPLOAD_TO_ANACONDA}
     Publish to Docker Hub   | ${params.BUILD_H2O_DOCKER}
 =======================================
 """

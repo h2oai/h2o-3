@@ -1,8 +1,6 @@
 package hex;
 
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes

@@ -1,10 +1,20 @@
 description = "H2O Steam Integration"
 
 dependencies {
-    compile project(":h2o-core")
-    compile project(":h2o-webserver-iface")
+    api project(":h2o-core")
+    api project(":h2o-webserver-iface")
     compileOnly "javax.servlet:javax.servlet-api:${servletApiVersion}"
 
-    testCompile project(":h2o-test-support")
+    testImplementation project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
+}
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+test {
+    dependsOn ":h2o-core:testJar"
+    dependsOn jar, testJar, testSingleNode
+
+    // Defeat task 'test' by running no tests.
+    exclude '**'
 }

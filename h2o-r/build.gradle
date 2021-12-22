@@ -7,7 +7,7 @@ description = "H2O R Package"
 //apply plugin: 'water.gradle.plugins.manageLocalClouds'
 
 dependencies {
-    compile project(path: ":h2o-assemblies:main", configuration: 'shadow')
+    api project(path: ":h2o-assemblies:main", configuration: 'shadow')
 }
 
 def getOS() {
@@ -144,19 +144,63 @@ task cpPDF(type: Copy) {
 
 cpPDF.onlyIf { PDF_LATEX.contains("pdflatex") }
 
-task cpH2OAppJar(type: Copy, dependsOn: [configurations.compile]) {
-    from configurations.compile.getSingleFile()
+task cpH2OAppJar(type: Copy, dependsOn: [configurations.compileClasspath]) {
+    from configurations.compileClasspath.getSingleFile()
     rename { filename ->
         return 'h2o.jar'
     }
     into "${projectDir}/h2o-package/inst/java/"
 }
 
+task cpMainPKG {
+    doLast {
+        file("${buildDir}/h2o-package-main").mkdirs()
+        copy {
+            from "h2o-package"
+            into "${buildDir}/h2o-package-main"
+        }
+    }
+}
+
 task buildPKG(type: Exec) {
     doFirst {
         standardOutput = new FileOutputStream("${buildDir}/tmp/h2o-r_buildPKG.out")
     }
-    commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'h2o-package'])
+    commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', 'build/h2o-package-main'])
+}
+
+task cpClientPKG {
+    doLast {
+        file("${buildDir}/h2o-package-client").mkdirs()
+        copy {
+            from "h2o-package"
+            into "${buildDir}/h2o-package-client"
+        }
+        new File([T, "build", "h2o-package-client", "inst", "java", "h2o.jar"].join(File.separator)).delete()
+        copy{
+            from "../h2o-py/build/libs/h2o-py.jar"
+            rename { filename ->
+                return 'h2o.jar'
+            }
+            into "${buildDir}/h2o-package-client/inst/java"
+        }
+        copy{
+            from "dist-readme.txt"
+            rename { filename ->
+                return 'client_info.txt'
+            }
+            into "${buildDir}/h2o-package-client/inst/"
+        }
+    }
+}
+
+task buildPKGClient(type: Exec) {
+    doFirst {
+        workingDir new File(buildDir, "client")
+        file("${buildDir}/client/tmp").mkdirs()
+        standardOutput = new FileOutputStream("${buildDir}/client/tmp/h2o-r_buildPKG.out")
+        commandLine getOsSpecificCommandLine(['R', 'CMD', 'build', '../../build/h2o-package-client'])
+    }
 }
 
 task cpToR {
@@ -224,10 +268,13 @@ buildPackageDocumentation.dependsOn setDevPackageFiles, setPackageFiles
 genPDF.dependsOn setPackageFiles
 genPDF.dependsOn buildPackageDocumentation
 cpPDF.dependsOn genPDF
-buildPKG.dependsOn cpPDF
+cpMainPKG.dependsOn cpPDF
+buildPKG.dependsOn cpMainPKG
+cpClientPKG.dependsOn buildPKG
+buildPKGClient.dependsOn cpClientPKG
 cpToR.dependsOn buildPKG
 publishPKG.dependsOn cpToR
-untar.dependsOn publishPKG
+untar.dependsOn publishPKG, buildPKGClient
 cleaner.dependsOn untar
 task build_rh2o(dependsOn: cleaner)
 build.dependsOn build_rh2o

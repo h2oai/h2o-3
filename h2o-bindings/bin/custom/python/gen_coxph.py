@@ -1,17 +1,20 @@
 def class_extensions():
-    def _additional_used_columns(self, parms):
-        """
-        :return: Start and stop column if specified.
-        """
-        result = []
-        for col in ["start_column", "stop_column"]:
-            if col in parms and parms[col] is not None:
-                result.append(parms[col])
-        return result
+    @property
+    def baseline_hazard_frame(self):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("baseline_hazard", {}).get("name") is not None):
+            baseline_hazard_name = self._model_json["output"]["baseline_hazard"]["name"]
+            return H2OFrame.get_frame(baseline_hazard_name)
 
+    @property
+    def baseline_survival_frame(self):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("baseline_survival", {}).get("name") is not None):
+            baseline_survival_name = self._model_json["output"]["baseline_survival"]["name"]
+            return H2OFrame.get_frame(baseline_survival_name)
 
 extensions = dict(
-    __class__=class_extensions,
+    __class__=class_extensions
 )
 
 doc = dict(

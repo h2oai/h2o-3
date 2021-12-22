@@ -3,7 +3,7 @@ package water.k8s.api;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import water.k8s.KubernetesEmbeddedConfigProvider;
+import water.k8s.H2OCluster;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -22,7 +22,7 @@ public class KubernetesRestApiTest {
         try (final KubernetesRestApi kubernetesRestApi = new KubernetesRestApi()) {
             kubernetesRestApi.start();
             int responseCode = callIsLeaderNode(8081);
-            assertFalse(KubernetesEmbeddedConfigProvider.isClustered());
+            assertFalse(H2OCluster.isClustered());
             assertEquals(200, responseCode);
         }
     }
@@ -32,7 +32,7 @@ public class KubernetesRestApiTest {
         try (final KubernetesRestApi kubernetesRestApi = new KubernetesRestApi()) {
             kubernetesRestApi.start();
             int responseCode = callIsLeaderNode(8080);
-            assertFalse(KubernetesEmbeddedConfigProvider.isClustered());
+            assertFalse(H2OCluster.isClustered());
             assertEquals(200, responseCode);
         }
     }

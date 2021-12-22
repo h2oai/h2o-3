@@ -17,8 +17,14 @@ public class GlmMultinomialMojoModel extends GlmMojoModelBase {
     noff = _catOffsets[_cats];
   }
 
-  @Override
-  double[] glmScore0(double[] data, double[] preds) {
+  public final double[] score0(double[] data, double offset, double[] preds) {
+    if (_meanImputation)
+      super.imputeMissingWithMeans(data);
+
+    return glmScore0(data, offset, preds);
+  }
+  
+  double[] glmScore0(double[] data, double offset, double[] preds) {
     preds[0] = 0;
     for (int c = 0; c < _nclasses; ++c) {
       preds[c + 1] = 0;

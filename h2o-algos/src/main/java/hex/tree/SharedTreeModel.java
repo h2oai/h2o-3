@@ -1,20 +1,14 @@
 package hex.tree;
 
 import hex.*;
-
-import static hex.genmodel.GenModel.createAuxKey;
-import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
-
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
+import org.apache.log4j.Logger;
 import water.*;
-import water.codegen.CodeGenerator;
-import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -25,11 +19,16 @@ import water.util.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static hex.genmodel.GenModel.createAuxKey;
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
+
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures, Model.FeatureFrequencies, Model.UpdateAuxTreeWeights {
+
+  private static final Logger LOG = Logger.getLogger(SharedTreeModel.class);
 
   @Override
   public String[] getMostImportantFeatures(int n) {
@@ -77,6 +76,10 @@ public abstract class SharedTreeModel<
 
     public double[] _sample_rate_per_class; //fraction of rows to sample for each tree, per class
 
+    public boolean useRowSampling() {
+      return _sample_rate < 1 || _sample_rate_per_class != null;
+    }
+
     public boolean _calibrate_model = false; // Use Platt Scaling
     public Key<Frame> _calibration_frame;
 
@@ -85,10 +88,22 @@ public abstract class SharedTreeModel<
     public double _col_sample_rate_change_per_level = 1.0f; //relative change of the column sampling rate for every level
     public double _col_sample_rate_per_tree = 1.0f; //fraction of columns to sample for each tree
 
+    public boolean useColSampling() {
+      return _col_sample_rate_change_per_level != 1.0f || _col_sample_rate_per_tree != 1.0f;
+    }
+
+    public boolean isStochastic() {
+      return useRowSampling() || useColSampling();
+    }
+
+    public boolean _parallel_main_model_building = false;
+
+    public boolean _use_best_cv_iteration = true; // when early stopping is enabled, cv models will pick the iteration that produced the best score instead of the stopping iteration
+
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
-    static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
+    static final String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
 
     @Override
     public int getNTrees() {
@@ -110,12 +125,23 @@ public abstract class SharedTreeModel<
       return this;
     }
 
+    /**
+     * Do we need to enable strictly deterministic way of building histograms?
+     *
+     * Used eg. when monotonicity constraints in GBM are enabled, by default disabled
+     *
+     * @return true if histograms should be built in deterministic way
+     */
+    public boolean forceStrictlyReproducibleHistograms() {
+      return false;
+    }
+
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain, _parms._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -219,6 +245,26 @@ public abstract class SharedTreeModel<
       fs.blockForPending();
     }
 
+    public void trimTo(final int ntrees) {
+      Futures fs = new Futures();
+      for (int i = ntrees; i < _treeKeys.length; i++) {
+        for (int tc = 0; tc < _treeKeys[i].length; tc++) {
+          if (_treeKeys[i][tc] == null)
+            continue;
+          DKV.remove(_treeKeys[i][tc], fs);
+          DKV.remove(_treeKeysAux[i][tc], fs);
+        }
+      }
+      _ntrees = ntrees;
+      _treeKeys = Arrays.copyOf(_treeKeys ,_ntrees);
+      _treeKeysAux = Arrays.copyOf(_treeKeysAux ,_ntrees);
+      // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
+      _scored_train = Arrays.copyOf(_scored_train, _ntrees + 1);
+      _scored_valid = _scored_valid != null ? Arrays.copyOf(_scored_valid, _ntrees + 1) : null;
+      _training_time_ms = Arrays.copyOf(_training_time_ms, _ntrees + 1);
+      fs.blockForPending();
+    }
+
     @Override
     public int getNTrees() {
       return _ntrees;
@@ -236,7 +282,6 @@ public abstract class SharedTreeModel<
   public SharedTreeModel(Key<M> selfKey, P parms, O output) {
     super(selfKey, parms, output);
   }
-
 
   protected String[] makeAllTreeColumnNames() {
     int classTrees = 0;
@@ -267,6 +312,28 @@ public abstract class SharedTreeModel<
     return task.execute(adaptFrm, names, destination_key);
   }
 
+  @Override
+  public UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn) {
+    if (weightsColumn == null) {
+      throw new IllegalArgumentException("Weights column name is not defined");
+    }
+    Frame adaptFrm = new Frame(frame);
+    Vec weights = adaptFrm.remove(weightsColumn);
+    if (weights == null) {
+      throw new IllegalArgumentException("Input frame doesn't contain weights column `" + weightsColumn + "`");
+    }
+    adaptTestForTrain(adaptFrm, true, false);
+    // keep features only and re-introduce weights column at the end of the frame
+    Frame featureFrm = new Frame(_output.features(), frame.vecs(_output.features()));
+    featureFrm.add(weightsColumn, weights);
+
+    UpdateAuxTreeWeightsTask t = new UpdateAuxTreeWeightsTask(_output).doAll(featureFrm);
+    UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport report = new UpdateAuxTreeWeights.UpdateAuxTreeWeightsReport();
+    report._warn_trees = t._warnTrees;
+    report._warn_classes = t._warnClasses;
+    return report;
+  }
+
   public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
     private final byte[] _buf = new byte[__INTERNAL_MAX_TREE_DEPTH];
     private final BufferedString _bs = new BufferedString(_buf, 0, 0);
@@ -291,7 +358,7 @@ public abstract class SharedTreeModel<
 
   private static abstract class AssignLeafNodeTaskBase extends MRTask<AssignLeafNodeTaskBase> {
     final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
-    final String _domains[][];
+    final String[][] _domains;
 
     AssignLeafNodeTaskBase(SharedTreeOutput output) {
       _treeKeys = output._treeKeys;
@@ -304,7 +371,7 @@ public abstract class SharedTreeModel<
                                        final NewChunk out);
 
     @Override
-    public void map(Chunk chks[], NewChunk[] idx) {
+    public void map(Chunk[] chks, NewChunk[] ncs) {
       double[] input = new double[chks.length];
 
       initMap();
@@ -319,11 +386,11 @@ public abstract class SharedTreeModel<
             Key key = keys[cls];
             if (key != null) {
               CompressedTree tree = DKV.get(key).get();
-              assignNode(tidx, cls, tree, input, idx[col++]);
+              assignNode(tidx, cls, tree, input, ncs[col++]);
             }
           }
         }
-        assert (col == idx.length);
+        assert (col == ncs.length);
       }
     }
 
@@ -340,7 +407,7 @@ public abstract class SharedTreeModel<
       }
     }
   }
-
+  
   private static class AssignTreePathTask extends AssignLeafNodeTaskBase {
     private transient BufStringDecisionPathTracker _tr;
 
@@ -354,9 +421,10 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, 
+                              NewChunk nc) {
       BufferedString pred = tree.getDecisionPath(input, _domains, _tr);
-      out.addStr(pred);
+      nc.addStr(pred);
     }
 
     @Override
@@ -382,15 +450,15 @@ public abstract class SharedTreeModel<
         DKV.put(res);
       }
       if (hasInvalidPaths) {
-        Log.warn("Some of the leaf node assignments were skipped (NA), " +
+        LOG.warn("Some of the leaf node assignments were skipped (NA), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return res;
     }
   }
-
+  
   private static class AssignLeafNodeIdTask extends AssignLeafNodeTaskBase {
-    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
 
     private AssignLeafNodeIdTask(SharedTreeOutput output) {
       super(output);
@@ -402,27 +470,139 @@ public abstract class SharedTreeModel<
     }
 
     @Override
-    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk out) {
+    protected void assignNode(int tidx, int cls, CompressedTree tree, double[] input, NewChunk nc) {
       CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
       assert auxTree != null;
 
       final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
       final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
 
-      out.addNum(nodeId, 0);
+      nc.addNum(nodeId, 0);
     }
 
     @Override
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
       Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
       if (result.vec(0).min() < 0) {
-        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
+        LOG.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return result;
     }
   }
 
+  private static class UpdateAuxTreeWeightsTask extends MRTask<UpdateAuxTreeWeightsTask> {
+    // IN
+    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
+    private final String[][] _domains;
+    // WORKING
+    private transient int[/*treeId*/][/*classId*/] _maxNodeIds;
+    // OUT
+    private double[/*treeId*/][/*classId*/][/*leafNodeId*/] _leafNodeWeights;
+    private int[] _warnTrees;
+    private int[] _warnClasses;
+
+    private UpdateAuxTreeWeightsTask(SharedTreeOutput output) {
+      _treeKeys = output._treeKeys;
+      _auxTreeKeys = output._treeKeysAux;
+      _domains = output._domains;
+    }
+
+    @Override
+    protected void setupLocal() {
+      _maxNodeIds = new int[_auxTreeKeys.length][];
+      for (int treeId = 0; treeId < _auxTreeKeys.length; treeId++) {
+        Key<CompressedTree>[] classAuxTreeKeys = _auxTreeKeys[treeId];
+        _maxNodeIds[treeId] = new int[classAuxTreeKeys.length];
+        for (int classId = 0; classId < classAuxTreeKeys.length; classId++) {
+          if (classAuxTreeKeys[classId] == null) {
+            _maxNodeIds[treeId][classId] = -1;
+            continue;
+          }
+          CompressedTree tree = classAuxTreeKeys[classId].get();
+          assert tree != null;
+          _maxNodeIds[treeId][classId] = tree.findMaxNodeId();
+        }
+      }
+    }
+
+    protected void initMap() {
+      _leafNodeWeights = new double[_maxNodeIds.length][][];
+      for (int treeId = 0; treeId < _maxNodeIds.length; treeId++) {
+        int[] classMaxNodeIds = _maxNodeIds[treeId];
+        _leafNodeWeights[treeId] = new double[classMaxNodeIds.length][];
+        for (int classId = 0; classId < classMaxNodeIds.length; classId++) {
+          if (classMaxNodeIds[classId] < 0)
+            continue;
+          _leafNodeWeights[treeId][classId] = new double[classMaxNodeIds[classId] + 1];
+        }
+      }
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      double[] input = new double[chks.length - 1];
+
+      initMap();
+      for (int row = 0; row < chks[0]._len; row++) {
+        double weight = chks[input.length].atd(row);
+        if (weight == 0 || Double.isNaN(weight))
+          continue;
+        for (int i = 0; i < input.length; i++)
+          input[i] = chks[i].atd(row);
+
+        for (int tidx = 0; tidx < _treeKeys.length; tidx++) {
+          Key<CompressedTree>[] keys = _treeKeys[tidx];
+          for (int cls = 0; cls < keys.length; cls++) {
+            Key<CompressedTree> key = keys[cls];
+            if (key != null) {
+              CompressedTree tree = DKV.get(key).get();
+              CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
+              assert auxTree != null;
+
+              final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
+              final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
+
+              _leafNodeWeights[tidx][cls][nodeId] += weight;
+            }
+          }
+        }
+      }
+    }
+
+    @Override
+    public void reduce(UpdateAuxTreeWeightsTask mrt) {
+      ArrayUtils.add(_leafNodeWeights, mrt._leafNodeWeights);
+    }
+
+    @Override
+    protected void postGlobal() {
+      _warnTrees = new int[0];
+      _warnClasses = new int[0];
+      Futures fs = new Futures();
+      for (int treeId = 0; treeId < _leafNodeWeights.length; treeId++) {
+        double[][] classWeights = _leafNodeWeights[treeId];
+        for (int classId = 0; classId < classWeights.length; classId++) {
+          double[] nodeWeights = classWeights[classId];
+          if (nodeWeights == null)
+            continue;
+          CompressedTree auxTree = _auxTreeKeys[treeId][classId].get();
+          assert auxTree != null;
+          CompressedTree updatedTree = auxTree.updateLeafNodeWeights(nodeWeights);
+          assert auxTree._key.equals(updatedTree._key);
+          DKV.put(updatedTree, fs);
+          if (updatedTree.hasZeroWeight()) {
+            _warnTrees = ArrayUtils.append(_warnTrees, treeId);
+            _warnClasses = ArrayUtils.append(_warnClasses, classId);
+          }
+        }
+      }
+      fs.blockForPending();
+      assert _warnTrees.length == _warnClasses.length;
+    }
+  }
+  
   @Override
   public Frame scoreFeatureFrequencies(Frame frame, Key<Frame> destination_key) {
     Frame adaptFrm = new Frame(frame);
@@ -433,6 +613,9 @@ public abstract class SharedTreeModel<
     adaptFrm.remove(_parms._fold_column);
     adaptFrm.remove(_parms._weights_column);
     adaptFrm.remove(_parms._offset_column);
+    if(_parms._treatment_column != null){
+      adaptFrm.remove(_parms._treatment_column);
+    }
 
     assert adaptFrm.numCols() == _output.nfeatures();
 
@@ -651,23 +834,30 @@ public abstract class SharedTreeModel<
       throw new IllegalArgumentException("Invalid tree index: " + tidx +
               ". Tree index must be in range [0, " + (_output._ntrees -1) + "].");
     }
-    final CompressedTree auxCompressedTree = _output._treeKeysAux[tidx][cls].get();
+    Key<CompressedTree> treeKey = _output._treeKeysAux[tidx][cls];
+    if (treeKey == null)
+      return null;
+    final CompressedTree auxCompressedTree = treeKey.get();
     return _output._treeKeys[tidx][cls].get().toSharedTreeSubgraph(auxCompressedTree, _output._names, _output._domains);
+  }
+
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (featureName.equals(_output.responseName())) return false;
+    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
+    return featureIdx != -1 && (double) _output._varimp._varimp[featureIdx] != 0d;
   }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into a POJO
   //--------------------------------------------------------------------------------------------------------------------
 
-  // Override in subclasses to provide some top-level model-specific goodness
-  @Override protected boolean toJavaCheckTooBig() {
-    // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
-    return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
+  public boolean binomialOpt() {
+    return true;
   }
 
-  protected boolean binomialOpt() { return true; }
-
-  @Override protected CategoricalEncoding getGenModelEncoding() {
+  @Override
+  public CategoricalEncoding getGenModelEncoding() {
     switch (_parms._categorical_encoding) {
       case AUTO:
       case Enum:
@@ -687,92 +877,18 @@ public abstract class SharedTreeModel<
         return null;
     }
   }
-  
-  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+
+  protected SharedTreePojoWriter makeTreePojoWriter() {
+    throw new UnsupportedOperationException("POJO is not supported for model " + _parms.algoName() + ".");
+  }
+
+  @Override
+  protected final PojoWriter makePojoWriter() {
     CategoricalEncoding encoding = getGenModelEncoding();
     if (encoding == null) {
       throw new IllegalArgumentException("Only default, SortByResponse, EnumLimited and 1-hot explicit scheme is supported for POJO/MOJO");
     }
-    sb.nl();
-    sb.ip("public boolean isSupervised() { return true; }").nl();
-    sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
-    sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
-    if (encoding == CategoricalEncoding.Eigen) {
-      sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
-    }
-    if (encoding != CategoricalEncoding.AUTO) {
-      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
-              encoding.name() + "; }").nl();
-    }
-    return sb;
+    return makeTreePojoWriter();
   }
 
-  @Override protected void toJavaPredictBody(SBPrintStream body,
-                                             CodeGeneratorPipeline classCtx,
-                                             CodeGeneratorPipeline fileCtx,
-                                             final boolean verboseCode) {
-    final int nclass = _output.nclasses();
-    body.ip("java.util.Arrays.fill(preds,0);").nl();
-    final String mname = JCodeGen.toJavaId(_key.toString());
-
-    // One forest-per-GBM-tree, with a real-tree-per-class
-    for (int t=0; t < _output._treeKeys.length; t++) {
-      // Generate score method for given tree
-      toJavaForestName(body.i(),mname,t).p(".score0(data,preds);").nl();
-
-      final int treeIdx = t;
-
-      fileCtx.add(new CodeGenerator() {
-        @Override
-        public void generate(JCodeSB out) {
-          try {
-            // Generate a class implementing a tree
-            out.nl();
-            toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
-            out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-            for (int c = 0; c < nclass; c++) {
-              if (_output._treeKeys[treeIdx][c] == null) continue;
-              if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
-                toJavaTreeName(out.ip("preds[").p(nclass == 1 ? 0 : c + 1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
-            }
-            out.di(1).ip("}").nl(); // end of function
-            out.di(1).ip("}").nl(); // end of forest class
-
-            // Generate the pre-tree classes afterwards
-            for (int c = 0; c < nclass; c++) {
-              if (_output._treeKeys[treeIdx][c] == null) continue;
-              if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
-                String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
-                CompressedTree ct = _output.ctree(treeIdx, c);
-                SB sb = new SB();
-                new TreeJCodeGen(SharedTreeModel.this, ct, sb, javaClassName, verboseCode).generate();
-                out.p(sb);
-              }
-            }
-          } catch (Exception e) {
-            throw new RuntimeException("Internal error creating the POJO.", e);
-          }
-        }
-      });
-    }
-
-    toJavaUnifyPreds(body);
-  }
-
-  protected abstract void toJavaUnifyPreds(SBPrintStream body);
-
-  protected <T extends JCodeSB> T toJavaTreeName(T sb, String mname, int t, int c ) {
-    return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
-  }
-
-  protected <T extends JCodeSB> T toJavaForestName(T sb, String mname, int t ) {
-    return (T) sb.p(mname).p("_Forest_").p(t);
-  }
-
-  @Override
-  public boolean isFeatureUsedInPredict(String featureName) {
-    if (featureName.equals(_output.responseName())) return false;
-    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
-    return featureIdx != -1 && (double) _output._varimp._varimp[featureIdx] != 0d;
-  }
 }

@@ -38,7 +38,7 @@ class SpnegoAuth(AuthBase):
     def __init__(self, service_principal, mech_oid=kerberos.GSS_MECH_OID_SPNEGO):
         assert_is_type(service_principal, str)
 
-        self._header_regex = re.compile('(?:.*,)*\s*Negotiate\s*([^,]*),?', re.I)
+        self._header_regex = re.compile(r'(^|,\s*)Negotiate($|[,\s]+)', re.I)
 
         self._service_principal = service_principal
         self._mech_oid = mech_oid

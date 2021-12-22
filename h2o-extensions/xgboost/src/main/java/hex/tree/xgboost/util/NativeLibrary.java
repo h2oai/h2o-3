@@ -16,9 +16,9 @@
 package hex.tree.xgboost.util;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -69,8 +69,7 @@ public class NativeLibrary {
 
   synchronized boolean load() throws IOException {
     if (!loaded) {
-      doLoad();
-      loaded = true;
+      loaded = doLoad();
     }
     return loaded;
   }
@@ -79,13 +78,14 @@ public class NativeLibrary {
    * Load order:
    *
    */
-  private void doLoad() throws IOException {
+  private boolean doLoad() throws IOException {
     final String libName = getName();
     try {
       System.loadLibrary(libName);
+      return true;
     } catch (UnsatisfiedLinkError e) {
       try {
-        extractAndLoad(getPlatformLibraryPath(), getSimpleLibraryPath());
+        return extractAndLoad(getPlatformLibraryPath());
       } catch (IOException ioe) {
         logger.warn("Failed to load library from both native path and jar!");
         throw ioe;
@@ -99,11 +99,6 @@ public class NativeLibrary {
                          platform.getPlatformLibName(getName()));
   }
 
-  private String getSimpleLibraryPath() {
-    return String.format("%s/%s", getResourcePrefix(),
-                         platform.getPlatformLibName(getName()));
-  }
-
   private String getResourcePrefix() {
     return "lib";
   }
@@ -112,27 +107,53 @@ public class NativeLibrary {
     return classLoader;
   }
 
-  private void extractAndLoad(String ...libPaths) throws IOException {
-    Throwable lastException = null;
-    for (String libPath : libPaths) {
-      try {
-        lastException = null;
-        File temp = extract(libPath, getClassLoader());
-        // Finally, load the library
-        System.load(temp.getAbsolutePath());
-        // Perfect loaded, break the cycle
-        logger.info("Loaded library from " + libPath + " (" + temp.getAbsolutePath() + ")");
-        break;
-      } catch (IOException | UnsatisfiedLinkError e) {
-        logger.warn("Cannot load library from path " + libPath);
-        lastException = e;
+  private boolean extractAndLoad(String libPath) throws IOException {
+    try {
+      URL libResource = getLibResource(libPath, getClassLoader());
+      if (libResource == null) {
+        logger.debug("We don't bundle library " + libPath);
+        return false;
       }
+      File temp = extract(libPath, libResource);
+      // Finally, load the library
+      System.load(temp.getAbsolutePath());
+      // Perfect loaded, break the cycle
+      logger.info("Loaded library from " + libPath + " (" + temp.getAbsolutePath() + ")");
+      return true;
+    } catch (IOException | UnsatisfiedLinkError e) {
+      logger.warn("Cannot load library from path " + libPath);
+      throw new IOException(e);
     }
-    if (lastException != null) throw new IOException(lastException);
   }
 
-  private static File extract(String libPath, ClassLoader classLoader)
+  private URL getLibResource() {
+    return getLibResource(getPlatformLibraryPath(), getClassLoader());
+  }
+
+  public boolean isBundled() {
+    return getLibResource() != null;
+  }
+
+  public File extractTo(File directory) throws IOException {
+    File target = new File(directory, platform.getPlatformLibName(getName()));
+    extractTo(getLibResource(), target);
+    return target;
+  }
+  
+  private static void extractTo(URL libResource, File target) throws IOException {
+    try (InputStream is = libResource.openStream()) {
+      Files.copy(is, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+  }
+
+  private static URL getLibResource(String libPath, ClassLoader classLoader) {
+    return classLoader.getResource(libPath);
+  }
+
+  private static File extract(String libPath, URL libResource)
       throws IOException, IllegalArgumentException {
+    assert libResource != null : "Argument `libResource` cannot be null, make sure you only call `extract` for " +
+            "libraries that are available for the current platform.";
 
     // Split filename to prefix and suffix (extension)
     String filename = libPath.substring(libPath.lastIndexOf('/') + 1);
@@ -148,18 +169,8 @@ public class NativeLibrary {
     File temp = File.createTempFile(prefix, suffix);
     temp.deleteOnExit();
 
-    // Open and check input stream
-    InputStream is = classLoader.getResourceAsStream(libPath);
-    if (is == null) {
-      throw new FileNotFoundException("File " + libPath + " was not found inside JAR.");
-    }
-
     // Open output stream and copy data between source file in JAR and the temporary file
-    try {
-      Files.copy(is, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    } finally {
-      is.close();
-    }
+    extractTo(libResource, temp);
 
     return temp;
   }

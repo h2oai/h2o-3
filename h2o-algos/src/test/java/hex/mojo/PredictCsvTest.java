@@ -8,9 +8,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 
 import java.io.ByteArrayOutputStream;
@@ -20,9 +23,11 @@ import java.io.PrintStream;
 import java.security.Permission;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.parseAndTrackTestFile;
 
-
-public class PredictCsvTest extends TestUtil{
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class PredictCsvTest {
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();
@@ -31,7 +36,6 @@ public class PredictCsvTest extends TestUtil{
 
   @Before
   public void setUp() {
-    TestUtil.stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
@@ -48,7 +52,7 @@ public class PredictCsvTest extends TestUtil{
     try {
       Scope.enter();
       // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = parseAndTrackTestFile("smalldata/iris/iris.csv");
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -104,7 +108,7 @@ public class PredictCsvTest extends TestUtil{
     try {
       Scope.enter();
       // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/junit/iris.csv"));
+      Frame train = parseAndTrackTestFile("smalldata/junit/iris.csv");
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -113,6 +117,7 @@ public class PredictCsvTest extends TestUtil{
       p._ntrees = 1;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 

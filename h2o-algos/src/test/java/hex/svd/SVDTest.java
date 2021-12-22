@@ -2,8 +2,6 @@ package hex.svd;
 
 import hex.DataInfo;
 import hex.SplitFrame;
-import hex.pca.PCA;
-import hex.pca.PCAModel;
 import hex.svd.SVDModel.SVDParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -38,7 +36,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 4;
@@ -66,7 +64,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 4;
@@ -95,7 +93,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null, scoreR = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 4;
@@ -109,7 +107,7 @@ public class SVDTest extends TestUtil {
       boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._v, TOLERANCE);
 
       score = model.score(train);
-      scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
+      scoreR = parseTestFile(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
       TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
     } finally {
       if (train != null) train.delete();
@@ -129,7 +127,7 @@ public class SVDTest extends TestUtil {
     for (double missing_fraction : new double[]{0, 0.1, 0.25, 0.5, 0.75, 0.9}) {
       try {
         Scope.enter();
-        train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+        train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
 
         // Add missing values to the training data
         if (missing_fraction > 0) {
@@ -169,7 +167,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      train = parseTestFile(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 4;
@@ -204,7 +202,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null;
     try {
-      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      train = parseTestFile(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 7;
@@ -236,7 +234,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      train = parseTestFile(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 7;
@@ -262,7 +260,7 @@ public class SVDTest extends TestUtil {
     Frame tr = null, te= null;
 
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parseTestFile("smalldata/iris/iris_wheader.csv");
       SplitFrame sf = new SplitFrame(fr,new double[] { 0.5, 0.5 },new Key[] { Key.make("train.hex"), Key.make("test.hex")});
 
       // Invoke the job
@@ -306,7 +304,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
+      train = parseTestFile(Key.make("iris.hex"), "smalldata/iris/iris_wheader.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 7;
@@ -335,7 +333,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
+      train = parseTestFile(Key.make("benign.hex"), "smalldata/logreg/benign.csv");
       SVDModel.SVDParameters parms = new SVDModel.SVDParameters();
       parms._train = train._key;
       parms._nv = 5;
@@ -361,7 +359,7 @@ public class SVDTest extends TestUtil {
     Frame train = null, score = null;
     SVDModel model = null;
     try {
-      train = parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate_cat.csv");
+      train = parseTestFile(Key.make("prostate.hex"), "smalldata/prostate/prostate_cat.csv");
 
       // Add missing values to the training data
       Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
@@ -403,7 +401,7 @@ public class SVDTest extends TestUtil {
     SVDModel model = null;
     Frame train = null, score = null;
     try {
-      train = parse_test_file(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
+      train = parseTestFile(Key.make("prostate_cat.hex"), "smalldata/prostate/prostate_cat.csv");
       for (int i = train.numCols() - 1; i > 0; i--) {
         Vec v = train.vec(i);
         if (v.get_type() != Vec.T_CAT) {

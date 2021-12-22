@@ -25,32 +25,168 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     """
 
     algo = "naivebayes"
-    param_names = {"model_id", "nfolds", "seed", "fold_assignment", "fold_column", "keep_cross_validation_models",
-                   "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "training_frame",
-                   "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
-                   "max_confusion_matrix_size", "laplace", "min_sdev", "eps_sdev", "min_prob", "eps_prob",
-                   "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins"}
+    supervised_learning = True
 
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 model_id=None,  # type: Optional[Union[None, str, H2OEstimator]]
+                 nfolds=0,  # type: int
+                 seed=-1,  # type: int
+                 fold_assignment="auto",  # type: Literal["auto", "random", "modulo", "stratified"]
+                 fold_column=None,  # type: Optional[str]
+                 keep_cross_validation_models=True,  # type: bool
+                 keep_cross_validation_predictions=False,  # type: bool
+                 keep_cross_validation_fold_assignment=False,  # type: bool
+                 training_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 validation_frame=None,  # type: Optional[Union[None, str, H2OFrame]]
+                 response_column=None,  # type: Optional[str]
+                 ignored_columns=None,  # type: Optional[List[str]]
+                 ignore_const_cols=True,  # type: bool
+                 score_each_iteration=False,  # type: bool
+                 balance_classes=False,  # type: bool
+                 class_sampling_factors=None,  # type: Optional[List[float]]
+                 max_after_balance_size=5.0,  # type: float
+                 max_confusion_matrix_size=20,  # type: int
+                 laplace=0.0,  # type: float
+                 min_sdev=0.001,  # type: float
+                 eps_sdev=0.0,  # type: float
+                 min_prob=0.001,  # type: float
+                 eps_prob=0.0,  # type: float
+                 compute_metrics=True,  # type: bool
+                 max_runtime_secs=0.0,  # type: float
+                 export_checkpoints_dir=None,  # type: Optional[str]
+                 gainslift_bins=-1,  # type: int
+                 auc_type="auto",  # type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+                 ):
+        """
+        :param model_id: Destination id for this model; auto-generated if not specified.
+               Defaults to ``None``.
+        :type model_id: Union[None, str, H2OEstimator], optional
+        :param nfolds: Number of folds for K-fold cross-validation (0 to disable or >= 2).
+               Defaults to ``0``.
+        :type nfolds: int
+        :param seed: Seed for pseudo random number generator (only used for cross-validation and
+               fold_assignment="Random" or "AUTO")
+               Defaults to ``-1``.
+        :type seed: int
+        :param fold_assignment: Cross-validation fold assignment scheme, if fold_column is not specified. The
+               'Stratified' option will stratify the folds based on the response variable, for classification problems.
+               Defaults to ``"auto"``.
+        :type fold_assignment: Literal["auto", "random", "modulo", "stratified"]
+        :param fold_column: Column with cross-validation fold index assignment per observation.
+               Defaults to ``None``.
+        :type fold_column: str, optional
+        :param keep_cross_validation_models: Whether to keep the cross-validation models.
+               Defaults to ``True``.
+        :type keep_cross_validation_models: bool
+        :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation models.
+               Defaults to ``False``.
+        :type keep_cross_validation_predictions: bool
+        :param keep_cross_validation_fold_assignment: Whether to keep the cross-validation fold assignment.
+               Defaults to ``False``.
+        :type keep_cross_validation_fold_assignment: bool
+        :param training_frame: Id of the training data frame.
+               Defaults to ``None``.
+        :type training_frame: Union[None, str, H2OFrame], optional
+        :param validation_frame: Id of the validation data frame.
+               Defaults to ``None``.
+        :type validation_frame: Union[None, str, H2OFrame], optional
+        :param response_column: Response variable column.
+               Defaults to ``None``.
+        :type response_column: str, optional
+        :param ignored_columns: Names of columns to ignore for training.
+               Defaults to ``None``.
+        :type ignored_columns: List[str], optional
+        :param ignore_const_cols: Ignore constant columns.
+               Defaults to ``True``.
+        :type ignore_const_cols: bool
+        :param score_each_iteration: Whether to score during each iteration of model training.
+               Defaults to ``False``.
+        :type score_each_iteration: bool
+        :param balance_classes: Balance training data class counts via over/under-sampling (for imbalanced data).
+               Defaults to ``False``.
+        :type balance_classes: bool
+        :param class_sampling_factors: Desired over/under-sampling ratios per class (in lexicographic order). If not
+               specified, sampling factors will be automatically computed to obtain class balance during training.
+               Requires balance_classes.
+               Defaults to ``None``.
+        :type class_sampling_factors: List[float], optional
+        :param max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be
+               less than 1.0). Requires balance_classes.
+               Defaults to ``5.0``.
+        :type max_after_balance_size: float
+        :param max_confusion_matrix_size: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in
+               the Logs
+               Defaults to ``20``.
+        :type max_confusion_matrix_size: int
+        :param laplace: Laplace smoothing parameter
+               Defaults to ``0.0``.
+        :type laplace: float
+        :param min_sdev: Min. standard deviation to use for observations with not enough data
+               Defaults to ``0.001``.
+        :type min_sdev: float
+        :param eps_sdev: Cutoff below which standard deviation is replaced with min_sdev
+               Defaults to ``0.0``.
+        :type eps_sdev: float
+        :param min_prob: Min. probability to use for observations with not enough data
+               Defaults to ``0.001``.
+        :type min_prob: float
+        :param eps_prob: Cutoff below which probability is replaced with min_prob
+               Defaults to ``0.0``.
+        :type eps_prob: float
+        :param compute_metrics: Compute metrics on training data
+               Defaults to ``True``.
+        :type compute_metrics: bool
+        :param max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+               Defaults to ``0.0``.
+        :type max_runtime_secs: float
+        :param export_checkpoints_dir: Automatically export generated models to this directory.
+               Defaults to ``None``.
+        :type export_checkpoints_dir: str, optional
+        :param gainslift_bins: Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic
+               binning.
+               Defaults to ``-1``.
+        :type gainslift_bins: int
+        :param auc_type: Set default multinomial AUC type.
+               Defaults to ``"auto"``.
+        :type auc_type: Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]
+        """
         super(H2ONaiveBayesEstimator, self).__init__()
         self._parms = {}
-        for pname, pvalue in kwargs.items():
-            if pname == 'model_id':
-                self._id = pvalue
-                self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
-                # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, pvalue)
-            else:
-                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._id = self._parms['model_id'] = model_id
+        self.nfolds = nfolds
+        self.seed = seed
+        self.fold_assignment = fold_assignment
+        self.fold_column = fold_column
+        self.keep_cross_validation_models = keep_cross_validation_models
+        self.keep_cross_validation_predictions = keep_cross_validation_predictions
+        self.keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment
+        self.training_frame = training_frame
+        self.validation_frame = validation_frame
+        self.response_column = response_column
+        self.ignored_columns = ignored_columns
+        self.ignore_const_cols = ignore_const_cols
+        self.score_each_iteration = score_each_iteration
+        self.balance_classes = balance_classes
+        self.class_sampling_factors = class_sampling_factors
+        self.max_after_balance_size = max_after_balance_size
+        self.max_confusion_matrix_size = max_confusion_matrix_size
+        self.laplace = laplace
+        self.min_sdev = min_sdev
+        self.eps_sdev = eps_sdev
+        self.min_prob = min_prob
+        self.eps_prob = eps_prob
+        self.compute_metrics = compute_metrics
+        self.max_runtime_secs = max_runtime_secs
+        self.export_checkpoints_dir = export_checkpoints_dir
+        self.gainslift_bins = gainslift_bins
+        self.auc_type = auc_type
 
     @property
     def nfolds(self):
         """
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``, defaults to ``0``.
 
         :examples:
 
@@ -72,13 +208,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
 
-
     @property
     def seed(self):
         """
         Seed for pseudo random number generator (only used for cross-validation and fold_assignment="Random" or "AUTO")
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -112,14 +247,13 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
 
-
     @property
     def fold_assignment(self):
         """
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
 
-        One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+        Type: ``Literal["auto", "random", "modulo", "stratified"]``, defaults to ``"auto"``.
 
         :examples:
 
@@ -140,7 +274,6 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def fold_assignment(self, fold_assignment):
         assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
-
 
     @property
     def fold_column(self):
@@ -172,13 +305,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
 
-
     @property
     def keep_cross_validation_models(self):
         """
         Whether to keep the cross-validation models.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -202,13 +334,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_models, None, bool)
         self._parms["keep_cross_validation_models"] = keep_cross_validation_models
 
-
     @property
     def keep_cross_validation_predictions(self):
         """
         Whether to keep the predictions of the cross-validation models.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -232,13 +363,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_predictions, None, bool)
         self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
-
     @property
     def keep_cross_validation_fold_assignment(self):
         """
         Whether to keep the cross-validation fold assignment.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -262,13 +392,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(keep_cross_validation_fold_assignment, None, bool)
         self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
-
     @property
     def training_frame(self):
         """
         Id of the training data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -290,13 +419,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def training_frame(self, training_frame):
         self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
 
-
     @property
     def validation_frame(self):
         """
         Id of the validation data frame.
 
-        Type: ``H2OFrame``.
+        Type: ``Union[None, str, H2OFrame]``.
 
         :examples:
 
@@ -318,7 +446,6 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def validation_frame(self, validation_frame):
         self._parms["validation_frame"] = H2OFrame._validate(validation_frame, 'validation_frame')
 
-
     @property
     def response_column(self):
         """
@@ -332,7 +459,6 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
-
 
     @property
     def ignored_columns(self):
@@ -348,13 +474,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(ignored_columns, None, [str])
         self._parms["ignored_columns"] = ignored_columns
 
-
     @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -380,13 +505,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(ignore_const_cols, None, bool)
         self._parms["ignore_const_cols"] = ignore_const_cols
 
-
     @property
     def score_each_iteration(self):
         """
         Whether to score during each iteration of model training.
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -410,13 +534,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(score_each_iteration, None, bool)
         self._parms["score_each_iteration"] = score_each_iteration
 
-
     @property
     def balance_classes(self):
         """
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
-        Type: ``bool``  (default: ``False``).
+        Type: ``bool``, defaults to ``False``.
 
         :examples:
 
@@ -435,7 +558,6 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def balance_classes(self, balance_classes):
         assert_is_type(balance_classes, None, bool)
         self._parms["balance_classes"] = balance_classes
-
 
     @property
     def class_sampling_factors(self):
@@ -464,14 +586,13 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(class_sampling_factors, None, [float])
         self._parms["class_sampling_factors"] = class_sampling_factors
 
-
     @property
     def max_after_balance_size(self):
         """
         Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
         balance_classes.
 
-        Type: ``float``  (default: ``5``).
+        Type: ``float``, defaults to ``5.0``.
 
         :examples:
 
@@ -496,13 +617,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(max_after_balance_size, None, float)
         self._parms["max_after_balance_size"] = max_after_balance_size
 
-
     @property
     def max_confusion_matrix_size(self):
         """
         [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs
 
-        Type: ``int``  (default: ``20``).
+        Type: ``int``, defaults to ``20``.
         """
         return self._parms.get("max_confusion_matrix_size")
 
@@ -511,13 +631,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(max_confusion_matrix_size, None, int)
         self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
 
-
     @property
     def laplace(self):
         """
         Laplace smoothing parameter
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -539,13 +658,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(laplace, None, numeric)
         self._parms["laplace"] = laplace
 
-
     @property
     def min_sdev(self):
         """
         Min. standard deviation to use for observations with not enough data
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -573,13 +691,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(min_sdev, None, numeric)
         self._parms["min_sdev"] = min_sdev
 
-
     @property
     def eps_sdev(self):
         """
         Cutoff below which standard deviation is replaced with min_sdev
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -604,13 +721,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(eps_sdev, None, numeric)
         self._parms["eps_sdev"] = eps_sdev
 
-
     @property
     def min_prob(self):
         """
         Min. probability to use for observations with not enough data
 
-        Type: ``float``  (default: ``0.001``).
+        Type: ``float``, defaults to ``0.001``.
 
         :examples:
 
@@ -638,13 +754,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(min_prob, None, numeric)
         self._parms["min_prob"] = min_prob
 
-
     @property
     def eps_prob(self):
         """
         Cutoff below which probability is replaced with min_prob
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -670,13 +785,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(eps_prob, None, numeric)
         self._parms["eps_prob"] = eps_prob
 
-
     @property
     def compute_metrics(self):
         """
         Compute metrics on training data
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``, defaults to ``True``.
 
         :examples:
 
@@ -700,13 +814,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(compute_metrics, None, bool)
         self._parms["compute_metrics"] = compute_metrics
 
-
     @property
     def max_runtime_secs(self):
         """
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
-        Type: ``float``  (default: ``0``).
+        Type: ``float``, defaults to ``0.0``.
 
         :examples:
 
@@ -729,7 +842,6 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
-
 
     @property
     def export_checkpoints_dir(self):
@@ -757,13 +869,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
-
     @property
     def gainslift_bins(self):
         """
         Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``, defaults to ``-1``.
 
         :examples:
 
@@ -780,5 +891,20 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def gainslift_bins(self, gainslift_bins):
         assert_is_type(gainslift_bins, None, int)
         self._parms["gainslift_bins"] = gainslift_bins
+
+    @property
+    def auc_type(self):
+        """
+        Set default multinomial AUC type.
+
+        Type: ``Literal["auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"]``, defaults to
+        ``"auto"``.
+        """
+        return self._parms.get("auc_type")
+
+    @auc_type.setter
+    def auc_type(self, auc_type):
+        assert_is_type(auc_type, None, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+        self._parms["auc_type"] = auc_type
 
 

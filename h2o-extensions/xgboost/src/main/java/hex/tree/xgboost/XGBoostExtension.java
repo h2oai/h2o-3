@@ -6,6 +6,7 @@ import hex.tree.xgboost.util.NativeLibrary;
 import hex.tree.xgboost.util.NativeLibraryLoaderChain;
 import org.apache.log4j.Logger;
 import water.AbstractH2OExtension;
+import water.H2O;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,7 +23,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
   
   private static final Logger LOG = Logger.getLogger(XGBoostExtension.class);
 
-  private static String XGBOOST_MIN_REQUIREMENTS =
+  private static final String XGBOOST_MIN_REQUIREMENTS =
           "Xgboost (enabled GPUs) needs: \n"
                   + "  - CUDA 8.0\n"
                   + "XGboost (minimal version) needs: \n"
@@ -65,35 +66,41 @@ public class XGBoostExtension extends AbstractH2OExtension {
     }
   }
 
+  public static NativeLibraryLoaderChain getLoader() throws IOException {
+    INativeLibLoader loader = NativeLibLoader.getLoader();
+    if (! (loader instanceof NativeLibraryLoaderChain)) {
+      LOG.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
+              "XGBoost extension will be disabled.");
+      return null;
+    }
+    return(NativeLibraryLoaderChain) loader;
+  }
+
+  @Override
+  public void onLocalNodeStarted() {
+    if (!isEnabled())
+      return;
+    final double ratio = H2O.ARGS.off_heap_memory_ratio;
+    if (H2O.ARGS.off_heap_memory_ratio > 0) {
+      MemoryCheck.Report report = MemoryCheck.runCheck(ratio);
+      if (!report.isOffHeapRequirementMet()) {
+        LOG.warn("There doesn't seem to be enough memory available for XGBoost model training (off_heap_memory_ratio=" + ratio + "), " +
+                "training XGBoost models is not advised. Details: " + report);
+      }
+    }
+  }
+
   private boolean initXgboost() {
     try {
-      INativeLibLoader loader = NativeLibLoader.getLoader();
-      if (! (loader instanceof NativeLibraryLoaderChain)) {
-        LOG.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
-                "XGBoost extension will be disabled.");
+      NativeLibraryLoaderChain chainLoader = getLoader();
+      if (chainLoader == null)
         return false;
-      }
-      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
       NativeLibrary lib = chainLoader.getLoadedLibrary();
       nativeLibInfo = new NativeLibInfo(lib);
       return true;
     } catch (IOException e) {
       // Ups no lib loaded or load failed
       LOG.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
-      return false;
-    }
-  }
-
-  static boolean isGpuSupportEnabled() {
-    try {
-      INativeLibLoader loader = NativeLibLoader.getLoader();
-      if (! (loader instanceof NativeLibraryLoaderChain))
-        return false;
-      NativeLibraryLoaderChain chainLoader = (NativeLibraryLoaderChain) loader;
-      NativeLibrary lib = chainLoader.getLoadedLibrary();
-      return lib.hasCompilationFlag(NativeLibrary.CompilationFlags.WITH_GPU);
-    } catch (IOException e) {
-      LOG.debug(e);
       return false;
     }
   }

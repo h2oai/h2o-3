@@ -1,7 +1,7 @@
 package water.k8s.lookup;
 
 
-import water.util.Log;
+import org.apache.log4j.Logger;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -61,6 +61,8 @@ import java.util.regex.Pattern;
  */
 public class KubernetesDnsLookup implements KubernetesLookup {
 
+    private static final Logger LOG = Logger.getLogger(KubernetesDnsLookup.class);
+
     private static final String K8S_SERVICE_DNS_ENV_VAR_KEY = "H2O_KUBERNETES_SERVICE_DNS";
     private static final String DNS_TIMEOUT_DEFAULT = "30000"; // 30 seconds
     private static final int ONE_SECOND = 1000;
@@ -109,13 +111,13 @@ public class KubernetesDnsLookup implements KubernetesLookup {
             try {
                 dnsLookup(lookedUpNodes);
             } catch (NamingException e) {
-                Log.warn(e.getMessage());
+                LOG.warn(e.getMessage());
                 continue;
             } finally {
                 try {
                     Thread.sleep(ONE_SECOND);
                 } catch (InterruptedException e) {
-                    Log.err(e);
+                    LOG.error(e);
                     return Optional.empty();
                 }
             }
@@ -149,11 +151,11 @@ public class KubernetesDnsLookup implements KubernetesLookup {
                 try {
                     nodeIP = InetAddress.getByName(serverHost);
                 } catch (UnknownHostException e) {
-                    Log.err("Unknown host for IP Address: " + serverHost);
+                    LOG.error("Unknown host for IP Address: " + serverHost);
                     continue;
                 }
                 if (nodeIPs.add(nodeIP.getHostAddress())) {
-                    Log.info(String.format("New H2O pod with DNS record '%s' discovered.", nodeIP));
+                    LOG.info(String.format("New H2O pod with DNS record '%s' discovered.", nodeIP));
                 }
             }
             servers.close();

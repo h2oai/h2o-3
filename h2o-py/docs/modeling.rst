@@ -7,6 +7,12 @@ Modeling In H2O
 Supervised
 ++++++++++
 
+:mod:`H2OANOVAGLMEstimator`
+---------------------------
+.. autoclass:: h2o.estimators.anovaglm.H2OANOVAGLMEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OCoxProportionalHazardsEstimator`
 -----------------------------------------
 .. autoclass:: h2o.estimators.coxph.H2OCoxProportionalHazardsEstimator
@@ -34,6 +40,18 @@ Supervised
 :mod:`H2OGeneralizedLinearEstimator`
 ------------------------------------
 .. autoclass:: h2o.estimators.glm.H2OGeneralizedLinearEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OInfogram`
+------------------
+.. autoclass:: h2o.estimators.infogram.H2OInfogram
+    :show-inheritance:
+    :members:
+
+:mod:`H2OModelSelectionEstimator`
+---------------------------------
+.. autoclass:: h2o.estimators.model_selection.H2OModelSelectionEstimator
     :show-inheritance:
     :members:
 
@@ -73,6 +91,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OUpliftRandomForestEstimator`
+-------------------------------------
+.. autoclass:: h2o.estimators.uplift_random_forest.H2OUpliftRandomForestEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OXGBoostEstimator`
 --------------------------
 .. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator
@@ -92,6 +116,12 @@ Unsupervised
 :mod:`H2OAutoEncoderEstimator`
 ------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2OAutoEncoderEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OExtendedIsolationForestEstimator`
+------------------------------------------
+.. autoclass:: h2o.estimators.extended_isolation_forest.H2OExtendedIsolationForestEstimator
     :show-inheritance:
     :members:
 

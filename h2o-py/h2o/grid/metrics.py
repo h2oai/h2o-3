@@ -1105,6 +1105,57 @@ class H2OMultinomialGridSearch(object):
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
+    def auc(self, train=False, valid=False, xval=False):
+        """
+        Retrieve the AUC value.
+
+        If all are False (default), then return the training metric value.
+        If more than one option is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the AUC values for the training data.
+        :param bool valid: If valid is True, then return the AUC values for the validation data.
+        :param bool xval:  If xval is True, then return the AUC values for the cross validation data.
+        :returns: The AUC values for this multinomial model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.auc(train=True)
+        """
+        return {model.model_id: model.auc(train, valid, xval) for model in self.models}
+
+    def aucpr(self, train=False, valid=False, xval=False):
+        """
+        Retrieve the PR AUC value.
+
+        If all are False (default), then return the training metric value.
+        If more than one option is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the PR AUC values for the training data.
+        :param bool valid: If valid is True, then return the PR AUC values for the validation data.
+        :param bool xval:  If xval is True, then return the PR AUC values for the cross validation data.
+        :returns: The PR AUC values for this multinomial model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.aucpr(train=True)
+        """
+        return {model.model_id: model.aucpr(train, valid, xval) for model in self.models}
 
     def mean_per_class_error(self, train=False, valid=False, xval=False):
         """

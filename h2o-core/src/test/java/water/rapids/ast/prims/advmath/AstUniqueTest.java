@@ -11,13 +11,14 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.DistributedException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
 public class AstUniqueTest extends TestUtil {
-
 
   @Test
   public void uniqueCategoricalTest() {
@@ -124,5 +125,30 @@ public class AstUniqueTest extends TestUtil {
     }
   }
 
+  @Test
+  public void stringsUnsupported() {
+    Scope.enter();
+    try {
+      final Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withVecTypes(Vec.T_STR)
+              .withDataForCol(0, ar("LEVEL1", null))
+              .build();
+      final String expression = "(unique (cols " + fr._key.toString() + " [0]) true)";
+      Throwable cause = null;
+      try {
+        final Val val = Rapids.exec(expression);
+        Scope.track(val.getFrame());
+      } catch (DistributedException e) {
+        cause = e.getCause();
+      } catch (Exception e) {
+        cause = e;
+      }
+      assertNotNull(cause);
+      assertEquals("Operation not allowed on string vector.", cause.getMessage());
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

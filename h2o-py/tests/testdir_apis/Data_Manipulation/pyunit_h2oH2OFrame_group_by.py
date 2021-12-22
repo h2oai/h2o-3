@@ -26,7 +26,6 @@ def h2o_H2OFrame_group_by():
     grouped = h2o_iris.group_by([4])        # set by as an int list
     assert_is_type(grouped, GroupBy)
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_group_by())
-else:
-    h2o_H2OFrame_group_by()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_group_by)
+

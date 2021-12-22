@@ -1,5 +1,7 @@
 import groovy.json.JsonSlurper
 
+import java.lang.reflect.Array
+
 def call() {
     return new PipelineUtils()
 }
@@ -13,6 +15,10 @@ class PipelineUtils {
             return stageName.toLowerCase().replaceAll(' |\\(|\\)', '-')
         }
         return null
+    }
+
+    void stashGit(final context) {
+        context.stash name: "git", includes: '**/.git/**/*', useDefaultExcludes: false
     }
 
     void stashFiles(final context, final String stashName, final String includedFiles, final boolean allowEmpty) {
@@ -121,13 +127,18 @@ class PipelineUtils {
         return gradleVersion
     }
 
-    boolean dockerImageExistsInRegistry(final context, final String registry, final String imageName, final String version) {
+    boolean dockerImageExistsInRegistry(final context, final String registry, final String projectName, final String repositoryName, final String version) {
         context.withCredentials([context.usernamePassword(credentialsId: "${registry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-            context.echo "URL: http://${registry}/api/repositories/${imageName}/tags"
-            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/repositories/${imageName}/tags".execute().text
+            String repositoryNameAdjusted = repositoryName.replaceAll("/","%252F")
+            context.echo "URL: http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryNameAdjusted}/artifacts/${version}/tags"
+            final String response = "curl -k -u ${context.REGISTRY_USERNAME}:${context.REGISTRY_PASSWORD} http://${registry}/api/v2.0/projects/${projectName}/repositories/${repositoryNameAdjusted}/artifacts/${version}/tags".execute().text
             final def jsonResponse = new groovy.json.JsonSlurper().parseText(response)
-            def matched = jsonResponse.findAll { it.name == version }
-            return matched.size() > 0
+            if (jsonResponse instanceof List) {
+                return jsonResponse.size() > 0
+            }
+            assert jsonResponse instanceof Map, "Response is not a valid json. Response is:" + response
+            context.echo response // The output is most probably error (NOT_FOUND)
+            return false
         }
     }
 
@@ -175,7 +186,8 @@ class PipelineUtils {
             unstashFiles(context, buildConfig.getStashNameForTestPackage(component))
             unstashFiles(context, buildConfig.H2O_JAR_STASH_NAME)
         }
-        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${component}.zip && rm -v test-package-${component}.zip"
+        def suffix = component == 'any' ? 'java' : component
+        context.sh "cd ${stageDir}/h2o-3 && unzip -q -o test-package-${suffix}.zip && rm -v test-package-${suffix}.zip"
     }
 
     void archiveStageFiles(final context, final String h2o3dir, final List<String> archiveFiles, final List<String> excludeFiles) {

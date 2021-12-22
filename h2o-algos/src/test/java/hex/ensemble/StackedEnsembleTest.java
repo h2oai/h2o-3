@@ -21,26 +21,27 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
+@CloudSize(1)
+@RunWith(H2ORunner.class)
 public class StackedEnsembleTest extends TestUtil {
 
-    @BeforeClass public static void stall() { stall_till_cloudsize(1); }
-
   @Rule
-  public ExpectedException expectedException = ExpectedException.none();
+  public transient ExpectedException expectedException = ExpectedException.none();
 
     private abstract class PrepData { abstract int prep(Frame fr); }
 
@@ -52,7 +53,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
-            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
             false, DistributionFamily.gaussian, Algorithm.AUTO, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -81,7 +82,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.gbm, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -109,7 +110,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.drf, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -137,7 +138,7 @@ public class StackedEnsembleTest extends TestUtil {
 
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.deeplearning, false);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -168,7 +169,7 @@ public class StackedEnsembleTest extends TestUtil {
         // Regression tests
         basicEnsemble("./smalldata/junit/cars.csv",
                 null,
-                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+                new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
                 false, DistributionFamily.gaussian, Algorithm.glm, false);
 
         // Binomial tests
@@ -309,7 +310,7 @@ public class StackedEnsembleTest extends TestUtil {
     @Test public void testBlending() {
         basicEnsemble("./smalldata/junit/cars.csv",
             null,
-            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return ~fr.find("economy (mpg)"); }},
+            new StackedEnsembleTest.PrepData() { int prep(Frame fr ) {fr.remove("name").remove(); return fr.find("economy (mpg)"); }},
             false, DistributionFamily.gaussian, Algorithm.AUTO, true);
 
         basicEnsemble("./smalldata/airlines/allyears2k_headers.zip",
@@ -341,7 +342,7 @@ public class StackedEnsembleTest extends TestUtil {
       try {
         Scope.enter();
         long seed = 6 << 6 << 6;
-        Frame train = parse_test_file("./smalldata/junit/cars.csv");
+        Frame train = parseTestFile("./smalldata/junit/cars.csv");
         String target = "economy (mpg)";
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
             train,
@@ -439,8 +440,8 @@ public class StackedEnsembleTest extends TestUtil {
       List<Lockable> deletables = new ArrayList<>();
       try {
         final int seed = 62832;
-        final Frame fr = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
-        final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+        final Frame fr = parseTestFile("./smalldata/logreg/prostate_train.csv"); deletables.add(fr);
+        final Frame test = parseTestFile("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
 
         final String target = "CAPSULE";
         int tidx = fr.find(target);
@@ -493,8 +494,8 @@ public class StackedEnsembleTest extends TestUtil {
       List<Lockable> deletables = new ArrayList<>();
       try {
         final int seed = 62832;
-        final Frame train = parse_test_file("./smalldata/testng/cars_train.csv"); deletables.add(train);
-        final Frame test = parse_test_file("./smalldata/testng/cars_test.csv"); deletables.add(test);
+        final Frame train = parseTestFile("./smalldata/testng/cars_train.csv"); deletables.add(train);
+        final Frame test = parseTestFile("./smalldata/testng/cars_test.csv"); deletables.add(test);
         final String target = "economy (mpg)";
         int cyl_idx = test.find("cylinders");
         Assert.assertTrue(test.vec(cyl_idx).isInt());
@@ -574,8 +575,8 @@ public class StackedEnsembleTest extends TestUtil {
         List<Lockable> deletables = new ArrayList<>();
         try {
             final int seed = 1;
-            final Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
-            final Frame test = parse_test_file("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
+            final Frame train = parseTestFile("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
+            final Frame test = parseTestFile("./smalldata/logreg/prostate_test.csv"); deletables.add(test);
 
             final String target = "CAPSULE";
             int tidx = train.find(target);
@@ -656,9 +657,9 @@ public class StackedEnsembleTest extends TestUtil {
         long seed = 42*42;
         try {
             Scope.enter();
-            training_frame = parse_test_file(training_file);
+            training_frame = parseTestFile(training_file);
             if (null != validation_file)
-                validation_frame = parse_test_file(validation_file);
+                validation_frame = parseTestFile(validation_file);
 
             int idx = prep.prep(training_frame); // hack frame per-test
             if (null != validation_frame)
@@ -692,7 +693,6 @@ public class StackedEnsembleTest extends TestUtil {
 
             // Build GBM
             GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
-            if( idx < 0 ) idx = ~idx;
             // Configure GBM
             gbmParameters._train = training_frame._key;
             gbmParameters._valid = (validation_frame == null ? null : validation_frame._key);
@@ -761,6 +761,7 @@ public class StackedEnsembleTest extends TestUtil {
 
             Frame training_clone = new Frame(training_frame);
             DKV.put(training_clone);
+            Scope.track(training_clone);
             preds = stackedEnsembleModel.score(training_clone);
             final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
             Assert.assertTrue(predsTheSame);
@@ -775,6 +776,7 @@ public class StackedEnsembleTest extends TestUtil {
                 ModelMetrics validation_metrics = stackedEnsembleModel._output._validation_metrics;
                 Frame validation_clone = new Frame(validation_frame);
                 DKV.put(validation_clone);
+                Scope.track(validation_clone);
                 stackedEnsembleModel.score(validation_clone).remove();
                 ModelMetrics validation_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, validation_clone);
                 Assert.assertEquals(validation_metrics.mse(), validation_clone_metrics.mse(), 1e-15);
@@ -789,15 +791,15 @@ public class StackedEnsembleTest extends TestUtil {
             if (blending_frame != null) blending_frame.remove();
             if( gbm != null ) {
                 gbm.delete();
-                for (Key k : gbm._output._cross_validation_predictions) k.remove();
-                gbm._output._cross_validation_holdout_predictions_frame_id.remove();
+                for (Key k : gbm._output._cross_validation_predictions) Keyed.remove(k);
+                Keyed.remove(gbm._output._cross_validation_holdout_predictions_frame_id);
                 gbm.deleteCrossValidationModels();
             }
             if( drf != null ) {
                 drf.delete();
                 if (!blending_mode) {
-                    for (Key k : drf._output._cross_validation_predictions) k.remove();
-                    drf._output._cross_validation_holdout_predictions_frame_id.remove();
+                    for (Key k : drf._output._cross_validation_predictions) Keyed.remove(k);
+                    Keyed.remove(drf._output._cross_validation_holdout_predictions_frame_id);
                     drf.deleteCrossValidationModels();
                 }
             }
@@ -835,8 +837,8 @@ public class StackedEnsembleTest extends TestUtil {
         List<Lockable> deletables = new ArrayList<>();
         try {
             final int seed = 1;
-            final Frame train = parse_test_file("./smalldata/testng/prostate_train.csv"); deletables.add(train);
-            final Frame test = parse_test_file("./smalldata/testng/prostate_test.csv"); deletables.add(test);
+            final Frame train = parseTestFile("./smalldata/testng/prostate_train.csv"); deletables.add(train);
+            final Frame test = parseTestFile("./smalldata/testng/prostate_test.csv"); deletables.add(test);
             final String target = "CAPSULE";
             int target_idx = train.find(target);
             train.replace(target_idx, train.vec(target_idx).toCategoricalVec()).remove();
@@ -904,9 +906,9 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
-      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      final Frame partialFrame = parseTestFile("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
       Scope.track(partialFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -953,9 +955,9 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
-      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      final Frame partialFrame = parseTestFile("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
       Scope.track(partialFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -1004,9 +1006,9 @@ public class StackedEnsembleTest extends TestUtil {
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
-      final Frame partialFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
+      final Frame partialFrame = parseTestFile("./smalldata/iris/iris_wheader.csv", new int[]{4}); // Missing fold column
       Scope.track(partialFrame);
 
       GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
@@ -1049,62 +1051,12 @@ public class StackedEnsembleTest extends TestUtil {
   }
 
   @Test
-  public void testInvalidFoldColumn_trainingFrame() {
-    GBMModel gbmModel = null;
-    try {
-      Scope.enter();
-
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
-      Scope.track(trainingFrame);
-
-      GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
-      parameters._train = trainingFrame._key;
-      parameters._fold_column = "class";
-      parameters._seed = 0xFEED;
-      parameters._response_column = "petal_len";
-      parameters._ntrees = 1;
-      parameters._keep_cross_validation_predictions = true;
-
-      GBM gbm = new GBM(parameters);
-      gbmModel = gbm.trainModel().get();
-      assertNotNull(gbmModel);
-
-      final Frame seTrain = new Frame(Key.<Frame>make(), trainingFrame.names(), trainingFrame.vecs());
-      Vec foldVec = seTrain.remove("class");
-      seTrain.add("class", foldVec.toStringVec());
-      DKV.put(seTrain);
-      Scope.track(seTrain);
-
-      final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
-      seParams._train = seTrain._key;
-      seParams._response_column = "petal_len";
-      seParams._metalearner_algorithm = Algorithm.AUTO;
-      seParams._base_models = new Key[]{gbmModel._key};
-      seParams._seed = 0x5EED;
-      seParams._metalearner_fold_column = "class";
-
-      expectedException.expect(IllegalArgumentException.class);
-      expectedException.expectMessage("Specified fold column 'class' not found in one of the supplied data frames. Available column names are: [sepal_len, sepal_wid, petal_wid, petal_len]");
-
-      new StackedEnsemble(seParams);
-      fail("Expected the Stack Ensemble Model never to be initialized successfully.");
-    } finally {
-      Scope.exit();
-      if(gbmModel != null){
-        gbmModel.deleteCrossValidationModels();
-        gbmModel.deleteCrossValidationPreds();
-        gbmModel.remove();
-      }
-    }
-  }
-
-  @Test
   public void testBaseModelsWorkWithGrid() {
     GBMModel gbmModel = null;
     try {
       Scope.enter();
 
-      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/junit/weather.csv");
+      final Frame trainingFrame = parseTestFile("./smalldata/junit/weather.csv");
       Scope.track(trainingFrame);
       trainingFrame.toCategoricalCol("RainTomorrow");
 
@@ -1164,9 +1116,9 @@ public class StackedEnsembleTest extends TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 1;
-      final Frame train = parse_test_file("./smalldata/testng/prostate_train.csv");
+      final Frame train = parseTestFile("./smalldata/testng/prostate_train.csv");
       deletables.add(train);
-      final Frame test = parse_test_file("./smalldata/testng/prostate_test.csv");
+      final Frame test = parseTestFile("./smalldata/testng/prostate_test.csv");
       deletables.add(test);
       final String target = "CAPSULE";
       int target_idx = train.find(target);
@@ -1244,9 +1196,9 @@ public class StackedEnsembleTest extends TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 1;
-      final Frame train = parse_test_file("./smalldata/iris/iris_train.csv");
+      final Frame train = parseTestFile("./smalldata/iris/iris_train.csv");
       deletables.add(train);
-      final Frame test = parse_test_file("./smalldata/iris/iris_test.csv");
+      final Frame test = parseTestFile("./smalldata/iris/iris_test.csv");
       deletables.add(test);
       final String target = "petal_wid";
       int target_idx = train.find(target);
@@ -1300,9 +1252,9 @@ public class StackedEnsembleTest extends TestUtil {
     List<Lockable> deletables = new ArrayList<>();
     try {
       final int seed = 1;
-      final Frame train = parse_test_file("./smalldata/iris/iris_train.csv");
+      final Frame train = parseTestFile("./smalldata/iris/iris_train.csv");
       deletables.add(train);
-      final Frame test = parse_test_file("./smalldata/iris/iris_test.csv");
+      final Frame test = parseTestFile("./smalldata/iris/iris_test.csv");
       deletables.add(test);
       final String target = "petal_wid";
       int target_idx = train.find(target);
@@ -1406,4 +1358,299 @@ public class StackedEnsembleTest extends TestUtil {
       }
     }
   }
+
+
+  @Test
+  public void logitTransformWorks() {
+        Scope.enter();
+        try {
+            Frame fr = new Frame();
+            fr.add("first", Vec.makeCon(0.5, 10));
+            fr.add("second", Vec.makeCon(0.1, 10));
+            fr.add("third", Vec.makeCon(0.9, 10));
+
+            Frame newFr = StackedEnsembleParameters.MetalearnerTransform.Logit.transform(null,fr, Key.make());
+            Scope.track(newFr);
+
+            Frame expected = new Frame();
+            expected.add("first", Vec.makeCon(0, 10));
+            expected.add("second", Vec.makeCon(-2.19722457, 10));
+            expected.add("third", Vec.makeCon(2.19722457, 10));
+
+            assertFrameEquals(expected, newFr, 1e-5);
+        } finally {
+            Scope.exit();
+        }
+  }
+
+
+    @Test
+    public void testMetalearnerTransformWorks() {
+        try {
+            Scope.enter();
+
+            final Frame trainingFrame = parseTestFile("./smalldata/junit/weather.csv");
+            Scope.track(trainingFrame);
+            trainingFrame.toCategoricalCol("RainTomorrow");
+
+            HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+                put("_max_depth", new Integer[]{2, 3, 4});
+            }};
+
+            GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+            params._train = trainingFrame._key;
+            params._nfolds = 2;
+            params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            params._response_column = "RainTomorrow";
+            params._keep_cross_validation_predictions = true;
+            params._seed = 0;
+            params._col_sample_rate = 0.1; // so we don't have all the columns the same after percentile rank transform
+            params._distribution = DistributionFamily.bernoulli;
+
+            Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+            Scope.track_generic(gs);
+            final Grid grid = gs.get();
+            Scope.track_generic(grid);
+            final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+            seParams._train = trainingFrame._key;
+            seParams._response_column = "RainTomorrow";
+            seParams._metalearner_algorithm = Algorithm.AUTO;
+            seParams._base_models = grid.getModelKeys();
+            seParams._keep_levelone_frame = true;
+            seParams._seed = 0xFEED;
+
+            final StackedEnsembleParameters seParamsLogit = (StackedEnsembleParameters)seParams.clone();
+            seParamsLogit._metalearner_transform = StackedEnsembleParameters.MetalearnerTransform.Logit;
+
+            final StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+            final StackedEnsembleModel seLogit = new StackedEnsemble(seParamsLogit).trainModel().get();
+
+            Scope.track_generic(se);
+            Scope.track_generic(seLogit);
+
+            final Frame vanillaLevelOneFrame = new Frame(se._output._levelone_frame_id).remove(new String[]{"RainTomorrow"});
+            Scope.track(vanillaLevelOneFrame);
+
+            Frame expectedLogit = StackedEnsembleParameters.MetalearnerTransform.Logit.transform(seLogit,vanillaLevelOneFrame,Key.make());
+            Scope.track(expectedLogit);
+            assertFrameEquals(expectedLogit,
+                    new Frame(seLogit._output._levelone_frame_id).remove(new String[]{"RainTomorrow"}),
+                    1e-5);
+
+            Frame training_clone = new Frame(trainingFrame);
+            DKV.put(training_clone);
+            Scope.track(training_clone);
+            Frame preds = se.score(training_clone);
+            Scope.track(preds);
+            final boolean predsTheSame = se.testJavaScoring(training_clone, preds, 1e-15, 0.01);
+            Assert.assertTrue(predsTheSame);
+
+            Frame predsLogit = seLogit.score(training_clone);
+            Scope.track(predsLogit);
+            final boolean predsLogitTheSame = seLogit.testJavaScoring(training_clone, predsLogit, 1e-15, 0.01);
+            Assert.assertTrue(predsLogitTheSame);
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testMultinomialWithAUTOMetalearnerAndAlphaSearch() {
+        final String training_file = "./smalldata/iris/iris_wheader.csv";
+        Set<Frame> framesBefore = new HashSet<>();
+        framesBefore.addAll(Arrays.asList(Frame.fetchAll()));
+
+        GBMModel gbm = null;
+        DRFModel drf = null;
+        StackedEnsembleModel stackedEnsembleModel = null;
+        Frame training_frame = null;
+        Frame preds = null;
+        long seed = 42 * 42;
+        try {
+            Scope.enter();
+            training_frame = parseTestFile(training_file);
+
+            int idx = 4;
+            if (!training_frame.vecs()[idx].isCategorical()) {
+                Scope.track(training_frame.replace(idx, training_frame.vecs()[idx].toCategoricalVec()));
+            }
+
+            DKV.put(training_frame); // Update frames after preparing
+
+            // Build GBM
+            GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+            // Configure GBM
+            gbmParameters._train = training_frame._key;
+            gbmParameters._response_column = training_frame._names[idx];
+            gbmParameters._ntrees = 5;
+            gbmParameters._distribution = DistributionFamily.multinomial;
+            gbmParameters._max_depth = 4;
+            gbmParameters._min_rows = 1;
+            gbmParameters._nbins = 50;
+            gbmParameters._learn_rate = .2f;
+            gbmParameters._score_each_iteration = true;
+            gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            gbmParameters._keep_cross_validation_predictions = true;
+            gbmParameters._nfolds = 5;
+            gbmParameters._seed = seed;
+
+            // Invoke GBM and block till the end
+            GBM gbmJob = new GBM(gbmParameters);
+            // Get the model
+            gbm = gbmJob.trainModel().get();
+            Assert.assertTrue(gbmJob.isStopped()); //HEX-1817
+
+            // Build DRF
+            DRFModel.DRFParameters drfParameters = new DRFModel.DRFParameters();
+            // Configure DRF
+            drfParameters._train = training_frame._key;
+            drfParameters._response_column = training_frame._names[idx];
+            drfParameters._distribution = DistributionFamily.multinomial;
+            drfParameters._ntrees = 5;
+            drfParameters._max_depth = 4;
+            drfParameters._min_rows = 1;
+            drfParameters._nbins = 50;
+            drfParameters._score_each_iteration = true;
+            drfParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            drfParameters._keep_cross_validation_predictions = true;
+            drfParameters._nfolds = 5;
+            drfParameters._seed = seed;
+
+            // Invoke DRF and block till the end
+            DRF drfJob = new DRF(drfParameters);
+            // Get the model
+            drf = drfJob.trainModel().get();
+            Assert.assertTrue(drfJob.isStopped()); //HEX-1817
+
+            // Build Stacked Ensemble of previous GBM and DRF
+            StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
+            // Configure Stacked Ensemble
+            stackedEnsembleParameters._train = training_frame._key;
+            stackedEnsembleParameters._response_column = training_frame._names[idx];
+            stackedEnsembleParameters._metalearner_algorithm = Algorithm.glm;
+            stackedEnsembleParameters.initMetalearnerParams(Algorithm.glm);
+            GLMModel.GLMParameters glmParams =  (GLMModel.GLMParameters) stackedEnsembleParameters._metalearner_parameters;
+            glmParams._generate_scoring_history = true;
+            glmParams._score_iteration_interval = (glmParams._valid == null) ? 5 : -1;
+            glmParams._non_negative = true;
+            glmParams._alpha = new double[] {0.5, 1.0};
+            glmParams._standardize = false;
+
+            stackedEnsembleParameters._base_models = new Key[]{gbm._key, drf._key};
+            stackedEnsembleParameters._seed = seed;
+            stackedEnsembleParameters._score_training_samples = 0; // don't subsample dataset for training metrics so we don't randomly fail the test
+            // Invoke Stacked Ensemble and block till end
+            StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
+            // Get the stacked ensemble
+            stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
+
+            Frame training_clone = new Frame(training_frame);
+            DKV.put(training_clone);
+            Scope.track(training_clone);
+            preds = stackedEnsembleModel.score(training_clone);
+            final boolean predsTheSame = stackedEnsembleModel.testJavaScoring(training_clone, preds, 1e-15, 0.01);
+            Assert.assertTrue(predsTheSame);
+            Assert.assertTrue(stackedEnsembleJob.isStopped());
+
+            ModelMetrics training_metrics = stackedEnsembleModel._output._training_metrics;
+            ModelMetrics training_clone_metrics = ModelMetrics.getFromDKV(stackedEnsembleModel, training_clone);
+            Assert.assertEquals(training_metrics.mse(), training_clone_metrics.mse(), 1e-15);
+            training_clone.remove();
+        } finally {
+            if (training_frame != null) training_frame.remove();
+            if (gbm != null) gbm.delete();
+            if (drf != null) drf.delete();
+            if (preds != null) preds.delete();
+            if (stackedEnsembleModel != null) stackedEnsembleModel.delete();
+            Scope.exit();
+        }
+    }
+
+  @Test
+  public void testStackedEnsembleDoesntIgnoreColumnIfAnyBaseModelUsesIt() {
+    try {
+        Scope.enter();
+        StackedEnsembleModel.StackedEnsembleOutput output = null;
+        try {
+            output = basicEnsemble("./smalldata/junit/cars.csv",
+                    null,
+                    new StackedEnsembleTest.PrepData() {
+                        int prep(Frame fr) {
+                            fr.remove("name").remove();
+                            Vec acVec = fr.anyVec().makeCon(Math.PI); // this is what use to break SE (SE ignored this column, DRF did not)
+                            Scope.track(acVec);
+                            acVec.setNA(0);
+                            fr.insertVec(0, "almost_constant", acVec);
+                            return fr.find("economy (mpg)");
+                        }
+                    },
+                    false, DistributionFamily.gaussian, Algorithm.glm, false);
+        } finally { }
+        Assert.assertNotNull(output);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testMOJOWorksWhenSubmodelIsIgnoringAColumn() {
+        try (LockableCleaner cleaner = new LockableCleaner()) {
+            final String response = "petal_wid";
+            final Frame train = parseTestFile("./smalldata/iris/iris_train.csv");
+            cleaner.add(train);
+
+            Vec constVec = train.anyVec().makeCon(Math.PI);
+            train.insertVec(0, "constant", constVec);
+            DKV.put(train);
+            
+            GBMModel.GBMParameters ignoreConstParms = new GBMModel.GBMParameters();
+            ignoreConstParms._train = train._key;
+            ignoreConstParms._response_column = response;
+            ignoreConstParms._ntrees = 5;
+            ignoreConstParms._seed = 42;
+            ignoreConstParms._keep_cross_validation_models = false;
+            ignoreConstParms._keep_cross_validation_predictions = true;
+            ignoreConstParms._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+            ignoreConstParms._nfolds = 3;
+            ignoreConstParms._distribution = DistributionFamily.gaussian;
+
+            GBMModel.GBMParameters keepConstParms = (GBMModel.GBMParameters) ignoreConstParms.clone();
+            keepConstParms._ignore_const_cols = false;
+
+            GBMModel ignoreConstModel = new GBM(ignoreConstParms).trainModel().get();
+            cleaner.add(ignoreConstModel);
+            GBMModel keepConstModel = new GBM(keepConstParms).trainModel().get();
+            cleaner.add(keepConstModel);
+
+            StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+            seParams._train = train._key;
+            seParams._response_column = response;
+            seParams._base_models = new Key[]{ignoreConstModel._key, keepConstModel._key};
+            seParams._seed = 42;
+
+            StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get();
+            cleaner.add(se);
+
+            assertNotNull(se);
+
+            Frame sePredict = se.score(train);
+            cleaner.add(sePredict);
+
+            assertTrue(se.testJavaScoring(train, sePredict, 1e-15, 0.01));
+        }
+    }
+
+    private static class LockableCleaner extends ArrayList<Lockable<?>> implements AutoCloseable {
+        @Override
+        public void close() {
+            for (Lockable<?> l : this) {
+                if (l instanceof Model) 
+                    ((Model<?, ?, ?>) l).deleteCrossValidationPreds();
+                l.delete();
+            }
+        }
+    }
+    
 }

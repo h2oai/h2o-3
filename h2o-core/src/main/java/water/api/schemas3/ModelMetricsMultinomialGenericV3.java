@@ -21,6 +21,16 @@ public class ModelMetricsMultinomialGenericV3<I extends ModelMetricsMultinomialG
       convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(modelMetrics._confusion_matrix_table);
       this.cm = convertedConfusionMatrix;
     }
+
+    AUC = modelMetrics.auc();
+    pr_auc = modelMetrics.pr_auc();
+
+    if(null != modelMetrics._multinomial_auc_table){
+      multinomial_auc_table = new TwoDimTableV3(modelMetrics._multinomial_auc_table);
+    }
+    if(null != modelMetrics._multinomial_aucpr_table){
+      multinomial_aucpr_table = new TwoDimTableV3(modelMetrics._multinomial_aucpr_table);
+    }
     
     return (S)this;
   }

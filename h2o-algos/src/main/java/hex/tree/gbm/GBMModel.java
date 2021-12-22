@@ -1,6 +1,9 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.genmodel.MojoModel;
+import hex.genmodel.algos.gbm.GbmMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.utils.DistributionFamily;
@@ -13,13 +16,12 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 import java.util.*;
 
 public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> 
-        implements Model.StagedPredictions, FeatureInteractionsCollector {
+        implements Model.StagedPredictions, FeatureInteractionsCollector, FriedmanPopescusHCollector {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -41,13 +43,35 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       _pred_noise_bandwidth =0;
     }
 
+    @Override
+    public boolean useColSampling() {
+      return super.useColSampling() || _col_sample_rate != 1.0;
+    }
+
     public String algoName() { return "GBM"; }
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
 
+    @Override
+    public boolean forceStrictlyReproducibleHistograms() {
+      // if monotone constraints are enabled -> use strictly reproducible histograms (we calculate values that
+      // are not subject to reduce precision logic in DHistogram (the "float trick" cannot be applied)
+      return usesMonotoneConstraints();
+    }
+
+    private boolean usesMonotoneConstraints() {
+      if (areMonotoneConstraintsEmpty())
+        return emptyConstraints(0) != null;
+      return true;
+    }
+
+    private boolean areMonotoneConstraintsEmpty() {
+      return _monotone_constraints == null || _monotone_constraints.length == 0;
+    }
+
     public Constraints constraints(Frame f) {
-      if (_monotone_constraints == null || _monotone_constraints.length == 0) {
-        return emptyConstraints(f);
+      if (areMonotoneConstraintsEmpty()) {
+        return emptyConstraints(f.numCols());
       }
       int[] cs = new int[f.numCols()];
       for (KeyValue spec : _monotone_constraints) {
@@ -69,10 +93,9 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     }
 
     // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
-    Constraints emptyConstraints(Frame f) {
+    Constraints emptyConstraints(int nCols) {
       return null;
     }
-    
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
@@ -120,6 +143,10 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       return new ScoreContributionsTask(this);
   }
 
+  @Override
+  protected ScoreContributionsTask getScoreContributionsSoringTask(SharedTreeModel model, ContributionsOptions options) {
+    return new ScoreContributionsSortingTask(model, options);
+  }
 
   @Override
   public Frame scoreStagedPredictions(Frame frame, Key<Frame> destination_key) {
@@ -234,37 +261,12 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     return preds;
   }
 
-  // Note: POJO scoring code doesn't support per-row offsets (the scoring API would need to be changed to pass in offsets)
-  @Override protected void toJavaUnifyPreds(SBPrintStream body) {
-    // Preds are filled in from the trees, but need to be adjusted according to
-    // the loss function.
-    if( _parms._distribution == DistributionFamily.bernoulli
-        || _parms._distribution == DistributionFamily.quasibinomial
-        || _parms._distribution == DistributionFamily.modified_huber
-        ) {
-      body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = " + DistributionFactory.getDistribution(_parms).linkInvString("preds[2]") + ";").nl();
-      body.ip("preds[1] = 1.0-preds[2];").nl();
-      if (_parms._balance_classes)
-        body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
-      return;
-    }
-    if( _output.nclasses() == 1 ) { // Regression
-      body.ip("preds[0] += ").p(_output._init_f).p(";").nl();
-      body.ip("preds[0] = " + DistributionFactory.getDistribution(_parms).linkInvString("preds[0]") + ";").nl();
-      return;
-    }
-    if( _output.nclasses()==2 ) { // Kept the initial prediction for binomial
-      body.ip("preds[1] += ").p(_output._init_f).p(";").nl();
-      body.ip("preds[2] = - preds[1];").nl();
-    }
-    body.ip("hex.genmodel.GenModel.GBM_rescale(preds);").nl();
-    if (_parms._balance_classes)
-      body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-    body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
+  @Override
+  protected SharedTreePojoWriter makeTreePojoWriter() {
+    CompressedForest compressedForest = new CompressedForest(_output._treeKeys, _output._domains);
+    CompressedForest.LocalCompressedForest localCompressedForest = compressedForest.fetch();
+    return new GbmPojoWriter(this, localCompressedForest._trees);
   }
-
 
   @Override
   public GbmMojoWriter getMojo() {
@@ -283,7 +285,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
         Set<String> memo = new HashSet<>();
 
         FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0, currentTreeFeatureInteractions,
-                memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i);
+                memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, true);
         featureInteractions.mergeWith(currentTreeFeatureInteractions);
       }
     }
@@ -294,6 +296,19 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
   @Override
   public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
     return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
+  }
+
+  @Override
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    int nclasses = this._output._nclasses > 2 ? this._output._nclasses : 1;
+    SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        sharedTreeSubgraphs[i][j] = this.getSharedTreeSubgraph(i, j);
+      }
+    }
+    
+    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
   }
 
 }

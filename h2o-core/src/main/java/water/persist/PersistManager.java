@@ -4,12 +4,15 @@ import water.*;
 import water.api.FSIOException;
 import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.C1NChunk;
 import water.fvec.FileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.FileUtils;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
+import water.util.fp.Function2;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -47,6 +50,7 @@ public class PersistManager {
     String S3A  = "s3a";
     String GCS  = "gs";
     String NFS  = "nfs";
+    String HEX  = "hex";
   }
 
   public static class PersistStatsEntry {
@@ -66,6 +70,7 @@ public class PersistManager {
   }
 
   private Persist[] I;
+  private PersistHex HEX = new PersistHex(); // not part of I because it cannot be a backend for DKV
   private PersistStatsEntry[] stats;
   public PersistStatsEntry[] getStats() { return stats; }
 
@@ -94,6 +99,17 @@ public class PersistManager {
   
   public boolean isGcsPath(String path) {
     return path.toLowerCase().startsWith("gs://");
+  }
+
+  public boolean isHexPath(String path) {
+    return path.toLowerCase().startsWith(Schemes.HEX + "://");
+  }
+
+  public String toHexPath(Key<?> key) {
+    if (! key.isChunkKey()) {
+      throw new IllegalArgumentException("Only Chunk keys are supported for HEX schema");
+    }
+    return PersistHex.HEX_PATH_PREFIX + key.toString();
   }
 
   public PersistManager(URI iceRoot) {
@@ -401,18 +417,65 @@ public class PersistManager {
       I[Value.HDFS].importFiles(path, pattern, files, keys, fails, dels);
     }
 
-    if(pattern != null && !pattern.isEmpty()) {
-      files.retainAll(matchPattern(path,files,pattern)); //New files ArrayList after matching pattern of choice
-      keys.retainAll(matchPattern(path,keys,pattern)); //New keys ArrayList after matching pattern of choice
-      //New fails ArrayList after matching pattern of choice. Only show failures that match pattern
-      if(!fails.isEmpty()) {
-        fails.retainAll(matchPattern(path, fails, pattern));
-      }
-    }
-
+    if (pattern != null && !pattern.isEmpty())
+      filterFiles((prefix, elements) -> matchPattern(prefix, elements, pattern), path, files, keys, fails);
+    filterMetadataFiles(path, files, keys, fails);
   }
 
+  private void filterMetadataFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails) {
+    filterFiles(new DeltaLakeMetadataFilter(), path, files, keys, fails);
+  }
 
+  static class DeltaLakeMetadataFilter implements Function2<String, ArrayList<String>, ArrayList<String>> {
+    private static final String DELTA_LOG_DIRNAME = "_delta_log";
+    @Override
+    public ArrayList<String> apply(String unused, ArrayList<String> ids) {
+      ArrayList<String> filteredIds = new ArrayList<>(ids.size());
+      Exception firstFailure = null;
+      int failureCount = 0;
+      for (String id : ids) {
+        try {
+          URI uri = URI.create(id);
+          String path = uri.getPath();
+          if (path != null) {
+            String[] segments = path.split("/");
+            if (segments.length > 1 && DELTA_LOG_DIRNAME.equalsIgnoreCase(segments[segments.length - 2]))
+              continue;
+          }
+        } catch (Exception e) {
+          failureCount++;
+          firstFailure = firstFailure == null ? e : firstFailure;
+          Log.trace("Cannot create uri", e);
+        }
+        filteredIds.add(id);
+      }
+      if (firstFailure != null) {
+        Log.warn("There were " + failureCount + " failures during file filtering (only the first one logged)", firstFailure);
+      }
+      return filteredIds;
+    }
+  }
+
+  private void filterFiles(Function2<String, ArrayList<String>, ArrayList<String>> matcher,
+                           String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails) {
+    files.retainAll(matcher.apply(path, files)); //New files ArrayList after matching pattern of choice
+    List<String> retainKeys = matcher.apply(path, keys);
+    if (retainKeys.size() != keys.size()) {
+      Futures fs = new Futures();
+      @SuppressWarnings("unchecked")
+      List<String> removed = ((List<String>) keys.clone());
+      removed.removeAll(retainKeys);
+      for (String r : removed)
+        Keyed.remove(Key.make(r), fs, true);
+      fs.blockForPending();
+      keys.retainAll(retainKeys); //New keys ArrayList after matching pattern of choice
+    }
+    //New fails ArrayList after matching pattern of choice. Only show failures that match pattern
+    if (!fails.isEmpty()) {
+      fails.retainAll(matcher.apply(path, fails));
+    }
+  }
+  
   // -------------------------------
   // Node Persistent Storage helpers
   // -------------------------------
@@ -596,6 +659,8 @@ public class PersistManager {
       return os;
     } else if (isGcsPath(path)) {
       return I[Value.GCS].open(path);
+    } else if (isHexPath(path)) {
+      return HEX.open(path);
     }
 
     try {
@@ -681,6 +746,8 @@ public class PersistManager {
       return I[Value.HDFS].create(path, overwrite);
     } else if (isGcsPath(path)) {
       return I[Value.GCS].create(path, overwrite);
+    } else if (isHexPath(path)) {
+      return HEX.create(path, overwrite);
     }
 
     try {
@@ -749,15 +816,13 @@ public class PersistManager {
    * @param matchStr The regular expression to use on the string after prefix
    * @return list containing the matching entries
    */
-  public ArrayList<String> matchPattern(String prefix, ArrayList<String> fileList, String matchStr){
-    ArrayList<String> result = new ArrayList<String>();
+  private ArrayList<String> matchPattern(String prefix, ArrayList<String> fileList, String matchStr){
+    ArrayList<String> result = new ArrayList<>();
     Pattern pattern = Pattern.compile(matchStr);
-    if (matchStr != null) {
-      for(String s : fileList){
-        Matcher matcher = pattern.matcher(afterPrefix(s,prefix));
-        if (matcher.find()) {
-          result.add(s);
-        }
+    for (String s : fileList) {
+      Matcher matcher = pattern.matcher(afterPrefix(s,prefix));
+      if (matcher.find()) {
+        result.add(s);
       }
     }
     return result;

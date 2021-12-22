@@ -27,7 +27,8 @@ Authors@R: c(
     person("Matt", "Dowle", role = c("ctb")),
     person("Yuan", "Tang", role = c("ctb")),    
     person("Lauren", "DiPerna", role = c("ctb")), 
-    person("Tomas", "Fryda", role = c("ctb")),        
+    person("Tomas", "Fryda", role = c("ctb")),
+    person("Veronika", "Maurerova", role=c("ctb")),        
     person("H2O.ai", role = c("cph", "fnd"))
     )
 Description: R interface for 'H2O', the scalable open source machine learning
@@ -35,13 +36,13 @@ Description: R interface for 'H2O', the scalable open source machine learning
     unsupervised machine learning algorithms such as Generalized Linear
     Models (GLM), Gradient Boosting Machines (including XGBoost), Random Forests,
     Deep Neural Networks (Deep Learning), Stacked Ensembles, Naive Bayes,
-    Generalized Additive Models (GAM), Cox Proportional Hazards, K-Means, PCA,
+    Generalized Additive Models (GAM), ANOVA GLM, Cox Proportional Hazards, K-Means, PCA, ModelSelection,
     Word2Vec, as well as a fully automatic machine learning algorithm (H2O AutoML).
 License: Apache License (== 2.0)
 URL: https://github.com/h2oai/h2o-3
-BugReports: https://0xdata.atlassian.net/projects/PUBDEV
+BugReports: https://h2oai.atlassian.net/projects/PUBDEV
 NeedsCompilation: no
-SystemRequirements: Java (>= 8)
+SystemRequirements: Java (>= 8, <= 17)
 Depends: R (>= 2.13.0),
          methods,
          stats
@@ -80,6 +81,7 @@ Collate:
          'targetencoder.R'
          'import.R'
          'isolationforest.R'
+         'extendedisolationforest.R'
          'parse.R'
          'export.R'
          'edicts.R'
@@ -88,10 +90,12 @@ Collate:
          'coxphutils.R'
          'kmeans.R'
          'gam.R'
+         'anovaglm.R'
          'gbm.R'
          'generic.R'
          'glm.R'
          'glrm.R'
+         'modelselection.R'
          'pca.R'
          'svd.R'
          'psvm.R'
@@ -109,4 +113,7 @@ Collate:
          'tf-idf.R'
          'rulefit.R'
          'explain.R'
+         'permutation_varimp.R'
+         'infogram.R'
          'zzz.R'
+         'upliftrandomforest.R'

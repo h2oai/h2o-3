@@ -14,7 +14,7 @@ public class XGBoostStepsProvider implements ModelingStepsProvider<XGBoostSteps>
 
     @Override
     public String getName() {
-        return Algo.XGBoost.name();
+        return XGBoostSteps.NAME;
     }
 
     @Override

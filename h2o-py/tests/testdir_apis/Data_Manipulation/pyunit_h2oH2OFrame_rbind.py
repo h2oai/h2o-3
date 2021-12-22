@@ -20,7 +20,5 @@ def h2o_H2OFrame_rbind():
     assert_is_type(hdf2, H2OFrame)  # check new frame data type
     assert hdf2.shape==(2*hdfrows, hdfcols), "h2o.H2OFrame.rbind() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_rbind())
-else:
-    h2o_H2OFrame_rbind()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_rbind)

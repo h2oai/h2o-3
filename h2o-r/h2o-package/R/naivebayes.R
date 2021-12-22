@@ -51,6 +51,8 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
+#' @param auc_type Set default multinomial AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO",
+#'        "WEIGHTED_OVO". Defaults to AUTO.
 #' @return an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
@@ -88,7 +90,8 @@ h2o.naiveBayes <- function(x,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0,
                            export_checkpoints_dir = NULL,
-                           gainslift_bins = -1)
+                           gainslift_bins = -1,
+                           auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"))
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -162,6 +165,8 @@ h2o.naiveBayes <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")
@@ -203,6 +208,7 @@ h2o.naiveBayes <- function(x,
                                            max_runtime_secs = 0,
                                            export_checkpoints_dir = NULL,
                                            gainslift_bins = -1,
+                                           auc_type = c("AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO"),
                                            segment_columns = NULL,
                                            segment_models_id = NULL,
                                            parallelism = 1)
@@ -281,6 +287,8 @@ h2o.naiveBayes <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(gainslift_bins))
     parms$gainslift_bins <- gainslift_bins
+  if (!missing(auc_type))
+    parms$auc_type <- auc_type
 
   if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")

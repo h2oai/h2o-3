@@ -225,14 +225,14 @@ public class FeatureInteractions {
     public static void collectFeatureInteractions(SharedTreeNode node, List<SharedTreeNode> interactionPath,
                                                   double currentGain, double currentCover, double pathProba, int depth, int deepening,
                                                   FeatureInteractions featureInteractions, Set<String> memo, int maxInteractionDepth,
-                                                  int maxTreeDepth, int maxDeepening, int treeIndex) {
+                                                  int maxTreeDepth, int maxDeepening, int treeIndex, boolean useSquaredErrorForGain) {
 
         if (node.isLeaf() || depth == maxTreeDepth) {
             return;
         }
 
         interactionPath.add(node);
-        currentGain += node.getSquaredError();
+        currentGain += node.getGain(useSquaredErrorForGain);
         currentCover += node.getWeight();
 
         double ppl = pathProba * (node.getLeftChild().getWeight() / node.getWeight());
@@ -242,9 +242,9 @@ public class FeatureInteractions {
 
         if ((depth < maxDeepening) || (maxDeepening < 0)) {
             collectFeatureInteractions(node.getLeftChild(), new ArrayList<>(), 0, 0, ppl, depth + 1,
-                    deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+                    deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex, useSquaredErrorForGain);
             collectFeatureInteractions(node.getRightChild(), new ArrayList<>(), 0, 0, ppr, depth + 1,
-                    deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+                    deepening + 1, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex, useSquaredErrorForGain);
         }
 
         String path = FeatureInteraction.interactionPathToStr(interactionPath, true, true);
@@ -291,9 +291,9 @@ public class FeatureInteractions {
         }
 
         collectFeatureInteractions(leftChild, new ArrayList<>(interactionPath), currentGain, currentGain, ppl,
-                depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+                depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex, useSquaredErrorForGain);
         collectFeatureInteractions(node.getRightChild(), new ArrayList<>(interactionPath), currentGain, currentGain, ppr,
-                depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex);
+                depth + 1, deepening, featureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, treeIndex, useSquaredErrorForGain);
     }
     
     public static TwoDimTable[][] getFeatureInteractionsTable(FeatureInteractions featureInteractions) {

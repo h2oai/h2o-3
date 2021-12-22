@@ -24,7 +24,7 @@ makeRandomGridSpace <- function(algo,ncols=NULL,nrows=NULL) {
     if ( sample(0:1,1) ) { grid_space$nbins_cats <- sample(2:1024, sample(2:3,1)) }
   }
   if ( algo == "gbm" ) {
-    if ( sample(0:1,1) ) { grid_space$learn_rate <- round(1e-2*runif(sample(2:3,1)),6) }
+    if ( sample(0:1,1) ) { grid_space$learn_rate <- round(1e-2*runif(sample(2:3,1), min=1e-3),6) }
     grid_space$distribution <- sample(c('bernoulli','multinomial','gaussian','poisson','tweedie','gamma'), 1)
   }
   if ( algo == "drf" || algo == "randomForest") {

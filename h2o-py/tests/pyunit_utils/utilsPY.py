@@ -1,56 +1,79 @@
+# Py2 compat
 from __future__ import print_function
+
+import matplotlib
 from future import standard_library
+
 standard_library.install_aliases()
-from builtins import range
 from past.builtins import basestring
+
+# standard lib
+import copy
+import datetime
+from decimal import *
+import fnmatch
 from functools import reduce
-from scipy.sparse import csr_matrix
-import sys, os, gc
-import pandas as pd
-import tempfile
-
-try:        # works with python 2.7 not 3
-    from StringIO import StringIO
-except:     # works with python 3
-    from io import StringIO
-
-sys.path.insert(1, "../../")
-import h2o
 import imp
+import importlib
+import json
+import math
+import os
 import random
 import re
+import shutil
+import string
 import subprocess
 from subprocess import STDOUT,PIPE
-from h2o.utils.shared_utils import temp_ctr
+import sys
+import tempfile
+import time # needed to randomly generate time
+import threading
+import urllib.request, urllib.error, urllib.parse
+import uuid # call uuid.uuid4() to generate unique uuid numbers
+
+try:
+    from StringIO import StringIO  # py2 (first as py2 also has io.StringIO, but without string support, only unicode)
+except:
+    from io import StringIO  # py3
+    
+# 3rd parties
+import numpy as np
+import pandas as pd
+from scipy.sparse import csr_matrix
+import scipy.special
+
+# h2o 
+sys.path.insert(1, "../../")
+
+import h2o
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
 from h2o.model.ordinal import H2OOrdinalModel
 from h2o.model.regression import H2ORegressionModel
-from h2o.estimators.gbm import H2OGradientBoostingEstimator
-from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-from h2o.estimators.random_forest import H2ORandomForestEstimator
-from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
-from h2o.estimators.kmeans import H2OKMeansEstimator
-from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
-from h2o.transforms.decomposition import H2OPCA
-from h2o.estimators.random_forest import H2ORandomForestEstimator
-from decimal import *
-import urllib.request, urllib.error, urllib.parse
-import numpy as np
-import shutil
-import string
-import copy
-import json
-import math
-from random import shuffle
-import scipy.special
+from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimator, H2OGeneralizedLinearEstimator, \
+    H2OGeneralizedAdditiveEstimator, H2OKMeansEstimator, H2ONaiveBayesEstimator, H2OInfogram, \
+    H2ORandomForestEstimator, H2OPrincipalComponentAnalysisEstimator
 from h2o.utils.typechecks import is_type
-import datetime
-import time # needed to randomly generate time
-import threading
-import uuid # call uuid.uuid4() to generate unique uuid numbers
+from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
+
+
+class TemporaryDirectory:
+
+    def __init__(self, keep=False):
+        """
+        :param keep: set to True for debugging, to look at generated content.
+        """
+        self.tmp_dir = None
+        self._keep = keep
+
+    def __enter__(self):
+        self.tmp_dir = tempfile.mkdtemp(prefix='h2o_pyunit_')
+        return self.tmp_dir
+
+    def __exit__(self, *args):
+        if not self._keep:
+            shutil.rmtree(self.tmp_dir)
 
 
 class Timeout:
@@ -107,6 +130,7 @@ def gen_random_uuid(numberUUID):
     for uindex in range(numberUUID):
         uuidVec[uindex] = uuid.uuid4()
     return uuidVec
+
 
 def gen_random_time(numberTimes, maxtime= datetime.datetime(2080, 8,6,8,14,59), mintime=datetime.datetime(1980, 8,6,6,14,59)):
     '''
@@ -330,7 +354,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
     elif algo == "gam": model = H2OGeneralizedAdditiveEstimator(**kwargs)
     elif algo == "naive_bayes": model = H2ONaiveBayesEstimator(**kwargs)
     elif algo == "kmeans": model = H2OKMeansEstimator(**kwargs)
-    elif algo == "pca": model = H2OPCA(**kwargs)
+    elif algo == "pca": model = H2OPrincipalComponentAnalysisEstimator(**kwargs)
     else: raise ValueError
     if algo == "kmeans" or algo == "pca": model.train(x=x, training_frame=train)
     else: model.train(x=x, y=y, training_frame=train)
@@ -509,16 +533,30 @@ def locate(path):
     else:
         tmp_dir = os.path.realpath(os.getcwd())
         possible_result = os.path.join(tmp_dir, path)
-        while (True):
-            if (os.path.exists(possible_result)):
-                return possible_result
+        try:
+            while (True):
+                if (os.path.exists(possible_result)):
+                    return possible_result
 
-            next_tmp_dir = os.path.dirname(tmp_dir)
-            if (next_tmp_dir == tmp_dir):
-                raise ValueError("File not found: " + path)
+                next_tmp_dir = os.path.dirname(tmp_dir)
+                if (next_tmp_dir == tmp_dir):
+                    raise ValueError("File not found: " + path)
 
-            tmp_dir = next_tmp_dir
-            possible_result = os.path.join(tmp_dir, path)
+                tmp_dir = next_tmp_dir
+                possible_result = os.path.join(tmp_dir, path)
+        except ValueError as e:
+            url = "https://h2o-public-test-data.s3.amazonaws.com/{}".format(path)
+            if url_exists(url):
+                return url
+            raise
+
+def url_exists(url):
+    head_req = urllib.request.Request(url, method='HEAD')
+    try:
+        with urllib.request.urlopen(head_req) as test:
+            return test.status == 200
+    except urllib.error.URLError:
+        return False          
 
 def hadoop_namenode_is_accessible():
     url = "http://{0}:50070".format(hadoop_namenode())
@@ -546,12 +584,12 @@ def pyunit_exec(test_name):
         pyunit = t.read()
     test_path = os.path.abspath(test_name)
     pyunit_c = compile(pyunit, test_path, 'exec')
-    exec(pyunit_c, dict(__name__='main', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
+    exec(pyunit_c, dict(__name__='__main__', __file__=test_path))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
 
-def standalone_test(test):
+def standalone_test(test, init_options={}):
     if not h2o.connection() or not h2o.connection().connected:
         print("Creating connection for test %s" % test.__name__)
-        h2o.init(strict_version_check=False)
+        h2o.init(strict_version_check=False, **init_options)
         print("New session: %s" % h2o.connection().session_id)
 
     h2o.remove_all()
@@ -563,7 +601,7 @@ def standalone_test(test):
     h2o.log_and_echo("------------------------------------------------------------")
     test()
 
-def run_tests(tests, run_in_isolation=True):
+def run_tests(tests, run_in_isolation=True, init_options={}):
     #flatten in case of nested tests/test suites
     all_tests = reduce(lambda l, r: (l.extend(r) if isinstance(r, (list, tuple)) else l.append(r)) or l, tests, [])
     for test in all_tests:
@@ -1633,15 +1671,19 @@ def assert_H2OTwoDimTable_equal_upto(table1, table2, col_header_list, tolerance=
             val1 = table1.cell_values[cellind][colindex]
             val2 = table2.cell_values[cellind][colindex]
 
-            if isinstance(val1, float) and isinstance(val2, float):
-                assert abs(val1-val2) < tolerance, \
+            if isinstance(val1, float) and isinstance(val2, float) and not(math.isnan(val1) and math.isnan(val2)):
+                    assert abs(val1-val2) < tolerance, \
                     "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
                     "{3}".format(val1, val2, cname, tolerance)
-            else:
-                assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
+            elif not(isinstance(val1, float) and isinstance(val2, float)) :
+                    assert val1==val2, "table 1 value {0} and table 2 value {1} in {2} differ more than tolerance of " \
                                    "{3}".format(val1, val2, cname, tolerance)
     print("******* Congrats!  Test passed. ")
 
+def assert_equal_scoring_history(model1, model2, col_compare_list, tolerance=1e-6):
+    scoring_hist1 = model1._model_json["output"]["scoring_history"]
+    scoring_hist2 = model2._model_json["output"]["scoring_history"]
+    assert_H2OTwoDimTable_equal_upto(scoring_hist1, scoring_hist2, col_compare_list, tolerance=tolerance)
 
 def assert_H2OTwoDimTable_equal(table1, table2, col_header_list, tolerance=1e-6, check_sign=False, check_all=True,
                                 num_per_dim=10):
@@ -1717,7 +1759,7 @@ def generate_for_indices(list_size, check_all, num_per_dim, start_val):
         return list(range(start_val, list_size))
     else:
         randomList = list(range(start_val, list_size))
-        shuffle(randomList)
+        random.shuffle(randomList)
         return randomList[0:min(list_size, num_per_dim)]
 
 def generate_sign_vec(table1, table2):
@@ -2900,7 +2942,7 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
 
     total_model = 1
     hyper_keys = list(hyper_params)
-    shuffle(hyper_keys)    # get all hyper_parameter names in random order
+    random.shuffle(hyper_keys)    # get all hyper_parameter names in random order
     final_hyper_params = dict()
 
     for param in hyper_keys:
@@ -3012,6 +3054,24 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
             else:
                 compare_frames_local_onecolumn_NA(frame1[col_ind], frame2[col_ind], prob=probVal, tol=tol_numeric)
     return True
+
+
+def catch_warnings():
+    import warnings
+    warnings.simplefilter("always", RuntimeWarning)
+    for v in sys.modules.values():
+        if getattr(v, '__warningregistry__', None):
+            v.__warningregistry__ = {}
+    return warnings.catch_warnings(record=True)
+
+
+def contains_warning(ws, message):
+    return any(issubclass(w.category, RuntimeWarning) and message in str(w.message) for w in ws)
+
+
+def no_warnings(ws):
+    return len(ws) == 0
+
 
 def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """
@@ -3235,15 +3295,6 @@ def model_seed_sorted(model_list):
     model_seed_list.sort()
     return model_seed_list
 
-
-def check_ignore_cols_automl(models,names,x,y):
-    models = sum(models.as_data_frame().values.tolist(),[])
-    for model in models:
-        if "StackedEnsemble" in model:
-            continue
-        else:
-            assert set(h2o.get_model(model).params["ignored_columns"]["actual"]) == set(names) - {y} - set(x), \
-                "ignored columns are not honored for model " + model
 
 
 # This method is not changed to local method using as_data_frame because the frame size is too big.
@@ -3490,16 +3541,16 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
         if (typeDict[frameNames[colInd]]==u'enum'):
             if returnResult:
                 result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
             else:
                 result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
         elif (typeDict[frameNames[colInd]]==u'string'):
             if returnResult:
                 result =  compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
             else:
                 compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
@@ -3508,7 +3559,7 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
         else:
             if returnResult:
                 result = compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
-                if not(result):
+                if not(result) and returnResult:
                     return False
             else:
                 compare_frames_local_onecolumn_NA(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
@@ -3764,7 +3815,7 @@ def random_dataset_real_only(nrow, ncol, realR=100, misFrac=0.01, randSeed=None)
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] = 0
 
-    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, integer_range=realR,
+    df = h2o.create_frame(rows=nrow, cols=ncol, missing_fraction=misFrac, has_response=False, real_range=realR,
                           seed=randSeed, **fractions)
     return df
 
@@ -4287,9 +4338,22 @@ def assertEqualCoeffDicts(coef1Dict, coef2Dict, tol = 1e-6):
     assert len(coef1Dict) == len(coef2Dict), "Length of first coefficient dict: {0}, length of second coefficient " \
                                              "dict: {1} and they are different.".format(len(coef1Dict, len(coef2Dict)))
     for key in coef1Dict:
-        assert abs(coef1Dict[key]-coef2Dict[key]) < tol, "Coefficient for {0} from first dict: {1}, from second dict:" \
-                                                         " {2} and they are different.".format(key, coef1Dict[key],
-                                                                                               coef2Dict[key])
+        val1 = coef1Dict[key]
+        val2 = coef2Dict[key]
+        if (math.isnan(val1)):
+            assert math.isnan(val2), "Coefficient for {0} from first dict: {1}, from second dict: {2} are different." \
+                                     "".format(key, coef1Dict[key], coef2Dict[key])
+        elif (math.isinf(val1)):
+            assert math.isinf(val2), "Coefficient for {0} from first dict: {1}, from second dict: {2} are different." \
+                                     "".format(key, coef1Dict[key], coef2Dict[key])
+        else:
+            assert abs(coef1Dict[key] - coef2Dict[key]) < tol, "Coefficient for {0} from first dict: {1}, from second" \
+                                                               " dict: {2} and they are different.".format(key,
+                                                                                                           coef1Dict[
+                                                                                                               key],
+                                                                                                           coef2Dict[
+                                                                                                               key])
+
 def assertEqualModelMetrics(metrics1, metrics2, tol = 1e-6,
                             keySet=["MSE", "AUC", "Gini", "null_deviance", "logloss", "RMSE",
                                     "pr_auc", "r2"]):
@@ -4341,6 +4405,36 @@ def extractNextCoeff(cs_norm, orderedCoeffNames, startVal):
         startVal[ind] = cs_norm[orderedCoeffNames[ind]]
     return startVal
 
+def assertEqualScoringHistoryIteration(model_long, model_short, col_list_compare, tolerance=1e-6):
+    scoring_history_long = model_long._model_json["output"]["scoring_history"]
+    scoring_history_short = model_short._model_json["output"]["scoring_history"]
+    cv_4th_len = len(scoring_history_short.cell_values) - 1 # ignore last iteration, scoring is performed at different spots
+    cv_len = len(scoring_history_long.cell_values)
+    col_2D = scoring_history_short.col_header
+    iterInd = col_2D.index('iterations')
+    count = 0
+    for index in range(cv_4th_len):
+        iterInd4th = scoring_history_short.cell_values[index][iterInd]
+        iterIndlong = scoring_history_long.cell_values[count][iterInd]
+        while not(iterInd4th == None) and (iterInd4th > iterIndlong):
+            count = count+1
+            if count >= cv_len:
+                break
+            iterIndlong = scoring_history_long.cell_values[count][iterInd]
+
+        if not(iterInd4th == None) and not(iterInd4th == '') and (iterInd4th == iterIndlong):
+            for col_header in col_list_compare:
+                ind = col_2D.index(col_header)
+                val_short = scoring_history_short.cell_values[index][ind]
+                val_long = scoring_history_long.cell_values[count][ind]
+                if not(val_short == '' or math.isnan(val_short) or val_long == '' or math.isnan(val_long)):
+                    assert abs(scoring_history_short.cell_values[index][ind]-
+                               scoring_history_long.cell_values[count][ind]) < tolerance, \
+                        "{0} expected: {1}, actual: {2}".format(col_header, scoring_history_short.cell_values[index][ind],
+                                                                scoring_history_long.cell_values[count][ind])
+        count = count+1
+
+
 def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
     for key in regCoeff:
         temp = key.split('_')
@@ -4351,3 +4445,24 @@ def assertCoefEqual(regCoeff, coeff, coeffClassSet, tol=1e-6):
         diff = abs(val1-val2)
         print("val1: {0}, val2: {1}, tol: {2}".format(val1, val2, tol))
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
+
+
+def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
+    for key in regCoeff:
+        val1 = regCoeff[key]
+        val2 = coeff[key]
+        assert type(val1)==type(val2), "type of coeff1: {0}, type of coeff2: {1}".format(type(val1), type(val2))
+        diff = abs(val1-val2)
+        assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
+
+
+def assert_equals(expected, actual, message=""):
+    assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+
+def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
+    plot_result1.figure().savefig(path1)
+    assert os.path.isfile(path1)
+    os.remove(path1)
+    assert isinstance(plot_result2.figure() , matplotlib.pyplot.Figure)
+    assert os.path.isfile(path2)
+    os.remove(path2)

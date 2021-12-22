@@ -480,9 +480,9 @@ Step 2: Compile and Run the MOJO
          System.out.println("Shapley contributions: ");
          for (int i=0; i < p.contributions; i++) {
            if (i > 0) {
-             System.out.print(",");
+             System.out.print(", ");
            }
-           System.out.print(p.contributions[i]);
+           System.out.print(model.getContributionNames()[i] + ": " + p.contributions[i]);
          }
          System.out.println("");
        }
@@ -763,6 +763,10 @@ FAQ
 -  **Are MOJOs thread safe?**
 
   Yes, all of H2O-3 MOJOs are thread safe.
+
+-  **Does H2O-3 MOJO have a C++ runtime?**
+  
+  Currently, only GBM has a C++ runtime with C# wrapper for .NET. However, this is not part of the open source offerings and requires a support contract.
 
 -  **How can I use an XGBoost MOJO with Maven?**
 

@@ -1,0 +1,17 @@
+// Copy each jar artifact to a file without version for convenient scripting
+// Current known usage is genmodel.jar, h2o.jar and all hadoop h2odriver.jar
+tasks.withType(Jar) { Jar t ->
+  t.doLast {
+    copy {
+      from t.archivePath
+      into t.destinationDir
+      // Here we expected standard JAR file archive name:
+      //    [baseName]-[appendix]-[version]-[classifier].[extension]
+      if (t.classifier!=null) {
+          rename("(.*)-${t.version}(.*)", '$1$2')
+      } else {
+          rename("(.*)${t.version}-?(.*)", '$1$2')
+      }
+    }
+  }
+}

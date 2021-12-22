@@ -10,7 +10,11 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.9 cdh5.10 cdh5.13 cdh5.14 cdh5.15 cdh5.16 cdh6.0 cdh6.1 cdh6.2 cdh6.3 cdp7.0 hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 hdp3.0 hdp3.1 mapr4.0 mapr5.0 mapr5.1 mapr5.2 mapr6.0 mapr6.1 iop4.2"
+HADOOP_VERSIONS="cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 cdh5.9 cdh5.10 cdh5.13 cdh5.14 cdh5.15 cdh5.16 \
+cdh6.0 cdh6.1 cdh6.2 cdh6.3 cdp7.0 cdp7.1 cdp7.2 \
+hdp2.2 hdp2.3 hdp2.4 hdp2.5 hdp2.6 hdp3.0 hdp3.1 \
+mapr4.0 mapr5.0 mapr5.1 mapr5.2 mapr6.0 mapr6.1 \
+iop4.2"
 
 function make_zip_common {
   PROJECT_BASE=$1
@@ -18,6 +22,8 @@ function make_zip_common {
 
   mkdir $IMAGEDIR/R
   cp h2o-r/R/src/contrib/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R
+  cp h2o-r/build/client/h2o_${PROJECT_VERSION}.tar.gz $IMAGEDIR/R/h2o_client_${PROJECT_VERSION}.tar.gz
+  cp h2o-r/dist-readme.txt $IMAGEDIR/R/README.txt
 
   mkdir $IMAGEDIR/python
 
@@ -156,6 +162,9 @@ cp h2o-py/build/client/dist/*whl target/Python
 # Add Java bindings Jar to target.
 mkdir -p target/bindings/java
 cp -p h2o-bindings/build/libs/*.jar target/bindings/java
+
+# Add Minimal assembly Jar to target.
+cp h2o-assemblies/minimal/build/libs/minimal.jar target/h2o-minimal-${PROJECT_VERSION}.jar
 
 # Add Maven repo to target.
 mkdir target/maven

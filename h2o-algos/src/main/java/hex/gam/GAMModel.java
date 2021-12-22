@@ -2,7 +2,8 @@ package hex.gam;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel;
-import hex.gam.MatrixFrameUtils.AddGamColumns;
+import hex.gam.MatrixFrameUtils.AddCSGamColumns;
+import hex.gam.MatrixFrameUtils.AddTPKnotsGamColumns;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters.Family;
@@ -10,6 +11,7 @@ import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.util.EffectiveParametersUtils;
 import water.*;
+import water.exceptions.H2OColumnNotFoundArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -20,14 +22,18 @@ import water.util.*;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import static hex.gam.MatrixFrameUtils.GamUtils.equalColNames;
-import static hex.gam.MatrixFrameUtils.GamUtils.sortCoeffMags;
+import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
   private static final String[] BINOMIAL_CLASS_NAMES = new String[]{"0", "1"};
   public String[][] _gamColNamesNoCentering; // store column names only for GAM columns
   public String[][] _gamColNames; // store column names only for GAM columns after decentering
+  public int[] _gamPredSize;  // store size of predictors for gam smoother
+  public int[] _m;  // parameter related to gamPredSize;
+  public int[] _M;  // size of polynomial basis for thin plate regression smoothers
+  public int _cubicSplineNum;
+  public int _thinPlateSmoothersWithKnotsNum;
   public Key<Frame>[] _gamFrameKeysCenter;
   public double[] _gamColMeans;
   public int _nclass; // 2 for binomial, > 2 for multinomial and ordinal
@@ -54,7 +60,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
     GLMModel.GLMWeightsFun glmf = new GLMModel.GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
             _parms._tweedie_link_power, _parms._theta);
-    return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass);
+    return new MetricBuilderGAM(domain, _ymu, glmf, _rank, true, _parms._intercept, _nclass, _parms._auc_type);
   }
 
   public GAMModel(Key<GAMModel> selfKey, GAMParameters parms, GAMModelOutput output) {
@@ -66,41 +72,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     EffectiveParametersUtils.initFoldAssignment(_parms);
   }
 
-  public TwoDimTable copyTwoDimTable(TwoDimTable table) {
-    String[] rowHeaders = table.getRowHeaders();
-    String[] colTypes = table.getColTypes();
-    int tableSize = rowHeaders.length;
-    int colSize = colTypes.length;
-    TwoDimTable tableCopy = new TwoDimTable("glm scoring history", "",
-            rowHeaders, table.getColHeaders(), colTypes, table.getColFormats(),
-            "names");
-    for (int rowIndex = 0; rowIndex < tableSize; rowIndex++)  {
-      for (int colIndex = 0; colIndex < colSize; colIndex++) {
-        tableCopy.set(rowIndex, colIndex,table.get(rowIndex, colIndex));
-      }
-    }
-    return tableCopy;
-  }
-  
-  TwoDimTable genCoefficientTable(String[] colHeaders, double[] coefficients, double[] coefficientsStand,
-                                  String[] coefficientNames, String tableHeader) {
-    String[] colTypes = new String[]{ "double", "double"};
-    String[] colFormat = new String[]{"%5f", "%5f"};
-    int nCoeff = coefficients.length;
-    String[] coeffNames = new String[nCoeff];
-    System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
-    
-    Log.info("genCoefficientMagTableMultinomial", String.format("coemffNames length: %d.  coefficients " +
-            "length: %d, coeffSigns length: %d", coeffNames.length, coefficients.length, coefficientsStand.length));
-    
-    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
-            "names");
-    fillUpCoeffs(coefficients, coefficientsStand, table, 0);
-    return table;
-  }
-
-  TwoDimTable genCoefficientMagTableMultinomial(String[] colHeaders, double[][] coefficients,
-                                     String[] coefficientNames, String tableHeader) {
+  public TwoDimTable genCoefficientMagTableMultinomial(String[] colHeaders, double[][] coefficients,
+                                                       String[] coefficientNames, String tableHeader) {
     String[] colTypes = new String[]{ "double", "string"};
     String[] colFormat = new String[]{"%5f", ""};
     int nCoeff = coefficients[0].length;
@@ -142,8 +115,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     return table;
   }
 
-  TwoDimTable genCoefficientMagTable(String[] colHeaders, double[] coefficients,
-                                  String[] coefficientNames, String tableHeader) {
+  public TwoDimTable genCoefficientMagTable(String[] colHeaders, double[] coefficients,
+                                            String[] coefficientNames, String tableHeader) {
     String[] colTypes = new String[]{ "double", "string"};
     String[] colFormat = new String[]{"%5f", ""};
     int nCoeff = coefficients.length;
@@ -185,38 +158,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       arrCounter++;
     }
   }
-  
-  TwoDimTable genCoefficientTableMultinomial(String[] colHeaders, double[][] coefficients, double[][] coefficients_stand, 
-                                                     String[] coefficientNames, String tableHeader) {
-    String[] colTypes = new String[]{"double", "double"};
-    String[] colFormat = new String[]{"%5f", "%5f"};
-    int nCoeff = coefficients[0].length;
-    int nclass = coefficients.length;
-    int totCoeff = nCoeff*nclass;
-    String[] coeffNames = new String[totCoeff];
-
-    int coeffCounter=0;
-    for (int classInd=0; classInd < nclass; classInd++){
-      for (int ind=0; ind < nCoeff; ind++) {
-        coeffNames[coeffCounter++] = coefficientNames[ind]+"_class_"+classInd;
-      }
-    }
-    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
-            "names");
-    for (int classInd=0; classInd<nclass; classInd++)
-      fillUpCoeffs(coefficients[classInd], coefficients_stand[classInd], table, classInd*nCoeff);
-    return table;
-  }
-
-  private void fillUpCoeffs(double[] coeffValues, double[] coeffValuesStand, TwoDimTable tdt, int rowStart) {
-    int arrLength = coeffValues.length+rowStart;
-    int arrCounter=0;
-    for (int i=rowStart; i<arrLength; i++) {
-      tdt.set(i, 0, coeffValues[arrCounter]);
-      tdt.set(i, 1, coeffValuesStand[arrCounter]);
-      arrCounter++;
-    }
-  }
 
   /** Score on an already adapted validation frame during cross validation.  This function is not expected to be called
    * by other methods.   Returns a MetricBuilder that can be used to make a model metrics.
@@ -242,6 +183,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double _theta; // 1/k and is used by negative binomial distribution only
     public double [] _alpha;
     public double [] _lambda;
+    public double[] _startval;
     public Serializable _missing_values_handling = MissingValuesHandling.MeanImputation;
     public boolean _lambda_search = false;
     public boolean _use_all_factor_levels = false;
@@ -251,21 +193,33 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double _objective_epsilon = -1;
     public double _obj_reg = -1;
     public boolean _compute_p_values = false;
+    public boolean _scale_tp_penalty_mat = false;
+    public boolean _standardize_tp_gam_cols = false;
     public String[] _interactions=null;
     public StringPair[] _interaction_pairs=null;
     public Key<Frame> _plug_values = null;
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1; // not used in GAM, copied over to GLM params
+    public boolean _generate_scoring_history = false; // if true, will generate GLM scoring history but will slow algo down
+
 
     // the following parameters are for GAM
-    public int[] _num_knots; // array storing number of knots per basis function
-    public String[] _knot_ids;  // store frame keys that contain knots location for each gam column in gam_X;
-    public String[] _gam_columns; // array storing which predictor columns are needed
-    public int[] _bs; // choose spline function for gam column, 0 = cr
+    public int[] _num_knots; // array storing number of knots per smoother
+    public int[] _num_knots_sorted;
+    public int[] _num_knots_tp; // store num_knots for thin plate regression
+    public String[] _knot_ids;  // store frame keys that contain knots location for each smoother in gam_X;
+    public String[][] _gam_columns; // array storing which predictor columns are specified
+    public String[][] _gam_columns_sorted;  // move CS spline to the front and tp to the back in gam_columns
+    public int[] _gamPredSize;  // store size of predictors for gam smoother
+    public int[] _m;  // parameter related to gamPredSize;
+    public int[] _M;  // size of polynomial basis for thin plate regression smoothers
+    public int[] _bs; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = thin plate regression with SVD
+    public int[] _bs_sorted; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = thin plate regression with SVD
     public double[] _scale;  // array storing scaling values to control wriggliness of fit
+    public double[] _scale_sorted;
     public boolean _saveZMatrix = false;  // if asserted will save Z matrix
     public boolean _keep_gam_cols = false;  // if true will save the keys to gam Columns only
-    public boolean _savePenaltyMat = false; // if true will save penalty matrices as tripple array
+    public boolean _savePenaltyMat = false; // if true will save penalty matrices as triple array
     public String algoName() { return "GAM"; }
     public String fullName() { return "Generalized Additive Model"; }
     public String javaName() { return GAMModel.class.getName(); }
@@ -368,6 +322,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double[] _glm_stdErr;
     public double _glm_best_lamda_value;
     public TwoDimTable _glm_scoring_history;
+    public TwoDimTable[] _glm_cv_scoring_history;
     public TwoDimTable _coefficients_table;
     public TwoDimTable _coefficients_table_no_centering;
     public TwoDimTable _standardized_coefficient_magnitudes;
@@ -388,14 +343,21 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     private double[] _zvalues;
     private double _dispersion;
     private boolean _dispersionEstimated;
-    public String[][] _gamColNames; // store gam column names after transformation and decentering
-    public double[][][] _zTranspose; // Z matrix for de-centralization, can be null
-    public double[][][] _penaltyMatrices_center; // stores t(Z)*t(D)*Binv*D*Z and can be null
+    public String[][] _gamColNames; // store gam column names after transformation and centering
+    public double[][][] _zTranspose; // Z matrix for centralization, can be null
+    public double[][][] _penaltyMatricesCenter; // stores t(Z)*t(D)*Binv*D*Z and can be null
     public double[][][] _penaltyMatrices;          // store t(D)*Binv*D and can be null
     public double[][][] _binvD; // store BinvD for each gam column specified for scoring
-    public double[][] _knots; // store knots location for each gam column
-    public int[] _numKnots;  // store number of knots per gam column
-    public Key<Frame> _gamTransformedTrainCenter;  // contain key of predictors, all gam columns centered
+    public double[][][] _knots; // store knots location for each gam smoother
+    int[][][] _allPolyBasisList; // store polynomial basis function for all tp smoothers
+    double[][][] _penaltyMatCS; // penalty matrix after removing optimization constraint, only for thin plate
+    double[][][] _zTransposeCS; // store for each thin plate smoother for removing optimization constraint
+    public int[] _numKnots;  // store number of knots per gam smoother
+    public double[][][] _starT;
+    public double[][] _gamColMeansRaw;
+    public double[][] _oneOGamColStd;
+    public double[] _penaltyScale;
+    public Key<Frame> _gamTransformedTrainCenter;  // contain key of predictors, all gamified columns centered
     public DataInfo _dinfo;
     public String[] _responseDomains;
     public String _gam_transformed_center_key;
@@ -446,6 +408,14 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         default: return ModelCategory.Regression;
       }
     }
+
+    public void copyMetrics(GAMModel gamModel, Frame train, boolean forTrain, ModelMetrics glmMetrics) {
+      ModelMetrics tmpMetrics = glmMetrics.deepCloneWithDifferentModelAndFrame(gamModel, train);
+      if (forTrain)
+        gamModel._output._training_metrics = tmpMetrics;
+      else
+        gamModel._output._validation_metrics = tmpMetrics;
+    }
   }
 
   /**
@@ -479,26 +449,26 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public Frame cleanUpInputFrame(Frame test) {
     Frame adptedF = new Frame(Key.make(), test.names(), test.vecs().clone()); // clone test dataset
     return cleanUpInputFrame(adptedF, _parms, _gamColNames, _output._binvD, _output._zTranspose, 
-            _output._knots, _output._numKnots);
+            _output._knots, _output._zTransposeCS, _output._allPolyBasisList, _output._gamColMeansRaw, 
+            _output._oneOGamColStd);
   }
 
-  public static Frame cleanUpInputFrame(Frame adptedF, GAMParameters parms, String[][] gamColNames, 
-                                 double[][][] binvD, double[][][] zTranspose, double[][] knots, int[] numKnots) {
-    int numGamCols = parms._gam_columns.length;
-    String[] testNames = adptedF.names();
-    Vec[] gamCols = new Vec[numGamCols];
-    for (int vind=0; vind<numGamCols; vind++)
-      gamCols[vind] = adptedF.vec(parms._gam_columns[vind]).clone();
-    Frame onlyGamCols = new Frame(parms._gam_columns, gamCols);
-    AddGamColumns genGamCols = new AddGamColumns(binvD, zTranspose, knots, numKnots, onlyGamCols);
-    genGamCols.doAll(genGamCols._gamCols2Add, Vec.T_NUM, onlyGamCols);
-    String[] gamColsNames = new String[genGamCols._gamCols2Add];
-    int offset = 0;
-    for (int ind=0; ind<genGamCols._numGAMcols; ind++) {
-      System.arraycopy(gamColNames[ind], 0, gamColsNames, offset, gamColNames[ind].length);
-      offset+= gamColNames[ind].length;
-    }
-    Frame oneAugmentedColumn = genGamCols.outputFrame(Key.make(), gamColsNames, null);
+  public static Frame cleanUpInputFrame(Frame adptedF, GAMParameters parms, String[][] gamColNames, double[][][] binvD,
+                                        double[][][] zTranspose, double[][][] knots,
+                                        double[][][] zTransposeCS, int[][][] polyBasisList, double[][] gamColMeansRaw, 
+                                        double[][] oneOGamColStd) {
+    String[] testNames = adptedF.names(); // adptedF contains predictors, gam_columns and extras
+    // add gam columns for CS smoothers
+    Frame csAugmentedColumns = addCSGamColumns(adptedF, parms, gamColNames, binvD, zTranspose, knots);
+    // add gam columns for TP smoothers
+    Frame tpAugmentedColumns = addTPGamColumns(adptedF, parms, zTransposeCS, zTranspose, polyBasisList, 
+            knots, gamColMeansRaw, oneOGamColStd);
+    
+    if (csAugmentedColumns == null)
+      csAugmentedColumns = tpAugmentedColumns;
+    else if (tpAugmentedColumns != null)
+      csAugmentedColumns.add(tpAugmentedColumns.names(), tpAugmentedColumns.removeAll());
+    
     if (parms._ignored_columns != null) {  // remove ignored columns
       for (String iname:parms._ignored_columns) {
         if (ArrayUtils.contains(testNames, iname)) {
@@ -513,8 +483,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       weightV = adptedF.remove(parms._weights_column);
     if (ArrayUtils.contains(testNames, parms._response_column))
       respV = adptedF.remove(parms._response_column);
-    adptedF.add(oneAugmentedColumn.names(), oneAugmentedColumn.removeAll());
-    Scope.track(oneAugmentedColumn);
+    adptedF.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
+    Scope.track(csAugmentedColumns);
     
     if (weightV != null)
       adptedF.add(parms._weights_column, weightV);
@@ -523,17 +493,93 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     return adptedF;
   }
 
+  public static Frame adaptValidFrame(Frame adptedF, Frame valid, GAMParameters parms, String[][] gamColNames, double[][][] binvD,
+                                        double[][][] zTranspose, double[][][] knots,
+                                        double[][][] zTransposeCS, int[][][] polyBasisList, double[][] gamColMeansRaw,
+                                        double[][] oneOGamColStd) {
+    // add gam columns for CS smoothers
+    Frame csAugmentedColumns = addCSGamColumns(adptedF, parms, gamColNames, binvD, zTranspose, knots);
+    // add gam columns for TP smoothers
+    Frame tpAugmentedColumns = addTPGamColumns(adptedF, parms, zTransposeCS, zTranspose, polyBasisList,
+            knots, gamColMeansRaw, oneOGamColStd);
+
+    if (csAugmentedColumns == null)
+      csAugmentedColumns = tpAugmentedColumns;
+    else if (tpAugmentedColumns != null)
+      csAugmentedColumns.add(tpAugmentedColumns.names(), tpAugmentedColumns.removeAll());
+    
+    Vec respV = null;
+    Vec weightV = null;
+    if (parms._weights_column != null)  // move weight column to be last column before response column
+      weightV = valid.remove(parms._weights_column);
+    if (ArrayUtils.contains(valid.names(), parms._response_column))
+      respV = valid.remove(parms._response_column);
+    valid.add(csAugmentedColumns.names(), csAugmentedColumns.removeAll());
+    Scope.track(csAugmentedColumns);
+
+    if (weightV != null)
+      valid.add(parms._weights_column, weightV);
+    if (respV != null)
+      valid.add(parms._response_column, respV);
+    return valid;
+  }
+  
+  public static Frame addTPGamColumns(Frame adaptedF, GAMParameters parms, double[][][] zTransposeCS, 
+                                      double[][][] zTranspose, int[][][] polyBasisList, double[][][] knots,
+                                      double[][] gamColMeansRaw, double[][] oneOColStd) {
+    int numTPCols = parms._M==null?0:parms._M.length;
+    if (numTPCols == 0)
+      return null;
+    AddTPKnotsGamColumns addTPCols = new AddTPKnotsGamColumns(parms, zTransposeCS, zTranspose, polyBasisList, knots,
+            adaptedF);
+    addTPCols.addTPGamCols(gamColMeansRaw, oneOColStd); // generate thin plate regression smoothers
+    return concateGamVecs(addTPCols._gamFrameKeysCenter);
+  }
+  
+  public static Frame addCSGamColumns(Frame adptedF, GAMParameters parms, String[][] gamColNames,
+                                      double[][][] binvD, double[][][] zTranspose, double[][][] knots) {
+    int numGamCols = parms._gam_columns.length;
+    int numCSGamCols = numGamCols - (parms._M==null?0:parms._M.length);
+    if (numCSGamCols == 0)
+      return null;
+    
+    Vec[] gamColCSs = new Vec[numCSGamCols];
+    String[] gamColCSNames = new String[numCSGamCols];
+    for (int vind=0; vind<numCSGamCols; vind++) {
+      if (adptedF.vec(parms._gam_columns_sorted[vind][0]) == null) 
+        throw new H2OColumnNotFoundArgumentException("gam_columns", adptedF, parms._gam_columns_sorted[vind][0]);
+
+      gamColCSs[vind] = adptedF.vec(parms._gam_columns_sorted[vind][0]).clone();
+      gamColCSNames[vind] = parms._gam_columns_sorted[vind][0];
+    }
+    Frame onlyGamCols = new Frame(gamColCSNames, gamColCSs);
+    AddCSGamColumns genGamCols = new AddCSGamColumns(binvD, zTranspose, knots, parms._num_knots_sorted, onlyGamCols);
+    genGamCols.doAll(genGamCols._gamCols2Add, Vec.T_NUM, onlyGamCols);
+    String[] gamColsNames = new String[genGamCols._gamCols2Add];
+    int offset = 0;
+    for (int ind=0; ind<genGamCols._numGAMcols; ind++) {
+      System.arraycopy(gamColNames[ind], 0, gamColsNames, offset, gamColNames[ind].length);
+      offset+= gamColNames[ind].length;
+    }
+    return genGamCols.outputFrame(Key.make(), gamColsNames, null);
+  }
+
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics,
-                                   CFuncRef customMetricFunc) {
+  protected PredictScoreResult predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, 
+                                                boolean computeMetrics, CFuncRef customMetricFunc) {
     String[] predictNames = makeScoringNames();
     String[][] domains = new String[predictNames.length][];
     GAMScore gs = makeScoringTask(adaptFrm, true, j, computeMetrics);
     gs.doAll(predictNames.length, Vec.T_NUM, gs._dinfo._adaptedFrame);
-    if (gs._computeMetrics)
-      gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
+    ModelMetrics.MetricBuilder<?> mb = null;
+    Frame rawFrame = null;
+    if (gs._computeMetrics) {
+      mb = gs._mb;
+      rawFrame = gs.outputFrame();
+    }
     domains[0] = gs._predDomains;
-    return gs.outputFrame(Key.make(destination_key), predictNames, domains);  // place holder
+    Frame outputFrame = gs.outputFrame(Key.make(destination_key), predictNames, domains);
+    return new PredictScoreResult(mb, rawFrame, outputFrame);
   }
   
   private GAMScore makeScoringTask(Frame adaptFrm, boolean makePredictions, Job j, boolean computeMetrics) {
@@ -630,7 +676,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       }
       DataInfo.Row r = _dinfo.newDenseRow();
       int chkLen = chks[0]._len;
-      for (int rid=0; rid<chkLen; rid++) {  // extract each row
+      for (int rid = 0; rid < chkLen; rid++) {  // extract each row
         _dinfo.extractDenseRow(chks, rid, r);
         processRow(r, predictVals, nc, numPredVals);
         if (_computeMetrics && !r.response_bad) {
@@ -747,16 +793,42 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       for (Key oneKey:_validKeys) {
           Keyed.remove(oneKey, fs, true);
       }
+    if (_parms._keep_cross_validation_predictions)
+      Keyed.remove(_output._cross_validation_holdout_predictions_frame_id, fs, true);
+    if (_parms._keep_cross_validation_fold_assignment)
+      Keyed.remove(_output._cross_validation_fold_assignment_frame_id, fs, true);
+    if (_parms._keep_cross_validation_models && _output._cross_validation_models!=null) {
+      for (Key oneModelKey : _output._cross_validation_models)
+        Keyed.remove(oneModelKey, fs, true);
+    }
     return fs;
   }
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     if (_output._gamTransformedTrainCenter!=null)
       ab.putKey(_output._gamTransformedTrainCenter);
+    if (_parms._keep_cross_validation_predictions)
+      ab.putKey(_output._cross_validation_holdout_predictions_frame_id);
+    if (_parms._keep_cross_validation_fold_assignment)
+      ab.putKey(_output._cross_validation_fold_assignment_frame_id);
+    if (_parms._keep_cross_validation_models && _output._cross_validation_models!=null) {
+      for (Key oneModelKey : _output._cross_validation_models)
+        ab.putKey(oneModelKey);
+    }
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
+    if (_output._gamTransformedTrainCenter!=null)
+      ab.getKey(_output._gamTransformedTrainCenter, fs);
+    if (_parms._keep_cross_validation_predictions)
+      ab.getKey(_output._cross_validation_holdout_predictions_frame_id, fs);
+    if (_parms._keep_cross_validation_fold_assignment)
+      ab.getKey(_output._cross_validation_fold_assignment_frame_id, fs);
+    if (_parms._keep_cross_validation_models && _output._cross_validation_models!=null) {
+      for (Key oneModelKey : _output._cross_validation_models)
+      ab.getKey(oneModelKey, fs);
+    }
     return super.readAll_impl(ab, fs);
   }
 }

@@ -2,11 +2,11 @@ package water;
 
 import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
-import water.util.Log;
+import water.util.*;
 
+import java.io.PrintStream;
 import java.util.Arrays;
-
-import static water.Weaver.classForName;
+import java.util.ServiceLoader;
 
 /** Internal H2O class used to build and maintain the cloud-wide type mapping.
  *  Only public to expose a few constants to subpackages.  No exposed user
@@ -15,7 +15,7 @@ public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
 
   // This list contains all classes that are needed at cloud initialization time.
-  static final String BOOTSTRAP_CLASSES[] = {
+  private static final String[] BUILTIN_BOOTSTRAP_CLASSES = {
     " BAD",
     "[B",                               // 1 -
     water.Iced.class.getName(),         // 2 - Base serialization class
@@ -57,6 +57,11 @@ public class TypeMap {
     NodePersistentStorageV3.NodePersistentStorageEntryV3.class.getName(),
 
     // Beginning to hunt for files
+    water.util.IcedLong.class.getName(),
+    water.util.IcedAtomicInt.class.getName(),
+    water.util.IcedDouble.class.getName(),
+    water.util.IcedBitSet.class.getName(),
+    water.util.IcedHashSet.class.getName(),
     water.util.IcedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
     water.util.IcedHashMapGeneric.class.getName(),
@@ -73,14 +78,18 @@ public class TypeMap {
   static private Icer[] GOLD;
   // Unique IDs
   static private int IDS;
+  // Number of bootstrap classes
+  static final int BOOTSTRAP_SIZE;
   // JUnit helper flag
   static public volatile boolean _check_no_locking; // ONLY TOUCH IN AAA_PreCloudLock!
   static {
-    CLAZZES = BOOTSTRAP_CLASSES;
-    GOLD = new Icer[BOOTSTRAP_CLASSES.length];
+    CLAZZES = findAllBootstrapClasses();
+    BOOTSTRAP_SIZE = CLAZZES.length;
+    GOLD = new Icer[BOOTSTRAP_SIZE];
     int id=0;                   // The initial set of Type IDs to boot with
     for( String s : CLAZZES ) MAP.put(s,id++);
     IDS = id;
+    assert IDS == BOOTSTRAP_SIZE;
     // Some statically known names, to make life easier during e.g. bootup & parse
     NULL         = (short) -1;
     PRIM_B       = (short)onIce("[B");
@@ -90,6 +99,28 @@ public class TypeMap {
     FRAME        = (short)onIce("water.fvec.Frame");    // Used in water.Value
     VECGROUP     = (short)onIce("water.fvec.Vec$VectorGroup"); // Used in TestUtil
     ESPCGROUP    = (short)onIce("water.fvec.Vec$ESPC"); // Used in TestUtil
+  }
+
+  /**
+   * Collect built-in bootstrap classes and bootstrap classes from all extensions. 
+   * @return array of class names, built-in classes are listed first followed by sorted list of classes from extensions
+   */
+  static synchronized String[] findAllBootstrapClasses() {
+    String[] additionalBootstrapClasses = new String[0];
+    ServiceLoader<TypeMapExtension> extensionsLoader = ServiceLoader.load(TypeMapExtension.class);
+    for (TypeMapExtension ext : extensionsLoader) {
+      additionalBootstrapClasses = ArrayUtils.append(additionalBootstrapClasses, ext.getBoostrapClasses());
+    }
+    Arrays.sort(additionalBootstrapClasses);
+    return ArrayUtils.append(BUILTIN_BOOTSTRAP_CLASSES, additionalBootstrapClasses);
+  }
+
+  /**
+   * Retrieves the collection of bootstrap classes.
+   * @return array of class names
+   */
+  public static String[] bootstrapClasses() {
+    return Arrays.copyOf(CLAZZES, BOOTSTRAP_SIZE);
   }
 
   // The major complexity of this code is that the are FOUR major data forms
@@ -118,8 +149,7 @@ public class TypeMap {
     if (I != null)
       return I;
     try {
-      Class<?> clz = classForName(className);
-      assert clz != null;
+      Class.forName(className);
     } catch (ClassNotFoundException e) {
       throw new IllegalArgumentException("Class " + className + " is not known to H2O.", e);
     }
@@ -148,17 +178,33 @@ public class TypeMap {
     return id < gold.length ? gold[id] : null;
   }
 
-  // Reverse: convert an ID to a className possibly fetching it from leader.
-  public static String className(int id) {
+  static String classNameLocal(final int id) {
     if( id == PRIM_B ) return "[B";
-    String clazs[] = CLAZZES;   // Read once, in case resizing
+    String[] clazs = CLAZZES;   // Read once, in case resizing
     if( id < clazs.length ) { // Might be installed as a className mapping no Icer (yet)
-      String s = clazs[id];   // Racily read the CLAZZES array
-      if( s != null ) return s; // Has the className already
+      return clazs[id];   // Racily read the CLAZZES array
     }
-    assert H2O.CLOUD.leader() != H2O.SELF : "Leader has no mapping for id "+id; // Leaders always have the latest mapping already
-    String s = FetchClazz.fetchClazz(id); // Fetch class name string from leader
-    Paxos.lockCloud(s); // If the leader is already selected, then the cloud is already locked but maybe we dont know; lock now
+    return null;
+  }
+
+  // Reverse: convert an ID to a className possibly fetching it from leader.
+  public static String className(final int id) {
+    String s = classNameLocal(id);
+    if (s != null)
+      return s; // Has the className already
+
+    Paxos.lockCloud("Class Id="+id); // If the leader is already selected, then the cloud is already locked; but we don't know -> lock now
+    s = FetchClazz.fetchClazz(id); // Fetch class name string from leader
+
+    if (s == null) {
+      // this is bad - we are missing the mapping and cannot get it from anywhere
+      if (H2O.isCI()) {
+        // when running on CI - dump all local TypeMaps to get some idea of what happened
+        new PrintTypeMap().doAllNodes();
+      }
+      throw new IllegalStateException("Leader has no mapping for id " + id);
+    }
+
     install( s, id );                     // Install name<->id mapping
     return s;
   }
@@ -174,6 +220,17 @@ public class TypeMap {
       Integer i = MAP.get(className);
       if( i != null ) return i; // Check again under lock for already having an ID
       id = IDS++;               // Leader gets an ID under lock
+    } else {
+      String localClassName = classNameLocal(id);
+      if (localClassName != null) {
+        if (localClassName.equals(className)) {
+          return id; // Nothing to do - we already got the mapping
+        } else {
+          throw new IllegalStateException(
+                  "Inconsistent mapping: id=" + id + " is already mapped to " + localClassName + 
+                  "; was requested to be mapped to " + className + "!");
+        }
+      }
     }
     MAP.put(className,id);      // No race on insert, since under lock
     // Expand lists to handle new ID, as needed
@@ -209,19 +266,19 @@ public class TypeMap {
       // Now install under the TypeMap class lock, so the GOLD array is not
       // resized out from under the installation.
       synchronized( TypeMap.class ) {
+        assert id < BOOTSTRAP_SIZE || !(f.theFreezable() instanceof BootstrapFreezable) : "Class " + ice_clz + " is not BootstrapFreezable";
         return GOLD[id]=f;
       }
     }
   }
-  static void drop(String ice_clz) {
-    Integer I = MAP.get(ice_clz);
-    if( I==null ) return; // no icer, no problem
-    synchronized( TypeMap.class ) {  // install null
-      GOLD[I] = null;
-    }
-
-  }
   static Iced newInstance(int id) { return (Iced) newFreezable(id); }
+
+  static <T extends Freezable> T newFreezable(int id, Class<T> tc) {
+    @SuppressWarnings("unchecked")
+    T iced = (T) newFreezable(id);
+    assert tc == null || tc.isInstance(iced) : tc.getName() + " != " + iced.getClass().getName() + ", id = " + id;
+    return iced;
+  }
 
   /** Create a new freezable object based on its unique ID.
    *
@@ -239,20 +296,37 @@ public class TypeMap {
    * @return new instance of Freezable object
    */
   public static Freezable newFreezable(String className) {
-    return (Freezable)theFreezable(onIce(className)).clone();
+    return theFreezable(onIce(className)).clone();
   }
   /** The single golden instance of an Iced, used for cloning and instanceof
    *  tests, do-not-modify since it's The Golden Instance and shared. */
   public static Freezable theFreezable(int id) {
     try {
       Icer f = goForGold(id);
-      return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
+      return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) {
       throw Log.throwErr(e);
     }
   }
   public static Freezable getTheFreezableOrThrow(int id) throws ClassNotFoundException {
     Icer f = goForGold(id);
-    return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
+    return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
   }
+
+  static void printTypeMap(PrintStream ps) {
+    final String[] clazzes = CLAZZES;
+    for (int i = 0; i < clazzes.length; i++) {
+      final String className = CLAZZES[i];
+      ps.println(i + " -> " + className + " (map: " + (className != null ? MAP.get(className) : null) + ")");
+    }
+  }
+
+  private static class PrintTypeMap extends MRTask<PrintTypeMap> {
+    @Override
+    protected void setupLocal() {
+      System.err.println("TypeMap dump on node " + H2O.SELF);
+      printTypeMap(System.err);
+    }
+  }
+
 }

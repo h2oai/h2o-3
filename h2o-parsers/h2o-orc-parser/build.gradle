@@ -18,9 +18,9 @@ dependencies {
       exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
       exclude group: 'eigenbase', module: 'eigenbase-properties'
   }
-  compile project(":h2o-core")
+  api project(":h2o-core")
   // Only PersistHDFS API
-  compile(project(":h2o-persist-hdfs")) {
+  api(project(":h2o-persist-hdfs")) {
       exclude group: 'ai.h2o', module: 'h2o-core'
       exclude group: 'net.java.dev.jets3t', module: 'jets3t'
       exclude group: 'org.apache.hadoop', module: 'hadoop-client'
@@ -30,7 +30,7 @@ dependencies {
   // Note: What is connection between hive-exec version and hadoop-version and orc version?
   // Note: In this case we are using hive version which is compatible with $defaultHadoopVersion
   // Note: for newest version it should be replaces by hive-orc
-  compile("org.apache.hive:hive-exec:$defaultHiveExecVersion") {
+  api("org.apache.hive:hive-exec:$defaultHiveExecVersion") {
       // we can't use transitive=false so we need to exclude the dependencies manually
       configurations.hiveExecExclude.getResolvedConfiguration().getResolvedArtifacts().each {
           if (it.moduleVersion.id.group != "org.apache.hive" && it.moduleVersion.id.module.name != "hive-exec") {
@@ -40,7 +40,7 @@ dependencies {
       exclude group: 'org.pentaho', module: 'pentaho-aggdesigner-algorithm'
   }
   // For compilation we need common
-  compile("org.apache.hadoop:hadoop-common:$defaultHadoopVersion") {
+  api("org.apache.hadoop:hadoop-common:$defaultHadoopVersion") {
       // we can't use transitive=false so we need to exclude the dependencies manually
       configurations.hadoopCommonExclude.getResolvedConfiguration().getResolvedArtifacts().each {
           if (it.moduleVersion.id.group != "org.apache.hadoop" && it.moduleVersion.id.module.name != "hadoop-common") {
@@ -49,10 +49,10 @@ dependencies {
       }
   }
 
-  testCompile project(":h2o-test-support")
+  testImplementation project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
   // We need correct version of MapRe Hadoop to run JUnits
-  testRuntime("org.apache.hadoop:hadoop-client:$defaultHadoopVersion") {
+  testRuntimeOnly("org.apache.hadoop:hadoop-client:$defaultHadoopVersion") {
       exclude module: "jasper-runtime"
       exclude module: "jasper-compiler"
       exclude module: "curator-client"

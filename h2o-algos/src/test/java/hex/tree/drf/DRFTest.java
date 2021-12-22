@@ -10,6 +10,8 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.tools.PredictCsv;
+import hex.genmodel.utils.DistributionFamily;
+import hex.tree.DHistogram;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
@@ -26,6 +28,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -281,7 +284,7 @@ public class DRFTest extends TestUtil {
             20,
             1,
             10,
-        46.88452885668735
+            46.90342217100751
     );
 
   }
@@ -319,7 +322,7 @@ public class DRFTest extends TestUtil {
             20, //bins
             10, //min_rows
             5, //max_depth
-            0.25040633586487);
+            0.25040513069517);
   }
 
   @Test public void testProstate() throws Throwable {
@@ -473,7 +476,7 @@ public class DRFTest extends TestUtil {
     Frame test = null, res = null;
     DRFModel model = null;
     try {
-      frTrain = parse_test_file(fnametrain);
+      frTrain = parseTestFile(fnametrain);
       Vec removeme = unifyFrame(drf, frTrain, prep, classification);
       if (removeme != null) Scope.track(removeme);
       DKV.put(frTrain._key, frTrain);
@@ -505,7 +508,7 @@ public class DRFTest extends TestUtil {
 
       hex.ModelMetrics mm;
       if (fnametest != null) {
-        frTest = parse_test_file(fnametest);
+        frTest = parseTestFile(fnametest);
         pred = model.score(frTest);
         mm = hex.ModelMetrics.getFromDKV(model, frTest);
         // Check test set CM
@@ -514,7 +517,7 @@ public class DRFTest extends TestUtil {
       }
       Assert.assertEquals("Number of trees differs!", ntree, model._output._ntrees);
 
-      test = parse_test_file(fnametrain);
+      test = parseTestFile(fnametrain);
       res = model.score(test);
 
       // Build a POJO, validate same results
@@ -560,7 +563,7 @@ public class DRFTest extends TestUtil {
         Scope.enter();
         try {
           // Load data, hack frames
-          tfr = parse_test_file("/Users/ludirehak/Downloads/train.csv.zip");
+          tfr = parseTestFile("/Users/ludirehak/Downloads/train.csv.zip");
 
           DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
           parms._train = tfr._key;
@@ -606,7 +609,7 @@ public class DRFTest extends TestUtil {
             long startTime = System.currentTimeMillis();
             Scope.enter();
             // Load data, hack frames
-            Frame tfr = parse_test_file("/Users/ludirehak/Downloads/train.csv.zip");
+            Frame tfr = parseTestFile("/Users/ludirehak/Downloads/train.csv.zip");
 
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._train = tfr._key;
@@ -676,7 +679,7 @@ public class DRFTest extends TestUtil {
     for (int i=0; i<N; ++i) {
       Scope.enter();
       // Load data, hack frames
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
@@ -721,7 +724,7 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
@@ -771,7 +774,7 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
 
       // rebalance to fixed number of chunks
       Key dest = Key.make("df.rebalanced.hex");
@@ -834,8 +837,8 @@ public class DRFTest extends TestUtil {
     Scope.enter();
     try {
       // Load data, hack frames
-      tfr = parse_test_file(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
-      test = parse_test_file(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
+      tfr = parseTestFile(Key.make("air.hex"), "/users/arno/sz_bench_data/train-1m.csv");
+      test = parseTestFile(Key.make("airt.hex"), "/users/arno/sz_bench_data/test.csv");
 //      for (int i : new int[]{0,1,2}) {
 //        tfr.vecs()[i] = tfr.vecs()[i].toCategoricalVec();
 //        test.vecs()[i] = test.vecs()[i].toCategoricalVec();
@@ -887,7 +890,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/no_weights.csv");
+      tfr = parseTestFile("smalldata/junit/no_weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -921,7 +924,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_ones.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_ones.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -956,7 +959,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_twos.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_twos.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -991,7 +994,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights_all_tiny.csv");
+      tfr = parseTestFile("smalldata/junit/weights_all_tiny.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1026,7 +1029,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/no_weights_shuffled.csv");
+      tfr = parseTestFile("smalldata/junit/no_weights_shuffled.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1061,7 +1064,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1109,7 +1112,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",
@@ -1154,7 +1157,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",
@@ -1196,7 +1199,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1244,7 +1247,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      tfr = parseTestFile("./smalldata/airlines/allyears2k_headers.zip");
       for (String s : new String[]{
               "DepTime", "ArrTime", "ActualElapsedTime",
               "AirTime", "ArrDelay", "DepDelay", "Cancelled",
@@ -1295,8 +1298,8 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/weights.csv");
-      vfr = parse_test_file("smalldata/junit/weights.csv");
+      tfr = parseTestFile("smalldata/junit/weights.csv");
+      vfr = parseTestFile("smalldata/junit/weights.csv");
       DKV.put(tfr);
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = tfr._key;
@@ -1335,7 +1338,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+      tfr = parseTestFile("smalldata/junit/cars_20mpg.csv");
       tfr.remove("name").remove(); // Remove unique id
       tfr.remove("economy").remove();
       old = tfr.remove("economy_20mpg");
@@ -1385,7 +1388,7 @@ public class DRFTest extends TestUtil {
     for (int i=1; i<=6; ++i) {
       Scope.enter();
       try {
-        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr = parseTestFile("smalldata/junit/cars_20mpg.csv");
         tfr.remove("name").remove(); // Remove unique id
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
@@ -1425,7 +1428,7 @@ public class DRFTest extends TestUtil {
     DRFModel drf1 = null;
     Scope.enter();
     try {
-        tfr = parse_test_file("smalldata/junit/cars_20mpg.csv");
+        tfr = parseTestFile("smalldata/junit/cars_20mpg.csv");
         tfr.remove("name").remove(); // Remove unique id
         tfr.remove("economy").remove();
         old = tfr.remove("economy_20mpg");
@@ -1466,7 +1469,7 @@ public class DRFTest extends TestUtil {
 
     Scope.enter();
     try {
-      tfr = parse_test_file("./smalldata/junit/cars.csv");
+      tfr = parseTestFile("./smalldata/junit/cars.csv");
       for (String s : new String[]{
               "name",
       }) {
@@ -1502,7 +1505,7 @@ public class DRFTest extends TestUtil {
     Frame tfr = null;
     Key[] ksplits = new Key[0];
     try{
-      tfr=parse_test_file("./smalldata/gbm_test/ecology_model.csv");
+      tfr= parseTestFile("./smalldata/gbm_test/ecology_model.csv");
       SplitFrame sf = new SplitFrame(tfr,new double[] { 0.5, 0.5 }, new Key[] { Key.make("train.hex"), Key.make("test.hex")});
       // Invoke the job
       sf.exec().get();
@@ -1578,9 +1581,9 @@ public class DRFTest extends TestUtil {
     DRFModel drf = null;
     try {
       Scope.enter();
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
       int resp = 54;
-//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
       Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
       DKV.put(tfr);
@@ -1628,9 +1631,9 @@ public class DRFTest extends TestUtil {
     DRFModel drf = null;
     try {
       Scope.enter();
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
       int resp = 54;
-//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
       Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
       DKV.put(tfr);
@@ -1651,7 +1654,7 @@ public class DRFTest extends TestUtil {
         parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
         parms._max_depth = 10;
-        parms._seed = 12345;
+        parms._seed = 123456;
         parms._nbins = 20;
         parms._nbins_top_level = 20;
 
@@ -1665,7 +1668,7 @@ public class DRFTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal randomization: " + histoType[idx]);
-      Assert.assertTrue(4 == idx); //Quantiles are best
+      Assert.assertEquals(SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, histoType[idx]); //Quantiles are best
     } finally {
       if (drf!=null) drf.delete();
       if (tfr!=null) tfr.delete();
@@ -1681,9 +1684,9 @@ public class DRFTest extends TestUtil {
     DRFModel drf = null;
     try {
       Scope.enter();
-      tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
+      tfr = parseTestFile("smalldata/covtype/covtype.20k.data");
       int resp = 54;
-//      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
+//      tfr = parseTestFile("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
       Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
       DKV.put(tfr);
@@ -1720,7 +1723,7 @@ public class DRFTest extends TestUtil {
     Frame tfr=null;
     DRFModel drf = null;
     try {
-        tfr = parse_test_file(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
+        tfr = parseTestFile(Key.make("iris.hex"), "./smalldata/iris/iris.csv");
         tfr.add("constantCol",tfr.anyVec().makeCon(1));
         DKV.put(tfr);
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1742,7 +1745,7 @@ public class DRFTest extends TestUtil {
   @Test public void testScoreFeatureFrequencies() {
     Scope.enter();
     try {
-      Frame train = parse_test_file("./smalldata/logreg/prostate.csv");
+      Frame train = parseTestFile("./smalldata/logreg/prostate.csv");
       train.toCategoricalCol("CAPSULE");
       Scope.track(train);
 
@@ -1949,12 +1952,199 @@ public class DRFTest extends TestUtil {
     }
   }
 
+  @Test // observations at scoring time traverse the tree differently than at training time 
+  public void showRoundingErrorsCanMisclassifyObservations() {
+    checkRoundingErrorSplits(1);
+  }
+
+  @Test // tree has a larger total weight than it theoretically could be
+  public void showRoundingErrorsCanMakeTreeBuildingRegisterObservationsTwice() {
+    checkRoundingErrorSplits(2);
+  }
+
+  private void checkRoundingErrorSplits(int maxDepth) {
+    Scope.enter();
+    try {
+      int nbins = 2;
+
+      // column will have these 3 values
+      double min = 0;
+      double max = 40 + 1e-6;
+      double splitAt = 20 + 1e-7;
+
+      // validate assumptions of this setup
+      double maxEx = DHistogram.find_maxEx(max, 0);
+      double step = nbins / (maxEx - min);
+      // 'splitAt' point will be classified into the first bin
+      assertEquals(0, (int) (step * (splitAt - min)));
+      // but if we decide to split between the 2 bins, it would actually go RIGHT (direction of bin 2) -> issue
+      assertTrue(splitAt >= (float) ((min + max) / 2));
+
+      Frame f = new TestFrameBuilder()
+              .withColNames("C0", "response", "weight")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, new double[]{min, splitAt, max})
+              .withDataForCol(1, new double[]{1, 0, 0.1})
+              .withDataForCol(2, new double[]{1, 1, 1})
+              .build();
+
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._response_column = "response";
+      parms._train = f._key;
+      parms._ntrees = 1;
+      parms._seed = 1234L;
+      parms._max_depth = maxDepth;
+      parms._sample_rate = 1.0;
+      parms._weights_column = "weight";
+      parms._mtries = f.numCols() - 2;
+      parms._nbins_top_level = nbins;
+      parms._nbins = nbins;
+
+      DRFModel model = new DRF(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      TreeWeightInfo twi = calculateNodeWeights(model, f, "weight");
+
+      SharedTreeSubgraph tree0 = model.getSharedTreeSubgraph(0, 0);
+      float actualWeight = tree0.nodesArray.stream()
+              .filter(SharedTreeNode::isLeaf)
+              .map(SharedTreeNode::getWeight)
+              .reduce(Float::sum)
+              .get();
+      assertEquals(twi._treeWeight, actualWeight, 0);
+
+      for (SharedTreeNode n : tree0.nodesArray) {
+          if (n.isLeaf()) {
+              double expectedNodeWeight = n.getWeight();
+              assertEquals("Weight in node #" + n.getNodeNumber() + " should match",
+                      expectedNodeWeight, twi._nodeWeights.get(n.getNodeNumber()), 0);
+          }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static TreeWeightInfo calculateNodeWeights(DRFModel model, Frame f, String weightColumn) {
+      Map<Integer, Double> nodeWeights = new HashMap<>();
+      Frame nodeIds = model.scoreLeafNodeAssignment(
+              f, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, Key.make());
+      nodeIds.add(f);
+      Scope.track(nodeIds);
+      double treeWeight = 0;
+      for (int i = 0; i < nodeIds.numRows(); i++) {
+          int nodeId = (int) nodeIds.vec(0).at(i);
+          double weight = nodeIds.vec(weightColumn).at(i);
+          treeWeight += weight;
+          if (!nodeWeights.containsKey(nodeId)) {
+              nodeWeights.put(nodeId, 0.0);
+          }
+          nodeWeights.put(nodeId, nodeWeights.get(nodeId) + weight);
+      }
+      return new TreeWeightInfo(nodeWeights, treeWeight);
+  }
+
+  private static class TreeWeightInfo {
+      Map<Integer, Double> _nodeWeights;
+      double _treeWeight;
+
+      TreeWeightInfo(Map<Integer, Double> nodeWeights, double treeWeight) {
+          _nodeWeights = nodeWeights;
+          _treeWeight = treeWeight;
+      }
+  }
+  
+  @Test
+  public void testCategoricalSplitNAvsREST() {
+    Scope.enter();
+    try {
+      String[] dataCol1 = ArrayUtils.toString(ArrayUtils.seq(0, 64));
+      String[] dataCol2 = new String[dataCol1.length];
+      double[] response = new double[dataCol1.length];
+      double[] weights = new double[response.length];
+      for (int i = 0; i < response.length; i++) {
+          if (i <= 50) {
+              response[i] = i / 100.0;
+              weights[i] = 1.0;
+              dataCol2[i] = null;
+          } else if (i <= 57) {
+              response[i] = 10;
+              weights[i] = 100;
+              dataCol2[i] = null;
+          } else {
+              response[i] = 11;
+              weights[i] = 100;
+              dataCol2[i] = i % 2 == 0 ? "A" : "B";
+          }
+      }
+      
+      Frame f = new TestFrameBuilder()
+              .withColNames("C0", "C1", "response", "weight")
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, dataCol2)
+              .withDataForCol(1, dataCol1)
+              .withDataForCol(2, response)
+              .withDataForCol(3, weights)
+              .build();
+      f.vec(0).setNA(0);
+
+      System.out.println(f.toTwoDimTable(0, (int) f.numRows(), false));
+      
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._response_column = "response";
+      parms._train = f._key;
+      parms._ntrees = 1;
+      parms._seed = 1234L;
+      parms._max_depth = 4;
+      parms._sample_rate = 1.0;
+      parms._weights_column = "weight";
+      parms._mtries = f.numCols() - 2;
+      parms._nbins_cats = 32;
+
+      DRFModel model = new DRF(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      Map<Integer, Integer> actualWeights = new HashMap<>();
+      
+      Frame nodeIds = model.scoreLeafNodeAssignment(
+              f, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, Key.make());
+      nodeIds.add(f);
+      System.out.println(nodeIds.toTwoDimTable(0, (int) f.numRows(), false));
+      Scope.track(nodeIds);
+      for (int i = 0; i < nodeIds.numRows(); i++) {
+          int nodeId = (int) nodeIds.vec(0).at(i);
+          int weight = (int) nodeIds.vec("weight").at(i);
+          if (!actualWeights.containsKey(nodeId)) {
+              actualWeights.put(nodeId, 0);
+          }
+          actualWeights.put(nodeId, actualWeights.get(nodeId) + weight);
+      }
+
+      SharedTreeSubgraph tree0 = model.getSharedTreeSubgraph(0, 0);
+      // check that we reproduced the edge case that triggers the bug:
+      // we have a node that has a split "NAvsREST" whose parent is a bitset split
+      List<SharedTreeNode> naVsRestNodes = tree0.nodesArray.stream()
+              .filter(SharedTreeNode::isNaVsRest).collect(Collectors.toList());
+      assertEquals(1, naVsRestNodes.size());
+      assertTrue(naVsRestNodes.get(0).getParent().isBitset());
+      for (SharedTreeNode n : tree0.nodesArray) {
+          if (n.isLeaf()) {
+              int expectedWeight = (int) n.getWeight();
+              assertEquals("Weight in node #" + n.getNodeNumber() + " should match",
+                      expectedWeight, (int) actualWeights.get(n.getNodeNumber()));
+          }
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
     @Test public void testMOJOandPOJOSupportedCategoricalEncodings() throws Exception {
         try {
             Scope.enter();
             final String response = "CAPSULE";
             final String testFile = "./smalldata/logreg/prostate.csv";
-            Frame fr = parse_test_file(testFile)
+            Frame fr = parseTestFile(testFile)
                     .toCategoricalCol("RACE")
                     .toCategoricalCol("GLEASON")
                     .toCategoricalCol(response);
@@ -2007,7 +2197,7 @@ public class DRFTest extends TestUtil {
                                 "--output", pojoScoringOutput.getAbsolutePath(),
                                 "--decimal"}, (GenModel) pojoClass.newInstance());
                 predictor.run();
-                Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                Frame scoredWithPojo = Scope.track(parseTestFile(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                     @Override
                     public ParseSetup transformSetup(ParseSetup guessedSetup) {
                         return guessedSetup.setCheckHeader(1);
@@ -2027,7 +2217,7 @@ public class DRFTest extends TestUtil {
                                 "--output", mojoScoringOutput.getAbsolutePath(),
                                 "--decimal"}, (GenModel) mojoModel);
                 predictor.run();
-                Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+                Frame scoredWithMojo = Scope.track(parseTestFile(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
                     @Override
                     public ParseSetup transformSetup(ParseSetup guessedSetup) {
                         return guessedSetup.setCheckHeader(1);
@@ -2041,5 +2231,63 @@ public class DRFTest extends TestUtil {
             Scope.exit();
         }
 
+    }
+    
+    @Test 
+    public void reproducePUBDEV8298() throws Exception {
+      try {
+          Scope.enter();
+          int[] responseData = new int[] {1, 2, 3};
+          int[] c1Data = new int[] {1, 2, 3};
+          int[] c2Data = new int[] {2, 3, 4};
+          int[] c3Data = new int[] {3, 4, 5};
+
+          Frame train = new TestFrameBuilder()
+                  .withColNames("C1", "C2", "C3", "P")
+                  .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                  .withDataForCol(0, c1Data)
+                  .withDataForCol(1, c2Data)
+                  .withDataForCol(2, c3Data)
+                  .withDataForCol(3, responseData)
+                  .build();
+
+          Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+                  Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+                  Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                  Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+                  Model.Parameters.CategoricalEncodingScheme.Enum,
+                  Model.Parameters.CategoricalEncodingScheme.Binary,
+                  Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+                  Model.Parameters.CategoricalEncodingScheme.Eigen
+          };
+
+          for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
+              DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+              parms._train = train._key;
+              parms._response_column = "P";
+              parms._ntrees = 5;
+              parms._categorical_encoding = scheme;
+              parms._max_categorical_levels = 50;
+              parms._seed = 12345;
+              parms._distribution = DistributionFamily.gaussian;
+              parms._mtries = -2;
+              parms._ntrees = 1;
+              parms._sample_rate = 1.0;
+              parms._check_constant_response = false;
+              parms._max_depth = 3;
+              parms._nfolds = 0;
+
+              DRF job = new DRF(parms);
+              DRFModel drfModel= job.trainModel().get();
+              assertNotNull(drfModel);
+              Scope.track_generic(drfModel);                     
+
+              // conversion to mojo shouldn't produce exception
+              MojoModel mojoModel = drfModel.toMojo();
+              assertNotNull(mojoModel);
+          }
+      } finally {
+          Scope.exit();
+      }
     }
 }

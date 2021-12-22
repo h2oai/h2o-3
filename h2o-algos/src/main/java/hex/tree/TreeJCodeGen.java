@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.Model;
 import water.util.IcedBitSet;
 import water.util.SB;
 
@@ -26,7 +27,7 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
   final int   _staticInit[] = new int[MAX_DEPTH];
 
   final String _javaClassName;
-  final SharedTreeModel _tm;
+  final Model.Output _output;
   SB _sb;
   SB _csb;
   SB _grpsplit;
@@ -38,9 +39,9 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
 
   final private boolean _verboseCode;
 
-  public TreeJCodeGen(SharedTreeModel tm, CompressedTree ct, SB sb, String javaClassName, boolean verboseCode) {
+  public TreeJCodeGen(Model.Output output, CompressedTree ct, SB sb, String javaClassName, boolean verboseCode) {
     super(ct);
-    _tm = tm;
+    _output = output;
     _sb = sb;
     _csb = new SB();
     _grpsplit = new SB();
@@ -97,17 +98,17 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     _sb.ip(" (");
 
     // Generate column names only if necessary
-    String colName = _verboseCode ? " /* " + _tm._output._names[col] + " */" : "";
+    String colName = _verboseCode ? " /* " + _output._names[col] + " */" : "";
+
+    String[][] domains = _output._domains;
+    // size of the training domains (i.e., one larger than the max number of "seen" categorical IDs)
+    int limit = (domains != null && domains[col] != null) ? domains[col].length : Integer.MAX_VALUE;
 
     assert(equal!=1);
     if(equal == 0) {
       // for the special case of a split of a categorical column if there's not enough bins to resolve the levels,
       // we treat the categorical levels as ordinal integer levels, and split at a certain point (<=, not using a bitset)
       // => need to add the out-of-bound check explicitly here to handle unseen categoricals
-      String[][] domains = _tm._output._domains;
-      // size of the training domains (i.e., one larger than the max number of "seen" categorical IDs)
-      int limit = (domains != null && domains[col] != null) ? domains[col].length : Integer.MAX_VALUE;
-
       if (naSplitDirInt == DhnasdNaVsRest) {
         _sb.p("!Double.isNaN(data[").p(col).p("])");
         if (limit != Integer.MAX_VALUE)
@@ -122,30 +123,31 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
       if (naSplitDirInt != DhnasdNaVsRest) {
         _sb.p("data[").p(col);
         _sb.p(colName);
-        _sb.p("] ").p(equal == 1 ? "!= " : "<").pj(fcmp); // then left and then right (left is !=)
+        _sb.p("] < ").pj(fcmp);
         _constantPoolSize += 2; // * bytes for generated float which is represented as double because of cast (Double occupies 2 slots in constant pool)
       }
     } else {
-      boolean naVsRest = naSplitDirInt == DhnasdNaVsRest;
+      assert naSplitDirInt != DhnasdNaVsRest : "NAvsREST splits are expected to be represented with equal==0";
       boolean leftward = naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft;
-      if (naVsRest) {
-        _sb.p("!Double.isNaN(data[").p(col).p(colName).p("]) && "); //no need to store group split, all we need to know is NA or not (and in range)
+      if (leftward) {
+        _sb.p("Double.isNaN(data[").p(col).p(colName).p("]) || !"); //NAs (or out of range) go left
         gcmp.toJavaRangeCheck(_sb, col);
-      }
-      else {
-        if (leftward) {
-          _sb.p("Double.isNaN(data[").p(col).p(colName).p("]) || !"); //NAs (or out of range) go left
-          gcmp.toJavaRangeCheck(_sb, col);
-          _sb.p(" || ");
-        } else {
-          _sb.p("!Double.isNaN(data[").p(col).p(colName).p("]) && ");
+        if (limit != Integer.MAX_VALUE) {
+          _sb.p(" || (data[").p(col).p("] >= " + limit + ")");
         }
-        _sb.p("(");
-        gcmp.toJavaRangeCheck(_sb, col);
-        _sb.p(" && ");
-        gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col);
-        _sb.p(")");
+        _sb.p(" || ");
+      } else {
+        _sb.p("!Double.isNaN(data[").p(col).p(colName).p("]) && ");
       }
+      _sb.p("(");
+      gcmp.toJavaRangeCheck(_sb, col);
+      _sb.p(" && ");
+      if (limit != Integer.MAX_VALUE) {
+        _sb.p("(data[").p(col).p("] < " + limit + ")");
+      }
+      _sb.p(" && ");
+      gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col);
+      _sb.p(")");
       _grpCnt++;
     }
     _sb.p(" ? ").ii(2).nl();

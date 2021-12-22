@@ -22,12 +22,4 @@ public class H2OFailException extends H2OAbstractRuntimeException {
     this(msg);
     this.initCause(cause);
   }
-
-  public H2OError toH2OError() {
-    return new H2OError(timestamp, null, getMessage(), dev_message, HTTP_RESPONSE_CODE(), values, this);
-  }
-
-  public H2OError toH2OError(String error_url) {
-    return new H2OError(timestamp, error_url, getMessage(), dev_message, HTTP_RESPONSE_CODE(), values, this);
-  }
 }

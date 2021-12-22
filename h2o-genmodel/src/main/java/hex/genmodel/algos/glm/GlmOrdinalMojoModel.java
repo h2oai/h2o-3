@@ -1,5 +1,7 @@
 package hex.genmodel.algos.glm;
 
+import hex.genmodel.utils.ArrayUtils;
+
 import java.util.Arrays;
 
 public class GlmOrdinalMojoModel extends GlmMojoModelBase {
@@ -26,8 +28,14 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
     noff = _catOffsets[_cats];
   }
 
-  @Override
-  double[] glmScore0(double[] data, double[] preds) {
+  public final double[] score0(double[] data, double offset, double[] preds) {
+    if (_meanImputation)
+      super.imputeMissingWithMeans(data);
+
+    return glmScore0(data, offset, preds);
+  }
+  
+  double[] glmScore0(double[] data, double offset, double[] preds) {
     Arrays.fill(preds, 0);
     preds[0]=lastClass;
 
@@ -51,7 +59,6 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
           }
         }
       }
-
       for (int i = 0; i < _nums; ++i) {
         preds[c + 1] += _beta[i+noff + c * P] * data[i+_cats];
       }
@@ -60,23 +67,14 @@ public class GlmOrdinalMojoModel extends GlmMojoModelBase {
 
     double previousCDF = 0.0;
     for (int cInd = 0; cInd < lastClass; cInd++) { // classify row and calculate PDF of each class
-      double eta = preds[cInd + 1];
+      double eta = preds[cInd + 1]+offset;
       double currCDF = 1.0 / (1 + Math.exp(-eta));
       preds[cInd + 1] = currCDF - previousCDF;
       previousCDF = currCDF;
-
-      if (eta > 0) { // found the correct class
-        preds[0] = cInd;
-        break;
-      }
-    }
-    for (int cInd = (int) preds[0] + 1; cInd < lastClass; cInd++) {  // continue PDF calculation
-      double currCDF = 1.0 / (1 + Math.exp(-preds[cInd + 1]));
-      preds[cInd + 1] = currCDF - previousCDF;
-      previousCDF = currCDF;
-
     }
     preds[_nclasses] = 1-previousCDF;
+    preds[0] = 0;
+    preds[0] = ArrayUtils.maxIndex(preds)-1;
     return preds;
   }
 }

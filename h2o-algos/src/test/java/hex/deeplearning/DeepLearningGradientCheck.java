@@ -29,7 +29,7 @@ public class DeepLearningGradientCheck extends TestUtil {
     DeepLearningModel dl = null;
 
     try {
-      tfr = parse_test_file("smalldata/glm_test/cancar_logIn.csv");
+      tfr = parseTestFile("smalldata/glm_test/cancar_logIn.csv");
       for (String s : new String[]{
               "Merit", "Class"
       }) {

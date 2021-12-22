@@ -53,6 +53,8 @@ public class h2odriver extends Configured implements Tool {
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
   final static String ARGS_CONFIG_PROP = "ai.h2o.args.config";
   final static String DRIVER_JOB_CALL_TIMEOUT_SEC = "ai.h2o.driver.call.timeout";
+  final static String H2O_AUTH_TOKEN_REFRESHER_ENABLED = "h2o.auth.tokenRefresher.enabled";
+  final static String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
   private static final int GEN_PASSWORD_LENGTH = 16;
 
   static {
@@ -92,8 +94,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean enableRandomUdpDrop = false;
   static boolean enableExceptions = false;
   static boolean enableVerboseGC = true;
-  static boolean enablePrintGCDetails = true;
-  static boolean enablePrintGCTimeStamps = true;
+  static boolean enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+  static boolean enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
   static boolean enableVerboseClass = false;
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
@@ -133,12 +135,16 @@ public class h2odriver extends Configured implements Tool {
   static String hiveJdbcUrlPattern = null; 
   static String hiveHost = null;
   static String hivePrincipal = null;
-  static boolean refreshTokens = false;
+  static boolean refreshHiveTokens = false;
+  static boolean refreshHdfsTokens = false;
   static String hiveToken = null;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
+  static String autoRecoveryDir = null;
   static boolean disableFlow = false;
   static boolean swExtBackend = false;
+  static boolean configureS3UsingS3A = false;
+  static boolean refreshS3ATokens = false;
 
   String proxyUrl = null;
 
@@ -706,6 +712,7 @@ public class h2odriver extends Configured implements Tool {
       conf.set(h2omapper.H2O_CLOUDING_IMPL, NetworkBasedClouding.class.getName());
       conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackPublicIp);
       conf.set(h2omapper.H2O_DRIVER_PORT_KEY, Integer.toString(_ss.getLocalPort()));
+      conf.setInt(h2omapper.H2O_CLOUD_SIZE_KEY, targetCloudSize());
     } 
 
     @Override
@@ -847,9 +854,11 @@ public class h2odriver extends Configured implements Tool {
                     "          [-jobname <name of job in jobtracker (defaults to: 'H2O_nnnnn')>]\n" +
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
+                    "          [-refreshHdfsTokens]\n" +
+                    "          [-refreshS3ATokens]\n" +
                     "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
                     "          [-hiveJdbcUrlPattern <pattern for constructing hive jdbc url>]\n" +
-                    "          [-refreshTokens]\n" +
+                    "          [-refreshHiveTokens]\n" +
                     "          [-clouding_method <callbacks|filesystem (defaults: to 'callbacks')>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
@@ -864,6 +873,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-extramempercent <0 to 20>]\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-context_path <context_path> the context path for jetty]\n" +
+                    "          [-auto_recovery_dir <hdfs directory where to store recovery data>]\n" +
                     "          [-baseport <starting HTTP port for H2O nodes; default is 54321>]\n" +
                     "          [-flow_dir <server side directory or hdfs directory>]\n" +
                     "          [-ea]\n" +
@@ -910,9 +920,9 @@ public class h2odriver extends Configured implements Tool {
                     "             The file contains one line with the IP and port of the embedded\n" +
                     "             web server for one of the H2O nodes in the cluster.  e.g.\n" +
                     "                 192.168.1.100:54321\n" +
-                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]" +
-                    "             are deperacated in Java 9 and removed in Java 10." +
-                    "             The option [-Xlog:gc=info] replaces these flags since Java 9." +
+                    "          o  Flags [-verbose:gc], [-XX:+PrintGCDetails] and [-XX:+PrintGCTimeStamps]\n" +
+                    "             are deperacated in Java 9 and removed in Java 10.\n" +
+                    "             The option [-Xlog:gc=info] replaces these flags since Java 9.\n" +
                     "          o  All mappers must start before the H2O cloud is considered up.\n" +
                     "\n" +
                     "Examples:\n" +
@@ -1092,18 +1102,8 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-ea")) {
         enableExceptions = true;
       }
-      else if (s.equals("-verbose:gc") && !JAVA_VERSION.useUnifiedLogging()) {
-        if (!JAVA_VERSION.useUnifiedLogging()) {
-          enableVerboseGC = true;
-        } else {
-          error("Parameter -verbose:gc is unusable, running on JVM with deprecated GC debugging flags.");
-        }
-      } else if (s.equals("-Xlog:gc=info")) {
-        if (JAVA_VERSION.useUnifiedLogging()) {
-          enableVerboseGC = true;
-        } else {
-          error("Parameter -verbose:gc is unusable, running on JVM without unified JVM logging.");
-        }
+      else if (s.equals("-verbose:gc") || s.equals("-Xlog:gc=info")) {
+        enableVerboseGC = true;
       }
       else if (s.equals("-verbose:class")) {
         enableVerboseClass = true;
@@ -1150,8 +1150,8 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-gc")) {
         enableVerboseGC = true;
-        enablePrintGCDetails = true;
-        enablePrintGCTimeStamps = true;
+        enablePrintGCDetails = !JAVA_VERSION.useUnifiedLogging();
+        enablePrintGCTimeStamps = !JAVA_VERSION.useUnifiedLogging();
       }
       else if (s.equals("-nogc")) {
         enableVerboseGC = false;
@@ -1232,7 +1232,11 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-sw_ext_backend")) {
         swExtBackend = true;
-      } else if (s.equals("-session_timeout")) {
+      }
+      else if (s.equals("-configure_s3_using_s3a")) {
+        configureS3UsingS3A = true;
+      }
+      else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
         sessionTimeout = args[i];
       }
@@ -1269,17 +1273,25 @@ public class h2odriver extends Configured implements Tool {
       } else if (s.equals("-hivePrincipal")) {
         i++; if (i >= args.length) { usage (); }
         hivePrincipal = args[i];
-      } else if (s.equals("-refreshTokens")) {
-        refreshTokens = true;
+      } else if (s.equals("-refreshTokens") || // for backwards compatibility 
+              s.equals("-refreshHiveTokens")) {
+        refreshHiveTokens = true;
       } else if (s.equals("-hiveToken")) {
         i++; if (i >= args.length) { usage (); }
         hiveToken = args[i];
+      } else if (s.equals("-refreshHdfsTokens")) {
+        refreshHdfsTokens = true;
+      } else if (s.equals("-refreshS3ATokens")) {
+        refreshS3ATokens = true;  
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
-        cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase()); 
+        cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase());
       } else if (s.equals("-clouding_dir")) {
         i++; if (i >= args.length) { usage(); }
         cloudingDir = args[i];
+      } else if (s.equals("-auto_recovery_dir")) {
+        i++; if (i >= args.length) { usage(); }
+        autoRecoveryDir = args[i];
       } else {
         error("Unrecognized option " + s);
       }
@@ -1391,7 +1403,7 @@ public class h2odriver extends Configured implements Tool {
       error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
     }
     
-    if (refreshTokens && hivePrincipal == null) {
+    if (refreshHiveTokens && hivePrincipal == null) {
       error("delegation token refresh requires Hive principal to be set (use the '-hivePrincipal' option)");
     }
 
@@ -1700,8 +1712,7 @@ public class h2odriver extends Configured implements Tool {
               .append(" -Xmx").append(mapperXmx)
               .append(((mapperPermSize != null) && (mapperPermSize.length() > 0)) ? (" -XX:PermSize=" + mapperPermSize) : "")
               .append((enableExceptions ? " -ea" : ""))
-              .append((enableVerboseGC && !JAVA_VERSION.useUnifiedLogging() ? " -verbose:gc" : ""))
-              .append(enableVerboseGC && JAVA_VERSION.useUnifiedLogging() ? "-Xlog:gc=info" : "")
+              .append((enableVerboseGC ? " " + JAVA_VERSION.getVerboseGCFlag() : ""))
               .append((enablePrintGCDetails ? " -XX:+PrintGCDetails" : ""))
               .append((enablePrintGCTimeStamps ? " -XX:+PrintGCTimeStamps" : ""))
               .append((enableVerboseClass ? " -verbose:class" : ""))
@@ -1783,6 +1794,9 @@ public class h2odriver extends Configured implements Tool {
     }
     String hadoopVersion = calcHadoopVersion();
     addMapperArg(conf, "-ga_hadoop_ver", hadoopVersion);
+    if (configureS3UsingS3A) {
+      addMapperArg(conf, "-configure_s3_using_s3a");
+    }
     if (jksPass != null) {
       addMapperArg(conf, "-jks_pass", jksPass);
     }
@@ -1814,6 +1828,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (disableFlow) {
       addMapperArg(conf, "-disable_flow");
+    }
+    if (autoRecoveryDir != null) {
+      addMapperArg(conf, "-auto_recovery_dir", autoRecoveryDir);
     }
     if (swExtBackend) {
       addMapperArg(conf, "-allow_clients");
@@ -2071,21 +2088,25 @@ public class h2odriver extends Configured implements Tool {
     } else {
       haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     }
-    if (refreshTokens) {
-      if (!haveHiveToken) {
-        // token not acquired, we need to distribute keytab to make token acquisition possible in mapper
-        if (runAsUser != null) j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
-        if (principal != null) j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
-        if (keytabPath != null) {
-          byte[] payloadData = readBinaryFile(keytabPath);
-          String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
-          j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
-        }
+    if ((refreshHiveTokens && !haveHiveToken) || refreshHdfsTokens || refreshS3ATokens) {
+      if (runAsUser != null) 
+        j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
+      if (principal != null) 
+        j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+      if (keytabPath != null) {
+        byte[] payloadData = readBinaryFile(keytabPath);
+        String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
+        j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
       }
+    }
+    if (refreshHiveTokens) {
+      j.getConfiguration().setBoolean(H2O_HIVE_USE_KEYTAB, !haveHiveToken);
       if (hiveJdbcUrlPattern != null) j.getConfiguration().set(H2O_HIVE_JDBC_URL_PATTERN, hiveJdbcUrlPattern);
       if (hiveHost != null) j.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
       if (hivePrincipal != null) j.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
+    j.getConfiguration().setBoolean(H2O_AUTH_TOKEN_REFRESHER_ENABLED, refreshHdfsTokens);
+    j.getConfiguration().setBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, refreshS3ATokens);
 
     if (outputPath != null)
       FileOutputFormat.setOutputPath(j, new Path(outputPath));

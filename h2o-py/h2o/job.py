@@ -9,18 +9,30 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 
 import functools as ft
 import warnings
+import time
 
 import h2o
-from h2o.exceptions import H2OJobCancelled
-from h2o.utils.progressbar import ProgressBar
+from h2o.exceptions import H2OJobCancelled, H2OConnectionError, H2OResponseError, H2OServerError
+from h2o.utils.progressbar import ProgressBar, PBWString, PBWBar, PBWPercentage
 from h2o.utils.shared_utils import clamp
+
+
+class _DefaultJobProgressWidgetFactory(object):
+    """
+    Factory descriptor creating the job progress rendering widgets: this method is called by default for every running job.
+    """
+    def __get__(self, job, owner=None):  # type: (H2OJob, type) -> [ProgressBarWidget]
+        if job is None:  # to be able to replace this factory
+            return self
+        return [PBWString("%s progress:" % job._job_type), PBWBar(), PBWPercentage()]
 
 
 class H2OJob(object):
     """A class representing an H2O Job."""
 
     __PROGRESS_BAR__ = True  # display & update progress bar while polling
-
+    __PROGRESS_WIDGETS__ = _DefaultJobProgressWidgetFactory()
+    
     def __init__(self, jobs, job_type):
         """Initialize new H2OJob object."""
         if "jobs" in jobs:
@@ -34,13 +46,14 @@ class H2OJob(object):
         self.status = job["status"]
         self.job_key = job["key"]["name"]
         self.dest_key = job["dest"]["name"]
+        self.auto_recoverable = job["auto_recoverable"]
+        self.job_poll_success = False
         self.warnings = None
         self.progress = 0
         self.exception = job["exception"] if "exception" in job else None
         self._job_type = job_type
         self._polling = False
         self._poll_count = 10**10
-
 
     def poll(self, poll_updates=None):
         """
@@ -53,9 +66,9 @@ class H2OJob(object):
         """
         try:
             hidden = not H2OJob.__PROGRESS_BAR__
-            pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
+            pb = ProgressBar(widgets=self.__PROGRESS_WIDGETS__, hidden=hidden)
             if poll_updates:
-                pb.execute(self._refresh_job_status, print_verbose_info=ft.partial(poll_updates, self))
+                pb.execute(self._refresh_job_status, progress_monitor_fn=ft.partial(poll_updates, self))
             else:
                 pb.execute(self._refresh_job_status)
         except StopIteration as e:
@@ -92,10 +105,37 @@ class H2OJob(object):
     def cancel(self):
         h2o.api("POST /3/Jobs/%s/cancel" % self.job_key)
         self.status = "CANCELLED"
+    
+    def _query_job_status_safe(self):
+        result = None
+        attempts = 0
+        last_err = None
+        while attempts < 30:
+            try:
+                attempts += 1
+                result = h2o.api("GET /3/Jobs/%s" % self.job_key)
+                self.job_poll_success = True  # only retry if there was at least one OK response
+                break
+            except (H2OConnectionError, H2OResponseError, H2OServerError) as e:
+                last_err = e
+                if self.job_poll_success:
+                    if self.auto_recoverable:
+                        print("Job request failed %s, waiting for cluster to restart." % e.args[0])
+                        time.sleep(10)
+                    else:
+                        # general/unknown failure - might be due to a temporary issue on the cluster (eg. a heavy load)
+                        print("Job request failed %s, will retry after 3s." % e.args[0])
+                        time.sleep(3)
+                else:
+                    raise e
+        if result:
+            return result
+        else:
+            raise last_err
 
     def _refresh_job_status(self):
         if self._poll_count <= 0: raise StopIteration("")
-        jobs = h2o.api("GET /3/Jobs/%s" % self.job_key)
+        jobs = self._query_job_status_safe()
         self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
         self.status = self.job["status"]
         self.progress = self.job["progress"]

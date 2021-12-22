@@ -574,8 +574,8 @@ public abstract class GLMTask  {
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - 1; ++j)
         _gradient[j] += _currentLambda * _beta[j];  // add L2 constraint for gradient
-      if ((_penalty_mat != null) && (_gamBetaIndices != null))
-        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta, _dinfo._activeCols);  // update contribution from gam smoothness constraint
+      if ((_penalty_mat != null) && (_gamBetaIndices != null))  // update contribution from gam smoothness constraint
+        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta, _dinfo._activeCols);
     }
   }
 
@@ -1095,6 +1095,12 @@ public abstract class GLMTask  {
         updateGradGamMultinomial(_gradient, _penaltyMat, _gamBetaIndices, _beta); // beta is coeff index by class
     }
 
+    /** This method changes the _gradient that is coeffPerClss by number of classes back to number of classes by
+     *  coeffPerClass.  Also, if only active columns are included, that is what is returned.  If both active and
+     *  non-active columns are included, both will be returned.
+     *  
+     * @return
+     */
     public double [] gradient(){
       double [] res = MemoryManager.malloc8d(_gradient.length*_gradient[0].length);
       int P = _gradient.length;

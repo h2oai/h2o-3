@@ -47,12 +47,12 @@ h2o.ls <- function() {
 #' Remove All Objects on the H2O Cluster
 #'
 #' Removes the data from the h2o cluster, but does not remove the local references.
-#' Retains frames and vectors specified in retained_elements argument.
-#' Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
+#' Retains models, frames and vectors specified in retained_elements argument.
+#' Retained elements must be instances/ids of models and frames only. For models retained, training and validation frames are retained as well.
 #' Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
 #'
 #' @param timeout_secs Timeout in seconds. Default is no timeout.
-#' @param retained_elements Frames and vectors to be retained. Other keys provided are ignored.
+#' @param retained_elements Instances or ids of models and frames to be retained. Combination of instances and ids in the same list is also a valid input.
 #' @seealso \code{\link{h2o.rm}}
 #' @examples
 #' \dontrun{
@@ -76,6 +76,10 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
         retained_keys <- append(retained_keys, element@model_id)
       } else if (is.H2OFrame(element)) {
         retained_keys <- append(retained_keys, h2o.getId(element))
+      } else if( is.character(element) ) {
+        retained_keys <- append(retained_keys, element)
+      } else {
+        stop("The 'retained_elements' variable must be either an instance of H2OModel/H2OFrame or an id of H2OModel/H2OFrame.")
       }
     }
     
@@ -122,7 +126,7 @@ h2o.rm <- function(ids, cascade=TRUE) {
     } else if( is.character(xi) ) {
       .h2o.__remoteSend(paste0(.h2o.__DKV, "/",xi), method = "DELETE", .params=list(cascade=cascade))
     } else {
-      stop("input to h2o.rm must be a Keyed instance (e.g. H2OFrame, H2OModel) or character")
+      stop("Input to h2o.rm must be either an instance of H2OModel/H2OFrame or a character")
     }
   }
 
@@ -213,7 +217,7 @@ h2o.getModel <- function(model_id) {
   model_category <- json$output$model_category
   if (is.null(model_category))
     model_category <- "Unknown"
-  else if (!(model_category %in% c("Unknown", "Binomial", "Multinomial", "Ordinal", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding", "CoxPH", "AnomalyDetection", "TargetEncoder")))
+  else if (!(model_category %in% c("Unknown", "Binomial", "BinomialUplift", "Multinomial", "Ordinal", "Regression", "Clustering", "AutoEncoder", "DimReduction", "WordEmbedding", "CoxPH", "AnomalyDetection", "TargetEncoder")))
     stop(paste0("model_category, \"", model_category,"\", missing in the output"))
   Class <- paste0("H2O", model_category, "Model")
   model <- json$output[!(names(json$output) %in% c("__meta", "model_category"))]
@@ -223,11 +227,21 @@ h2o.getModel <- function(model_id) {
   model$validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=TRUE, on_xval=FALSE, metrics=model$validation_metrics)
   model$cross_validation_metrics <- new(MetricsClass, algorithm=json$algo, on_train=FALSE, on_valid=FALSE, on_xval=TRUE, metrics=model$cross_validation_metrics)
   if (model_category %in% c("Binomial", "Multinomial", "Ordinal", "Regression")) { # add the missing metrics manually where
-    model$coefficients <- model$coefficients_table[,2]
-    names(model$coefficients) <- model$coefficients_table[,1]
-    if (!is.null(model$random_coefficients_table)) {
-      model$random_coefficients <- model$random_coefficients_table[,2]
-      names(model$random_coefficients) <- model$random_coefficients_table[,1]
+    if (!is.null(model$coefficients_table)) {
+      if (typeof(model$coefficients_table[[2]])=="double") {
+        model$coefficients <- model$coefficients_table[,2]
+        names(model$coefficients) <- model$coefficients_table[,1]
+        if (!is.null(model$random_coefficients_table)) {
+          model$random_coefficients <- model$random_coefficients_table[,2]
+          names(model$random_coefficients) <- model$random_coefficients_table[,1]
+        }
+      } else { # with AnovaGLM
+        coefLen =  length(model$coefficients_table)
+        model$coefficients <- vector("list", coefLen)
+        for (index in 1:coefLen) {
+          model$coefficients[[index]] <- model$coefficients_table[[index]]
+        }  
+      }
     }
   }
   parameters <- list()
@@ -294,15 +308,19 @@ h2o.getModel <- function(model_id) {
   # Convert ignored_columns/response_column to valid R x/y
 
 
-  parameters$x <- json$output$names
-  allparams$x  <- json$output$names
+  parameters$x <- if (is.null(json$output$original_names)) json$output$names else json$output$original_names
+  allparams$x  <- if (is.null(json$output$original_names)) json$output$names else json$output$original_names
     
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
     allparams$y <- allparams$response_column
-    parameters$x <- setdiff(parameters$x, parameters$y)
-    allparams$x <- setdiff(allparams$x, allparams$y)
+    .not_x <- function(params) {
+       c(params$y, params$ignored_columns, params$fold_column$column_name, params$weights_column$column_name,
+         params$offset_column$column_name)
+    }
+    parameters$x <- setdiff(parameters$x, .not_x(parameters))
+    allparams$x <- setdiff(allparams$x, .not_x(allparams))
   }
   allparams$ignored_columns <- NULL
   allparams$response_column <- NULL
@@ -463,10 +481,11 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' @param model An H2OModel
 #' @param path The path where MOJO file should be saved. Saved to current directory by default.
 #' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in either in the same folder
-#         as the MOJO or in ``genmodel_path`` if specified.
+#'         as the MOJO or in ``genmodel_path`` if specified.
 #' @param genmodel_name Custom name of genmodel jar.
 #' @param genmodel_path Path to store h2o-genmodel.jar. If left blank and ``get_genmodel_jar`` is TRUE, then the h2o-genmodel.jar
-#         is saved to ``path``.
+#'         is saved to ``path``.
+#' @param filename string indicating the file name. (Type of file is always .zip)
 #' @return Name of the MOJO file written to the path.
 #'
 #' @examples
@@ -478,10 +497,14 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE, jar_n
 #' h2o.download_mojo(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="") {
+h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmodel_name="", genmodel_path="", filename="") {
   
   if (class(model) == "H2OAutoML") {
     model <- model@leader
+  }
+
+  if(!is(model, "H2OModel")) {
+    stop("`model` must be an H2OModel object")
   }
   
   if (!(model@have_mojo)){
@@ -506,15 +529,16 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     stop(paste0("'genmodel_path',",genmodel_path,", to save the genmodel.jar file cannot be found."))
   }
 
-  #Get model id
-  model_id <- model@model_id
+  if(filename == "") {
+    filename <- paste0(model@model_id, ".zip")
+  }
 
   #Build URL for MOJO
-  urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model_id),"/mojo")
+  urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model@model_id),"/mojo")
 
   #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
   #HTTP GET request to an H2O cluster with MOJO URL
-  mojo.path <- file.path(path, paste0(model_id,".zip"))
+  mojo.path <- file.path(path, filename)
   writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), mojo.path, useBytes = TRUE)
 
   if (get_genmodel_jar) {
@@ -529,7 +553,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
     #and write to jar.path.
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), jar.path, useBytes = TRUE)
   }
-  return(paste0(model_id,".zip"))
+  return(filename)
 }
 
 #'
@@ -538,6 +562,9 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #'
 #' @param model An H2OModel
 #' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
+#' @param export_cross_validation_predictions A boolean flag indicating whether the download model should be
+#'      saved with CV Holdout Frame predictions. Default is not to export the predictions. 
+#' @param filename string indicating the file name.
 #'
 #' @examples
 #' \dontrun{
@@ -548,7 +575,11 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 #' h2o.download_model(my_model)  # save to the current working directory
 #' }
 #' @export
-h2o.download_model <- function(model, path=NULL) {
+h2o.download_model <- function(model, path=NULL, export_cross_validation_predictions=FALSE, filename="") {
+
+    if(!is(model, "H2OModel")) {
+      stop("`model` must be an H2OModel object")
+    }
 
     if(!is.null(path) && !(is.character(path))){
       stop("The 'path' variable should be of type character")
@@ -559,19 +590,23 @@ h2o.download_model <- function(model, path=NULL) {
     if(is.null(path)){
       path = getwd()
     }
-    
-    #Get model id
-    model_id <- model@model_id
-    
+    if(!is.logical(export_cross_validation_predictions)){
+      stop("The 'export_cross_validation_predictions' variable should be of type logical")
+    }
+
+    if(filename == "") {
+      filename <- model@model_id
+    }
+
     #prepare suffix to get the right endpoint
-    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model_id)
-    modelname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
+    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model@model_id)
     
     #Path to save model, if `path` is provided
-    file_path <- file.path(path, paste0(modelname))
-    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), file_path, useBytes = TRUE)
+    file_path <- file.path(path, filename)
+    parms <- list(export_cross_validation_predictions=export_cross_validation_predictions)
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE, parms = parms), file_path, useBytes = TRUE)
     
-    return(paste0(file_path))
+    return(file_path)
 }
 
 #'

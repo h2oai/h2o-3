@@ -1,5 +1,6 @@
 package water;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,6 +20,11 @@ import static org.junit.Assert.*;
 @Suite.SuiteClasses({JavaVersionSupportTest.SupportedJavasTest.class, JavaVersionSupportTest.UnsupportedJavasTest.class})
 public class JavaVersionSupportTest {
 
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        Assume.assumeTrue(System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.allowJavaVersions") == null);
+    }
+
     @RunWith(Parameterized.class)
     public static class SupportedJavasTest {
         private static int originalJavaVersion;
@@ -31,7 +37,7 @@ public class JavaVersionSupportTest {
         @Parameterized.Parameters
         public static Collection<Object[]> data() {
             return Arrays.asList(new Object[][]{
-                    {8}, {9}, {10}, {11}, {12}, {13}, {14}
+                    {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}
             });
         }
 
@@ -73,7 +79,7 @@ public class JavaVersionSupportTest {
         @Parameterized.Parameters
         public static Collection<Object[]> data() {
             return Arrays.asList(new Object[][]{
-                    {7}, {15}
+                    {7}, {18}
             });
         }
 

@@ -58,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'H2O'
-copyright = u'2016-2020 H2O.ai'
+copyright = u'2016-2021 H2O.ai'
 author = u'h2o'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -202,7 +202,9 @@ html_static_path = ['sphinx_rtd_theme/static']
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
-#html_extra_path = []
+html_extra_path = [
+    "code-examples"
+]
 
 # If not None, a 'Last updated on:' timestamp is inserted at every page
 # bottom, using the given strftime format.

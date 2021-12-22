@@ -17,15 +17,26 @@ with_no_h2o_progress <- function(expr) {
   force(expr)
 }
 
+#' Stop with a user friendly message if a user is missing the ggplot2 package or has an old version of it.
+#'
+#' @param version minimal required ggplot2 version
+.check_for_ggplot2 <- function(version = "3.0.0") {
+  if (!use.package("ggplot2", version, TRUE)) {
+    function_name <- as.character(sys.call(-1)[[1]])
+    stop("Function \"", function_name, "\" requires ggplot2 version ", version, " or higher.", call. = FALSE)
+  }
+}
+
 #' Get the algoritm used by the model_or_model_id
 #'
 #' @param model_or_model_id Model object or a string containing model id
 #' @param treat_xrt_as_algorithm Try to find out if a model is XRT and if so report it as xrt
 #' @return algorithm name
 .get_algorithm <- function(model_or_model_id, treat_xrt_as_algorithm = FALSE) {
-  known_algos <- c("deeplearning", "drf", "glm", "gam", "gbm", "naivebayes", "stackedensemble", "rulefit", "xgboost", "xrt")
+  known_algos <- c("anovaglm", "deeplearning", "drf", "glm", "gam", "modelselection", "gbm", "naivebayes", "stackedensemble",
+                   "rulefit", "xgboost", "xrt")
   if (is.character(model_or_model_id)) {
-    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
+    algorithm <- sub("^(DeepLearning|DRF|GAM|GBM|GLM|NaiveBayes|ModelSelection|StackedEnsemble|RuleFit|XGBoost|XRT)_.*",
                      "\\L\\1", model_or_model_id, perl = TRUE)
     if (algorithm == "xrt" && !treat_xrt_as_algorithm)
       algorithm <- "drf"
@@ -45,7 +56,7 @@ with_no_h2o_progress <- function(expr) {
 #'
 #' @param models models or model ids
 #' @param all_stackedensembles if TRUE, select all stacked ensembles
-.get_first_of_family <- function(models, all_stackedensembles = TRUE) {
+.get_first_of_family <- function(models, all_stackedensembles = FALSE) {
   selected_models <- character()
   included_families <- character()
   for (model in models) {
@@ -120,14 +131,28 @@ with_no_h2o_progress <- function(expr) {
 #' @param model model or a string containing model id
 #' @return boolean
 .has_varimp <- function(model) {
-  return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
+  if (is.character(model))
+    return(!.get_algorithm(model) %in% c("stackedensemble", "naivebayes"))
+  else {
+    return(!is.null(model@model$variable_importances))
+  }
 }
+
+#' Get a mapping between columns and their domains
+#' @param model an h2o model
+#' @return list containing a mapping from column to its domains (levels)
+.get_domain_mapping <- function(model) {
+  domains <- model@model$domains
+  names(domains) <- model@model$names
+  return(domains)
+}
+
 
 #' Shortens model ids if possible (iff there will be same amount of unique model_ids as before)
 #' @param model_ids character vector
 #' @return character vector
 .shorten_model_ids <- function(model_ids) {
-  shortened_model_ids <- gsub("(.*)_AutoML_\\d{8}_\\d{6}(.*)", "\\1\\2", model_ids)
+  shortened_model_ids <- gsub("(.*)_AutoML_[\\d_]+(_.*)?$", "\\1\\2", model_ids, perl=TRUE)
   if (length(unique(shortened_model_ids)) == length(unique(model_ids))) {
     return(shortened_model_ids)
   }
@@ -230,9 +255,7 @@ with_no_h2o_progress <- function(expr) {
     stop("object must be specified!")
   if (missing(newdata))
     stop("newdata must be specified!")
-  if ("H2OFrame" %in% class(object)) {
-    object <- as.list(object[["model_id"]])
-  }
+
   newdata_name <- deparse(substitute(newdata, environment()))
   if (!"H2OFrame" %in% class(newdata) && require_newdata) {
     stop(paste(newdata_name, "must be an H2OFrame!"))
@@ -276,16 +299,19 @@ with_no_h2o_progress <- function(expr) {
   }
 
 
-  if ("H2OAutoML" %in% class(object)) {
-    if (require_single_model && nrow(object@leaderboard) > 1) {
+  if ("H2OAutoML" %in% class(object) || (("H2OFrame" %in% class(object) ||
+      "data.frame" %in% class(object)) && "model_id" %in% names(object))) {
+    leaderboard <- if ("H2OAutoML" %in% class(object)) object@leaderboard else object
+    if (require_single_model && nrow(leaderboard) > 1) {
       stop("Only one model is allowed!")
     }
-    if (require_multiple_models && nrow(object@leaderboard) <= 1) {
+    if (require_multiple_models && nrow(leaderboard) <= 1) {
       stop("More than one model is needed!")
     }
-    model_ids <- unlist(as.list(object@leaderboard$model_id))
+    model_ids <- unlist(as.list(leaderboard$model_id))
     if (only_with_varimp) {
       model_ids <- Filter(.has_varimp, model_ids)
+      if (length(model_ids) == 0) stop("No models with Variable Importance.")
     }
     if (best_of_family) {
       model_ids <- .get_first_of_family(model_ids)
@@ -298,7 +324,8 @@ with_no_h2o_progress <- function(expr) {
     return(make_models_info(
       newdata = newdata,
       is_automl = TRUE,
-      leaderboard = as.data.frame(h2o.get_leaderboard(object, extra_columns = "ALL")),
+      leaderboard = as.data.frame(if ("H2OAutoML" %in% class(object)) h2o.get_leaderboard(object, extra_columns = "ALL")
+                                  else leaderboard),
       model_ids = head(model_ids, top_n_from_AutoML)
     ))
   } else {
@@ -336,6 +363,7 @@ with_no_h2o_progress <- function(expr) {
 
       if (only_with_varimp) {
         object <- Filter(.has_varimp, object)
+        if (length(object) == 0) stop("No models with Variable Importance.")
       }
 
       memoised_models <- list()
@@ -463,14 +491,18 @@ with_no_h2o_progress <- function(expr) {
   leaderboard <-
     as.data.frame(t(sapply(models_info$model_ids, function(m) {
       m <- models_info$get_model(m)
-      unlist(h2o.performance(m, leaderboard_frame)@metrics[c(
-        "MSE",
-        "RMSE",
-        "mae",
-        "rmsle",
+      metrics <- h2o.performance(m, leaderboard_frame)@metrics
+      unlist(metrics[intersect(c(
+        "AUC",
+        "mean_residual_deviance",
         "mean_per_class_error",
-        "logloss"
-      )])
+        "logloss",
+        "pr_auc",
+        "RMSE",
+        "MSE",
+        "mae",
+        "rmsle"
+      ), names(metrics))])
     })))
   leaderboard <- cbind(data.frame(model_id = .model_ids(models_info$model_ids), stringsAsFactors = FALSE),
                        leaderboard)
@@ -504,19 +536,28 @@ with_no_h2o_progress <- function(expr) {
     }
   }
 
-  for (feature in names(to_process)) {
-    col_parts <- strsplit(feature, ".", fixed = TRUE)[[1]]
-    found <- FALSE
-    for (prefix_len in seq(from = length(col_parts), to = 1, by = -1)){
-      prefix <- paste0(head(col_parts, n = prefix_len), collapse = ".")
-      if (prefix %in% x) {
-        consolidated_varimps[[prefix]] <- consolidated_varimps[[prefix]] + varimps[[feature]]
-        found <- TRUE
-        break
+  domains <- .get_domain_mapping(model)
+  col_domain_mapping <- list()
+  for (col in names(domains)) {
+    if (!is.null(domains[[col]])) {
+      for (domain in c("missing(NA)", domains[[col]])) {
+        col_domain_mapping[[paste0(col, ".", domain)]] <- col
       }
     }
-    if (!found)
+  }
+
+  if (anyDuplicated(names(col_domain_mapping))) {
+    dups <- duplicated(names(col_domain_mapping)) | duplicated(names(col_domain_mapping), fromLast = TRUE)
+    warning("Ambiguous encoding of the column x category pairs: ", col_domain_mapping[dups])
+  }
+
+  for (feature in names(to_process)) {
+    if (feature %in% names(col_domain_mapping)) {
+      orig_col <- col_domain_mapping[[feature]]
+      consolidated_varimps[[orig_col]] <- consolidated_varimps[[orig_col]] + varimps[[feature]]
+    } else {
       stop(feature, " was not found in x!")
+    }
   }
 
   total_value <- sum(consolidated_varimps, na.rm = TRUE)
@@ -549,10 +590,10 @@ with_no_h2o_progress <- function(expr) {
 #' Plot variable importances with ggplot2
 #'
 #' @param model H2OModel
-#' @param newdata H2OFrame
 #' @param top_n Plot just top_n features
 #' @return list of variable importance, groupped variable importance, and variable importance plot
-.plot_varimp <- function(model, newdata, top_n = 10) {
+.plot_varimp <- function(model, top_n = 10) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   with_no_h2o_progress({
@@ -1061,6 +1102,7 @@ h2o.shap_summary_plot <-
            columns = NULL,
            top_n_features = 20,
            sample_size = 1000) {
+    .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
@@ -1069,6 +1111,11 @@ h2o.shap_summary_plot <-
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
     }
+
+    if (top_n_features < 0) {
+      top_n_features <- Inf
+    }
+
     if (!(is.null(columns) ||
       is.character(columns) ||
       is.numeric(columns))) {
@@ -1265,6 +1312,7 @@ h2o.shap_explain_row_plot <-
   function(model, newdata, row_index, columns = NULL, top_n_features = 10,
            plot_type = c("barplot", "breakdown"),
            contribution_type = c("both", "positive", "negative")) {
+    .check_for_ggplot2()
     # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
     .data <- NULL
     if (!.is_h2o_model(model) || !.is_h2o_tree_model(model)) {
@@ -1273,6 +1321,9 @@ h2o.shap_explain_row_plot <-
 
     if (!missing(columns) && !missing(top_n_features)) {
       warning("Parameters columns, and top_n_features are mutually exclusive. Parameter top_n_features will be ignored.")
+    }
+    if (top_n_features < 0) {
+      top_n_features <- Inf
     }
     if (!(is.null(columns) ||
       is.character(columns) ||
@@ -1486,6 +1537,20 @@ h2o.shap_explain_row_plot <-
     }
   }
 
+.varimp_matrix <- function(object, top_n = 20){
+  models_info <- .process_models_or_automl(object, NULL,
+                                           require_multiple_models = TRUE,
+                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE,
+                                           require_newdata = FALSE)
+  models <- Filter(.has_varimp, models_info$model_ids)
+  varimps <- lapply(lapply(models, models_info$get_model), .varimp)
+  names(varimps) <- .model_ids(models)
+
+  res <- do.call(rbind, varimps)
+  results <- as.data.frame(res)
+  return(results)
+}
+
 
 #' Variable Importance Heatmap across multiple models
 #'
@@ -1497,10 +1562,9 @@ h2o.shap_explain_row_plot <-
 #' encoded features and return a single variable importance for the original categorical
 #' feature. By default, the models and variables are ordered by their similarity.
 #'
-#' @param object An H2OAutoML object or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param top_n Integer specifying the number models shown in the heatmap 
 #'              (based on leaderboard ranking). Defaults to 20.
-#'
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -1530,20 +1594,11 @@ h2o.shap_explain_row_plot <-
 #' print(varimp_heatmap)
 #' }
 #' @export
-h2o.varimp_heatmap <- function(object,
-                               top_n = 20) {
+h2o.varimp_heatmap <- function(object, top_n = 20) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  models_info <- .process_models_or_automl(object, NULL,
-                                           require_multiple_models = TRUE,
-                                           top_n_from_AutoML = top_n, only_with_varimp = TRUE,
-                                           require_newdata = FALSE)
-  models <- Filter(.has_varimp, models_info$model_ids)
-  varimps <- lapply(lapply(models, models_info$get_model), .varimp)
-  names(varimps) <- .model_ids(models)
-
-  res <- do.call(rbind, varimps)
-  results <- as.data.frame(res)
+  results <- .varimp_matrix(object, top_n = top_n)
   ordered <- row.names(results)
   y_ordered <- make.names(names(results))
   if (length(ordered) > 2) {
@@ -1552,7 +1607,8 @@ h2o.varimp_heatmap <- function(object,
   if (length(y_ordered) > 2) {
     y_ordered <- y_ordered[stats::hclust(stats::dist(t(results)))$order]
   }
-  results[["model_id"]] <- row.names(results)
+  model_ids <- row.names(results)
+  results[["model_id"]] <- model_ids
   results <- stats::reshape(results,
                             direction = "long",
                             varying = Filter(function(col) col != "model_id", names(results)),
@@ -1568,7 +1624,7 @@ h2o.varimp_heatmap <- function(object,
   )
 
   margin <- ggplot2::margin(5.5, 5.5, 5.5, 5.5, "pt")
-  if (max(nchar(.shorten_model_ids(.model_ids(models)))) > 30)
+  if (max(nchar(.shorten_model_ids(model_ids))) > 30)
     margin <- ggplot2::margin(1, 1, 1, 7, "lines")
   p <- ggplot2::ggplot(ggplot2::aes(
     x = .shorten_model_ids(.data$model_id), y = .data$feature, fill = .data$value, text = .data$text
@@ -1588,20 +1644,100 @@ h2o.varimp_heatmap <- function(object,
   return(p)
 }
 
+
+#' Model Prediction Correlation
+#'
+#' Get a data.frame containing the correlation between the predictions of the models.
+#' For classification, frequency of identical predictions is used. By default, models
+#' are ordered by their similarity (as computed by hierarchical clustering).
+#'
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard)..
+#' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame,
+#'                so this should be a holdout set.
+#' @param top_n (DEPRECATED) Integer specifying the number models shown in the heatmap (used only with an
+#'              AutoML object, and based on the leaderboard ranking.  Defaults to 20.
+#' @param cluster_models Logical.  Order models based on their similarity.  Defaults to TRUE.
+#' @return A data.frame containing variable importance.
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' aml <- h2o.automl(y = response,
+#'                   training_frame = train,
+#'                   max_models = 10,
+#'                   seed = 1)
+#'
+#' # Create the model correlation
+#' model_correlation <- h2o.model_correlation(aml, test)
+#' print(model_correlation)
+#' }
+#' @export
+h2o.model_correlation <- function(object, newdata, top_n = 20, cluster_models = TRUE) {
+  models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
+  models <- models_info$model_ids
+  with_no_h2o_progress({
+    preds <- do.call(h2o.cbind,
+      lapply(models, function(m, df) {
+        m <- models_info$get_model(m)
+       as.numeric(stats::predict(m, df)[["predict"]])
+      }, newdata))
+    names(preds) <- unlist(.model_ids(models))
+  })
+  if (models_info$is_classification) {
+    model_ids <- .model_ids(models)
+    res <- matrix(0, length(models), length(models),
+                  dimnames = list(model_ids, model_ids))
+    for (i in seq_along(model_ids)) {
+      for (j in seq_along(model_ids)) {
+        if (i <= j) {
+          res[i, j] <- mean(preds[[model_ids[i]]] == preds[[model_ids[j]]])
+          res[j, i] <- res[i, j]
+        }
+      }
+    }
+    res <- as.data.frame(res)
+  } else {
+    res <- as.data.frame(h2o.cor(preds))
+    row.names(res) <- names(res)
+  }
+  ordered <- names(res)
+  if (cluster_models) {
+    ordered <- names(res)[stats::hclust(stats::dist(replace(res, is.na(res), 0)))$order]
+  }
+  res <- res[ordered, ordered]
+  # Remove rounding artifacts - even if the number shows as "1" it can has slightly higher value
+  # which messes up the plot showing that the value is outside of the range
+  res[res > 1] <- 1
+  return(res)
+}
+
 #' Model Prediction Correlation Heatmap
 #'
 #' This plot shows the correlation between the predictions of the models.
 #' For classification, frequency of identical predictions is used. By default, models
 #' are ordered by their similarity (as computed by hierarchical clustering).
 #'
-#' @param object An H2OAutoML object or list of H2O models.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2O Frame.  Predictions from the models will be generated using this frame, 
 #'                so this should be a holdout set.
 #' @param top_n Integer specifying the number models shown in the heatmap (used only with an 
 #'              AutoML object, and based on the leaderboard ranking.  Defaults to 20.
 #' @param cluster_models Logical.  Order models based on their similarity.  Defaults to TRUE.
 #' @param triangular Print just the lower triangular part of correlation matrix.  Defaults to TRUE.
-#'
 #' @return A ggplot2 object.
 #' @examples
 #'\dontrun{
@@ -1635,39 +1771,8 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
                                           cluster_models = TRUE, triangular = TRUE) {
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
-  models_info <- .process_models_or_automl(object, newdata, require_multiple_models = TRUE, top_n_from_AutoML = top_n)
-  models <- models_info$model_ids
-  with_no_h2o_progress({
-    preds <-
-      sapply(models, function(m, df) {
-        m <- models_info$get_model(m)
-        list(predict = as.numeric(as.data.frame(stats::predict(m, df)[["predict"]])[["predict"]]))
-      }, newdata)
-    preds <- as.data.frame(do.call(cbind, preds))
-    names(preds) <- unlist(.model_ids(models))
-  })
-
-  if (models_info$is_classification) {
-    model_ids <- .model_ids(models)
-    res <- matrix(0, length(models), length(models),
-                  dimnames = list(model_ids, model_ids))
-    for (i in seq_along(model_ids)) {
-      for (j in seq_along(model_ids)) {
-        if (i <= j) {
-          res[i, j] <- mean(as.numeric(preds[[model_ids[i]]] == preds[[model_ids[j]]]))
-          res[j, i] <- res[i, j]
-        }
-      }
-    }
-    res <- as.data.frame(res)
-  } else {
-    res <- as.data.frame(cor(preds))
-  }
+  res <- h2o.model_correlation(object, newdata, top_n, cluster_models)
   ordered <- names(res)
-  if (cluster_models) {
-    ordered <- names(res)[stats::hclust(stats::dist(replace(res, is.na(res), 0)))$order]
-  }
-  res <- res[ordered, ordered]
   varying <- row.names(res)
   if (triangular) {
     res[lower.tri(res)] <- NA
@@ -1752,6 +1857,7 @@ h2o.model_correlation_heatmap <- function(object, newdata, top_n = 20,
 #' }
 #' @export
 h2o.residual_analysis_plot <- function(model, newdata) {
+  .check_for_ggplot2()
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (is.character(model))
@@ -1827,12 +1933,16 @@ h2o.pd_plot <- function(object,
                         target = NULL,
                         row_index = NULL,
                         max_levels = 30) {
+  .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (h2o.getTypes(newdata[[column]])[[1]] == "string")
+    stop("String columns are not supported by h2o.pd_plot.")
+
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, require_single_model = TRUE)
@@ -1998,12 +2108,16 @@ h2o.pd_multi_plot <- function(object,
                               target = NULL,
                               row_index = NULL,
                               max_levels = 30) {
+  .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (h2o.getTypes(newdata[[column]])[[1]] == "string")
+    stop("String columns are not supported by h2o.pd_multi_plot.")
+
   if (is.null(row_index))
     row_index <- -1
   models_info <- .process_models_or_automl(object, newdata, best_of_family = best_of_family)
@@ -2258,12 +2372,15 @@ h2o.ice_plot <- function(model,
                          column,
                          target = NULL,
                          max_levels = 30) {
+  .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
   if (missing(column))
     stop("Column has to be specified!")
   if (!column %in% names(newdata))
     stop("Column was not found in the provided data set!")
+  if (h2o.getTypes(newdata[[column]])[[1]] == "string")
+    stop("String columns are not supported by h2o.ice_plot.")
 
   models_info <- .process_models_or_automl(model, newdata, require_single_model = TRUE)
 
@@ -2388,6 +2505,359 @@ h2o.ice_plot <- function(model,
   })
 }
 
+#' Learning Curve Plot
+#'
+#' Create learning curve plot for an H2O Model. Learning curves show error metric dependence on
+#' learning progress, e.g., RMSE vs number of trees trained so far in GBM. There can be up to 4 curves
+#' showing Training, Validation, Training on CV Models, and Cross-validation error.
+#'
+#' @param model an H2O model
+#' @param metric Metric to be used for the learning curve plot. These should mostly correspond with stopping metric.
+#' @param cv_ribbon if True, plot the CV mean as a and CV standard deviation as a ribbon around the mean,
+#'                  if NULL, it will attempt to automatically determine if this is suitable visualisation
+#' @param cv_lines if True, plot scoring history for individual CV models, if NULL, it will attempt to
+#'                 automatically determine if this is suitable visualisation
+#'
+#' @return A ggplot2 object
+#' @examples
+#'\dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#' # Import the wine dataset into H2O:
+#' f <- "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
+#' df <-  h2o.importFile(f)
+#'
+#' # Set the response
+#' response <- "quality"
+#'
+#' # Split the dataset into a train and test set:
+#' splits <- h2o.splitFrame(df, ratios = 0.8, seed = 1)
+#' train <- splits[[1]]
+#' test <- splits[[2]]
+#'
+#' # Build and train the model:
+#' gbm <- h2o.gbm(y = response,
+#'                training_frame = train)
+#'
+#' # Create the learning curve plot
+#' learning_curve <- h2o.learning_curve_plot(gbm)
+#' print(learning_curve)
+#' }
+#' @export
+h2o.learning_curve_plot <- function(model,
+                                    metric = c("AUTO", "auc", "aucpr", "mae", "rmse", "anomaly_score",
+                                               "convergence", "custom", "custom_increasing", "deviance",
+                                               "lift_top_group", "logloss", "misclassification",
+                                               "negative_log_likelihood", "objective", "sumetaieta02"),
+                                    cv_ribbon = NULL,
+                                    cv_lines = NULL
+                                    ) {
+  .check_for_ggplot2()
+  .preprocess_scoring_history <- function(model, scoring_history, training_metric=NULL) {
+    scoring_history <- scoring_history[, !sapply(scoring_history, function(col) all(is.na(col)))]
+    if (model@algorithm %in% c("glm", "gam") && model@allparameters$lambda_search) {
+      scoring_history <- scoring_history[scoring_history["alpha"] == model@model$alpha_best,]
+    }
+    if (!is.null(training_metric)) {
+      scoring_history <- scoring_history[!is.na(scoring_history[[training_metric]]),]
+    }
+    return(scoring_history)
+  }
+
+  metric_mapping <- list(
+    anomaly_score = "mean_anomaly_score",
+    custom = "custom",
+    custom_increasing = "custom",
+    deviance = "deviance",
+    logloss = "logloss",
+    rmse = "rmse",
+    mae = "mae",
+    auc = "auc",
+    aucpr = "pr_auc",
+    lift_top_group = "lift",
+    misclassification = "classification_error",
+    objective = "objective",
+    convergence = "convergence",
+    negative_log_likelihood = "negative_log_likelihood",
+    sumetaieta02 = "sumetaieta02"
+  )
+  inverse_metric_mapping <- stats::setNames(names(metric_mapping), metric_mapping)
+  inverse_metric_mapping[["custom"]] <- "custom, custom_increasing"
+
+  metric <- match.arg(arg = if (missing(metric) || tolower(metric) == "auto") "AUTO" else tolower(metric),
+                      choices = eval(formals()$metric))
+
+  if (!model@algorithm %in% c("stackedensemble", "glm", "gam", "glrm", "modelselection", "deeplearning",
+                              "drf", "gbm", "xgboost", "coxph", "isolationforest")) {
+    stop("Algorithm ", model@algorithm, " doesn't support learning curve plot!")
+  }
+
+  if ("stackedensemble" == model@algorithm)
+    model <- model@model$metalearner_model
+
+  allowed_metrics <- c()
+  allowed_timesteps <- c()
+  sh <- model@model$scoring_history
+  if (is.null(sh))
+    stop("Scoring history not found!")
+
+  sh <- .preprocess_scoring_history(model, sh)
+  if (model@algorithm %in% c("glm", "gam")) {
+    hglm <- !is.null(model@parameters$HGLM) && model@parameters$HGLM
+    if (model@allparameters$lambda_search) {
+      allowed_timesteps <- "iteration"
+    } else if (!is.null(hglm) && hglm) {
+      allowed_timesteps <- "iterations"
+    } else {
+      allowed_timesteps <- "iterations"
+    }
+    allowed_metrics <- c("deviance", "objective", "negative_log_likelihood", "convergence", "sumetaieta02",
+                         "logloss", "auc", "classification_error", "rmse", "lift", "pr_auc", "mae")
+    allowed_metrics <- Filter(
+      function(m)
+        paste0("training_", m) %in% names(sh) || paste0(m, "_train") %in% names(sh),
+      allowed_metrics)
+  } else if (model@algorithm == "glrm") {
+    allowed_metrics <- c("objective")
+    allowed_timesteps <- "iterations"
+  } else if (model@algorithm %in% c("deeplearning", "drf", "gbm", "xgboost")) {
+    if (is(model, "H2OBinomialModel")) {
+      allowed_metrics <- c("logloss", "auc", "classification_error", "rmse", "lift", "auc", "pr_auc")
+    } else if (is(model, "H2OMultinomialModel") || is(model, "H2OOrdinalModel")) {
+        allowed_metrics <- c("logloss", "classification_error", "rmse", "auc", "pr_auc")
+    } else if (is(model, "H2ORegressionModel")) {
+        allowed_metrics <- c("rmse", "deviance", "mae")
+    }
+    if (model@algorithm %in% c("drf", "gbm")) {
+      allowed_metrics <- c(allowed_metrics, "custom")
+    }
+  } else if (model@algorithm == "coxph") {
+    allowed_timesteps <- "iterations"
+    allowed_metrics <- "loglik"
+  } else if (model@algorithm == "isolationforest") {
+    allowed_timesteps <- "number_of_trees"
+    allowed_metrics <- "mean_anomaly_score"
+  }
+
+  if (model@algorithm == "deeplearning") {
+    allowed_timesteps <- c("epochs", "iterations", "samples")
+  } else if (model@algorithm %in% c("drf", "gbm", "xgboost")) {
+    allowed_timesteps <- c("number_of_trees")
+  }
+  if (metric == "AUTO") {
+    metric <- allowed_metrics[[1]]
+  } else {
+    metric <- metric_mapping[[metric]]
+  }
+
+  if (!(metric %in% allowed_metrics)) {
+    stop("Metric must be one of: ", paste(inverse_metric_mapping[allowed_metrics], collapse = ", "))
+  }
+
+  timestep <- allowed_timesteps[[1]]
+
+  if (metric %in% c("objective", "convergence", "loglik", "mean_anomaly_score")) {
+    training_metric <- metric
+    validation_metric <- "UNDEFINED"
+  } else if ("deviance" == metric && model@algorithm %in% c("gam", "glm") && !hglm) {
+    training_metric <- "deviance_train"
+    validation_metric <- "deviance_test"
+  } else {
+    training_metric <- sprintf("training_%s", metric)
+    validation_metric <- sprintf("validation_%s", metric)
+  }
+
+  selected_timestep_value <- switch(timestep,
+                                    number_of_trees = model@allparameters$ntrees,
+                                    iterations = model@model$model_summary$number_of_iterations,
+                                    iteration = model@model$model_summary$number_of_iterations,
+                                    epochs = model@allparameters$epochs,
+  )
+  if ("coxph" == model@algorithm)
+    selected_timestep_value <- model@model$iter
+
+  sh <- .preprocess_scoring_history(model, sh, training_metric)
+  scoring_history <-
+    data.frame(
+      model = "Main Model",
+      type = "Training",
+      x = sh[[timestep]],
+      metric = sh[[training_metric]],
+      stringsAsFactors = FALSE
+    )
+  if (validation_metric %in% names(sh)) {
+    scoring_history <- rbind(
+      scoring_history,
+      data.frame(
+        model = "Main Model",
+        type = "Validation",
+        x = sh[[timestep]],
+        metric = sh[[validation_metric]]
+      )
+    )
+  }
+
+  if (!is.null(model@model$cv_scoring_history)) {
+    cv_scoring_history <- data.frame()
+    for (csh_idx in seq_along(model@model$cv_scoring_history)) {
+      csh <- .preprocess_scoring_history(model, as.data.frame(model@model$cv_scoring_history[[csh_idx]]), training_metric)
+      cv_scoring_history <- rbind(
+        cv_scoring_history,
+        data.frame(
+          model = paste0("CV-", csh_idx),
+          type = "Training (CV Models)",
+          x = csh[[timestep]],
+          metric = csh[[training_metric]],
+          stringsAsFactors = FALSE
+        )
+      )
+      if (validation_metric %in% names(csh)) {
+        cv_scoring_history <- rbind(
+          cv_scoring_history,
+          data.frame(
+            model = paste0("CV-", csh_idx),
+            type = "Cross-validation",
+            x = csh[[timestep]],
+            metric = csh[[validation_metric]],
+            stringsAsFactors = FALSE
+          )
+        )
+      }
+    }
+
+    cvsh_mean <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], mean, na.rm = TRUE))
+    names(cvsh_mean) <- paste0(names(cvsh_mean), "_mean")
+    cvsh_sd <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], sd, na.rm = TRUE))
+    names(cvsh_sd) <- paste0(names(cvsh_sd), "_sd")
+
+    cvsh_len <-
+      as.data.frame(tapply(cv_scoring_history[, "metric"], cv_scoring_history[, c("x", "type")], length))
+
+    if (nrow(cvsh_len)  <= 1) {
+      cv_ribbon <- FALSE
+      cv_lines <- FALSE
+    } else if (mean(cvsh_len[["Training (CV Models)"]][-nrow(cvsh_len)] == cvsh_len$`Training (CV Models)`[-1]) < 0.5 ||
+        mean(cvsh_len$`Training (CV Models)`) < 2) {
+      if (is.null(cv_ribbon)) {
+        cv_ribbon <- FALSE
+      }
+      cv_lines <- is.null(cv_lines) || cv_lines
+    } else {
+      cv_lines <- !is.null(cv_lines) && cv_lines
+      cv_ribbon <- is.null(cv_ribbon) || cv_ribbon
+    }
+
+    cvsh <- cbind(cvsh_mean, cvsh_sd)
+    cvsh$x <- as.numeric(row.names(cvsh))
+
+    cvsh <- rbind(
+      data.frame(
+        x = cvsh$x,
+        mean = cvsh[["Training (CV Models)_mean"]],
+        type = "Training (CV Models)",
+        lower_bound = cvsh[["Training (CV Models)_mean"]] - cvsh[["Training (CV Models)_sd"]],
+        upper_bound = cvsh[["Training (CV Models)_mean"]] + cvsh[["Training (CV Models)_sd"]]
+      ),
+      if ("Cross-validation_mean" %in% names(cvsh))
+        data.frame(
+          x = cvsh$x,
+          mean = cvsh[["Cross-validation_mean"]],
+          type = "Cross-validation",
+          lower_bound = cvsh[["Cross-validation_mean"]] - cvsh[["Cross-validation_sd"]],
+          upper_bound = cvsh[["Cross-validation_mean"]] + cvsh[["Cross-validation_sd"]]
+        )
+    )
+    cv_scoring_history <- cv_scoring_history[!(is.na(cv_scoring_history$x) |
+      is.na(cv_scoring_history$metric) |
+      is.na(cv_scoring_history$type)
+    ), ]
+  } else {
+    cv_ribbon <- FALSE
+    cv_lines <- FALSE
+  }
+
+  colors <- c("Training" = "#785ff0", "Training (CV Models)" = "#648fff",
+              "Validation"  = "#ff6000", "Cross-validation" = "#ffb000")
+  shape <- c("Training" = 16, "Training (CV Models)" = NA,
+             "Validation" = 16, "Cross-validation" = NA)
+  fill <- c("Training" = NA, "Training (CV Models)" = "#648fff",
+            "Validation" = NA, "Cross-validation" = "#ffb000")
+
+  scoring_history <- scoring_history[!(is.na(scoring_history$x) |
+    is.na(scoring_history$metric) |
+    is.na(scoring_history$type)
+  ), ]
+
+
+  if (cv_ribbon || cv_lines)
+    labels <- c(sort(unique(cv_scoring_history$type)), sort(unique(scoring_history$type)))
+  else
+    labels <- sort(unique(scoring_history$type))
+
+  labels <- names(colors)[names(colors) %in% labels]
+  colors <- colors[labels]
+  p <- ggplot2::ggplot(ggplot2::aes_string(
+    x = "x",
+    y = "metric",
+    color = "type",
+    fill = "type"
+  ),
+                  data = scoring_history)
+  if (cv_ribbon) {
+    cvsh <- cvsh[!is.na(cvsh$lower_bound) &
+                   !is.na(cvsh$upper_bound),]
+    p <- p + ggplot2::geom_line(ggplot2::aes_string(y = "mean"), data = cvsh) +
+    ggplot2::geom_ribbon(
+      ggplot2::aes_string(
+        ymin = "lower_bound",
+        ymax = "upper_bound",
+        y = NULL,
+        color = NULL
+      ),
+      alpha = 0.25,
+      data = cvsh
+    )
+  }
+  if (cv_lines) {
+    type <- NULL
+    p <- p + ggplot2::geom_line(ggplot2::aes(group = paste(model, type)),
+                                linetype = "dotted",
+                                data = cv_scoring_history)
+  }
+  p <- p +
+    ggplot2::geom_line() +
+    ggplot2::geom_point() +
+    ggplot2::geom_vline(ggplot2::aes_(
+      xintercept = selected_timestep_value,
+      linetype = paste0("Selected\n", timestep)
+    ), color = "#2FBB24") +
+    ggplot2::labs(
+      x = timestep,
+      y = metric,
+      title = "Learning Curve",
+      subtitle = paste("for", .shorten_model_ids(model@model_id))
+    ) +
+   ggplot2::scale_color_manual(values = colors, breaks=names(colors), labels = names(colors)) +
+   ggplot2::scale_fill_manual(values = colors, breaks=names(colors), labels = names(colors)) +
+    ggplot2::guides(color=ggplot2::guide_legend(
+      override.aes = list(
+        shape=shape[labels],
+        fill=fill[labels]
+      )
+    )) +
+    ggplot2::theme_bw() +
+    ggplot2::theme(
+      legend.title = ggplot2::element_blank(),
+      plot.title = ggplot2::element_text(hjust = 0.5),
+      plot.subtitle = ggplot2::element_text(hjust = 0.5)
+    )
+
+  return(p)
+}
+
 ######################################## Explain ###################################################
 
 #' Generate Model Explanations
@@ -2399,8 +2869,7 @@ h2o.ice_plot <- function(model,
 #' are visual (ggplot plots).  These plots can also be created by individual utility functions 
 #' as well.
 #'
-#' @param object One of the following: an H2O model, a list of H2O models, an H2OAutoML object or 
-#'               an H2OAutoML Leaderboard slice.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param columns A vector of column names or column indices to create plots with. If specified
 #'                parameter top_n_features will be ignored.
@@ -2452,6 +2921,7 @@ h2o.explain <- function(object,
                         include_explanations = "ALL",
                         exclude_explanations = NULL,
                         plot_overrides = NULL) {
+  .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
   multiple_models <- length(models_info$model_ids) > 1
   result <- list()
@@ -2480,6 +2950,11 @@ h2o.explain <- function(object,
     is.numeric(columns))) {
     stop("Parameter columns must be either a character or numeric vector or NULL.")
   }
+
+  if (top_n_features < 0) {
+    top_n_features <- Inf
+  }
+
   skip_explanations <- c()
 
   if (!missing(include_explanations)) {
@@ -2539,6 +3014,14 @@ h2o.explain <- function(object,
       # deal with encoded columns
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
+  }
+  # Make sure that there are no string columns to explain as they are not supported by pdp
+  # Usually those columns would not be used by algos so this just makes sure to exclude them
+  # if user specifies top_n = Inf or columns_of_interest = x etc.
+  dropped_string_columns <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] == "string", columns_of_interest)
+  if (length(dropped_string_columns) > 1) {
+    warning(sprintf("Dropping string columns as they are unsupported: %s", paste(dropped_string_columns, collapse = ", ")), call. = FALSE)
+    columns_of_interest <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] != "string", columns_of_interest)
   }
 
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
@@ -2601,7 +3084,7 @@ h2o.explain <- function(object,
       varimp <- NULL
       for (m in models_info$model_ids) {
         m <- models_info$get_model(m)
-        tmp <- .plot_varimp(m, newdata)
+        tmp <- .plot_varimp(m)
         if (!is.null(tmp$varimp)) {
           result$varimp$plots[[m@model_id]] <- tmp$plot
           if (is.null(varimp)) varimp <- names(tmp$grouped_varimp)
@@ -2785,8 +3268,7 @@ h2o.explain <- function(object,
 #' are visual (ggplot plots).  These plots can also be created by individual utility functions 
 #' as well.
 #' 
-#' @param object One of the following: an H2O model, a list of H2O models, an H2OAutoML object 
-#'               or an H2OAutoML Leaderboard slice.
+#' @param object A list of H2O models, an H2O AutoML instance, or an H2OFrame with a 'model_id' column (e.g. H2OAutoML leaderboard).
 #' @param newdata An H2OFrame.
 #' @param row_index A row index of the instance to explain.
 #' @param columns A vector of column names or column indices to create plots with. If specified
@@ -2840,6 +3322,7 @@ h2o.explain_row <- function(object,
                             include_explanations = "ALL",
                             exclude_explanations = NULL,
                             plot_overrides = NULL) {
+  .check_for_ggplot2()
   models_info <- .process_models_or_automl(object, newdata)
   if (missing(row_index))
     stop("row_index must be specified!")
@@ -2863,6 +3346,11 @@ h2o.explain_row <- function(object,
     is.numeric(columns))) {
     stop("Parameter columns must be either a character or numeric vector or NULL.")
   }
+
+  if (top_n_features < 0) {
+    top_n_features <- Inf
+  }
+
   skip_explanations <- c()
 
   if (!missing(include_explanations)) {
@@ -2924,7 +3412,14 @@ h2o.explain_row <- function(object,
       columns_of_interest <- sapply(columns_of_interest, .find_appropriate_column_name, cols = models_info$x)
     }
   }
-
+  # Make sure that there are no string columns to explain as they are not supported by pdp
+  # Usually those columns would not be used by algos so this just makes sure to exclude them
+  # if user specifies top_n = Inf or columns_of_interest = x etc.
+  dropped_string_columns <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] == "string", columns_of_interest)
+  if (length(dropped_string_columns) > 1) {
+    warning(sprintf("Dropping string columns as they are unsupported: %s", paste(dropped_string_columns, collapse = ", ")), call. = FALSE)
+    columns_of_interest <- Filter(function(col) h2o.getTypes(newdata[[col]])[[1]] != "string", columns_of_interest)
+  }
   if (multiple_models && !"leaderboard" %in% skip_explanations) {
     result$leaderboard <- list(
       header = .h2o_explanation_header("Leaderboard"),
@@ -2992,38 +3487,4 @@ h2o.explain_row <- function(object,
   }
   class(result) <- "H2OExplanation"
   return(result)
-}
-
-
-#### On Load ####
-# Inspired by vctrs' s3_register function for registering s3 methods for generics from suggested packages
-.s3_register <- function(package, generic, class) {
-  method_env <- if (isNamespace(topenv())) asNamespace(environmentName(topenv())) else parent.frame()
-  method <- get(paste(generic, class, sep = "."), envir = method_env)
-
-  # Register hook in case package is unloaded & reloaded
-  setHook(packageEvent(package, "onLoad"),
-          function(...) {
-            registerS3method(generic, class, method, envir = asNamespace(package))
-          }
-  )
-
-  # Don't register if the package is not present
-  if (!isNamespaceLoaded(package)) {
-    return(invisible())
-  }
-
-  # Register iff generic exists in the package environment
-  if (exists(generic, asNamespace(package))) {
-    registerS3method(generic, class, method, envir = asNamespace(package))
-  }
-
-  invisible()
-}
-
-.onLoad <- function(...) {
-  registerS3method("print", "H2OExplanation", "print.H2OExplanation")
-  .s3_register("repr", "repr_text", "H2OExplanation")
-  .s3_register("repr", "repr_html", "H2OExplanation")
-  invisible()
 }

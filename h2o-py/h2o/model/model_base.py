@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.compatibility import *  # NOQA
 
 import os
 import traceback
@@ -9,19 +8,24 @@ import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
-from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
+from h2o.model.extensions import has_extension
+from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
+from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas
-from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
-@BackwardsCompatible(
+@backwards_compatibility(
     instance_attrs=dict(
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
 )
 class ModelBase(h2o_meta(Keyed)):
     """Base class for all models."""
+
+    _options_ = {}    # dict of options declared in implementation
 
     def __init__(self):
         """Construct a new model instance."""
@@ -33,7 +37,7 @@ class ModelBase(h2o_meta(Keyed)):
         self._xval_keys = None
         self._parms = {}  # internal, for object recycle
         self.parms = {}  # external
-        self._estimator_type = "unsupervised"
+        self._estimator_type = None
         self._future = False  # used by __repr__/show to query job state
         self._job = None  # used when _future is True
         self._have_pojo = False
@@ -58,7 +62,6 @@ class ModelBase(h2o_meta(Keyed)):
         self._id = newid
         h2o.rapids("(rename '%s' '%s')" % (oldid, newid))
 
-
     @property
     def params(self):
         """
@@ -73,7 +76,6 @@ class ModelBase(h2o_meta(Keyed)):
                          "input": self.parms[p]["input_value"]}
         return params
 
-
     @property
     def default_params(self):
         """Dictionary of the default parameters of the model."""
@@ -81,7 +83,6 @@ class ModelBase(h2o_meta(Keyed)):
         for p in self.parms:
             params[p] = self.parms[p]["default_value"]
         return params
-
 
     @property
     def actual_params(self):
@@ -98,12 +99,10 @@ class ModelBase(h2o_meta(Keyed)):
                 params[p] = self.parms[p]["actual_value"]
         return params
 
-
     @property
     def full_parameters(self):
         """Dictionary of the full specification of all parameters."""
         return self.parms
-
 
     @property
     def type(self):
@@ -135,14 +134,12 @@ class ModelBase(h2o_meta(Keyed)):
         """Model training time in milliseconds"""
         return self._run_time
 
-
     def __repr__(self):
         # PUBDEV-2278: using <method>? from IPython caused everything to dump
         stk = traceback.extract_stack()
         if not ("IPython" in stk[-2][0] and "info" == stk[-2][2]):
             self.show()
         return ""
-
 
     def predict_leaf_node_assignment(self, test_data, type="Path"):
         """
@@ -154,7 +151,8 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: A new H2OFrame of predictions.
         """
-        if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
+        if not isinstance(test_data, h2o.H2OFrame): 
+            raise ValueError("test_data must be an instance of H2OFrame")
         assert_is_type(type, None, Enum("Path", "Node_ID"))
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"leaf_node_assignment": True, "leaf_node_assignment_type": type})
@@ -178,25 +176,63 @@ class ModelBase(h2o_meta(Keyed)):
                     data={"predict_staged_proba": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
-    def predict_contributions(self, test_data):
+    def predict_contributions(self, test_data, output_format="Original", top_n=None, bottom_n=None, compare_abs=False):
         """
-        Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM and XGBoost models).
+        Predict feature contributions - SHAP values on an H2O Model (only GBM, XGBoost, DRF models and equivalent
+        imported MOJOs).
         
         Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
         feature, the last column is the model bias (same value for each row). The sum of the feature contributions
         and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum 
-        of the predictions of the individual trees before before the inverse link function is applied to get the actual
+        of the predictions of the individual trees before the inverse link function is applied to get the actual
         prediction. For Gaussian distribution the sum of the contributions is equal to the model prediction. 
 
         Note: Multinomial classification models are currently not supported.
 
         :param H2OFrame test_data: Data on which to calculate contributions.
-
+        :param Enum output_format: Specify how to output feature contributions in XGBoost - XGBoost by default outputs 
+            contributions for 1-hot encoded features, specifying a Compact output format will produce a per-feature
+            contribution. One of: ``"Original"``, ``"Compact"`` (default: ``"Original"``).
+        :param top_n: Return only #top_n highest contributions + bias.
+                      If top_n<0 then sort all SHAP values in descending order
+                      If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+        :param bottom_n: Return only #bottom_n lowest contributions + bias
+                         If top_n and bottom_n are defined together then return array of #top_n + #bottom_n + bias
+                         If bottom_n<0 then sort all SHAP values in ascending order
+                         If top_n<0 && bottom_n<0 then sort all SHAP values in descending order
+        :param compare_abs: True to compare absolute values of contributions
         :returns: A new H2OFrame made of feature contributions.
+
+        :examples:
+        
+        >>> prostate = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv"
+        >>> fr = h2o.import_file(prostate)
+        >>> predictors = list(range(2, fr.ncol))
+        >>> m = H2OGradientBoostingEstimator(ntrees=10, seed=1234)
+        >>> m.train(x=predictors, y=1, training_frame=fr)
+        >>> # Compute SHAP
+        >>> m.predict_contributions(fr)
+        >>> # Compute SHAP and pick the top two highest
+        >>> m.predict_contributions(fr, top_n=2)
+        >>> # Compute SHAP and pick the top two lowest
+        >>> m.predict_contributions(fr, bottom_n=2)
+        >>> # Compute SHAP and pick the top two highest regardless of the sign
+        >>> m.predict_contributions(fr, top_n=2, compare_abs=True)
+        >>> # Compute SHAP and pick top two lowest regardless of the sign
+        >>> m.predict_contributions(fr, bottom_n=2, compare_abs=True)
+        >>> # Compute SHAP values and show them all in descending order
+        >>> m.predict_contributions(fr, top_n=-1)
+        >>> # Compute SHAP and pick the top two highest and top two lowest
+        >>> m.predict_contributions(fr, top_n=2, bottom_n=2)
         """
+        assert_is_type(output_format, None, Enum("Original", "Compact"))
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                           data={"predict_contributions": True}), "contributions")
+                           data={"predict_contributions": True,
+                                 "predict_contributions_output_format": output_format,
+                                 "top_n": top_n,
+                                 "bottom_n": bottom_n,
+                                 "compare_abs": compare_abs}), "contributions")
         j.poll()
         return h2o.get_frame(j.dest_key)
 
@@ -237,16 +273,13 @@ class ModelBase(h2o_meta(Keyed)):
         j.poll()
         return h2o.get_frame(j.dest_key)
 
-
     def is_cross_validated(self):
         """Return True if the model was cross-validated."""
         return self._is_xvalidated
 
-
     def xval_keys(self):
         """Return model keys for the cross-validated model."""
         return self._xval_keys
-
 
     def get_xval_models(self, key=None):
         """
@@ -258,7 +291,6 @@ class ModelBase(h2o_meta(Keyed)):
         """
         return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
 
-
     @property
     def xvals(self):
         """
@@ -268,10 +300,8 @@ class ModelBase(h2o_meta(Keyed)):
         """
         return self.get_xval_models()
 
-
     def detach(self):
         self._id = None
-
 
     def deepfeatures(self, test_data, layer):
         """
@@ -280,7 +310,8 @@ class ModelBase(h2o_meta(Keyed)):
         :param test_data: Data to create a feature space on
         :param layer: 0 index hidden layer
         """
-        if test_data is None: raise ValueError("Must specify test data")
+        if test_data is None: 
+            raise ValueError("Must specify test data")
         if str(layer).isdigit():
             j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self._id, test_data.frame_id),
                                data={"deep_features_hidden_layer": layer}), "deepfeatures")
@@ -289,7 +320,6 @@ class ModelBase(h2o_meta(Keyed)):
                                data={"deep_features_hidden_layer_name": layer}), "deepfeatures")
         j.poll()
         return h2o.get_frame(j.dest_key)
-
 
     def weights(self, matrix_id=0):
         """
@@ -306,7 +336,6 @@ class ModelBase(h2o_meta(Keyed)):
                 "was requested.".format(num_weight_matrices, matrix_id))
         return h2o.get_frame(self._model_json["output"]["weights"][matrix_id]["URL"].split("/")[3])
 
-
     def biases(self, vector_id=0):
         """
         Return the frame for the respective bias vector.
@@ -322,31 +351,25 @@ class ModelBase(h2o_meta(Keyed)):
                 "was requested.".format(num_bias_vectors, vector_id))
         return h2o.get_frame(self._model_json["output"]["biases"][vector_id]["URL"].split("/")[3])
 
-
     def normmul(self):
         """Normalization/Standardization multipliers for numeric predictors."""
         return self._model_json["output"]["normmul"]
-
 
     def normsub(self):
         """Normalization/Standardization offsets for numeric predictors."""
         return self._model_json["output"]["normsub"]
 
-
     def respmul(self):
         """Normalization/Standardization multipliers for numeric response."""
         return self._model_json["output"]["normrespmul"]
-
 
     def respsub(self):
         """Normalization/Standardization offsets for numeric response."""
         return self._model_json["output"]["normrespsub"]
 
-
     def catoffsets(self):
         """Categorical offsets for one-hot encoding."""
         return self._model_json["output"]["catoffsets"]
-
 
     def training_model_metrics(self):
         """
@@ -354,7 +377,8 @@ class ModelBase(h2o_meta(Keyed)):
         """
         return self._model_json["output"]["training_metrics"]._metric_json
     
-    def model_performance(self, test_data=None, train=False, valid=False, xval=False):
+    def model_performance(self, test_data=None, train=False, valid=False, xval=False, auc_type=None, 
+                          auuc_type=None, auuc_nbins=-1):
         """
         Generate model metrics for this model on test_data.
 
@@ -364,23 +388,45 @@ class ModelBase(h2o_meta(Keyed)):
         :param bool valid: Report the validation metrics for the model.
         :param bool xval: Report the cross-validation metrics for the model. If train and valid are True, then it
             defaults to True.
-
+        :param String auc_type: Change default AUC type for multinomial classification AUC/AUCPR calculation when test_data is not None. One of: ``"auto"``, ``"none"``, ``"macro_ovr"``, ``"weighted_ovr"``, ``"macro_ovo"``, ``"weighted_ovo"`` (default: ``"none"``). If type is "auto" or "none" AUC and AUCPR is not calculated.
+        :param String auuc_type: Change default AUUC type for uplift binomial classification AUUC calculation 
+            when test_data is not None. One of: ``"AUTO"``, ``"qini"``, ``"lift"``, ``"gain"``, (default: ``"AUTO"``). 
+            If type is "auto" qini AUUC is calculated. 
+        :param int auuc_nbins: Number of bins for calculation AUUC. Defaults to -1, which means 1000.
         :returns: An object of class H2OModelMetrics.
         """
+        
         if test_data is None:
-            if not train and not valid and not xval: train = True  # default to train
-            if train: return self._model_json["output"]["training_metrics"]
-            if valid: return self._model_json["output"]["validation_metrics"]
-            if xval: return self._model_json["output"]["cross_validation_metrics"]
-
+            if auc_type is not None and auc_type != "none":
+                print("WARNING: The `auc_type` parameter is set but it is not used because the `test_data` parameter is None.")
+            if auuc_type is not None:
+                print("WARNING: The `auuc_type` parameter is set but it is not used because the `test_data` parameter is None.")
+            if train: 
+                return self._model_json["output"]["training_metrics"]
+            if valid: 
+                return self._model_json["output"]["validation_metrics"]
+            if xval: 
+                return self._model_json["output"]["cross_validation_metrics"]
+            return self._model_json["output"]["training_metrics"]
         else:  # cases dealing with test_data not None
             if not isinstance(test_data, h2o.H2OFrame):
                 raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
-            if (self._model_json["response_column_name"] != None) and not(self._model_json["response_column_name"] in test_data.names):
+            if (self._model_json["response_column_name"] is not None) and not(self._model_json["response_column_name"] in test_data.names):
                 print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
                 return
-            res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
-
+            if auc_type is not None:
+                assert_is_type(auc_type, Enum("auto", "none", "macro_ovr", "weighted_ovr", "macro_ovo", "weighted_ovo"))
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id), 
+                              data={"auc_type": auc_type})
+            elif auuc_type is not None:
+                assert_is_type(auuc_type, Enum("AUTO", "qini", "gain", "lift"))
+                if (self._model_json["treatment_column_name"] is not None) and not(self._model_json["treatment_column_name"] in test_data.names):
+                    print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the treatment column in your dataset.")
+                    return
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                              data={"auuc_type": auuc_type, "auuc_nbins": auuc_nbins})
+            else:
+                res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
             # FIXME need to do the client-side filtering...  (PUBDEV-874)
             raw_metrics = None
             for mm in res["model_metrics"]:
@@ -388,7 +434,6 @@ class ModelBase(h2o_meta(Keyed)):
                     raw_metrics = mm
                     break
             return self._metrics_class_valid(raw_metrics, algo=self._model_json["algo"])
-
 
     def scoring_history(self):
         """
@@ -401,7 +446,6 @@ class ModelBase(h2o_meta(Keyed)):
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
 
-
     def ntrees_actual(self):
         """
         Returns actual number of trees in a tree model. If early stopping enabled, GBM can reset the ntrees value.
@@ -410,13 +454,13 @@ class ModelBase(h2o_meta(Keyed)):
     
         Type: ``float``
         """
-        tree_algos = ['gbm', 'drf', 'isolationforest', 'xgboost']
-        if self._model_json["algo"] in tree_algos:
-            return self.summary()['number_of_trees'][0]
+        # For now, redirect to h2o.model.extensions.trees for models that support the feature, and print legacy message for others..
+        # Later, the method will be exposed only for models supporting the feature.
+        if has_extension(self, 'Trees'):
+            return self._ntrees_actual()
         print("No actual number of trees for this model")    
 
-
-    def feature_interaction(self, max_interaction_depth = 100, max_tree_depth = 100, max_deepening = -1):
+    def feature_interaction(self, max_interaction_depth=100, max_tree_depth=100, max_deepening=-1, path=None):
         """
         Feature interactions and importance, leaf statistics and split value histograms in a tabular form.
         Available for XGBoost and GBM.
@@ -435,9 +479,13 @@ class ModelBase(h2o_meta(Keyed)):
         :param max_interaction_depth: Upper bound for extracted feature interactions depth. Defaults to 100.
         :param max_tree_depth: Upper bound for tree depth. Defaults to 100.
         :param max_deepening: Upper bound for interaction start deepening (zero deepening => interactions 
-        starting at root only). Defaults to -1.
+            starting at root only). Defaults to -1.
+        :param path: (Optional) Path where to save the output in .xlsx format (e.g. ``/mypath/file.xlsx``).
+            Please note that Pandas and XlsxWriter need to be installed for using this option. Defaults to None.
+
 
         :examples:
+        
         >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
         >>> predictors = boston.columns[:-1]
         >>> response = "medv"
@@ -447,18 +495,56 @@ class ModelBase(h2o_meta(Keyed)):
         >>> boston_xgb.train(y=response, x=predictors, training_frame=train)
         >>> feature_interactions = boston_xgb.feature_interaction()
         """
-        supported_algos = ['gbm', 'xgboost']
-        if self._model_json["algo"] in supported_algos:
-            kwargs = {}
-            kwargs["model_id"] = self.model_id
-            kwargs["max_interaction_depth"] = max_interaction_depth
-            kwargs["max_tree_depth"] = max_tree_depth
-            kwargs["max_deepening"] = max_deepening
-            
-            json = h2o.api("POST /3/FeatureInteraction", data=kwargs)
-            
-            return json['feature_interaction']
+        # For now, redirect to h2o.model.extensions.feature_interaction for models that support the feature, and print legacy message for others..
+        # Later, the method will be exposed only for models supporting the feature.
+        if has_extension(self, 'FeatureInteraction'):
+            return self._feature_interaction(max_interaction_depth=max_interaction_depth, 
+                                             max_tree_depth=max_tree_depth, 
+                                             max_deepening=max_deepening, 
+                                             path=path)
         print("No calculation available for this model")
+
+    def h(self, frame, variables):
+        """
+        Calculates Friedman and Popescu's H statistics, in order to test for the presence of an interaction between specified variables in h2o gbm and xgb models.
+        H varies from 0 to 1. It will have a value of 0 if the model exhibits no interaction between specified variables and a correspondingly larger value for a 
+        stronger interaction effect between them. NaN is returned if a computation is spoiled by weak main effects and rounding errors.
+        
+        See Jerome H. Friedman and Bogdan E. Popescu, 2008, "Predictive learning via rule ensembles", *Ann. Appl. Stat.*
+        **2**:916-954, http://projecteuclid.org/download/pdfview_1/euclid.aoas/1223908046, s. 8.1.
+
+        
+        :param frame: the frame that current model has been fitted to
+        :param variables: variables of the interest
+        :return: H statistic of the variables 
+        
+        :examples:
+        
+        >>> prostate_train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/prostate_train.csv")
+        >>> prostate_train["CAPSULE"] = prostate_train["CAPSULE"].asfactor()
+        >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees=100, learn_rate=0.1,
+        >>>                                 max_depth=5,
+        >>>                                 min_rows=10,
+        >>>                                 distribution="bernoulli")
+        >>> gbm_h2o.train(x=list(range(1,prostate_train.ncol)),y="CAPSULE", training_frame=prostate_train)
+        >>> h = gbm_h2o.h(prostate_train, ['DPROS','DCAPS'])
+        """
+        if has_extension(self, 'HStatistic'):
+            return self._h(frame=frame, variables=variables)
+        print("No calculation available for this model")
+
+    def update_tree_weights(self, frame, weights_column):
+        """
+        Re-calculates tree-node weights based on provided dataset. Modifying node weights will affect how
+        contribution predictions (Shapley values) are calculated. This can be used to explain the model
+        on a curated sub-population of the training dataset.
+
+        :param frame: frame that will be used to re-populate trees with new observations and to collect per-node weights 
+        :param weights_column: name of the weight column (can be different from training weights) 
+        """
+        if has_extension(self, 'SupervisedTrees'):
+            return self._update_tree_weights(frame, weights_column)
+        print("Only supervised tree-based models support tree-reweighting")
 
     def cross_validation_metrics_summary(self):
         """
@@ -471,7 +557,6 @@ class ModelBase(h2o_meta(Keyed)):
             return model["cross_validation_metrics_summary"]
         print("No cross-validation metrics summary for this model")
 
-
     def summary(self):
         """Print a detailed summary of the model."""
         model = self._model_json["output"]
@@ -479,6 +564,10 @@ class ModelBase(h2o_meta(Keyed)):
             return model["model_summary"]
         print("No model summary for this model")
 
+    def show_summary(self):
+        summary = self.summary()
+        if summary is not None:
+            print(summary)
 
     def show(self):
         """Print innards of model, without regards to type."""
@@ -499,25 +588,22 @@ class ModelBase(h2o_meta(Keyed)):
         print("Model Key: ", self._id)
         print()
 
-        summary = self.summary()
-        if summary:
-            print(summary)
+        self.show_summary()
 
         # training metrics
         tm = model["training_metrics"]
-        if tm: tm.show()
+        if tm is not None: tm.show()
         vm = model["validation_metrics"]
-        if vm: vm.show()
+        if vm is not None: vm.show()
         xm = model["cross_validation_metrics"]
-        if xm: xm.show()
+        if xm is not None: xm.show()
         xms = model["cross_validation_metrics_summary"]
-        if xms: xms.show()
+        if xms is not None: xms.show()
 
         if "scoring_history" in model and model["scoring_history"]:
             model["scoring_history"].show()
         if "variable_importances" in model and model["variable_importances"]:
             model["variable_importances"].show()
-
 
     def varimp(self, use_pandas=False):
         """
@@ -540,7 +626,6 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             print("Warning: This model doesn't have variable importances")
 
-
     def residual_deviance(self, train=False, valid=False, xval=None):
         """
         Retreive the residual deviance if this model has the attribute, or None otherwise.
@@ -552,14 +637,12 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the residual deviance, or None if it is not present.
         """
-        if xval: raise H2OValueError("Cross-validation metrics are not available.")
-        if not train and not valid: train = True
-        if train and valid:  train = True
-        if train:
-            return self._model_json["output"]["training_metrics"].residual_deviance()
-        else:
+        if xval: 
+            raise H2OValueError("Cross-validation metrics are not available.")
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].residual_deviance()
-
+        else:
+            return self._model_json["output"]["training_metrics"].residual_deviance()
 
     def residual_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
@@ -572,14 +655,12 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the residual dof, or None if it is not present.
         """
-        if xval: raise H2OValueError("Cross-validation metrics are not available.")
-        if not train and not valid: train = True
-        if train and valid:         train = True
-        if train:
-            return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
-        else:
+        if xval: 
+            raise H2OValueError("Cross-validation metrics are not available.")
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
-
+        else:
+            return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
 
     def null_deviance(self, train=False, valid=False, xval=False):
         """
@@ -592,14 +673,12 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the null deviance, or None if it is not present.
         """
-        if xval: raise H2OValueError("Cross-validation metrics are not available.")
-        if not train and not valid: train = True
-        if train and valid:         train = True
-        if train:
-            return self._model_json["output"]["training_metrics"].null_deviance()
-        else:
+        if xval: 
+            raise H2OValueError("Cross-validation metrics are not available.")
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].null_deviance()
-
+        else:
+            return self._model_json["output"]["training_metrics"].null_deviance()
 
     def null_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
@@ -612,19 +691,16 @@ class ModelBase(h2o_meta(Keyed)):
 
         :returns: Return the null dof, or None if it is not present.
         """
-        if xval: raise H2OValueError("Cross-validation metrics are not available.")
-        if not train and not valid: train = True
-        if train and valid:         train = True
-        if train:
-            return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
-        else:
+        if xval: 
+            raise H2OValueError("Cross-validation metrics are not available.")
+        if valid and not train:
             return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
-
+        else: 
+            return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
 
     def pprint_coef(self):
         """Pretty print the coefficents table (includes normalized coefficients)."""
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
-
 
     def coef(self):
         """
@@ -700,7 +776,6 @@ class ModelBase(h2o_meta(Keyed)):
             m[k] = None if v is None else v.r2()
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def mse(self, train=False, valid=False, xval=False):
         """
         Get the Mean Square Error.
@@ -720,7 +795,6 @@ class ModelBase(h2o_meta(Keyed)):
         for k, v in viewitems(tm):
             m[k] = None if v is None else v.mse()
         return list(m.values())[0] if len(m) == 1 else m
-
 
     def rmse(self, train=False, valid=False, xval=False):
         """
@@ -742,7 +816,6 @@ class ModelBase(h2o_meta(Keyed)):
             m[k] = None if v is None else v.rmse()
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def mae(self, train=False, valid=False, xval=False):
         """
         Get the Mean Absolute Error.
@@ -763,7 +836,6 @@ class ModelBase(h2o_meta(Keyed)):
             m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def rmsle(self, train=False, valid=False, xval=False):
         """
         Get the Root Mean Squared Logarithmic Error.
@@ -782,7 +854,6 @@ class ModelBase(h2o_meta(Keyed)):
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.rmsle()
         return list(m.values())[0] if len(m) == 1 else m
-
 
     def logloss(self, train=False, valid=False, xval=False):
         """
@@ -803,7 +874,6 @@ class ModelBase(h2o_meta(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.logloss()
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def mean_residual_deviance(self, train=False, valid=False, xval=False):
         """
         Get the Mean Residual Deviances.
@@ -823,7 +893,6 @@ class ModelBase(h2o_meta(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.mean_residual_deviance()
         return list(m.values())[0] if len(m) == 1 else m
 
-
     def auc(self, train=False, valid=False, xval=False):
         """
         Get the AUC (Area Under Curve).
@@ -841,12 +910,53 @@ class ModelBase(h2o_meta(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm):
-            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
-                raise H2OValueError("auc() is only available for Binomial classifiers.")
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)) and not(is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics)):
+                raise H2OValueError("auc() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average AUC value, default is Weighted One-to-Rest AUC.")
             m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def auuc(self, train=False, valid=False):
+        """
+        Get the AUUC (Area Under Uplift Curve).
 
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid".
+
+        :param bool train: If train is True, then return the AUUC value for the training data.
+        :param bool valid: If valid is True, then return the AUUC value for the validation data.
+
+        :returns: The AUUC.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, False)
+        m = {}
+        for k, v in viewitems(tm):
+            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
+                raise H2OValueError("auuc() is only available for Uplift Binomial classifiers.")
+            m[k] = None if v is None else v.auuc()
+        return list(m.values())[0] if len(m) == 1 else m
+
+    def auuc_table(self, train=False, valid=False):
+        """
+        Get the AUUC table (Area Under Uplift Curve values of oll types).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid".
+
+        :param bool train: If train is True, then return the AUUC table value for the training data.
+        :param bool valid: If valid is True, then return the AUUC table value for the validation data.
+
+        :returns: The AUUC table.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, False)
+        m = {}
+        for k, v in viewitems(tm):
+            if not(v is None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialUpliftModelMetrics)):
+                raise H2OValueError("auuc_table() is only available for Uplift Binomial classifiers.")
+            m[k] = None if v is None else v.auuc_table()
+        return list(m.values())[0] if len(m) == 1 else m
+    
     def aic(self, train=False, valid=False, xval=False):
         """
         Get the AIC (Akaike Information Criterium).
@@ -865,7 +975,6 @@ class ModelBase(h2o_meta(Keyed)):
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.aic()
         return list(m.values())[0] if len(m) == 1 else m
-
 
     def gini(self, train=False, valid=False, xval=False):
         """
@@ -886,7 +995,6 @@ class ModelBase(h2o_meta(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
     
-    
     def aucpr(self, train=False, valid=False, xval=False):
         """
         Get the aucPR (Area Under PRECISION RECALL Curve).
@@ -904,27 +1012,26 @@ class ModelBase(h2o_meta(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): 
-            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics):
-                raise H2OValueError("aucpr() is only available for Binomial classifiers.")
+            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics) and not is_type(v, h2o.model.metrics_base.H2OMultinomialModelMetrics):
+                raise H2OValueError("aucpr() is only available for Binomial and Multinomial classifiers. For Multinomial classifiers is available average PR AUC value, default is Weighted One-to-Rest PR AUC.")
             m[k] = None if v is None else v.aucpr()
         return list(m.values())[0] if len(m) == 1 else m
 
-    @deprecated(replaced_by=aucpr)
+    @deprecated_fn(replaced_by=aucpr)
     def pr_auc(self, train=False, valid=False, xval=False):
         pass
 
-    def download_model(self, path=""):
+    def download_model(self, path="", filename=None):
         """
         Download an H2O Model object to disk.
     
-        :param model: The model object to download.
         :param path: a path to the directory where the model should be saved.
+        :param filename: a filename for the saved model
     
         :returns: the path of the downloaded model
         """
         assert_is_type(path, str)
-        return h2o.download_model(self, path)
-
+        return h2o.download_model(self, path, filename=filename)
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
@@ -935,13 +1042,13 @@ class ModelBase(h2o_meta(Keyed)):
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :param genmodel_name: Custom name of genmodel jar
+        
         :returns: name of the POJO file written.
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
         path = path.rstrip("/")
         return h2o.download_pojo(self, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
-
 
     def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
         """
@@ -950,6 +1057,7 @@ class ModelBase(h2o_meta(Keyed)):
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
         :param genmodel_name: Custom name of genmodel jar
+        
         :returns: name of the MOJO file written.
         """
         assert_is_type(path, str)
@@ -965,13 +1073,13 @@ class ModelBase(h2o_meta(Keyed)):
                 h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, genmodel_name))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
 
-    def save_mojo(self, path="", force=False):
+    def save_mojo(self, path="", force=False, filename=None):
         """
         Save an H2O Model as MOJO (Model Object, Optimized) to disk.
 
-        :param model: The model object to save.
         :param path: a path to save the model at (hdfs, s3, local)
         :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+        :param filename: a filename for the saved model (file type is always .zip)
 
         :returns str: the path of the saved model
         """
@@ -979,22 +1087,30 @@ class ModelBase(h2o_meta(Keyed)):
         assert_is_type(force, bool)
         if not self.have_mojo:
             raise H2OValueError("Export to MOJO not supported")
-        path = os.path.join(os.getcwd() if path == "" else path, self.model_id + ".zip")
+        if filename is None:
+            filename = self.model_id + ".zip"
+        else:
+            assert_is_type(filename, str)
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
         return h2o.api("GET /99/Models.mojo/%s" % self.model_id, data={"dir": path, "force": force})["dir"]
 
-    def save_model_details(self, path="", force=False):
+    def save_model_details(self, path="", force=False, filename=None):
         """
         Save Model Details of an H2O Model in JSON Format to disk.
 
-        :param model: The model object to save.
         :param path: a path to save the model details at (hdfs, s3, local)
         :param force: if True overwrite destination directory in case it exists, or throw exception if set to False.
+        :param filename: a filename for the saved model (file type is always .json)
 
         :returns str: the path of the saved model details
         """
         assert_is_type(path, str)
         assert_is_type(force, bool)
-        path = os.path.join(os.getcwd() if path == "" else path, self.model_id + ".json")
+        if filename is None:
+            filename = self.model_id + ".json"
+        else:
+            assert_is_type(filename, str)
+        path = os.path.join(os.getcwd() if path == "" else path, filename)
         return h2o.api("GET /99/Models/%s/json" % self.model_id, data={"dir": path, "force": force})["dir"]
 
     @staticmethod
@@ -1002,92 +1118,20 @@ class ModelBase(h2o_meta(Keyed)):
         # noinspection PyProtectedMember
         output = o._model_json["output"]
         metrics = {}
-        if train: metrics["train"] = output["training_metrics"]
-        if valid: metrics["valid"] = output["validation_metrics"]
-        if xval: metrics["xval"] = output["cross_validation_metrics"]
-        if len(metrics) == 0: metrics["train"] = output["training_metrics"]
+        if train: 
+            metrics["train"] = output["training_metrics"]
+        if valid: 
+            metrics["valid"] = output["validation_metrics"]
+        if xval: 
+            metrics["xval"] = output["cross_validation_metrics"]
+        if len(metrics) == 0: 
+            metrics["train"] = output["training_metrics"]
         return metrics
 
-
-    # Delete from cluster as model goes out of scope
-    # def __del__(self):
-    #   h2o.remove(self._id)
-
-    def _plot(self, timestep, metric, server=False):
-        plt = _get_matplotlib_pyplot(server)
-        if not plt: return
-
-        scoring_history = self.scoring_history()
-        # Separate functionality for GLM since its output is different from other algos
-        if self._model_json["algo"] == "glm":
-            # GLM has only one timestep option, which is `iterations`
-            timestep = "iterations"
-            if metric == "AUTO":
-                metric = "objective" # this includes the negative log likelihood and the penalties.
-            elif metric not in ("negative_log_likelihood", "objective"):
-                raise H2OValueError("for GLM, metric must be one of: negative_log_likelihood, objective")
-            plt.xlabel(timestep)
-            plt.ylabel(metric)
-            plt.title("Validation Scoring History")
-            style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
-            plt.plot(scoring_history[timestep], scoring_history[metric], style)
-
-        elif self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
-            # Set timestep
-            if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
-                assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
-                if timestep == "AUTO":
-                    timestep = "number_of_trees"
-            else:  # self._model_json["algo"] == "deeplearning":
-                # Delete first row of DL scoring history since it contains NAs & NaNs
-                if scoring_history["samples"][0] == 0:
-                    scoring_history = scoring_history[1:]
-                assert_is_type(timestep, "AUTO", "epochs",  "samples", "duration")
-                if timestep == "AUTO":
-                    timestep = "epochs"
-
-            training_metric = "training_{}".format(metric)
-            validation_metric = "validation_{}".format(metric)
-            if timestep == "duration":
-                dur_colname = "duration_{}".format(scoring_history["duration"][1].split()[1])
-                scoring_history[dur_colname] = [str(x).split()[0] for x in scoring_history["duration"]]
-                timestep = dur_colname
-
-            if can_use_pandas():
-                valid = validation_metric in list(scoring_history)
-                ylim = (scoring_history[[training_metric, validation_metric]].min().min(),
-                        scoring_history[[training_metric, validation_metric]].max().max()) if valid \
-                    else (scoring_history[training_metric].min(), scoring_history[training_metric].max())
-            else:
-                valid = validation_metric in scoring_history.col_header
-                ylim = (min(min(scoring_history[[training_metric, validation_metric]])),
-                        max(max(scoring_history[[training_metric, validation_metric]]))) if valid \
-                    else (min(scoring_history[training_metric]), max(scoring_history[training_metric]))
-            if ylim[0] == ylim[1]: ylim = (0, 1)
-
-            if valid:  # Training and validation scoring history
-                plt.xlabel(timestep)
-                plt.ylabel(metric)
-                plt.title("Scoring History")
-                plt.ylim(ylim)
-                plt.plot(scoring_history[timestep], scoring_history[training_metric], label="Training")
-                plt.plot(scoring_history[timestep], scoring_history[validation_metric], color="orange",
-                         label="Validation")
-                plt.legend()
-            else:  # Training scoring history only
-                plt.xlabel(timestep)
-                plt.ylabel(training_metric)
-                plt.title("Training Scoring History")
-                plt.ylim(ylim)
-                plt.plot(scoring_history[timestep], scoring_history[training_metric])
-
-        else:  # algo is not glm, deeplearning, drf, gbm, xgboost
-            raise H2OValueError("Plotting not implemented for this type of model")
-        if not server: plt.show()        
-
+    @deprecated_params({'save_to_file': 'save_plot_path'})
     def partial_plot(self, data, cols=None, destination_key=None, nbins=20, weight_column=None,
-                     plot=True, plot_stddev = True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
-                     col_pairs_2dpdp=None, save_to_file=None, row_index=None, targets=None):
+                     plot=True, plot_stddev=True, figsize=(7, 10), server=False, include_na=False, user_splits=None,
+                     col_pairs_2dpdp=None, save_plot_path=None, row_index=None, targets=None):
         """
         Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
         response. The effect of a variable is measured in change in the mean response.
@@ -1104,25 +1148,26 @@ class ModelBase(h2o_meta(Keyed)):
         :param include_na: A boolean specifying whether missing value should be included in the Feature values.
         :param user_splits: a dictionary containing column names as key and user defined split values as value in a list.
         :param col_pairs_2dpdp: list containing pairs of column names for 2D pdp
-        :param save_to_file: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
+        :param save_plot_path: Fully qualified name to an image file the resulting plot should be saved to, e.g. '/home/user/pdpplot.png'. The 'png' postfix might be omitted. If the file already exists, it will be overridden. Plot is only saved if plot = True.
         :param row_index: Row for which partial dependence will be calculated instead of the whole input frame.
         :param targets: Target classes for multiclass model.
-        :returns: Plot and list of calculated mean response tables for each feature requested.
+
+        :returns: Plot and list of calculated mean response tables for each feature requested + the resulting plot (can be accessed using result.figure()).
         """
         if not isinstance(data, h2o.H2OFrame): raise ValueError("Data must be an instance of H2OFrame.")
         num_1dpdp = 0
         num_2dpdp = 0
-        if not(cols==None):
+        if cols is not None:
             assert_is_type(cols, [str])
             num_1dpdp = len(cols)
-        if not(col_pairs_2dpdp==None):
+        if col_pairs_2dpdp is not None:
             assert_is_type(col_pairs_2dpdp, [[str, str]])
-            num_2dpdp=len(col_pairs_2dpdp)
+            num_2dpdp = len(col_pairs_2dpdp)
             
-        if (cols==None) and (col_pairs_2dpdp==None):
+        if cols is None and col_pairs_2dpdp is None:
             raise ValueError("Must specify either cols or col_pairs_2dpd to generate partial dependency plots.")
 
-        if (col_pairs_2dpdp and targets and len(targets>1)):
+        if col_pairs_2dpdp and targets and len(targets) > 1:
             raise ValueError("Multinomial 2D Partial Dependency is available only for one target.")
             
         assert_is_type(destination_key, None, str)
@@ -1131,17 +1176,17 @@ class ModelBase(h2o_meta(Keyed)):
         assert_is_type(figsize, (int, int))
 
         # Check cols specified exist in frame data
-        if not(cols==None):
+        if cols is not None:
             for xi in cols:
                 if xi not in data.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % xi)
-        if not(col_pairs_2dpdp==None):
+        if col_pairs_2dpdp is not None:
             for oneP in col_pairs_2dpdp:
                 if oneP[0] not in data.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % oneP[0])
                 if oneP[1] not in data.names:
                     raise H2OValueError("Column %s does not exist in the training frame." % oneP[1])
-                if oneP[0]==oneP[1]:
+                if oneP[0] is oneP[1]:
                     raise H2OValueError("2D pdp must be with different columns.")
         if isinstance(weight_column, int) and not (weight_column == -1):
             raise H2OValueError("Weight column should be a column name in your data frame.")
@@ -1156,7 +1201,7 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             row_index = -1
             
-        if targets:
+        if targets is not None:
             assert_is_type(targets, list)
             for i in targets:
                 assert_is_type(i, str)
@@ -1184,14 +1229,15 @@ class ModelBase(h2o_meta(Keyed)):
         pps = json["partial_dependence_data"]
 
         # Plot partial dependence plots using matplotlib
-        self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                      kwargs["user_cols"], kwargs["num_user_splits"], plot_stddev, cols, save_to_file, row_index, targets)
-        return pps
+        return self.__generate_partial_plots(num_1dpdp, num_2dpdp, plot, server, pps, figsize, 
+                                             col_pairs_2dpdp, data, nbins,
+                                             kwargs["user_cols"], kwargs["num_user_splits"], 
+                                             plot_stddev, cols, save_plot_path, row_index, targets, include_na)
 
     def __generate_user_splits(self, user_splits, data, kwargs):
         # extract user defined split points from dict user_splits into an integer array of column indices
         # and a double array of user define values for the corresponding columns
-        if not(user_splits == None) and (len(user_splits) > 0):
+        if user_splits is not None and len(user_splits) > 0:
             if not(isinstance(user_splits, dict)):
                 raise H2OValueError("user_splits must be a Python dict.")
             else:
@@ -1216,7 +1262,7 @@ class ModelBase(h2o_meta(Keyed)):
 
                             numVal = [0]*nVal
                             for ind in range(nVal):
-                                if (val[ind] in domains):
+                                if val[ind] in domains:
                                     numVal[ind] = domains.index(val[ind])
                                 else:
                                     raise H2OValueError("Illegal enum value {0} encountered.  To include missing"
@@ -1239,14 +1285,14 @@ class ModelBase(h2o_meta(Keyed)):
             kwargs["num_user_splits"] = None
 
     def __generate_partial_plots(self, num_1dpdp, num_2dpdp, plot, server, pps, figsize, col_pairs_2dpdp, data, nbins,
-                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file, row_index, targets):
+                                 user_cols, user_num_splits, plot_stddev, cols, save_to_file, row_index, targets, include_na):
         # Plot partial dependence plots using matplotlib
         to_fig = num_1dpdp + num_2dpdp
         if plot and to_fig > 0:     # plot 1d pdp for now
-            plt = _get_matplotlib_pyplot(server)
+            plt = get_matplotlib_pyplot(server)
             cm = _get_matplotlib_cm("Partial dependency plots")
             if not plt: 
-                return pps
+                return decorate_plot_result(res=pps, figure=RAISE_ON_FIGURE_ACCESS)
             import matplotlib.gridspec as gridspec
             fig = plt.figure(figsize=figsize)
             gxs = gridspec.GridSpec(to_fig, 1)
@@ -1266,10 +1312,10 @@ class ModelBase(h2o_meta(Keyed)):
                 else:  # plot 1D pdp
                     col = cols[i]
                     if targets is None or target:
-                        fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target)
+                        fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, row_index, target, include_na)
                     else:
                         fig_plotted = self.__plot_1d_pdp_multinomial(col, i, data, pps, data_index, fig, gxs, cm, 
-                                                                     plot_stddev, row_index, targets)
+                                                                     plot_stddev, row_index, targets, include_na)
                         data_index = data_index + len(targets)
             if fig_plotted:
                 fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
@@ -1278,6 +1324,9 @@ class ModelBase(h2o_meta(Keyed)):
                       "mpl_toolkits.mplot3d or matplotlib.")
             if (save_to_file is not None) and fig_plotted:  # only save when a figure is actually plotted
                 plt.savefig(save_to_file)
+            return decorate_plot_result(res=pps, figure=fig)
+        else:
+            return decorate_plot_result(res=pps)
 
     def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
                       plot_stddev, cm, i, row_index):
@@ -1310,17 +1359,17 @@ class ModelBase(h2o_meta(Keyed)):
         ax.set_title(title)
         return True
     
-    def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, row_index, target=None):
+    def __plot_1d_pdp(self, col, i, data, pp, fig, gxs, plot_stddev, row_index, target=None, include_na=False):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target) 
+        self.__set_axs_1d(axs, plot_stddev, cat, pp, col, row_index, target, include_na) 
         return True
     
     def __plot_1d_pdp_multinomial(self, col, i, data, pps, data_start_index, fig, gxs, cm, plot_stddev, row_index, 
-                                    targets):
+                                    targets, include_na):
         cat = data[col].isfactor()[0]
         axs = fig.add_subplot(gxs[i])
-        self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets)
+        self.__set_axs_1d_multinomial(axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na)
         return True
         
     # change x, y, z to be 2-D numpy arrays in order to plot it.
@@ -1367,7 +1416,10 @@ class ModelBase(h2o_meta(Keyed)):
         else:
             return pp[index]
         
-    def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target):
+    def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target, include_na):
+        np = _get_numpy("1D partial plots")
+        if np is None:
+            print("Numpy not found. Cannot plot partial plots.")
         pp_start_index = 0
         x = pp[pp_start_index]
         y = pp[pp_start_index+1]
@@ -1375,7 +1427,10 @@ class ModelBase(h2o_meta(Keyed)):
             fmt = 'o'
         else:
             fmt = '-'
-            axs.set_xlim(min(x), max(x))
+            if isinstance(x[0], str):
+                axs.set_xlim(0, len(x)-1)
+            else:
+                axs.set_xlim(min(x), max(x))
         if cat:
             labels = x  # 1d pdp, this is 0
             x = range(len(labels))
@@ -1385,17 +1440,20 @@ class ModelBase(h2o_meta(Keyed)):
             axs.set_xlim(min(x) - 0.2, max(x) + 0.2)
         if plot_stddev:
             std = pp[pp_start_index+2]
-            upper = [a + b for a, b in zip(y, std)]  # pp[1] is mean, pp[2] is std
-            lower = [a - b for a, b in zip(y, std)]
+            upper = np.array([a + b for a, b in zip(y, std)])  # pp[1] is mean, pp[2] is std
+            lower = np.array([a - b for a, b in zip(y, std)])
             if cat:
                 axs.errorbar(x, y, yerr=std, fmt=fmt, alpha=0.5, capsize=5, label=target)
             else:
-                axs.plot(x, y, fmt, label=target)
+                numline, = axs.plot(x, y, fmt, label=target)
             axs.fill_between(x, lower, upper, where=lower < upper, alpha=0.1, interpolate=False)
             axs.set_ylim(min(lower) - 0.2 * abs(min(lower)), max(upper) + 0.2 * abs(max(upper)))
         else:
-            axs.plot(x, y, fmt, label=target)
+            numline, = axs.plot(x, y, fmt, label=target)
             axs.set_ylim(min(y) - 0.2 * abs(min(y)), max(y) + 0.2 * abs(max(y)))
+        if (not cat) and include_na:
+            axs.plot(x, [y[np.argwhere(np.isnan(x))[0][0]]] * len(x), '--', color=numline._color,label="NAN")
+            axs.legend() 
         title = "Partial Dependence Plot for {}".format(col)
         if target:
             title += " and class {}".format(target)
@@ -1407,7 +1465,10 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets):
+    def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na):
+        np = _get_numpy("1D multinomial partial plots")
+        if np is None:
+            print("Numpy not found. Cannot plot multinomial partial plots.")
         pp_start_index = 0
         pp = pps[data_start_index]
         x = pp[pp_start_index]
@@ -1438,17 +1499,19 @@ class ModelBase(h2o_meta(Keyed)):
             max_y = max(max_y, max(y))
             if plot_stddev:  # set std
                 std = pp[pp_start_index + 2]
-                upper = [a + b for a, b in zip(y, std)]  # pp[1] is mean, pp[2] is std
-                lower = [a - b for a, b in zip(y, std)]
+                upper = np.array([a + b for a, b in zip(y, std)])  # pp[1] is mean, pp[2] is std
+                lower = np.array([a - b for a, b in zip(y, std)])
                 min_lower = min(min_lower, min(lower))
                 max_upper = max(max_upper, max(upper))
                 if cat:
                     axs.errorbar(x, y, yerr=std, fmt=fmt, c=cmap(i), alpha=0.5, capsize=5, label=targets[i])
                 else:
-                    axs.plot(x, y, c=cmap(i), label=targets[i])
+                    numline, = axs.plot(x, y, c=cmap(i), label=targets[i])
                 axs.fill_between(x, lower, upper, where=lower < upper, facecolor=cmap(i), alpha=0.1, interpolate=False)
             else:
-                axs.plot(x, y, c=cmap(i), marker=fmt, label=targets[i]) 
+                numline, = axs.plot(x, y, c=cmap(i), marker=fmt, label=targets[i])
+            if (not cat) and include_na:
+                axs.plot(x, [y[np.argwhere(np.isnan(x))[0][0]]] * len(x), '--', color=numline._color,label=targets[i] + " NAN")
         if plot_stddev:
             axs.set_ylim(min_lower - 0.2 * abs(min_lower), max_upper + 0.2 * abs(max_upper))
         else:
@@ -1461,208 +1524,37 @@ class ModelBase(h2o_meta(Keyed)):
         axs.xaxis.grid()
         axs.yaxis.grid()
         
-    def varimp_plot(self, num_of_features=None, server=False):
+    def varimp_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
         Plot the variable importance for a trained model.
 
         :param num_of_features: the number of features shown in the plot (default is 10 or all if less than 10).
-        :param server: ?
+        :param server: if true set server settings to matplotlib and do not show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: None.
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
-        assert_is_type(num_of_features, None, int)
-        assert_is_type(server, bool)
+        # For now, redirect to h2o.model.extensions.varimp for models that support the feature, and raise legacy error for others.
+        # Later, the method will be exposed only for models supporting the feature.
+        if has_extension(self, 'VariableImportance'):
+            return self._varimp_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path)
+        raise H2OValueError("Variable importance plot is not available for this type of model (%s)." % self.algo)
 
-        plt = _get_matplotlib_pyplot(server)
-        if not plt: return
-
-        # get the variable importances as a list of tuples, do not use pandas dataframe
-        importances = self.varimp(use_pandas=False)
-        # features labels correspond to the first value of each tuple in the importances list
-        feature_labels = [tup[0] for tup in importances]
-        # relative importances correspond to the first value of each tuple in the importances list
-        scaled_importances = [tup[2] for tup in importances]
-        # specify bar centers on the y axis, but flip the order so largest bar appears at top
-        pos = range(len(feature_labels))[::-1]
-        # specify the bar lengths
-        val = scaled_importances
-
-        # # check that num_of_features is an integer
-        # if num_of_features is None:
-        #     num_of_features = len(val)
-
-        # default to 10 or less features if num_of_features is not specified
-        if num_of_features is None:
-            num_of_features = min(len(val), 10)
-
-        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
-        # create separate plot for the case where num_of_features == 1
-        if num_of_features == 1:
-            plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
-                     height=0.8, color="#1F77B4", edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(None, 0.5)
-
-        else:
-            plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
-                     height=0.8, color="#1F77B4", edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            plt.ylim([min(pos[0:num_of_features])- 1, max(pos[0:num_of_features])+1])
-            # ax.margins(y=0.5)
-
-        # check which algorithm was used to select right plot title
-        if self._model_json["algo"] == "gbm":
-            plt.title("Variable Importance: H2O GBM", fontsize=20)
-            if not server: plt.show()
-        elif self._model_json["algo"] == "drf":
-            plt.title("Variable Importance: H2O DRF", fontsize=20)
-            if not server: plt.show()
-        elif self._model_json["algo"] == "xgboost":
-            plt.title("Variable Importance: H2O XGBoost", fontsize=20)
-            if not server: plt.show()
-        # if H2ODeepLearningEstimator has variable_importances == True
-        elif self._model_json["algo"] == "deeplearning":
-            plt.title("Variable Importance: H2O Deep Learning", fontsize=20)
-            if not server: plt.show()
-        elif self._model_json["algo"] == "glm":
-            plt.title("Variable Importance: H2O GLM", fontsize=20)
-            if not server: plt.show()            
-        else:
-            raise H2OValueError("A variable importances plot is not implemented for this type of model")
-
-
-    def std_coef_plot(self, num_of_features=None, server=False):
+    def std_coef_plot(self, num_of_features=None, server=False, save_plot_path=None):
         """
-        Plot a GLM model"s standardized coefficient magnitudes.
+        Plot a model's standardized coefficient magnitudes.
 
         :param num_of_features: the number of features shown in the plot.
-        :param server: ?
+        :param server: if true set server settings to matplotlib and show the graph
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: None.
+        :returns: object that contains the resulting figure (can be accessed using result.figure())
         """
-        assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
-
-        # check that model is a glm
-        if self._model_json["algo"] != "glm":
-            raise H2OValueError("This function is available for GLM models only")
-
-        plt = _get_matplotlib_pyplot(server)
-        if not plt: return
-
-        # get unsorted tuple of labels and coefficients
-        unsorted_norm_coef = self.coef_norm().items()
-        # drop intercept value then sort tuples by the coefficient"s absolute value
-        drop_intercept = [tup for tup in unsorted_norm_coef if tup[0] != "Intercept"]
-        norm_coef = sorted(drop_intercept, key=lambda x: abs(x[1]), reverse=True)
-
-        signage = []
-        for element in norm_coef:
-            # if positive including zero, color blue, else color orange (use same colors as Flow)
-            if element[1] >= 0:
-                signage.append("#1F77B4")  # blue
-            else:
-                signage.append("#FF7F0E")  # dark orange
-
-        # get feature labels and their corresponding magnitudes
-        feature_labels = [tup[0] for tup in norm_coef]
-        norm_coef_magn = [abs(tup[1]) for tup in norm_coef]
-        # specify bar centers on the y axis, but flip the order so largest bar appears at top
-        pos = range(len(feature_labels))[::-1]
-        # specify the bar lengths
-        val = norm_coef_magn
-
-        # check number of features, default is all the features
-        if num_of_features is None:
-            num_of_features = len(val)
-
-        # plot horizontal plot
-        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
-        # create separate plot for the case where num_of_features = 1
-        if num_of_features == 1:
-            plt.barh(pos[0], val[0],
-                     align="center", height=0.8, color=signage[0], edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks([0], feature_labels[0])
-            ax.margins(None, 0.5)
-
-        else:
-            plt.barh(pos[0:num_of_features], val[0:num_of_features],
-                     align="center", height=0.8, color=signage[0:num_of_features], edgecolor="none")
-            # Hide the right and top spines, color others grey
-            ax.spines["right"].set_visible(False)
-            ax.spines["top"].set_visible(False)
-            ax.spines["bottom"].set_color("#7B7B7B")
-            ax.spines["left"].set_color("#7B7B7B")
-            # Only show ticks on the left and bottom spines
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-            ax.margins(None, 0.05)
-
-        # generate custom fake lines that will be used as legend entries:
-        # check if positive and negative values exist
-        # if positive create positive legend
-        if "#1F77B4" in signage[0:num_of_features] and "#FF7F0E" not in signage[0:num_of_features]:
-            color_ids = ("Positive",)
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in signage[0:num_of_features]]
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-        # if neg create neg legend
-        elif "#FF7F0E" in signage[0:num_of_features] and "#1F77B4" not in signage[0:num_of_features]:
-            color_ids = ("Negative",)
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in set(signage[0:num_of_features])]
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-        # if both provide both colors in legend
-        else:
-            color_ids = ("Positive", "Negative")
-            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
-                       for color in ['#1F77B4', '#FF7F0E']] # blue should always be positive, orange negative
-            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
-            lgnd.legendHandles[0]._legmarker.set_markersize(10)
-            lgnd.legendHandles[1]._legmarker.set_markersize(10)
-
-        # Hide the right and top spines, color others grey
-        ax.spines["right"].set_visible(False)
-        ax.spines["top"].set_visible(False)
-        ax.spines["bottom"].set_color("#7B7B7B")
-        ax.spines["left"].set_color("#7B7B7B")
-
-        # Only show ticks on the left and bottom spines
-        # ax.yaxis.set_ticks_position("left")
-        # ax.xaxis.set_ticks_position("bottom")
-        plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
-        plt.tick_params(axis="x", which="minor", bottom="off", top="off",  labelbottom="off")
-        plt.title("Standardized Coef. Magnitudes: H2O GLM", fontsize=20)
-        # plt.axis("tight")
-        # show plot
-        if not server: plt.show()
-
+        # For now, redirect to h2o.model.extensions.std_coef for models that support the feature, and raise legacy error for others.
+        # Later, the method will be exposed only for models supporting the feature.
+        if has_extension(self, 'StandardCoef'):
+            return self._std_coef_plot(num_of_features=num_of_features, server=server, save_plot_path=save_plot_path)
+        raise H2OValueError("Standardized coefficient plot is not available for this type of model (%s)." % self.algo)
 
     @staticmethod
     def _check_targets(y_actual, y_predicted):
@@ -1676,7 +1568,6 @@ class ModelBase(h2o_meta(Keyed)):
         if len(y_actual) != len(y_predicted):
             raise ValueError("Row mismatch: [{},{}]".format(len(y_actual), len(y_predicted)))
 
-
     def cross_validation_models(self):
         """
         Obtain a list of cross-validation models.
@@ -1684,11 +1575,11 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: list of H2OModel objects.
         """
         cvmodels = self._model_json["output"]["cross_validation_models"]
-        if cvmodels is None: return None
+        if cvmodels is None: 
+            return None
         m = []
         for p in cvmodels: m.append(h2o.get_model(p["name"]))
         return m
-
 
     def cross_validation_predictions(self):
         """
@@ -1699,11 +1590,11 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: list of H2OFrame objects.
         """
         preds = self._model_json["output"]["cross_validation_predictions"]
-        if preds is None: return None
+        if preds is None: 
+            return None
         m = []
         for p in preds: m.append(h2o.get_frame(p["name"]))
         return m
-
 
     def cross_validation_holdout_predictions(self):
         """
@@ -1714,9 +1605,9 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: H2OFrame
         """
         preds = self._model_json["output"]["cross_validation_holdout_predictions_frame_id"]
-        if preds is None: return None
+        if preds is None: 
+            return None
         return h2o.get_frame(preds["name"])
-
 
     def cross_validation_fold_assignment(self):
         """
@@ -1725,7 +1616,8 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: H2OFrame
         """
         fid = self._model_json["output"]["cross_validation_fold_assignment_frame_id"]
-        if fid is None: return None
+        if fid is None: 
+            return None
         return h2o.get_frame(fid["name"])
 
     def rotation(self):
@@ -1742,43 +1634,169 @@ class ModelBase(h2o_meta(Keyed)):
         """DEPRECATED. Use :meth:`scoring_history` instead."""
         return self.scoring_history()
 
+    def permutation_importance(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1, use_pandas=False):
+        """
+        Get Permutation Variable Importance.
+
+        When n_repeats == 1, the result is similar to the one from varimp() method, i.e., it contains
+        the following columns "Relative Importance", "Scaled Importance", and "Percentage".
+
+        When n_repeats > 1, the individual columns correspond to the permutation variable
+        importance values from individual runs which corresponds to the "Relative Importance" and also
+        to the distance between the original prediction error and prediction error using a frame with
+        a given feature permuted.
+
+        :param frame: training frame
+        :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
+                       "PR_AUC".  Defaults to "AUTO".
+        :param n_samples: number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
+        :param n_repeats: number of repeated evaluations. Defaults to 1.
+        :param features: features to include in the permutation importance. Use None to include all.
+        :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
+        :param use_pandas: set true to return pandas data frame.
+        
+        :return: H2OTwoDimTable or Pandas data frame
+        """
+        from h2o.two_dim_table import H2OTwoDimTable
+        from h2o.frame import H2OFrame
+        from h2o.expr import ExprNode
+        from h2o.exceptions import H2OValueError
+        from h2o.utils.shared_utils import can_use_pandas
+
+        if type(frame) is not H2OFrame:
+            raise H2OValueError("Frame is not H2OFrame")
+
+        if self.actual_params["response_column"] not in frame.columns:
+            raise H2OValueError("Frame must contain the response column!")
+
+        if features is not None and len(features) == 0:
+            features = None
+
+        if n_samples < -1 or n_samples in (0, 1):
+            raise H2OValueError("Argument n_samples has to be either -1 to use the whole frame or greater than 2!")
+
+        if n_samples > frame.nrows:
+            n_samples = -1
+
+        if n_repeats < 1:
+            raise H2OValueError("Argument n_repeats must be greater than 0!")
+
+        assert_is_type(features, None, [str])
+        if features is not None:
+            not_in_frame = [f for f in features if f not in frame.columns]
+            if len(not_in_frame) > 0:
+                raise H2OValueError("Features " + ", ".join(not_in_frame) + " are not present in the provided frame!")
+
+        existing_metrics = [k.lower() for k in self._model_json['output']['training_metrics']._metric_json.keys()]
+        if metric.lower() not in ["auto"] + existing_metrics:
+            raise H2OValueError("Metric " + metric + " doesn't exist for this model.")
+        m_frame = H2OFrame._expr(ExprNode(
+            "PermutationVarImp",
+            self,
+            frame,
+            metric,
+            n_samples,
+            n_repeats,
+            features,
+            seed))
+        if use_pandas and can_use_pandas():
+            import pandas
+            pd = h2o.as_list(m_frame)
+            return pandas.DataFrame(pd, columns=pd.columns).set_index("Variable")
+        else:
+            def _replace_empty_str(row):
+                return [
+                    float("nan") if "" == elem else elem
+                    for elem in row
+                ]
+            varimp = H2OTwoDimTable(
+                table_header="Variable Importances",
+                col_header=m_frame.columns,
+                col_types=["string"] + ["double"] * (len(m_frame.columns) - 1),
+                raw_cell_values=list(map(_replace_empty_str, zip(*m_frame.as_data_frame(use_pandas=False, header=False))))  # transpose
+            )
+            return varimp
+
+    def permutation_importance_plot(self, frame, metric="AUTO", n_samples=10000, n_repeats=1, features=None, seed=-1,
+                                    num_of_features=10, server=False, save_plot_path=None):
+        """
+        Plot Permutation Variable Importance. This method plots either a bar plot or if n_repeats > 1 a box plot and
+        returns the variable importance table.
+
+        :param frame: training frame
+        :param metric: metric to be used. One of "AUTO", "AUC", "MAE", "MSE", "RMSE", "logloss", "mean_per_class_error",
+                       "PR_AUC".  Defaults to "AUTO".
+        :param n_samples: number of samples to be evaluated. Use -1 to use the whole dataset. Defaults to 10 000.
+        :param n_repeats: number of repeated evaluations. Defaults to 1.
+        :param features: features to include in the permutation importance. Use None to include all.
+        :param seed: seed for the random generator. Use -1 to pick a random seed. Defaults to -1.
+        :param num_of_features: number of features to plot. Defaults to 10.
+        :param server: if true set server settings to matplotlib and do not show the plot
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+        
+        :return: object that contains H2OTwoDimTable with variable importance and the resulting figure (can be accessed using result.figure())
+        """
+        plt = get_matplotlib_pyplot(server)
+        if not plt:
+            return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
+
+        importance = self.permutation_importance(frame, metric, n_samples, n_repeats, features, seed, use_pandas=False)
+        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+        if n_repeats > 1:
+            vi = sorted([{"feature": row[0], "mean": sum(row[1:])/(len(row)-1), "values": row[1:]}
+                         for row in importance.cell_values],
+                        key=lambda x: -x["mean"])[:num_of_features][::-1]
+            ax.boxplot([x["values"] for x in vi], vert=False, labels=[x["feature"] for x in vi])
+        else:
+            importance_val = importance["Scaled Importance"]
+            # specify bar centers on the y axis, but flip the order so largest bar appears at top
+            pos = range(len(importance_val))[::-1]
+            num_of_features = min(len(importance_val), num_of_features)
+            plt.barh(pos[0:num_of_features], importance_val[0:num_of_features], align="center",
+                     height=0.8, color="#1F77B4", edgecolor="none")
+            plt.yticks(pos[0:num_of_features], importance["Variable"][0:num_of_features])  # col 0 is str: importance
+            plt.ylim([min(pos[0:num_of_features]) - 1, max(pos[0:num_of_features]) + 1])
+        # Hide the right and top spines, color others grey
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.spines["bottom"].set_color("#7B7B7B")
+        ax.spines["left"].set_color("#7B7B7B")
+        # Only show ticks on the left and bottom spines
+        ax.yaxis.set_ticks_position("left")
+        ax.xaxis.set_ticks_position("bottom")
+        plt.title("Permutation Variable Importance: " + self.algo +
+                  (" (" + metric.lower() + ")" if metric.lower() != "auto" else ""), fontsize=20)
+        if not server:
+            plt.show()
+        if save_plot_path is not None:
+            fig.savefig(fname=save_plot_path)    
+        return decorate_plot_result(res=importance, figure=fig)
 
 
-
-def _get_matplotlib_pyplot(server):
-    try:
-        # noinspection PyUnresolvedReferences
-        import matplotlib
-        if server: matplotlib.use("Agg")
-        # noinspection PyUnresolvedReferences
-        import matplotlib.pyplot as plt
-        return plt
-    except ImportError:
-        print("`matplotlib` library is required for this function!")
-        return None
-
-def _get_mplot3d_pyplot(functionName):
+def _get_mplot3d_pyplot(function_name):
     try:
         # noinspection PyUnresolvedReferences
         from mpl_toolkits.mplot3d import Axes3D
         return Axes3D
     except ImportError:
-        print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(functionName))
+        print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(function_name))
         return None
 
-def _get_numpy(functionName):
+
+def _get_numpy(function_name):
     try:
         import numpy as np
         return np
     except ImportError:
-        print("`numpy` library is required for function {0}!".format(functionName))
+        print("`numpy` library is required for function {0}!".format(function_name))
         return None
 
-def _get_matplotlib_cm(functionName):
+
+def _get_matplotlib_cm(function_name):
     try:
         from matplotlib import cm
         return cm
     except ImportError:
-        print('matplotlib library is required for 3D plots for function {0}'.format(functionName))
+        print('matplotlib library is required for 3D plots for function {0}'.format(function_name))
         return None
     

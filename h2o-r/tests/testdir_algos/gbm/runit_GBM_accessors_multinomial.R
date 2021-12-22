@@ -8,7 +8,7 @@ test.gbm.mult.accessors <- function() {
   i.sid <- h2o.runif(iris.hex)
   iris.train <- h2o.assign(iris.hex[i.sid > .2, ], "iris.train")
   iris.test <- h2o.assign(iris.hex[i.sid <= .2, ], "iris.test")
-  iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train)
+  iris.gbm <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, auc_type="WEIGHTED_OVR")
   iris.gbm.valid <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test)
   iris.gbm.valid.xval <- h2o.gbm(x = 1:4, y = 5, training_frame = iris.train, validation_frame = iris.test, nfolds=2)
 
@@ -54,7 +54,25 @@ test.gbm.mult.accessors <- function() {
   Log.info("Variable Importance...")
   print(h2o.varimp(iris.gbm))
 
+  Log.info("Multinomial AUC")
+  auc1 <- iris.gbm@model$training_metrics@metrics$AUC
+  auc2 <- h2o.auc(iris.gbm@model$training_metrics)
+  print(auc1)
+  print(auc2)
+  expect_equal(auc1, auc2)
   
+  Log.info("Multinomial PR AUC")  
+  aucpr1 <- iris.gbm@model$training_metrics@metrics$pr_auc
+  aucpr2 <- h2o.aucpr(iris.gbm@model$training_metrics)  
+  print(aucpr1)
+  print(aucpr2)
+  expect_equal(aucpr1, aucpr2)
+    
+  Log.info("Multinomial AUC table")  
+  print(h2o.multinomial_auc_table(iris.gbm@model$training_metrics))
+
+  Log.info("Multinomial PR AUC table")
+  print(h2o.multinomial_aucpr_table(iris.gbm@model$training_metrics))
 }
 
 doTest("Testing model accessors for GBM", test.gbm.mult.accessors)

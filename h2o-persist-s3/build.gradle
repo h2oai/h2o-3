@@ -1,20 +1,14 @@
 description = "H2O Persist S3"
 
-//apply plugin: "io.spring.dependency-management"
-
-//dependencyManagement {
-//  imports {
-//    mavenBom 'com.amazonaws:aws-java-sdk-bom:1.10.47'
-//  }
-//}
-
 dependencies {
-  compile project(":h2o-core")
-  compile 'com.amazonaws:aws-java-sdk-s3:1.10.77'
-  compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
-  compile 'javax.xml.bind:jaxb-api:2.3.0'
+  api project(":h2o-core")
+  api "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
+  api "org.apache.httpcomponents:httpclient:${httpClientVersion}"
+  api "javax.xml.bind:jaxb-api:2.3.1"
 
-  testCompile project(":h2o-test-support")
+  testImplementation project(":h2o-test-support")
+  testImplementation "com.adobe.testing:s3mock:2.1.28"
+  testImplementation "com.adobe.testing:s3mock-junit4:2.1.28"
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

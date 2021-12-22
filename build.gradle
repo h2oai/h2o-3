@@ -4,29 +4,31 @@ import org.apache.tools.ant.taskdefs.condition.Os
 // classpath
 buildscript {
     ext {
-        isCi = (System.getProperty("user.name").equals("jenkins")
+        isCi = (!rootProject.hasProperty("forcePublic")) && (System.getProperty("user.name").equals("jenkins")
                     || System.getenv("CI") != null
                     || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
     }
 
     repositories {
         if (isCi) {
-            maven { url "${localNexusLocation}/public" }
+            maven {
+                allowInsecureProtocol = true
+                url "${localNexusLocation}/public"
+            }
         } else {
             maven { url 'https://plugins.gradle.org/m2/' }
             mavenCentral()
-            jcenter()
         }
     }
 
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
+        classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.2'
         // Note: Analyze unused/undefined dependencies for each module - good for debugging
         // However, later it should be enabled by default
         //classpath 'ca.cutterslade.gradle:gradle-dependency-analyze:1.1.0'
@@ -34,8 +36,8 @@ buildscript {
 }
 
 plugins {
-    id "java"
-    id "com.github.hierynomus.license" version "0.14.0"
+    id "java-library"
+    id "com.github.hierynomus.license" version "0.16.1"
 }
 
 //
@@ -74,6 +76,7 @@ ext {
       project(':h2o-parquet-parser'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
+      project(':h2o-admissibleml'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
@@ -83,13 +86,19 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
+      project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
       project(':h2o-security'),
       project(':h2o-logger'),
+      project(':h2o-logging-impl-classic'),
+      project(':h2o-logging-impl-log4j2'),
+      project(':h2o-logging-safe4j'),
       project(':h2o-genmodel-ext-jgrapht'),
       project(':h2o-k8s'),
-      project(':h2o-genmodel-ext-deepwater')
+      project(':h2o-k8s-int'),
+      project(':h2o-genmodel-ext-deepwater'),
+      project(':h2o-clustering')
     ]
 
     javaProjects = [
@@ -112,6 +121,7 @@ ext {
       project(':h2o-parquet-v17-compat'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
+      project(':h2o-admissibleml'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
@@ -121,13 +131,20 @@ ext {
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
+      project(':h2o-jetty-9-minimal'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
       project(':h2o-security'),
       project(':h2o-logger'),
+      project(':h2o-logging-impl-classic'),
+      project(':h2o-logging-impl-log4j2'),
+      project(':h2o-logging-safe4j'),
       project(':h2o-genmodel-ext-jgrapht'),
-      project(':h2o-k8s'), 
-      project(':h2o-genmodel-ext-deepwater')
+      project(':h2o-k8s'),
+      project(':h2o-k8s-int'),
+      project(':h2o-k8s-comp'),
+      project(':h2o-genmodel-ext-deepwater'),
+      project(':h2o-clustering')
     ]
 
     rProjects = [
@@ -150,28 +167,27 @@ ext {
     // Projects with micro-benchmarks
     ubenchProjects = [
       project(':h2o-core'),
-      project(':h2o-algos')
+      project(':h2o-algos'),
+      project(':h2o-ext-target-encoder')      
     ]
     
     //
     // Versions of libraries shared cross all projects
-    // The version of protoc must match protobuf-java. If you don't depend on
-    // protobuf-java directly, you will be transitively depending on the
-    // protobuf-java version that grpc depends on.
     //
     junitVersion  = '4.12'
     jets3tVersion = '0.7.1'
-    awsJavaSdkVersion = '1.8.3'
+    awsJavaSdkVersion = '1.12.127'
 
     //
     // Optional H2O modules which can be included h2o.jar assembly
     // They can be enabled by passing parameter "-Pwith{componentName}=true"
-    // For example, `-PwithVisDataServer=true -PvisDataServerVersion=3.14.27`
+    // For example, `-PwithXgboost=true -PxgboostVersion=1.2.0.16`
+    //
     optionalComponents = [
             // NAME | VERSION | IS ENABLED? | HAS GENMODEL PART ?
-            [name: "visDataServer", version : "1.0.0-SNAPSHOT", enabled: false, genmodel: false ],
             [name: "xgboost", version: "$version", enabled: true, genmodel: true ],
             [name: "jython-cfunc", version: "$version", enabled: true, genmodel: false],
+            [name: "jgrapht", version: "$version", enabled: true, genmodel: true],
     ]
 
     //
@@ -196,6 +212,7 @@ allprojects {
 
     ext {
         isRelease = rootProject.hasProperty("doRelease")
+        validateRelease = rootProject.hasProperty("validateRelease")
         isCi = isCi
     }
 }
@@ -218,22 +235,25 @@ subprojects {
         }
         if (isCi) {
             maven {
+                allowInsecureProtocol = true
                 url "${localNexusLocation}/public"
             }
         } else {
             mavenCentral()
-            jcenter()
             maven {
                 url "https://repository.cloudera.com/artifactory/cloudera-repos/"
             }
             maven {
-                url "http://repo.hortonworks.com/content/repositories/releases/"
+                url "https://repo.hortonworks.com/content/repositories/releases/"
             }
             maven {
-                url "http://repo.hortonworks.com/content/repositories/jetty-hadoop/"
+                url "https://repo.hortonworks.com/content/repositories/jetty-hadoop/"
             }
             maven {
-                url "http://repository.mapr.com/maven/"
+                url "https://repository.mapr.com/maven/"
+            }
+            maven {
+                url "https://repository.jboss.org/nexus/content/repositories/thirdparty-releases/"
             }
         }
     }
@@ -244,8 +264,8 @@ subprojects {
       apply from: "$rootDir/gradle/publish.gradle"
     }
 
-    // Note: this is deprecated and will be removed in the future
-    apply from: "$rootDir/gradle/makeSupport.gradle"
+    // Copy all jars and remove version number from the name
+    apply from: "$rootDir/gradle/copyJars.gradle"
 
     //
     // Early configuration of projects simplifies build resolution
@@ -265,7 +285,11 @@ subprojects {
             apply from: "$rootDir/gradle/animalSniffer.gradle"
         }
         if (testNeedsCiProject.contains(project)) {
-            logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            if (isCi) {
+                logger.info("Running in CI mode, tests for $project will be enabled.")
+            } else {
+                logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
+            }
             project.testSingleNode.enabled = isCi
             project.testMultiNode.enabled = isCi
         }
@@ -292,6 +316,9 @@ subprojects {
 // Include support for S3 syncing
 apply from: "gradle/s3sync.gradle"
 
+// Include support for Pull Request validator
+apply from: "gradle/prCheck.gradle"
+
 // This task is used by the Jenkins on test.h2o.ai.
 //
 // It creates a directory called 'target', copies everything to be released 
@@ -308,6 +335,19 @@ task buildH2oDevDist(type: Exec) {
     def branchName = bv.getBranch()
     def buildNumber = bv.getBuildNumber()
     def lastCommitHash = bv.getLastCommitHash()
+
+    if (validateRelease) {
+        def middleNumber = Integer.parseInt(projectVersion.split("\\.")[1])
+        def lastNumber = Integer.parseInt(projectVersion.split("\\.")[3])
+        def isBleedingEdge = middleNumber % 2 == 1
+        if (isBleedingEdge && branchName != "master") {
+            throw new Exception("The version ${projectVersion} is corresponding to nightly release but the branch you are releasing from is not master but ${branchName}")
+        } else if (!isBleedingEdge && !branchName.startsWith("rel-")) {
+            throw new Exception("The version ${projectVersion} is corresponding to the release but the branch you are releasing from not match release branch but ${branchName}")
+        } else if (lastNumber == 99999) {
+            throw new Exception("The version ${projectVersion} is a developer version and should not be released.")
+        }
+    }
 
     environment['BUILD_TIME_MILLIS'] = buildTimeMillis
     environment['BUILD_TIME_ISO8601'] = buildTimeIso8601

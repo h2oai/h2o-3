@@ -31,6 +31,9 @@ public class ModelSchemaBaseV3<M extends hex.Model<M,?,?>, S extends ModelSchema
   @API(help="The response column name for this Model (if applicable). Is null otherwise.", direction=API.Direction.OUTPUT)
   public String response_column_name;
 
+  @API(help="The treatment column name for this Model (if applicable). Is null otherwise.", direction=API.Direction.OUTPUT)
+  public String treatment_column_name;
+
   @API(help="The Model\'s training frame key", direction=API.Direction.OUTPUT)
   public FrameKeyV3 data_frame;
 
@@ -52,6 +55,7 @@ public class ModelSchemaBaseV3<M extends hex.Model<M,?,?>, S extends ModelSchema
     this.algo_full_name = m._parms.fullName();
     this.data_frame = new FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;
+    this.treatment_column_name = m._parms._treatment_column;
     this.timestamp = m._output._job == null?-1:m._output._job.isRunning() ? 0 : m._output._job.end_time();
     this.have_pojo = m.havePojo();
     this.have_mojo = m.haveMojo();

@@ -6,16 +6,16 @@ The only requirements from the original estimator are the following:
 
 """
 from collections import defaultdict, OrderedDict
-import copy
-from functools import partial, update_wrapper, wraps
-import sys
-import types
+from functools import wraps
 from weakref import ref
 
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
 
 from .. import h2o, H2OFrame
+from ..utils.compatibility import PY2
+from ..utils.metaclass import decoration_info
 from ..utils.shared_utils import can_use_numpy, can_use_pandas
+from ..utils.mixin import Mixin, register_class
 
 try:
     from inspect import Parameter, signature
@@ -29,63 +29,15 @@ if can_use_numpy():
     import numpy as np
 
 
-def mixin(obj, *mixins):
+def _unwrap(fn):
     """
-    Function adding one or more mixin class to the list of parent classes of the current object.
-    This is done by dynamically changing the class hierarchy of the current object,
-    not only by adding the mixin methods to the object.
-
-    :param obj: the object on which to apply the mixins.
-    :param mixins: the list of mixin classes to add to the object.
-    :return: the extended object.
+    Hack to be sure we get the function with the correct signature in Py2.
+    Can be removed when we stop supporting Py2.
     """
-    obj.__class__ = type(obj.__class__.__name__, (obj.__class__,)+tuple(mixins), dict())
-    return obj
-
-
-class Mixin(object):
-    """
-    Context manager used to temporarily add mixins to an object.
-    """
-
-    def __init__(self, obj, *mixins):
-        """
-        :param obj: the object on which the mixins are temporarily added.
-        :param mixins: the list of mixins to apply.
-        """
-        self._inst = mixin(copy.copy(obj), *mixins)  # no deepcopy necessary, we just want to ensure mixin methods are not added to original instance
-
-    def __enter__(self):
-        if hasattr(self._inst, '__enter__'):
-            return self._inst.__enter__()
-        return self._inst
-
-    def __exit__(self, *args):
-        if hasattr(self._inst, '__exit__'):
-            self._inst.__exit__()
-
-
-def register_module(module_name):
-    """
-    Creates and globally registers a module with given name.
-
-    :param module_name: the name of the module to register.
-    :return: the module with given name.
-    """
-    if module_name not in sys.modules:
-        mod = types.ModuleType(module_name)
-        sys.modules[module_name] = mod
-    return sys.modules[module_name]
-
-
-def register_class(cls):
-    """
-    Register a class module, and adds it to it's module.
-
-    :param cls: the class to register.
-    """
-    module = register_module(cls.__module__)
-    setattr(module, cls.__name__, cls)
+    decoration = decoration_info(fn)
+    if PY2 and decoration is not None:
+        return _unwrap(decoration['wrapped'])
+    return fn
 
 
 def wrap_estimator(cls,
@@ -116,7 +68,7 @@ def wrap_estimator(cls,
     assert isinstance(bases, tuple) and len(bases) > 0
     if default_params is None:
         # obtain the default params from signature of the estimator class constructor
-        sig = signature(cls.__init__)
+        sig = signature(_unwrap(cls.__init__))
         ignored_names = ['self']
         ignored_kind = [Parameter.VAR_KEYWORD, Parameter.VAR_POSITIONAL]
         default_params = OrderedDict((p.name, p.default if p.default is not p.empty else None)
@@ -295,6 +247,7 @@ def params_as_h2o_frames(frame_params=('X', 'y'),
         :param fn: the function to be decorated
         :return: a new function that will convert X, and y parameters before passing them to the original function.
         """
+        fn = _unwrap(fn)
         sig = signature(fn)
         has_self = 'self' in sig.parameters
         assert any(arg in sig.parameters for arg in frame_params), \
@@ -633,7 +586,6 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
             print(self)
 
 
-
 class H2OtoSklearnEstimator(BaseSklearnEstimator):
     """
     The base wrapper class exposing `sklearn` estimator methods.
@@ -765,7 +717,6 @@ class H2OtoSklearnTransformer(BaseSklearnEstimator, TransformerMixin):
         if hasattr(self._estimator, 'inverse_transform') and callable(self._estimator.inverse_transform):
             return self._estimator.inverse_transform(X)
         raise AttributeError("{} does not support 'inverse_transform'.".format(self.__class__.__name__))
-
 
 
 class H2OEstimatorPredictProbabilitiesSupport(BaseEstimatorMixin):

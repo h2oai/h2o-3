@@ -25,10 +25,12 @@ test.tree.fetch <- function() {
   data <- as.h2o(data)
   model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
-    tree <- h2o.getModelTree(model, i)
+    tree <- h2o.getModelTree(model, i, plain_language_rules = "FALSE")
     expect_false(is.null(tree))
     expect_false(is.null(tree@tree_decision_path))
-    expect_false(is.null(tree@decision_paths[1]))
+    expect_equal(tree@tree_decision_path, "Plain language rules generation is turned off.")
+    expect_false(is.null(tree@decision_paths))
+    expect_equal(tree@decision_paths, "Plain language rules generation is turned off.")
   }
   
   # Random Tree API test with a randomly generated matrix - categorical only
@@ -45,7 +47,7 @@ test.tree.fetch <- function() {
   data$x2 <- h2o.asfactor(data$x2)
   model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
-    tree <- h2o.getModelTree(model, i)
+    tree <- h2o.getModelTree(model, i, plain_language_rules = TRUE)
     expect_false(is.null(tree))
     expect_false(is.null(tree@tree_decision_path))
     expect_false(is.null(tree@decision_paths[1]))
@@ -68,7 +70,7 @@ test.tree.fetch <- function() {
   model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
     for(clazz in domain){
-    tree <- h2o.getModelTree(model, i,as.character(clazz))
+    tree <- h2o.getModelTree(model, i, as.character(clazz), TRUE)
     expect_false(is.null(tree))
     expect_false(is.null(tree@tree_decision_path))
     expect_false(is.null(tree@decision_paths[1]))
@@ -95,7 +97,7 @@ test.tree.fetch <- function() {
   model <- h2o.xgboost(x= c("x1", "x2"), y = "response", training_frame = data, ntrees = ntrees, seed = seed)
   for (i in seq(1,ntrees)) {
     for(clazz in states){
-      tree <- h2o.getModelTree(model, i,as.character(clazz))
+      tree <- h2o.getModelTree(model, i, as.character(clazz), TRUE)
       expect_false(is.null(tree))
       expect_false(is.null(tree@tree_decision_path))
       expect_false(is.null(tree@decision_paths[1]))

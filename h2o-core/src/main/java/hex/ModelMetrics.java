@@ -420,8 +420,8 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       return _count <= 1 ? 0 : Math.sqrt(sampleCorrection*(_wYY/_wcount - (_wY*_wY)/(_wcount*_wcount)));
     }
     abstract public double[] perRow(double ds[], float yact[], Model m);
-    public double[] perRow(double ds[], float yact[],double weight, double offset,  Model m) {
-      assert(weight==1 && offset == 0);
+    public double[] perRow(double ds[], float yact[], double weight, double offset,  Model m) {
+      assert(weight == 1 && offset == 0);
       return perRow(ds, yact, m);
     }
     public void reduce( T mb ) {
@@ -430,6 +430,10 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       _wcount += mb._wcount;
       _wY += mb._wY;
       _wYY += mb._wYY;
+    }
+    
+    public void reduceForCV(T mb){
+      this.reduce(mb);
     }
 
     public void postGlobal() {

@@ -45,10 +45,11 @@ automl.model_selection.suite <- function() {
       project_name = "aml_exclude_algos",
       max_models = max_models,
       exclude_algos = c('DRF', 'GLM'),
+      seed = 42 # since SE are build only if the basemodels would differ from the other SEs, it can happen that sometime we would not improve any model from any family so we would not have a new SE which would break the test
     )
     models <- get_partitioned_models(aml)
     expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
-    expect_equal(length(models$se), 2)
+    expect_gt(length(models$se), 3)
   }
 
   test_include_algos <- function() {
@@ -119,16 +120,19 @@ automl.model_selection.suite <- function() {
       modeling_plan = list(
         list(name="GLM", steps=c(list(id="def_1"))),
         list(name="GBM", alias='grids'),
-        list(name='DRF', steps=c(list(id='def_1', weight=333)))  # just testing that it is parsed correctly on backend (no model won't be build due to max_models)
+        list(name='DRF', steps=c(list(id='def_1', group=5, weight=333))),  # just testing that it is parsed correctly on backend (no model will be build due to group+max_models)
+        list(name="GBM", steps=c(list(id="def_1")))
       ),
       project_name = "r_modeling_plan_full_syntax",
-      max_models = 2,
+      max_models = 3,
       seed = 1,
     )
     models <- get_partitioned_models(aml)
-    expect_equal(length(models$non_se), 2)
+    expect_equal(length(models$non_se), 3)
     expect_equal(length(models$se), 0)
     expect_true(any(grepl("GLM", models$all)))
+    expect_true(any(grepl("GBM", models$all)))
+    expect_false(any(grepl("DRF", models$all)))
     expect_true(any(grepl("GBM_grid", models$all)))
   }
 
@@ -148,7 +152,7 @@ automl.model_selection.suite <- function() {
     )
     models <- get_partitioned_models(aml)
     expect_equal(length(models$non_se), 5)
-    expect_equal(length(models$se), 2)
+    expect_gt(length(models$se), 2) 
     expect_true(any(grepl("XRT", models$all)))
     expect_true(any(grepl("GLM", models$all)))
     expect_equal(sum(grepl("GBM_grid", models$all)), 2)
@@ -162,20 +166,28 @@ automl.model_selection.suite <- function() {
       training_frame = ds$train,
       modeling_plan = list(
         "DRF",
-        "GLM",
-        list(name="GBM", steps=list(id="grid_1", weight=777)),
-        "StackedEnsemble"
+        list(name="GLM", alias="defaults"),
+        list(name="GBM", steps=list(
+            list(id="def_3", group=2),
+            list(id="grid_1", weight=777)
+        )),
+        list(name="StackedEnsemble", alias="defaults")
       ),
       project_name = "r_modeling_steps",
       max_models = 5,
       seed = 1,
     )
     print(aml@leaderboard)
+    # print(aml@modeling_steps)  
     expect_equal(aml@modeling_steps, list(
-      list(name='DRF', steps=list(list(id='def_1', weight=10), list(id='XRT', weight=10))),
-      list(name='GLM', steps=list(list(id='def_1', weight=10))),
-      list(name='GBM', steps=list(list(id='grid_1', weight=777))),
-      list(name='StackedEnsemble', steps=list(list(id='best', weight=10), list(id='all', weight=10)))
+      list(name='DRF', steps=list(list(id='def_1', group=1, weight=10), 
+                                  list(id='XRT', group=1, weight=10))),
+      list(name='GLM', steps=list(list(id='def_1', group=1, weight=10))),
+      list(name='StackedEnsemble', steps=list(list(id='best_of_family_1', group=1, weight=10))), # no all_1 as XRT is interpreted as not being of the same family as DRF (legacy decision). 
+      list(name='GBM', steps=list(list(id='def_3', group=2, weight=10), 
+                                  list(id='grid_1', group=2, weight=777))),
+      list(name='StackedEnsemble', steps=list(list(id='best_of_family_2', group=2, weight=10), 
+                                              list(id='all_2', group=2, weight=10)))
     ))
 
     new_aml <- h2o.automl(x=ds$x, y=ds$y.idx,

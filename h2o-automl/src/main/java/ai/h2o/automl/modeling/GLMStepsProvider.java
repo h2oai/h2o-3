@@ -2,14 +2,10 @@ package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import ai.h2o.automl.preprocessing.PreprocessingConfig;
-import ai.h2o.automl.preprocessing.PreprocessingStepDefinition;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.Model;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
-import water.Job;
-
-import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
 public class GLMStepsProvider
@@ -18,10 +14,12 @@ public class GLMStepsProvider
 
     public static class GLMSteps extends ModelingSteps {
 
+        static final String NAME = Algo.GLM.name();
+        
         static abstract class GLMModelStep extends ModelingStep.ModelStep<GLMModel> {
 
-            GLMModelStep(String id, int weight, AutoML autoML) {
-                super(Algo.GLM, id, weight, autoML);
+            GLMModelStep(String id, AutoML autoML) {
+                super(NAME, Algo.GLM, id, autoML);
             }
 
             @Override
@@ -29,14 +27,14 @@ public class GLMStepsProvider
                 // disabled as we're using lambda search
             }
 
-            GLMParameters prepareModelParameters() {
-                GLMParameters glmParameters = new GLMParameters();
-                glmParameters._lambda_search = true;
-                glmParameters._family =
+            public GLMParameters prepareModelParameters() {
+                GLMParameters params = new GLMParameters();
+                params._lambda_search = true;
+                params._family =
                         aml().getResponseColumn().isBinary() && !(aml().getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
                                 : aml().getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
                                 : GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
-                return glmParameters;
+                return params;
             }
             
             @Override
@@ -50,38 +48,16 @@ public class GLMStepsProvider
         }
 
 
-        private ModelingStep[] defaults = new GLMModelStep[] {
-                new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+        private final ModelingStep[] defaults = new GLMModelStep[] {
+                new GLMModelStep("def_1", aml()) {
                     @Override
-                    protected Job<GLMModel> startJob() {
-                        GLMParameters glmParameters = prepareModelParameters();
-                        glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
-                        glmParameters._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
-
-                        return trainModel(glmParameters);
+                    public GLMParameters prepareModelParameters() {
+                        GLMParameters params = super.prepareModelParameters();
+                        params._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
+                        params._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
+                        return params;
                     }
                 },
-        };
-
-        private ModelingStep[] grids = new ModelingStep[] {
-                /*
-                new GLMGridStep("grid_1", BASE_GRID_WEIGHT, aml()) {
-                    @Override
-                    protected Job<Grid> makeJob() {
-                        GLMParameters glmParameters = prepareModelParameters();
-                        glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
-
-                        Map<String, Object[]> searchParams = new HashMap<>();
-                        // NOTE: removed MissingValuesHandling.Skip for now because it's crashing.  See https://0xdata.atlassian.net/browse/PUBDEV-4974
-                        searchParams.put("_missing_values_handling", new GLMParameters.MissingValuesHandling[] {
-                                GLMParameters.MissingValuesHandling.MeanImputation,
-    //                            GLMParameters.MissingValuesHandling.Skip
-                        });
-
-                        return hyperparameterSearch(glmParameters, searchParams);
-                    }
-                },
-                 */
         };
 
         public GLMSteps(AutoML autoML) {
@@ -89,19 +65,19 @@ public class GLMStepsProvider
         }
 
         @Override
-        protected ModelingStep[] getDefaultModels() {
-            return defaults;
+        public String getProvider() {
+            return NAME;
         }
 
         @Override
-        protected ModelingStep[] getGrids() {
-            return grids;
+        protected ModelingStep[] getDefaultModels() {
+            return defaults;
         }
     }
 
     @Override
     public String getName() {
-        return Algo.GLM.name();
+        return GLMSteps.NAME;
     }
 
     @Override

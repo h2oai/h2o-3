@@ -1,4 +1,0 @@
-
-requirements:
-  build:
-    - grpcio-tools >=1.1.0

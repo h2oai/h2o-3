@@ -46,7 +46,7 @@ public class ClientTest extends TestUtil {
         Frame _fr;              // Output frame
         @Override
         public void compute2() {
-          _fr = parse_test_file(Key.make("covtype.hex"),"../../datasets/UCI/UCI-large/covtype/covtype.data");
+          _fr = parseTestFile(Key.make("covtype.hex"),"../../datasets/UCI/UCI-large/covtype/covtype.data");
           tryComplete();
         } 
       }).get()._fr;

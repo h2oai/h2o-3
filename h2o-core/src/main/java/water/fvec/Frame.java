@@ -570,11 +570,11 @@ public class Frame extends Lockable<Frame> {
    *  files into the same offsets in some chunk this checksum will be
    *  consistent across reparses.
    *  @return 64-bit Frame checksum */
-  @Override protected long checksum_impl() {
+  @Override protected long checksum_impl(boolean noCache) {
     Vec[] vecs = vecs();
     long _checksum = 0;
     for( int i = 0; i < _names.length; ++i ) {
-      long vec_checksum = vecs[i].checksum();
+      long vec_checksum = vecs[i].checksum(noCache);
       _checksum ^= vec_checksum;
       long tmp = (2147483647L * i);
       _checksum ^= tmp;
@@ -883,13 +883,25 @@ public class Frame extends Lockable<Frame> {
 
   /** Write out K/V pairs, in this case Vecs. */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    for( Key k : _keys )
+    ab.putA8(anyVec().espc());
+    for (Key k : _keys)
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    for( Key k : _keys )
-      ab.getKey(k,fs);
+    long[] espc = ab.getA8();
+    _keys = new Vec.VectorGroup().addVecs(_keys.length);
+    // I am modifying self => I need to make an update
+    // This is more of a workaround, readAll_impl methods are not expected to modify self
+    DKV.put(this, fs);
+    int rowLayout = Vec.ESPC.rowLayout(_keys[0], espc);
+    for (Key<Vec> key : _keys) {
+      Vec v = ab.get();
+      v._key = key;
+      v._rowLayout = rowLayout;
+      v.readAll_impl(ab, fs);
+      DKV.put(v, fs);
+    }
     return super.readAll_impl(ab,fs);
   }
 
@@ -1518,7 +1530,12 @@ public class Frame extends Lockable<Frame> {
     return export(fr, path, frameName, overwrite, nParts, null, new CSVStreamParams());
   }
 
-  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, 
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts,
+                           String compression, CSVStreamParams csvParms) {
+    return export(fr, path, frameName, overwrite, nParts, false, compression, csvParms);
+  }
+
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts, boolean parallel,
                            String compression, CSVStreamParams csvParms) {
     boolean forceSingle = nParts == 1;
     // Validate input
@@ -1538,7 +1555,7 @@ public class Frame extends Lockable<Frame> {
     CompressionFactory compressionFactory = compression != null ? CompressionFactory.make(compression) : null;
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
     FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(
-            fr, path, frameName, overwrite, job, nParts, compressionFactory, csvParms);
+            fr, path, frameName, overwrite, job, nParts, parallel, compressionFactory, csvParms);
     return job.start(t, fr.anyVec().nChunks());
   }
 
@@ -1560,7 +1577,7 @@ public class Frame extends Lockable<Frame> {
     boolean _headers = true;
     boolean _quoteColumnNames = true; 
     boolean _hexString = false;
-    boolean _escapeQuotes = false;
+    boolean _escapeQuotes = true;
     char _separator = DEFAULT_SEPARATOR;
     char _escapeCharacter = DEFAULT_ESCAPE;
 
@@ -1618,6 +1635,7 @@ public class Frame extends Lockable<Frame> {
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
     private transient final String[][] _escapedCategoricalVecDomains;
+    private transient final VecEncoder[] _encoders;
 
     public CSVStream(Frame fr, CSVStreamParams parms) {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
@@ -1647,6 +1665,24 @@ public class Frame extends Lockable<Frame> {
       _chkRow = -1; // first process the header line
       _curChks = chks;
       _escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
+      if (_curChks != null) {
+        _encoders = new VecEncoder[_curChks.length];
+        for (int i = 0; i < _curChks.length; i++) {
+          Vec v = _curChks[i]._vec;
+          if (v.isCategorical()) {
+            _encoders[i] = VecEncoder.CAT;
+          } else if (v.isUUID()) {
+            _encoders[i] = VecEncoder.UUID;
+          } else if (v.isInt()) {
+            _encoders[i] = VecEncoder.INT;
+          } else if (v.isString()) {
+            _encoders[i] = VecEncoder.STRING;
+          } else {
+            _encoders[i] = VecEncoder.NUM;
+          }
+        }
+      } else
+        _encoders = null;
     }
 
     private void appendColumnName(StringBuilder sb, String name) {
@@ -1689,18 +1725,11 @@ public class Frame extends Lockable<Frame> {
         final String[] originalDomain = vec.domain();
         final String[] escapedDomain = new String[originalDomain.length];
 
-        boolean escapingRequired = false;
         for (int level = 0; level < originalDomain.length; level++) {
-          escapedDomain[level] = escapeQuotesForCsv(originalDomain[level]);
-          escapingRequired = escapingRequired || !escapedDomain[level].equals(originalDomain[level]);
+          escapedDomain[level] = '"' + escapeQuotesForCsv(originalDomain[level]) + '"';
         }
 
-        if (escapingRequired) {
-          localEscapedCategoricalVecDomains[i] = escapedDomain;
-        } else {
-          // If the domain does not need escaping, simply link to the original domain and drop the escaped array
-          localEscapedCategoricalVecDomains[i] = originalDomain;
-        }
+        localEscapedCategoricalVecDomains[i] = escapedDomain;
       }
 
       return localEscapedCategoricalVecDomains;
@@ -1712,35 +1741,45 @@ public class Frame extends Lockable<Frame> {
       return _line.length;
     }
 
+    enum VecEncoder {CAT, UUID, INT, STRING, NUM};
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
-      BufferedString tmpStr = new BufferedString();
+      final BufferedString unescapedTempStr = new BufferedString();
       for (int i = 0; i < _curChks.length; i++) {
-        Vec v = _curChks[i]._vec;
         if (i > 0) sb.append(_parms._separator);
         if (!_curChks[i].isNA(_chkRow)) {
-          if (v.isCategorical()) {
-            final String escapedString = _escapedCategoricalVecDomains[i][(int) _curChks[i].at8(_chkRow)];
-            sb.append('"').append(escapedString).append('"');
-          } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
-          else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
-          else if (v.isString()) {
-            final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(tmpStr, _chkRow).toString());
-            sb.append('"').append(escapedString).append('"');
-          } else {
-            double d = _curChks[i].atd(_chkRow);
-            // R 3.1 unfortunately changed the behavior of read.csv().
-            // (Really type.convert()).
-            //
-            // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
-            //
-            // See these discussions:
-            //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
-            //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
-            //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
-            String s = _parms._hexString ? Double.toHexString(d) : Double.toString(d);
-            sb.append(s);
+          switch (_encoders[i]) {
+            case NUM:
+              // R 3.1 unfortunately changed the behavior of read.csv().
+              // (Really type.convert()).
+              //
+              // Numeric values with too much precision now trigger a type conversion in R 3.1 into a factor.
+              //
+              // See these discussions:
+              //   https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15751
+              //   https://stat.ethz.ch/pipermail/r-devel/2014-April/068778.html
+              //   http://stackoverflow.com/questions/23072988/preserve-old-pre-3-1-0-type-convert-behavior
+              double d = _curChks[i].atd(_chkRow);
+              String s = _parms._hexString ? Double.toHexString(d) : RyuDouble.doubleToString(d);
+              sb.append(s);
+              break;
+            case CAT:
+              final String escapedCat = _escapedCategoricalVecDomains[i][(int) _curChks[i].at8(_chkRow)];
+              sb.append(escapedCat);
+              break;
+            case INT:
+              sb.append(_curChks[i].at8(_chkRow));
+              break;
+            case STRING:
+              final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(unescapedTempStr, _chkRow).toString());
+              sb.append('"').append(escapedString).append('"');
+              break;
+            case UUID:
+              sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
+              break;
+            default:
+              throw new IllegalStateException("Unknown encoder " + _encoders[i]);
           }
         }
       }
@@ -1775,7 +1814,7 @@ public class Frame extends Lockable<Frame> {
       Chunk anyChunk = _curChks[0];
 
       // Case 3:  Out of data.
-      if (anyChunk._start + _chkRow == anyChunk._vec.length()) {
+      if (anyChunk._start + _chkRow >= anyChunk._vec.length()) {
         return -1;
       }
 

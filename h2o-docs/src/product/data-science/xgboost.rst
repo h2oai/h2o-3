@@ -141,6 +141,12 @@ Defining an XGBoost Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
+- `auc_type <algo-params/auc_type.html>`__: Set default AUC type. Must be one of: "AUTO", "NONE", "MACRO_OVR", "WEIGHTED_OVR", "MACRO_OVO", "WEIGHTED_OVO". Defaults to AUTO.
+
+- **nthread**: Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads parameter). Defaults to maximum available (-1).
+
+- **save_matrix_directory**: Directory where to save matrices passed to XGBoost library. Useful for debugging.
+
 - `checkpoint <algo-params/checkpoint.html>`__: Allows you to specify a model key associated with a previously trained model. This builds a new model as a continuation of a previously generated model. If this is not specified, then a new model will be trained instead of building on a previous model
 
 -  **tree_method**: Specify the construction tree method to use. This can be one of the following: 
@@ -186,6 +192,8 @@ Defining an XGBoost Model
 -  **reg_lambda**: Specify a value for L2 regularization. This defaults to 1.
 
 -  **reg_alpha**: Specify a value for L1 regularization. This defaults to 0.
+
+-  **scale_pos_weight**: Specify the multiplier that will be used for gradient calculation for observations with positive weights. This is useful for imbalanced problems. A good starting value is: sum(weight of negative observations) / sum(weight of positive observations). This defaults to 1.
 
 -  **dmatrix_type**: Specify the type of DMatrix. Valid options include the following: "auto", "dense", and "sparse". Note that for ``dmatrix_type="sparse"``, NAs and 0 are treated equally. This value defaults to "auto".
 
@@ -324,6 +332,7 @@ Metrics
 - **Expected Gain:** Total gain of each feature or feature interaction weighted by the probability to gather the gain
 - **Average Tree Index**
 - **Average Tree Depth**
+- **Path:** Argument for saving the table in .xlsx format.
 
 **Additional features:**
 
@@ -409,7 +418,11 @@ Below is a simple example showing how to build a XGBoost model.
 
     # Extract feature interactions:
     feature_interactions = titanic_xgb.feature_interaction()
-  
+
+Note
+''''
+
+XGBoost requires its own memory outside the H2O (Java) cluster. When running XGBoost, be sure you allow H2O-3 no more than 2/3 of the total available RAM.
 
 FAQs
 ~~~~

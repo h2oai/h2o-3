@@ -66,7 +66,7 @@ def partial_plot_test():
     assert h2o_mean_response_pdp_row == pdp_row_manual[0]
     assert h2o_stddev_response_pdp_row == pdp_row_manual[1]
     assert h2o_std_error_mean_response_pdp_row == pdp_row_manual[2]
-    
+
     
 def partial_dependence(object, pred_data, xname, h2o_pp, pdp_name_idx):
     x_pt = h2o_pp[pdp_name_idx][xname.lower()]  # Needs to be lower case here as the PDP response sets everything to lower

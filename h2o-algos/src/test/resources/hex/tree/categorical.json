@@ -1,7 +1,7 @@
 {
   "params": {
-    "h2o_version": "0",
-    "mojo_version": 1.3,
+    h2o_version,
+    mojo_version,
     "algo": "isolationforest",
     "model_category": "AnomalyDetection",
     "classifier": false,
@@ -116,20 +116,23 @@
         "weight": 27112.0,
         "colId": 0,
         "colName": "fYear",
-        "leftward": true,
+        "leftward": false,
         "isCategorical": true,
         "inclusiveNa": true,
-        "splitValue": 7.0,
+        "splitValue": 4.5,
         "rightChild": {
           "nodeNumber": 2,
-          "weight": 13415.0,
+          "weight": 17340.0,
           "colId": 5,
           "colName": "Distance",
           "leftward": false,
           "isCategorical": false,
-          "inclusiveNa": false,
-          "splitValue": 228.5,
+          "inclusiveNa": true,
+          "splitValue": 211.5,
           "matchValues": [
+            5,
+            6,
+            7,
             8,
             9,
             10,
@@ -139,59 +142,51 @@
           ],
           "rightChild": {
             "nodeNumber": 6,
-            "weight": 124.0,
+            "weight": 160.0,
             "colId": 5,
             "colName": "Distance",
             "leftward": false,
             "isCategorical": false,
             "inclusiveNa": true,
-            "splitValue": 362.5,
+            "splitValue": 348.5,
             "rightChild": {
               "nodeNumber": 22,
-              "weight": 102.0,
+              "weight": 128.0,
               "predValue": 2.0
             },
             "leftChild": {
               "nodeNumber": 21,
-              "weight": 22.0,
+              "weight": 32.0,
               "predValue": 2.0
             }
           },
           "leftChild": {
             "nodeNumber": 5,
-            "weight": 7.0,
-            "colId": 2,
-            "colName": "fDayofMonth",
-            "leftward": false,
+            "weight": 17.0,
+            "colId": 0,
+            "colName": "fYear",
+            "leftward": true,
             "isCategorical": true,
             "inclusiveNa": false,
-            "splitValue": 15.5,
+            "splitValue": 6.5,
             "rightChild": {
               "nodeNumber": 20,
-              "weight": 4.0,
+              "weight": 7.0,
               "predValue": 2.0,
               "matchValues": [
-                16,
-                17,
-                18,
-                19,
-                20,
-                21,
-                22,
-                23,
-                24,
-                25,
-                26,
-                27,
-                28,
-                29,
-                30
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13
               ],
-              "inclusiveNa": true
+              "inclusiveNa": false
             },
             "leftChild": {
               "nodeNumber": 19,
-              "weight": 3.0,
+              "weight": 10.0,
               "predValue": 2.0,
               "matchValues": [
                 0,
@@ -200,50 +195,40 @@
                 3,
                 4,
                 5,
-                6,
-                7,
-                8,
-                9,
-                10,
-                11,
-                12,
-                13,
-                14,
-                15
+                6
               ],
-              "inclusiveNa": false
+              "inclusiveNa": true
             }
           }
         },
         "leftChild": {
           "nodeNumber": 1,
-          "weight": 13697.0,
+          "weight": 9772.0,
           "colId": 0,
           "colName": "fYear",
-          "leftward": true,
+          "leftward": false,
           "isCategorical": true,
-          "inclusiveNa": true,
-          "splitValue": 3.5,
+          "inclusiveNa": false,
+          "splitValue": 1.5,
           "matchValues": [
             0,
             1,
             2,
             3,
-            4,
-            5,
-            6,
-            7
+            4
           ],
           "rightChild": {
             "nodeNumber": 4,
-            "weight": 60.0,
-            "colId": 0,
-            "colName": "fYear",
+            "weight": 51.0,
+            "colId": 3,
+            "colName": "fDayOfWeek",
             "leftward": true,
             "isCategorical": true,
             "inclusiveNa": false,
-            "splitValue": 5.5,
+            "splitValue": 3.5,
             "matchValues": [
+              2,
+              3,
               4,
               5,
               6,
@@ -257,79 +242,57 @@
             ],
             "rightChild": {
               "nodeNumber": 18,
-              "weight": 25.0,
+              "weight": 20.0,
               "predValue": 2.0,
               "matchValues": [
-                6,
-                7,
-                8,
-                9,
-                10,
-                11,
-                12,
-                13
+                4,
+                5,
+                6
               ],
               "inclusiveNa": false
             },
             "leftChild": {
               "nodeNumber": 17,
-              "weight": 35.0,
+              "weight": 31.0,
               "predValue": 2.0,
               "matchValues": [
                 0,
                 1,
                 2,
-                3,
-                4,
-                5
+                3
               ],
-              "inclusiveNa": false
+              "inclusiveNa": true
             }
           },
           "leftChild": {
             "nodeNumber": 3,
-            "weight": 75.0,
+            "weight": 38.0,
             "colId": 0,
             "colName": "fYear",
-            "leftward": true,
+            "leftward": false,
             "isCategorical": true,
-            "inclusiveNa": true,
-            "splitValue": 2.0,
+            "inclusiveNa": false,
             "matchValues": [
               0,
-              1,
-              2,
-              3
+              1
             ],
             "rightChild": {
               "nodeNumber": 16,
-              "weight": 37.0,
+              "weight": 20.0,
               "predValue": 2.0,
               "matchValues": [
-                3,
-                4,
-                5,
-                6,
-                7,
-                8,
-                9,
-                10,
-                11,
-                12,
-                13
+                1
               ],
               "inclusiveNa": false
             },
             "leftChild": {
               "nodeNumber": 15,
-              "weight": 38.0,
+              "weight": 18.0,
               "predValue": 2.0,
               "matchValues": [
-                0,
-                1,
-                2
+                0
               ],
-              "inclusiveNa": true
+              "inclusiveNa": false
             }
           }
         }

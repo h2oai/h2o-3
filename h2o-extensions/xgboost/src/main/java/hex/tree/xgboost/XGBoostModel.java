@@ -11,10 +11,9 @@ import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.FeatureInteraction;
-import hex.FeatureInteractions;
-import hex.FeatureInteractionsCollector;
+import hex.tree.FriedmanPopescusH;
 import hex.tree.PlattScalingHelper;
+import hex.tree.SharedTreeModel;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import hex.util.EffectiveParametersUtils;
@@ -28,17 +27,17 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static hex.genmodel.algos.xgboost.XGBoostMojoModel.ObjectiveType;
 import static hex.tree.xgboost.XGBoost.makeDataInfo;
+import static hex.tree.xgboost.util.GpuUtils.hasGPU;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions, FeatureInteractionsCollector, Model.UpdateAuxTreeWeights, FriedmanPopescusHCollector {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
@@ -129,7 +128,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public DMatrixType _dmatrix_type = DMatrixType.auto;
     public float _reg_lambda = 1;
     public float _reg_alpha = 0;
-    
+    public float _scale_pos_weight = 1;
+
     // Platt scaling
     public boolean _calibrate_model;
     public Key<Frame> _calibration_frame;
@@ -140,7 +140,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public float _rate_drop = 0;
     public boolean _one_drop = false;
     public float _skip_drop = 0;
-    public int _gpu_id = 0; // which GPU to use
+    public int[] _gpu_id; // which GPU to use
     public Backend _backend = Backend.auto;
 
     public String algoName() { return "XGBoost"; }
@@ -219,7 +219,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     switch(_output.getModelCategory()) {
       case Binomial:    return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
-      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+      case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(), domain, _parms._auc_type);
       case Regression:  return new ModelMetricsRegression.MetricBuilderRegression();
       default: throw H2O.unimpl();
     }
@@ -275,17 +275,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p, boolean verbose) {
     Consumer<String> log = verbose ? LOG::info : LOG::debug;
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node) {
+      if (H2O.getCloudSize() > 1 && !p._build_tree_one_node && !XGBoost.allowMultiGPU()) {
         log.accept("GPU backend not supported in distributed mode. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       } else if (! p.gpuIncompatibleParams().isEmpty()) {
         log.accept("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
-      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
-        log.accept("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+      } else if (hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
+        log.accept("Using GPU backend (gpu_id: " + Arrays.toString(p._gpu_id) + ").");
         return XGBoostParameters.Backend.gpu;
       } else {
-        log.accept("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
+        log.accept("No GPU (gpu_id: " + Arrays.toString(p._gpu_id) + ") found. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       }
     } else {
@@ -307,7 +307,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._n_estimators = p._ntrees;
     }
     if (p._eta != 0.3) {
-      LOG.info("Using user-provided parameter eta instead of learn_rate.");
       params.put("eta", p._eta);
       p._learn_rate = p._eta;
     } else {
@@ -321,7 +320,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("silent", p._quiet_mode);
     }
     if (p._subsample != 1.0) {
-      LOG.info("Using user-provided parameter subsample instead of sample_rate.");
       params.put("subsample", p._subsample);
       p._sample_rate = p._subsample;
     } else {
@@ -329,7 +327,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._subsample = p._sample_rate;
     }
     if (p._colsample_bytree != 1.0) {
-      LOG.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
       params.put("colsample_bytree", p._colsample_bytree);
       p._col_sample_rate_per_tree = p._colsample_bytree;
     } else {
@@ -337,7 +334,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._colsample_bytree = p._col_sample_rate_per_tree;
     }
     if (p._colsample_bylevel != 1.0) {
-      LOG.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
       params.put("colsample_bylevel", p._colsample_bylevel);
       p._col_sample_rate = p._colsample_bylevel;
     } else {
@@ -348,7 +344,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("colsample_bynode", p._colsample_bynode);
     }    
     if (p._max_delta_step != 0) {
-      LOG.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
       params.put("max_delta_step", p._max_delta_step);
       p._max_abs_leafnode_pred = p._max_delta_step;
     } else {
@@ -374,7 +369,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     XGBoostParameters.Backend actualBackend = getActualBackend(p, true);
     XGBoostParameters.TreeMethod actualTreeMethod = getActualTreeMethod(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
-      params.put("gpu_id", p._gpu_id);
+      if (p._gpu_id != null && p._gpu_id.length > 0) {
+        params.put("gpu_id", p._gpu_id[0]);
+      } else {
+        params.put("gpu_id", 0);
+      }
       // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
       if (p._booster == XGBoostParameters.Booster.gblinear) {
         LOG.info("Using gpu_coord_descent updater."); 
@@ -418,6 +417,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     params.put("lambda", p._reg_lambda);
     params.put("alpha", p._reg_alpha);
+    if (p._scale_pos_weight != 1)
+      params.put("scale_pos_weight", p._scale_pos_weight);
 
     if (nClasses==2) {
       params.put("objective", ObjectiveType.BINARY_LOGISTIC.getId());
@@ -564,11 +565,13 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(model_info.getDataInfoKey());
+    ab.putKey(model_info.getAuxNodeWeightsKey());
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     ab.getKey(model_info.getDataInfoKey(), fs);
+    ab.getKey(model_info.getAuxNodeWeightsKey(), fs);
     return super.readAll_impl(ab, fs);
   }
 
@@ -618,7 +621,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     assert di != null;
     MutableOneHotEncoderFVec row = new MutableOneHotEncoderFVec(di, _output._sparse);
     row.setInput(data);
-    Predictor predictor = PredictorFactory.makePredictor(model_info._boosterBytes);
+    Predictor predictor = makePredictor(true);
     float[] out;
     if (_output.hasOffset()) {
       out = predictor.predict(row, (float) offset);
@@ -659,22 +662,83 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    return scoreContributions(frame, destination_key, null);
+    return scoreContributions(frame, destination_key, null, new ContributionsOptions());
   }
 
   @Override
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j, ContributionsOptions options) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
     DataInfo di = model_info().dataInfo();
     assert di != null;
-    final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
+    final String[] featureContribNames = ContributionsOutputFormat.Compact.equals(options._outputFormat) ? 
+            _output.features() : di.coefNames();
+    final String[] outputNames = ArrayUtils.append(featureContribNames, "BiasTerm");
 
-    return new PredictTreeSHAPTask(di, model_info(), _output)
+    if (options.isSortingRequired()) {
+      final ContributionComposer contributionComposer = new ContributionComposer();
+      int topNAdjusted = contributionComposer.checkAndAdjustInput(options._topN, featureContribNames.length);
+      int bottomNAdjusted = contributionComposer.checkAndAdjustInput(options._bottomN, featureContribNames.length);
+
+      int outputSize = Math.min((topNAdjusted+bottomNAdjusted)*2, featureContribNames.length*2);
+      String[] names = new String[outputSize+1];
+      byte[] types = new byte[outputSize+1];
+      String[][] domains = new String[outputSize+1][outputNames.length];
+
+      composeScoreContributionTaskMetadata(names, types, domains, featureContribNames, options);
+
+      return new PredictTreeSHAPSortingTask(di, model_info(), _output, options)
+              .withPostMapAction(JobUpdatePostMap.forJob(j))
+              .doAll(types, adaptFrm)
+              .outputFrame(destination_key, names, domains);
+    }
+
+    return new PredictTreeSHAPTask(di, model_info(), _output, options)
             .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
+  }
+
+  @Override
+  public UpdateAuxTreeWeightsReport updateAuxTreeWeights(Frame frame, String weightsColumn) {
+    if (weightsColumn == null) {
+      throw new IllegalArgumentException("Weights column name is not defined");
+    }
+    Frame adaptFrm = new Frame(frame);
+    Vec weights = adaptFrm.remove(weightsColumn);
+    if (weights == null) {
+      throw new IllegalArgumentException("Input frame doesn't contain weights column `" + weightsColumn + "`");
+    }
+    adaptTestForTrain(adaptFrm, true, false);
+    // keep features only and re-introduce weights column at the end of the frame
+    Frame featureFrm = new Frame(_output.features(), frame.vecs(_output.features()));
+    featureFrm.add(weightsColumn, weights);
+
+    DataInfo di = model_info().dataInfo();
+    assert di != null;
+
+    double[][] nodeWeights = new UpdateAuxTreeWeightsTask(_parms._distribution, di, model_info(), _output)
+            .doAll(featureFrm)
+            .getNodeWeights();
+    AuxNodeWeights auxNodeWeights = new AuxNodeWeights(model_info().getAuxNodeWeightsKey(), nodeWeights);
+    DKV.put(auxNodeWeights);
+
+    UpdateAuxTreeWeightsReport report = new UpdateAuxTreeWeightsReport();
+    report._warn_classes = new int[0];
+    report._warn_trees = new int[0];
+    for (int treeId = 0; treeId < nodeWeights.length; treeId++) {
+      if (nodeWeights[treeId] == null)
+        continue;
+      for (double w : nodeWeights[treeId]) {
+        if (w == 0) {
+          report._warn_trees = ArrayUtils.append(report._warn_trees, treeId);
+          report._warn_classes = ArrayUtils.append(report._warn_classes, 0);
+          break;
+        }
+      }
+    }
+    return report;
   }
 
   @Override
@@ -702,6 +766,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (di != null) {
       di.remove(fs);
     }
+    AuxNodeWeights anw = model_info().auxNodeWeights();
+    if (anw != null) {
+      anw.remove(fs);
+    }
     if (_output._calib_model != null)
       _output._calib_model.remove(fs);
     return super.remove_impl(fs, cascade);
@@ -709,7 +777,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClassName) {
-    GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+    GradBooster booster = XGBoostJavaMojoModel
+            .makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes())
+            .getBooster();
     if (!(booster instanceof GBTree)) {
       throw new IllegalArgumentException("XGBoost model is not backed by a tree-based booster. Booster class is " + 
               booster.getClass().getCanonicalName());
@@ -756,7 +826,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     sharedTreeNode.setPredValue(xgBoostNode.getLeafValue());
     sharedTreeNode.setInclusiveNa(inclusiveNA);
     sharedTreeNode.setNodeNumber(nodeIndex);
-    sharedTreeNode.setSquaredError(xgBoostNodeStat.getGain());
+    sharedTreeNode.setGain(xgBoostNodeStat.getGain());
     sharedTreeNode.setWeight(xgBoostNodeStat.getCover());
     
     if (!xgBoostNode.isLeaf()) {
@@ -842,7 +912,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       SBPrintStream sb, CodeGeneratorPipeline classCtx, CodeGeneratorPipeline fileCtx, boolean verboseCode
   ) {
     final String namePrefix = JCodeGen.toJavaId(_key.toString());
-    Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
+    Predictor p = makePredictor(false);
     XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
 
@@ -859,7 +929,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       Set<String> memo = new HashSet<>();
       
       FeatureInteractions.collectFeatureInteractions(tree.rootNode, interactionPath, 0, 0, 1, 0, 0,
-              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i);
+              currentTreeFeatureInteractions, memo, maxInteractionDepth, maxTreeDepth, maxDeepening, i, false);
       featureInteractions.mergeWith(currentTreeFeatureInteractions);
     }
     
@@ -869,6 +939,24 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   @Override
   public TwoDimTable[][] getFeatureInteractionsTable(int maxInteractionDepth, int maxTreeDepth, int maxDeepening) {
     return FeatureInteractions.getFeatureInteractionsTable(this.getFeatureInteractions(maxInteractionDepth,maxTreeDepth,maxDeepening));
+  }
+
+  Predictor makePredictor(boolean scoringOnly) {
+    return PredictorFactory.makePredictor(model_info._boosterBytes, model_info.auxNodeWeightBytes(), scoringOnly);
+  }
+  @Override
+  public double getFriedmanPopescusH(Frame frame, String[] vars) {
+    int nclasses = this._output.nclasses() > 2 ? this._output.nclasses() : 1;
+    SharedTreeSubgraph[][] sharedTreeSubgraphs = new SharedTreeSubgraph[this._parms._ntrees][nclasses];
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      for (int j = 0; j < nclasses; j++) {
+        SharedTreeGraph graph = this.convert(i, this._output.classNames()[j]);
+        assert graph.subgraphArray.size() == 1;
+        sharedTreeSubgraphs[i][j] = graph.subgraphArray.get(0);
+      }
+    }
+
+    return FriedmanPopescusH.h(frame, vars, this._parms._learn_rate, sharedTreeSubgraphs);
   }
 
 

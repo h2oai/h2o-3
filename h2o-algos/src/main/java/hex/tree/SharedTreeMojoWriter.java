@@ -5,7 +5,6 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.Key;
 import water.Value;
-import water.exceptions.H2OKeyNotFoundArgumentException;
 
 import java.io.IOException;
 

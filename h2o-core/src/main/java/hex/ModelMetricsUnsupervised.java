@@ -12,5 +12,14 @@ public class ModelMetricsUnsupervised extends ModelMetrics {
   }
 
   public static abstract class MetricBuilderUnsupervised<T extends MetricBuilderUnsupervised<T>>
-          extends MetricBuilder<T> {}
+          extends MetricBuilder<T> {
+
+    @Override
+    public final ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
+      return makeModelMetrics(m, f);
+    }
+
+    public abstract ModelMetrics makeModelMetrics(Model m, Frame f);
+    
+  }
 }

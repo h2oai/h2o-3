@@ -1,14 +1,9 @@
 #' Automatic Machine Learning
-#'
+#' 
 #' The Automatic Machine Learning (AutoML) function automates the supervised machine learning model training process.
-#' The current version of AutoML trains and cross-validates the following algorithms (in the following order):
-#' three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs,
-#' a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net,
-#' an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs,
-#' and a random grid of Deep Neural Nets. In some cases, there will not be enough time to complete all the algorithms,
-#' so some may be missing from the leaderboard. AutoML then trains two Stacked Ensemble models, one of all the models,
-#' and one of only the best models of each kind.
-#'
+#' AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
+#' which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
+#' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or index of the response variable in the model. For classification, the y column must be a
@@ -22,17 +17,18 @@
 #'        this data frame intead of using cross-validation metrics, which is the default.
 #' @param blending_frame Blending frame (H2OFrame or ID) used to train the the metalearning algorithm in Stacked Ensembles (instead of relying on cross-validated predicted values); Optional.
 #'        When provided, it also is recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
-#' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
+#' @param nfolds Number of folds for k-fold cross-validation. Must be >= 2; defaults to 5. Use 0 to disable cross-validation; 
+#'        this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
-#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        FALSE.
+#' @param balance_classes \code{Logical}. Specify whether to oversample the minority classes to balance the class distribution; only applicable to classification. If the oversampled size of the 
+#'        dataset exceeds the maximum size calculated during `max_after_balance_size` parameter, then the majority class will be undersampled to satisfy the size limit. Defaults to FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-#'        be automatically computed to obtain class balance during training. Requires balance_classes.
+#'        be automatically computed to obtain class balance during training. Requires `balance_classes`.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-#'        balance_classes. Defaults to 5.0.
-#' @param max_runtime_secs This argument specifies the maximum time that the AutoML process will run for, prior to training the final Stacked Ensemble models. If neither `max_runtime_secs` nor `max_models` are specified by the user, then `max_runtime_secs` defaults to 3600 seconds (1 hour).
+#'        `balance_classes`. Defaults to 5.0.
+#' @param max_runtime_secs This argument specifies the maximum time that the AutoML process will run for. If neither `max_runtime_secs` nor `max_models` are specified by the user, then `max_runtime_secs` defaults to 3600 seconds (1 hour).
 #' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL (no strict limit).
 #' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
@@ -40,17 +36,20 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the
 #'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed
 #'        as 1/sqrt(nrows * non-NA-rate).
-#' @param stopping_rounds Integer. Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric
-#'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
-#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used
-#'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
-#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated.
-#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
+#' @param stopping_rounds Integer. Early stopping based on convergence of `stopping_metric`. Stop if simple moving average of length k of the `stopping_metric`
+#'        does not improve for k (`stopping_rounds`) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
+#' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if `max_models` or early stopping is used
+#'        because `max_runtime_secs` is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
+#'        In addition, H2O Deep Learning models are not reproducible by default for performance reasons, so if the user requires reproducibility, then `exclude_algos` must
+#'        contain "DeepLearning".
+#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated. More models can be trained and added to an existing
+#'        AutoML project by specifying the same project name in multiple calls to the AutoML function (as long as the same training frame is used in subsequent runs).
+#' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is `exclude_algos = c("GLM", "DeepLearning", "DRF")`,
 #'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble".
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-#' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
+#' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with `exclude_algos` param.
 #'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-#' @param exploitation_ratio The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
+#' @param exploitation_ratio The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, this is set to AUTO (exploitation_ratio=-1) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
 #' @param preprocessing List. The list of preprocessing steps to run. Only 'target_encoding' is currently supported.
 #' @param monotone_constraints List. A mapping representing monotonic constraints.
@@ -64,11 +63,31 @@
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
-#'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
+#'        Must be one of NULL (live log disabled), "debug", "info", "warn", "error". Defaults to "warn".
 #' @param ... Additional (experimental) arguments to be passed through; Optional.        
-#' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
-#'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
+#' @details AutoML trains several models, cross-validated by default, by using the following available algorithms:
+#'  * XGBoost
+#'  * GBM (Gradient Boosting Machine)
+#'  * GLM (Generalized Linear Model)
+#'  * DRF (Distributed Random Forest)
+#'  * XRT (eXtremely Randomized Trees)
+#'  * DeepLearning (Fully Connected Deep Neural Network)
+#' 
+#'  It also applies HPO on the following algorithms:
+#'  * XGBoost
+#'  * GBM
+#'  * DeepLearning
+#' 
+#'  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.
+#' 
+#'  Finally, AutoML also trains several Stacked Ensemble models at various stages during the run.
+#'  Mainly two kinds of Stacked Ensemble models are trained:
+#'  * one of all available models at time t.
+#'  * one of only the best models of each kind at time t.
+#' 
+#'  Note that Stacked Ensemble models are trained only if there isn't another stacked ensemble with the same base models.
+#'
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -82,6 +101,7 @@
 #' head(lb)
 #' }
 #' @export
+#' @md
 h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
@@ -104,7 +124,7 @@ h2o.automl <- function(x, y, training_frame,
                        include_algos = NULL,
                        modeling_plan = NULL,
                        preprocessing = NULL,
-                       exploitation_ratio = 0.0,
+                       exploitation_ratio = -1.0,
                        monotone_constraints = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
@@ -339,7 +359,7 @@ h2o.automl <- function(x, y, training_frame,
   }
 
   # POST call to AutoMLBuilder (executes the AutoML job)
-  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
+  res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", parms_as_payload = TRUE, .params = params)
 
   poll_state <- list()
   poll_updates <- function(job) {
@@ -396,22 +416,20 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 }
 
 .automl.poll_updates <- function(job, verbosity=NULL, state=NULL) {
-  levels <- c('Debug', 'Info', 'Warn')
-  idx = ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
+  levels <- c('debug', 'info', 'warn', 'error')
+  idx <- ifelse(is.null(verbosity), NA, match(tolower(verbosity), tolower(levels)))
   if (is.na(idx)) return()
 
-  levels <- levels[idx:length(levels)]
   try({
       if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
         project_name <- job$dest$name
-        events <- .automl.fetch_state(project_name, properties=c('event_log'))$event_log
-        events <- events[events['level'] %in% levels,]
+        events <- .automl.fetch_state(project_name, properties=list())$json$event_log_table
         last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
-        if (h2o.nrow(events) > last_nrows) {
+        if (nrow(events) > last_nrows) {
           for (row in (last_nrows+1):nrow(events)) {
             cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
           }
-          state$last_events_nrows <- h2o.nrow(events)
+          state$last_events_nrows <- nrow(events)
         }
       }
       state$last_job_progress <- job$progress
@@ -446,28 +464,27 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
 .automl.fetch_state <- function(run_id, properties=NULL) {
   # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
-  project_name <- automl_job$project_name
-  automl_id <- automl_job$automl_id$name
-
-  leaderboard <- as.data.frame(automl_job$leaderboard_table)
-  row.names(leaderboard) <- seq(nrow(leaderboard))
-
+  state_json <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
+  project_name <- state_json$project_name
+  automl_id <- state_json$automl_id$name
+  is_leaderboard_empty <- all(dim(state_json$leaderboard_table) == c(1, 1)) && state_json$leaderboard_table[1, 1] == ""
+    
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
-  if (should_fetch('leaderboard')) {
-    leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
-    # leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
+  if (should_fetch('leaderboard')) { 
+    leaderboard <- .automl.fetch_table(state_json$leaderboard_table, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE) 
     # If the leaderboard is empty, it creates a dummy row so let's remove it
-    if (leaderboard$model_id[1,1] == "") {
+    if (is_leaderboard_empty) {
       leaderboard <- leaderboard[-1,]
       warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
     }
+  } else {
+    leaderboard <- NULL
   }
 
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
-  if (should_fetch('leader') & nrow(leaderboard) > 0) {
-    leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
+  if (should_fetch('leader') && !is_leaderboard_empty) {
+    leader <- h2o.getModel(state_json$leaderboard$models[[1]]$name)
   } else {
     # create a phony leader
     Class <- paste0("H2OBinomialModel")
@@ -475,15 +492,13 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   if (should_fetch('event_log')) {
-    event_log <- as.data.frame(automl_job$event_log_table)
-    event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
-    # row.names(event_log) <- seq(nrow(event_log))
+    event_log <- .automl.fetch_table(state_json$event_log_table, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
   } else {
     event_log <- NULL
   }
 
   if (should_fetch('modeling_steps')) {
-    modeling_steps <- lapply(automl_job$modeling_steps, function(sdef) {
+    modeling_steps <- lapply(state_json$modeling_steps, function(sdef) {
       list(name=sdef$name, steps=sdef$steps)
     })
   } else {
@@ -496,7 +511,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     leaderboard=leaderboard,
     leader=leader,
     event_log=event_log,
-    modeling_steps=modeling_steps
+    modeling_steps=modeling_steps,
+    json=state_json
   ))
 }
 
@@ -561,6 +577,7 @@ h2o.getAutoML <- function(project_name) {
 #' \item{'ALL': adds all columns below.}
 #' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
 #' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' \item{'algo': column providing the algorithm name for each model.}
 #' }
 #' @return An H2OFrame representing the leaderboard.
 #' @examples
@@ -579,4 +596,86 @@ h2o.getAutoML <- function(project_name) {
 h2o.get_leaderboard <- function(object, extra_columns=NULL) {
   if (!.is.H2OAutoML(object)) stop("Only H2OAutoML instances are currently supported.")
   return(.automl.fetch_leaderboard(attr(object, 'id'), extra_columns))
+}
+
+
+#' Get best model of a given family/algorithm for a given criterion from an AutoML object.
+#'
+#' @param object H2OAutoML object
+#' @param algorithm One of "any", "basemodel", "deeplearning", "drf", "gbm", "glm", "stackedensemble", "xgboost"
+#' @param criterion Criterion can be one of the metrics reported in the leaderboard. If set to NULL, the same ordering
+#' as in the leaderboard will be used.
+#' Avaliable criteria:
+#' \itemize{
+#' \item{Regression metrics: deviance, RMSE, MSE, MAE, RMSLE}
+#' \item{Binomial metrics: AUC, logloss, AUCPR, mean_per_class_error, RMSE, MSE}
+#' \item{Multinomial metrics: mean_per_class_error, logloss, RMSE, MSE}
+#' }
+#' The following additional leaderboard information can be also used as a criterion:
+#' \itemize{
+#' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
+#' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' }
+#' @return An H2OModel or NULL if no model of a given family is present
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
+#' gbm <- h2o.get_best_model(aml, "gbm")
+#' }
+#' @export
+h2o.get_best_model <- function(object,
+                               algorithm = c("any", "basemodel", "deeplearning", "drf", "gbm",
+                                             "glm", "stackedensemble", "xgboost"),
+                               criterion = c("AUTO", "AUC", "AUCPR", "logloss", "MAE", "mean_per_class_error",
+                                             "deviance", "MSE", "predict_time_per_row_ms",
+                                             "RMSE", "RMSLE", "training_time_ms")) {
+  if (!.is.H2OAutoML(object))
+    stop("Only H2OAutoML instances are currently supported.")
+
+  algorithm <- match.arg(arg = if (missing(algorithm) || tolower(algorithm) == "any") "any" else tolower(algorithm),
+                         choices = eval(formals()$algorithm))
+
+  criterion <- match.arg(arg = if (missing(criterion) || tolower(criterion) == "auto") "auto" else tolower(criterion),
+                         choices = c(tolower(eval(formals()$criterion)), "mean_residual_deviance"))
+
+  if ("deviance" == criterion) {
+    criterion <- "mean_residual_deviance"
+  }
+
+  higher_is_better <- c("auc", "aucpr")
+
+  extra_cols <- "algo"
+  if (criterion %in% c("training_time_ms", "predict_time_per_row_ms")) {
+    extra_cols <-  c(extra_cols, criterion)
+  }
+
+  leaderboard <- h2o.get_leaderboard(object, extra_columns = extra_cols)
+  leaderboard <- if ("any" == algorithm) leaderboard
+                 else if ("basemodel" != algorithm) leaderboard[h2o.tolower(leaderboard["algo"]) == algorithm, ]
+                 else leaderboard[h2o.tolower(leaderboard["algo"]) != "stackedensemble", ]
+
+  if (nrow(leaderboard) == 0)
+    return(NULL)
+
+  if ("auto" == criterion) {
+    return(h2o.getModel(leaderboard[1, "model_id"]))
+  }
+
+  if (!criterion %in% names(leaderboard)) {
+    stop("Criterion \"", criterion,"\" is not present in the leaderboard!")
+  }
+
+  models_in_default_order <- as.character(as.list(leaderboard["model_id"]))
+  sorted_lb <- do.call(h2o.arrange, c(
+    list(leaderboard),
+    if(criterion %in% higher_is_better) bquote(desc(.(as.symbol(criterion)))) else as.symbol(criterion)))
+  selected_models <- as.character(as.list(sorted_lb[sorted_lb[,criterion] == sorted_lb[1, criterion],]["model_id"]))
+  picked_model <- models_in_default_order[models_in_default_order %in% selected_models][[1]]
+  return(h2o.getModel(picked_model))
 }

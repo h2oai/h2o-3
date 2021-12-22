@@ -1,3 +1,4 @@
+ai.h2o.automl.modeling.CompletionStepsProvider
 ai.h2o.automl.modeling.DeepLearningStepsProvider
 ai.h2o.automl.modeling.DRFStepsProvider
 ai.h2o.automl.modeling.GBMStepsProvider

@@ -2940,7 +2940,7 @@ cor <- function (x, ...)
 #'
 #' @param frame An H2OFrame object to drop duplicates on.
 #' @param columns Columns to compare during the duplicate detection process.
-#' @param keep Which rows to keep. The "first" value (default) keeps the first row and delets the rest. 
+#' @param keep Which rows to keep. The "first" value (default) keeps the first row and deletes the rest. 
 #' The "last" keeps the last row.
 #' @examples
 #' \dontrun{
@@ -3372,8 +3372,10 @@ h2o.asfactor <- function(x) {
   as.factor(x)
 }
 
-#'
 #' Convert H2O Data to Numerics
+#' 
+#' If the column type is enum and you want to convert it to numeric, you should first convert it to character then convert it to numeric. 
+#' Otherwise, the values may be converted to underlying factor values, not the expected mapped values.
 #'
 #' @name h2o.asnumeric
 #' @param x An H2OFrame object.
@@ -3385,6 +3387,7 @@ h2o.asfactor <- function(x) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
+#' h2o.ascharacter(cars)
 #' h2o.asnumeric(cars)
 #' }
 #' @export
@@ -4023,14 +4026,17 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 is.h2o <- function(x) inherits(x, "H2OFrame")
 
 h2o.class.map <- function() {
-  c("integer64"="numeric",
+  c(
+    "integer64"="numeric",
     "integer"="numeric",
     "double"="numeric",
     "complex"="numeric",
     "logical"="enum",
     "factor"="enum",
     "character"="string",
-    "Date"="Time")
+    "Date"="Time",
+    "POSIXct"="Time"
+  )
 }
 
 destination_frame.guess <- function(x) {
@@ -4171,7 +4177,10 @@ as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) 
   verbose <- getOption("h2o.verbose", FALSE)
   if (verbose) pt <- proc.time()[[3]]
   if (use_datatable && getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
-    data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
+    data.table::fwrite(
+      x, tmpf,
+      na = "NA_h2o", row.names = FALSE, showProgress = FALSE, dateTimeAs = "write.csv"
+    )
     fun <- "fwrite"
   } else {
     write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
@@ -4354,7 +4363,10 @@ as.data.frame.H2OFrame <- function(x, ...) {
     if (identical(colClasses, NA_character_) || identical(colClasses, "")) colClasses <- NULL  # workaround for data.table length-1 bug #4237 fixed in v1.12.9
     df <- data.table::fread(ttt, sep = ",", blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
-      for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
+      for (i in which(dates)) {
+        df[[i]] <- df[[i]] / 1000
+        data.table::setattr(df[[i]], "class", "POSIXct")
+      }
     fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
@@ -4365,7 +4377,10 @@ as.data.frame.H2OFrame <- function(x, ...) {
       df <- read.csv(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
     }
     if (sum(dates))
-      for (i in which(dates)) class(df[[i]]) = "POSIXct"
+      for (i in which(dates)) {
+        df[[i]] <- df[[i]] / 1000
+        class(df[[i]]) <- "POSIXct"
+      }
     fun <- "read.csv"
   }
   if (!useCon && file.exists(ttt)) file.remove(ttt)  
@@ -4445,17 +4460,25 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 
 #' Convert H2O Data to Factors
 #'
-#' Convert a column into a factor column.
+#' Convert column/columns in the current frame to categoricals.
 #' @param x a column from an H2OFrame data set.
 #' @seealso \code{\link{as.factor}}.
 #' @examples
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate <- h2o.uploadFile(path = prostate_path)
-#' prostate[, 2] <- as.factor(prostate[, 2])
-#' summary(prostate)
+#' 
+#' # Single column
+#' cars <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' df <- h2o.importFile(cars)
+#' df["cylinders"] <- as.factor(df["cylinders"])
+#' h2o.describe(df["cylinders"])
+#' 
+#' # Multiple columns
+#' cars <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' df <- h2o.importFile(cars)
+#' df[c("cylinders","economy_20mpg")] <- as.factor(df[c("cylinders","economy_20mpg")])
+#' h2o.describe(df[c("cylinders","economy_20mpg")])
 #' }
 #' @export
 as.factor <- function(x) {
@@ -4486,7 +4509,8 @@ as.character.H2OFrame <- function(x, ...) {
 
 #' Convert H2O Data to Numeric
 #'
-#' Converts an H2O column into a numeric value column.
+#' Converts an H2O column into a numeric value column. If the column type is enum and you want to convert it to numeric, you should first convert it 
+#' to character then convert it to numeric. Otherwise, the values may be converted to underlying factor values, not the expected mapped values.
 #' @param x a column from an H2OFrame data set.
 #' @examples
 #' \dontrun{

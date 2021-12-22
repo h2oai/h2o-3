@@ -1,7 +1,9 @@
 package water.api.schemas3;
 
+import hex.AUUC;
 import hex.Model.Parameters.CategoricalEncodingScheme;
 import hex.Model.Parameters.FoldAssignmentScheme;
+import hex.MultinomialAucType;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
 import water.api.EnumValuesProvider;
@@ -30,5 +32,13 @@ public interface ModelParamsValuesProviders {
     public FoldAssignmentSchemeValuesProvider() {
       super(FoldAssignmentScheme.class);
     }
+  }
+  
+  class MultinomialAucTypeSchemeValuesProvider extends EnumValuesProvider<MultinomialAucType>{
+    public MultinomialAucTypeSchemeValuesProvider() {super(MultinomialAucType.class);}
+  }
+
+  class UpliftAuucTypeSchemeValuesProvider extends EnumValuesProvider<AUUC.AUUCType>{
+    public UpliftAuucTypeSchemeValuesProvider() {super(AUUC.AUUCType.class);}
   }
 }

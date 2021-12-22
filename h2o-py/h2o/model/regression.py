@@ -1,24 +1,29 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+
+from h2o.exceptions import H2OValueError
+from h2o.model.extensions import has_extension
+from h2o.model.model_base import ModelBase
 # noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
-
-from h2o.model.model_base import ModelBase
 from h2o.utils.shared_utils import _colmean
+from h2o.utils.typechecks import assert_is_type
 
 
 class H2ORegressionModel(ModelBase):
     def _make_model(self):
         return H2ORegressionModel()
 
-    def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+    def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """
         Plots training set (and validation set if available) scoring history for an H2ORegressionModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
-        :returns: A scoring history plot.
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
+
+        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
 
         :examples:
 
@@ -38,14 +43,15 @@ class H2ORegressionModel(ModelBase):
         ...           validation_frame=valid)
         >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
+        if not has_extension(self, 'ScoringHistory'):
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
-        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
-            if metric == "AUTO":
-                metric = "rmse"
-            elif metric not in ("rmse", "deviance", "mae"):
-                raise ValueError("metric for H2ORegressionModel must be one of: AUTO, rmse, deviance, or mae")
-
-        self._plot(timestep=timestep, metric=metric, **kwargs)
+        valid_metrics = self._allowed_metrics('regression')
+        if valid_metrics is not None:
+            assert_is_type(metric, 'AUTO', *valid_metrics), "metric for H2ORegressionModel must be one of %s" % valid_metrics
+        if metric == "AUTO":
+            metric = self._default_metric('regression') or 'AUTO'
+        self.scoring_history_plot(timestep=timestep, metric=metric, save_plot_path=save_plot_path, **kwargs)
 
 
 def _mean_var(frame, weights=None):

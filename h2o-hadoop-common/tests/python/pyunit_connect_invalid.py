@@ -23,6 +23,9 @@ def connect_invalid():
     # Not invalid yet - first do sanity check that original connection can be used to make a request
     invalid.request("GET /3/About")
 
+    auth_user = invalid._auth[0] if isinstance(invalid._auth, tuple) else "jenkins" # fallback for CI testing
+    invalid._auth = (auth_user, "invalid-password")
+
     # Test with invalid basic auth
     err = None
     try:

@@ -56,6 +56,8 @@
 #' @param skipped_columns a list of column indices to be skipped during parsing.
 #' @param custom_non_data_line_markers (Optional) If a line in imported file starts with any character in given string it will NOT be imported. Empty string means all lines are imported, NULL means that default behaviour for given format will be used
 #' @param partition_by names of the columns the persisted dataset has been partitioned by.
+#' @param quotechar A hint for the parser which character to expect as quoting character. None (default) means autodetection.
+#' @param escapechar (Optional) One ASCII character used to escape other characters.
 #' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
 #' \dontrun{
@@ -78,10 +80,10 @@
 #' @export
 h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA, sep = "", col.names=NULL,
                            col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
-                           custom_non_data_line_markers=NULL, partition_by=NULL) {
+                           custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="") {
   h2o.importFolder(path, pattern = "", destination_frame=destination_frame, parse, header, sep, col.names, col.types,
                    na.strings=na.strings, decrypt_tool=decrypt_tool, skipped_columns=skipped_columns,
-                   custom_non_data_line_markers=custom_non_data_line_markers, partition_by)
+                   custom_non_data_line_markers=custom_non_data_line_markers, partition_by, quotechar, escapechar)
 }
 
 
@@ -89,12 +91,14 @@ h2o.importFile <- function(path, destination_frame = "", parse = TRUE, header=NA
 #' @export
 h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse = TRUE, header = NA, sep = "",
                              col.names = NULL, col.types=NULL, na.strings=NULL, decrypt_tool=NULL, skipped_columns=NULL,
-                             custom_non_data_line_markers=NULL, partition_by=NULL) {
+                             custom_non_data_line_markers=NULL, partition_by=NULL, quotechar=NULL, escapechar="\\") {
   if(!is.character(path) || is.na(path) || !nzchar(path)) stop("`path` must be a non-empty character string")
   if(!is.character(pattern) || length(pattern) != 1L || is.na(pattern)) stop("`pattern` must be a character string")
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
+  if(!is.null(quotechar) && !quotechar %in% c("\"", "'", NULL))
+    stop("`quotechar` must be either NULL or single (') or double (\") quotes.")
   if (!is.null(skipped_columns) && (length(skipped_columns) > 0)) {
     for (a in c(1:length(skipped_columns))) {
       if (!is.numeric(skipped_columns[a]))
@@ -126,7 +130,8 @@ if(parse) {
     srcKey <- res$destination_frames
     return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
             header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, decrypt_tool=decrypt_tool,
-             skipped_columns=skipped_columns, custom_non_data_line_markers=custom_non_data_line_markers, partition_by=partition_by) )
+            skipped_columns=skipped_columns, custom_non_data_line_markers=custom_non_data_line_markers, partition_by=partition_by,
+            quotechar=quotechar, escapechar=escapechar) )
 }
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
@@ -147,7 +152,9 @@ h2o.importHDFS <- function(path, pattern = "", destination_frame = "", parse = T
 #' @export
 h2o.uploadFile <- function(path, destination_frame = "",
                            parse = TRUE, header = NA, sep = "", col.names = NULL,
-                           col.types = NULL, na.strings = NULL, progressBar = FALSE, parse_type=NULL, decrypt_tool=NULL, skipped_columns=NULL) {
+                           col.types = NULL, na.strings = NULL, progressBar = FALSE,
+                           parse_type=NULL, decrypt_tool=NULL, skipped_columns=NULL,
+                           quotechar=NULL, escapechar="\\") {
   if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
     stop("`path` must be a non-empty character string")
   if (length(skipped_columns) > 0) { # check to make sure only valid column indices are here
@@ -160,6 +167,8 @@ h2o.uploadFile <- function(path, destination_frame = "",
   .key.validate(destination_frame)
   if(!is.logical(parse) || length(parse) != 1L || is.na(parse))
     stop("`parse` must be TRUE or FALSE")
+  if(!is.null(quotechar) && !quotechar %in% c("\"", "'", NULL))
+    stop("`quotechar` must be either NULL or single (') or double (\") quotes.")
   if(!is.logical(progressBar) || length(progressBar) != 1L || is.na(progressBar))
     stop("`progressBar` must be TRUE or FALSE")
 
@@ -180,7 +189,7 @@ h2o.uploadFile <- function(path, destination_frame = "",
     if (verbose) pt <- proc.time()[[3]]
     ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names,
                         col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type,
-                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns)
+                        decrypt_tool = decrypt_tool, skipped_columns = skipped_columns, quotechar=quotechar, escapechar=escapechar)
     if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
     ans
   } else {
@@ -321,6 +330,35 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 }
 
 #'
+#' Load frame previously stored in H2O's native format.
+#'
+#' @name h2o.load_frame
+#' @param frame_id the frame ID of the original frame
+#' @param dir a filesystem location where to look for frame data
+#' @param force \code{logical}. overwrite an already existing frame (defaults to true)
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate = h2o.importFile(path = prostate_path)
+#' h2o.save_frame(prostate, "/tmp/prostate")
+#' prostate.key <- h2o.getId(prostate)
+#' h2o.rm(prostate)
+#' prostate <- h2o.load_frame(prostate.key, "/tmp/prostate")
+#' }
+#' @export
+h2o.load_frame <- function(frame_id, dir, force = TRUE) {
+    res <- .h2o.__remoteSend(.h2o.__LOAD_FRAME, frame_id = frame_id, dir = dir, force = force, method = "POST")
+    hex <- res$job$dest$name
+    .h2o.__waitOnJob(res$job$key$name)
+    x <- .newH2OFrame("Load", id=hex, -1, -1)
+    .fetch.data(x,1L) # Fill in nrow and ncol
+    x
+}
+
+#'
 #' Load H2O Model from HDFS or Local Disk
 #'
 #' Load a saved H2O model from disk. (Note that ensemble binary models 
@@ -418,6 +456,9 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #' Returns a reference to the loaded Grid.
 #'
 #' @param grid_path A character string containing the path to the file with the grid saved.
+#' @param load_params_references A logical which if true will attemt to reload saved objects referenced by 
+#'                    grid parameters (e.g. training frame, calibration frame), will fail if grid was saved 
+#'                    without referenced objects.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -438,15 +479,15 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #'grid <- h2o.loadGrid(paste0(tempdir(),"/",baseline_grid@grid_id))
 #' }
 #' @export
-h2o.loadGrid <- function(grid_path){
+h2o.loadGrid <- function(grid_path, load_params_references=FALSE){
   params <- list()
   params[["grid_path"]] <- grid_path
-  
+  params[["load_params_references"]] <- load_params_references
   
   res <- .h2o.__remoteSend(
     "Grid.bin/import",
     method = "POST",
-    h2oRestApiVersion = 3,.params = params
+    h2oRestApiVersion = 3, .params = params
   )
   
   h2o.getGrid(grid_id = res$name)

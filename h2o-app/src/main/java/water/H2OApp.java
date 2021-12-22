@@ -6,7 +6,7 @@ public class H2OApp extends H2OStarter {
   
   public static void main(String[] args) {
 
-    if (H2O.checkUnsupportedJava())
+    if (H2O.checkUnsupportedJava(args))
       System.exit(BAD_JAVA_VERSION_RETURN_CODE);
 
     start(args, System.getProperty("user.dir"));

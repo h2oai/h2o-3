@@ -1,4 +1,4 @@
-apply plugin: 'java'
+apply plugin: 'java-library'
 
 description = 'H2O Generic MapReduce Driver for Hadoop'
 
@@ -12,14 +12,17 @@ compileJava {
 dependencies {
   // we need to compile against something - the versions here are not important - assemblies will bundle the correct versions
   compileOnly "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
-  compile(project(':h2o-app')) {
+  api(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
-  compile(project(':h2o-hive')) {
+  api(project(':h2o-hive')) {
     transitive = false
   }
-  compile project(":h2o-security")
-  testCompile "junit:junit:${junitVersion}"
-  testCompile "org.mockito:mockito-core:2.23.0"
-  testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
+  api(project(':h2o-persist-hdfs')) {
+    transitive = false
+  }
+  api project(":h2o-security")
+  testImplementation "junit:junit:${junitVersion}"
+  testImplementation "org.mockito:mockito-core:2.23.0"
+  testImplementation "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
 }

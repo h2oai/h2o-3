@@ -35,6 +35,12 @@ Defining a RuleFit Model (Beta API)
 
 - **model_type**: Specify the type of base learners in the ensemble. Must be one of: "rules_and_linear", "rules", or "linear". Defaults to "rules_and_linear".
 
+    - If the model_type is ``rules_and_linear``, the algorithm fits a linear model to the rule feature set joined with the original feature set.
+    - If the model_type is ``rules``, the algorithm fits a linear model only to the rule feature set (no linear terms can become important).
+    - If the model_type is ``linear``, the algorithm fits a linear model only to the original feature set (no rule terms can become important).
+
+- **rule_generation_ntrees**: Specify the number of trees for tree ensemble. Defaults to 50.
+
 - `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. 
 
 	**Python only:** To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``.
@@ -58,6 +64,11 @@ Defining a RuleFit Model (Beta API)
 		- and the response is **Enum** with cardinality = 2, then the family is automatically determined as **bernoulli**.
 		- and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
 		- and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
+
+- **remove_duplicates**: Specify whether to remove rules which are identical to an earlier rule. Defaults to true.
+
+- **lambda**: Specify the regularization strength for LASSO regressor.
+
 
 Interpreting a RuleFit Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,7 +121,7 @@ Examples
 
 		import h2o
 		h2o.init()
-		from h2o.estimators import H2ORuleFitEstimators
+		from h2o.estimators import H2ORuleFitEstimator
 
 		# Import the titanic dataset and set the column types:
 		f = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
@@ -133,7 +144,7 @@ Examples
 		print(rfit._model_json['output']['rule_importance'])
 
 		# Predict on the test data:
-		rfit.predict()
+		rfit.predict(test)
 
 
 References

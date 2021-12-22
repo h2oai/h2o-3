@@ -1,11 +1,13 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.compatibility import *  # NOQA
 
 import h2o
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type
-from ..frame import H2OFrame
+from .extensions import has_extension
 from .model_base import ModelBase
+from ..exceptions import H2OValueError
+from ..frame import H2OFrame
 
 
 class H2OOrdinalModel(ModelBase):
@@ -64,15 +66,18 @@ class H2OOrdinalModel(ModelBase):
         return list(m.values())[0] if len(m) == 1 else m
 
 
-    def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+    def plot(self, timestep="AUTO", metric="AUTO", save_plot_path=None, **kwargs):
         """
         Plots training set (and validation set if available) scoring history for an H2OOrdinalModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
+        :param save_plot_path: a path to save the plot via using mathplotlib function savefig
 
-        :returns: A scoring history plot.
+        :returns: Object that contains the resulting scoring history plot (can be accessed using result.figure()).
         """
+        if not has_extension(self, 'ScoringHistory'):
+            raise H2OValueError("Scoring history plot is not available for this type of model (%s)." % self.algo)
 
-        self._plot(timestep=timestep, metric=metric, **kwargs)
+        self.scoring_history_plot(timestep=timestep, metric=metric, save_plot_path=save_plot_path, **kwargs)

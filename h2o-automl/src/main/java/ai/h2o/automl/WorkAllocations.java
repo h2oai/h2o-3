@@ -1,8 +1,5 @@
 package ai.h2o.automl;
 
-import org.apache.commons.lang.builder.StandardToStringStyle;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import water.Iced;
 import water.util.ArrayUtils;
 
@@ -19,18 +16,21 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     ModelBuild,
     HyperparamSearch,
     Selection,
+    Dynamic,
   }
 
   public static class Work extends Iced<Work> {
     String _id;
     IAlgo _algo;
     JobType _type;
+    int _priorityGroup;
     int _weight;
 
-    Work(String id, IAlgo algo, JobType type, int weight) {
+    Work(String id, IAlgo algo, JobType type, int priorityGroup, int weight) {
       this._algo = algo;
       this._type = type;
       this._id = id;
+      this._priorityGroup = priorityGroup;
       this._weight = weight;
     }
 
@@ -44,9 +44,11 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     public String toString() {
       final StringBuilder sb = new StringBuilder("Work{")
               .append(_id).append(", ")
-              .append(_algo).append(", ")
+              .append(_algo.name()).append(", ")
               .append(_type).append(", ")
-              .append(_weight).append('}');
+              .append("group=").append(_priorityGroup).append(", ")
+              .append("weight=").append(_weight)
+              .append('}');
       return sb.toString();
     }
   }
@@ -92,7 +94,8 @@ public class WorkAllocations extends Iced<WorkAllocations> {
   private int sum(Work[] workItems) {
     int tot = 0;
     for (Work item : workItems) {
-      tot += item._weight;
+      if (item._weight > 0)
+        tot += item._weight;
     }
     return tot;
   }

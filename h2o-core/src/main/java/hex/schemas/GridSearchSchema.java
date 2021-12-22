@@ -13,9 +13,10 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMap;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static hex.grid.HyperSpaceWalker.BaseWalker.SUBSPACES;
+import static water.api.API.Direction.INOUT;
+import static water.api.API.Direction.INPUT;
 
 /**
  * This is a common grid search schema composed of two parameters: default parameters for a builder
@@ -37,21 +38,31 @@ public class GridSearchSchema<G extends Grid<MP>,
   //
   // Inputs
   //
-  @API(help = "Basic model builder parameters.", direction = API.Direction.INPUT)
+  @API(help = "Basic model builder parameters.", direction = INPUT)
   public P parameters;
 
-  @API(help = "Grid search parameters.", direction = API.Direction.INOUT)
+  @API(help = "Grid search parameters.", direction = INOUT)
   public IcedHashMap<String, Object[]> hyper_parameters;
 
-  @API(help = "Destination id for this grid; auto-generated if not specified.", direction = API.Direction.INOUT)
+  @API(help = "Destination id for this grid; auto-generated if not specified.", direction = INOUT)
   public KeyV3.GridKeyV3 grid_id;
 
-  @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
+  @API(help="Hyperparameter search criteria, including strategy and early stopping directives. If it is not given, " +
+      "exhaustive Cartesian is used.", direction = INOUT)
   public HyperSpaceSearchCriteriaV99 search_criteria;
 
-  @API(help = "Level of parallelism during grid model building. 1 = sequential building (default). 0 for adaptive parallelism." +
-          "Any number > 1 sets the exact number of models built in parallel.")
+  @API(help = "Level of parallelism during grid model building. 1 = sequential building (default). 0 for adaptive " +
+      "parallelism. Any number > 1 sets the exact number of models built in parallel.")
   public int parallelism;
+  
+  @API(help= "Path to a directory where grid will save everything necessary to resume training after cluster crash.", 
+      direction = INPUT)
+  public String recovery_dir;
+
+  @API(help= "Key to use for the Job handling this GridSearch (internal use only).",
+      direction = INPUT)
+  public KeyV3.JobKeyV3 job_id;
+  
   //
   // Outputs
   //
@@ -132,7 +143,7 @@ public class GridSearchSchema<G extends Grid<MP>,
     }
 
     if (parms.containsKey("grid_id")) {
-      grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
+      grid_id = new KeyV3.GridKeyV3(Key.make(parms.getProperty("grid_id")));
       parms.remove("grid_id");
     }
 
@@ -152,6 +163,16 @@ public class GridSearchSchema<G extends Grid<MP>,
       parms.remove("parallelism");
     } else {
       this.parallelism = SEQUENTIAL_GRID_SEARCH;
+    }
+
+    if (parms.containsKey("recovery_dir")) {
+      this.recovery_dir = parms.getProperty("recovery_dir");
+      parms.remove("recovery_dir");
+    }
+
+    if (parms.containsKey("job_id")) {
+      this.job_id = new KeyV3.JobKeyV3(Key.make(parms.getProperty("job_id")));
+      parms.remove("job_id");
     }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad

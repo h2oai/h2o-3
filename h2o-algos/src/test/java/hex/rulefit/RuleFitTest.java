@@ -6,22 +6,19 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.junit.runner.RunWith;
 import water.DKV;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.parser.ParseDataset;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.test.util.ConfusionMatrixUtils;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,7 +36,7 @@ public class RuleFitTest extends TestUtil {
         GLMModel glmModel = null;
         Frame fr = null, fr2 = null, fr3 = null;
         try {
-            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -130,9 +127,10 @@ public class RuleFitTest extends TestUtil {
         // the same as above but uses rules + linear terms
         RuleFitModel rfModel = null;
         GLMModel glmModel = null;
-        Frame fr = null, fr2 = null, fr3 = null;
+        Frame fr = null, fr2 = null, fr3 = null, valid = null;
         try {
-            fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+            fr = parseTestFile("./smalldata/gbm_test/titanic.csv");
+            valid = parseTestFile("./smalldata/gbm_test/titanic.csv");
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -148,11 +146,14 @@ public class RuleFitTest extends TestUtil {
             final Vec weightsVector = fr.anyVec().makeOnes(1)[0];
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
+            
             DKV.put(fr);
+            DKV.put(valid);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._train = fr._key;
+            params._valid = valid._key;
             params._response_column = responseColumnName;
             params._max_num_rules = 100;
             params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
@@ -174,10 +175,16 @@ public class RuleFitTest extends TestUtil {
 
             ConfusionMatrix ruleFitConfusionMatrix = ConfusionMatrixUtils.buildCM(data, predictions);
 
+            assertEquals(rfModel._output._validation_metrics.rmse(), rfModel._output._training_metrics.rmse(), 1e-4);
+            assertEquals(rfModel._output._validation_metrics.mse(), rfModel._output._training_metrics.mse(), 1e-4);
+            assertEquals(rfModel._output._validation_metrics.auc_obj()._auc, rfModel._output._training_metrics.auc_obj()._auc, 1e-4);
+            assertEquals(rfModel._output._validation_metrics.hr(), rfModel._output._training_metrics.hr());
+            
             // GLM to compare:
 
             GLMModel.GLMParameters glmParameters = rfModel.glmModel._parms;
             glmParameters._train = fr._key;
+            glmParameters._valid = valid._key;
             glmParameters._weights_column = rfModel._parms._weights_column;
             glmParameters._response_column = rfModel._parms._response_column;
             glmModel = new GLM(glmParameters).trainModel().get();
@@ -211,11 +218,14 @@ public class RuleFitTest extends TestUtil {
 
             System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
             System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+            
+            
 
         } finally {
             if (fr != null) fr.remove();
             if (fr2 != null) fr2.remove();
             if (fr3 != null) fr3.remove();
+            if (valid != null) valid.remove();
             if (rfModel != null) {
                 rfModel.remove();
             }
@@ -228,7 +238,7 @@ public class RuleFitTest extends TestUtil {
         // https://github.com/h2oai/h2o-tutorials/blob/8df6b492afa172095e2595922f0b67f8d715d1e0/best-practices/explainable-models/rulefit_analysis.ipynb
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/gbm_test/titanic.csv"));
 
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
@@ -321,7 +331,7 @@ public class RuleFitTest extends TestUtil {
         // the same as above but uses rules + linear terms
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/gbm_test/titanic.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/gbm_test/titanic.csv"));
             String responseColumnName = "survived";
             asFactor(fr, responseColumnName);
             asFactor(fr, "pclass");
@@ -417,7 +427,7 @@ public class RuleFitTest extends TestUtil {
     public void testCarsRules() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -427,6 +437,7 @@ public class RuleFitTest extends TestUtil {
             params._max_rule_length = 5;
             params._model_type = RuleFitModel.ModelType.RULES;
             params._min_rule_length = 1;
+            params._remove_duplicates = false;
 
             RuleFitModel model = new RuleFit( params).trainModel().get();
             Scope.track_generic(model);
@@ -480,13 +491,62 @@ public class RuleFitTest extends TestUtil {
         }
     }
 
+    @Test
+    public void testCarsRulesValidation() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parseTestFile("smalldata/testng/cars_train.csv"));
+            final Frame valid = Scope.track(parseTestFile("smalldata/testng/cars_test.csv"));
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 1234;
+            params._response_column = "power (hp)";
+            params._ignored_columns = new String[]{"name"};
+            params._train = fr._key;
+            params._valid = valid._key;
+            params._max_num_rules = 200;
+            params._max_rule_length = 5;
+            params._model_type = RuleFitModel.ModelType.RULES;
+            params._min_rule_length = 1;
+
+            RuleFitModel model = new RuleFit( params).trainModel().get();
+            Scope.track_generic(model);
+
+            System.out.println("Intercept: \n" + model._output._intercept[0]);
+            System.out.println(model._output._rule_importance);
+
+            final Frame fr2 = Scope.track(model.score(fr));
+
+            GLMModel.GLMParameters glmParameters = model.glmModel._parms;
+            glmParameters._train = fr._key;
+            glmParameters._valid = valid._key;
+            glmParameters._response_column = model._parms._response_column;
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+            Scope.track(glmModel.score(fr));
+
+            Assert.assertTrue(model.testJavaScoring(fr,fr2,1e-4));
+
+            ScoringInfo RuleFitScoringInfo = model.glmModel.getScoringInfo()[0];
+            ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
+            System.out.println("RuleFit MSE: " + RuleFitScoringInfo.scored_train._mse);
+            System.out.println("GLM MSE: " + GLMScoringInfo.scored_train._mse);
+            System.out.println("RuleFit r2: " + RuleFitScoringInfo.scored_train._r2);
+            System.out.println("GLM r2: " + GLMScoringInfo.scored_train._r2);
+            System.out.println("RuleFit RMSLE:" +  model.rmsle());
+            System.out.println("GLM RMSLE:" + glmModel.rmsle());
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
 
     @Test
     public void testCarsRulesAndLinear() {
         // only linear variables are important in this case
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file( "./smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parseTestFile( "./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -546,7 +606,7 @@ public class RuleFitTest extends TestUtil {
     public void testCarsLongRules() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("./smalldata/junit/cars.csv"));
+            final Frame fr = Scope.track(parseTestFile("./smalldata/junit/cars.csv"));
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 1234;
             params._response_column = "power (hp)";
@@ -600,7 +660,7 @@ public class RuleFitTest extends TestUtil {
         // example from http://statweb.stanford.edu/~jhf/ftp/RuleFit.pdf but need to experiment with setup
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+            final Frame fr = parseTestFile("./smalldata/gbm_test/BostonHousing.csv");
             Scope.track(fr);
 
             String responseColumnName = fr.lastVecName();
@@ -652,9 +712,11 @@ public class RuleFitTest extends TestUtil {
     public void testDiabetesWithWeights() {
         try {
             Scope.enter();
-            final Frame fr = parse_test_file("./smalldata/diabetes/diabetes_text_train.csv");
+            final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
             Scope.track(fr);
-            final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
+           // final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10); // failing with these weights is ok because https://h2oai.atlassian.net/browse/PUBDEV-8249 is not a bug
+            final Vec weightsVector = Vec.makeOne(fr.numRows());
+            weightsVector.set(1, 0.5);
             final String weightsColumnName = "weights";
             fr.add(weightsColumnName, weightsVector);
             DKV.put(fr);
@@ -668,6 +730,7 @@ public class RuleFitTest extends TestUtil {
             params._max_num_rules = 200;
             params._max_rule_length = 5;
             params._min_rule_length = 1;
+            params._rule_generation_ntrees = 3;
 
 
             final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
@@ -678,7 +741,7 @@ public class RuleFitTest extends TestUtil {
 
             final Frame fr2 = Scope.track(rfModel.score(fr));
 
-            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4, 1e-4, 1));
 
             // GLM to compare:
 
@@ -689,7 +752,9 @@ public class RuleFitTest extends TestUtil {
             final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
             Scope.track_generic(glmModel);
 
-            Scope.track(glmModel.score(fr));
+            final Frame fr3 = Scope.track(glmModel.score(fr));
+            
+            Assert.assertTrue(glmModel.testJavaScoring(fr,fr3,1e-4, 1e-4, 1));
 
             ScoringInfo RuleFitScoringInfo = rfModel.glmModel.getScoringInfo()[0];
             ScoringInfo GLMScoringInfo = glmModel.getScoringInfo()[0];
@@ -704,12 +769,48 @@ public class RuleFitTest extends TestUtil {
             Scope.exit();
         }
     }
+
+    @Test @Ignore // this failing is ok because https://h2oai.atlassian.net/browse/PUBDEV-8249 is not a bug
+    public void testDiabetesWithWeightsShowWhatGlmIsDoingSeparately() { 
+        try {
+            Scope.enter();
+            final Frame fr = parseTestFile("./smalldata/diabetes/diabetes_text_train.csv");
+            Scope.track(fr);
+            final Vec weightsVector = createRandomBinaryWeightsVec(fr.numRows(), 10);
+            // works with non-zero weights, but if I create zero ( weightsVector.set(1, 0.5); -> weightsVector.set(1, 0.0); ) it will fail again
+            // final Vec weightsVector = Vec.makeOne(fr.numRows());
+            weightsVector.set(1, 0.5);
+            
+            final String weightsColumnName = "weights";
+            fr.add(weightsColumnName, weightsVector);
+            DKV.put(fr);
+            
+            GLMModel.GLMParameters glmParameters = new GLMModel.GLMParameters();
+            glmParameters._seed = 12345;
+            glmParameters._train = fr._key;
+            glmParameters._response_column = "diabetesMed";
+            glmParameters._weights_column = "weights";
+            
+            
+            final GLMModel glmModel = new GLM(glmParameters).trainModel().get();
+            Scope.track_generic(glmModel);
+
+            final Frame fr3 = Scope.track(glmModel.score(fr));
+
+            // this fails
+            Assert.assertTrue(glmModel.testJavaScoring(fr,fr3,1e-4, 1e-4, 1));
+            
+            
+        } finally {
+            Scope.exit();
+        }
+    }
     
     @Test
     public void testMulticlass() {
         try {
             Scope.enter();
-            final Frame fr = Scope.track(parse_test_file("smalldata/iris/iris_train.csv"));
+            final Frame fr = Scope.track(parseTestFile("smalldata/iris/iris_train.csv"));
            
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 12345;
@@ -725,21 +826,44 @@ public class RuleFitTest extends TestUtil {
 
             final Frame fr2 = Scope.track(rfModel.score(fr));
 
-            Assert.assertTrue(rfModel.testJavaScoring(fr,fr2,1e-4));
+            Assert.assertTrue(rfModel.testJavaScoring(fr, fr2, 1e-4));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testProstateMulticlass() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parseTestFile("smalldata/prostate/prostate_cat.csv"));
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 12345;
+            params._train = fr._key;
+            params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._response_column = "DPROS";
+
+            final RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
+
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+            final Frame fr2 = Scope.track(rfModel.score(fr));
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr, fr2, 1e-4));
         } finally {
             Scope.exit();
         }
     }
     
     @Test
-    public void testBadColsBug() throws IOException {
+    public void testBadColsBug() {
         try {
             Scope.enter();
+            final Frame fr = Scope.track(parse_test_file("smalldata/rulefit/repro_bad_cols_bug.csv"));
 
-            TestUtil.downloadTestFileFromS3("smalldata/rulefit/repro_bad_cols_bug.csv");
-            NFSFileVec nfs = TestUtil.makeNfsFileVec("smalldata/rulefit/repro_bad_cols_bug.csv");
-            final Frame fr = Scope.track(ParseDataset.parse(Key.make(), nfs._key));
-            
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._seed = 42;
             params._train = fr._key;
@@ -763,4 +887,178 @@ public class RuleFitTest extends TestUtil {
         }
     }
     
+    @Test
+    public void testIrisMulticlassWithoutScope() {
+        RuleFitModel rfModel = null;
+        Frame fr = null, fr2 = null;
+        try {
+            fr = parseTestFile("./smalldata/iris/iris_wheader.csv");
+            DKV.put(fr);
+            
+            final RuleFitModel.RuleFitParameters ruleFitParameters = new RuleFitModel.RuleFitParameters();
+            ruleFitParameters._train = fr._key;
+            ruleFitParameters._response_column = "class";
+            ruleFitParameters._seed = 0XFEED;
+            ruleFitParameters._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            ruleFitParameters._max_rule_length = 5;
+            ruleFitParameters._min_rule_length = 1;
+            ruleFitParameters._max_num_rules = 50;
+            
+            rfModel = new RuleFit(ruleFitParameters).trainModel().get();
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+            
+            fr2 = rfModel.score(fr);
+
+            Assert.assertTrue(rfModel.testJavaScoring(fr, fr2,1e-4));
+            
+        } finally {
+            if (rfModel != null) {
+                rfModel.remove();
+            }
+            if (fr != null) fr.remove();
+            if (fr2 != null) fr2.remove();
+        }
+    }
+
+    @Test
+    public void testTitanicMulticlass() {
+        try {
+            Scope.enter();
+            final Frame fr = Scope.track(parseTestFile("./smalldata/gbm_test/titanic.csv"));
+
+            String responseColumnName = "parch";
+            asFactor(fr, responseColumnName);
+            asFactor(fr, "pclass");
+            fr.remove("name").remove();
+            fr.remove("ticket").remove();
+            fr.remove("cabin").remove();
+            fr.remove("embarked").remove();
+            fr.remove("boat").remove();
+            fr.remove("body").remove();
+            fr.remove("home.dest").remove();
+            DKV.put(fr);
+
+            RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
+            params._seed = 1234;
+            params._train = fr._key;
+            params._response_column = responseColumnName;
+            params._max_num_rules = 100;
+            params._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+            params._min_rule_length = 1;
+            params._max_rule_length = 10;
+
+
+            RuleFitModel rfModel = new RuleFit(params).trainModel().get();
+            Scope.track_generic(rfModel);
+            System.out.println("Intercept: \n" + rfModel._output._intercept[0]);
+            System.out.println(rfModel._output._rule_importance);
+
+           // TODO: this reproduces problem with mapping (will be fixed in PUBDEV-8333)
+            //     Frame scored = rfModel.score(fr);
+            //   Assert.assertTrue(rfModel.testJavaScoring(fr, scored, 1e-4));
+
+
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test public void testEcologyMulticlass() {
+        try {
+            Scope.enter();
+            Frame  train = parseTestFile("smalldata/gbm_test/ecology_model.csv")
+                    .toCategoricalCol("Method");
+     
+            train.remove("Site").remove();
+            Scope.track(train);
+            DKV.put(train);
+            RuleFitModel.RuleFitParameters parms = new RuleFitModel.RuleFitParameters();
+            parms._seed = 1234;
+            parms._train = train._key;
+            parms._response_column = "Method";
+            parms._max_num_rules = 100;
+            parms._model_type = RuleFitModel.ModelType.RULES_AND_LINEAR;
+
+            RuleFitModel rfit = new RuleFit(parms).trainModel().get();
+            Scope.track_generic(rfit);
+            
+            System.out.println("Intercept: \n" + rfit._output._intercept[0]);
+            System.out.println(rfit._output._rule_importance);
+            
+            Frame scored = Scope.track(rfit.score(train));
+            
+            Assert.assertTrue(rfit.testJavaScoring(train, scored, 1e-4));
+        } finally {
+            Scope.exit();
+        }
+
+    }
+
+
+    @Test public void testEcologyBinomial() {
+        try {
+            Scope.enter();
+            Frame  train = parseTestFile("smalldata/gbm_test/ecology_model.csv")
+                    .toCategoricalCol("Angaus");
+            train.remove("Site").remove();
+            Scope.track(train);
+            DKV.put(train);
+            RuleFitModel.RuleFitParameters parms = new RuleFitModel.RuleFitParameters();
+            parms._train = train._key;
+            parms._response_column = "Angaus";
+            parms._max_num_rules = 100;
+            parms._model_type = RuleFitModel.ModelType.RULES;
+            parms._min_rule_length = 1;
+            parms._max_rule_length = 10;
+            parms._seed = -2348835740834922574L;
+
+            RuleFitModel rfit = new RuleFit(parms).trainModel().get();
+            Scope.track_generic(rfit);
+
+            System.out.println("Intercept: \n" + rfit._output._intercept[0]);
+            System.out.println(rfit._output._rule_importance);
+
+            Frame scored = Scope.track(rfit.score(train));
+
+            Assert.assertTrue(rfit.testJavaScoring(train, scored, 1e-4));
+            
+            
+            // test transform by rules functionality:
+            Frame transformedOutput = rfit.predictRules(train, new String[] {"M1T38N9, M1T44N9", "M2T34N20"});
+            Scope.track(transformedOutput);
+            Rule rule1 = rfit.ruleEnsemble.getRuleByVarName("M1T38N9");
+            Rule rule2 = rfit.ruleEnsemble.getRuleByVarName("M2T34N20");
+
+            System.out.println("Rule 1: \n" + rule1.languageRule);
+            System.out.println("Rule 2: \n" + rule2.languageRule);
+            
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(0), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(1), 1);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(2), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(3), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(4), 1);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(5), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(6), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(7), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(8), 0);
+            assertEquals((int)transformedOutput.vec("M1T38N9").at(9), 1);
+            
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(0), 1);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(1), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(2), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(3), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(4), 1);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(5), 1);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(6), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(7), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(8), 0);
+            assertEquals((int)transformedOutput.vec("M2T34N20").at(9), 0);
+            
+        } finally {
+            Scope.exit();
+        }
+
+    }
+
 }

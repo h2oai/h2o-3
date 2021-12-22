@@ -11,12 +11,12 @@ This option allows you to specify a list of algorithms to include in an AutoML r
 
 The algorithms that can be specified include:
 
-- DRF (including both the Random Forest and Extremely Randomized Trees (XRT) models)
-- GLM
-- XGBoost (XGBoost GBM)
-- GBM (H2O GBM)
-- DeepLearning (Fully-connected multi-layer artificial neural network)
-- StackedEnsemble
+- ``DRF`` (including both the Random Forest and Extremely Randomized Trees (XRT) models)
+- ``GLM``
+- ``XGBoost`` (XGBoost GBM)
+- ``GBM`` (H2O GBM)
+- ``DeepLearning`` (Fully-connected multi-layer artificial neural network)
+- ``StackedEnsemble``
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

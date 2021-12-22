@@ -1,5 +1,5 @@
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O GenModel Assembly which is embedded into H2O.jar"
@@ -10,8 +10,7 @@ targetCompatibility = 1.7
 
 // Dependencies
 dependencies {
-    compile project(":h2o-genmodel")
-    compile project(path: ':h2o-genmodel-ext-jgrapht', configuration: 'default')
+    api project(":h2o-genmodel")
 }
 
 // Include optional components
@@ -22,7 +21,6 @@ for (comp in optionalComponents) {
     def compPropName = "with${compName.capitalize()}"
     def compPropVersionName = "${compName}Version"
     def compIsGenModel = comp['genmodel']
-    def compPropGenModelName = "${compPropName}GenModel"
 
     if (!project.hasProperty(compPropVersionName)) {
         project.ext.set(compPropVersionName, compVersion)

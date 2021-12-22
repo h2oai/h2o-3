@@ -1,21 +1,24 @@
 package hex.grid;
 
 import hex.*;
+import hex.faulttolerance.Recoverable;
+import hex.faulttolerance.Recovery;
 import water.*;
 import water.api.schemas3.KeyV3;
-import water.exceptions.H2OConcurrentModificationException;
 import water.fvec.Frame;
+import water.fvec.persist.PersistUtils;
 import water.persist.Persist;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Array;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static hex.grid.GridSearch.IGNORED_FIELDS_PARAM_HASH;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.
@@ -24,14 +27,14 @@ import java.util.Objects;
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model>, Recoverable<Grid<MP>> {
 
   /**
    * Publicly available Grid prototype - used by REST API.
    *
    * @see hex.schemas.GridSchemaV99
    */
-  public static final Grid GRID_PROTO = new Grid(null, null, null, null);
+  public static final Grid GRID_PROTO = new Grid(null, null, null, new HashMap<>(), null, null, 0);
 
   // A cache of double[] hyper-parameters mapping to Models.
   private final IcedHashMap<IcedLong, Key<Model>> _models = new IcedHashMap<>();
@@ -43,6 +46,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
   // Names of used hyper parameters for this grid search.
   private final String[] _hyper_names;
+  private HyperParameters _hyper_params;
+  private int _parallelism;
+  private HyperSpaceSearchCriteria _search_criteria;
 
   private final FieldNaming _field_naming_strategy;
 
@@ -55,7 +61,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   private static final Key<Model> NO_MODEL_FAILURES_KEY = Key.makeUserHidden("GridSearchFailureEmptyModelKey");
 
   /**
-   * A failure occured during hyperspace exploration.
+   * Failure that occurred during hyperspace exploration.
    */
   public static final class SearchFailure<MP extends Model.Parameters> extends Iced<SearchFailure> {
 
@@ -74,12 +80,16 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     // represented in textual form, since simple <code>java.lang.Object</code>
     // cannot be serialized by H2O serialization.
     private String[][] _failed_raw_params;
+    
+    // collect warning
+    private String[] _warning_details;
 
     private SearchFailure(final Class<MP> paramsClass) {
       _failed_params = paramsClass != null ? (MP[]) Array.newInstance(paramsClass, 0) : null;
       _failure_details = new String[]{};
       _failed_raw_params = new String[][]{};
       _failure_stack_traces = new String[]{};
+      _warning_details = new String[]{};
     }
 
     /**
@@ -90,8 +100,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      *
      * @param params    model parameters which caused model builder failure, can be null
      * @param rawParams array of "raw" parameter values
-     * @params failureDetails  textual description of model building failure
-     * @params stackTrace  stringify stacktrace
+     * @param failureDetails  textual description of model building failure
+     * @param stackTrace  stringify stacktrace
      */
     private void appendFailedModelParameters(MP params, String[] rawParams, String failureDetails, String stackTrace) {
       assert rawParams != null : "API has to always pass rawParams";
@@ -116,6 +126,25 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       nst[st.length] = stackTrace;
       _failure_stack_traces = nst;
     }
+    
+    private void appendWarningMessage(String[] hyper_parameter, String checkField) {
+      if (hyper_parameter != null && Arrays.asList(hyper_parameter).contains(checkField)) {
+        String warningMessage = null;
+        if ("alpha".equals(checkField)) {
+          warningMessage = "Adding alpha array to hyperparameter runs slower with gridsearch. " +
+                  "This is due to the fact that the algo has to run initialization for every alpha value. " +
+                  "Setting the alpha array as a model parameter will skip the initialization and run faster overall.";
+        }
+        if (warningMessage != null) {
+          Log.warn(warningMessage);
+          // Append message
+          String[] m = _warning_details;
+          String[] nm = Arrays.copyOf(m, m.length+1);
+          nm[m.length] = warningMessage;
+          _warning_details = nm;
+        }
+      }
+    }
 
     public void appendFailedModelParameters(final MP[] params, final String[][] rawParams,
                                             final String[] failureDetails, final String[] stackTraces) {
@@ -137,7 +166,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
      * <p> Should be used only from <code>GridSearch</code> job.</p>
      *
      * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-     * @params e exception causing a failure
+     * @param e exception causing a failure
      */
     /* package */ void appendFailedModelParameters(Object[] rawParams, Exception e) {
       assert rawParams != null : "Raw parameters should be always != null !";
@@ -150,6 +179,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
 
     public String[] getFailureDetails() {
       return _failure_details;
+    }
+    
+    public String[] getWarningDetails() {
+      return _warning_details;
     }
 
     public String[] getFailureStackTraces() {
@@ -172,12 +205,50 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param params     initial parameters used by grid search
    * @param hyperNames names of used hyper parameters
    */
-  protected Grid(Key key, MP params, String[] hyperNames, FieldNaming fieldNaming) {
+  protected Grid(
+      Key key, MP params, 
+      String[] hyperNames,
+      Map<String, Object[]> hyperParams,
+      HyperSpaceSearchCriteria searchCriteria,
+      FieldNaming fieldNaming,
+      int parallelism
+  ) {
     super(key);
     _params = params != null ? (MP) params.clone() : null;
     _hyper_names = hyperNames;
-      _field_naming_strategy = fieldNaming;
-      _failures = new IcedHashMap<>();
+    _failures = new IcedHashMap<>();
+    _field_naming_strategy = fieldNaming;
+    update(hyperParams, searchCriteria, parallelism);
+  }
+  
+  protected Grid(Key key, HyperSpaceWalker<MP, ?> walker, int parallelism) {
+    this(
+        key,
+        walker.getParams(),
+        walker.getAllHyperParamNames(),
+        walker.getHyperParams(),
+        walker.search_criteria(),
+        walker.getParametersBuilderFactory().getFieldNamingStrategy(),
+        parallelism
+    );
+  }
+
+  public void update(Map<String,Object[]> hyperParams, HyperSpaceSearchCriteria searchCriteria, int parallelism) {
+    _hyper_params = new HyperParameters(hyperParams);
+    _search_criteria = searchCriteria;
+    _parallelism = parallelism;
+  }
+  
+  public Map<String, Object[]> getHyperParams() {
+    return _hyper_params.getValues();
+  }
+
+  public HyperSpaceSearchCriteria getSearchCriteria() {
+    return _search_criteria;
+  }
+
+  public int getParallelism() {
+    return _parallelism;
   }
 
   /**
@@ -199,7 +270,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
 
-  /**
+  /*
    * Ask the Grid for a suggested next hyperparameter value, given an existing Model as a starting
    * point and the complete set of hyperparameter limits. Returning a NaN signals there is no next
    * suggestion, which is reasonable if the obvious "next" value does not exist (e.g. exhausted all
@@ -237,7 +308,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   }
 
   public Key<Model> getModelKey(MP params) {
-    long checksum = params.checksum();
+    long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     return getModelKey(checksum);
   }
 
@@ -262,8 +333,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * @param modelKey Model the failures are related to
    * @param params    model parameters which caused model builder failure, can be null
    * @param rawParams array of "raw" parameter values
-   * @params failureDetails  textual description of model building failure
-   * @params stackTrace  stringify stacktrace
+   * @param t the exception causing a failure
    */
   private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
                                            final Throwable t) {
@@ -271,14 +341,15 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       final String stackTrace = StringUtils.toString(t);
       final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
       SearchFailure searchFailure = _failures.get(searchedKey);
-      if ((searchFailure == null)) {
+      if (searchFailure == null) {
         searchFailure = new SearchFailure(_params.getClass());
-          _failures.put(searchedKey, searchFailure);
+        _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
+      searchFailure.appendWarningMessage(_hyper_names, "alpha");
   }
 
-  private static boolean isJobCanceled(final Throwable t) {
+  static boolean isJobCanceled(final Throwable t) {
     for (Throwable ex = t; ex != null; ex = ex.getCause()) {
       if (ex instanceof Job.JobCancelledException) {
         return true;
@@ -296,7 +367,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param params model parameters which caused model builder failure
-   * @params e  exception causing a failure
+   * @param t the exception causing a failure
    */
   void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
     assert params != null : "Model parameters should be always != null !";
@@ -313,7 +384,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * <p> Should be used only from <code>GridSearch</code> job.</p>
    *
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
-   * @params e exception causing a failure
+   * @param e the exception causing a failure
    */
   void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams, final Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
@@ -373,8 +444,12 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       searchFailure.appendFailedModelParameters(f._failed_params, f._failed_raw_params, f._failure_details,
               f._failure_stack_traces);
     }
-
+    searchFailure.appendWarningMessage(_hyper_names, "alpha");
     return searchFailure;
+  }
+  
+  public int countTotalFailures() {
+    return _failures.values().stream().mapToInt(SearchFailure::getFailureCount).sum();
   }
 
   /**
@@ -428,17 +503,6 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     return super.writeAll_impl(ab);
   }
 
-  /**
-   * By default, the method writeAll_impl saves all the Grid models as well into the binary file. For some use-cases,
-   * this is undesired (Grid checkpointing).
-   *
-   * @param autoBuffer AutoBuffer to serialize this instance of {@link Grid} to
-   * @return Reference to the instance of {@link AutoBuffer} given as a method argument.
-   */
-  protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
-    return super.writeAll_impl(autoBuffer.put(this));
-  }
-
   @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     throw H2O.unimpl();
@@ -458,9 +522,31 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
     if (_hyper_names == null || model_ids == null || model_ids.length == 0) return null;
     int extra_len = sort_by != null ? 2 : 1;
     String[] colTypes = new String[_hyper_names.length + extra_len];
-    Arrays.fill(colTypes, "string");
     String[] colFormats = new String[_hyper_names.length + extra_len];
+
+    // Set the default type to string
+    Arrays.fill(colTypes, "string");
     Arrays.fill(colFormats, "%s");
+
+    // Change where appropriate (and only the hyper params)
+    for (int i = 0; i < _hyper_names.length; i++) {
+      Object[] objects = _hyper_params.getValues().get(_hyper_names[i]);
+      if (objects != null && objects.length > 0) {
+        Object obj = objects[0];
+        if (obj instanceof Double || obj instanceof Float) {
+          colTypes[i] = "double";
+          colFormats[i] = "%.5f";
+        } else if (obj instanceof Integer || obj instanceof Long) {
+          colTypes[i] = "long";
+          colFormats[i] = "%d";
+        }
+      }
+    }
+    if (sort_by != null) {
+      colTypes[colTypes.length-1] = "double";
+      colFormats[colFormats.length-1] = "%.5f";
+    }
+
     String[] colNames = Arrays.copyOf(_hyper_names, _hyper_names.length + extra_len);
     colNames[_hyper_names.length] = "model_ids";
     if (sort_by != null)
@@ -473,8 +559,18 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
       Model m = DKV.getGet(km);
       Model.Parameters parms = m._parms;
       int j;
-      for (j = 0; j < _hyper_names.length; ++j)
-        table.set(i, j, PojoUtils.getFieldValue(parms, _hyper_names[j], _field_naming_strategy));
+      for (j = 0; j < _hyper_names.length; ++j) {
+        Object paramValue = PojoUtils.getFieldValue(parms, _hyper_names[j], _field_naming_strategy);
+        if (paramValue.getClass().isArray()) {
+          // E.g., GLM alpha/lambda parameters can be arrays with one value
+          if (paramValue instanceof float[] && ((float[])paramValue).length == 1) paramValue = ((float[]) paramValue)[0];
+          else if (paramValue instanceof double[] && ((double[])paramValue).length == 1) paramValue = ((double[]) paramValue)[0];
+          else if (paramValue instanceof int[] && ((int[])paramValue).length == 1) paramValue = ((int[]) paramValue)[0];
+          else if (paramValue instanceof long[] && ((long[])paramValue).length == 1) paramValue = ((long[]) paramValue)[0];
+          else if (paramValue instanceof Object[] && ((Object[])paramValue).length == 1) paramValue = ((Object[]) paramValue)[0];
+        }
+        table.set(i, j, paramValue);
+      }
       table.set(i, j, km.toString());
       if (sort_by != null) table.set(i, j + 1, ModelMetrics.getMetricFromModel(km, sort_by));
       i++;
@@ -510,35 +606,88 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    * Exports this Grid in a binary format using {@link AutoBuffer}. Related models are not saved.
    *
    * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
-   * @throws IOException Error serializing the grid.
+   * @return Path of the file written
    */
-  public void exportBinary(final String gridExportDir) throws IOException {
+  public List<String> exportBinary(final String gridExportDir, final boolean exportModels, ModelExportOption... options) {
     Objects.requireNonNull(gridExportDir);
-    final String gridFilePath = gridExportDir + "/" + _key.toString();
     assert _key != null;
+    final String gridFilePath = gridExportDir + "/" + _key;
     final URI gridUri = FileUtils.getURI(gridFilePath);
+    PersistUtils.write(gridUri, (ab) -> ab.put(this));
+    List<String> result = new ArrayList<>();
+    result.add(gridFilePath);
+    if (exportModels) {
+      exportModelsBinary(result, gridExportDir, options);
+    }
+    return result;
+  }
+
+  private void exportModelsBinary(final List<String> files, final String exportDir, ModelExportOption... options) {
+    Objects.requireNonNull(exportDir);
+    for (Model model : getModels()) {
+      try {
+        String modelFile = exportDir + "/" + model._key.toString();
+        files.add(modelFile);
+        model.exportBinaryModel(modelFile, true, options);
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to write grid model " + model._key.toString(), e);
+      }
+    }
+  }
+  
+  public static Grid importBinary(final String gridPath, final boolean loadReferences) {
+    final URI gridUri = FileUtils.getURI(gridPath);
+    if (!PersistUtils.exists(gridUri)) {
+      throw new IllegalArgumentException("Grid file not found " + gridUri);
+    }
     final Persist persist = H2O.getPM().getPersistForURI(gridUri);
-    try (final OutputStream outputStream = persist.create(gridUri.toString(), true)) {
-      final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
-      writeWithoutModels(autoBuffer);
-      autoBuffer.close();
+    final String gridDirectory = persist.getParent(gridUri.toString());
+    final Grid grid = readGridBinary(gridUri, persist);
+    final Recovery<Grid> recovery = new Recovery<>(gridDirectory);
+    URI gridReferencesUri = FileUtils.getURI(recovery.referencesMetaFile(grid));
+    if (loadReferences && !PersistUtils.exists(gridReferencesUri)) {
+      throw new IllegalArgumentException("Requested to load with references, but the grid was saved without references.");
+    }
+    grid.importModelsBinary(gridDirectory);
+    if (loadReferences) {
+      recovery.loadReferences(grid);
+    }
+    DKV.put(grid);
+    return grid;
+  }
+  
+  private static Grid readGridBinary(final URI gridUri, Persist persist) {
+    try (final InputStream inputStream = persist.open(gridUri.toString())) {
+      final AutoBuffer gridAutoBuffer = new AutoBuffer(inputStream);
+      final Freezable freezable = gridAutoBuffer.get();
+      if (!(freezable instanceof Grid)) {
+        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridUri.toString()));
+      }
+      return (Grid) freezable;
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to open grid file.", e);
     }
   }
 
-  /**
-   * Saves all of the models present in this Grid. Models are named by their keys.
-   *
-   * @param exportDir Directory to export all the models to.
-   * @throws IOException Error exporting the models
-   */
-  public void exportModelsBinary(final String exportDir) throws IOException {
-    Objects.requireNonNull(exportDir);
-    for (Model model : getModels()) {
-      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true);
+  private void importModelsBinary(final String exportDir) {
+    for (Key<Model> k : _models.values()) {
+      String modelFile = exportDir + "/" + k.toString();
+      try {
+        final Model<?, ?, ?> model = Model.importBinaryModel(modelFile);
+        assert model != null;
+      } catch (IOException e) {
+        throw new IllegalStateException("Unable to load model from " + modelFile, e);
+      }
     }
+  }
+
+  @Override
+  public Set<Key<?>> getDependentKeys() {
+    return _params.getDependentKeys();
   }
 
   public MP getParams() {
     return _params;
   }
+
 }

@@ -15,7 +15,10 @@ spec:
   template:
     metadata:
       labels:
-    {{- include "h2o-helm.selectorLabels" . | nindent 8 }}
+      {{- include "h2o-helm.selectorLabels" . | nindent 8 }}
+      {{- range $k, $v := .Values.podLabels }}
+        {{ $k }}: {{ $v }}
+      {{- end }}
     spec:
       securityContext:
       {{- toYaml .Values.podSecurityContext | nindent 8 }}

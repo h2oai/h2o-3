@@ -34,7 +34,5 @@ def h2o_H2OFrame_set_level():
     assert (newFrame[0]==lastLevel).all(), "h2o.H2OFrame.set_level() command is not working."
     assert (newFrame[1]==firstLevel).all, "h2o.H2OFrame.set_level() command is not working."
 
-if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_set_level())
-else:
-    h2o_H2OFrame_set_level()
+
+pyunit_utils.standalone_test(h2o_H2OFrame_set_level)

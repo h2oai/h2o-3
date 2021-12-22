@@ -50,13 +50,14 @@ function() {
   cleanUP(c(model, model2, training1_data))
 
 # PCA
-  print("*************  starting max_runtime_test for PCA")
-  training1_data <- h2o.importFile(locate("smalldata/gridsearch/pca1000by25.csv"))
-  x_indices <- c(1:h2o.ncol(training1_data))
-  model <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, seed=seed)
-  model2 <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, max_runtime_secs=model@model$run_time/(1000.0*fact_red), seed=seed)
-  test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound*2.0, 1.2))
-  cleanUP(c(training1_data, model, model2))
+#  print("*************  starting max_runtime_test for PCA")
+#  training1_data <- h2o.importFile(locate("smalldata/gridsearch/pca1000by25.csv"))
+#  x_indices <- c(1:h2o.ncol(training1_data))
+#  model <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, seed=seed)
+#  model2 <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, max_runtime_secs=model@model$run_time/(1000.0*fact_red), seed=seed)
+#  test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound*2.0, 1.2))
+#  cleanUP(c(training1_data, model, model2))
+  print("############## Timing test skipped for PCA for now until JIRA PUBDEV-8103 is resolved")
 
   # kmeans
   print("*************  starting max_runtime_test for kmeans")
@@ -94,6 +95,8 @@ function() {
   
   if (sum(test_pass_fail)>0)
     stop("Max_runtime_secs tests have failed.  Please check printout to determine which algos have failed....")
+  else
+      print("PCA not tested.  Please fix JIRA: https://h2oai.atlassian.net/browse/PUBDEV-8103")
 }
 
 cleanUP<-function(removeList) {

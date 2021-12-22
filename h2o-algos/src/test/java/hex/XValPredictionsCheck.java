@@ -37,7 +37,7 @@ public class XValPredictionsCheck extends TestUtil {
     Frame tfr = null;
     try {
       // Load data, hack frames
-      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      tfr = parseTestFile("smalldata/iris/iris_wheader.csv");
       Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{AstKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
       tfr.add(foldId);
       DKV.put(tfr);

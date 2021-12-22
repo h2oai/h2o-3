@@ -140,7 +140,7 @@ def stackedensemble_multinomial_test():
     # Train a stacked ensemble using the GBM and GLM above
     stack = H2OStackedEnsembleEstimator(base_models=[my_gbm.model_id,  my_rf.model_id, my_xgb.model_id, my_nb.model_id, my_dnn.model_id, my_glm.model_id])
     stack.train(x=x, y=y, training_frame=train, validation_frame=test)  # also test that validation_frame is working
-    assert type(stack) == h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator
+    assert isinstance(stack, h2o.estimators.stackedensemble.H2OStackedEnsembleEstimator)
     assert stack.type == "classifier"
 
     # Check that prediction works
@@ -151,11 +151,11 @@ def stackedensemble_multinomial_test():
 
     # Evaluate ensemble performance
     perf_stack_train = stack.model_performance()
-    assert type(perf_stack_train) == h2o.model.metrics_base.H2OMultinomialModelMetrics
+    assert isinstance(perf_stack_train, h2o.model.metrics_base.H2OMultinomialModelMetrics)
     perf_stack_valid = stack.model_performance(valid=True)
-    assert type(perf_stack_valid) == h2o.model.metrics_base.H2OMultinomialModelMetrics
+    assert isinstance(perf_stack_valid, h2o.model.metrics_base.H2OMultinomialModelMetrics)
     perf_stack_test = stack.model_performance(test_data=test)
-    assert type(perf_stack_test) == h2o.model.metrics_base.H2OMultinomialModelMetrics
+    assert isinstance(perf_stack_test, h2o.model.metrics_base.H2OMultinomialModelMetrics)
 
 
     # Check that stack perf is better (smaller) than the best (smaller) base learner perf:

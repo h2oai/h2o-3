@@ -3,7 +3,9 @@ package water.util;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 import static water.util.ArrayUtils.*;
@@ -42,6 +44,16 @@ public class ArrayUtilsTest {
     assertArrayEquals(sut, append(empty, sut));
     assertArrayEquals(sut, append(sut, empty));
     assertArrayEquals(expected, append(sut, sut2));
+  }
+  
+  @Test
+  public void testAppendDouble() {
+    double[] sut = {1.0, 2.0, 3.0};
+    double[] expected = {1.0, 2.0, 3.0, 3.0};
+    double[] empty = {};
+    assertArrayEquals(expected, append(sut, 3.0), 0.0);
+    assertArrayEquals(new double[]{3.0}, append(empty, 3.0), 0.0);
+    assertArrayEquals(new double[]{3.0}, append(null, 3.0), 0.0);
   }
 
   @Test
@@ -173,16 +185,80 @@ public class ArrayUtilsTest {
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
   }
+
+  @Test
+  public void testSortIndicesCutoffIsStable() {
+    int arrayLen = 100;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[arrayLen]; // intentionally only zeros
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, 500, 1);
+    assertArrayEquals("Not correctly sorted or the same values were replaced",
+            ArrayUtils.range(0, arrayLen - 1), indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+
+    sort(indices, valuesInput, 500, -1);
+    assertArrayEquals("Not correctly sorted or the same values were replaced",
+            ArrayUtils.range(0, arrayLen - 1), indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+  }
+
+  @Test
+  public void testSortIndicesCutoffBranch() {
+    int arrayLen = 10;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 2, -26, 16};
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, 500, 1);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 4, 7, 9, 3}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, valuesInput, 500, -1);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 7, 4, 2, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
+  }
+
+  @Test
+  public void testSortIndicesJavaSortBranch() {
+    int arrayLen = 10;
+    int[] indices = ArrayUtils.range(0, arrayLen - 1);
+    double[] values = new double[]{-12, -5, 1, 255, 1.25, -1, 0, 2, -26, 16};
+    double[] valuesInput = Arrays.copyOf(values, values.length);
+
+    sort(indices, valuesInput, -1, 1);
+    assertArrayEquals("Not correctly sorted", new int[]{8, 0, 1, 5, 6, 2, 4, 7, 9, 3}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, valuesInput, -1, -1);
+    assertArrayEquals("Not correctly sorted", new int[]{3, 9, 7,4, 2, 6, 5, 1, 0, 8}, indices);
+    assertArrayEquals("Values array is changed", values, valuesInput, 0);
+    for (int index = 1; index < arrayLen; index++)
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
+  }
   
   @Test
-  public void testSortIndices() {
+  public void testSortIndicesRandomAttackJavaSortBranch() {
     Random randObj = new Random(12345);
     int arrayLen = 100;
     int[] indices = new int[arrayLen];
     double[] values = new double[arrayLen];
-    for (int index = 0; index < arrayLen; index++)  // generate data array
+    for (int index = 0; index < arrayLen; index++) {// generate data array
       values[index] = randObj.nextDouble();
-    
+      indices[index] = index;
+    }
+
     sort(indices, values, -1, 1); // sorting in ascending order
     for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
       Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]], 
@@ -192,6 +268,28 @@ public class ArrayUtilsTest {
     for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
       Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
               values[indices[index-1]] >= values[indices[index]]);  
+  }
+
+  @Test
+  public void testSortIndicesRandomAttackCutoffBranch() {
+    Random randObj = new Random(12345);
+    int arrayLen = 100;
+    int[] indices = new int[arrayLen];
+    double[] values = new double[arrayLen];
+    for (int index = 0; index < arrayLen; index++) {// generate data array
+      values[index] = randObj.nextDouble();
+      indices[index] = index;
+    }
+
+    sort(indices, values, 500, 1); // sorting in ascending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in ascending order
+      Assert.assertTrue(values[indices[index-1]]+" should be <= "+values[indices[index]],
+              values[indices[index-1]] <= values[indices[index]]);
+
+    sort(indices, values, 500, -1);  // sorting in descending order
+    for (int index = 1; index < arrayLen; index++)  // check correct sorting in descending order
+      Assert.assertTrue(values[indices[index-1]]+" should be >= "+values[indices[index]],
+              values[indices[index-1]] >= values[indices[index]]);
   }
 
   @Test
@@ -290,6 +388,58 @@ public class ArrayUtilsTest {
     assertArrayEquals("Selected array elements mismatch.",
                       expectedSelectedElements, ArrayUtils.select(arr, idxs));
   }
+
+  @Test
+  public void testSubArrayByte() {
+    byte[] a = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    byte[] subA = ArrayUtils.subarray(a, 0, 6);
+    assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5}, subA);
+
+    byte[] subA2 = ArrayUtils.subarray(a, 1, 6);
+    assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, subA2);
+
+    subA2[2] = 2;
+    assertArrayEquals(subA2, new byte[]{1, 2, 2, 4, 5, 6});
+    assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, a);
+  }
+
+  @Test
+  public void testSubArray2D() {
+    Integer[][] a = new Integer[][]{{0, 1}, {2, 3, 4}, {5, 6, 7, 8, 9}, {5}, {5, 6}, {5, 6, 8}};
+    Integer[][] subA = ArrayUtils.subarray2DLazy(a, 0, 2);
+    assertArrayEquals("Wrong column subarray", new Integer[][]{{0, 1}, {2, 3, 4}}, subA);
+
+    Integer[][] subA2 = ArrayUtils.subarray2DLazy(a, 1, 5);
+    assertArrayEquals("Wrong column subarray", new Integer[][]{{2, 3, 4}, {5, 6, 7, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, subA2);
+
+    subA2[1][2] = 2;
+    assertArrayEquals("Subarray not changed",
+            new Integer[][]{{2, 3, 4}, {5, 6, 2, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, subA2);
+    assertArrayEquals("Original array not changed",
+            new Integer[][]{{0, 1}, {2, 3, 4}, {5, 6, 2, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, a);
+  }
+
+  @Test
+  public void testGaussianVector() {
+    double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE);
+    assertArrayEquals(new double[]{0.86685, 0.539654, 1.65799, -0.16698, 2.332985}, a, 1e-3);
+  }
+
+  @Test
+  public void testInnerProductDouble() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double res = ArrayUtils.innerProduct(a, b);
+    assertEquals(21, res, 0);
+  }
+
+  @Test
+  public void testSubDouble() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double[] res = ArrayUtils.subtract(a, b);
+    assertArrayEquals(new double[]{-1, 0.5, 0.25, -8.25, 2, 5}, res, 0);
+  }
   
   @Test
   public void testToStringQuotedElements(){
@@ -310,4 +460,118 @@ public class ArrayUtilsTest {
     final String outputString = toStringQuotedElements(emptyNames);
     assertEquals("[]", outputString);
   }
+
+  @Test
+  public void testMinMax() {
+    double[] array = new double[]{1.0, 4.0, -1.0};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
+  }
+
+  @Test
+  public void testMinMaxNaN() {
+    double[] array = new double[]{Double.NaN, 4.0, -1.0};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{-1.0, 4.0}, res, 0);
+  }
+
+  @Test
+  public void testMinMaxNaNs() {
+    double[] array = new double[]{Double.NaN, Double.NaN, Double.NaN};
+    double[] res = minMaxValue(array);
+    assertArrayEquals("Result is not correct", new double[]{Double.MAX_VALUE, Double.MIN_VALUE}, res, 0);
+  }
+
+  @Test
+  public void testSubAndMul() {
+    double[] row = new double[]{2.0, 5.0, 6.0};
+    double[] p = new double[]{1.0, 4.0, -1.0};
+    double[] n = new double[]{-0.25, 0, 0.25};
+    double res = subAndMul(row, p, n);
+
+    assertEquals("Result is not correct", 1.5, res, 1e-3);
+
+    double[] sub = ArrayUtils.subtract(row, p);
+    double res2 = ArrayUtils.innerProduct(sub, n);
+
+    assertEquals("Result is not correct", res, res2, 1e-3);
+  }
+  
+  @Test
+  public void testToStringQuotedElements_with_max_items() {
+    final Object[] names = IntStream.range(1, 10).mapToObj(Integer::toString).toArray();
+    final String outputString = toStringQuotedElements(names, 5);
+    assertEquals("[\"1\", \"2\", \"3\", ...4 not listed..., \"8\", \"9\"]", outputString);
+  }
+
+  @Test
+  public void testToStringQuotedElements_with_max_items_corner_cases() {
+    final Object[] names = IntStream.range(1, 4).mapToObj(Integer::toString).toArray();
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, -1));
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 0));
+    assertEquals("[\"1\", ...2 not listed...]", toStringQuotedElements(names, 1));
+    assertEquals("[\"1\", ...1 not listed..., \"3\"]", toStringQuotedElements(names, 2));
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 3));
+    assertEquals("[\"1\", \"2\", \"3\"]", toStringQuotedElements(names, 4));
+  }
+
+  @Test
+  public void rangeTest() {
+    int[] range = ArrayUtils.range(0, 5);
+    assertArrayEquals("It is not a valid range", new int[]{0, 1, 2, 3, 4, 5}, range);
+  }
+
+  @Test
+  public void testUniformDistFromArray() {
+    double[][] array = new double[][]{{1.0, 2.0, 3.0}, {-1.0, -2.0, -3.0}};
+    double[] dist = uniformDistFromArray(array, 0xDECAF);
+    assertArrayEquals("Not expected array of size", new double[]{2.763, -2.958}, dist, 10e-3);
+  }
+
+  @Test
+  public void testInterpolateLinear(){
+    double[] simple = new double[]{Double.NaN, 1, 2, Double.NaN, 4};
+    double[] simpleExpected = new double[]{0.5, 1, 2, 3, 4};
+    interpolateLinear(simple);
+    assertArrayEquals("Interpolated array should be"+Arrays.toString(simpleExpected)+" but is"+Arrays.toString(simple), simpleExpected, simple, 0);
+
+    double[] simple2 = new double[]{Double.NaN, Double.NaN, 3, 4, Double.NaN, 6};
+    double[] simpleExpected2 = new double[]{1, 2, 3, 4, 5, 6};
+    interpolateLinear(simple2);
+    assertArrayEquals("Interpolated array should be"+Arrays.toString(simpleExpected2)+" but is"+ Arrays.toString(simple2), simpleExpected2, simple2, 0);
+
+    double[] complex = new double[]{0, Double.NaN, 3, Double.NaN, 9};
+    double[] complexExpected = new double[]{0, 1.5, 3, 6, 9};
+    interpolateLinear(complex);
+    assertArrayEquals("Interpolated array should be"+Arrays.toString(complexExpected)+" but is"+Arrays.toString(complex), complexExpected, complex, 0);
+  }
+
+  @Test
+  public void testDistinctLongs() {
+    assertArrayEquals(new long[0], ArrayUtils.distinctLongs(0, 100L, RandomUtils.getRNG(42)));
+    assertArrayEquals(
+            ArrayUtils.toString(ArrayUtils.seq(0, 33)), 
+            ArrayUtils.toString(ArrayUtils.distinctLongs(33, 33L, RandomUtils.getRNG(42)))); // comparing strings to avoid int-long conversion ;)
+    
+    long bound = (long) Integer.MAX_VALUE + 1;
+    long[] vals = ArrayUtils.distinctLongs(33, bound, RandomUtils.getRNG(42));
+    assertEquals(33, vals.length);
+    for (int i = 0; i < vals.length; i++) {
+      assertTrue(vals[i] < bound);
+      assertTrue(i == 0 || vals[i - 1] < vals[i]);
+    }
+    try {
+      ArrayUtils.distinctLongs(11, 10, RandomUtils.getRNG(42));
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertEquals(e.getMessage(), "argument bound (=10) needs to be lower or equal to n (=11)");
+    }
+    try {
+      ArrayUtils.distinctLongs(11, 12, new Random());
+      fail();
+    } catch (IllegalArgumentException e) {
+      assertEquals(e.getMessage(), "Random implementation needs to be created by RandomUtils and inherit from RandomBase");
+    }
+  }
+
 }

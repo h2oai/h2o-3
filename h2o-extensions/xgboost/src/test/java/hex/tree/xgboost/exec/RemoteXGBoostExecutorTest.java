@@ -13,7 +13,7 @@ import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
 import static org.junit.Assert.assertTrue;
-import static water.TestUtil.parse_test_file;
+import static water.TestUtil.parseTestFile;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -34,7 +34,7 @@ public class RemoteXGBoostExecutorTest {
         Scope.enter();
         try {
             // Parse frame into H2O
-            Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+            Frame tfr = Scope.track(parseTestFile("./smalldata/prostate/prostate.csv"));
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._train = tfr._key;

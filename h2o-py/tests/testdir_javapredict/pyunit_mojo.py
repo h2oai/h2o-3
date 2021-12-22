@@ -16,7 +16,6 @@ import sys; sys.path.insert(1, os.path.join("..", ".."))
 import tempfile
 import time
 
-import colorama
 import tabulate
 from tests import pyunit_utils
 import h2o
@@ -44,9 +43,9 @@ def test_mojo_model(target_dir):
     report = []
     for estimator, estimator_name in [(H2ORandomForestEstimator, "DRF"),
                                       (H2OGradientBoostingEstimator, "GBM")]:
-        print(colorama.Fore.LIGHTYELLOW_EX + "\n#================================================")
+        print("\n#================================================")
         print("#  Estimator: " + estimator.__name__)
-        print("#================================================\n" + colorama.Fore.RESET)
+        print("#================================================\n")
 
         for problem in ["binomial", "multinomial", "regression"]:
             print("========================")
@@ -146,11 +145,11 @@ def test_mojo_model(target_dir):
                 assert same, \
                     "Predictions are different for row %d: mojo=%r, pojo=%r, server=%r" % (i + 1, lpred, ppred, rpred)
             print("    Time taken = %.3fs" % (time.time() - time0))
-            print(colorama.Fore.LIGHTGREEN_EX + "\nPredictions match!\n" + colorama.Fore.RESET)
+            print("\nPredictions match!\n")
 
-    print(colorama.Fore.LIGHTYELLOW_EX + "\n\n#================================================")
+    print("\n\n#================================================")
     print("#  Timing report")
-    print("#================================================\n" + colorama.Fore.RESET)
+    print("#================================================\n")
     print(tabulate.tabulate(report,
           headers=["Model", "Problem type", "Scorer", "%d rows" % NTESTROWS, "%d rows" % (2 * NTESTROWS)],
           floatfmt=".3f"), end="\n\n\n")
@@ -198,7 +197,6 @@ def load_csv(csvfile):
 try:
     target_dir = tempfile.mkdtemp()
     if __name__ == "__main__":
-        colorama.init()
         pyunit_utils.standalone_test(lambda: test_mojo_model(target_dir))
     else:
         test_mojo_model(target_dir)

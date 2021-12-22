@@ -29,6 +29,7 @@ public class SortTest extends TestUtil {
       // Sort will be on columns 0 and 1, in that order, and is expected stable.
       fr = buildFrame(1000,10);
       fr.insertVec(0,"row",fr.remove(2));
+      DKV.put(fr);
       //
       Val val = Rapids.exec(tree);
       assertTrue( val instanceof ValFrame);
@@ -46,6 +47,7 @@ public class SortTest extends TestUtil {
     try {
       fr = buildFrame(1000,10);
       fr.insertVec(0,"row",fr.remove(2));
+      DKV.put(fr);
       res = Merge.sort(fr,new int[]{1,2});
       res.add("row",res.remove(0));
       new CheckSort().doAll(res);
@@ -62,6 +64,7 @@ public class SortTest extends TestUtil {
       String[] domain = new String[1000];
       for( int i=0; i<1000; i++ ) domain[i] = "D"+i;
       fr.vec(0).setDomain(domain);
+      DKV.put(fr);
       res = fr.sort(new int[]{0,1});
       new CheckSort().doAll(res);
     } finally {
@@ -89,8 +92,8 @@ public class SortTest extends TestUtil {
     Frame fr = null, res = null, ans = null;
     try {
 
-      fr = parse_test_file(f1Name);
-      ans = parse_test_file(f2Name);
+      fr = parseTestFile(f1Name);
+      ans = parseTestFile(f2Name);
       Scope.track(fr);
       Scope.track(ans);
       res = fr.sort(sortingIndices);
@@ -202,7 +205,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
-      fr = parse_test_file("sort_crash.csv");
+      fr = parseTestFile("sort_crash.csv");
       sorted = fr.sort(new int[]{0});
       Scope.track(fr);
       Scope.track(sorted);
@@ -297,7 +300,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr = null, sortedInt = null, sortedFloat = null;
     try {
-      fr = parse_test_file(fileWithPath);
+      fr = parseTestFile(fileWithPath);
       if (addNas) {
         Random _rand = new Random();
         int randRange = Math.min(10, (int)fr.numRows());
@@ -332,7 +335,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr, sortedInt;
     try {
-      fr = parse_test_file("smalldata/synthetic/integerFrame.csv");
+      fr = parseTestFile("smalldata/synthetic/integerFrame.csv");
       sortedInt = fr.sort(new int[]{0}, new int[]{-1});
       Scope.track(fr);
       Scope.track(sortedInt);

@@ -53,7 +53,7 @@ public class OrcTestUtils {
       Configuration conf = new Configuration();
       Path p = new Path(f.toString());
       Reader orcFileReader = OrcFile.createReader(p, OrcFile.readerOptions(conf));
-      h2oFrame = water.TestUtil.parse_test_file(f.toString());
+      h2oFrame = water.TestUtil.parseTestFile(f.toString());
       return compareH2OFrame(fileName, failedFiles, h2oFrame, orcFileReader);
     } finally {
       if (h2oFrame != null) h2oFrame.delete();
