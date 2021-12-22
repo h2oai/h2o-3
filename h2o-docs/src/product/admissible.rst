@@ -256,7 +256,7 @@ The code below generates an infogram, and we plot the infogram and view the data
         h2o.init()
                 
         # Import hmda dataset
-        f <- "https://erin-data.s3.amazonaws.com/misc/hmda_lar_2018_orig_mtg_sample-singleMF-rm-rare.csv"
+        f <- "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
         col_types <- list(by.col.name = c("high_priced"), 
                           types = c("factor"))
         df <- h2o.importFile(path = f, col.types = col_types)
@@ -298,13 +298,13 @@ The code below generates an infogram, and we plot the infogram and view the data
         h2o.init()
 
         # Import credit dataset
-        f = "https://erin-data.s3.amazonaws.com/misc/hmda_lar_2018_orig_mtg_sample-singleMF-rm-rare.csv"
+        f = "https://erin-data.s3.amazonaws.com/admissible/data/hmda_lar_2018_sample.csv"
         col_types = {'high_priced': "enum"}
         df = h2o.import_file(path=f, col_types=col_types)
 
         # We will split the data so that we can test/compare performance
         # of admissible vs non-admissible models later
-        train, test = df.split_frame(seed=1)
+        train, test = df.split_frame(ratios=[0.8], seed=1)
 
         # Response column and predictor columns
         y = "high_priced"
@@ -399,11 +399,11 @@ Using the HMDA infogram example above, we can extend the infogram analysis to ev
         from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
         # Train an Admissible GBM
-        agbm = H2OGradientBoostingEstimator(seed = 1)
+        agbm = H2OGradientBoostingEstimator(seed=1)
         agbm.train(x=acols, y=y, training_frame=train)
 
         # Train a GBM on all unprotected features
-        gbm = H2OGradientBoostingEstimator(seed = 1)
+        gbm = H2OGradientBoostingEstimator(seed=1)
         gbm.train(x=ucols, y=y, training_frame=train)
 
         # Admissible GBM test AUC
@@ -463,11 +463,11 @@ We can execute two AutoML runs to compare the accuracy of the models built on on
         aml.train(x=ucols, y=y, training_frame=train)
 
         # Admissible AutoML test AUC
-        aaml.model_performance(test).auc()
+        aaml.leader.model_performance(test).auc()
         # 0.8264549
 
         # Un-protected AutoML test AUC
-        aml.model_performance(test).auc()
+        aml.leader.model_performance(test).auc()
         # 0.8501232
 
 
