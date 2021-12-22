@@ -133,7 +133,7 @@ public class RuleFitUtils {
                 .map(e -> e.getValue().stream()
                         .reduce((r1,r2) -> new Rule(r1.conditions, r1.predictionValue, r1.varName + ", " + r2.varName,
                                 r1.coefficient + r2.coefficient, r1.support, 
-                                 ruleImportance(r1.coefficient + r2.coefficient, r1.support))))
+                                 ruleGlobalImportance(r1.coefficient + r2.coefficient, r1.support))))
                 .map(f -> f.get())
                 .collect(Collectors.toList());
 
@@ -156,7 +156,7 @@ public class RuleFitUtils {
         }
     }
 
-    static double ruleImportance(double lassoWeight, double support) {
+    static double ruleGlobalImportance(double lassoWeight, double support) {
         return abs(lassoWeight) * sqrt(support * (1 - support));
     }
 }
