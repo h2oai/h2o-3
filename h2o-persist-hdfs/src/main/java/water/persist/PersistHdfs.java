@@ -11,11 +11,7 @@ import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.MemoryManager;
-import water.Value;
+import water.*;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
@@ -267,12 +263,14 @@ public final class PersistHdfs extends Persist {
   }
 
   private static void startDelegationTokenRefresher(Path p) throws IOException {
-    if (H2O.CLOUD.leader() != H2O.SELF) {
-      // only cloud leader is allowed to refresh the tokens
+    if (lastSavedHadoopConfiguration == null || 
+            !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
+      // no refreshing needed, bye
       return;
     }
 
-    if (lastSavedHadoopConfiguration == null || !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
+    if (Paxos._cloudLocked && H2O.CLOUD.leader() != H2O.SELF) {
+      // cloud already locked, and I am not the leader, give up - only the cloud leader is allowed to refresh the tokens
       return;
     }
 
@@ -280,8 +278,17 @@ public final class PersistHdfs extends Persist {
     if (!"s3a".equalsIgnoreCase(uri.getScheme())) {
       // only S3A needs to generate delegation token
       if (Log.isLoggingFor(Log.DEBUG)) {
-        Log.debug("Scheme is not s3a: " + uri);
+        Log.debug("Delegation token refresh is only needed for s3a, requested URI: " + uri);
       }
+      return;
+    }
+
+    // Important make sure the cloud is locked in order to guarantee that the leader will distribute credentials
+    // to all nodes and don't do refresh only for itself (which can happen if cloud is not yet locked)
+    Paxos.lockCloud("S3A Token Refresh");
+
+    if (H2O.CLOUD.leader() != H2O.SELF) {
+      // we are not a leader node in a locked cloud, give up
       return;
     }
 
