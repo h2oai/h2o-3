@@ -90,34 +90,6 @@ public final class PersistHdfs extends Persist {
   public PersistHdfs() { _iceRoot = null; }
   public void cleanUp() { throw H2O.unimpl(); /* user-mode swapping not implemented */}
 
-  // Loading/Writing ice to HDFS
-  public PersistHdfs(URI uri) {
-    try {
-      _iceRoot = new Path(uri + "/ice" + H2O.SELF_ADDRESS.getHostAddress() + "-" + H2O.API_PORT);
-      // Make the directory as-needed
-      FileSystem fs = getFileSystem(_iceRoot, CONF);
-      fs.mkdirs(_iceRoot);
-    } catch( Exception e ) {
-      throw Log.throwErr(e);
-    }
-  }
-
-  /** InputStream from a HDFS-based Key */
-  /*public static InputStream openStream(Key k, Job pmon) throws IOException {
-    H2OHdfsInputStream res = null;
-    Path p = new Path(k.toString());
-    try {
-      res = new H2OHdfsInputStream(p, 0, pmon);
-    } catch( IOException e ) {
-      try {
-        Thread.sleep(1000);
-      } catch( Exception ex ) {}
-      Log.warn("Error while opening HDFS key " + k.toString() + ", will wait and retry.");
-      res = new H2OHdfsInputStream(p, 0, pmon);
-    }
-    return res;
-  }*/
-
   @Override public byte[] load(final Value v) {
     //
     // !!! WARNING !!!
