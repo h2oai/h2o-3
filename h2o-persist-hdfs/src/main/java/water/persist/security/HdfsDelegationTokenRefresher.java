@@ -74,7 +74,8 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         return keytabFile.getAbsolutePath();
     }
 
-    private final ScheduledExecutorService _executor;
+    // executor is only non-NULL when this node still believes it can refresh credentials (eg: it is a leader node or cloud was not locked yet)
+    private volatile ScheduledExecutorService _executor; 
 
     private final String _authPrincipal;
     private final String _authKeytabPath;
@@ -94,7 +95,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         this(conf, authPrincipal, authKeytabPath, authUser, null);
     }
 
-    public  HdfsDelegationTokenRefresher(
+    public HdfsDelegationTokenRefresher(
             Configuration conf,
             String authPrincipal,
             String authKeytabPath,
@@ -133,8 +134,14 @@ public class HdfsDelegationTokenRefresher implements Runnable {
         if (renewalIntervalSecs <= 0) {
             throw new IllegalArgumentException("Renewal interval needs to be a positive number, got " + renewalIntervalSecs);
         }
-        doRefresh();
-        _executor.scheduleAtFixedRate(this, renewalIntervalSecs, renewalIntervalSecs, TimeUnit.SECONDS);
+        boolean keepRefreshing = doRefresh();
+        if (keepRefreshing) {
+            // note: _executor cannot be modified concurrently - at this stage everything is strictly sequential
+            assert _executor != null : "Executor is undefined even though we were asked to keep refreshing credentials";
+            _executor.scheduleAtFixedRate(this, renewalIntervalSecs, renewalIntervalSecs, TimeUnit.SECONDS);
+        } else {
+            log("Node " + H2O.SELF + " will not be participating in delegation token refresh.", null);
+        }
     }
 
     private long autodetectRenewalInterval() {
@@ -165,20 +172,33 @@ public class HdfsDelegationTokenRefresher implements Runnable {
 
     @Override
     public void run() {
-        doRefresh();
+        boolean keepRefreshing = doRefresh();
+        if (!keepRefreshing) {
+            log("Cloud is already locked, non-leader node " + H2O.SELF + " will no longer refresh delegation tokens.", null);
+        }
     }
 
-    private void doRefresh() {
+    private boolean doRefresh() {
         if (Paxos._cloudLocked && !(H2O.CLOUD.leader() == H2O.SELF)) {
             // cloud is formed the leader will take of subsequent refreshes
-            _executor.shutdown();
-            return;
+            if (_executor != null) {
+                // only shutdown once
+                final ScheduledExecutorService executor;
+                synchronized(this) {
+                    executor = _executor;
+                    _executor = null;
+                }
+                if (executor != null) {
+                    executor.shutdown();
+                }
+            }
+            return false;
         }
         for (int i = 0; i < _maxAttempts; i++) {
             try {
                 Credentials creds = refreshTokens(loginAuthUser());
                 distribute(creds);
-                return;
+                return true;
             } catch (IOException | InterruptedException e) {
                 log("Failed to refresh token (attempt " + i + " out of " + _maxAttempts + "). Will retry in " + _retryDelaySecs + "s.", e);
             }
@@ -188,6 +208,7 @@ public class HdfsDelegationTokenRefresher implements Runnable {
                 Thread.currentThread().interrupt();
             }
         }
+        return true;
     }
 
     private Credentials refreshTokens(UserGroupInformation tokenUser) throws IOException, InterruptedException {
