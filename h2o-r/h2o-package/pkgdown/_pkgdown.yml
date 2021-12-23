@@ -23,6 +23,7 @@ reference:
       - apply
       - as.character.H2OFrame
       - as.data.frame.H2OFrame
+      - as.data.frame.H2OSegmentModels
       - as.factor
       - as.h2o
       - as.matrix.H2OFrame
@@ -105,12 +106,14 @@ reference:
       - h2o.download_pojo
       - h2o.downloadAllLogs
       - h2o.downloadCSV
+      - h2o.drop_duplicates
       - h2o.entropy
       - h2o.exp
       - h2o.explain
       - h2o.explain_row
       - h2o.exportFile
       - h2o.exportHDFS
+      - h2o.feature_interaction
       - h2o.fillna
       - h2o.filterNACols
       - h2o.find_row_by_threshold
@@ -120,6 +123,7 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gbm
+      - h2o.generic
       - h2o.genericModel
       - h2o.get_automl
       - h2o.get_leaderboard
@@ -158,6 +162,7 @@ reference:
       - h2o.import_sql_select
       - h2o.import_sql_table
       - h2o.importFile
+      - h2o.importFolder
       - h2o.impute
       - h2o.infogram
       - h2o.init
@@ -182,6 +187,7 @@ reference:
       - h2o.list_api_extensions
       - h2o.list_core_extensions
       - h2o.list_jobs
+      - h2o.list_models
       - h2o.listTimezones
       - h2o.loadGrid
       - h2o.loadModel
@@ -258,6 +264,7 @@ reference:
       - h2o.removeVecs
       - h2o.rep_len
       - h2o.reset_threshold
+      - h2o.residual_analysis_plot
       - h2o.residual_deviance 
       - h2o.residual_dof
       - h2o.residual_analysis_plot
@@ -269,6 +276,7 @@ reference:
       - h2o.rstrip
       - h2o.runif
       - h2o.save_mojo
+      - h2o.save_to_hive
       - h2o.saveGrid
       - h2o.saveModel
       - h2o.saveModelDetails
@@ -312,10 +320,12 @@ reference:
       - h2o.target_encode_fit
       - h2o.target_encode_transform
       - h2o.targetencoder
+      - h2o.tf_idf
       - h2o.toFrame
       - h2o.tokenize
       - h2o.tolower
       - h2o.topN
+      - h2o.topBottomN
       - h2o.tot_withinss
       - h2o.totss 
       - h2o.toupper
@@ -385,6 +395,7 @@ reference:
       - print.H2OTable 
       - prostate
       - range.H2OFrame
+      - scale.H2OFrame
       - show,H2OCoxPHModelSummary-method
       - staged_predict_proba.H2OModel
       - str.H2OFrame
