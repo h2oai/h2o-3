@@ -169,7 +169,7 @@ public final class PersistHdfs extends Persist {
     long start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(max);
     run(() -> {
-        FileSystem fs = getFileSystem(p, CONF);
+        FileSystem fs = FileSystem.get(p.toUri(), CONF);
         FSDataInputStream s = null;
         try {
           s = fs.open(p);
@@ -200,9 +200,9 @@ public final class PersistHdfs extends Persist {
     store(new Path(_iceRoot, getIceName(v)), m);
   }
 
-  public static void store(final Path path, final byte[] data) {
+  private static void store(final Path path, final byte[] data) {
     run(() -> {
-        FileSystem fs = getFileSystem(path, CONF);
+        FileSystem fs = getFileSystem(path, true);
         fs.mkdirs(path.getParent());
         try (FSDataOutputStream s = fs.create(path)) {
           s.write(data);
@@ -217,7 +217,7 @@ public final class PersistHdfs extends Persist {
 
     run(() -> {
         Path p = new Path(_iceRoot, getIceName(v));
-        FileSystem fs = getFileSystem(p, CONF);
+        FileSystem fs = getFileSystem(p, true);
         fs.delete(p, true);
         return null;
     });
@@ -258,7 +258,7 @@ public final class PersistHdfs extends Persist {
   }
 
   public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException, RuntimeException {
-      FileSystem fs = getFileSystem(p, PersistHdfs.CONF);
+      FileSystem fs = getFileSystem(p, false);
       if(!fs.exists(p)){
         failed.add("Path does not exist: '" + p.toString() + "'");
         return;
@@ -267,6 +267,11 @@ public final class PersistHdfs extends Persist {
   }
 
   private static void startDelegationTokenRefresher(Path p) throws IOException {
+    if (H2O.CLOUD.leader() != H2O.SELF) {
+      // only cloud leader is allowed to refresh the tokens
+      return;
+    }
+
     if (lastSavedHadoopConfiguration == null || !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
       return;
     }
@@ -323,7 +328,7 @@ public final class PersistHdfs extends Persist {
             || "s3n".equals(uri.getScheme()) || "s3a".equals(uri.getScheme()) : "Expected hdfs, s3 s3n, or s3a scheme, but uri is " + uri;
 
     Path path = new Path(uri);
-    FileSystem fs = getFileSystem(path, PersistHdfs.CONF);
+    FileSystem fs = getFileSystem(path, false);
     FileStatus[] fstatus = fs.listStatus(path);
     assert fstatus.length == 1 : "Expected uri to single file, but uri is " + uri;
 
@@ -363,7 +368,7 @@ public final class PersistHdfs extends Persist {
       Path p = new Path(filter);
       Path expand = p;
       if( !filter.endsWith("/") ) expand = p.getParent();
-      FileSystem fs = getFileSystem(p, PersistHdfs.CONF);
+      FileSystem fs = getFileSystem(p, false);
       for( FileStatus file : fs.listStatus(expand) ) {
         Path fp = file.getPath();
         if( fp.toString().startsWith(p.toString()) ) {
@@ -420,7 +425,7 @@ public final class PersistHdfs extends Persist {
   public PersistEntry[] list(String path) {
     try {
       Path p = new Path(path);
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       FileStatus[] arr1 = fs.listStatus(p);
       PersistEntry[] arr2 = new PersistEntry[arr1.length];
       for (int i = 0; i < arr1.length; i++) {
@@ -437,7 +442,7 @@ public final class PersistHdfs extends Persist {
   public boolean exists(String path) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       return fs.exists(p);
     }
     catch (IOException e) {
@@ -455,7 +460,7 @@ public final class PersistHdfs extends Persist {
   public boolean isDirectory(String path) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       return fs.isDirectory(p);
     }
     catch (IOException e) {
@@ -467,7 +472,7 @@ public final class PersistHdfs extends Persist {
   public long length(String path) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       return fs.getFileStatus(p).getLen();
     }
     catch (IOException e) {
@@ -484,7 +489,7 @@ public final class PersistHdfs extends Persist {
   public InputStream openSeekable(String path) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       return fs.open(p);
     }
     catch (IOException e) {
@@ -504,7 +509,7 @@ public final class PersistHdfs extends Persist {
   public boolean mkdirs(String path) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       // Be consistent with Java API and File#mkdirs
       if (fs.exists(p)) {
         return false;
@@ -522,7 +527,7 @@ public final class PersistHdfs extends Persist {
     Path f = new Path(fromPath);
     Path t = new Path(toPath);
     try {
-      FileSystem fs = getFileSystem(f, CONF);
+      FileSystem fs = getFileSystem(f, false);
       return fs.rename(f, t);
     }
     catch (IOException e) {
@@ -534,7 +539,7 @@ public final class PersistHdfs extends Persist {
   public OutputStream create(String path, boolean overwrite) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       return fs.create(p, overwrite);
     }
     catch (IOException e) {
@@ -546,7 +551,7 @@ public final class PersistHdfs extends Persist {
   public boolean delete(String path) {
     Path p = new Path(path);
     try {
-      FileSystem fs = getFileSystem(p, CONF);
+      FileSystem fs = getFileSystem(p, false);
       return fs.delete(p, true);
     }
     catch (IOException e) {
@@ -564,9 +569,21 @@ public final class PersistHdfs extends Persist {
       return false;
     }
   }
-  
-  private static FileSystem getFileSystem(Path path, Configuration configuration) throws IOException {
-    startDelegationTokenRefresher(path);
-    return FileSystem.get(path.toUri(), configuration);
+
+  /**
+   * Retrieves FileSystem instance - the sole purpose of this method is to make sure delegation tokens
+   * are acquired before we attempt to get FileSystem instance.
+   * 
+   * @param path hdfs path
+   * @param assumeTokensAcquired set to true if this function is called for retrieving data from DKV
+   *                             in this case we assume that a higher-level method already acquired the tokens 
+   * @return FileSystem instance
+   * @throws IOException ouch...
+   */
+  private static FileSystem getFileSystem(Path path, boolean assumeTokensAcquired) throws IOException {
+    if (! assumeTokensAcquired) {
+      startDelegationTokenRefresher(path);
+    }
+    return FileSystem.get(path.toUri(), CONF);
   }
 }
