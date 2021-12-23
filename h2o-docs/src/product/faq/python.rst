@@ -167,14 +167,15 @@ Refer to the following example:
 How do I view a list of variable importances in Python?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Use ``model.varimp(return_list=True)`` as shown in the following example:
+Use ``model.varimp(use_pandas=False)`` as shown in the following example:
 
 ::
 
-    model = h2o.gbm(y = "IsDepDelayed", x = ["Month"], training_frame = df)
-    vi = model.varimp(return_list=True)
+    model = h2o.estimators.H2OGradientBoostingEstimator(seed=1111)
+    model.train(y = "IsDepDelayed", x = ["Month"],training_frame = airlines)
+    vi = model.varimp(use_pandas=False)
     Out[26]:
-    [(u'Month', 69.27436828613281, 1.0, 1.0)]
+    [('Month', 69.27436828613281, 1.0, 1.0)]
 
 --------------
 
