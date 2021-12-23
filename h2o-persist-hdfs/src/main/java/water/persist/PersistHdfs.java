@@ -266,13 +266,22 @@ public final class PersistHdfs extends Persist {
       addFolder(fs, p, keys, failed);
   }
 
-  public static void startDelegationTokenRefresher(Path p) throws IOException {
+  private static void startDelegationTokenRefresher(Path p) throws IOException {
     if (lastSavedHadoopConfiguration == null || !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
       return;
     }
 
+    final URI uri = p.toUri();
+    if (!"s3a".equalsIgnoreCase(uri.getScheme())) {
+      // only S3A needs to generate delegation token
+      if (Log.isLoggingFor(Log.DEBUG)) {
+        Log.debug("Scheme is not s3a: " + uri);
+      }
+      return;
+    }
+
     synchronized (GENERATION_LOCK) {
-      if (isInBucketWithAlreadyExistingToken(p.toUri())) {
+      if (isInBucketWithAlreadyExistingToken(uri)) {
         return;
       }
       final String bucketIdentifier = p.toUri().getHost();
@@ -283,11 +292,6 @@ public final class PersistHdfs extends Persist {
   }
   
   private static boolean isInBucketWithAlreadyExistingToken(URI uri) {
-    if (!"s3a".equals(uri.getScheme())) {
-      // if it is something else than s3a, return true to fallback to original behaviour and not generate token
-      Log.debug("Scheme is not s3a: " + uri.getScheme());
-      return true;
-    }
     return bucketsWithDelegationToken.contains(uri.getHost());
   }
 
