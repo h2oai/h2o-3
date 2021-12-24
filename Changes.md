@@ -2,6 +2,55 @@
 
 ## H2O
 
+### Zorn (3.36.0.1) - 12/2X/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8447]](https://h2oai.atlassian.net/browse/PUBDEV-8447) - Fixed differences in H2O’s random behavior across Java versions by disabling Stream API in this task. 
+- [[PUBDEV-8413]](https://h2oai.atlassian.net/browse/PUBDEV-8413) - Fixed CoxPH summary method in Python to return H2OTwoDimTable.
+- [[PUBDEV-8386]](https://h2oai.atlassian.net/browse/PUBDEV-8386) - Fixed form authentication not working by enforcing relative redirects in Jetty.
+- [[PUBDEV-7752]](https://h2oai.atlassian.net/browse/PUBDEV-7752) - Fixed exception raised in K-Means when a model is built using `nfolds` by disabling centroid stats for Cross-Validation.
+
+
+#### Improvement
+
+- [[PUBDEV-8474]](https://h2oai.atlassian.net/browse/PUBDEV-8474) - Removed `ymu` and `rank` visibility from FlowUI.
+- [[PUBDEV-8452]](https://h2oai.atlassian.net/browse/PUBDEV-8452) - Exposed `lambda` in Rulefit to have better control over regularization strength. 
+- [[PUBDEV-8444]](https://h2oai.atlassian.net/browse/PUBDEV-8444) - Implemented sequential replacement method with ModelSelection.
+- [[PUBDEV-8439]](https://h2oai.atlassian.net/browse/PUBDEV-8439) - Improved rule extraction from trees in RuleFit.
+- [[PUBDEV-8420]](https://h2oai.atlassian.net/browse/PUBDEV-8420) - Improved exception handling in AutoML and Grids to prevent model failure.
+- [[PUBDEV-8258]](https://h2oai.atlassian.net/browse/PUBDEV-8258) - Ensured Infogram uses validation frame and cross-validation when enabled.
+
+#### New Feature
+
+- [[PUBDEV-8414]](https://h2oai.atlassian.net/browse/PUBDEV-8414) - Added support and rule coverage to RuleFit.
+- [[PUBDEV-8391]](https://h2oai.atlassian.net/browse/PUBDEV-8391) - Added support for importing GAM MOJO.
+- [[PUBDEV-8379]](https://h2oai.atlassian.net/browse/PUBDEV-8379) - Added a convenience tool that converts MOJO to POJO from the command line.
+- [[PUBDEV-8378]](https://h2oai.atlassian.net/browse/PUBDEV-8378) - Added support allowing users to modify floating point representation in POJO.
+- [[PUBDEV-8371]](https://h2oai.atlassian.net/browse/PUBDEV-8371) - Added experimental support for importing POJO for in-H2O scoring.
+- [[PUBDEV-8341]](https://h2oai.atlassian.net/browse/PUBDEV-8341) - Added official support for Java 16 and 17.
+- [[PUBDEV-8334]](https://h2oai.atlassian.net/browse/PUBDEV-8334) - Added Java 16 and 17 to the cluster.
+- [[PUBDEV-8322]](https://h2oai.atlassian.net/browse/PUBDEV-8322) - Added a compatibility K8s module that allows older versions of H2O to run on K8s.
+- [[PUBDEV-8204]](https://h2oai.atlassian.net/browse/PUBDEV-8204) - Added ability to convert MOJO to POJO for tree models.
+- [[PUBDEV-8135]](https://h2oai.atlassian.net/browse/PUBDEV-8135) - Added support enabling users to configure S3 with S3A configuration.
+- [[PUBDEV-8075]](https://h2oai.atlassian.net/browse/PUBDEV-8075) - Implemented the Infogram model.
+- [[PUBDEV-4940]](https://h2oai.atlassian.net/browse/PUBDEV-4940) - Implemented the Uplift DRF algorithm.
+
+#### Task
+
+- [[PUBDEV-8335]](https://h2oai.atlassian.net/browse/PUBDEV-8335) - Upgraded to Gradle 7 to support Java 16+.
+- [[PUBDEV-8222]](https://h2oai.atlassian.net/browse/PUBDEV-8222) - Added R API for Infogram.
+
+#### Docs
+
+- [[PUBDEV-8449]](https://h2oai.atlassian.net/browse/PUBDEV-8449) - Added documentation on Infogram to the User Guide.
+- [[PUBDEV-8379]](https://h2oai.atlassian.net/browse/PUBDEV-8379) - Added documentation on ModelSelection to the User Guide.
+- [[PUBDEV-8384]](https://h2oai.atlassian.net/browse/PUBDEV-8384) - Added notebook on floating point issue for POJO and FAQ documentation on POJO split points.
+- [[PUBDEV-8327]](https://h2oai.atlassian.net/browse/PUBDEV-8327) - Fixed bullet list formatting issues. 
+- [[PUBDEV-7903]](https://h2oai.atlassian.net/browse/PUBDEV-7903) - Updated R Reference Guide list.
+
 ### Zizler (3.34.0.7) - 12/21/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/7/index.html</a>
