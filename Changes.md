@@ -22,6 +22,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.h
 - [[PUBDEV-8439]](https://h2oai.atlassian.net/browse/PUBDEV-8439) - Improved rule extraction from trees in RuleFit.
 - [[PUBDEV-8420]](https://h2oai.atlassian.net/browse/PUBDEV-8420) - Improved exception handling in AutoML and Grids to prevent model failure.
 - [[PUBDEV-8258]](https://h2oai.atlassian.net/browse/PUBDEV-8258) - Ensured Infogram uses validation frame and cross-validation when enabled.
+- [[PUBDEV-7542]](https://h2oai.atlassian.net/browse/PUBDEV-7542) - Added dynamic stacking metalearning strategy for Stacked Ensemble in AutoML.
 
 #### New Feature
 
