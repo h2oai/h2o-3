@@ -1,26 +1,24 @@
 package hex.ensemble;
 
-import hex.*;
-
+import hex.Model;
+import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.genmodel.utils.DistributionFamily;
-import hex.genmodel.utils.LinkFunctionType;
-import hex.glm.GLMModel;
 import hex.grid.Grid;
-import water.*;
+import jsr166y.CountedCompleter;
+import water.DKV;
+import water.Job;
+import water.Key;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
-
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import water.util.ArrayUtils;
 import water.util.Log;
+
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -316,10 +314,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       List<Frame> baseModelPredictions = new ArrayList<>();
 
       for (Key<Model> k : baseModelKeys) {
-        // if training we can stop prematurely due to a timeout but computing validation scores should be allowed to finish
-        if (stop_requested() && isTraining)
-          throw new Job.JobCancelledException();
-
         if (_model._output._metalearner == null || _model.isUsefulBaseModel(k)) {
           Model aModel = DKV.getGet(k);
           if (null == aModel)
@@ -340,6 +334,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         Scope.untrack(levelOneFrame.keysList());
       }
       return levelOneFrame;
+    }
+
+    @Override
+    public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      if (_model != null) _model.delete();
+      return super.onExceptionalCompletion(ex, caller);
     }
 
     protected Frame buildPredictionsForBaseModel(Model model, Frame frame) {
@@ -482,6 +482,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     @Override
     protected Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame) {
+      // if training we can stop prematurely due to a timeout but computing validation scores should be allowed to finish
+      if (stop_requested() && isTrainingFrame) {
+        throw new Job.JobCancelledException();
+      }
       return buildPredictionsForBaseModel(model, actualsFrame);
     }
   }

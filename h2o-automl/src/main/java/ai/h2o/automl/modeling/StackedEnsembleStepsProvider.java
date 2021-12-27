@@ -26,6 +26,13 @@ public class StackedEnsembleStepsProvider
                  , ModelParametersProvider<StackedEnsembleParameters> {
 
     public static class StackedEnsembleSteps extends ModelingSteps {
+        @Override
+        protected void cleanup() {
+            super.cleanup();
+            Arrays.stream(aml().leaderboard().getModels())
+                    .filter(model -> model instanceof StackedEnsembleModel)
+                    .forEach(model -> ((StackedEnsembleModel) model).deleteBaseModelPredictions());
+        }
 
         static final String NAME = Algo.StackedEnsemble.name();
 

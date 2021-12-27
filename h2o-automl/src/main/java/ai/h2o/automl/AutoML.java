@@ -13,6 +13,7 @@ import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
+import hex.ensemble.StackedEnsembleModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -29,6 +30,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
@@ -158,6 +161,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private transient ModelingStep[] _executionPlan;
   private transient PreprocessingStep[] _preprocessing;
 
+  private boolean _useAutoBlending;
   /**
    * DO NOT USE explicitly: for schema/reflection only.
    */
@@ -277,10 +281,34 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+
   private void validateModelValidation(AutoMLBuildSpec buildSpec) {
     if (buildSpec.input_spec.fold_column != null) {
-      eventLog().warn(Stage.Validation, "Fold column "+buildSpec.input_spec.fold_column+" will be used for cross-validation. nfolds parameter will be ignored.");
+      eventLog().warn(Stage.Validation, "Fold column " + buildSpec.input_spec.fold_column + " will be used for cross-validation. nfolds parameter will be ignored.");
       buildSpec.build_control.nfolds = 0;
+    } else if (buildSpec.build_control.nfolds == -1) {
+      Frame trainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
+      long nrows = trainingFrame.numRows();
+      long ncols = trainingFrame.numCols() - (buildSpec.getNonPredictors().length +
+              (buildSpec.input_spec.ignored_columns != null ? buildSpec.input_spec.ignored_columns.length : 0));
+
+      double max_runtime = buildSpec.build_control.stopping_criteria.max_runtime_secs();
+      long nthreads = Stream.of(H2O.CLOUD.members())
+              .mapToInt((h2o) -> h2o._heartbeat._nthreads)
+              .sum();
+
+      boolean use_blending = ((ncols * nrows) / (max_runtime * nthreads)) > 2064;
+      if (max_runtime > 0 && use_blending &&
+              !(buildSpec.build_control.keep_cross_validation_predictions ||
+                buildSpec.build_control.keep_cross_validation_models ||
+                buildSpec.build_control.keep_cross_validation_fold_assignment)) {
+        _useAutoBlending = true;
+        buildSpec.build_control.nfolds = 0;
+        eventLog().info(Stage.Validation, "Blending will be used.");
+      } else {
+        buildSpec.build_control.nfolds = 5;
+        eventLog().info(Stage.Validation, "5-fold cross-validation will be used.");
+      }
     } else if (buildSpec.build_control.nfolds <= 1) {
       eventLog().info(Stage.Validation, "Cross-validation disabled by user: no fold column nor nfolds > 1.");
       buildSpec.build_control.nfolds = 0;
@@ -529,27 +557,30 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     // then we need to create one out of the original training set.
     if (!isCVEnabled()) {
       double[] splitRatios = null;
-      if (null == _validationFrame && null == _leaderboardFrame) {
-        splitRatios = new double[]{ 0.8, 0.1, 0.1 };
-        eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and none of validation frame and leaderboard frame were provided, " +
-                "automatically split the training data into training, validation and leaderboard frames in the ratio 80/10/10");
-      } else if (null == _validationFrame) {
-        splitRatios = new double[]{ 0.9, 0.1, 0 };
-        eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and no validation frame was provided, " +
-                "automatically split the training data into training and validation frames in the ratio 90/10");
-      } else if (null == _leaderboardFrame) {
-        splitRatios = new double[]{ 0.9, 0, 0.1 };
-        eventLog().info(Stage.DataImport,
-            "Since cross-validation is disabled, and no leaderboard frame was provided, " +
-                "automatically split the training data into training and leaderboard frames in the ratio 90/10");
+      double validationRatio = null == _validationFrame ? 0.1 : 0;
+      double blendingRatio = (_useAutoBlending && null == _blendingFrame) ? 0.2 : 0;
+      if (validationRatio + blendingRatio > 0) {
+        splitRatios = new double[]{
+                1 - (validationRatio + blendingRatio),
+                validationRatio,
+                blendingRatio
+        };
+        ArrayList<String> frames = new ArrayList();
+        if (null == _validationFrame) frames.add("validation");
+        if (null == _blendingFrame && _useAutoBlending) frames.add("blending");
+
+        String framesStr = String.join(", ", frames);
+        String ratioStr = Arrays.stream(splitRatios)
+                .mapToObj(d -> Integer.toString((int) (d * 100)))
+                .collect(Collectors.joining("/"));
+        eventLog().info(Stage.DataImport, "Since cross-validation is disabled, and " + framesStr + " frame(s) were not provided, " +
+                "automatically split the training data into training, " + framesStr + " frame(s) in the ratio " + ratioStr + ".");
       }
       if (splitRatios != null) {
         Key[] keys = new Key[] {
             Key.make(_runId+"_training_"+ _origTrainingFrame._key),
             Key.make(_runId+"_validation_"+ _origTrainingFrame._key),
-            Key.make(_runId+"_leaderboard_"+ _origTrainingFrame._key),
+            Key.make(_runId+"_blending_"+ _origTrainingFrame._key),
         };
         Frame[] splits = ShuffleSplitFrame.shuffleSplitFrame(
                 _origTrainingFrame, 
@@ -565,12 +596,14 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           splits[1].delete();
         }
 
-        if (_leaderboardFrame == null && splits[2].numRows() > 0) {
-          _leaderboardFrame = splits[2];
+        if (_blendingFrame == null && splits[2].numRows() > 0) {
+          _blendingFrame = splits[2];
         } else {
           splits[2].delete();
         }
       }
+      if (_leaderboardFrame == null)
+        _leaderboardFrame = _validationFrame;
     }
   }
 
@@ -727,9 +760,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }
       if (_buildSpec.input_spec.validation_frame == null && _validationFrame != null) {
         _validationFrame.delete(jobKey, fs, true);
-      }
-      if (_buildSpec.input_spec.leaderboard_frame == null && _leaderboardFrame != null) {
-        _leaderboardFrame.delete(jobKey, fs, true);
       }
     }
     if (_trainingFrame != null && _origTrainingFrame != null)
