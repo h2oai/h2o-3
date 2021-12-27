@@ -1,11 +1,13 @@
 package water.hadoop;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.s3a.S3A;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
 import water.persist.PersistHdfs;
+import water.persist.S3ATokenRefresherFactory;
 import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.BinaryFileTransfer;
 import water.hive.DelegationTokenRefresher;
@@ -155,7 +157,10 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
 
     DelegationTokenRefresher.setup(conf, ice_root);
     HdfsDelegationTokenRefresher.setup(conf, ice_root, null);
-    PersistHdfs.lastSavedHadoopConfiguration = conf;
+    S3ATokenRefresherFactory s3aTokenRefresherFactory = S3ATokenRefresherFactory.make(conf, ice_root);
+    if (s3aTokenRefresherFactory != null) {
+      PersistHdfs.registerRefresherFactory(s3aTokenRefresherFactory);
+    }
 
     final String[] args = makeArgs(conf, ice_root);
     try {
