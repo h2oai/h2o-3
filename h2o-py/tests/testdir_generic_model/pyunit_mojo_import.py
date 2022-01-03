@@ -29,16 +29,20 @@ def mojo_conveniece():
     # MOJO UPLOAD TEST
     #####
 
-    # Download the MOJO
-    original_model_filename = model.download_mojo(original_model_filename)
-    # Load the model from the temporary file
-    mojo_model = h2o.upload_mojo(original_model_filename)
-    assert isinstance(mojo_model, H2OGenericEstimator)
-
-    # Test scoring is available on the model
-    predictions = mojo_model.predict(airlines)
-    assert predictions is not None
-    assert predictions.nrows == 24421
+    try:
+        pyunit_utils.set_forbidden_paths([original_model_filename])
+        # Download the MOJO
+        original_model_filename = model.download_mojo(original_model_filename)
+        # Load the model from the temporary file
+        mojo_model = h2o.upload_mojo(original_model_filename)
+        assert isinstance(mojo_model, H2OGenericEstimator)
+    
+        # Test scoring is available on the model
+        predictions = mojo_model.predict(airlines)
+        assert predictions is not None
+        assert predictions.nrows == 24421
+    finally:
+        pyunit_utils.set_forbidden_paths([])
 
     #####
     # MOJO to POJO Conversion test with POJO re-import
