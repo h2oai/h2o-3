@@ -58,7 +58,7 @@ class H2OEstimator(ModelBase):
     """
     
     supervised_learning = None  # overridden in implementation
-    __default_params = None  # mangled/hidden: use `_default_param_value` to access a default param values internally.
+    __default_params = None     # mangled/hidden: use `_default_param_value` to access default param values internally.
 
     def __new__(cls, *args, **kwargs):
         if cls.__default_params is None:
