@@ -541,7 +541,7 @@ class H2OEstimator(ModelBase):
                 warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method."
                               " The last passed value \"%s\" is used." % (parameter_name, parameter_value), 
                               UserWarning, 
-                              stacklevel=2)  # warning should refer to the original call to `train`, `train_xxx`
+                              stacklevel=4)  # warning should refer to the original call to `train`, `train_xxx`
 
     def _default_param_value(self, param_name):
         return getattr(self.__default_params__, param_name)
