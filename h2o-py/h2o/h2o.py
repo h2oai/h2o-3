@@ -2275,7 +2275,8 @@ def upload_mojo(mojo_path, model_id=None):
     """
     response = api("POST /3/PostFile", filename=mojo_path)
     frame_key = response["destination_frame"]
-    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), path=mojo_path, model_id=model_id)
+    model_id = model_id if model_id else H2OGenericEstimator.guess_model_id(mojo_path)
+    mojo_estimator = H2OGenericEstimator(model_key=get_frame(frame_key), model_id=model_id)
     mojo_estimator.train()
     print(mojo_estimator)
     return mojo_estimator

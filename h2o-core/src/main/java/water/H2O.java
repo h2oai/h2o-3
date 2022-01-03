@@ -1141,7 +1141,7 @@ final public class H2O {
 
   //-------------------------------------------------------------------------------------------------------------------
 
-  private static AtomicLong nextModelNum = new AtomicLong(0);
+  private static final AtomicLong nextModelNum = new AtomicLong(0);
   
   /**
    * Calculate a unique model id that includes User-Agent info (if it can be discovered).
@@ -1201,7 +1201,7 @@ final public class H2O {
     // I actually tried only doing the addAndGet only for POST requests (and junk UUID otherwise),
     // but that didn't eliminate the gaps.
     long n = sequenceSource.addAndGet(1);
-    sb.append(Long.toString(CLUSTER_ID)).append("_").append(Long.toString(n));
+    sb.append(CLUSTER_ID).append("_").append(n);
 
     return sb.toString();
   }

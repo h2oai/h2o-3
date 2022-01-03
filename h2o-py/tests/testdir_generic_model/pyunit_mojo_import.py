@@ -5,8 +5,9 @@ from tests import pyunit_utils
 import os
 from pandas.testing import assert_frame_equal
 
+
 # Test of MOJO convenience methods
-def mojo_conveniece():    
+def mojo_convenience():    
     # Train a model
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     model = H2OGradientBoostingEstimator(ntrees = 1)
@@ -42,7 +43,7 @@ def mojo_conveniece():
         assert predictions is not None
         assert predictions.nrows == 24421
     finally:
-        pyunit_utils.set_forbidden_paths([])
+        pyunit_utils.clear_forbidden_paths()
 
     #####
     # MOJO to POJO Conversion test with POJO re-import
@@ -59,6 +60,6 @@ def mojo_conveniece():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(mojo_conveniece)
+    pyunit_utils.standalone_test(mojo_convenience)
 else:
-    mojo_conveniece()
+    mojo_convenience()

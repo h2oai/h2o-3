@@ -52,6 +52,15 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
     }
 
     @Override
+    public void init(boolean expensive) {
+        super.init(expensive);
+        if (_parms._path != null && _parms._model_key != null) {
+            error("_path", 
+                    "Path cannot be set for MOJO that is supposed to be loaded from distributed memory (key=" + _parms._model_key + ").");
+        }
+    }
+
+    @Override
     protected Driver trainModelImpl() {
         return new MojoDelegatingModelDriver();
     }
