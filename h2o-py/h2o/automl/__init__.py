@@ -40,4 +40,3 @@ class Distribution:
 
 
 __all__ = ['H2OAutoML', 'Distribution', 'get_automl', 'get_leaderboard']
->>>>>>> 901c6eb984 (Initial backend implementation)

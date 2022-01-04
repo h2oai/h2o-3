@@ -9,7 +9,6 @@ from h2o.automl import *
 from tests import pyunit_utils as pu
 
 
-
 def test_automl_distributions():
     scenarios = [
         dict(response="binomial", distribution=Distribution.binomial,
@@ -22,15 +21,15 @@ def test_automl_distributions():
         dict(response="gaussian", distribution=Distribution.gaussian,
              algos=['DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], max_models=12),
         dict(response="ordinal", distribution=Distribution.poisson,
-             algos=['DeepLearning', 'DRF', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
+             algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
         dict(response="gaussian", distribution=Distribution.gamma,
-             algos=['DeepLearning', "DRF", 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
-        dict(response="gaussian", distribution=Distribution.laplace, algos=['DeepLearning', 'GBM', 'StackedEnsemble']),
-        dict(response="gaussian", distribution=Distribution.quantile(0.25), algos=['DeepLearning', 'GBM', 'StackedEnsemble']),
+             algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
+        dict(response="gaussian", distribution=Distribution.laplace, algos=['DeepLearning', 'GBM']),
+        dict(response="gaussian", distribution=Distribution.quantile(0.25), algos=['DeepLearning', 'GBM']),
         dict(response="gaussian", distribution=Distribution.huber(.3),
-             algos=['DeepLearning', 'GBM', 'StackedEnsemble'], max_models=12),
+             algos=['DeepLearning', 'GBM'], max_models=12),
         dict(response="gaussian", distribution=Distribution.tweedie(1.5),
-             algos=['DeepLearning', 'DRF', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost']),
+             algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost']),
         dict(response="ordinal_factors", distribution=Distribution.ordinal, algos=[], fail=True),
         dict(response="gaussian", distribution="custom", algos=["GBM"]),
         dict(response="gaussian", distribution="custom2", algos=["GBM"]),
@@ -80,7 +79,7 @@ def test_automl_distributions():
                 scenario["distribution"] = Distribution.custom(CustomDistributionGaussian)
 
             aml = H2OAutoML(max_models=scenario.get("max_models", 12), distribution=scenario["distribution"], seed=seed,
-                            max_runtime_secs_per_model=1)
+                            max_runtime_secs_per_model=1, verbosity=None)
             aml.train(y=scenario["response"], training_frame=df)
             if scenario.get('fail', False):
                 failed = True
@@ -99,14 +98,13 @@ def test_automl_distributions():
                 expected_dist = scenario["distribution"]
                 if isinstance(expected_dist, dict):
                     expected_dist = expected_dist["distribution"]
-                if distribution != expected_dist and h2o.get_model(model_id).algo in scenario["algos"]:
+                if distribution != expected_dist and h2o.get_model(model_id).algo in [a.lower() for a in scenario["algos"]]:
                     failed = True
                     print("{model}: Expected distribution {s_dist} but {distribution} found!".format(
                         model=model_id,
                         s_dist=expected_dist,
                         distribution=distribution
                     ))
-                h2o.remove(model_id)
         except Exception as e:
             if not scenario.get('fail', False):
                 raise e

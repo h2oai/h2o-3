@@ -115,6 +115,7 @@ h2o.automl <- function(x, y, training_frame,
                        max_runtime_secs = NULL,
                        max_runtime_secs_per_model = NULL,
                        max_models = NULL,
+                       distribution = c("AUTO"),
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error"),
                        stopping_tolerance = NULL,
                        stopping_rounds = 3,
@@ -222,6 +223,16 @@ h2o.automl <- function(x, y, training_frame,
   build_control$stopping_criteria$stopping_metric <- ifelse(length(stopping_metric) == 1,
                                                             match.arg(tolower(stopping_metric), tolower(formals()$stopping_metric)),
                                                             match.arg(stopping_metric))
+  if (!is.null(distribution)) {
+    if (is.list(distribution)) {
+      build_control$distribution <- distribution$distribution
+      param <- setdiff(names(distribution), "distribution")
+      stopifnot("Expecting exactly one parameter, e.g. quantile_alpha, tweedie_power etc." = length(param) == 1)
+      build_control[[param]] <- distribution[[param]]
+    } else {
+      build_control$distribution <- distribution
+    }
+  }
   if (!is.null(stopping_tolerance)) {
     build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
   }
