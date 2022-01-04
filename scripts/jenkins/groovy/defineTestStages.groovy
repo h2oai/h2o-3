@@ -67,6 +67,12 @@ def call(final pipelineContext) {
   // for Python, mainly test with latest supported version
   def PR_STAGES = [
     [
+      stageName: 'Java 16 JUnit (SecurityUtils)', target: 'test-junit-security-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
+      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
+      imageSpecifier: "python-2.7-jdk-16"
+    ],
+    [
       stageName: 'Py3.7 Smoke (Minimal Assembly)', target: 'test-py-smoke-minimal', pythonVersion: '3.7', timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_MINIMAL]
@@ -345,13 +351,6 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 16 JUnit', target: 'test-junit-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-16"
-    ],
-    [
-      // SecurityUtils won't run on Java 16 see PUBDEV-8468 for details, left here as a reminder
-      stageName: 'Java 16 JUnit (SecurityUtils-PUBDEV-8468)', target: 'test-junit-security-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-2.7-jdk-16"
     ],
