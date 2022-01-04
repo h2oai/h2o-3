@@ -3,13 +3,20 @@ package water.parser;
 import org.junit.*;
 
 import java.io.File;
+
+import org.junit.runner.RunWith;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileIntegrityChecker;
 import water.util.FileUtils;
 
-public class ParseProgressTest extends TestUtil {
+@CloudSize(1)
+@RunWith(H2ORunner.class)
+public class ParseProgressTest {
+
   // Attempt a multi-jvm parse of covtype.
   // Silently exits if it cannot find covtype.
   @Test public void testCovtype() {
@@ -25,10 +32,10 @@ public class ParseProgressTest extends TestUtil {
       return;
     }
 
-    FileIntegrityChecker c = FileIntegrityChecker.check(f);
+    FileIntegrityChecker c = FileIntegrityChecker.check(f, false);
     Assert.assertEquals(1,c.size());   // Exactly 1 file
     Key k = c.syncDirectory(null,null,null,null);
-    Assert.assertEquals(true,k!=null);
+    Assert.assertNotNull(k);
 
     Frame fr = ParseDataset.parse(Key.make(), k);
     Assert.assertEquals( 55, fr.numCols() );

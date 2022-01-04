@@ -1,21 +1,29 @@
 package water.util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import water.*;
 import water.fvec.*;
 import water.persist.PersistNFS;
 
 public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
+  final int _expected;
   final String[] _files;        // File names found locally
   final long  [] _sizes;        // File sizes found locally
   int[] _ok;                    // OUTPUT: files which are globally compatible
   @Override public void setupLocal() {
     _ok = new int[_files.length];
-    for( int i = 0; i < _files.length; ++i ) {
+    for (int i = 0; i < _files.length; i++) {
       File f = new File(_files[i]);
-      if( f.exists() && (f.length()==_sizes[i]) )
+      if (!f.exists()) {
+        Log.warn("File " + f.getAbsolutePath() + " doesn't exist on node " + H2O.SELF);
+      } else if (f.length() != _sizes[i]) {
+        Log.warn("File " + f.getAbsolutePath() + " exists on node " + H2O.SELF + " but has a different size " +
+                "(expected=" + _sizes[i] + "B, actual=" + f.length() + "B).");
+      } else {
         _ok[i] = 1;
+      }
     }
   }
 
@@ -40,9 +48,16 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
     }
   }
 
-  public static FileIntegrityChecker check(File r) {  return new FileIntegrityChecker(r).doAllNodes(); }
+  public static FileIntegrityChecker check(File r, boolean local) {
+    FileIntegrityChecker checker = local ? new LocalFileIntegrityChecker(r) : new FileIntegrityChecker(r);
+    return checker.doCheck();
+  }
 
-  public FileIntegrityChecker(File root) {
+  protected FileIntegrityChecker doCheck() {
+    return doAllNodes();
+  }
+  
+  protected FileIntegrityChecker(File root, int expectedCnt) {
     super(H2O.GUI_PRIORITY);
     ArrayList<File> filesInProgress = new ArrayList<>();
     addFolder(root,filesInProgress);
@@ -53,9 +68,26 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
       _files[i] = f.getAbsolutePath();
       _sizes[i] = f.length();
     }
+    _expected = expectedCnt;
+  }
+  
+  public FileIntegrityChecker(File root) {
+    this(root, H2O.CLOUD.size());
   }
 
   public int size() { return _files.length; }
+
+  protected void makeFrame(Key<Frame> k, File f, Futures fs) {
+    Key<Job> lockOwner = Key.make();
+    new Frame(k).delete_and_lock(lockOwner); // Lock before making the nfs; avoids racing ImportFiles creating same Frame
+    Vec nfs = NFSFileVec.make(f, fs);
+    new Frame(k,new String[]{"C1"}, new Vec[]{nfs}).update(lockOwner).unlock(lockOwner);
+  }
+
+  @SuppressWarnings("unchecked")
+  protected Key<Frame> makeFrameKey(File f) {
+    return PersistNFS.decodeFile(f);
+  }
 
   // Sync this directory with H2O.  Record all files that appear to be visible
   // to the entire cloud, and give their Keys.  List also all files which appear
@@ -67,27 +99,44 @@ public class FileIntegrityChecker extends MRTask<FileIntegrityChecker> {
                            ArrayList<String> dels) {
 
     Futures fs = new Futures();
-    Key k = null;
+    Key<Frame> k = null;
     // Find all Keys which match ...
     for( int i = 0; i < _files.length; ++i ) {
-      if( _ok[i] < H2O.CLOUD.size() ) {
+      if( _ok[i] < _expected ) {
         if( fails != null ) fails.add(_files[i]);
       } else {
         File f = new File(_files[i]);
         // Do not call getCanonicalFile - which resolves symlinks - breaks test harness
 //        try { f = f.getCanonicalFile(); _files[i] = f.getPath(); } // Attempt to canonicalize
 //        catch( IOException ignore ) {}
-        k = PersistNFS.decodeFile(f);
+        k = makeFrameKey(f);
         if( files != null ) files.add(_files[i]);
         if( keys  != null ) keys .add(k.toString());
         if( DKV.get(k) != null ) dels.add(k.toString());
-        Key lockOwner = Key.make();
-        new Frame(k).delete_and_lock(lockOwner); // Lock before making the NFS; avoids racing ImportFiles creating same Frame
-        NFSFileVec nfs = NFSFileVec.make(f, fs);
-        new Frame(k,new String[]{"C1"}, new Vec[]{nfs}).update(lockOwner).unlock(lockOwner);
+        makeFrame(k, f, fs);
       }
     }
     fs.blockForPending();
     return k;
+  }
+}
+
+class LocalFileIntegrityChecker extends FileIntegrityChecker {
+  protected LocalFileIntegrityChecker(File root) {
+    super(root, 1);
+  }
+
+  protected Key<Frame> makeFrameKey(File f) {
+    return Key.make("file:" + File.separator + f.toString());
+  }
+
+  @Override
+  protected void makeFrame(Key<Frame> k, File f, Futures fs) {
+    UploadFileVec.ReadPutStats stats = new UploadFileVec.ReadPutStats();
+    try {
+      UploadFileVec.readPut(k, f, stats);
+    } catch (IOException e) {
+      throw new RuntimeException("Upload of file " + f.getAbsolutePath() + " failed.", e);
+    }
   }
 }

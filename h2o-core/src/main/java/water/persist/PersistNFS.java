@@ -120,11 +120,19 @@ public final class PersistNFS extends Persist {
     }
     return array;
   }
+  
+  @Override
+  public void importFiles(String path, String pattern, boolean forceLocal,
+                          ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    File f = new File(FileUtils.getURI(path));
+    if (!f.exists())
+      throw new H2ONotFoundArgumentException("File " + f + " does not exist");
+    FileIntegrityChecker.check(f, forceLocal).syncDirectory(files,keys,fails,dels);
+  }
 
   @Override
-  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    File f = new File(FileUtils.getURI(path));
-    if( !f.exists() ) throw new H2ONotFoundArgumentException("File " + path + " does not exist");
-    FileIntegrityChecker.check(f).syncDirectory(files,keys,fails,dels);
+  public void importFiles(String path, String pattern, 
+                          ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    importFiles(path, pattern, false, files, keys, fails, dels);
   }
 }

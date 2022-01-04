@@ -117,7 +117,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         ArrayList<String> keys = new ArrayList<>();
         ArrayList<String> fails = new ArrayList<>();
         ArrayList<String> dels = new ArrayList<>();
-        H2O.getPM().importFiles(_parms._path, null, files, keys, fails, dels);
+        H2O.getPM().importFiles(_parms._path, null, true, files, keys, fails, dels);
         if (!fails.isEmpty()) {
             throw new RuntimeException("Failed to import file: " + Arrays.toString(fails.toArray()));
         }

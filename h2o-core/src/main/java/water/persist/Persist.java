@@ -57,6 +57,11 @@ public abstract class Persist {
 
   abstract public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels);
 
+  public void importFiles(String path, String pattern, boolean forceLocal, 
+                          ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    importFiles(path, pattern, files, keys, fails, dels);
+  }
+
   // The filename can be either byte encoded if it starts with % followed by
   // a number, or is a normal key name with special characters encoded in
   // special ways.

@@ -1,5 +1,7 @@
 package water.fvec;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.io.InputStream;
@@ -53,6 +55,12 @@ public class UploadFileVec extends FileVec {
     public long total_bytes;
   }
 
+  static public Key readPut(Key<Frame> k, File file, ReadPutStats stats) throws IOException {
+    try (InputStream is = new FileInputStream(file)) {
+      return readPut_impl(k, is, stats);
+    }
+  }
+  
   static public Key readPut(String keyname, InputStream is, ReadPutStats stats) throws IOException {
     return readPut(Key.make(keyname), is, stats);
   }

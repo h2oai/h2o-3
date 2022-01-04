@@ -377,6 +377,11 @@ public class PersistManager {
 
   }
 
+  public void importFiles(String path, String pattern,
+                          ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+    importFiles(path, pattern, false, files, keys, fails, dels);
+  }
+
   /**
    * From a path produce a list of files and keys for parsing.
    *
@@ -390,16 +395,19 @@ public class PersistManager {
    *
    * @param path  (Input) Path to import data from
    * @param pattern (Input) Regex pattern to match files by
+   * @param forceLocal (Input) Flag indicating whether files should be read from a location on this node instead of
+   *                   the regular distributed way
    * @param files (Output) List of files found
    * @param keys  (Output) List of keys corresponding to files
    * @param fails (Output) List of failed files which mismatch among nodes
    * @param dels  (Output) I don't know what this is
    */
-  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+  public void importFiles(String path, String pattern, boolean forceLocal,
+                          ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     URI uri = FileUtils.getURI(path);
     String scheme = uri.getScheme();
     if (scheme == null || "file".equals(scheme)) {
-      I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
+      I[Value.NFS].importFiles(path, pattern, forceLocal, files, keys, fails, dels);
     } else if ("http".equals(scheme) || "https".equals(scheme)) {
       I[Value.HTTP].importFiles(path, pattern, files, keys, fails, dels);
     } else if ("s3".equals(scheme)) {
