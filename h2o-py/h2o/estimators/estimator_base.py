@@ -60,12 +60,6 @@ class H2OEstimator(ModelBase):
     supervised_learning = None  # overridden in implementation
     __default_params = None     # mangled/hidden: use `_default_param_value` to access default param values internally.
 
-    def __new__(cls, *args, **kwargs):
-        if cls.__default_params is None:
-            cls.__default_params = object()  # anything but None to avoid infinite recursion
-            cls.__default_params = cls()
-        return super(H2OEstimator, cls).__new__(cls)
-
     def __init__(self):
         super(H2OEstimator, self).__init__()
         self._model = self
@@ -543,5 +537,8 @@ class H2OEstimator(ModelBase):
                               UserWarning, 
                               stacklevel=4)  # warning should refer to the original call to `train`, `train_xxx`
 
-    def _default_param_value(self, param_name):
-        return getattr(self.__default_params, param_name)
+    @classmethod
+    def _default_param_value(cls, param_name):
+        if cls.__default_params is None:
+            cls.__default_params = cls()
+        return getattr(cls.__default_params, param_name)
