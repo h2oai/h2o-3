@@ -2279,7 +2279,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       return new DistributionFamily[] {
               DistributionFamily.AUTO,
               DistributionFamily.bernoulli,
-             // DistributionFamily.quasibinomial, // UNSUPPORTED
               DistributionFamily.multinomial,
               DistributionFamily.gaussian,
               DistributionFamily.poisson,
@@ -2287,10 +2286,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               DistributionFamily.laplace,
               DistributionFamily.quantile,
               DistributionFamily.huber,
-             // DistributionFamily.modified_huber,
               DistributionFamily.tweedie,
-            //  DistributionFamily.ordinal,
-             // DistributionFamily.custom, // UNSUPPORTED
       };
     }
   }

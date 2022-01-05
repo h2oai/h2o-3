@@ -758,14 +758,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
               DistributionFamily.gaussian,
               DistributionFamily.poisson,
               DistributionFamily.gamma,
-              //DistributionFamily.laplace,
               DistributionFamily.negativebinomial,
-              //DistributionFamily.quantile,
-              //DistributionFamily.huber,
-              //DistributionFamily.modified_huber,
               DistributionFamily.tweedie,
               DistributionFamily.ordinal,
-              //DistributionFamily.custom,
       };
       if (_lambda_search)
           distributionFamilies = Arrays.stream(distributionFamilies)

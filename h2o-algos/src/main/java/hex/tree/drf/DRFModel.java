@@ -14,7 +14,7 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     public String fullName() { return "Distributed Random Forest"; }
     public String javaName() { return DRFModel.class.getName(); }
     public boolean _binomial_double_trees = false;
-    public int _mtries = -1; //number of columns to use per split. default depeonds on the algorithm and problem (classification/regression)
+    public int _mtries = -1; //number of columns to use per split. default depends on the algorithm and problem (classification/regression)
 
     public DRFParameters() {
       super();
@@ -28,18 +28,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
       return new DistributionFamily[] {
               DistributionFamily.AUTO,
               DistributionFamily.bernoulli,
-              // DistributionFamily.quasibinomial,
               DistributionFamily.multinomial,
               DistributionFamily.gaussian,
-//              DistributionFamily.poisson,
-//              DistributionFamily.gamma,
-//              DistributionFamily.laplace,
-//              DistributionFamily.quantile,
-//              DistributionFamily.huber,
-//              DistributionFamily.modified_huber,
-//              DistributionFamily.tweedie,
-//              DistributionFamily.ordinal,
-              // DistributionFamily.custom,
       };
     }
   }

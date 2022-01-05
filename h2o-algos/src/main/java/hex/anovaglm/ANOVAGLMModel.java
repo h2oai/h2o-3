@@ -2,6 +2,7 @@ package hex.anovaglm;
 
 import hex.*;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import org.apache.commons.math3.distribution.FDistribution;
@@ -18,6 +19,8 @@ import static hex.anovaglm.ANOVAGLMUtils.generateGLMSS;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.genCoefficientTable;
 import static hex.glm.GLMModel.GLMParameters.*;
 import static hex.glm.GLMModel.GLMParameters.Family.AUTO;
+import static hex.util.DistributionUtils.distributionToFamily;
+import static hex.util.DistributionUtils.familyToDistribution;
 
 
 public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMParameters, ANOVAGLMModel.ANOVAGLMModelOutput>{
@@ -129,6 +132,39 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
       } else { // mean/mode imputation and skip (even skip needs an imputer right now! PUBDEV-6809)
         return new DataInfo.MeanImputer();
       }
+    }
+
+    @Override
+    public void setDistributionFamily(DistributionFamily distributionFamily) {
+      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily)))
+        _family = distributionToFamily(distributionFamily);
+    }
+
+    @Override
+    public DistributionFamily getDistributionFamily() {
+      return familyToDistribution(_family);
+    }
+
+    @Override
+    public DistributionFamily[] supportedDistributions() {
+      DistributionFamily[] distributionFamilies = new DistributionFamily[]{
+              DistributionFamily.AUTO,
+              DistributionFamily.bernoulli,
+              DistributionFamily.quasibinomial,
+              DistributionFamily.fractionalbinomial,
+              DistributionFamily.multinomial,
+              DistributionFamily.gaussian,
+              DistributionFamily.poisson,
+              DistributionFamily.gamma,
+              DistributionFamily.negativebinomial,
+              DistributionFamily.tweedie,
+              DistributionFamily.ordinal,
+      };
+      if (_lambda_search)
+        distributionFamilies = Arrays.stream(distributionFamilies)
+                .filter(df -> !df.equals(DistributionFamily.ordinal))
+                .toArray(DistributionFamily[]::new);
+      return distributionFamilies;
     }
   }
 

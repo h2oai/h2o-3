@@ -110,9 +110,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
               DistributionFamily.laplace,
               DistributionFamily.quantile,
               DistributionFamily.huber,
-          ///     DistributionFamily.modified_huber,
               DistributionFamily.tweedie,
-             // DistributionFamily.ordinal,
               DistributionFamily.custom,
       };
     }

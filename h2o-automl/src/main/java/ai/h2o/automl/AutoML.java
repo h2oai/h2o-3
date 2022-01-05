@@ -322,7 +322,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (buildSpec.build_control.distribution.equals(DistributionFamily.fractionalbinomial) ||
             buildSpec.build_control.distribution.equals(DistributionFamily.quasibinomial) ||
             buildSpec.build_control.distribution.equals(DistributionFamily.ordinal)) {
-      throw new H2OIllegalArgumentException("Distribution " + buildSpec.build_control.distribution.name() + " is not supported in AutoML!");
+      throw new H2OIllegalArgumentException("Distribution \"" + buildSpec.build_control.distribution.name() + "\" is not supported in AutoML!");
     }
   }
 

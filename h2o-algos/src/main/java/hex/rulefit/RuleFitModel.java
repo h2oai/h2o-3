@@ -1,6 +1,7 @@
 package hex.rulefit;
 
 import hex.*;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -77,6 +78,20 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                 rfit.error("min_rule_length", "min_rule_length cannot be greater than max_rule_length. Current values:  min_rule_length = " + rfit._parms._min_rule_length
                         + ", max_rule_length = " + rfit._parms._max_rule_length + ".");
             }
+        }
+
+        @Override
+        public DistributionFamily[] supportedDistributions() {
+            DistributionFamily[] distributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+                    DistributionFamily.poisson,
+                    DistributionFamily.gamma,
+                    DistributionFamily.tweedie,
+            };
+            return distributionFamilies;
         }
     }
 
