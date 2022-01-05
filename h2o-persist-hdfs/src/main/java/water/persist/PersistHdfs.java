@@ -15,7 +15,6 @@ import water.*;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
 import water.fvec.Vec;
-import water.persist.security.HdfsDelegationTokenRefresher;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -30,11 +29,7 @@ public final class PersistHdfs extends Persist {
   /** Root path of HDFS */
   private final Path _iceRoot;
 
-  public static Configuration lastSavedHadoopConfiguration = null;
-  
-  private static final String H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED = "h2o.auth.dynamicS3ATokenRefresher.enabled";
-  private static final Set<String> bucketsWithDelegationToken = Collections.synchronizedSet(new HashSet<>());
-  private static final Object GENERATION_LOCK = new Object();
+  private static final List<S3ATokenRefresherFactory> _refreshers = new LinkedList<>();
 
   /**
    * Filter out hidden files/directories (dot files, eg.: .crc).
@@ -260,51 +255,6 @@ public final class PersistHdfs extends Persist {
         return;
       }
       addFolder(fs, p, keys, failed);
-  }
-
-  private static void startDelegationTokenRefresher(Path p) throws IOException {
-    if (lastSavedHadoopConfiguration == null || 
-            !lastSavedHadoopConfiguration.getBoolean(H2O_DYNAMIC_AUTH_S3A_TOKEN_REFRESHER_ENABLED, false)) {
-      // no refreshing needed, bye
-      return;
-    }
-
-    if (Paxos._cloudLocked && H2O.CLOUD.leader() != H2O.SELF) {
-      // cloud already locked, and I am not the leader, give up - only the cloud leader is allowed to refresh the tokens
-      return;
-    }
-
-    final URI uri = p.toUri();
-    if (!"s3a".equalsIgnoreCase(uri.getScheme())) {
-      // only S3A needs to generate delegation token
-      if (Log.isLoggingFor(Log.DEBUG)) {
-        Log.debug("Delegation token refresh is only needed for s3a, requested URI: " + uri);
-      }
-      return;
-    }
-
-    // Important make sure the cloud is locked in order to guarantee that the leader will distribute credentials
-    // to all nodes and don't do refresh only for itself (which can happen if cloud is not yet locked)
-    Paxos.lockCloud("S3A Token Refresh");
-
-    if (H2O.CLOUD.leader() != H2O.SELF) {
-      // we are not a leader node in a locked cloud, give up
-      return;
-    }
-
-    synchronized (GENERATION_LOCK) {
-      if (isInBucketWithAlreadyExistingToken(uri)) {
-        return;
-      }
-      final String bucketIdentifier = p.toUri().getHost();
-      HdfsDelegationTokenRefresher.setup(lastSavedHadoopConfiguration, System.getProperty("java.io.tmpdir"), p.toString());
-      Log.debug("Bucket added to bucketsWithDelegationToken: '" + bucketIdentifier + "'");
-      bucketsWithDelegationToken.add(bucketIdentifier);
-    }
-  }
-  
-  private static boolean isInBucketWithAlreadyExistingToken(URI uri) {
-    return bucketsWithDelegationToken.contains(uri.getHost());
   }
 
   private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
@@ -588,9 +538,18 @@ public final class PersistHdfs extends Persist {
    * @throws IOException ouch...
    */
   private static FileSystem getFileSystem(Path path, boolean assumeTokensAcquired) throws IOException {
-    if (! assumeTokensAcquired) {
-      startDelegationTokenRefresher(path);
+    if (! assumeTokensAcquired && _refreshers.size() > 0) {
+      for (S3ATokenRefresherFactory refresherFactory : _refreshers) {
+        boolean handled = refresherFactory.startDelegationTokenRefresher(path);
+        if (handled)
+          break;
+      }
     }
     return FileSystem.get(path.toUri(), CONF);
   }
+
+  public static void registerRefresherFactory(S3ATokenRefresherFactory refresherFactory) {
+    _refreshers.add(refresherFactory);
+  }
+
 }
