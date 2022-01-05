@@ -738,8 +738,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     @Override
     public void setDistributionFamily(DistributionFamily distributionFamily) {
-      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily)))
+      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily))) {
         _family = distributionToFamily(distributionFamily);
+        _link = Link.family_default;
+      }
     }
 
     @Override

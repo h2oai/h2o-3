@@ -136,8 +136,10 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
 
     @Override
     public void setDistributionFamily(DistributionFamily distributionFamily) {
-      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily)))
+      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily))) {
         _family = distributionToFamily(distributionFamily);
+        _link = Link.family_default;
+      }
     }
 
     @Override
