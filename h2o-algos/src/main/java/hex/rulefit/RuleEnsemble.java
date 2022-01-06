@@ -5,6 +5,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.Log;
 import water.util.VecUtils;
 
 import java.util.Arrays;
@@ -137,6 +138,14 @@ public class RuleEnsemble extends Iced {
                 result.remove();
             } else {
                 rule.support = frameToMakeCategorical.vec(rule.varName).sparseRatio();
+                Log.info("Support of rule " + rule.varName + " is: " + rule.support);
+                int sum = 0;
+                for (int i = 0; i < frameToMakeCategorical.vec(rule.varName).length(); i++) {
+                    sum += frameToMakeCategorical.vec(rule.varName).at(i);
+                }
+                double calculated =(double) sum / frameToMakeCategorical.vec(rule.varName).length();
+                Log.info("Rule " + rule.varName + " sum/frameToMakeCategorical.vec(rule.varName).length(): " + calculated);
+                assert rule.support == calculated;
             }
         }
     }

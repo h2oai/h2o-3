@@ -33,6 +33,11 @@ def titanic():
             (train.as_data_frame()['sex'][i] == "male") and\
             (train.as_data_frame()['sibsp'][i] < 3.5 or math.isnan(train.as_data_frame()['sibsp'][i])):
             count = count + 1
+
+    print("rfit.rule_importance()['support'][0] value:")
+    print(rfit.rule_importance()['support'][0])
+    print("count / train.nrows value: ")
+    print(count / train.nrows)
     
     assert rfit.rule_importance()['support'][0] == count / train.nrows
     
