@@ -126,6 +126,11 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
                     throw new IllegalArgumentException(String.format("Unsupported MOJO model '%s'. ", mojoModel._modelDescriptor.algoName()));
             }
 
+            if (isDefaultResultKey() && mojoModel._modelAttributes != null) {
+                Key<GenericModel> originalModelKey = Key.make(mojoModel._modelAttributes.getModelId());
+                setResultKey(originalModelKey);
+            }
+
             final GenericModelOutput genericModelOutput = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes, mojoModel._reproducibilityInformation);
             return new GenericModel(_result, _parms, genericModelOutput, mojoModel, dataKey);
         }
@@ -136,6 +141,16 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
             final GenericModelOutput genericModelOutput = new GenericModelOutput(pojoDescriptor);
             return new GenericModel(_result, _parms, genericModelOutput, genmodel, pojoKey);
         }
+    }
+
+    private void setResultKey(Key<GenericModel> newResultKey) {
+        _job.setResult(newResultKey);
+        _result = _job._result; // careful - we have to make sure _result == _job._result (not just object equals)
+    }
+
+    private boolean isDefaultResultKey() {
+        final String genericPrefix = _parms.algoName() + "_";
+        return _result.toString().startsWith(genericPrefix);
     }
 
     private Key<Frame> importFile() {

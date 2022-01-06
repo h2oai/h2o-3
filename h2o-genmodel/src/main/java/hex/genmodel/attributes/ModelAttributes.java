@@ -1,6 +1,7 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
@@ -12,13 +13,13 @@ import hex.genmodel.attributes.parameters.ModelParameter;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Attributes of a MOJO model extracted from the MOJO itself.
  */
 public class ModelAttributes implements Serializable {
 
+  private final String _modelId;
   private final Table _modelSummary;
   private final Table _scoring_history;
   private final MojoModelMetrics _trainingMetrics;
@@ -28,9 +29,10 @@ public class ModelAttributes implements Serializable {
   private final ModelParameter[] _model_parameters;
 
   public ModelAttributes(MojoModel model, final JsonObject modelJson) {
+    _modelId = readModelId(modelJson);
+
     _modelSummary = ModelJsonReader.readTable(modelJson, "output.model_summary");
     _scoring_history = ModelJsonReader.readTable(modelJson, "output.scoring_history");
-
 
     if (ModelJsonReader.elementExists(modelJson, "output.training_metrics")) {
       _trainingMetrics = determineModelMetricsType(model);
@@ -69,6 +71,17 @@ public class ModelAttributes implements Serializable {
     }
   }
 
+  public String getModelId() {
+    return _modelId;
+  }
+
+  private String readModelId(final JsonObject modelJson) {
+    if (!ModelJsonReader.elementExists(modelJson, "model_id.name"))
+      return null;
+    JsonElement idElement = ModelJsonReader.findInJson(modelJson, "model_id.name");
+    return idElement.getAsString();
+  }
+  
   private static MojoModelMetrics determineModelMetricsType(final MojoModel mojoModel) {
     switch (mojoModel.getModelCategory()) {
       case Binomial:

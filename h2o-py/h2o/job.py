@@ -138,6 +138,7 @@ class H2OJob(object):
         jobs = self._query_job_status_safe()
         self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
         self.status = self.job["status"]
+        self.dest_key = self.job["dest"]["name"]
         self.progress = self.job["progress"]
         self.exception = self.job["exception"]
         self.warnings = self.job["warnings"] if "warnings" in self.job else None

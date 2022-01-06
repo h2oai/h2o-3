@@ -7,6 +7,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /** Jobs are used to do minimal tracking of long-lifetime user actions,
  *  including progress-bar updates and the ability to review in progress or
@@ -35,7 +36,7 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
 
   /** Result Key */
-  public final Key<T> _result;
+  public Key<T> _result;
   public final int _typeid;
 
   /** User description */
@@ -58,6 +59,19 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
       @Override boolean abort(Job job) { return job._stop_requested; }
       @Override void update(Job job) { job._warns = warns; }
     }.apply(this);
+  }
+
+  public void setResult(final Key<T> result) {
+    String resultClassName = TypeMap.className(_typeid);
+    if (!"hex.generic.GenericModel".equals(resultClassName)) {
+      throw new UnsupportedOperationException("Result key cannot be modified for " + 
+              (_typeid == 0 ? "unknown result type." : "result of type " + resultClassName + "."));
+    }
+    new JAtomic() {
+      @Override boolean abort(Job job) { return job._stop_requested; }
+      @Override void update(Job job) { job._result = result; }
+    }.apply(this);
+    update_from_remote();
   }
 
   /** Create a Job
@@ -453,11 +467,12 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   // Update the *this* object from a remote object.
   private void update_from_remote( ) {
-    Job remote = DKV.getGet(_key); // Watch for changes in the DKV
+    Job<T> remote = DKV.getGet(_key); // Watch for changes in the DKV
     if( this==remote ) return; // Trivial!
     if( null==remote ) return; // Stay with local version
-    boolean differ = false;
-    if( _stop_requested != remote._stop_requested ) differ = true;
+    final boolean resultDiffers = !Objects.equals(_result, remote._result);
+    boolean differ = resultDiffers;
+    if(_stop_requested != remote._stop_requested ) differ = true;
     if(_start_time!= remote._start_time) differ = true;
     if(_end_time  != remote._end_time  ) differ = true;
     if(_ex        != remote._ex        ) differ = true;
@@ -467,7 +482,10 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
     if(_max_runtime_msecs != remote._max_runtime_msecs) differ = true;
     if(! Arrays.equals(_warns, remote._warns)) differ = true;
     if( differ )
-      synchronized(this) { 
+      synchronized(this) {
+        if (resultDiffers) {
+          _result = remote._result; // keep the same instance if nothing actually changed, otherwise we could break '==' assumptions 
+        }
         _stop_requested = remote._stop_requested;
         _start_time= remote._start_time;
         _end_time  = remote._end_time  ;

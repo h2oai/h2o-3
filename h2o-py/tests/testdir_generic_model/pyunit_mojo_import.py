@@ -20,7 +20,8 @@ def mojo_convenience():
     # Load the model from the temporary file
     mojo_model = h2o.import_mojo(original_model_filename)
     assert isinstance(mojo_model, H2OGenericEstimator)
-    
+    assert mojo_model.model_id == model.model_id
+
     # Test scoring is available on the model
     predictions = mojo_model.predict(airlines)
     assert predictions is not None
@@ -37,6 +38,7 @@ def mojo_convenience():
         # Load the model from the temporary file
         mojo_model = h2o.upload_mojo(original_model_filename)
         assert isinstance(mojo_model, H2OGenericEstimator)
+        assert mojo_model.model_id == model.model_id
     
         # Test scoring is available on the model
         predictions = mojo_model.predict(airlines)
