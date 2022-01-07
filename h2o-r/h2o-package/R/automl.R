@@ -223,7 +223,7 @@ h2o.automl <- function(x, y, training_frame,
   build_control$stopping_criteria$stopping_metric <- ifelse(length(stopping_metric) == 1,
                                                             match.arg(tolower(stopping_metric), tolower(formals()$stopping_metric)),
                                                             match.arg(stopping_metric))
-  if (!is.null(distribution)) {
+  if (!is.null(distribution) && !missing(distribution)) {
     if (is.list(distribution)) {
       build_control$distribution <- distribution$distribution
       param <- setdiff(names(distribution), "distribution")
@@ -240,6 +240,7 @@ h2o.automl <- function(x, y, training_frame,
         ))
       build_control[[param]] <- distribution[[param]]
     } else {
+      distribution <- match.arg(distribution)
       if (tolower(distribution) %in% c("huber", "tweedie", "quantile", "custom")) {
         stop(paste0("Parameterized distributions(huber, tweedie, quantile, custom) must be specified as a list ",
                     "with their parameter, e.g., `list(distribution = \"tweedie\", tweedie_power = 1.5)`."))
