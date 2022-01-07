@@ -174,6 +174,7 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 LOG.info((tid + 1) + ". tree was built in " + timer.toString());
                 isolationTreeStats.updateBy(isolationTree);
             }
+            _model._output._training_metrics = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder().makeModelMetrics(_model, _parms.train(), null, null);
         }
     }
 

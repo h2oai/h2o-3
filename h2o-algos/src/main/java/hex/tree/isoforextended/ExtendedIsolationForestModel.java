@@ -46,13 +46,16 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
         assert _output._iTreeKeys != null : "Output has no trees, check if trees are properly set to the output.";
         // compute score for given point
         double pathLength = 0;
+        int numberOfTrees = 0;
         for (Key<CompressedIsolationTree> iTreeKey : _output._iTreeKeys) {
+            if (iTreeKey == null) continue;
+            numberOfTrees++;
             CompressedIsolationTree iTree = DKV.getGet(iTreeKey);
             double iTreeScore = iTree.computePathLength(data);
             pathLength += iTreeScore;
             LOG.trace("iTreeScore " + iTreeScore);
         }
-        pathLength = pathLength / _output._ntrees;
+        pathLength = pathLength / numberOfTrees;
         LOG.trace("Path length " + pathLength);
         double anomalyScore = anomalyScore(pathLength, _output._sample_size);
         LOG.trace("Anomaly score " + anomalyScore);
