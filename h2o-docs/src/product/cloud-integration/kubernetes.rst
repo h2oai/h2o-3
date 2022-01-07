@@ -31,19 +31,23 @@ Headless Service
 
 .. code:: yaml
 
-  apiVersion: networking.k8s.io/v1beta1
-  kind: Ingress
+  apiVersion: v1
+  kind: Service
   metadata:
-    name: h2o-ingress
-    namespace: default
+    name: h2o-service
+    namespace: <namespace-name>
   spec:
-    rules:
-    - http:
-        paths:
-        - path: /
-          backend:
-            serviceName: h2o-service
-            servicePort: 80
+    type: ClusterIP
+    clusterIP: None
+    selector:
+      app: h2o-k8s
+  ports:
+  - protocol: TCP
+    port: 54321
+
+The ``clusterIP: None`` defines the service as headless, and ``port: 54321`` is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
+
+The ``app: h2o-k8s`` setting is the name of the application with H2O pods inside. Be sure this setting corresponds to the name of the chosen H2O deployment name.
 
 StatefulSet
 ~~~~~~~~~~~
