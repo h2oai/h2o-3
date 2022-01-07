@@ -29,7 +29,8 @@ public class AUUC extends Iced{
     public final long[] _yControl;        // control group and y==1
     public final long[] _frequency;       // number of data in each bin
     public final long[] _frequencyCumsum; // cumulative sum of frequency to plot AUUC
-    public double[][] _uplift;              // output uplift values
+    public double[][] _uplift;            // output uplift values
+    public double[][] _upliftRandom;      // output random uplift values  
     public final long _n;                 // number of data
     
     public static final int NBINS = 1000;
@@ -37,6 +38,8 @@ public class AUUC extends Iced{
     public final AUUCType _auucType;
     public final int _auucTypeIndx;
     public double[] _auucs;
+    public double[] _auucsRandom;
+    public double[] _qini;
     
     public double threshold( int idx ) { return _ths[idx]; }
     public long treatment( int idx ) { return _treatment[idx]; }
@@ -48,6 +51,11 @@ public class AUUC extends Iced{
     public double[] upliftByType(AUUCType type){
         int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
         return _uplift[idx];
+    }
+    public double upliftRandom( int idx) { return _upliftRandom[_auucTypeIndx][idx]; }
+    public double[] upliftRandomByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return _upliftRandom[idx];
     }
     public AUUC(Vec probs, Vec y, Vec uplift, AUUCType auucType) {
         this(NBINS, probs, y, uplift, auucType);
@@ -81,7 +89,8 @@ public class AUUC extends Iced{
         _frequency = Arrays.copyOf(bldr._frequency, _nBins);
         _frequencyCumsum = Arrays.copyOf(bldr._frequency, _nBins);
         _uplift = new double[AUUCType.values().length][_nBins];
-
+        _upliftRandom = new double[AUUCType.values().length][_nBins];
+        
         // Rollup counts
         long tmpt=0, tmpc=0, tmptp = 0, tmpcp = 0, tmpf= 0;
         for( int i=0; i<_nBins; i++ ) {
@@ -91,6 +100,22 @@ public class AUUC extends Iced{
             tmpcp += _yControl[i]; _yControl[i] = tmpcp;
             tmpf += _frequencyCumsum[i]; _frequencyCumsum[i] = tmpf;
         }
+        
+        // these methods need to be call in this order
+        setUplift();
+        setUpliftRandom();
+        
+        if (trueProbabilities) {
+            _auucs = computeAuucs();
+            _auucsRandom = computeAuucsRandom();
+            _qini = computeQini();
+            _maxIdx = _auucType.maxCriterionIdx(this);
+        } else {
+            _maxIdx = 0;
+        }
+    }
+    
+    public void setUplift(){
         for(int i=0; i<AUUCType.VALUES.length; i++) {
             for (int j = 0; j < _nBins; j++) {
                 _uplift[i][j] = AUUCType.VALUES[i].exec(this, j);
@@ -103,11 +128,15 @@ public class AUUC extends Iced{
                 ArrayUtils.interpolateLinear(_uplift[i]);
             }
         }
-        if (trueProbabilities) {
-            _auucs = computeAuucs();
-            _maxIdx = _auucType.maxCriterionIdx(this);
-        } else {
-            _maxIdx = 0;
+    }
+    
+    public void setUpliftRandom(){
+        for(int i=0; i<AUUCType.VALUES.length; i++) {
+            int maxIndex = _nBins-1;
+            double a = _uplift[i][maxIndex]/_frequencyCumsum[maxIndex];
+            for (int j = 0; j < _nBins; j++) {
+                _upliftRandom[i][j] = a * _frequencyCumsum[j];
+            }
         }
     }
 
@@ -157,39 +186,66 @@ public class AUUC extends Iced{
         return quantiles;
     }
     
-    private double computeAuuc(){
+    private double computeAuuc(double[] uplift){
         double area = 0;
         for( int i = 0; i < _nBins; i++ ) {
-            area += uplift(i) * frequency(i);
+            area += uplift[i] * frequency(i);
         }
         return area/(_n+1);
     }
 
     private double[] computeAuucs(){
+        return computeAuucs(_uplift);
+    }
+
+    private double[] computeAuucsRandom(){
+        return computeAuucs(_upliftRandom);
+    }
+
+    private double[] computeAuucs(double[][] uplift){
         AUUCType[] auucTypes = AUUCType.VALUES;
         double[] auucs = new double[auucTypes.length];
         for(int i = 0; i < auucTypes.length; i++ ) {
             double area = 0;
             for(int j = 0; j < _nBins; j++) {
-                area += _uplift[i][j] * frequency(j);
+                area += uplift[i][j] * frequency(j);
             }
             auucs[i] = area/(_n+1);
         }
         return auucs;
     }
     
+    private double[] computeQini(){
+        double[] qini = new double[_auucs.length];
+        for(int i = 0; i < _auucs.length; i++){
+            qini[i] = auuc(i) - auucRandom(i);
+        }
+        return qini;
+    }
+    
     public double auucByType(AUUCType type){
         int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
         return auuc(idx);
     }
-
-    public double auuc(int idx){
-        return _auucs[idx];
-    }
     
-    public double auuc(){
-        return auuc(_auucTypeIndx);
+    public double qiniByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return qini(idx);
     }
+
+    public double auuc(int idx){ return _auucs[idx]; }
+    
+    public double auuc(){ return auuc(_auucTypeIndx); }
+
+    public double auucRandom(int idx){
+        return _auucsRandom[idx];
+    }
+
+    public double auucRandom(){ return auucRandom(_auucTypeIndx); }
+    
+    public double qini(int idx) { return _qini[idx];}
+    
+    public double qini(){ return qini(_auucTypeIndx);}
 
     private static class AUUCImpl extends MRTask<AUUCImpl> {
         final double[] _thresholds;
@@ -283,28 +339,39 @@ public class AUUC extends Iced{
      *  from the basic parts, and from an AUUC at a given threshold index.
      */
     public enum AUUCType {
-        AUTO() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
-            return qini.exec(treatment, control, yTreatment, yControl);
-        } },
-        qini() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
-            double norm = treatment / (double)control;
-            return yTreatment - yControl * norm;
-        } },
-        lift() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
-            return yTreatment / (double)treatment - yControl / (double)control;
-        } },
-        gain() { @Override double exec(long treatment, long control, long yTreatment, long yControl) {
-            return lift.exec(treatment, control, yTreatment, yControl) * (double)(treatment + control);
-        } };
+        AUTO() { 
+            @Override 
+            double exec(long treatment, long control, long yTreatment, long yControl) {
+                return qini.exec(treatment, control, yTreatment, yControl);
+            }
+        },
+        qini() { 
+            @Override 
+            double exec(long treatment, long control, long yTreatment, long yControl) {
+                double norm = treatment / (double)control;
+                return yTreatment - yControl * norm;
+            }
+        },
+        lift() {
+            @Override 
+            double exec(long treatment, long control, long yTreatment, long yControl) {
+                return yTreatment / (double) treatment - yControl / (double)control;
+            }
+        },
+        gain() {
+            @Override 
+            double exec(long treatment, long control, long yTreatment, long yControl) {
+                return lift.exec(treatment, control, yTreatment, yControl) * (double)(treatment + control);}
+        };
         
-        /** @param threshold
+        /** @param treatment
          *  @param control
          *  @param yTreatment
          *  @param yControl
          *  @return metric value */
-        abstract double exec(long threshold, long control, long yTreatment, long yControl );
-        public double exec( AUUC auc, int idx ) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
-
+        abstract double exec(long treatment, long control, long yTreatment, long yControl );
+        public double exec(AUUC auc, int idx) { return exec(auc.treatment(idx),auc.control(idx),auc.yTreatment(idx),auc.yControl(idx)); }
+        
         public static final AUUCType[] VALUES = values();
 
         public static AUUCType fromString(String strRepr) {
@@ -316,15 +383,15 @@ public class AUUC extends Iced{
             return null;
         }
 
-        public double maxCriterion(AUUC auuc ) { return exec(auuc, maxCriterionIdx(auuc)); }
+        public double maxCriterion(AUUC auuc) { return exec(auuc, maxCriterionIdx(auuc)); }
 
         /** Convert a criterion into a threshold index that maximizes the criterion
          *  @return Threshold index that maximizes the criterion
          */
-        public int maxCriterionIdx(AUUC auuc ) {
+        public int maxCriterionIdx(AUUC auuc) {
             double md = -Double.MAX_VALUE;
             int mx = -1;
-            for( int i=0; i<auuc._nBins; i++ ) {
+            for( int i=0; i<auuc._nBins; i++) {
                 double d = exec(auuc,i);
                 if( d > md ) {
                     md = d;

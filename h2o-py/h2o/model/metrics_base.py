@@ -1817,6 +1817,42 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             assert metric in ['qini', 'lift', 'gain'], \
                "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
             return self._metric_json['auuc_table'][metric][0]
+
+    def qini(self, metric=None):
+        """
+        Retrieve Qini value (area between Uplift curve and random curve).
+        
+        :param metric AUUC metric type (None, "qini", "lift", "gain",
+            default is None which means it takes default metric from model parameters) 
+        :returns: Qini value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.qini()
+        """
+        if metric is None:
+            return self._metric_json['qini']
+        else:
+            assert metric in ['qini', 'lift', 'gain'], \
+                "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
+            return self._metric_json['qini_table'][metric][0]
             
     def uplift(self, metric="AUTO"):
         """
@@ -1853,9 +1889,44 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             metric = 'qini'
         return self._metric_json["thresholds_and_metric_scores"][metric]
 
+    def uplift_random(self, metric="AUTO"):
+        """
+        Retrieve uplift values for each bin. 
+        
+        :param metric AUUC metric type ("qini", "lift", "gain", default is "AUTO" which means "qini") 
+        
+        :returns: a list of uplift values.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.uplift()
+        """
+        assert metric in ['AUTO', 'qini', 'lift', 'gain']
+
+        if metric == "AUTO":
+            metric = 'qini'
+        return self._metric_json["thresholds_and_metric_scores"][metric+"_random"]    
+
     def n(self):
         """
-        Retrieve numbers of observations in each bin. 
+        Retrieve cumulative sum of numbers of observations in each bin. 
         
         :returns: a list of numbers of observation.
 
@@ -1969,7 +2040,36 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         return self._metric_json["auuc_table"]
 
-    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="auto"):
+    def qini_table(self):
+        """
+        Retrieve all types of Qini values in a table.
+         
+        :returns: a table of Qini values.
+    
+        :examples:
+         
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.qini_table()
+        """
+        return self._metric_json["qini_table"]
+
+    def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="AUTO"):
         """
         Plot Uplift Curve. 
         
@@ -1998,8 +2098,9 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.plot_uplift(plot=True)
-        >>> n, uplift = uplift_model.plot_uplift(plot=False)
+        >>> perf = uplift_model.model_performance()
+        >>> perf.plot_uplift(plot=True)
+        >>> n, uplift = perf.plot_uplift(plot=False)
         """
         if plot:
             plt = get_matplotlib_pyplot(server)
@@ -2011,8 +2112,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
             uplift = self.uplift(metric)
             n = self.n()
             plt.plot(n, uplift, 'b-', label='uplift')
-            a = uplift[len(uplift)-1]/n[len(n)-1]
-            rnd = [a * nn for nn in n]
+            rnd = self.uplift_random(metric)
             plt.plot(n, rnd, 'k--', label='random')
             if metric == "lift":
                 plt.legend(loc='upper right')
