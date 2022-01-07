@@ -5,8 +5,9 @@ from tests import pyunit_utils
 import os
 from pandas.testing import assert_frame_equal
 
+
 # Test of MOJO convenience methods
-def mojo_conveniece():    
+def mojo_convenience():    
     # Train a model
     airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/airlines_train.csv"))
     model = H2OGradientBoostingEstimator(ntrees = 1)
@@ -29,16 +30,20 @@ def mojo_conveniece():
     # MOJO UPLOAD TEST
     #####
 
-    # Download the MOJO
-    original_model_filename = model.download_mojo(original_model_filename)
-    # Load the model from the temporary file
-    mojo_model = h2o.upload_mojo(original_model_filename)
-    assert isinstance(mojo_model, H2OGenericEstimator)
-
-    # Test scoring is available on the model
-    predictions = mojo_model.predict(airlines)
-    assert predictions is not None
-    assert predictions.nrows == 24421
+    try:
+        pyunit_utils.set_forbidden_paths([original_model_filename])
+        # Download the MOJO
+        original_model_filename = model.download_mojo(original_model_filename)
+        # Load the model from the temporary file
+        mojo_model = h2o.upload_mojo(original_model_filename)
+        assert isinstance(mojo_model, H2OGenericEstimator)
+    
+        # Test scoring is available on the model
+        predictions = mojo_model.predict(airlines)
+        assert predictions is not None
+        assert predictions.nrows == 24421
+    finally:
+        pyunit_utils.clear_forbidden_paths()
 
     #####
     # MOJO to POJO Conversion test with POJO re-import
@@ -55,6 +60,6 @@ def mojo_conveniece():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(mojo_conveniece)
+    pyunit_utils.standalone_test(mojo_convenience)
 else:
-    mojo_conveniece()
+    mojo_convenience()

@@ -4466,3 +4466,12 @@ def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
     assert isinstance(plot_result2.figure() , matplotlib.pyplot.Figure)
     assert os.path.isfile(path2)
     os.remove(path2)
+
+
+def set_forbidden_paths(paths):
+    forbidden = "'" + "','".join(paths) + "'" if paths else ""
+    h2o.rapids("(testing.setreadforbidden [" + forbidden + "])")
+
+
+def clear_forbidden_paths():
+    set_forbidden_paths([])
