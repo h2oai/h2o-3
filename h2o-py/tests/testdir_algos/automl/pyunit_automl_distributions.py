@@ -59,58 +59,80 @@ def test_automl_distributions():
             distribution = "bernoulli"
         return distribution
 
-    failed = False
+    tests = []
     for scenario in scenarios:
+        def _(scenario):
+            distribution_name = scenario["distribution"]
+            if isinstance(distribution_name, dict):
+                distribution_name = distribution_name["distribution"]
+            def test_scenario():
+                expected_dist = distribution_name
+                df = make_data(scenario.get("nrows", 264))
+
+                # Hack so we don't remove the custom distribution function
+                if expected_dist == "custom":
+                    from h2o.utils.distributions import CustomDistributionGaussian
+                    custom_dist = h2o.upload_custom_distribution(CustomDistributionGaussian)
+                    scenario["distribution"] = Distribution.custom(custom_dist)
+                if expected_dist == "custom2":
+                    from h2o.utils.distributions import CustomDistributionGaussian
+                    scenario["distribution"] = Distribution.custom(CustomDistributionGaussian)
+                    expected_dist = "custom"
+
+                aml = H2OAutoML(max_models=scenario.get("max_models", 12), distribution=scenario["distribution"], seed=seed,
+                                max_runtime_secs_per_model=1, verbosity=None)
+                try:
+                    aml.train(y=scenario["response"], training_frame=df)
+                except Exception:
+                    assert scenario.get('fail', False), "This distribution should not have failed."
+                    return
+                assert not scenario.get('fail', False), "This distribution should have failed."
+                if aml.leaderboard.nrow == 0:
+                    algos = []
+                else:
+                    algos = list(set(get_leaderboard(aml, "algo").as_data_frame()["algo"].unique()))
+
+                for expected in ['DeepLearning', "DRF", 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost']:
+                    assert expected in algos, "Expected {expected} but no found.".format(expected=expected)
+
+                for model_id in aml.leaderboard.as_data_frame()["model_id"]:
+                    distribution = get_distribution(model_id)
+
+                    assert distribution == expected_dist or \
+                    h2o.get_model(model_id).algo not in [a.lower() for a in scenario["algos"]], (
+                       "{model}: Expected distribution {s_dist} but {distribution} found!".format(
+                            model=model_id,
+                            s_dist=expected_dist,
+                            distribution=distribution
+                        ))
+            test_scenario.__name__ = "test_{}_distribution".format(distribution_name)
+            return test_scenario
+        tests.append(_(scenario))
+    return tests
+
+
+def test_python_api():
+    def test_parameterized_distribution_without_param():
         try:
-            distribution = scenario["distribution"]
-            if isinstance(distribution, dict):
-                distribution = distribution["distribution"]
-            print("\n" + distribution + "\n" + "=" * len(distribution))
-            h2o.remove_all()
-            df = make_data(scenario.get("nrows", 264))
+            aml = H2OAutoML(distribution=dict(distribution="huber"))
+        except AssertionError:
+            return
+        assert False, "should have failed"
 
-            # Hack so we don't remove the custom distribution function
-            if distribution == "custom":
-                from h2o.utils.distributions import CustomDistributionGaussian
-                custom_dist = h2o.upload_custom_distribution(CustomDistributionGaussian)
-                scenario["distribution"] = Distribution.custom(custom_dist)
-            if distribution == "custom2":
-                from h2o.utils.distributions import CustomDistributionGaussian
-                scenario["distribution"] = Distribution.custom(CustomDistributionGaussian)
+    def test_parameterized_distribution_without_param2():
+        try:
+            aml = H2OAutoML(distribution="tweedie")
+        except ValueError:
+            return
+        assert False, "should have failed"
 
-            aml = H2OAutoML(max_models=scenario.get("max_models", 12), distribution=scenario["distribution"], seed=seed,
-                            max_runtime_secs_per_model=1, verbosity=None)
-            aml.train(y=scenario["response"], training_frame=df)
-            if scenario.get('fail', False):
-                failed = True
-            if aml.leaderboard.nrow == 0:
-                algos = []
-            else:
-                algos = list(set(get_leaderboard(aml, "algo").as_data_frame()["algo"].unique()))
-
-            for expected in ['DeepLearning', "DRF", 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost']:
-                if expected not in algos:
-                    failed = True
-                    print("Expected {expected} but no found.".format(expected=expected))
-
-            for model_id in aml.leaderboard.as_data_frame()["model_id"]:
-                distribution = get_distribution(model_id)
-                expected_dist = scenario["distribution"]
-                if isinstance(expected_dist, dict):
-                    expected_dist = expected_dist["distribution"]
-                if distribution != expected_dist and h2o.get_model(model_id).algo in [a.lower() for a in scenario["algos"]]:
-                    failed = True
-                    print("{model}: Expected distribution {s_dist} but {distribution} found!".format(
-                        model=model_id,
-                        s_dist=expected_dist,
-                        distribution=distribution
-                    ))
-        except Exception as e:
-            if not scenario.get('fail', False):
-                raise e
-    assert not failed
+    return [
+        test_parameterized_distribution_without_param,
+        test_parameterized_distribution_without_param2,
+    ]
 
 
-pu.run_tests([
-    test_automl_distributions
-])
+pu.run_tests(
+    test_automl_distributions() +
+    test_python_api()
+)

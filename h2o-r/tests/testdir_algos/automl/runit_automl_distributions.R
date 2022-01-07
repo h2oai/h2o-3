@@ -29,7 +29,7 @@ seed <- 9803190
   ))
 }
 
-
+# TODO: Decide if we want to have something like this in R as well.
 Distribution.binomial <- 'bernoulli'
 Distribution.multinomial <- 'multinomial'
 Distribution.gaussian <- 'gaussian'
@@ -70,7 +70,7 @@ automl.distributions.tests <- function() {
 
   all_algos <- c('DeepLearning', "DRF", 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost')
 
-  do.call(makeSuite, lapply(scenarios, function(scenario) {
+  lapply(scenarios, function(scenario) {
     distribution <- scenario$distribution
     if (is.list(distribution)) distribution <- distribution$distribution
     assign(paste0("test_", distribution), function() {
@@ -113,10 +113,30 @@ automl.distributions.tests <- function() {
           expect_true(distr != distribution)
         }
       }
-    }, envir = parent.frame(2))
+    }, envir = parent.frame(3))
     as.name(paste0("test_", distribution))
-  }))
+  })
 }
 
+test.wrong.distribution <- function() {
+  df <- as.h2o(iris)
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "Student-t"))
+}
 
-doSuite("AutoML distributions Test", automl.distributions.tests())
+test.unspecified.param <- function() {
+  df <- as.h2o(iris)
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "tweedie"))
+}
+
+test.unspecified.param2 <- function() {
+  df <- as.h2o(iris)
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = list(distribution = "huber")))
+}
+
+doSuite("AutoML distributions Test", do.call(makeSuite, c(
+  automl.distributions.tests(),
+  alist(
+    test.wrong.distribution,
+    test.unspecified.param,
+    test.unspecified.param2
+  ))))

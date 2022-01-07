@@ -408,17 +408,25 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
     def __validate_distribution(self, distribution):
         if is_type(distribution, str):
+            distribution = distribution.lower()
+            if distribution in ["huber", "tweedie", "quantile", "custom"]:
+                raise H2OValueError('Distributions "huber", "tweedie", "quantile", "custom" has to be specified as a '
+                                    'dictionary with their respective parameters, e.g., '
+                                    '`dict(distribution="tweedie", tweedie_power=1.5)`.')
             return distribution
         if is_type(distribution, dict):
-            dist = distribution["distribution"]
-            ALLOWED_DISTRIBUTION_PARAMETERS = ('custom_distribution_func', 'huber_alpha',
-                                               'quantile_alpha', 'tweedie_power')
-            distribution = {k: v for k, v in distribution.items() if k in ALLOWED_DISTRIBUTION_PARAMETERS}
-            assert len(distribution) == 1, ("Distribution dictionary should contain distribution and a distribution "
-                "parameter. Allowed distribution parameters: \"" + '", "'.join(ALLOWED_DISTRIBUTION_PARAMETERS) + "\".")
-
-            for k, v in distribution.items():
-                setattr(self, k, v)
+            dist = distribution["distribution"].lower()
+            ALLOWED_DISTRIBUTION_PARAMETERS = dict(
+                custom='custom_distribution_func',
+                huber='huber_alpha',
+                quantile='quantile_alpha',
+                tweedie='tweedie_power'
+            )
+            assert distribution.get(ALLOWED_DISTRIBUTION_PARAMETERS.get(dist)) is not None, (
+                    "Distribution dictionary should contain distribution and a distribution "
+                    "parameter. For example `dict(distribution=\"{}\", {}=...)`."
+            ).format(dist, ALLOWED_DISTRIBUTION_PARAMETERS[dist])
+            setattr(self, ALLOWED_DISTRIBUTION_PARAMETERS[dist], distribution[ALLOWED_DISTRIBUTION_PARAMETERS[dist]])
             return dist
 
 
