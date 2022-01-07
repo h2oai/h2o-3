@@ -41,8 +41,7 @@ class H2OGenericEstimator(H2OEstimator):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
         if model_id is None and path is not None:
-            path_split = path.split('/')
-            model_id = path_split[len(path_split)-1].split('.')[0]
+            model_id = H2OGenericEstimator.guess_model_id(path)
         self._id = self._parms['model_id'] = model_id
         self.model_key = model_key
         self.path = path
@@ -130,3 +129,10 @@ class H2OGenericEstimator(H2OEstimator):
         model.train()
 
         return model
+
+
+    @staticmethod
+    def guess_model_id(path):
+        # FIXME: this method doesn't work in edge cases (see https://h2oai.atlassian.net/browse/PUBDEV-8489)
+        path_split = path.split('/')
+        return path_split[len(path_split)-1].split('.')[0]
