@@ -38,6 +38,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._seed = 0xDECAF;
             p._ntrees = 100;
             p._extension_level = train.numCols() - 1;
+            p._score_each_iteration = true;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
