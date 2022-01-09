@@ -11,8 +11,7 @@ import water.util.FileUtils;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class FVecTest extends TestUtil {
 
@@ -161,7 +160,6 @@ public class FVecTest extends TestUtil {
     Frame fr = null;
     try {
       v = Vec.makeVec(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, Vec.newKey());
-      Futures fs = new Futures();
       assertEquals(0, v.min(), 0);
       assertEquals(9, v.max(), 0);
       assertEquals(4.5,v.mean(),1e-8);
@@ -174,28 +172,34 @@ public class FVecTest extends TestUtil {
       v2.set(5, -100);
       assertEquals(-100, v2.min(), 0);
       v2.set(5, 5);
-      // make several rollups requests in parallel with and without histo and then get histo
-      v2.startRollupStats(fs);
-      v2.startRollupStats(fs);
-      v2.startRollupStats(fs,true);
-      assertEquals(0, v2.min(), 0);
-      long [] bins = v2.bins();
-      assertEquals(10,bins.length);
-      // TODO: should test percentiles?
-      for(long l:bins) assertEquals(1,l);
-      Vec.Writer w = v2.open();
-      try {
-        v2.min();
-        assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown
-      } catch( H2OConcurrentModificationException ie ) {
-        // if on local node can get CME directly
-      } catch( RuntimeException re ) {
-        assertTrue(re.getCause() instanceof H2OConcurrentModificationException);
-        // expect to get CME since we're requesting rollups while also changing the vec
+      // Make several rollups requests in parallel with and without histo and then get histo
+      {
+        Futures fs = new Futures();
+        v2.startRollupStats(fs);
+        v2.startRollupStats(fs);
+        v2.startRollupStats(fs, true);
+        assertEquals(0, v2.min(), 0);
+        long[] bins = v2.bins();
+        assertEquals(10, bins.length);
+        for (long l : bins)
+          assertEquals(1, l);
+        fs.blockForPending();
       }
-      w.close(fs);
-      fs.blockForPending();
-      assertEquals(0,v2.min(),0);
+      // Check that rollups cannot be access while Vec is being modified
+      {
+        Vec.Writer w = v2.open();
+        try {
+          v2.min();
+          fail("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)"); // fail - should've thrown
+        } catch (H2OConcurrentModificationException ie) {
+          // if on local node can get CME directly
+        } catch (RuntimeException re) {
+          assertTrue(re.getCause() instanceof H2OConcurrentModificationException);
+          // expect to get CME since we're requesting rollups while also changing the vec
+        }
+        w.close();
+        assertEquals(0, v2.min(), 0);
+      }
       fr.delete();
       v.remove();
       fr = null;
