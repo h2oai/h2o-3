@@ -12,9 +12,9 @@ def pubdev_5336():
 
     # First column has one more categorical variable
     assert frame['Origin'].nlevels() == [3]
-    assert frame['Origin'].levels() == [['NYC', 'SAN', 'SFO']];
+    assert frame['Origin'].levels() == [['NYC', 'SAN', 'SFO']]
     assert frame['Dest'].nlevels() == [2]
-    assert frame['Dest'].levels() == [['SAN', 'SFO']];
+    assert frame['Dest'].levels() == [['SAN', 'SFO']]
     frame['eq'] = frame['Origin'] == frame['Dest']
     assert frame['eq'][0,0] == 1
     assert frame['eq'][1,0] == 0
@@ -32,7 +32,7 @@ def pubdev_5336():
     train['Origin'].asfactor()
     train['Dest'].asfactor()
     train['eq'] = train['Origin'] == train['Dest']
-    assert train[train['eq'] == 1].nrows is 0
+    assert train[train['eq'] == 1].nrows == 0
 
     missing = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
     missing['GLEASON'] = missing['GLEASON'].asfactor()
@@ -42,6 +42,7 @@ def pubdev_5336():
     assert missing['eq'][1,0] == 1
     # One NA on this in GLEASON column
     assert missing['eq'][7,0] == 0
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_5336)

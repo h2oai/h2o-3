@@ -119,7 +119,7 @@ The example below uses a version of the `Wine Quality <https://archive.ics.uci.e
 
         # Import wine quality dataset
         f = "https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv"
-        df = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/wine/winequality-redwhite-no-BOM.csv")
+        df = h2o.import_file(f)
 
         # Reponse column
         y = "quality"

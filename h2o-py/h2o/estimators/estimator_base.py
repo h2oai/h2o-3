@@ -37,6 +37,7 @@ from ..model.coxph import H2OCoxPHModel
 from ..model.coxph import H2OCoxPHMojoModel
 from ..model.segment_models import H2OSegmentModels
 
+
 class EstimatorAttributeError(AttributeError):
     def __init__(self, obj, method):
         super(AttributeError, self).__init__("No {} method for {}".format(method, obj.__class__.__name__))
@@ -57,6 +58,7 @@ class H2OEstimator(ModelBase):
     """
     
     supervised_learning = None  # overridden in implementation
+    __default_params = None     # mangled/hidden: use `_default_param_value` to access default param values internally.
 
     def __init__(self):
         super(H2OEstimator, self).__init__()
@@ -520,12 +522,23 @@ class H2OEstimator(ModelBase):
     def _check_and_save_parm(self, parms, parameter_name, parameter_value):
         """
         If a parameter is not stored in parms dict save it there (even though the value is None).
-        Else check if the parameter has been already set during initialization of estimator. If yes, check the new value is the same or not. If the values are different, set the last passed value to params dict and throw UserWarning.
+        Else check if the parameter has been already set during initialization of estimator. 
+            If yes, check the new value is the same or not.
+            If the values are different, set the last passed value to params dict and throw UserWarning.
         """
         if parameter_name not in parms:
             parms[parameter_name] = parameter_value
         elif parameter_value is not None and parms[parameter_name] != parameter_value:
+            prev_value = parms[parameter_name]
             parms[parameter_name] = parameter_value
-            warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method. The last passed value \"%s\" is used." % (parameter_name, parameter_value), UserWarning, stacklevel=2)
+            if prev_value != self._default_param_value(parameter_name):
+                warnings.warn("\n\n\t`%s` parameter has been already set and had a different value in `train` method."
+                              " The last passed value \"%s\" is used." % (parameter_name, parameter_value), 
+                              UserWarning, 
+                              stacklevel=4)  # warning should refer to the original call to `train`, `train_xxx`
 
-
+    @classmethod
+    def _default_param_value(cls, param_name):
+        if cls.__default_params is None:
+            cls.__default_params = cls()
+        return getattr(cls.__default_params, param_name)

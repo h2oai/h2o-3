@@ -398,10 +398,7 @@ def test_suite_remove_automl():
             models_base=max_models + num_SEs,
             cv_models=0,
             predictions=0,
-            metrics=(len(keys['models_base']) * 2  # for each model, 1 on training_frame, 1 on leaderboard frame (those are extracted from original training_frame)
-                     + max_models * 1  # for each non-SE model, 1 on validation frame
-                     + (num_SEs * 2)  # for each SE metalearner, 1 on levelone training, 1 on levelone validation
-                     )
+            metrics=(2*len(keys['models_all']))   # for each model, 1 on training_frame, 1 on validation frame which is also the leaderboard frame
         )
         for k, v in expectations.items():
             assert len(keys[k]) == v, "expected {} {}, but got {}".format(v, k, len(keys[k]))

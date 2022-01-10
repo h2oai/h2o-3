@@ -95,6 +95,10 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
+      stageName: 'Py3.7 Explain', target: 'test-pyunit-explain', pythonVersion: '3.7',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
       stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
@@ -341,13 +345,6 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 16 JUnit', target: 'test-junit-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
       timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, 
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
-      imageSpecifier: "python-2.7-jdk-16"
-    ],
-    [
-      // SecurityUtils won't run on Java 16 see PUBDEV-8468 for details, left here as a reminder
-      stageName: 'Java 16 JUnit (SecurityUtils-PUBDEV-8468)', target: 'test-junit-security-16-jenkins', pythonVersion: '2.7', javaVersion: 16,
-      timeoutValue: 180, component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       imageSpecifier: "python-2.7-jdk-16"
     ],

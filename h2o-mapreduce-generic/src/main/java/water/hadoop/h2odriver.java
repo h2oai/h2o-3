@@ -538,7 +538,7 @@ public class h2odriver extends Configured implements Tool {
     }
 
     void announceNodeCloudSize(String ip, int port, String leaderWebServerIp, int leaderWebServerPort, int cloudSize) throws Exception {
-      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerIp + "]");
+      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerPort + "]");
       if (cloudSize == _targetCloudSize) {
         announceCloudReadyNode(leaderWebServerIp, leaderWebServerPort);
       }

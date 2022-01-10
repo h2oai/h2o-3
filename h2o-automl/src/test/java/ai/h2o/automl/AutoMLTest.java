@@ -537,9 +537,9 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
-      assertEquals(0.9, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(1, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(test.numRows(), aml.getValidationFrame().numRows());
-      assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(aml.getValidationFrame().numRows(), aml.getLeaderboardFrame().numRows());
     } finally {
       if (aml != null) aml.delete();
       if (fr != null) fr.remove();
@@ -564,7 +564,7 @@ public class AutoMLTest extends water.TestUtil {
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
       double tolerance = 1e-2;
-      assertEquals(0.8, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
+      assertEquals(0.9, (double)aml.getTrainingFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(0.1, (double)aml.getValidationFrame().numRows() / fr.numRows(), tolerance);
       assertEquals(0.1, (double)aml.getLeaderboardFrame().numRows() / fr.numRows(), tolerance);
     } finally {

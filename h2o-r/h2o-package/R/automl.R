@@ -106,7 +106,7 @@ h2o.automl <- function(x, y, training_frame,
                        validation_frame = NULL,
                        leaderboard_frame = NULL,
                        blending_frame = NULL,
-                       nfolds = 5,
+                       nfolds = -1,
                        fold_column = NULL,
                        weights_column = NULL,
                        balance_classes = FALSE,
@@ -323,10 +323,9 @@ h2o.automl <- function(x, y, training_frame,
   }
 
   # Update build_control with nfolds
-  if (nfolds < 0) {
-    stop("nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
-  }
-  if (nfolds == 1) {
+  if (nfolds < 0 && nfolds != -1) {
+    stop("nfolds cannot be negative with the exception of -1 which means \"AUTO\". Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
+  } else if (nfolds == 1) {
     stop("nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable.")
   }
   build_control$nfolds <- nfolds

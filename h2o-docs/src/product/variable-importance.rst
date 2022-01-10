@@ -129,6 +129,39 @@ GLM/GAM
 Variable importance represents the coefficient magnitudes. The standardized coefficients are returned if the ``standardize`` option is enabled (which is the default). These are the predictor weights of the standardized data and are included only for informational purposes like comparing the relative variable importance.
 
 
+Retrieving Variable Importance in H2O-3
+---------------------------------------
+
+To retrieve variable importance for an H2O-3 model, execute the following respective commands:
+
+.. tabs::
+   .. code-tab:: r R
+
+      # Build and train your model
+      model <- h2o.gbm(...)
+
+      # Retrieve the variable importance
+      varimp <- h2o.varimp(model)
+
+   .. code-tab:: python
+
+      # Build and train your model
+      model = H2OGradientBoostingEstimator(...)
+      model.train(...)
+
+      # Retrieve the variable importance
+      varimp = model.varimp(use_pandas=True)
+
+   .. code-tab:: Java Java MOJO Model
+
+      // Load the MOJO model and make predictions
+      MojoModel modelMojo = MojoModel.load("GBM_model.zip", true);
+      EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(modelMojo);
+      EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
+
+      // Retrieve the variable importance
+      model.varimp();
+
 References
 ----------
 

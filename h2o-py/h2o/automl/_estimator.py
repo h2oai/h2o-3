@@ -124,7 +124,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     """
 
     def __init__(self,
-                 nfolds=5,
+                 nfolds=-1,
                  balance_classes=False,
                  class_sampling_factors=None,
                  max_after_balance_size=5.0,
@@ -154,7 +154,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         
         :param int nfolds: Number of folds for k-fold cross-validation.
             Use ``0`` to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
-            Defaults to ``5``.
+            Defaults to ``-1``.
 
         :param bool balance_classes: Specify whether to oversample the minority classes to balance the class distribution. This option can increase
             the data frame size. This option is only applicable for classification. If the oversampled size of the dataset exceeds the maximum size
@@ -323,7 +323,9 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         return project_name
 
     def __validate_nfolds(self, nfolds):
-        assert nfolds == 0 or nfolds > 1, "nfolds set to %s; use nfolds >=2 if you want cross-validated metrics and Stacked Ensembles or use nfolds = 0 to disable." % nfolds
+        assert nfolds in (-1, 0) or nfolds > 1, ("nfolds set to %s; use nfolds >=2 if you want cross-validated metrics "
+                                                 "and Stacked Ensembles or use nfolds = 0 to disable or nfolds = -1 to "
+                                                 "let h2o choose automatically." % nfolds)
         return nfolds
 
     def __validate_modeling_plan(self, modeling_plan):

@@ -6,6 +6,7 @@ description = "H2O HDFS client shadowjar for Hadoop ${ext.hadoopVersion}"
 configurations {
     api.exclude group: 'org.apache.hadoop'
     api.exclude group: 'org.apache.hive'
+    api.exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
 }
 
 dependencies {

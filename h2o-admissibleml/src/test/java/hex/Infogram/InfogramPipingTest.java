@@ -43,7 +43,7 @@ public class InfogramPipingTest extends TestUtil {
       InfogramModel infogramModel = new Infogram(params).trainModel().get();
       Scope.track_generic(infogramModel);
       assertEqualCMIRel(deepRel, deepCMI, infogramModel._output, TOLERANCE);
-      Frame infogramFr = DKV.getGet(infogramModel._output._relevance_cmi_key);  // info gram info in an H2OFrame
+      Frame infogramFr = DKV.getGet(infogramModel._output._admissible_score_key);  // info gram info in an H2OFrame
       Scope.track(infogramFr);
       assertEquals(infogramFr.numRows(), deepCMI.length);
     } finally {
@@ -135,7 +135,7 @@ public class InfogramPipingTest extends TestUtil {
       InfogramModel infogramModel = new Infogram(params).trainModel().get();
       Scope.track_generic(infogramModel);
       assertEqualCMIRel(deepRel, deepCMI, infogramModel._output, TOLERANCE);
-      Frame infogramFr = DKV.getGet(infogramModel._output._relevance_cmi_key);  // info gram info in an H2OFrame
+      Frame infogramFr = DKV.getGet(infogramModel._output._admissible_score_key);  // info gram info in an H2OFrame
       Scope.track(infogramFr);
       assertEquals(infogramFr.numRows(), deepCMI.length);
     } finally {

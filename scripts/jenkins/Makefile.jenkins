@@ -46,24 +46,26 @@ test-package-r:
 
 init-lookup:
 	rm -f h2o-{r,py}/tests/.lookup.txt
+	mkdir -p h2o-{r,py}/tests
 
 lookup-automl-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests
 	find h2o-r/tests -name '*automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 	
 lookup-automl-smoke-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests
 	find h2o-r/tests -name '*SMOKE_automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*SMOKE_automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
-lookup-fault-tolerance-tests:
-	mkdir -p h2o-{r,py}/tests
+lookup-fault-tolerance-tests: init-lookup
 	find h2o-r/tests -name '*fault_tolerance*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*fault_tolerance*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
+lookup-explain-tests: init-lookup
+	find h2o-r/tests -name '*explain*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
+	find h2o-py/tests -name '*explain*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
+
 lookup-demos-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests/testdir_demos
+	mkdir h2o-{r,py}/tests/testdir_demos
 	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests/testdir_demos -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
@@ -90,8 +92,11 @@ test-py-demos:
 test-pyunit-demos:
 	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
-test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests
+test-pyunit-small: lookup-automl-tests lookup-fault-tolerance-tests lookup-explain-tests
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 4g --excludelist .lookup.txt
+
+test-pyunit-explain: lookup-explain-tests
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 3 --jvm.xmx 4g --testlist .lookup.txt
 
 test-pyunit-single-node:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 1 --jvm.xmx 4g --testlist ../../tests/pyunitSingleNodeList
@@ -375,21 +380,14 @@ test-junit-16-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit-16
 
 test-junit-16:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-security:test $$ADDITIONAL_GRADLE_OPTS
-
-test-junit-security-16-jenkins:
-	$(call sed_test_scripts)
-	@$(MAKE) -f $(THIS_FILE) test-junit-security-16
-
-test-junit-security-16:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew h2o-security:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-17-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) test-junit-17
 
 test-junit-17:
-	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test -x h2o-security:test $$ADDITIONAL_GRADLE_OPTS
+	ADDITIONAL_TEST_JVM_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED" ./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode -x h2o-ext-target-encoder:testMultiNode -x h2o-clustering:test $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-latest-jenkins:
 	$(call sed_test_scripts)

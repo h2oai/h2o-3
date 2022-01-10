@@ -80,29 +80,29 @@ public class InfogramCVValidTest  extends TestUtil {
             
 
             // check all four models have same training relcmi frame;
-            Frame relCmiTrain = DKV.getGet(infogramModel._output._relevance_cmi_key);
+            Frame relCmiTrain = DKV.getGet(infogramModel._output._admissible_score_key);
             Scope.track(relCmiTrain);
-            Frame relCmiTrainV = DKV.getGet(infogramModelV._output._relevance_cmi_key);
+            Frame relCmiTrainV = DKV.getGet(infogramModelV._output._admissible_score_key);
             Scope.track(relCmiTrainV);
-            Frame relCmiTrainVCV = DKV.getGet(infogramModelVCV._output._relevance_cmi_key);
+            Frame relCmiTrainVCV = DKV.getGet(infogramModelVCV._output._admissible_score_key);
             Scope.track(relCmiTrainVCV);
-            Frame relCmiTrainCV = DKV.getGet(infogramModelCV._output._relevance_cmi_key);
+            Frame relCmiTrainCV = DKV.getGet(infogramModelCV._output._admissible_score_key);
             Scope.track(relCmiTrainCV);
             TestUtil.assertFrameEquals(relCmiTrain, relCmiTrainV, 1e-6);
             TestUtil.assertFrameEquals(relCmiTrainVCV, relCmiTrainCV, 1e-6);
             TestUtil.assertFrameEquals(relCmiTrain, relCmiTrainVCV, 1e-6);
             
             // check two models have same validation relcmi frame;
-            Frame relCmiValidV = DKV.getGet(infogramModelV._output._relevance_cmi_key_valid);
+            Frame relCmiValidV = DKV.getGet(infogramModelV._output._admissible_score_key_valid);
             Scope.track(relCmiValidV);
-            Frame relCmiValidVCV = DKV.getGet(infogramModelVCV._output._relevance_cmi_key_valid);
+            Frame relCmiValidVCV = DKV.getGet(infogramModelVCV._output._admissible_score_key_valid);
             Scope.track(relCmiValidVCV);
             TestUtil.assertFrameEquals(relCmiValidV, relCmiValidVCV, 1e-6);
             
             // check two models with same cv relcmi frame;
-            Frame relCmiCV = DKV.getGet(infogramModelCV._output._relevance_cmi_key_xval);
+            Frame relCmiCV = DKV.getGet(infogramModelCV._output._admissible_score_key_xval);
             Scope.track(relCmiCV);
-            Frame relCmiVCV = DKV.getGet(infogramModelVCV._output._relevance_cmi_key_xval);
+            Frame relCmiVCV = DKV.getGet(infogramModelVCV._output._admissible_score_key_xval);
             Scope.track(relCmiVCV);
             TestUtil.assertFrameEquals(relCmiVCV, relCmiCV, 1e-6);
 
@@ -143,12 +143,12 @@ public class InfogramCVValidTest  extends TestUtil {
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel);
-            assertTrue(infogramModel._output._relevance_cmi_key_valid == null);
+            assertTrue(infogramModel._output._admissible_score_key_valid == null);
             
             params._valid = testFrame._key;
             InfogramModel infogramModelV = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModelV);
-            assertTrue(infogramModelV._output._relevance_cmi_key_valid != null);
+            assertTrue(infogramModelV._output._admissible_score_key_valid != null);
             assertCorrectRuns(infogramModel, infogramModelV);
         } finally {
             Scope.exit();
@@ -193,20 +193,20 @@ public class InfogramCVValidTest  extends TestUtil {
             Scope.track_generic(infogramModel);
             InfogramModel infogramModel2 = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel2);
-            Frame relCmiFrame = DKV.getGet(infogramModel._output._relevance_cmi_key);
+            Frame relCmiFrame = DKV.getGet(infogramModel._output._admissible_score_key);
             Scope.track(relCmiFrame);
-            Frame relCmiFrame2 = DKV.getGet(infogramModel2._output._relevance_cmi_key);
+            Frame relCmiFrame2 = DKV.getGet(infogramModel2._output._admissible_score_key);
             Scope.track(relCmiFrame2);            
             TestUtil.assertFrameEquals(relCmiFrame, relCmiFrame2, 1e-6);
             
             params._valid = testFrame._key;
             InfogramModel infogramModelV = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModelV);
-            Frame relCmiFrameV = DKV.getGet(infogramModelV._output._relevance_cmi_key);
+            Frame relCmiFrameV = DKV.getGet(infogramModelV._output._admissible_score_key);
             Scope.track(relCmiFrameV);
             InfogramModel infogramModelV2 = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModelV2);
-            Frame relCmiFrameV2 = DKV.getGet(infogramModelV2._output._relevance_cmi_key);
+            Frame relCmiFrameV2 = DKV.getGet(infogramModelV2._output._admissible_score_key);
             Scope.track(relCmiFrameV2);
             TestUtil.assertFrameEquals(relCmiFrameV, relCmiFrameV2, 1e-6);
         } finally {
@@ -281,15 +281,15 @@ public class InfogramCVValidTest  extends TestUtil {
             InfogramModel infogramModel2 = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel2);
 
-            Frame relCmiFrameTrain = DKV.getGet(infogramModel._output._relevance_cmi_key);
+            Frame relCmiFrameTrain = DKV.getGet(infogramModel._output._admissible_score_key);
             Scope.track(relCmiFrameTrain);
-            Frame relCmiFrameTrain2 = DKV.getGet(infogramModel2._output._relevance_cmi_key);
+            Frame relCmiFrameTrain2 = DKV.getGet(infogramModel2._output._admissible_score_key);
             Scope.track(relCmiFrameTrain2);
             TestUtil.assertFrameEquals(relCmiFrameTrain, relCmiFrameTrain2, 1e-6);
 
-            Frame relCmiFrameCV = DKV.getGet(infogramModel._output._relevance_cmi_key_xval);
+            Frame relCmiFrameCV = DKV.getGet(infogramModel._output._admissible_score_key_xval);
             Scope.track(relCmiFrameCV);
-            Frame relCmiFrameCV2 = DKV.getGet(infogramModel2._output._relevance_cmi_key_xval);
+            Frame relCmiFrameCV2 = DKV.getGet(infogramModel2._output._admissible_score_key_xval);
             Scope.track(relCmiFrameCV2);
             TestUtil.assertFrameEquals(relCmiFrameCV, relCmiFrameCV2, 1e-6);
         } finally {
@@ -342,29 +342,29 @@ public class InfogramCVValidTest  extends TestUtil {
 
 
             // check all four models have same training relcmi frame;
-            Frame relCmiTrain = DKV.getGet(infogramModel._output._relevance_cmi_key);
+            Frame relCmiTrain = DKV.getGet(infogramModel._output._admissible_score_key);
             Scope.track(relCmiTrain);
-            Frame relCmiTrainV = DKV.getGet(infogramModelV._output._relevance_cmi_key);
+            Frame relCmiTrainV = DKV.getGet(infogramModelV._output._admissible_score_key);
             Scope.track(relCmiTrainV);
-            Frame relCmiTrainVCV = DKV.getGet(infogramModelVCV._output._relevance_cmi_key);
+            Frame relCmiTrainVCV = DKV.getGet(infogramModelVCV._output._admissible_score_key);
             Scope.track(relCmiTrainVCV);
-            Frame relCmiTrainCV = DKV.getGet(infogramModelCV._output._relevance_cmi_key);
+            Frame relCmiTrainCV = DKV.getGet(infogramModelCV._output._admissible_score_key);
             Scope.track(relCmiTrainCV);
             TestUtil.assertFrameEquals(relCmiTrain, relCmiTrainV, 1e-6);
             TestUtil.assertFrameEquals(relCmiTrainVCV, relCmiTrainCV, 1e-6);
             TestUtil.assertFrameEquals(relCmiTrain, relCmiTrainVCV, 1e-6);
 
             // check two models have same validation relcmi frame;
-            Frame relCmiValidV = DKV.getGet(infogramModelV._output._relevance_cmi_key_valid);
+            Frame relCmiValidV = DKV.getGet(infogramModelV._output._admissible_score_key_valid);
             Scope.track(relCmiValidV);
-            Frame relCmiValidVCV = DKV.getGet(infogramModelVCV._output._relevance_cmi_key_valid);
+            Frame relCmiValidVCV = DKV.getGet(infogramModelVCV._output._admissible_score_key_valid);
             Scope.track(relCmiValidVCV);
             TestUtil.assertFrameEquals(relCmiValidV, relCmiValidVCV, 1e-6);
 
             // check two models with same cv relcmi frame;
-            Frame relCmiCV = DKV.getGet(infogramModelCV._output._relevance_cmi_key_xval);
+            Frame relCmiCV = DKV.getGet(infogramModelCV._output._admissible_score_key_xval);
             Scope.track(relCmiCV);
-            Frame relCmiVCV = DKV.getGet(infogramModelVCV._output._relevance_cmi_key_xval);
+            Frame relCmiVCV = DKV.getGet(infogramModelVCV._output._admissible_score_key_xval);
             Scope.track(relCmiVCV);
             TestUtil.assertFrameEquals(relCmiVCV, relCmiCV, 1e-6);
 
@@ -385,7 +385,7 @@ public class InfogramCVValidTest  extends TestUtil {
         String[] mainColNames = new String[]{"concave_points_worst", "radius_worst", "concave_points_mean", 
                 "perimeter_worst", "area_worst"};
         
-        Frame relCmiKeyCV = DKV.getGet(infogramModel._output._relevance_cmi_key_xval);
+        Frame relCmiKeyCV = DKV.getGet(infogramModel._output._admissible_score_key_xval);
         Scope.track(relCmiKeyCV);
         // check correct validation infogram averaging
         assertCorrectInfoGramMetrics(relCmiKeyCV, validNonZeroRows, cmiRaw, mainRelevance, mainColNames, validColNames);
@@ -477,12 +477,12 @@ public class InfogramCVValidTest  extends TestUtil {
 
             InfogramModel infogramModel = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel);
-            assertTrue(infogramModel._output._relevance_cmi_key_valid==null);
+            assertTrue(infogramModel._output._admissible_score_key_valid==null);
             
             params._valid = testFrame._key;
             InfogramModel infogramModelV = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModelV);
-            assertTrue(infogramModelV._output._relevance_cmi_key_valid!=null);
+            assertTrue(infogramModelV._output._admissible_score_key_valid!=null);
             assertCorrectRuns(infogramModel, infogramModelV);
         } finally {
             Scope.exit();
@@ -505,6 +505,7 @@ public class InfogramCVValidTest  extends TestUtil {
             InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
             params._response_column = "two_year_recid";
             params._train = trainFrame._key;
+
             params._algorithm_params = "{\"ntrees\": [8]}";
             params._protected_columns = new String[]{"sex","age","race"};
             params._algorithm = InfogramModel.InfogramParameters.Algorithm.gbm;
@@ -516,9 +517,9 @@ public class InfogramCVValidTest  extends TestUtil {
             Scope.track_generic(infogramModel);
             InfogramModel infogramModel2 = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel2);
-            Frame relCmiTrain = DKV.getGet(infogramModel._output._relevance_cmi_key);
+            Frame relCmiTrain = DKV.getGet(infogramModel._output._admissible_score_key);
             Scope.track(relCmiTrain);
-            Frame relCmiTrain2 = DKV.getGet(infogramModel2._output._relevance_cmi_key);
+            Frame relCmiTrain2 = DKV.getGet(infogramModel2._output._admissible_score_key);
             Scope.track(relCmiTrain2);
             TestUtil.assertFrameEquals(relCmiTrain, relCmiTrain2, 1e-6);
             
@@ -528,15 +529,15 @@ public class InfogramCVValidTest  extends TestUtil {
             InfogramModel infogramModelV2 = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModelV2);
 
-            Frame relCmiVTr = DKV.getGet(infogramModelV._output._relevance_cmi_key);
+            Frame relCmiVTr = DKV.getGet(infogramModelV._output._admissible_score_key);
             Scope.track(relCmiVTr);
-            Frame relCmiV2Tr = DKV.getGet(infogramModelV2._output._relevance_cmi_key);
+            Frame relCmiV2Tr = DKV.getGet(infogramModelV2._output._admissible_score_key);
             Scope.track(relCmiV2Tr);
             TestUtil.assertFrameEquals(relCmiV2Tr, relCmiVTr, 1e-6);
             
-            Frame relCmiV = DKV.getGet(infogramModelV._output._relevance_cmi_key_valid);
+            Frame relCmiV = DKV.getGet(infogramModelV._output._admissible_score_key_valid);
             Scope.track(relCmiV);
-            Frame relCmiV2 = DKV.getGet(infogramModelV2._output._relevance_cmi_key_valid);
+            Frame relCmiV2 = DKV.getGet(infogramModelV2._output._admissible_score_key_valid);
             Scope.track(relCmiV2);
             TestUtil.assertFrameEquals(relCmiV2, relCmiV, 1e-6);
         } finally {
@@ -598,15 +599,15 @@ public class InfogramCVValidTest  extends TestUtil {
             InfogramModel infogramModel2 = new Infogram(params).trainModel().get();
             Scope.track_generic(infogramModel2);
             // both runs should return same training relCMIframe contents
-            Frame relCmiFrameTrain = DKV.getGet(infogramModel._output._relevance_cmi_key);
+            Frame relCmiFrameTrain = DKV.getGet(infogramModel._output._admissible_score_key);
             Scope.track(relCmiFrameTrain);
-            Frame relCmiFrameTrain2 = DKV.getGet(infogramModel2._output._relevance_cmi_key);
+            Frame relCmiFrameTrain2 = DKV.getGet(infogramModel2._output._admissible_score_key);
             Scope.track(relCmiFrameTrain2);
             TestUtil.assertFrameEquals(relCmiFrameTrain, relCmiFrameTrain2, 1e-6);
             // both runs should return same cross-validation relCMIframe contents
-            Frame relCmiFrameValid = DKV.getGet(infogramModel._output._relevance_cmi_key_xval);
+            Frame relCmiFrameValid = DKV.getGet(infogramModel._output._admissible_score_key_xval);
             Scope.track(relCmiFrameValid);
-            Frame relCmiFrameTrainValid2 = DKV.getGet(infogramModel2._output._relevance_cmi_key_xval);
+            Frame relCmiFrameTrainValid2 = DKV.getGet(infogramModel2._output._admissible_score_key_xval);
             Scope.track(relCmiFrameTrainValid2);
             TestUtil.assertFrameEquals(relCmiFrameValid, relCmiFrameTrainValid2, 1e-6);
         } finally {
@@ -632,9 +633,9 @@ public class InfogramCVValidTest  extends TestUtil {
                 2.574920854711118E-4, 0.004113058086770913, 0.0012933419572252322, 0.0014052131829135543, 
                 0.0022520089083028056, 0.0013904296902873732};
         String[] mainColNames = new String[]{"end", "event", "priors_count", "priors_count.1", "decile_score", 
-                "decile_score.1", "score_text", "v_decile_score", "start", "v_score_text", "days_b_screening_arrest",
-                 "c_charge_degree", "juv_other_count", "juv_misd_count", "juv_fel_count"};
-        Frame relCmiKeyCV = DKV.getGet(infogramModel._output._relevance_cmi_key_xval);
+                "decile_score.1", "score_text", "v_decile_score", "start", "v_score_text", "days_b_screening_arrest", 
+                "c_charge_degree", "juv_other_count", "juv_misd_count", "juv_fel_count"};
+        Frame relCmiKeyCV = DKV.getGet(infogramModel._output._admissible_score_key_xval);
         Scope.track(relCmiKeyCV);
         // check correct validation infogram averaging
         assertCorrectInfoGramMetrics(relCmiKeyCV, validNonZeroRows, cmiRaw, mainRelevance, mainColNames, validColNames);
@@ -642,13 +643,13 @@ public class InfogramCVValidTest  extends TestUtil {
     
     public void assertCorrectRuns(InfogramModel modelWOValid, InfogramModel modelWValid) {
         // compare results of training dataset info with and without validation dataset.  Should be the same
-        Frame relCmiNoValid = DKV.getGet(modelWOValid._output._relevance_cmi_key);
+        Frame relCmiNoValid = DKV.getGet(modelWOValid._output._admissible_score_key);
         Scope.track(relCmiNoValid);
-        Frame relCmiValid = DKV.getGet(modelWValid._output._relevance_cmi_key);
+        Frame relCmiValid = DKV.getGet(modelWValid._output._admissible_score_key);
         Scope.track(relCmiValid);
         TestUtil.assertIdenticalUpToRelTolerance(relCmiNoValid, relCmiValid, 1e-6);
         // check to make sure relevance cmi frame has admissible index sorted in increasing order
-        Frame relCmi_valid = DKV.getGet(modelWValid._output._relevance_cmi_key_valid);
+        Frame relCmi_valid = DKV.getGet(modelWValid._output._admissible_score_key_valid);
         Scope.track(relCmi_valid);
         Vec admissibleIndex = Scope.track(relCmi_valid.vec("admissible_index"));
         long numRow = relCmi_valid.numRows();

@@ -670,7 +670,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
               +_parms._base_models.length+" were specified but none of those were found: "+Arrays.toString(_parms._base_models));
   }
   
-  void deleteBaseModelPredictions() {
+  public void deleteBaseModelPredictions() {
     if (_output._base_model_predictions_keys != null) {
       for (Key<Frame> key : _output._base_model_predictions_keys) {
         if (_output._levelone_frame_id != null && key.get() != null)
@@ -719,16 +719,19 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   @Override
   public void deleteCrossValidationModels() {
-    _output._metalearner.deleteCrossValidationModels();
+    if (_output._metalearner != null)
+      _output._metalearner.deleteCrossValidationModels();
   }
 
   @Override
   public void deleteCrossValidationPreds() {
-    _output._metalearner.deleteCrossValidationPreds();
+    if (_output._metalearner != null)
+      _output._metalearner.deleteCrossValidationPreds();
   }
 
   @Override
   public void deleteCrossValidationFoldAssignment() {
-    _output._metalearner.deleteCrossValidationFoldAssignment();
+    if (_output._metalearner != null)
+      _output._metalearner.deleteCrossValidationFoldAssignment();
   }
 }
