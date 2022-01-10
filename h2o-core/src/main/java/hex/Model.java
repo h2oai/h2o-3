@@ -242,6 +242,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   public boolean havePojo() {
+    if (_parms._preprocessors != null) return false; // TE processor not included to current POJO (see PUBDEV-8508 for potential fix)
     final String algoName = _parms.algoName();
     return ModelBuilder.getRegisteredBuilder(algoName)
             .map(ModelBuilder::havePojo)
@@ -253,6 +254,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public boolean haveMojo() {
+    if (_parms._preprocessors != null) return false; // until PUBDEV-7799, disable model MOJO if it was trained with embedded TE.
     final String algoName = _parms.algoName();
     return ModelBuilder.getRegisteredBuilder(algoName)
             .map(ModelBuilder::haveMojo)
