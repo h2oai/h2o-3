@@ -71,7 +71,7 @@ def titanic():
         if train.as_data_frame()['sex'][i] == 'female':
             count = count + 1
 
-    assert rfit.rule_importance()['support'][0] == count / train.nrows
+    assert abs(rfit.rule_importance()['support'][0] - count / train.nrows) < 1e-6
     
 
 if __name__ == "__main__":
