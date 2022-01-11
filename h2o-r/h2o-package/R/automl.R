@@ -226,24 +226,31 @@ h2o.automl <- function(x, y, training_frame,
   if (!is.null(distribution) && !missing(distribution)) {
     if (is.list(distribution)) {
       build_control$distribution <- distribution$distribution
-      param <- setdiff(names(distribution), "distribution")
       ALLOWED_DISTRIBUTION_PARAMETERS <- list(
         custom = 'custom_distribution_func',
         huber = 'huber_alpha',
         quantile = 'quantile_alpha',
         tweedie = 'tweedie_power'
       )
-      if (!any(param == ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]))
+      param <- ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]
+      if (!any(param == ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]) && length(distribution) != 1)
         stop(sprintf("Distribution \"%s\" requires \"%s\" parameter, e.g., `list(distribution = \"%s\", %s = ...)`.",
                      distribution$distribution, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]],
                      distribution$distribution, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]
         ))
-      build_control[[param]] <- distribution[[param]]
+      if (tolower(distribution) == "custom") {
+        stop(paste0('Distribution "custom" has to be specified as a ',
+                    'dictionary with their respective parameters, e.g., ',
+                    '`list(distribution = \"custom\", custom_distribution_func = \"...\"))`.'))
+      }
+      if (param %in% names(distribution))
+        build_control[[param]] <- distribution[[param]]
     } else {
       distribution <- match.arg(distribution)
-      if (tolower(distribution) %in% c("huber", "tweedie", "quantile", "custom")) {
-        stop(paste0("Parameterized distributions(huber, tweedie, quantile, custom) must be specified as a list ",
-                    "with their parameter, e.g., `list(distribution = \"tweedie\", tweedie_power = 1.5)`."))
+      if (tolower(distribution) == "custom") {
+        stop(paste0('Distribution "custom" has to be specified as a ',
+                    'dictionary with their respective parameters, e.g., ',
+                    '`list(distribution = \"custom\", custom_distribution_func = \"...\"))`.'))
       }
       build_control$distribution <- distribution
     }

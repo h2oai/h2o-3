@@ -107,7 +107,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       if (_parms._metalearner_parameters instanceof GLMModel.GLMParameters)
         distribution = familyToDistribution(((GLMModel.GLMParameters) _parms._metalearner_parameters)._family);
       else
-        distribution = _parms._metalearner_parameters._distribution; // quasibinomial
+        distribution = _parms._metalearner_parameters._distribution;
 
       if (multinomial.equals(distribution) || ordinal.equals(distribution) || AUTO.equals(distribution))
         return _nclass;

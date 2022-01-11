@@ -409,10 +409,10 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     def __validate_distribution(self, distribution):
         if is_type(distribution, str):
             distribution = distribution.lower()
-            if distribution in ["huber", "tweedie", "quantile", "custom"]:
-                raise H2OValueError('Distributions "huber", "tweedie", "quantile", "custom" has to be specified as a '
+            if distribution == "custom":
+                raise H2OValueError('Distribution "custom" has to be specified as a '
                                     'dictionary with their respective parameters, e.g., '
-                                    '`dict(distribution="tweedie", tweedie_power=1.5)`.')
+                                    '`dict(distribution = \"custom\", custom_distribution_func = \"...\"))`.')
             return distribution
         if is_type(distribution, dict):
             dist = distribution["distribution"].lower()
@@ -422,11 +422,16 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                 quantile='quantile_alpha',
                 tweedie='tweedie_power'
             )
-            assert distribution.get(ALLOWED_DISTRIBUTION_PARAMETERS.get(dist)) is not None, (
+            assert distribution.get(ALLOWED_DISTRIBUTION_PARAMETERS.get(dist)) is not None or len(distribution) == 1, (
                     "Distribution dictionary should contain distribution and a distribution "
                     "parameter. For example `dict(distribution=\"{}\", {}=...)`."
             ).format(dist, ALLOWED_DISTRIBUTION_PARAMETERS[dist])
-            setattr(self, ALLOWED_DISTRIBUTION_PARAMETERS[dist], distribution[ALLOWED_DISTRIBUTION_PARAMETERS[dist]])
+            if distribution["distribution"] == "custom" and "custom_distribution_func" not in distribution.keys():
+                raise H2OValueError('Distribution "custom" has to be specified as a '
+                            'dictionary with their respective parameters, e.g., '
+                            '`dict(distribution = \"custom\", custom_distribution_func = \"...\"))`.')
+            if ALLOWED_DISTRIBUTION_PARAMETERS.get(dist) in distribution.keys():
+                setattr(self, ALLOWED_DISTRIBUTION_PARAMETERS[dist], distribution[ALLOWED_DISTRIBUTION_PARAMETERS[dist]])
             return dist
 
 

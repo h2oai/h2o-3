@@ -29,41 +29,31 @@ seed <- 9803190
   ))
 }
 
-# TODO: Decide if we want to have something like this in R as well.
-Distribution.binomial <- 'bernoulli'
-Distribution.multinomial <- 'multinomial'
-Distribution.gaussian <- 'gaussian'
-Distribution.poisson <- 'poisson'
-Distribution.gamma <- 'gamma'
-Distribution.laplace <- 'laplace'
-Distribution.quantile <- function(alpha) list(distribution = "quantile", quantile_alpha = alpha)
-Distribution.huber <- function(alpha) list(distribution = "huber", huber_alpha = alpha)
-Distribution.tweedie <- function(power) list(distribution = "tweedie", tweedie_power = power)
-Distribution.ordinal <- 'ordinal'
-
 
 automl.distributions.tests <- function() {
   scenarios <- list(
-    list(response = "binomial", distribution = Distribution.binomial,
+    list(response = "binomial", distribution = "binomial",
+         algos = c('DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), max_models = 12, fail = TRUE),
+    list(response = "binomial", distribution = "bernoulli",
          algos = c('DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), max_models = 12),
     list(response = "quasibinomial", distribution = "quasibinomial", algos = c('GBM', 'GLM', 'StackedEnsemble'),
-         max_models = 17, fail = TRUE),  # needed to be able to build SE
+         max_models = 17, fail = TRUE),
     list(response = "quasibinomial", distribution = "fractionalbinomial", algos = c('GLM'), fail = TRUE),
-    list(response = "multinomial", distribution = Distribution.multinomial,
+    list(response = "multinomial", distribution = "multinomial",
          algos = c('DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), max_models = 12),
-    list(response = "gaussian", distribution = Distribution.gaussian,
+    list(response = "gaussian", distribution = "gaussian",
          algos = c('DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), max_models = 12),
-    list(response = "ordinal", distribution = Distribution.poisson,
+    list(response = "ordinal", distribution = "poisson",
          algos = c('DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), nrows = 400),
-    list(response = "gaussian", distribution = Distribution.gamma,
+    list(response = "gaussian", distribution = "gamma",
          algos = c('DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'), nrows = 400),
-    list(response = "gaussian", distribution = Distribution.laplace, algos = c('DeepLearning', 'GBM')),
-    list(response = "gaussian", distribution = Distribution.quantile(0.25), algos = c('DeepLearning', 'GBM')),
-    list(response = "gaussian", distribution = Distribution.huber(.3),
+    list(response = "gaussian", distribution = "laplace", algos = c('DeepLearning', 'GBM')),
+    list(response = "gaussian", distribution = list(distribution = "quantile", quantile_alpha = 0.25), algos = c('DeepLearning', 'GBM')),
+    list(response = "gaussian", distribution = list(distribution = "huber", huber_alpha = .3),
          algos = c('DeepLearning', 'GBM'), max_models = 12),
-    list(response = "gaussian", distribution = Distribution.tweedie(1.5),
+    list(response = "gaussian", distribution = list(distribution = "tweedie", tweedie_power = 1.5),
          algos = c('DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost')),
-    list(response = "ordinal_factors", distribution = Distribution.ordinal, algos = c(), fail = TRUE)
+    list(response = "ordinal_factors", distribution = "ordinal", algos = c(), fail = TRUE)
     # list(response = "gaussian", distribution = "custom", algos = c("GBM")),
     # list(response = "gaussian", distribution = "custom2", algos = c("GBM"))
   )
@@ -125,12 +115,18 @@ test.wrong.distribution <- function() {
 
 test.unspecified.param <- function() {
   df <- as.h2o(iris)
-  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "tweedie"))
+  aml <- h2o.automl(y = "Species", training_frame = df, distribution = "huber", max_runtime_secs = 2)
+  expect_is(aml, "H2OAutoML")
+  aml <- h2o.automl(y = "Species", training_frame = df, distribution = list(distribution = "tweedie"), max_runtime_secs = 2)
+  expect_is(aml, "H2OAutoML")
+  aml <- h2o.automl(y = "Species", training_frame = df, distribution = "quantile", max_runtime_secs = 2)
+  expect_is(aml, "H2OAutoML")
 }
 
 test.unspecified.param2 <- function() {
   df <- as.h2o(iris)
-  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = list(distribution = "huber")))
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = list(distribution = "custom"), max_runtime_secs = 2))
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "custom", max_runtime_secs = 2))
 }
 
 doSuite("AutoML distributions Test", do.call(makeSuite, c(

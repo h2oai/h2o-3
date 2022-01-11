@@ -11,28 +11,29 @@ from tests import pyunit_utils as pu
 
 def test_automl_distributions():
     scenarios = [
-        dict(response="binomial", distribution=Distribution.binomial,
+        dict(response="binomial", distribution="binomial",
+             algos=['DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], max_models=12, fail=True),
+        dict(response="binomial", distribution="bernoulli",
              algos=['DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], max_models=12),
         dict(response="quasibinomial", distribution="quasibinomial", algos=['GBM', 'GLM', 'StackedEnsemble'],
               max_models=17, fail=True),  # needed to be able to build SE
         dict(response="quasibinomial", distribution="fractionalbinomial", algos=['GLM'], fail=True),
-        dict(response="multinomial", distribution=Distribution.multinomial,
+        dict(response="multinomial", distribution="multinomial",
              algos=['DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], max_models=12),
-        dict(response="gaussian", distribution=Distribution.gaussian,
+        dict(response="gaussian", distribution="gaussian",
              algos=['DRF', 'DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], max_models=12),
-        dict(response="ordinal", distribution=Distribution.poisson,
+        dict(response="ordinal", distribution="poisson",
              algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
-        dict(response="gaussian", distribution=Distribution.gamma,
+        dict(response="gaussian", distribution="gamma",
              algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost'], nrows=400),
-        dict(response="gaussian", distribution=Distribution.laplace, algos=['DeepLearning', 'GBM']),
-        dict(response="gaussian", distribution=Distribution.quantile(0.25), algos=['DeepLearning', 'GBM']),
-        dict(response="gaussian", distribution=Distribution.huber(.3),
+        dict(response="gaussian", distribution="laplace", algos=['DeepLearning', 'GBM']),
+        dict(response="gaussian", distribution=dict(distribution="quantile", quantile_alpha=0.25), algos=['DeepLearning', 'GBM']),
+        dict(response="gaussian", distribution=dict(distribution="huber", huber_alpha=.3),
              algos=['DeepLearning', 'GBM'], max_models=12),
-        dict(response="gaussian", distribution=Distribution.tweedie(1.5),
+        dict(response="gaussian", distribution=dict(distribution="tweedie", tweedie_power=1.5),
              algos=['DeepLearning', 'GBM', 'GLM', 'StackedEnsemble', 'XGBoost']),
-        dict(response="ordinal_factors", distribution=Distribution.ordinal, algos=[], fail=True),
-        dict(response="gaussian", distribution="custom", algos=["GBM"]),
-        dict(response="gaussian", distribution="custom2", algos=["GBM"]),
+        dict(response="ordinal_factors", distribution="ordinal", algos=[], fail=True),
+        dict(response="gaussian", distribution=dict(distribution="custom", custom_distribution_func="FILLED_LATER_IN_THE_TEST"), algos=["GBM"]),
     ]
     seed = 9803190
 
@@ -73,11 +74,8 @@ def test_automl_distributions():
                 if expected_dist == "custom":
                     from h2o.utils.distributions import CustomDistributionGaussian
                     custom_dist = h2o.upload_custom_distribution(CustomDistributionGaussian)
-                    scenario["distribution"] = Distribution.custom(custom_dist)
-                if expected_dist == "custom2":
-                    from h2o.utils.distributions import CustomDistributionGaussian
-                    scenario["distribution"] = Distribution.custom(CustomDistributionGaussian)
-                    expected_dist = "custom"
+                    scenario["distribution"]["custom_distribution_func"] = custom_dist
+
 
                 aml = H2OAutoML(max_models=scenario.get("max_models", 12), distribution=scenario["distribution"], seed=seed,
                                 max_runtime_secs_per_model=1, verbosity=None)
@@ -115,16 +113,22 @@ def test_python_api():
     def test_parameterized_distribution_without_param():
         try:
             aml = H2OAutoML(distribution=dict(distribution="huber"))
+            aml = H2OAutoML(distribution="tweedie")
+            aml = H2OAutoML(distribution="quantile")
         except AssertionError:
-            return
-        assert False, "should have failed"
+            assert False, "should not have failed"
 
     def test_parameterized_distribution_without_param2():
         try:
-            aml = H2OAutoML(distribution="tweedie")
+            aml = H2OAutoML(distribution="custom")
+            assert False, "should have failed"
         except ValueError:
-            return
-        assert False, "should have failed"
+            pass
+        try:
+            aml = H2OAutoML(distribution=dict(distribution="custom"))
+            assert False, "should have failed"
+        except ValueError:
+            pass
 
     return [
         test_parameterized_distribution_without_param,
