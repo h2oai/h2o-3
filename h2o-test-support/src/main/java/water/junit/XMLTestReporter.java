@@ -9,6 +9,8 @@ import org.junit.runner.notification.RunListener;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
+import water.H2ORuntime;
+import water.TestUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -79,7 +81,7 @@ public class XMLTestReporter extends RunListener {
 
     docBuilderFactory = DocumentBuilderFactory.newInstance();
     docBuilder = docBuilderFactory.newDocumentBuilder();
-    document = docBuilder.newDocument();;
+    document = docBuilder.newDocument();
     testCaseElement = document.createElement("testcase");
     transFactory = TransformerFactory.newInstance();
     trans = transFactory.newTransformer();
@@ -91,15 +93,17 @@ public class XMLTestReporter extends RunListener {
     if (!rdir.exists()) rdir.mkdirs();
   }
 
+  @Override
   public void testRunFinished(Result result) throws Exception {
     if (currentTestSuiteName != null) {
       finishTestSuite(); // finish last suite
     }
   }
 
+  @Override
   public void testStarted(Description description) throws Exception {
 
-    String testSuiteName = description.getClassName();
+    final String testSuiteName = makeTestSuiteName(description);
 
     if (currentTestSuiteName == null) {
       startTestSuite(testSuiteName); // start first suite
@@ -114,17 +118,24 @@ public class XMLTestReporter extends RunListener {
     startTestCase(description);
   }
 
-  public void testFinished(Description description) throws Exception {
+  private String makeTestSuiteName(Description description) {
+    String clusterType = TestUtil.MINCLOUDSIZE > 1 ? "multi" : "single";
+    return clusterType + "." + description.getClassName();
+  }
+
+  @Override
+  public void testFinished(Description description) {
     finishTestCase();
     recordTestCaseSuccess();
   }
 
-  public void testFailure(Failure failure) throws Exception {
+  @Override
+  public void testFailure(Failure failure) {
     finishTestCase();
     recordTestCaseFailure(failure);
   }
 
-  public void startTestSuite(String testSuiteName) throws Exception {
+  private void startTestSuite(String testSuiteName) throws Exception {
 
     testSuiteStartTime = System.currentTimeMillis();
 
@@ -141,6 +152,8 @@ public class XMLTestReporter extends RunListener {
                                   StringEscapeUtils.escapeXml(InetAddress.getLocalHost().getHostName()));
     testSuiteElement.setAttribute("ncpu",
       StringEscapeUtils.escapeXml(Integer.toString(Runtime.getRuntime().availableProcessors())));
+    testSuiteElement.setAttribute("activecpu",
+            StringEscapeUtils.escapeXml(Integer.toString(H2ORuntime.availableProcessors())));
 
     // system properties
     Element propertiesElement = document.createElement("properties");
@@ -168,7 +181,7 @@ public class XMLTestReporter extends RunListener {
     System.setErr(new PrintStream(new TeeOutputStream(err, stdErr), true));
   }
 
-  public void finishTestSuite() throws Exception {
+  private void finishTestSuite() throws Exception {
 
     double time = (System.currentTimeMillis() - testSuiteStartTime) / 1000.0;
     testSuiteElement.setAttribute("time", "" + time);
@@ -208,7 +221,7 @@ public class XMLTestReporter extends RunListener {
     fw.close();
   }
 
-  public void startTestCase(Description description) throws Exception {
+  private void startTestCase(Description description) {
 
     testCaseStartTime = System.currentTimeMillis();
 
@@ -221,16 +234,16 @@ public class XMLTestReporter extends RunListener {
     testCount++;
   }
 
-  public void finishTestCase() throws Exception {
+  private void finishTestCase() {
     double time = (System.currentTimeMillis() - testCaseStartTime) / 1000.0;
     testCaseElement.setAttribute("time", "" + time);
   }
 
-  public void recordTestCaseSuccess() throws Exception {
+  private void recordTestCaseSuccess() {
     successCount++;
   }
-
-  public void recordTestCaseFailure(Failure failure) throws Exception {
+  
+  private void recordTestCaseFailure(Failure failure) {
 
     Element failureElement = document.createElement("failure");
     testCaseElement.appendChild(failureElement);
