@@ -4,6 +4,7 @@ import hex.glm.GLMModel;
 import hex.modelselection.ModelSelection;
 import hex.modelselection.ModelSelectionModel;
 import water.api.API;
+import water.api.EnumValuesProvider;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 
@@ -25,6 +26,11 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "score_iteration_interval",
                 "offset_column",
                 "weights_column",
+                "family",
+                "link",
+                "tweedie_variance_power",
+                "tweedie_link_power",
+                "theta", // equals to 1/r and should be > 0 and <=1, used by negative binomial
                 "solver",
                 "alpha",
                 "lambda",
@@ -61,11 +67,30 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 "custom_metric_func",
                 "nparallelism",
                 "max_predictor_number",  // denote maximum number of predictors to build models for
-                "mode" // naive, maxr, backward
+                "min_predictor_number",
+                "mode", // naive, maxr, backward
+                "p_values_threshold"
         };
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
         public long seed;
+
+        // Input fields
+        @API(help = "Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not supported",
+                values = {"AUTO", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson",
+                        "gamma", "tweedie", "negativebinomial"}, level = API.Level.critical)
+        // took tweedie out since it's not reliable
+        public GLMModel.GLMParameters.Family family;
+
+        @API(help = "Tweedie variance power", level = API.Level.critical, gridable = true)
+        public double tweedie_variance_power;
+
+        @API(help = "Tweedie link power", level = API.Level.critical, gridable = true)
+        public double tweedie_link_power;
+
+        @API(help = "Theta", level = API.Level.critical, gridable = true)
+        public double theta; // used by negtaive binomial distribution family
+
 
         @API(help = "AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on " +
                 "problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales " +
@@ -143,15 +168,24 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
         @API(help="Likelihood divider in objective value computation, default is 1/nobs")
         public double obj_reg;
 
+        @API(help = "Link function.", level = API.Level.secondary, values = {"family_default", "identity", "logit", "log",
+                "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
+        public GLMModel.GLMParameters.Link link;
+
         @API(help = "double array to initialize fixed and random coefficients for HGLM, coefficients for GLM.",
                 gridable=true)
         public double[] startval;
 
         @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
         public boolean calc_like;
-
-        @API(help = "Mode: used to choose model selection algorithm to use, ", values = {"allsubsets", "maxr"},
-                level = API.Level.critical)
+        
+        @API(level = API.Level.critical, direction = API.Direction.INOUT,
+                valuesProvider = ModelSelectionModeProvider.class,
+                help = "Mode: Used to choose model selection algorithms to use.  Options include "
+                        + "'allsubsets' for all subsets, "
+                        + "'maxr' for MaxR, "
+                        + "'backward' for backward selection"
+        )
         public ModelSelectionModel.ModelSelectionParameters.Mode mode;
 
         @API(help="Include constant term in the model", level = API.Level.expert)
@@ -220,12 +254,25 @@ public class ModelSelectionV3 extends ModelBuilderSchema<ModelSelection, ModelSe
                 level = API.Level.secondary, direction = API.Direction.INPUT)
         public boolean remove_collinear_columns; // _remove_collinear_columns
 
-        @API(help = "Maximum number of predictors to be considered when building GLM models.  Defaiult to 1.", 
+        @API(help = "Maximum number of predictors to be considered when building GLM models.  Defaults to 1.", 
                 level = API.Level.secondary, direction = API.Direction.INPUT)
         public int max_predictor_number;
 
-        @API(help = "number of models to build in parallel.  Default to 0.0 which is adaptive to the system capability",
+        @API(help = "For mode = 'backward' only.  Minimum number of predictors to be considered when building GLM " +
+                "models starting with all predictors to be included.  Defaults to 1.",
+                level = API.Level.secondary, direction = API.Direction.INPUT)
+        public int min_predictor_number;
+
+        @API(help = "number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability",
                 level = API.Level.secondary, gridable = true)
         public int nparallelism;
+
+        @API(help = "For mode='backward' only.  If specified, will stop the model building process when all coefficients" +
+                "p-values drop below this threshold ", level = API.Level.expert)
+        public double p_values_threshold;
+    }
+
+    public static final class ModelSelectionModeProvider extends EnumValuesProvider<ModelSelectionModel.ModelSelectionParameters.Mode> {
+        public ModelSelectionModeProvider() { super(ModelSelectionModel.ModelSelectionParameters.Mode.class); }
     }
 }
