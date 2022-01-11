@@ -1,5 +1,6 @@
 package water.webserver.jetty8;
 
+import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -17,7 +18,6 @@ import water.webserver.iface.H2OHttpView;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 public class Jetty8HelperTest {
@@ -84,4 +84,13 @@ public class Jetty8HelperTest {
     }
   }
 
+  @Test
+  public void testMakeFormAuthenticator() {
+    assertTrue(Jetty8Helper.makeFormAuthenticator(false) 
+                    instanceof org.eclipse.jetty.security.authentication.FormAuthenticator);
+    Authenticator customFormAuthenticator = Jetty8Helper.makeFormAuthenticator(true);
+    assertTrue(customFormAuthenticator instanceof water.webserver.jetty8.security.FormAuthenticator);
+    assertTrue(((water.webserver.jetty8.security.FormAuthenticator) customFormAuthenticator).getUseRelativeRedirects());
+  }
+  
 }

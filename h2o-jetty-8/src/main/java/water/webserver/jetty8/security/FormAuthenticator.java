@@ -87,13 +87,14 @@ public class FormAuthenticator extends LoginAuthenticator
     private String _formLoginPath;
     private boolean _dispatch;
     private boolean _alwaysSaveUri;
+    private boolean _useRelativeRedirects;
 
     public FormAuthenticator()
     {
     }
 
     /* ------------------------------------------------------------ */
-    public FormAuthenticator(String login,String error,boolean dispatch)
+    public FormAuthenticator(String login,String error,boolean dispatch,boolean useRelativeRedirects)
     {
         this();
         if (login!=null)
@@ -101,6 +102,7 @@ public class FormAuthenticator extends LoginAuthenticator
         if (error!=null)
             setErrorPage(error);
         _dispatch=dispatch;
+        _useRelativeRedirects=useRelativeRedirects;
     }
 
     /* ------------------------------------------------------------ */
@@ -121,6 +123,11 @@ public class FormAuthenticator extends LoginAuthenticator
     public boolean getAlwaysSaveUri ()
     {
         return _alwaysSaveUri;
+    }
+
+    public boolean getUseRelativeRedirects ()
+    {
+        return _useRelativeRedirects;
     }
 
     /* ------------------------------------------------------------ */
@@ -292,10 +299,7 @@ public class FormAuthenticator extends LoginAuthenticator
                         MultiMap<String> j_post = (MultiMap<String>)session.getAttribute(__J_POST);
                         if (j_post!=null)
                         {
-                            StringBuffer buf = request.getRequestURL();
-                            if (request.getQueryString() != null)
-                                buf.append("?").append(request.getQueryString());
-
+                            StringBuffer buf = extractJUri(request);
                             if (j_uri.equals(buf.toString()))
                             {
                                 // This is a retry of an original POST request
@@ -328,9 +332,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 // But only if it is not set already, or we save every uri that leads to a login form redirect
                 if (session.getAttribute(__J_URI)==null || _alwaysSaveUri)
                 {
-                    StringBuffer buf = request.getRequestURL();
-                    if (request.getQueryString() != null)
-                        buf.append("?").append(request.getQueryString());
+                    StringBuffer buf = extractJUri(request);
                     session.setAttribute(__J_URI, buf.toString());
 
                     if (MimeTypes.FORM_ENCODED.equalsIgnoreCase(req.getContentType()) && HttpMethods.POST.equals(request.getMethod()))
@@ -366,6 +368,17 @@ public class FormAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
+    }
+
+    StringBuffer extractJUri(HttpServletRequest request) {
+        final StringBuffer buf; 
+        if (_useRelativeRedirects) {
+            buf = new StringBuffer(request.getContextPath());
+        } else
+            buf = request.getRequestURL();
+        if (request.getQueryString() != null)
+            buf.append("?").append(request.getQueryString());
+        return buf;
     }
 
     /* ------------------------------------------------------------ */
