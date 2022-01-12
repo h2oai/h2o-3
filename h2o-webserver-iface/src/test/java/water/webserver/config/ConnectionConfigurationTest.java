@@ -33,6 +33,7 @@ public class ConnectionConfigurationTest {
             props.put(prefix + "relativeRedirectAllowed", "false");
 
             ConnectionConfiguration cfg = new MyConnectionConfiguration(props, isSecured);
+            assertEquals(isSecured, cfg.isSecure());
             assertEquals(42, cfg.getRequestHeaderSize());
             assertEquals(43, cfg.getRequestBufferSize());
             assertEquals(44, cfg.getResponseHeaderSize());
