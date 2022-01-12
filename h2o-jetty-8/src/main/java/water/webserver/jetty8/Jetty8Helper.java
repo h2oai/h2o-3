@@ -4,7 +4,6 @@ import ai.h2o.org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
 import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -49,8 +48,8 @@ class Jetty8Helper {
     jettyServer.setSendServerVersion(false);
 
     final Connector connector;
-    final boolean isSecure = config.jks != null;
-    if (isSecure) {
+    final ConnectionConfiguration connConfig = getConnectionConfiguration();
+    if (connConfig.isSecure()) {
       final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
       sslContextFactory.setKeyStorePassword(config.jks_pass);
       if (config.jks_alias != null) {
@@ -64,11 +63,15 @@ class Jetty8Helper {
       connector.setHost(ip);
     }
     connector.setPort(port);
-    configureConnector(connector, new ConnectionConfiguration(isSecure));
+    configureConnector(connector, connConfig);
     jettyServer.setConnectors(new Connector[]{connector});
     return jettyServer;
   }
 
+  ConnectionConfiguration getConnectionConfiguration() {
+    return new ConnectionConfiguration(config.jks != null);
+  }
+  
   // Configure connector via properties which we can modify.
   // Also increase request header size and buffer size from default values
   // located in org.eclipse.jetty.http.HttpBuffersImpl
@@ -151,7 +154,8 @@ class Jetty8Helper {
     // Authentication / Authorization
     final Authenticator authenticator;
     if (config.form_auth) {
-      FormAuthenticator formAuthenticator = new FormAuthenticator("/login", "/loginError", false);
+      final ConnectionConfiguration connConfig = getConnectionConfiguration();
+      final Authenticator formAuthenticator = makeFormAuthenticator(connConfig.isRelativeRedirectAllowed());
       authenticator = new Jetty8DelegatingAuthenticator(primaryAuthenticator, formAuthenticator);
     } else {
       authenticator = primaryAuthenticator;
@@ -173,7 +177,22 @@ class Jetty8Helper {
     // Pass-through to H2O if authenticated.
     jettyServer.setHandler(sessionHandler);
     return security;
+  }
 
+  static Authenticator makeFormAuthenticator(boolean useRelativeRedirects) {
+    final Authenticator formAuthenticator;
+    if (useRelativeRedirects) {
+      // If relative redirects are enabled - use our custom modified Authenticator
+      formAuthenticator = new water.webserver.jetty8.security.FormAuthenticator(
+              "/login", "/loginError", false, true
+      );
+    } else {
+      // Otherwise - prefer the default jetty authenticator 
+      formAuthenticator = new org.eclipse.jetty.security.authentication.FormAuthenticator(
+              "/login", "/loginError", false
+      );
+    }
+    return formAuthenticator;
   }
 
   /**

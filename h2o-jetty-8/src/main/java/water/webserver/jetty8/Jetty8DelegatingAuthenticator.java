@@ -2,7 +2,6 @@ package water.webserver.jetty8;
 
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 
 import javax.servlet.ServletRequest;
@@ -17,10 +16,10 @@ import javax.servlet.http.HttpServletRequest;
  */
 class Jetty8DelegatingAuthenticator implements Authenticator {
 
-  private Authenticator _primaryAuth;
-  private FormAuthenticator _formAuth;
+  private final Authenticator _primaryAuth;
+  private final Authenticator _formAuth;
 
-  Jetty8DelegatingAuthenticator(Authenticator primaryAuth, FormAuthenticator formAuth) {
+  Jetty8DelegatingAuthenticator(Authenticator primaryAuth, Authenticator formAuth) {
     _primaryAuth = primaryAuth;
     _formAuth = formAuth;
   }
