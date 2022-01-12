@@ -238,7 +238,7 @@ h2o.automl <- function(x, y, training_frame,
                      distribution$distribution, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]],
                      distribution$distribution, ALLOWED_DISTRIBUTION_PARAMETERS[[distribution$distribution]]
         ))
-      if (tolower(distribution) == "custom") {
+      if (tolower(distribution$distribution) == "custom") {
         stop(paste0('Distribution "custom" has to be specified as a ',
                     'dictionary with their respective parameters, e.g., ',
                     '`list(distribution = \"custom\", custom_distribution_func = \"...\"))`.'))

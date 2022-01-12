@@ -13,7 +13,6 @@ import ai.h2o.automl.preprocessing.PreprocessingStep;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.genmodel.utils.DistributionFamily;
-import hex.ensemble.StackedEnsembleModel;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -613,8 +612,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private DistributionFamily inferDistribution(Vec response) {
+    int numOfDomains = response.domain() == null ? 0 : response.domain().length;
     if (_buildSpec.build_control.distribution == DistributionFamily.AUTO) {
-      int numOfDomains = response.domain() == null ? 0 : response.domain().length;
       if (numOfDomains == 0)
         return DistributionFamily.gaussian;
       if (numOfDomains == 2)
@@ -624,7 +623,38 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       throw new RuntimeException("Number of domains is equal to 1.");
     } else {
-      return _buildSpec.build_control.distribution;
+      DistributionFamily distribution = _buildSpec.build_control.distribution;
+      if (numOfDomains > 2) {
+        if (! (distribution.equals(DistributionFamily.multinomial) ||
+                distribution.equals(DistributionFamily.ordinal) ||
+                distribution.equals(DistributionFamily.custom))) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of domains of response is greater than 2." +
+                  " Possible distribution values: \"multinomial\"," +
+                  /*" \"ordinal\"," + */ // Currently unsupported in AutoML
+                  " \"custom\".");
+        }
+      } else if (numOfDomains == 2) {
+        if (! (distribution.equals(DistributionFamily.bernoulli) ||
+                distribution.equals(DistributionFamily.quasibinomial) ||
+                distribution.equals(DistributionFamily.fractionalbinomial) ||
+                distribution.equals(DistributionFamily.custom))) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of domains of response is 2." +
+                  " Possible distribution values: \"bernoulli\"," +
+                  /*" \"quasibinomial\", \"fractionalbinomial\"," + */ // Currently unsupported in AutoML
+                  " \"custom\".");
+        }
+      } else {
+        if (distribution.equals(DistributionFamily.multinomial) ||
+               distribution.equals(DistributionFamily.ordinal) ||
+               distribution.equals(DistributionFamily.bernoulli) ||
+               distribution.equals(DistributionFamily.quasibinomial) ||
+               distribution.equals(DistributionFamily.fractionalbinomial)) {
+          throw new H2OAutoMLException("Wrong distribution specified! Number of domains of response is greater than 2." +
+                  " Possible distribution values: \"gaussian\", \"poisson\", \"negativebinomial\", \"gamma\", " +
+                  "\"laplace\", \"quantile\", \"huber\", \"tweedie\", \"custom\".");
+        }
+      }
+    return distribution;
     }
   }
 

@@ -108,18 +108,18 @@ automl.distributions.tests <- function() {
   })
 }
 
-test.wrong.distribution <- function() {
+test.nonexistent.distribution <- function() {
   df <- as.h2o(iris)
   expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "Student-t"))
 }
 
 test.unspecified.param <- function() {
   df <- as.h2o(iris)
-  aml <- h2o.automl(y = "Species", training_frame = df, distribution = "huber", max_runtime_secs = 2)
+  aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = "huber", max_runtime_secs = 2)
   expect_is(aml, "H2OAutoML")
-  aml <- h2o.automl(y = "Species", training_frame = df, distribution = list(distribution = "tweedie"), max_runtime_secs = 2)
+  aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = list(distribution = "tweedie"), max_runtime_secs = 2)
   expect_is(aml, "H2OAutoML")
-  aml <- h2o.automl(y = "Species", training_frame = df, distribution = "quantile", max_runtime_secs = 2)
+  aml <- h2o.automl(y = "Sepal.Length", training_frame = df, distribution = "quantile", max_runtime_secs = 2)
   expect_is(aml, "H2OAutoML")
 }
 
@@ -129,10 +129,18 @@ test.unspecified.param2 <- function() {
   expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "custom", max_runtime_secs = 2))
 }
 
+test.wrong.distribution <- function() {
+  df <- as.h2o(iris)
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "tweedie", max_runtime_secs = 2))
+  expect_error(h2o.automl(y = "Species", training_frame = df, distribution = "bernoulli", max_runtime_secs = 2))
+  expect_error(h2o.automl(y = "Sepal.Length", training_frame = df, distribution = "multinomial", max_runtime_secs = 2))
+}
+
 doSuite("AutoML distributions Test", do.call(makeSuite, c(
   automl.distributions.tests(),
   alist(
-    test.wrong.distribution,
+    test.nonexistent.distribution,
     test.unspecified.param,
-    test.unspecified.param2
+    test.unspecified.param2,
+    test.wrong.distribution
   ))))
