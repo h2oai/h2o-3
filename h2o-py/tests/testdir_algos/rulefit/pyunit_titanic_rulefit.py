@@ -1,3 +1,4 @@
+from __future__ import division
 import sys
 sys.path.insert(1,"../../../")
 import h2o
@@ -34,7 +35,7 @@ def titanic():
             (train.as_data_frame()['sibsp'][i] < 3.5 or math.isnan(train.as_data_frame()['sibsp'][i])):
             count = count + 1
     
-    assert rfit.rule_importance()['support'][0] == count / train.nrows
+    assert abs(rfit.rule_importance()['support'][0] - count / train.nrows) < 1e-6
     
     assert rfit._model_json["output"]["model_summary"] is not None, "model_summary should be present"
     assert len(rfit._model_json["output"]["model_summary"]._cell_values) > 0, "model_summary's content should be present"
@@ -66,7 +67,7 @@ def titanic():
         if train.as_data_frame()['sex'][i] == 'female':
             count = count + 1
 
-    assert rfit.rule_importance()['support'][0] == count / train.nrows
+    assert abs(rfit.rule_importance()['support'][0] - count / train.nrows) < 1e-6
     
 
 if __name__ == "__main__":
