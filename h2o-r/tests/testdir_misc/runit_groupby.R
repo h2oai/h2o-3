@@ -47,7 +47,19 @@ test <- function(conn) {
   gp_sd <- as.data.frame(gp_sd)[,2]
   r_sd  <- sapply(races, sd)
   checkEqualsNumeric(r_sd, gp_sd)
-  
+
+  Log.info("Test method = sum applied on multiple cols...")
+  cols <- c("VOL", "PSA")
+  gp_sum2 <- h2o.group_by(data = df.hex, by = "RACE", sum(cols))
+  expect_true(all(c("sum_VOL", "sum_PSA") %in% names(gp_sum2)))
+  checkEqualsNumeric(r_sum, as.data.frame(gp_sum2)$sum_VOL)
+
+  Log.info("Test method = sum applied on multiple cols some nonexistent...")
+  cols <- c("NE", "VOL", "PSA")
+  expect_error(h2o.group_by(data = df.hex, by = "RACE", sum(cols)), "No column(s) named \"NE\" in data.", fixed = TRUE)
+  cols <- c("NE", "VOL", "PES")
+  expect_error(h2o.group_by(data = df.hex, by = "RACE", sum(cols)), "No column(s) named \"NE\", \"PES\" in data.", fixed = TRUE)
+
 }
 
 doTest("Testing different methods for groupby:", test)

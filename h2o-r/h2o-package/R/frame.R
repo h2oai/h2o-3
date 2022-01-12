@@ -5048,7 +5048,7 @@ h2o.group_by <- function(data, by, ..., gb.control=list(na.methods=NULL, col.nam
       col.idx <- match(col.name, colnames(data))
 
     # no such column, stop!
-      if( is.na(col.idx) ) stop('No column named ', col.name, ' in ', substitute(data), '.')
+      if( any(is.na(col.idx)) ) stop('No column(s) named "', paste0(col.name[is.na(col.idx)], collapse = '", "'), '" in ', substitute(data), '.')
     # got a good column index, return it.
       col.idx
     }
