@@ -505,7 +505,7 @@ public final class PersistHdfs extends Persist {
   }
 
   public InputStream wrapSeekable(Vec vec) {
-    return new FSDataInputStream(new VecDataInputStream(vec));
+    return new FSDataInputStream(new VecDataInputStream(vec, true));
   }
   
   public boolean isSeekableOpenSupported() {
