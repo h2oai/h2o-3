@@ -67,7 +67,7 @@ author = u'h2o'
 #
 # The short X.Y version.
 if os.path.exists("project_version"):
-    f = open("project_version", "r")
+    f = open("project_version", "r", encoding='utf-8')
     version = f.readline().strip()
 else:
     version = "AnonDeveloperBuild"
