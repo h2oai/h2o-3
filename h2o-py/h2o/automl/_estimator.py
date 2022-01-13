@@ -176,6 +176,11 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             Defaults to ``0`` (disabled: no time limit).
         :param int max_models: Specify the maximum number of models to build in an AutoML run, excluding the Stacked Ensemble models.
             Defaults to ``None`` (disabled: no limitation).
+        :param Union[str, dict] distribution: Distribution function used by algorithms that support it; other algorithms
+            use their defaults.  Possible values: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
+            "tweedie", "laplace", "quantile", "huber", "custom", and for parameterized distributions dictionary form is
+            used to specify the parameter, e.g., ``dict(distribution="tweedie", tweedie_power=1.5)``.
+            Defaults to ``AUTO``.
         :param str stopping_metric: Specifies the metric to use for early stopping. 
             The available options are:
             ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
