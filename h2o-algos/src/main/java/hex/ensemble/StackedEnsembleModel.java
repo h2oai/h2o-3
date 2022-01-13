@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
-import static hex.util.DistributionUtils.distributionToFamily;
 import static hex.util.DistributionUtils.familyToDistribution;
 
 /**
@@ -138,15 +137,16 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
 
     @Override
-    public DistributionFamily[] supportedDistributions() {
-      return Metalearners.createParameters(_metalearner_algorithm.name()).supportedDistributions();
-    }
-
-    @Override
     public DistributionFamily getDistributionFamily() {
       if (_metalearner_parameters != null)
         return _metalearner_parameters.getDistributionFamily();
       return super.getDistributionFamily();
+    }
+
+    @Override
+    public void setDistributionFamily(DistributionFamily distributionFamily) {
+      assert _metalearner_parameters != null;
+      _metalearner_parameters.setDistributionFamily(distributionFamily);
     }
   }
 

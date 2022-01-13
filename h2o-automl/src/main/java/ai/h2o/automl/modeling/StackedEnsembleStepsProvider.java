@@ -7,6 +7,7 @@ import ai.h2o.automl.preprocessing.PreprocessingConfig;
 import ai.h2o.automl.preprocessing.TargetEncoding;
 import hex.KeyValue;
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ScoreKeeper;
 import hex.ensemble.Metalearner;
 import hex.ensemble.StackedEnsembleModel;
@@ -16,6 +17,7 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
 import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 import java.util.*;
@@ -156,9 +158,15 @@ public class StackedEnsembleStepsProvider
             public boolean supportsDistribution(DistributionFamily distributionFamily) {
                 StackedEnsembleParameters params = prepareModelParameters();
                 setMetalearnerParameters(params);
+                try {
+                    params.setDistributionFamily(distributionFamily);
+                } catch (H2OIllegalArgumentException e) {
+                    return false;
+                }
+                ModelBuilder mb = ModelBuilder.make(params);
+                mb.init(false);
 
-                return Arrays.stream(params.supportedDistributions())
-                        .anyMatch(dist -> dist.equals(distributionFamily));
+                return mb.error_count() == 0;
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {

@@ -70,6 +70,20 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     super.init(expensive);
     _parms.validate(this, expensive);
     _orig_projection_array = LinearAlgebraUtils.toEigenProjectionArray(_origTrain, _train, expensive);
+    DistributionFamily[] allowed_distributions = new DistributionFamily[] {
+            DistributionFamily.AUTO,
+            DistributionFamily.bernoulli,
+            DistributionFamily.multinomial,
+            DistributionFamily.gaussian,
+            DistributionFamily.poisson,
+            DistributionFamily.gamma,
+            DistributionFamily.laplace,
+            DistributionFamily.quantile,
+            DistributionFamily.huber,
+            DistributionFamily.tweedie,
+    };
+    if (!(Arrays.stream(allowed_distributions).anyMatch(_parms._distribution::equals)))
+      error("_distribution", _parms._distribution.name() + " is not supported for XGBoost in current H2O.");
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 

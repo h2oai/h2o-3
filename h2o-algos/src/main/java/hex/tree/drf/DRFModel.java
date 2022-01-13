@@ -22,16 +22,6 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
       _max_depth = 20;
       _min_rows = 1;
     }
-
-    @Override
-    public DistributionFamily[] supportedDistributions() {
-      return new DistributionFamily[] {
-              DistributionFamily.AUTO,
-              DistributionFamily.bernoulli,
-              DistributionFamily.multinomial,
-              DistributionFamily.gaussian,
-      };
-    }
   }
 
   public static class DRFOutput extends SharedTreeModelWithContributions.SharedTreeOutput {

@@ -212,19 +212,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { 
         "_tree_method", "_grow_policy", "_booster", "_sample_rate", "_max_depth", "_min_rows" 
     };
-
-    @Override
-    public DistributionFamily[] supportedDistributions() {
-      return new DistributionFamily[] {
-              DistributionFamily.AUTO,
-              DistributionFamily.bernoulli,
-              DistributionFamily.multinomial,
-              DistributionFamily.gaussian,
-              DistributionFamily.poisson,
-              DistributionFamily.gamma,
-              DistributionFamily.tweedie,
-      };
-    }
   }
 
   @Override

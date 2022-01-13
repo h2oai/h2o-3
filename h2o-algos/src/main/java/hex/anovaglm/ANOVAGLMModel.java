@@ -136,37 +136,13 @@ public class ANOVAGLMModel extends Model<ANOVAGLMModel, ANOVAGLMModel.ANOVAGLMPa
 
     @Override
     public void setDistributionFamily(DistributionFamily distributionFamily) {
-      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily))) {
         _family = distributionToFamily(distributionFamily);
         _link = Link.family_default;
-      }
     }
 
     @Override
     public DistributionFamily getDistributionFamily() {
       return familyToDistribution(_family);
-    }
-
-    @Override
-    public DistributionFamily[] supportedDistributions() {
-      DistributionFamily[] distributionFamilies = new DistributionFamily[]{
-              DistributionFamily.AUTO,
-              DistributionFamily.bernoulli,
-              DistributionFamily.quasibinomial,
-              DistributionFamily.fractionalbinomial,
-              DistributionFamily.multinomial,
-              DistributionFamily.gaussian,
-              DistributionFamily.poisson,
-              DistributionFamily.gamma,
-              DistributionFamily.negativebinomial,
-              DistributionFamily.tweedie,
-              DistributionFamily.ordinal,
-      };
-      if (_lambda_search)
-        distributionFamilies = Arrays.stream(distributionFamilies)
-                .filter(df -> !df.equals(DistributionFamily.ordinal))
-                .toArray(DistributionFamily[]::new);
-      return distributionFamilies;
     }
   }
 

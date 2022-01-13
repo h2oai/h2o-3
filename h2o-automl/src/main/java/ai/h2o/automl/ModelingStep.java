@@ -111,6 +111,16 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         throw new UnsupportedOperationException();
     }
 
+    public boolean validParameters(Model.Parameters parms) {
+        try {
+            ModelBuilder mb = ModelBuilder.make(parms);
+            mb.init(false);
+            return mb.error_count() == 0;
+        } catch (H2OIllegalArgumentException e) {
+            return false;
+        }
+    }
+
     protected void setDistributionParameters(Model.Parameters parms) {
         if (aml().getDistributionFamily().equals(DistributionFamily.custom))
             parms._custom_distribution_func = aml().getBuildSpec().build_control.custom_distribution_func;
@@ -121,7 +131,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (aml().getDistributionFamily().equals(DistributionFamily.quantile))
             parms._quantile_alpha = aml().getBuildSpec().build_control.quantile_alpha;
 
-        parms.setDistributionFamily(aml().getDistributionFamily());
+        try {
+            parms.setDistributionFamily(aml().getDistributionFamily());
+        } catch (H2OIllegalArgumentException e) {
+            parms.setDistributionFamily(DistributionFamily.AUTO);
+        }
+        if (!validParameters(parms))
+            parms.setDistributionFamily(DistributionFamily.AUTO);
     }
 
     private transient AutoML _aml;
@@ -520,8 +536,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         @Override
         public boolean supportsDistribution(DistributionFamily distributionFamily) {
-            return Arrays.stream(prepareModelParameters().supportedDistributions())
-                    .anyMatch(dist -> dist.equals(distributionFamily));
+            Model.Parameters parms = prepareModelParameters();
+            try {
+                parms.setDistributionFamily(distributionFamily);
+                return validParameters(parms);
+            } catch (H2OIllegalArgumentException e) {
+                return false;
+            }
         }
     }
 
@@ -636,8 +657,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         @Override
         public boolean supportsDistribution(DistributionFamily distributionFamily) {
-            return Arrays.stream(prepareModelParameters().supportedDistributions())
-                    .anyMatch(dist -> dist.equals(distributionFamily));
+            Model.Parameters parms = prepareModelParameters();
+            try {
+                parms.setDistributionFamily(distributionFamily);
+                return validParameters(parms);
+            } catch (H2OIllegalArgumentException e) {
+                return false;
+            }
         }
     }
 

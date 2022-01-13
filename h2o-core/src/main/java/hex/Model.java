@@ -713,10 +713,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return values;
     }
 
-    public DistributionFamily[] supportedDistributions() {
-      return new DistributionFamily[] {DistributionFamily.AUTO};
-    }
-
     @Override
     public final CategoricalEncodingScheme getCategoricalEncoding() {
       return _categorical_encoding;
@@ -753,9 +749,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     public void setDistributionFamily(DistributionFamily distributionFamily){
-      if (Arrays.stream(supportedDistributions()).anyMatch(dist -> dist.equals(distributionFamily)))
-        _distribution = distributionFamily;
+      _distribution = distributionFamily;
     }
+
     public DistributionFamily getDistributionFamily() {
       return _distribution;
     }

@@ -133,7 +133,9 @@ public class Metalearners {
             super.validateParams(parms);
 
             // Check if distribution family is supported and if not pick a basic one
-            if (!ArrayUtils.contains(parms.supportedDistributions(), parms._distribution)) {
+            ModelBuilder mb = ModelBuilder.make(parms);
+            mb.init(false);
+            if (mb.error_count() > 0) {
                 DistributionFamily distribution;
                 if (_model._output.nclasses() == 1) {
                     distribution = DistributionFamily.gaussian;

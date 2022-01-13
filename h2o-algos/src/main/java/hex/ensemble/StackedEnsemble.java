@@ -21,9 +21,6 @@ import water.util.Log;
 import java.util.*;
 import java.util.stream.Stream;
 
-import water.util.ArrayUtils;
-import water.util.Log;
-
 import static hex.genmodel.utils.DistributionFamily.*;
 import static hex.util.DistributionUtils.familyToDistribution;
 

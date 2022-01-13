@@ -79,20 +79,6 @@ public class RuleFitModel extends Model<RuleFitModel, RuleFitModel.RuleFitParame
                         + ", max_rule_length = " + rfit._parms._max_rule_length + ".");
             }
         }
-
-        @Override
-        public DistributionFamily[] supportedDistributions() {
-            DistributionFamily[] distributionFamilies = new DistributionFamily[]{
-                    DistributionFamily.AUTO,
-                    DistributionFamily.bernoulli,
-                    DistributionFamily.multinomial,
-                    DistributionFamily.gaussian,
-                    DistributionFamily.poisson,
-                    DistributionFamily.gamma,
-                    DistributionFamily.tweedie,
-            };
-            return distributionFamilies;
-        }
     }
 
     public static class RuleFitOutput extends Model.Output {
