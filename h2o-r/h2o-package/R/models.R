@@ -5649,7 +5649,7 @@ h2o.import_mojo <- function(mojo_file_path, model_id=NULL){
 #' @export
 h2o.upload_mojo <- function(mojo_local_file_path, model_id=NULL){
   model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
-  model <- h2o.generic(model_key = model_file_key, model_id = model_id, path = mojo_local_file_path)
+  model <- h2o.generic(model_key = model_file_key, model_id = model_id)
   return(model)
 }
 
