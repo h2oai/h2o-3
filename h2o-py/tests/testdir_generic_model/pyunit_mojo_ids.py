@@ -1,7 +1,7 @@
 import h2o
 import tempfile
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
-from tests import pyunit_utils, assert_equals
+from tests import pyunit_utils, assert_equals, assert_not_equal
 
 
 # Test of MOJO convenience methods
@@ -40,11 +40,11 @@ def test_mojo_ids():
     # Test initialize model_id from path
     mojo_model_up_wid = h2o.upload_mojo(original_model_filename)
     print(mojo_model_up_wid.model_id)
-    assert_equals(mojo_model_up_wid.model_id, original_model_id, "Ids should not be the same.")
+    assert_not_equal(mojo_model_up_wid.model_id, original_model_id, "Ids should not be the same.")
 
     mojo_model_im_wid = h2o.import_mojo(original_model_filename)
     print(mojo_model_im_wid.model_id)
-    assert_equals(mojo_model_im_wid.model_id, original_model_id, "Ids should not be the same.")
+    assert_not_equal(mojo_model_im_wid.model_id, original_model_id, "Ids should not be the same.")
     
     
 if __name__ == "__main__":
