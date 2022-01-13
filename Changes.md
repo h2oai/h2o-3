@@ -52,6 +52,18 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.h
 - [[PUBDEV-8327]](https://h2oai.atlassian.net/browse/PUBDEV-8327) - Fixed bullet list formatting issues. 
 - [[PUBDEV-7903]](https://h2oai.atlassian.net/browse/PUBDEV-7903) - Updated R Reference Guide list.
 
+### Zizler (3.34.0.8) - 1/13/2021
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/8/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8514]](https://h2oai.atlassian.net/browse/PUBDEV-8514) - Fixed MOJO import automatically re-using original Model ID.
+
+#### Security
+
+- [[PUBDEV-8515]](https://h2oai.atlassian.net/browse/PUBDEV-8515) - Upgraded to log4j 2.17.1.
+
 ### Zizler (3.34.0.7) - 12/21/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/7/index.html</a>
