@@ -1,8 +1,10 @@
 package hex.genmodel;
 
+import ai.h2o.genmodel.NativeMojoModel;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.Table;
 import hex.genmodel.descriptor.ModelDescriptor;
+import org.omg.CORBA.UnknownUserException;
 
 import java.io.*;
 
@@ -36,7 +38,12 @@ public abstract class MojoModel extends GenModel {
    * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
    */
   public static MojoModel load(String file) throws IOException {
-    return load(file, false);
+    MojoModel mojoModel = load(file, false);
+    if (mojoModel.hasNativeMojo()) {
+      NativeMojoModel nativeMojoModel = new NativeMojoModel(file);
+      mojoModel.setNativeMojo(nativeMojoModel);
+    }
+    return mojoModel;
   }
 
   /**
@@ -83,4 +90,13 @@ public abstract class MojoModel extends GenModel {
   protected MojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
+
+  public boolean hasNativeMojo() {
+    return false;
+  }
+
+  public void setNativeMojo(NativeMojoModel nativeMojoModel) {
+    throw new UnsupportedOperationException();
+  }
+  
 }

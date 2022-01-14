@@ -1,5 +1,6 @@
 package hex.genmodel.algos.gbm;
 
+import ai.h2o.genmodel.NativeMojoModel;
 import hex.genmodel.GenModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.algos.tree.*;
@@ -15,9 +16,20 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
     public DistributionFamily _family;
     public LinkFunctionType _link_function;
     public double _init_f;
+    private ai.h2o.genmodel.NativeMojoModel _nativeMojoModel;
 
     public GbmMojoModel(String[] columns, String[][] domains, String responseColumn) {
         super(columns, domains, responseColumn);
+    }
+
+    @Override
+    public boolean hasNativeMojo() {
+        return nclasses() == 2;
+    }
+
+    @Override
+    public void setNativeMojo(NativeMojoModel nativeMojoModel) {
+        _nativeMojoModel = nativeMojoModel;
     }
 
     @Override
@@ -35,8 +47,14 @@ public final class GbmMojoModel extends SharedTreeMojoModelWithContributions imp
      */
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
+        double[] nativePreds = null;
+        if (_nativeMojoModel != null && offset == 0) {
+            nativePreds = _nativeMojoModel.score0(row, preds);
+        }
+        
         super.scoreAllTrees(row, preds);
-        return unifyPreds(row, offset, preds);
+        unifyPreds(row, offset, preds);
+        return nativePreds != null ? nativePreds : preds;
     }
 
     @Override
