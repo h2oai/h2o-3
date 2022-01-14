@@ -17,8 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static hex.DMatrix.transpose;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -361,5 +360,28 @@ public class InfogramPipingTest extends TestUtil {
       }
     }
   }
+
+  @Test
+  public void testInfogramSupportAllAlgos() {
+      try {
+        Scope.enter();
+        Frame trainF = parseTestFile("smalldata/admissibleml_test/irisROriginal.csv");
+        Scope.track(trainF);
+        InfogramModel.InfogramParameters params = new InfogramModel.InfogramParameters();
+        params._response_column = "Species";
+        params._train = trainF._key;
+        params._seed = 12345;
+
+        for (InfogramModel.InfogramParameters.Algorithm algo : InfogramModel.InfogramParameters.Algorithm.values()) {
+          params._algorithm = algo;
+          InfogramModel infogramModel = new Infogram(params).trainModel().get();
+          assertNotNull(infogramModel);
+          Scope.track_generic(infogramModel);
+        }
+
+      } finally {
+        Scope.exit();
+      }
+    }
 }
 
