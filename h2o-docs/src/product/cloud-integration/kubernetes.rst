@@ -31,19 +31,23 @@ Headless Service
 
 .. code:: yaml
 
-  apiVersion: networking.k8s.io/v1beta1
-  kind: Ingress
+  apiVersion: v1
+  kind: Service
   metadata:
-    name: h2o-ingress
-    namespace: default
+    name: h2o-service
+    namespace: <namespace-name>
   spec:
-    rules:
-    - http:
-        paths:
-        - path: /
-          backend:
-            serviceName: h2o-service
-            servicePort: 80
+    type: ClusterIP
+    clusterIP: None
+    selector:
+      app: h2o-k8s
+  ports:
+  - protocol: TCP
+    port: 54321
+
+The ``clusterIP: None`` defines the service as headless, and ``port: 54321`` is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
+
+The ``app: h2o-k8s`` setting is the name of the application with H2O pods inside. Be sure this setting corresponds to the name of the chosen H2O deployment name.
 
 StatefulSet
 ~~~~~~~~~~~
@@ -54,23 +58,25 @@ StatefulSet
   kind: StatefulSet
   metadata:
     name: h2o-stateful-set
-    namespace: default
+    namespace: <namespace-name>
   spec:
     serviceName: h2o-service
     podManagementPolicy: "Parallel"
     replicas: 3
     selector:
       matchLabels:
-        app: h2o
+        app: h2o-k8s
     template:
       metadata:
         labels:
-          app: h2o
+          app: h2o-k8s
       spec:
         containers:
-          - name: h2o
-            image: 'h2oai/h2o-open-source-k8s'
-            command: ["/bin/bash", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=90 -jar /opt/h2oai/h2o-3/h2o.jar"]
+          - name: h2o-k8s
+            image: 'h2oai/h2o-open-source-k8s:<tagname>'
+            resources:
+              requests:
+                memory:"4Gi"
             ports:
               - containerPort: 54321
                 protocol: TCP
@@ -81,16 +87,9 @@ StatefulSet
               initialDelaySeconds: 5
               periodSeconds: 5
               failureThreshold: 1
-            resources:
-              limits:
-                cpu: 1
-                memory: 256Mi
-              requests:
-                cpu: 1
-                memory: 256Mi
             env:
             - name: H2O_KUBERNETES_SERVICE_DNS
-              value: h2o-service.default.svc.cluster.local
+              value: h2o-service.<namespace-name>.svc.cluster.local
             - name: H2O_NODE_LOOKUP_TIMEOUT
               value: '180'
             - name: H2O_NODE_EXPECTED_COUNT

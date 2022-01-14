@@ -3270,6 +3270,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IOException when writing fails
    */
   public URI exportMojo(String location, boolean force) throws IOException {
+    if (! haveMojo())
+      throw new IllegalStateException("Model doesn't support MOJOs.");
     OutputStream os = null;
     try {
       URI targetUri = FileUtils.getURI(location);

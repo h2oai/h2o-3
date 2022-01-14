@@ -72,10 +72,6 @@ echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # classpath before the main classpath.
 #JVM="nice java -ea -cp build/classes/test${SEP}build/classes/main${SEP}../h2o-core/build/classes/test${SEP}../h2o-core/build/classes/main${SEP}../lib/*"
 
-# Tests
-# Must run first, before the cloud locks (because it tests cloud locking)
-JUNIT_TESTS_BIG=""
-
 # Runner
 # Default JUnit runner is org.junit.runner.JUnitCore
 JUNIT_RUNNER="water.junit.H2OTestRunner"
@@ -90,7 +86,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows. 
 # Windows has sort.exe which you don't want. Fails? (is it a lineend issue)
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BIG | sort | grep -v AAA_PreCloudLock > $OUTDIR/tests.txt
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | /usr/bin/sort > $OUTDIR/tests.txt
 
 # Output the comma-separated list of ignored/dooonly tests
 # Ignored tests trump do-only tests
