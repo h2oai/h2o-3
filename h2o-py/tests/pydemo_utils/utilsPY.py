@@ -10,7 +10,7 @@ def ipy_notebook_exec(path, save_and_norun=None):
             if "h2o.init" not in line:
                 program += line if '\n' in line else line + '\n'
     if save_and_norun is not None:
-        with open(save_and_norun, "w") as f: f.write(program)
+        with open(save_and_norun, "w", encoding='utf-8') as f: f.write(program)
     else:
         exec(program, dict(__name__='main'))
 
@@ -51,7 +51,7 @@ def ipy_valid_lines(block):
     return lines
 
 def pydemo_exec(test_name):
-    with open(test_name, "r") as t: demo = t.read()
+    with open(test_name, "r", encoding='utf-8') as t: demo = t.read()
     program = ''
     for line in demo.split('\n'):
         if "h2o.init" not in line:

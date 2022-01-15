@@ -72,7 +72,7 @@ def main():
     # magic_files = {}
     for filename in locate_files(ROOT_DIR):
         print("Processing %s" % filename)
-        with open(filename, "rt") as f:
+        with open(filename, "rt", encoding='utf-8') as f:
             tokens = list(tokenize.generate_tokens(f.readline))
             text1 = tokenize.untokenize(tokens)
             ntokens = normalize_tokens(tokens)
