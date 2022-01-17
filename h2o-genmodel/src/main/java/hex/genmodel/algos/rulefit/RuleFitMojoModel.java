@@ -8,7 +8,7 @@ public class RuleFitMojoModel extends MojoModel {
 
   public enum ModelType {LINEAR, RULES_AND_LINEAR, RULES}
   
-  MojoModel _linearModel;
+  public MojoModel _linearModel;
   MojoRuleEnsemble _ruleEnsemble;
   int _depth;
   int _ntrees;

@@ -15,6 +15,7 @@ import java.util.stream.DoubleStream;
 
 import org.apache.commons.lang.ArrayUtils;
 import water.rapids.Merge;
+import water.util.ComparisonUtils;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.*;
@@ -50,6 +51,19 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
               "Expected to find a ModelMetricsRegression for model: " + model._key.toString() + " and frame: " + frame._key.toString() + " but found a: " + mm.getClass());
 
     return (ModelMetricsRegressionCoxPH) mm;
+  }
+
+  @Override
+  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsRegressionCoxPH specificOther = (ModelMetricsRegressionCoxPH) other;
+
+    boolean result = resultFromSupport &&
+      ComparisonUtils.compareValuesUpToTolerance(this.concordance(), specificOther.concordance(), proportionalTolerance) &&
+      this.concordant() == specificOther.concordant() &&
+      this.discordant() == specificOther.discordant() &&
+      this.tiedY() == specificOther.tiedY();      
+    return result;
   }
 
   @Override

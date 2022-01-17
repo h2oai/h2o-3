@@ -110,7 +110,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   protected abstract String getModelMojoReaderClassName();
 
-  protected abstract void readModelData() throws IOException;
+  protected abstract void readModelData(boolean readModelMetadata) throws IOException;
 
   protected abstract M makeModel(String[] columns, String[][] domains, String responseColumn);
 
@@ -270,7 +270,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._offsetColumn = readkv("offset_column");
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
-    readModelData();
+    readModelData(readModelMetadata);
     if (readModelMetadata) {
       final String algoFullName = readkv("algorithm"); // The key'algo' contains the shortcut, 'algorithm' is the long version
       _model._modelAttributes = readModelSpecificAttributes();

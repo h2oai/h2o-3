@@ -10,7 +10,7 @@ public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extend
 
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
     // In mojos v=1.0 this info wasn't saved.
     Integer tpc = readkv("n_trees_per_class");
     if (tpc == null) {

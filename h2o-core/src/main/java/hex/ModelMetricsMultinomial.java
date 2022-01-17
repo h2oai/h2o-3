@@ -7,10 +7,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.Arrays;
 
@@ -82,7 +79,21 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   public double aucpr(){
     return pr_auc();
   }
-  
+
+  @Override
+  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsMultinomial specificOther = (ModelMetricsMultinomial) other;
+
+    boolean result = resultFromSupport &&
+      ComparisonUtils.compareValuesUpToTolerance(this.auc(), specificOther.auc(), proportionalTolerance) &&
+      ComparisonUtils.compareValuesUpToTolerance(this.pr_auc(), specificOther.pr_auc(), proportionalTolerance) &&
+      ComparisonUtils.compareValuesUpToTolerance(this.logloss(), specificOther.logloss(), proportionalTolerance) &&
+      ComparisonUtils.compareValuesUpToTolerance(this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance) &&
+      ComparisonUtils.compareValuesUpToTolerance(this.hr(), specificOther.hr(), proportionalTolerance);
+      // CM not supported yet.
+    return result;
+  }
 
   public static ModelMetricsMultinomial getFromDKV(Model model, Frame frame) {
     ModelMetrics mm = ModelMetrics.getFromDKV(model, frame);

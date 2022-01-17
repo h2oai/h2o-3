@@ -18,7 +18,7 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
   protected String getModelMojoReaderClassName() { return "hex.glrm.GlrmMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
     _model._ncolA = readkv("ncolA");
     _model._ncolY = readkv("ncolY");
     _model._nrowY = readkv("nrowY");

@@ -7,6 +7,7 @@ import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.utils.DistributionFamily;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 public class ModelMetricsSupervised extends ModelMetrics {
   public final String[] _domain;// Name of classes
@@ -28,6 +29,14 @@ public class ModelMetricsSupervised extends ModelMetrics {
   public double r2() { // TODO: Override for GLM Regression  - create new Generic & Generic V3 versions
     double var = _sigma*_sigma;
     return 1.0-_MSE /var;
+  }
+
+  @Override
+  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    boolean resultFromSuper = super.isEqualUpToTolerance(other, proportionalTolerance);
+    
+    return resultFromSuper &&
+      ComparisonUtils.compareValuesUpToTolerance(this.r2(), ((ModelMetricsSupervised)other).r2(), proportionalTolerance);
   }
 
   abstract public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {

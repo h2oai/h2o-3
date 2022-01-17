@@ -22,7 +22,7 @@ public class DeeplearningMojoReader extends ModelMojoReader<DeeplearningMojoMode
   protected String getModelMojoReaderClassName() { return "hex.deeplearning.DeepLearningMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
 /*    if (_model.isAutoEncoder()) {
       throw new UnsupportedOperationException("AutoEncoder mojo is not ready for deployment.  Stay tuned...");
     }*/

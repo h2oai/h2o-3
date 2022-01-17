@@ -26,7 +26,7 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
   }
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
     try {
       _model._network = readblob("model_network");
       _model._parameters = readblob("model_params");

@@ -20,7 +20,7 @@ public class GamMojoReader extends ModelMojoReader<GamMojoModelBase> {
   protected String getModelMojoReaderClassName() { return "hex.gam.GAMMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
     _model._useAllFactorLevels = readkv("use_all_factor_levels", false);
     _model._numExpandedGamCols = readkv("num_expanded_gam_columns",0);
     _model._numExpandedGamColsCenter = readkv("num_expanded_gam_columns_center",0);

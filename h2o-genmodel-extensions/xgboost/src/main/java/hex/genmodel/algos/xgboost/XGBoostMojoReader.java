@@ -18,7 +18,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
   protected String getModelMojoReaderClassName() { return "hex.tree.xgboost.XGBoostMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
     _model._boosterType = readkv("booster");
     _model._ntrees = readkv("ntrees", 0);
     _model._nums = readkv("nums");

@@ -119,6 +119,17 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   public ConfusionMatrix cm() { return null; }
   public float[] hr() { return null; }
   public AUC2 auc_obj() { return null; }
+  
+  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    boolean result = 
+      ComparisonUtils.compareValuesUpToTolerance(this.mse(), other.mse(), proportionalTolerance) &&
+      ComparisonUtils.compareValuesUpToTolerance(this.rmse(), other.rmse(), proportionalTolerance) &&
+      this._nobs == other._nobs &&
+      ((this._custom_metric == null && other._custom_metric == null) || 
+      ComparisonUtils.compareValuesUpToTolerance(this._custom_metric.value, other._custom_metric.value, proportionalTolerance));
+      
+    return result;
+  }
 
   public static ModelMetrics defaultModelMetrics(Model model) {
     return model._output._cross_validation_metrics != null ? model._output._cross_validation_metrics

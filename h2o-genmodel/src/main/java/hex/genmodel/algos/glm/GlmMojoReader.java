@@ -19,7 +19,7 @@ public class GlmMojoReader extends ModelMojoReader<GlmMojoModelBase> {
   protected String getModelMojoReaderClassName() { return "hex.glm.GLMMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
     _model._useAllFactorLevels = readkv("use_all_factor_levels", false);
 
     _model._cats = readkv("cats", -1);

@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
 public class GlmMojoReaderTest {
 
   @Test
-  public void readModelData() throws Exception {
+  public void readModelData(final boolean readModelMetadata) throws Exception {
     GlmMojoModel model = (GlmMojoModel) ModelMojoReader.readFrom(new MojoReaderBackend() {
       @Override public BufferedReader getTextFile(String filename) throws IOException {
         if ("model.ini".equals(filename)) {

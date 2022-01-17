@@ -18,8 +18,8 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
   protected String getModelMojoReaderClassName() { return "hex.tree.gbm.GbmMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
-    super.readModelData();
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
+    super.readModelData(readModelMetadata);
     _model._family = DistributionFamily.valueOf((String)readkv("distribution"));
     _model._init_f = readkv("init_f");
     _model._link_function = readLinkFunction((String) readkv("link_function"), _model._family);

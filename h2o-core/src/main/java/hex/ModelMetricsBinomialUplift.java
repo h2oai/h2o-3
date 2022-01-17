@@ -5,6 +5,7 @@ import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.ComparisonUtils;
 
 import java.util.Arrays;
 
@@ -44,6 +45,16 @@ public class ModelMetricsBinomialUplift extends ModelMetricsSupervised {
     @Override
     protected StringBuilder appendToStringMetrics(StringBuilder sb) {
         return sb;
+    }
+
+    @Override
+    public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+        boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+        ModelMetricsBinomialUplift specificOther = (ModelMetricsBinomialUplift) other;
+
+        boolean result = resultFromSupport &&
+            ComparisonUtils.compareValuesUpToTolerance(this.auuc(), specificOther.auuc(), proportionalTolerance);
+        return result;
     }
 
     /**

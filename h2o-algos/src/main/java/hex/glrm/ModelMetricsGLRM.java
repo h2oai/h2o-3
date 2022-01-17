@@ -1,13 +1,11 @@
 package hex.glrm;
 
 import com.google.gson.JsonObject;
-import hex.CustomMetric;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsUnsupervised;
+import hex.*;
 import hex.genmodel.IMetricBuilder;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   public double _numerr;
@@ -25,6 +23,19 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     this(model, frame, numerr, caterr, customMetric);
     _numcnt = numcnt;
     _catcnt = catcnt;
+  }
+
+  @Override
+  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+    ModelMetricsGLRM specificOther = (ModelMetricsGLRM) other;
+
+    boolean result = resultFromSupport &&
+            ComparisonUtils.compareValuesUpToTolerance(this._numerr, specificOther._numerr, proportionalTolerance) &&
+            ComparisonUtils.compareValuesUpToTolerance(this._caterr, specificOther._caterr, proportionalTolerance) &&
+            _numcnt == specificOther._numcnt &&
+            _catcnt == specificOther._catcnt;
+    return result;
   }
 
   public static class GlrmModelMetricsBuilder extends MetricBuilderUnsupervised<GlrmModelMetricsBuilder> {

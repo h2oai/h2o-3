@@ -5,6 +5,7 @@ import hex.ModelMetrics;
 import hex.ModelMetricsSupervised;
 import hex.MultiModelMojoWriter;
 import hex.genmodel.algos.rulefit.RuleFitMojoModel;
+import hex.glm.GLMMetricBuilderFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ public class RuleFitMojoWriter extends MultiModelMojoWriter<RuleFitModel,
 
     @Override
     public ModelMetrics.MetricBuilderFactory getModelBuilderFactory() {
-        return new ModelMetricsSupervised.SupervisedMetricBuilderFactory<RuleFitModel, RuleFitMojoModel>();
+        return new RuleFitMetricBuilderFactory();
     }
 
     @Override

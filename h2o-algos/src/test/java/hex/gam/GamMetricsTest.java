@@ -1,21 +1,23 @@
 package hex.gam;
 
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ModelMetrics;
 import hex.SplitFrame;
+import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLM;
 import hex.glm.GLMModel;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.RandomUtils;
 
 import java.util.Random;
+import java.util.function.Function;
 
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
@@ -23,7 +25,7 @@ import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
-public class GamMetricsTest extends TestUtil {
+public class GamMetricsTest extends MetricTest {
     public static final double TOLERANCE = 1e-6;
 
     // test CV metrics with multinomial
@@ -125,6 +127,174 @@ public class GamMetricsTest extends TestUtil {
             Scope.track_generic(gam);
             assertTrue(Math.abs(gam._output._training_metrics._MSE-gam._output._glm_training_metrics._MSE) < TOLERANCE);
             assertTrue(gam._output._training_metrics._nobs==gam._output._glm_training_metrics._nobs);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    private Function<Model.Parameters, ModelBuilder> gamConstructor = parameters -> {
+        GAMModel.GAMParameters gamParameters = (GAMModel.GAMParameters)parameters;
+        return new GAM(gamParameters);
+    };
+
+
+    @Test
+    public void testIndependentModelMetricsCalculation_regression() {
+        Scope.enter();
+        try {
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._distribution = DistributionFamily.gaussian;
+            params._gam_columns = new String[][]{{"PSA"}};
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculation_binomial() {
+        Scope.enter();
+        try {
+            String response = "CAPSULE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            dataset.toCategoricalCol(response);
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._distribution = DistributionFamily.bernoulli;
+            params._gam_columns = new String[][]{{"PSA"}};
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculation_multinomial() {
+        Scope.enter();
+        try {
+            String response = "Angaus";
+            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+            dataset.toCategoricalCol(response);
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._distribution = DistributionFamily.multinomial;
+            params._gam_columns = new String[][]{{"LocSed"}};
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculation_ordinal() {
+        Scope.enter();
+        try {
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            dataset.toCategoricalCol(response);
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._family = GLMModel.GLMParameters.Family.ordinal;
+            params._gam_columns = new String[][]{{"PSA"}};
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculationWithWeightColumn_regression() {
+        Scope.enter();
+        try {
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._distribution = DistributionFamily.gaussian;
+            params._gam_columns = new String[][]{{"PSA"}};
+            params._weights_column = "ID";
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculationWithWeightColumn_binomial() {
+        Scope.enter();
+        try {
+            String response = "CAPSULE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            dataset.toCategoricalCol(response);
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._distribution = DistributionFamily.bernoulli;
+            params._gam_columns = new String[][]{{"PSA"}};
+            params._weights_column = "ID";
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
+        Scope.enter();
+        try {
+            String response = "Angaus";
+            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            dataset.toCategoricalCol(response);
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._distribution = DistributionFamily.multinomial;
+            params._gam_columns = new String[][]{{"LocSed"}};
+            params._weights_column = "Site";
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculationWithWeightColumn_ordinal() {
+        Scope.enter();
+        try {
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            dataset.toCategoricalCol(response);
+
+            GAMModel.GAMParameters params = new GAMModel.GAMParameters();
+            params._response_column = response;
+            params._family = GLMModel.GLMParameters.Family.ordinal;
+            params._gam_columns = new String[][]{{"PSA"}};
+            params._weights_column = "ID";
+
+            double tolerance = 0.000001;
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
         } finally {
             Scope.exit();
         }

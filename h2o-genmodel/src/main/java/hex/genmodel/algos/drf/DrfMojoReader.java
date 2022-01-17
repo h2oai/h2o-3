@@ -17,8 +17,8 @@ public class DrfMojoReader extends SharedTreeMojoReader<DrfMojoModel> {
   protected String getModelMojoReaderClassName() { return "hex.tree.drf.DrfMojoWriter"; }
 
   @Override
-  protected void readModelData() throws IOException {
-    super.readModelData();
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
+    super.readModelData(readModelMetadata);
     _model._binomial_double_trees = readkv("binomial_double_trees");
     // _model._effective_n_classes = _model._nclasses == 2 && !_model._binomial_double_trees ? 1 : _model._nclasses;
   }

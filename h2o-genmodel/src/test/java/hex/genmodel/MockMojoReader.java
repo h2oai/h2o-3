@@ -15,13 +15,18 @@ public class MockMojoReader extends ModelMojoReader {
   }
 
   @Override
+  protected String getModelMojoReaderClassName() {
+    return null;
+  }
+
+  @Override
   protected ModelAttributes readModelSpecificAttributes() {
     return delegate.readModelSpecificAttributes();
   }
 
   @Override
-  protected void readModelData() throws IOException {
-    delegate.readModelData();
+  protected void readModelData(final boolean readModelMetadata) throws IOException {
+    delegate.readModelData(readModelMetadata);
   }
 
   @Override

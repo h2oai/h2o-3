@@ -24,7 +24,7 @@ public class TargetEncoderMojoReaderTest {
     }
 
     @Override public String getModelName() { return null; }
-    @Override protected void readModelData() throws IOException {
+    @Override protected void readModelData(final boolean readModelMetadata) throws IOException {
       _model._nclasses = 2;
       _model.setEncodings(parseEncodingMap());
     }
@@ -76,7 +76,7 @@ public class TargetEncoderMojoReaderTest {
 
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
     testMojoReader.initModel();
-    testMojoReader.readModelData();
+    testMojoReader.readModelData(final boolean readModelMetadata);
     Map<String, EncodingMap> parsedEncodings = testMojoReader.getModel()._encodingsByCol;
     assertArrayEquals(parsedEncodings.get("embarked").getNumDen(0), new double[]{2, 4}, 1e-8);
     assertArrayEquals(parsedEncodings.get("sex").getNumDen(0), new double[]{3, 42}, 1e-8);
