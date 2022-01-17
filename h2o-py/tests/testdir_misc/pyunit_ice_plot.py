@@ -30,7 +30,7 @@ def test_display_mode():
     gbm.train(y=y, training_frame=train)
 
     assert isinstance(gbm.ice_plot(train, 'title').figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'title', display_mode="ice", save_plot_path="mode_ice.png").figure(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.ice_plot(train, 'title', display_mode="ice").figure(), matplotlib.pyplot.Figure)
     assert isinstance(gbm.ice_plot(train, 'title', display_mode="pdp").figure(), matplotlib.pyplot.Figure)
 
     assert isinstance(gbm.ice_plot(train, 'age').figure(), matplotlib.pyplot.Figure)
