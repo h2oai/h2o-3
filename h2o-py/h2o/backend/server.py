@@ -332,8 +332,8 @@ class H2OLocalServer(object):
         self._stdout = self._tmp_file("stdout")
         self._stderr = self._tmp_file("stderr")
         cwd = os.path.abspath(os.getcwd())
-        out = open(self._stdout, "w")
-        err = open(self._stderr, "w")
+        out = open(self._stdout, "w", encoding='utf-8')
+        err = open(self._stderr, "w", encoding='utf-8')
         if self._verbose:
             print("  JVM stdout: " + out.name)
             print("  JVM stderr: " + err.name)
@@ -357,7 +357,7 @@ class H2OLocalServer(object):
                 else:
                     error_message = "Server process terminated with error code %d" % proc.returncode 
                 if os.stat(self._stderr).st_size > 0:
-                    error_message += ": %s" % open(self._stderr).read()
+                    error_message += ": %s" % open(self._stderr, encoding='utf-8').read()
                 else:
                     error_message += "."
                 raise H2OServerError(error_message)
@@ -479,7 +479,7 @@ class H2OLocalServer(object):
         :returns: (scheme, ip, port) tuple if the server has already started, None otherwise.
         """
         searchstr = ": Open H2O Flow in your web browser:"
-        with open(self._stdout, "rt") as f:
+        with open(self._stdout, "rt", encoding='utf-8') as f:
             for line in f:
                 if searchstr in line:
                     url = line[line.index(searchstr) + len(searchstr):].strip().rstrip("/")
