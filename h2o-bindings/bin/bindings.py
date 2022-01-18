@@ -20,6 +20,7 @@ import atexit
 import codecs
 import errno
 import os
+import platform
 import pprint
 import re
 import requests
@@ -29,6 +30,16 @@ import textwrap
 import time
 from collections import defaultdict
 
+
+def check_requirements():
+    min_version = (3, 6)
+    if sys.version_info < min_version:
+        raise OSError("Python ({py_exec}) version {py_version} does not match minimal required version to generate bindings: {min_version}".format(
+            py_exec=sys.executable,
+            py_version=platform.python_version(),
+            min_version=".".join(str(v) for v in min_version)
+        ))
+    
 
 class TypeTranslator(object):
     """
