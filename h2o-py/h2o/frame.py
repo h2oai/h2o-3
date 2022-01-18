@@ -33,7 +33,7 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
-from h2o.model.model_base import _get_numpy
+from h2o.utils.ext_dependencies import _get_numpy
 
 __all__ = ("H2OFrame", )
 

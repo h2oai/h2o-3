@@ -12,6 +12,7 @@ from h2o.model.extensions import has_extension
 from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGURE_ACCESS
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
+from h2o.utils.ext_dependencies import _get_numpy
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
@@ -1780,15 +1781,6 @@ def _get_mplot3d_pyplot(function_name):
         return Axes3D
     except ImportError:
         print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(function_name))
-        return None
-
-
-def _get_numpy(function_name):
-    try:
-        import numpy as np
-        return np
-    except ImportError:
-        print("`numpy` library is required for function {0}!".format(function_name))
         return None
 
 
