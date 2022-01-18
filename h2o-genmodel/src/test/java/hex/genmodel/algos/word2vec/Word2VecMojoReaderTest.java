@@ -14,7 +14,7 @@ public class Word2VecMojoReaderTest {
   public void readModelData(final boolean readModelMetadata) throws Exception {
     TestedWord2VecMojoReader reader = new TestedWord2VecMojoReader();
 
-    reader.readModelData(final boolean readModelMetadata);
+    reader.readModelData(false);
     Word2VecMojoModel model = reader.getModel();
 
     assertArrayEquals(new float[]{0.0f, 1.0f}, model.transform0("A", new float[2]), 0.0001f);

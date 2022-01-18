@@ -76,7 +76,7 @@ public class TargetEncoderMojoReaderTest {
 
     TestMojoReader testMojoReader = new TestMojoReader(mojoReaderBackendMock);
     testMojoReader.initModel();
-    testMojoReader.readModelData(final boolean readModelMetadata);
+    testMojoReader.readModelData(false);
     Map<String, EncodingMap> parsedEncodings = testMojoReader.getModel()._encodingsByCol;
     assertArrayEquals(parsedEncodings.get("embarked").getNumDen(0), new double[]{2, 4}, 1e-8);
     assertArrayEquals(parsedEncodings.get("sex").getNumDen(0), new double[]{3, 42}, 1e-8);
