@@ -18,6 +18,7 @@ import water.DKV;
 import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.Log;
 import water.util.PojoUtils;
 
 import java.util.*;
@@ -163,10 +164,13 @@ public class StackedEnsembleStepsProvider
                 } catch (H2OIllegalArgumentException e) {
                     return false;
                 }
+                // Just to get the correct response
+                setCommonModelBuilderParams(params);
                 ModelBuilder mb = ModelBuilder.make(params);
                 mb.init(false);
-
-                return mb.error_count() == 0;
+                return Arrays.stream(new String[]{"_distribution", "_family"})
+                        .allMatch((field) ->
+                                mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0);
             }
 
             Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] baseModels, boolean isLast) {

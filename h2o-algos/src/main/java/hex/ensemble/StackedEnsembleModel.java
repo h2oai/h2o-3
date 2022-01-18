@@ -471,7 +471,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     } else {
       try {
         metaParams.setDistributionFamily(baseModelParms._distribution);
-      } catch (IllegalArgumentException e) {
+      } catch (H2OIllegalArgumentException e) {
         Log.warn("Stacked Ensemble is not able to inherit family from a distribution " + baseModelParms._distribution + ".");
         inferBasicDistribution();
       }

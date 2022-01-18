@@ -1300,6 +1300,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (log_level == Log.ERRR) _error_count++;
   }
 
+  public ValidationMessage[] getMessagesByFieldAndSeverity(String fieldName, byte logLevel) {
+    return Arrays.stream(_messages)
+            .filter((msg) -> msg._field_name.equals(fieldName) && msg._log_level == logLevel)
+            .toArray(ValidationMessage[]::new);
+  }
  /** Get a string representation of only the ERROR ValidationMessages (e.g., to use in an exception throw). */
   public String validationErrors() {
     return validationMessage(Log.ERRR);

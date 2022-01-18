@@ -111,11 +111,16 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         throw new UnsupportedOperationException();
     }
 
-    public boolean validParameters(Model.Parameters parms) {
+    public boolean validParameters(Model.Parameters parms, String[] fields) {
         try {
-            ModelBuilder mb = ModelBuilder.make(parms);
+            Model.Parameters params = parms.clone();
+            // some algos check if distribution has proper _nclass(es) so we need to set training frame and response etc
+            setCommonModelBuilderParams(params);
+            ModelBuilder mb = ModelBuilder.make(params);
             mb.init(false);
-            return mb.error_count() == 0;
+            return Arrays.stream(fields)
+                    .allMatch((field) ->
+                            mb.getMessagesByFieldAndSeverity(field, Log.ERRR).length == 0);
         } catch (H2OIllegalArgumentException e) {
             return false;
         }
@@ -136,7 +141,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         } catch (H2OIllegalArgumentException e) {
             parms.setDistributionFamily(DistributionFamily.AUTO);
         }
-        if (!validParameters(parms))
+        if (!validParameters(parms, new String[]{"_distribution", "_family"}))
             parms.setDistributionFamily(DistributionFamily.AUTO);
     }
 
@@ -539,7 +544,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Model.Parameters parms = prepareModelParameters();
             try {
                 parms.setDistributionFamily(distributionFamily);
-                return validParameters(parms);
+                return validParameters(parms, new String[]{"_distribution", "_family"});
             } catch (H2OIllegalArgumentException e) {
                 return false;
             }
@@ -660,7 +665,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Model.Parameters parms = prepareModelParameters();
             try {
                 parms.setDistributionFamily(distributionFamily);
-                return validParameters(parms);
+                return validParameters(parms, new String[]{"_distribution", "_family"});
             } catch (H2OIllegalArgumentException e) {
                 return false;
             }

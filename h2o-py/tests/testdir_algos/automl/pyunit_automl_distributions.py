@@ -77,8 +77,10 @@ def test_automl_distributions():
                     scenario["distribution"]["custom_distribution_func"] = custom_dist
 
 
-                aml = H2OAutoML(max_models=scenario.get("max_models", 12), distribution=scenario["distribution"], seed=seed,
-                                max_runtime_secs_per_model=1, verbosity=None)
+                aml = H2OAutoML(max_models=scenario.get("max_models", 12),
+                                distribution=scenario["distribution"],
+                                seed=seed,
+                                max_runtime_secs_per_model=1)
                 try:
                     aml.train(y=scenario["response"], training_frame=df)
                 except Exception:

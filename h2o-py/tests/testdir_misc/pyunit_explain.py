@@ -618,6 +618,8 @@ def test_learning_curve_for_algos_not_present_in_automl():
     assert isinstance(if_model.learning_curve_plot().figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close()
 
+# Remove unnecesary warnings
+matplotlib.rcParams["figure.max_open_warning"] = 0
 
 pyunit_utils.run_tests([
     test_get_xy,
