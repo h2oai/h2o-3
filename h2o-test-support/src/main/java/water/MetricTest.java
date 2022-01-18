@@ -11,6 +11,7 @@ import org.junit.Assert;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.fp.Function2;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -101,7 +102,7 @@ public abstract class MetricTest extends TestUtil {
     protected ModelMetrics calculateMetricsViaIndependentBuilder(
             Model model, 
             Frame frame, 
-            Function<Frame, Vec[]> actualVectorsGetter) {
+            Function2<Frame, Model, Vec[]> actualVectorsGetter) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         model.getMojo().writeTo(outputStream);
         byte[] mojoData = outputStream.toByteArray();
@@ -115,7 +116,7 @@ public abstract class MetricTest extends TestUtil {
         }
         Frame predictions = Scope.track(model.score(frame));
         Vec[] predictionVectors = predictions.vecs();
-        Vec[] actualVectors = actualVectorsGetter.apply(frame);
+        Vec[] actualVectors = actualVectorsGetter.apply(frame, model);
         Vec[] offsetCol = model._parms._offset_column == null ? new Vec[0] : new Vec[] { frame.vec(model._parms._offset_column) };
         Vec[] weightCol = model._parms._weights_column == null ? new Vec[0] : new Vec[] { frame.vec(model._parms._weights_column) };
         
@@ -138,7 +139,7 @@ public abstract class MetricTest extends TestUtil {
 
     protected void testIndependentlyCalculatedMetrics(
             Model model,
-            Function<Frame, Vec[]> actualVectorsGetter,
+            Function2<Frame, Model, Vec[]> actualVectorsGetter,
             Frame trainingFrame,
             Frame validationFrame,
             double tolerance) {
@@ -167,6 +168,32 @@ public abstract class MetricTest extends TestUtil {
         }
     }
 
+    protected void testIndependentlyCalculatedMetrics(
+            Frame dataset,
+            Model.Parameters parameters,
+            Function<Model.Parameters, ModelBuilder> algorithmConstructor,
+            Function2<Frame, Model, Vec[]> actualVectorsGetter,
+            double tolerance,
+            boolean ignoreTrainingMetrics) {
+        Scope.enter();
+        try {
+            Frames frames = split(dataset, 0.2);
+            Frame train = Scope.track(frames.train);
+            Frame valid = Scope.track(frames.test);
+
+            parameters._train = train._key;
+            parameters._valid = valid._key;
+            parameters._seed = 42L;
+
+            ModelBuilder modelBuilder = algorithmConstructor.apply(parameters);
+            Model model = (Model)Scope.track_generic(modelBuilder.trainModel().get());
+            Frame trainForMetrics = ignoreTrainingMetrics ? null : train;
+            testIndependentlyCalculatedMetrics(model, actualVectorsGetter, trainForMetrics, valid, tolerance);
+        } finally {
+            Scope.exit();
+        }
+    }
+
     protected void testIndependentlyCalculatedSupervisedMetrics(
             Frame dataset,
             Model.Parameters parameters,
@@ -181,23 +208,8 @@ public abstract class MetricTest extends TestUtil {
             Function<Model.Parameters, ModelBuilder> algorithmConstructor, 
             double tolerance,
             boolean ignoreTrainingMetrics) {
-        Scope.enter();
-        try {
-            Frames frames = split(dataset, 0.2);
-            Frame train = Scope.track(frames.train);
-            Frame valid = Scope.track(frames.test);
-            
-            parameters._train = train._key;
-            parameters._valid = valid._key;
-            parameters._seed = 42L;
-
-            ModelBuilder modelBuilder = algorithmConstructor.apply(parameters);
-            Model model = (Model)Scope.track_generic(modelBuilder.trainModel().get());
-            Function<Frame, Vec[]> actualVectorsGetter = frame -> new Vec[]{frame.vec(parameters._response_column)};
-            Frame trainForMetrics = ignoreTrainingMetrics ? null : train;
-            testIndependentlyCalculatedMetrics(model, actualVectorsGetter, trainForMetrics, valid, tolerance);
-        } finally {
-            Scope.exit();
-        }
+        Function2<Frame, Model, Vec[]> actualVectorsGetter = (frame, model) -> new Vec[]{frame.vec(parameters._response_column)};
+        testIndependentlyCalculatedMetrics(dataset, parameters, algorithmConstructor, actualVectorsGetter, tolerance, ignoreTrainingMetrics);
     }
+    
 }
