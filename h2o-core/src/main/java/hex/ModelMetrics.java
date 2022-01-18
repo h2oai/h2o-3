@@ -124,9 +124,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     boolean result = 
       ComparisonUtils.compareValuesUpToTolerance(this.mse(), other.mse(), proportionalTolerance) &&
       ComparisonUtils.compareValuesUpToTolerance(this.rmse(), other.rmse(), proportionalTolerance) &&
-      this._nobs == other._nobs &&
-      ((this._custom_metric == null && other._custom_metric == null) || 
-      ComparisonUtils.compareValuesUpToTolerance(this._custom_metric.value, other._custom_metric.value, proportionalTolerance));
+      this._nobs == other._nobs;
       
     return result;
   }

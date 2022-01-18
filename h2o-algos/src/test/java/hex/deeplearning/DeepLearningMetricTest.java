@@ -8,6 +8,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
+import water.util.fp.Function2;
 
 import java.util.function.Function;
 
@@ -154,6 +156,26 @@ public class DeepLearningMetricTest extends MetricTest {
             final double tolerance = 0.000001;
             final boolean skipTrainingDataset = true; // TODO: investigate why AUC is different on training dataset.
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance, skipTrainingDataset);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIndependentModelMetricsCalculation_autoencoder() {
+        Scope.enter();
+        try {
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+
+            DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
+            params._autoencoder = true;
+            params._hidden = new int[]{ 3 };
+            params._reproducible = true;
+
+            final double tolerance = 0.000001;
+            final Function2<Frame, Model, Vec[]> actualVectorsGetter = (frame, model) -> frame.vecs();
+            final boolean ignoreTrainingMetrics = false;
+            testIndependentlyCalculatedMetrics(dataset, params, dlConstructor, actualVectorsGetter, tolerance, ignoreTrainingMetrics);
         } finally {
             Scope.exit();
         }
