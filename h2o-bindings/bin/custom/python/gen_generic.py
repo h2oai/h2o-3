@@ -31,19 +31,8 @@ def class_extensions():
         return model
 
 
-    @staticmethod
-    def guess_model_id(path):
-        # FIXME: this method doesn't work in edge cases (see https://h2oai.atlassian.net/browse/PUBDEV-8489)
-        path_split = path.split('/')
-        return path_split[len(path_split)-1].split('.')[0]
-
 extensions = dict(
     __class__=class_extensions,
-    __init__model_id="""
-if model_id is None and path is not None:
-    model_id = H2OGenericEstimator.guess_model_id(path)
-self._id = self._parms['model_id'] = model_id
-"""
 )
 
 examples = dict(

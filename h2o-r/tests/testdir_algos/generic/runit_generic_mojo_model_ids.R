@@ -16,36 +16,32 @@ test.model.generic.mojo.ids <- function() {
   mojo_original_path <- paste0(mojo_original_name)
     
   # Import MOJO
-  print("Import MOJO")
+  print("Import MOJO with a given model_id")
   mojo_model <- h2o.import_mojo(mojo_original_path, original_model_id)
-  print(mojo_model@model_id)
 
+  print(mojo_model@model_id)
   expect_equal(mojo_model@model_id, original_model_id)
 
+  print("Import MOJO without a given model_id will auto-generate a new model_id with Generic prefix")
   mojo_model <- h2o.import_mojo(mojo_original_path)
-  print(mojo_model@model_id)
 
-  expect_equal(mojo_model@model_id, original_model_id)
+  print(mojo_model@model_id)
+  expect_true(startsWith(mojo_model@model_id, "Generic"))
   
   # MOJO Upload
-  print("Upload MOJO")
+  print("Upload MOJO with a given model_id")
   mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
   mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
   mojo_model_up <- h2o.upload_mojo(mojo_original_path, original_model_id)
+
   print(mojo_model_up@model_id)  
-
   expect_equal(mojo_model_up@model_id, original_model_id)
     
+  print("Upload MOJO without a given model_id will auto-generate a new model_id with Generic prefix")
   mojo_model_up <- h2o.upload_mojo(mojo_original_path)
-  print(mojo_model_up@model_id)
 
-  expect_equal(mojo_model_up@model_id, original_model_id)
-    
-  print("Get model MOJO")  
-  model <- h2o.getModel(original_model_id)
-  print(model@model_id)
-    
-  expect_equal(model@model_id, original_model_id)
+  print(mojo_model_up@model_id)
+  expect_true(startsWith(mojo_model_up@model_id, "Generic"))
 }
 
 doTest("Generic model from GBM MOJO", test.model.generic.mojo.ids)
