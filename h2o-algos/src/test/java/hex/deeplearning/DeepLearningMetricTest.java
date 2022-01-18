@@ -63,8 +63,8 @@ public class DeepLearningMetricTest extends MetricTest {
     public void testIndependentModelMetricsCalculation_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
             dataset.toCategoricalCol(response);
 
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
@@ -142,14 +142,14 @@ public class DeepLearningMetricTest extends MetricTest {
     public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             dataset.toCategoricalCol(response);
 
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._weights_column = "Site";
+            params._weights_column = "ID";
 
             final double tolerance = 0.000001;
             final boolean skipTrainingDataset = true; // TODO: investigate why AUC is different on training dataset.

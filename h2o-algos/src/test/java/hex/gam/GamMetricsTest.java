@@ -181,14 +181,14 @@ public class GamMetricsTest extends MetricTest {
     public void testIndependentModelMetricsCalculation_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
             dataset.toCategoricalCol(response);
 
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._gam_columns = new String[][]{{"LocSed"}};
+            params._gam_columns = new String[][]{{"PSA"}};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
@@ -262,15 +262,15 @@ public class GamMetricsTest extends MetricTest {
     public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             dataset.toCategoricalCol(response);
 
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._gam_columns = new String[][]{{"LocSed"}};
-            params._weights_column = "Site";
+            params._gam_columns = new String[][]{{"PSA"}};
+            params._weights_column = "ID";
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);

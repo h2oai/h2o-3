@@ -64,8 +64,8 @@ public class XGBoostMetricTest extends MetricTest {
     public void testIndependentModelMetricsCalculation_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
             dataset.toCategoricalCol(response);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -125,15 +125,15 @@ public class XGBoostMetricTest extends MetricTest {
     public void testIndependentModelMetricsCalculationWithOffsetColumn_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             dataset.toCategoricalCol(response);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
-            parms._offset_column = "Site";
+            parms._offset_column = "ID";
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);
@@ -187,15 +187,15 @@ public class XGBoostMetricTest extends MetricTest {
     public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             dataset.toCategoricalCol(response);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
-            parms._weights_column = "Site";
+            parms._weights_column = "ID";
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);

@@ -24,7 +24,7 @@ public class RuleFitMetricTest extends MetricTest {
     @BeforeClass
     public static void setup() { stall_till_cloudsize(1); }
 
-    @Ignore
+    @Test
     public void testIndependentModelMetricsCalculation_regression() {
         Scope.enter();
         try {
@@ -61,12 +61,12 @@ public class RuleFitMetricTest extends MetricTest {
         }
     }
 
-    @Ignore
+    @Test
     public void testIndependentModelMetricsCalculation_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv", new int[]{0}));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
             dataset.toCategoricalCol(response);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
@@ -80,7 +80,7 @@ public class RuleFitMetricTest extends MetricTest {
         }
     }
 
-    @Ignore
+    @Test
     public void testIndependentModelMetricsCalculationWithOffsetColumn_regression() {
         Scope.enter();
         try {
@@ -119,18 +119,18 @@ public class RuleFitMetricTest extends MetricTest {
         }
     }
 
-    @Ignore
+    @Test
     public void testIndependentModelMetricsCalculationWithOffsetColumn_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             dataset.toCategoricalCol(response);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._offset_column = "Site";
+            params._offset_column = "ID";
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, ruleFitConstructor, tolerance);
@@ -139,7 +139,7 @@ public class RuleFitMetricTest extends MetricTest {
         }
     }
 
-    @Ignore
+    @Test
     public void testIndependentModelMetricsCalculationWithWeightColumn_regression() {
         Scope.enter();
         try {
@@ -178,18 +178,18 @@ public class RuleFitMetricTest extends MetricTest {
         }
     }
 
-    @Ignore
+    @Test
     public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
         Scope.enter();
         try {
-            String response = "Angaus";
-            Frame dataset = Scope.track(parseTestFile("smalldata/gbm_test/ecology_model.csv"));
+            String response = "AGE";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
             dataset.toCategoricalCol(response);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._weights_column = "Site";
+            params._weights_column = "ID";
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, ruleFitConstructor, tolerance);
