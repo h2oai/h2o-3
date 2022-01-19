@@ -10,8 +10,8 @@ import ast
 import json
 import warnings
 import h2o
+from h2o.utils.shared_utils import can_use_numpy
 from h2o.utils.typechecks import is_type
-from h2o.utils.ext_dependencies import _get_numpy
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
@@ -896,7 +896,9 @@ class H2OInfogram(H2OEstimator):
 
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
         polycoll = get_polycollection(server, raise_if_not_available=True)
-        np = _get_numpy("Infogram plots")
+        if not can_use_numpy():
+            raise ImportError("numpy is required for Infogram.")
+        import numpy as np
 
         if train:
             rel_cmi_frame = self.get_admissible_score_frame()
