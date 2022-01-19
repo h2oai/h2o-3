@@ -1376,9 +1376,9 @@ class ModelBase(h2o_meta(Keyed)):
     # note that, x stays at one value for the duration of y value changes.
     def __pred_for_3d(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):
         # deal with y axis first
-        np = _get_numpy("2D partial plots")
-        if np is None:
-            print("Numpy not found.  Cannot plot 2D partial plots.")
+        if not can_use_numpy():
+            raise ImportError("numpy is required for 2D partial plots.")
+        import numpy as np
         ycol = colPairs[1]
         nBins = nbins
         if user_cols is not None and ycol in user_cols:
