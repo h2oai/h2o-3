@@ -4456,8 +4456,11 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
         assert diff < tol, "diff {0} exceeds tolerance {1}.".format(diff, tol)
 
 
-def assert_equals(expected, actual, message=""):
-    assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+def assert_equals(expected, actual, message="", delta=-1):
+    if delta != -1:
+        assert abs(expected - actual) <= delta, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
+    else:
+        assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
 
 
 def assert_not_equal(expected, actual, message=""):
