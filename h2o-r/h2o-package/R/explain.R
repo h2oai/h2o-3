@@ -2427,102 +2427,109 @@ h2o.ice_plot <- function(model,
       unlist(sapply(seq_len(11), function(i) sprintf("%dth Percentile", (i - 1) * 10)))
     )
     names(results) <- make.names(names(results))
-      
+
     col_name <- make.names(column)
-      
+
     if (is.character(results[[col_name]])) {
-        results[[col_name]] <- as.factor(results[[col_name]])
+      results[[col_name]] <- as.factor(results[[col_name]])
     }
     results[["text"]] <- paste0(
-    "Percentile: ", results[["name"]], "\n",
-    "Feature Value: ", results[[col_name]], "\n",
-    "Mean Response: ", results[["mean_response"]], "\n"
+      "Percentile: ", results[["name"]], "\n",
+      "Feature Value: ", results[[col_name]], "\n",
+      "Mean Response: ", results[["mean_response"]], "\n"
     )
     y_range <- range(results$mean_response)
-      
+
     if (display_mode == "both" || display_mode == "pdp") {
       pdp <-
         as.data.frame(h2o.partialPlot(models_info$get_model(models_info$model),
-                                        newdata,
-                                        column,
-                                        plot = FALSE,
-                                        targets = target,
-                                        nbins = if (is.factor(newdata[[column]])) {
-                                          h2o.nlevels(newdata[[column]]) + 1
-                                        } else {
-                                          20
-                                        }
-      ))
+                                      newdata,
+                                      column,
+                                      plot = FALSE,
+                                      targets = target,
+                                      nbins = if (is.factor(newdata[[column]])) {
+                                        h2o.nlevels(newdata[[column]]) + 1
+                                      } else {
+                                        20
+                                      }
+        ))
       pdp[["name"]] <- "mean response"
       names(pdp) <- make.names(names(pdp))
-    
+
       col_name <- make.names(column)
       if (is.character(pdp[[col_name]])) {
-          pdp[[col_name]] <- as.factor(pdp[[col_name]])
+        pdp[[col_name]] <- as.factor(pdp[[col_name]])
       }
       pdp[["text"]] <- paste0(
-      "Partial Depencence \n",
-      "Feature Value: ", pdp[[col_name]], "\n",
-      "Mean Response: ", pdp[["mean_response"]], "\n"
+        "Partial Depencence \n",
+        "Feature Value: ", pdp[[col_name]], "\n",
+        "Mean Response: ", pdp[["mean_response"]], "\n"
       )
     }
 
     q <- ggplot2::ggplot(ggplot2::aes(x = .data[[col_name]],
-    y = .data$mean_response,
-    color = .data$name,
-    text = .data$text),
-    data = results)
-    histogram <-  stat_count_or_bin(!is.numeric(newdata[[column]]),
-    ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
-    position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
-    inherit.aes = FALSE, data = as.data.frame(newdata[[column]]))
+                                      y = .data$mean_response,
+                                      color = .data$name,
+                                      text = .data$text),
+                         data = results)
+    histogram <- stat_count_or_bin(!is.numeric(newdata[[column]]),
+                                   ggplot2::aes(x = .data[[col_name]], y = (.data$..count.. / max(.data$..count..)) * diff(y_range) / 1.61),
+                                   position = ggplot2::position_nudge(y = y_range[[1]] - 0.05 * diff(y_range)), alpha = 0.2,
+                                   inherit.aes = FALSE, data = as.data.frame(newdata[[column]]))
     rug_part <- ggplot2::geom_rug(ggplot2::aes(x = .data[[col_name]], y = NULL, text = NULL),
-      sides = "b", alpha = 0.1, color = "black",
-      data = stats::setNames(as.data.frame(newdata[[column]]), col_name)
+                                  sides = "b", alpha = 0.1, color = "black",
+                                  data = stats::setNames(as.data.frame(newdata[[column]]), col_name)
     )
-    plot_name <-  ggplot2::labs(y = "Response", title = sprintf(
-    "Individual Conditional Expectations on \"%s\"%s\nfor Model: \"%s\"", col_name,
-    if (is.null(target)) {
+    plot_name <- ggplot2::labs(y = "Response", title = sprintf(
+      "Individual Conditional Expectations on \"%s\"%s\nfor Model: \"%s\"", col_name,
+      if (is.null(target)) {
         ""
-    } else {
+      } else {
         sprintf(" with Target = \"%s\"", target)
-    },
-    model@model_id
+      },
+      model@model_id
     ))
     # make the histogram closer to the axis. (0.05 is the default value)
-    histogram_alignment <-  ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
+    histogram_alignment <- ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.05)))
     theme_part <- ggplot2::theme_bw()
     theme_part2 <- ggplot2::theme(
-          legend.title = ggplot2::element_blank(),
-          axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[col_name]])) 45 else 0, hjust = 1),
-          plot.margin = margin,
-          plot.title = ggplot2::element_text(hjust = 0.5)
-          )
-      
-    q <- q + histogram + rug_part + plot_name + histogram_alignment + theme_part + theme_part2
-      
+      legend.title = ggplot2::element_blank(),
+      axis.text.x = ggplot2::element_text(angle = if (h2o.isfactor(newdata[[col_name]])) 45 else 0, hjust = 1),
+      plot.margin = margin,
+      plot.title = ggplot2::element_text(hjust = 0.5)
+    )
+
+    q <- q +
+      histogram +
+      rug_part +
+      plot_name +
+      histogram_alignment +
+      theme_part +
+      theme_part2
+
     if (display_mode == "both" || display_mode == "ice") {
-        ice_part <-  geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name))
-        color_spec <- ggplot2::scale_color_viridis_d(option = "plasma")
-        
-        q <- q + ice_part + color_spec
+      ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name))
+      color_spec <- ggplot2::scale_color_viridis_d(option = "plasma")
+
+      q <- q + ice_part + color_spec
     }
     if (display_mode == "both" || display_mode == "pdp") {
-        pdp_part <-geom_point_or_line(!is.numeric(newdata[[column]]),
-        if (is.factor(pdp[[col_name]])) {
-            ggplot2::aes(shape = "Partial Dependence", group = "Partial Dependence")
-        } else {
-            ggplot2::aes(linetype = "Partial Dependence", group = "Partial Dependence")
-        },
-        data = as.data.frame(pdp), color = "black"
-        )
-        pdp_dashed <-  ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed"))
-        
-        q <- q + pdp_part + pdp_dashed
+      pdp_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
+                                     if (is.factor(pdp[[col_name]])) {
+                                       ggplot2::aes(shape = "Partial Dependence", group = "Partial Dependence")
+                                     } else {
+                                       ggplot2::aes(linetype = "Partial Dependence", group = "Partial Dependence")
+                                     },
+                                     data = as.data.frame(pdp), color = "black"
+      )
+      pdp_dashed <- ggplot2::scale_linetype_manual(values = c("Partial Dependence" = "dashed"))
+
+      q <- q + pdp_part + pdp_dashed
     }
     return(q)
   })
 }
+
 
 #' Learning Curve Plot
 #'
