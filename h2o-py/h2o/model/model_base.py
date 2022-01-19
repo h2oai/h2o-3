@@ -1377,7 +1377,7 @@ class ModelBase(h2o_meta(Keyed)):
     def __pred_for_3d(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):
         # deal with y axis first
         if not can_use_numpy():
-            raise ImportError("numpy is required for 2D partial plots.")
+            raise ImportError("numpy is required for 3D partial plots.")
         import numpy as np
         ycol = colPairs[1]
         nBins = nbins
