@@ -184,14 +184,16 @@ public class ExtendedIsolationForest extends ModelBuilder<ExtendedIsolationFores
                 isolationTreeStats.updateBy(isolationTree);
 
                 boolean manualInterval = _parms._score_tree_interval > 0 && (tid +1) % _parms._score_tree_interval == 0;
+                boolean finalScoring = _parms._ntrees == (tid + 1);
 
                 _model._output._scored_train[tid + 1] = new ScoreKeeper();
-                if (_parms._score_each_iteration || manualInterval) {
-                    ModelMetrics.MetricBuilder mb = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
-                    _model._output._scored_train[tid + 1].fillFrom(mb.makeModelMetrics(_model, _parms.train(), null, null));
+                if (_parms._score_each_iteration || manualInterval || finalScoring) {
+                    ModelMetrics.MetricBuilder metricsBuilder = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder();
+                    ModelMetrics modelMetrics = metricsBuilder.makeModelMetrics(_model, _parms.train(), null, null);
+                    _model._output._training_metrics = modelMetrics;
+                    _model._output._scored_train[tid + 1].fillFrom(modelMetrics);
                 }
             }
-            _model._output._training_metrics = new ScoreExtendedIsolationForestTask(_model).doAll(_train).getMetricsBuilder().makeModelMetrics(_model, _parms.train(), null, null);
             _model._output._scoring_history = createScoringHistoryTable();
         }
     }
