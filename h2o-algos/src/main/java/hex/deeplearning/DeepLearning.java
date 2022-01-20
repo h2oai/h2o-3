@@ -523,7 +523,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     }
 
     public void initActualParamValues() {
-      EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier());
+      if (_parms._autoencoder) {
+        if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
+          _parms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
+        }
+      } else { 
+        EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier());
+      }
       EffectiveParametersUtils.initCategoricalEncoding(_parms, Model.Parameters.CategoricalEncodingScheme.OneHotInternal);
     }
 
