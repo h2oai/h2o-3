@@ -1,5 +1,10 @@
 description = "H2O Persist S3"
 
+configurations {
+    testImplementation.exclude group: "ch.qos.logback", module: "logback-classic"
+}
+
+
 dependencies {
   api project(":h2o-core")
   api "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
