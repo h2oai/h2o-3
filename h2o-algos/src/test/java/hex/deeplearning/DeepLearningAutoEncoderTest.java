@@ -66,13 +66,20 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._epochs = 13.3;
         p._force_load_balance = true;
         p._elastic_averaging = false;
+
+        // same parameters for the non-standardized model
+        DeepLearningParameters pNoStand = (DeepLearningParameters) p.clone();
+        pNoStand._standardize = false;
+
+        // train default
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = dl.trainModel().get();
+        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, p._stopping_metric); // AE early-stops on MSE
 
-        p._stopping_metric = ScoreKeeper.StoppingMetric.AUTO; // reset to auto as it got evaluated during previous model building
-        p._standardize = false;
-        DeepLearning dlNoStand = new DeepLearning(p);
+        // train non-standardized
+        DeepLearning dlNoStand = new DeepLearning(pNoStand);
         DeepLearningModel mymodelNoStand = dlNoStand.trainModel().get();
+        Assert.assertEquals(ScoreKeeper.StoppingMetric.MSE, pNoStand._stopping_metric);
 
         Frame l2_frame_train=null, l2_frame_test=null;
 
