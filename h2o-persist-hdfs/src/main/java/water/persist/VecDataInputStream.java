@@ -2,6 +2,9 @@ package water.persist;
 
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
+import water.DKV;
+import water.Key;
+import water.Value;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 
@@ -17,14 +20,20 @@ public class VecDataInputStream extends InputStream implements Seekable, Positio
   private static final byte[] EMPTY_BUFFER = new byte[0];
 
   private final Vec _v;
+  private final boolean _transient;
 
   private byte[] _buffer;
   private long _offset;
   private int _pos;
 
   public VecDataInputStream(Vec v) {
+    this(v, false);
+  }
+
+  public VecDataInputStream(Vec v, boolean trans) {
     this._v = v;
-    flushBuffer(0L);
+    this._transient = trans;
+    flushBuffer(0);
   }
 
   private int buffAvailable() {
@@ -37,6 +46,14 @@ public class VecDataInputStream extends InputStream implements Seekable, Positio
 
   private void fetchData(long position) {
     Chunk chk = _v.chunkForRow(position);
+    if (_transient) {
+      Key<?> k = _v.chunkKey(chk.cidx());
+      if (!k.home()) { // free the cache on a non-home node (this is used to prevent leader-node overload when reading preview data)
+        Value v = DKV.get(k);
+        if (v != null)
+          v.freeMem();
+      }
+    }
     _buffer = chk.asBytes();
     _offset = chk.start();
     _pos = (int) (position - _offset);
@@ -63,8 +80,12 @@ public class VecDataInputStream extends InputStream implements Seekable, Positio
   @Override
   public int read(byte[] buffer, int offset, int length) throws IOException {
     int read = read(_offset + _pos, buffer, offset, length);
-    int skipped = (int) skip(read);
-    assert skipped == read;
+    if (read == -1) {
+      flushBuffer(_offset + _pos);
+    } else {
+      int skipped = (int) skip(read);
+      assert skipped == read;
+    }
     return read;
   }
 
@@ -106,7 +127,10 @@ public class VecDataInputStream extends InputStream implements Seekable, Positio
       loaded += avail;
       currentPosition += avail;
     }
-    return loaded;
+    if ((loaded == 0) && (currentPosition == _v.length()))
+      return -1;
+    else
+      return loaded;
   }
 
   @Override

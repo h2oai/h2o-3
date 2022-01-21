@@ -30,10 +30,10 @@ from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, RAISE_ON_FIGUR
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
-                                    can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
+                                    can_use_pandas, can_use_numpy, quote, normalize_slice, slice_is_normalized, 
+                                    check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
-from h2o.model.model_base import _get_numpy
 
 __all__ = ("H2OFrame", )
 
@@ -386,7 +386,9 @@ class H2OFrame(Keyed):
         """
         if not len(self.columns) == 1:
             raise H2OValueError("dtype is only supported for one column frames")
-        np = _get_numpy("H2OFrame.dtype")
+        if not can_use_numpy():
+            raise ImportError("H2OFrame.dtype function requires numpy to be installed")
+        import numpy as np
         type_map = {
             "enum": np.str, 
             "string": np.str, 

@@ -6,10 +6,7 @@ import hex.ModelBuilderHelper;
 import hex.SplitFrame;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel;
-import hex.schemas.DRFV3;
-import hex.schemas.DeepLearningV3;
-import hex.schemas.GBMV3;
-import hex.schemas.GLMV3;
+import hex.schemas.*;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
@@ -175,6 +172,9 @@ public class InfogramUtils {
         break;
       case deeplearning:
         paramsSchema = new DeepLearningV3.DeepLearningParametersV3();
+        break;
+      case xgboost:
+        paramsSchema = new XGBoostV3.XGBoostParametersV3();
         break;
       default:
         throw new UnsupportedOperationException("Unknown algo: " + algoName);

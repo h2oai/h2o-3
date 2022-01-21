@@ -222,7 +222,8 @@ public class ScoreKeeper extends Iced {
   public enum ProblemType {
     regression(StoppingMetric.deviance),
     classification(StoppingMetric.logloss),
-    anomaly_detection(StoppingMetric.anomaly_score);
+    anomaly_detection(StoppingMetric.anomaly_score),
+    autoencoder(StoppingMetric.MSE);
 
     private final StoppingMetric _defaultMetric;
     

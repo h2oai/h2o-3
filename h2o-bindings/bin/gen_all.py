@@ -15,6 +15,8 @@ sys.path.insert(0, "../../scripts")
 import run
 import atexit
 
+bindings.check_requirements()
+
 # Create results folder, where H2OCloud stores its logs
 results_dir = "../build/logs"
 if not os.path.exists(results_dir):

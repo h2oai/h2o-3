@@ -13,7 +13,7 @@ from h2o.plot import decorate_plot_result, get_matplotlib_pyplot, RAISE_ON_FIGUR
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.metaclass import backwards_compatibility, deprecated_fn, h2o_meta, deprecated_params
-from h2o.utils.shared_utils import can_use_pandas
+from h2o.utils.shared_utils import can_use_pandas, can_use_numpy
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, Enum, is_type
 
 
@@ -1376,9 +1376,9 @@ class ModelBase(h2o_meta(Keyed)):
     # note that, x stays at one value for the duration of y value changes.
     def __pred_for_3d(self, x, y, z, colPairs, nbins, user_cols, user_num_splits):
         # deal with y axis first
-        np = _get_numpy("2D partial plots")
-        if np is None:
-            print("Numpy not found.  Cannot plot 2D partial plots.")
+        if not can_use_numpy():
+            raise ImportError("numpy is required for 3D partial plots.")
+        import numpy as np
         ycol = colPairs[1]
         nBins = nbins
         if user_cols is not None and ycol in user_cols:
@@ -1417,9 +1417,9 @@ class ModelBase(h2o_meta(Keyed)):
             return pp[index]
         
     def __set_axs_1d(self, axs, plot_stddev, cat, pp, col, row_index, target, include_na):
-        np = _get_numpy("1D partial plots")
-        if np is None:
-            print("Numpy not found. Cannot plot partial plots.")
+        if not can_use_numpy():
+            raise ImportError("numpy is required for partial plots.")
+        import numpy as np
         pp_start_index = 0
         x = pp[pp_start_index]
         y = pp[pp_start_index+1]
@@ -1466,9 +1466,9 @@ class ModelBase(h2o_meta(Keyed)):
         axs.yaxis.grid()
         
     def __set_axs_1d_multinomial(self, axs, cm, plot_stddev, cat, pps, data_start_index, col, row_index, targets, include_na):
-        np = _get_numpy("1D multinomial partial plots")
-        if np is None:
-            print("Numpy not found. Cannot plot multinomial partial plots.")
+        if not can_use_numpy():
+            raise ImportError("numpy is required for multinomial partial plots.")
+        import numpy as np
         pp_start_index = 0
         pp = pps[data_start_index]
         x = pp[pp_start_index]
@@ -1780,15 +1780,6 @@ def _get_mplot3d_pyplot(function_name):
         return Axes3D
     except ImportError:
         print("`mpl_toolkits.mplot3d` library is required for function {0}!".format(function_name))
-        return None
-
-
-def _get_numpy(function_name):
-    try:
-        import numpy as np
-        return np
-    except ImportError:
-        print("`numpy` library is required for function {0}!".format(function_name))
         return None
 
 

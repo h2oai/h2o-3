@@ -42,6 +42,9 @@ def class_extensions():
         
         plt = get_matplotlib_pyplot(server, raise_if_not_available=True)
         polycoll = get_polycollection(server, raise_if_not_available=True)
+        if not can_use_numpy():
+            raise ImportError("numpy is required for Infogram.")
+        import numpy as np
         
         if train:
             rel_cmi_frame = self.get_admissible_score_frame()
@@ -237,8 +240,8 @@ import ast
 import json
 import warnings
 import h2o
+from h2o.utils.shared_utils import can_use_numpy
 from h2o.utils.typechecks import is_type
-import numpy as np
 from h2o.plot import get_matplotlib_pyplot, decorate_plot_result, get_polycollection
 """,
     __class__=class_extensions

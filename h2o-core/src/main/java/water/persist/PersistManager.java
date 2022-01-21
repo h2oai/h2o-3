@@ -4,12 +4,10 @@ import water.*;
 import water.api.FSIOException;
 import water.api.HDFSIOException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.C1NChunk;
 import water.fvec.FileVec;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.FileUtils;
-import water.util.FrameUtils;
 import water.util.Log;
 import water.persist.Persist.PersistEntry;
 import water.util.fp.Function2;
@@ -687,14 +685,14 @@ public class PersistManager {
     if (vec instanceof FileVec) {
       FileVec fileVec = (FileVec) vec;
       final String path = fileVec.getPath();
-      if (isHdfsPath(path)) {
-        validateHdfsConfigured();
-        return I[Value.HDFS].openSeekable(path);
-      } else {
-        Persist p = I[fileVec.getBackend()];
-        if (p != null && p.isSeekableOpenSupported()) {
+      final Persist p = I[fileVec.getBackend()];
+      if (p != null) {
+        if (p.isSeekableOpenSupported()) {
           return p.openSeekable(path);
         }
+      } else if (isHdfsPath(path)) {
+        validateHdfsConfigured();
+        return I[Value.HDFS].openSeekable(path);
       }
     }
     // fallback

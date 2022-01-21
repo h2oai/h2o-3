@@ -37,6 +37,14 @@ def import_gam_mojo_regression(family):
     predict_w = h2o_model.predict(train)
     # scoring without weight column
     predict = h2o_model.predict(test) 
+    
+    # get train perf on a cloned frame (to avoid re-using cached metrics - force to recalculate) 
+    train_clone = h2o.H2OFrame(train.as_data_frame(use_pandas=True))
+    model_perf_on_train = h2o_model.model_performance(test_data=train_clone)
+
+    # ditto on test
+    test_clone = h2o.H2OFrame(test.as_data_frame(use_pandas=True))
+    model_perf_on_test = h2o_model.model_performance(test_data=test_clone)
 
     # should produce same frame
     pyunit_utils.compare_frames_local(predict_w, predict, prob=1, tol=1e-6)
@@ -55,12 +63,11 @@ def import_gam_mojo_regression(family):
     pyunit_utils.compare_frames_local(predict_mojo_w, predict, prob=1, tol=1e-6)
     pyunit_utils.compare_frames_local(predict_mojo, predict, prob=1, tol=1e-6)
 
-    model_perf = h2o_model.model_performance(test_data=train)
-    mojo_perf = mojo_model.model_performance(test_data=train)
-    assert abs(mojo_perf._metric_json["MSE"] - model_perf._metric_json["MSE"]) < 1e-6
+    mojo_perf_on_train = mojo_model.model_performance(test_data=train_clone)
+    assert abs(mojo_perf_on_train._metric_json["MSE"] - model_perf_on_train._metric_json["MSE"]) < 1e-6
 
-    #FIXME: PUBDEV-8455 - doesn't hold currently:
-    #assert h2o_model.model_performance(test_data=train)._metric_json["MSE"] == h2o_model.model_performance(train=True)._metric_json["MSE"]
+    mojo_perf_on_test = mojo_model.model_performance(test_data=test_clone)
+    assert abs(mojo_perf_on_test._metric_json["MSE"] - model_perf_on_test._metric_json["MSE"]) < 1e-6
 
 
 def import_gam_mojo_poisson():

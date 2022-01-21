@@ -4459,6 +4459,11 @@ def assertCoefDictEqual(regCoeff, coeff, tol=1e-6):
 def assert_equals(expected, actual, message=""):
     assert expected == actual, ("{0}\nexpected:{1}\nactual\t:{2}".format(message, expected, actual))
 
+
+def assert_not_equal(expected, actual, message=""):
+    assert expected != actual, ("{0}\nactual\t:{1}".format(message, expected))
+
+
 def test_plot_result_saving(plot_result1, path1, plot_result2, path2):
     plot_result1.figure().savefig(path1)
     assert os.path.isfile(path1)
