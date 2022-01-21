@@ -433,7 +433,8 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
 
 
 def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmodel_jar_path=None, classpath=None, 
-                     java_options=None, verbose=False, setInvNumNA=False, predict_contributions=False):
+                     java_options=None, verbose=False, setInvNumNA=False, predict_contributions=False, 
+                     extra_cmd_args=None):
     """
     MOJO scoring function to take a CSV file and use MOJO model as zip file to score.
 
@@ -449,6 +450,7 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     :param verbose: Optional, if True, then additional debug information will be printed. False by default.
     :param predict_contributions: if True, then return prediction contributions instead of regular predictions 
         (only for tree-based models).
+    :param extra_cmd_args: Optional, a list of additional arguments to append to genmodel.jar's command line. 
     :return: List of computed predictions
     """
     default_java_options = '-Xmx4g -XX:ReservedCodeCacheSize=256m'
@@ -512,6 +514,9 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
 
     if predict_contributions:
         cmd.append('--predictContributions')
+
+    if extra_cmd_args:
+        cmd += extra_cmd_args
 
     if verbose:
         cmd_str = " ".join(cmd)
