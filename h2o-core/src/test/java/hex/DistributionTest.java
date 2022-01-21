@@ -33,14 +33,43 @@ public class DistributionTest extends TestUtil {
             huberByDef[i] = huberByDef(w[i], f[i]-y[i], delta);
             oldHuber[i] = oldDeviance(w[i], f[i], y[i], delta);
         }
+        // test calculated values from other source
         Assert.assertArrayEquals(scipyHuber, h2oHuber, tol);
         Assert.assertArrayEquals(huberByDef, h2oHuber, tol);
+        
+        // test old implementation is not correct
         Assert.assertNotEquals("The values should not be same.", huberByDef[0], oldHuber[0]);
         Assert.assertNotEquals("The values should not be same.", huberByDef[1], oldHuber[1]);
+        Assert.assertNotEquals("The values should not be same.", huberByDef[0], oldHuber[0]/2);
+        Assert.assertNotEquals("The values should not be same.", huberByDef[1], oldHuber[1]/2);
+        
+        // test symmetry with weights
+        Assert.assertEquals("The values should be same.", dist.deviance(0, 1, 0.5), dist.deviance(0, 0, 0.5), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(0.3, 1, 0.5), dist.deviance(0.3, 0, 0.5), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(0.7, 1, 0.5), dist.deviance(0.7, 0, 0.5), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(1, 1, 0.5), dist.deviance(1, 0, 0.5), 0);
+        
+        Assert.assertEquals("The values should be same.", dist.deviance(0, 1, 1), dist.deviance(0, 0, 0), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(0.3, 1, 1), dist.deviance(0.3, 0, 0), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(0.7, 1, 1), dist.deviance(0.7, 0, 0), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(1, 1, 1), dist.deviance(1, 0, 0), 0);
+
+        Assert.assertEquals("The values should be same.", dist.deviance(0, 1, -0.3), dist.deviance(0, 0, 1.3), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(0.3, 1, -0.3), dist.deviance(0.3, 0, 1.3), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(0.7, 1, -0.3), dist.deviance(0.7, 0, 1.3), 0);
+        Assert.assertEquals("The values should be same.", dist.deviance(1, 1, -0.3), dist.deviance(1, 0, 1.3), 0);
+
+        // test convexity with weights
+        Assert.assertFalse(oldDeviance(1, 1, 2, 0.9) > oldDeviance(1, 1, 1.5, 0.9));
+        Assert.assertFalse(oldDeviance(0.8, 1, 2, 0.9) > oldDeviance(0.8, 1, 1.5, 0.9));
+        dist.setHuberDelta(0.9);
+        Assert.assertTrue(dist.deviance(1, 1, 2) > dist.deviance(1, 1, 1.5));
+        Assert.assertTrue(dist.deviance(0.8, 1, 2) > dist.deviance(0.8, 1, 1.5));
     }
 
     /**
      * Source: https://en.wikipedia.org/wiki/Huber_loss
+     * Use * 0.5 to avoid dividing (/2)
      * @param w weight
      * @param r residual
      * @param delta huber delta
@@ -50,7 +79,7 @@ public class DistributionTest extends TestUtil {
         if (Math.abs(r) <= delta) {
             return 0.5 * w * (r * r); 
         } else {
-            return w * delta * (Math.abs(r) - delta/2);
+            return w * delta * (Math.abs(r) - delta * 0.5);
         }
     }
 
