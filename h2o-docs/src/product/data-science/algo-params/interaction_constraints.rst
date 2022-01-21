@@ -33,7 +33,7 @@ Example
 		response <- "CAPSULE"
 
 		# train a model using the interaction_constraints option
-		prostate_gbm <- h2o.xgboost(y = response, 
+		prostate_xgb <- h2o.xgboost(y = response, 
 	                        	interaction_constraints = list(list("AGE", "DCAPS")),
 	                        	seed = 1234, 
 	                        	training_frame = prostate)
@@ -54,5 +54,5 @@ Example
 		seed = 1234
 		
 		# train a model using the interaction_constraints option
-		gbm_model = H2OXGBoostEstimator(seed=seed, interaction_constraints=[["AGE", "DCAPS"]])
-		gbm_model.train(y=response, ignored_columns=["ID"], training_frame=prostate)
+		xgb_model = H2OXGBoostEstimator(seed=seed, interaction_constraints=[["AGE", "DCAPS"]])
+		xgb_model.train(y=response, ignored_columns=["ID"], training_frame=prostate)
