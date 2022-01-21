@@ -1,5 +1,10 @@
 description = "H2O Persist S3"
 
+configurations {
+    testImplementation.exclude group: "ch.qos.logback", module: "logback-classic"
+}
+
+
 dependencies {
   api project(":h2o-core")
   api "com.amazonaws:aws-java-sdk-s3:${awsJavaSdkVersion}"
@@ -10,6 +15,8 @@ dependencies {
   testImplementation "com.adobe.testing:s3mock:2.1.28"
   testImplementation "com.adobe.testing:s3mock-junit4:2.1.28"
   testRuntimeOnly project(":${defaultWebserverModule}")
+  testRuntimeOnly project(":h2o-parquet-parser")
+  testRuntimeOnly project(":h2o-persist-hdfs")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
