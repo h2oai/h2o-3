@@ -34,7 +34,7 @@ from collections import defaultdict
 def check_requirements():
     if os.getenv("BUILD_HADOOP"):
         print("Building on Hadoop - skipping Python version check (see https://h2oai.atlassian.net/browse/ITA-1006)")
-    else
+    else:
         check_python_version()
 
 def check_python_version():
