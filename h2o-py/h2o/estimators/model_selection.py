@@ -45,6 +45,11 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  score_iteration_interval=0,  # type: int
                  offset_column=None,  # type: Optional[str]
                  weights_column=None,  # type: Optional[str]
+                 family="auto",  # type: Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma", "tweedie", "negativebinomial"]
+                 link="family_default",  # type: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
+                 tweedie_variance_power=0.0,  # type: float
+                 tweedie_link_power=0.0,  # type: float
+                 theta=0.0,  # type: float
                  solver="irlsm",  # type: Literal["auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent", "gradient_descent_lh", "gradient_descent_sqerr"]
                  alpha=None,  # type: Optional[List[float]]
                  lambda_=None,  # type: Optional[List[float]]
@@ -80,7 +85,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
                  custom_metric_func=None,  # type: Optional[str]
                  nparallelism=0,  # type: int
                  max_predictor_number=1,  # type: int
-                 mode="maxr",  # type: Literal["allsubsets", "maxr"]
+                 min_predictor_number=1,  # type: int
+                 mode="maxr",  # type: Literal["allsubsets", "maxr", "backward"]
+                 p_values_threshold=0.0,  # type: float
                  ):
         """
         :param model_id: Destination id for this model; auto-generated if not specified.
@@ -133,6 +140,23 @@ class H2OModelSelectionEstimator(H2OEstimator):
                that row is zero and this is incorrect. To get an accurate prediction, remove all rows with weight == 0.
                Defaults to ``None``.
         :type weights_column: str, optional
+        :param family: Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not
+               supported
+               Defaults to ``"auto"``.
+        :type family: Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma",
+               "tweedie", "negativebinomial"]
+        :param link: Link function.
+               Defaults to ``"family_default"``.
+        :type link: Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]
+        :param tweedie_variance_power: Tweedie variance power
+               Defaults to ``0.0``.
+        :type tweedie_variance_power: float
+        :param tweedie_link_power: Tweedie link power
+               Defaults to ``0.0``.
+        :type tweedie_link_power: float
+        :param theta: Theta
+               Defaults to ``0.0``.
+        :type theta: float
         :param solver: AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on
                problems with small number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for
                datasets with many columns.
@@ -267,17 +291,26 @@ class H2OModelSelectionEstimator(H2OEstimator):
         :param custom_metric_func: Reference to custom evaluation function, format: `language:keyName=funcName`
                Defaults to ``None``.
         :type custom_metric_func: str, optional
-        :param nparallelism: number of models to build in parallel.  Default to 0.0 which is adaptive to the system
+        :param nparallelism: number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system
                capability
                Defaults to ``0``.
         :type nparallelism: int
-        :param max_predictor_number: Maximum number of predictors to be considered when building GLM models.  Defaiult
+        :param max_predictor_number: Maximum number of predictors to be considered when building GLM models.  Defaults
                to 1.
                Defaults to ``1``.
         :type max_predictor_number: int
-        :param mode: Mode: used to choose model selection algorithm to use,
+        :param min_predictor_number: For mode = 'backward' only.  Minimum number of predictors to be considered when
+               building GLM models starting with all predictors to be included.  Defaults to 1.
+               Defaults to ``1``.
+        :type min_predictor_number: int
+        :param mode: Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all
+               subsets, 'maxr' for MaxR, 'backward' for backward selection
                Defaults to ``"maxr"``.
-        :type mode: Literal["allsubsets", "maxr"]
+        :type mode: Literal["allsubsets", "maxr", "backward"]
+        :param p_values_threshold: For mode='backward' only.  If specified, will stop the model building process when
+               all coefficientsp-values drop below this threshold
+               Defaults to ``0.0``.
+        :type p_values_threshold: float
         """
         super(H2OModelSelectionEstimator, self).__init__()
         self._parms = {}
@@ -295,6 +328,11 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.score_iteration_interval = score_iteration_interval
         self.offset_column = offset_column
         self.weights_column = weights_column
+        self.family = family
+        self.link = link
+        self.tweedie_variance_power = tweedie_variance_power
+        self.tweedie_link_power = tweedie_link_power
+        self.theta = theta
         self.solver = solver
         self.alpha = alpha
         self.lambda_ = lambda_
@@ -330,7 +368,9 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self.custom_metric_func = custom_metric_func
         self.nparallelism = nparallelism
         self.max_predictor_number = max_predictor_number
+        self.min_predictor_number = min_predictor_number
         self.mode = mode
+        self.p_values_threshold = p_values_threshold
 
     @property
     def training_frame(self):
@@ -518,6 +558,78 @@ class H2OModelSelectionEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
+
+    @property
+    def family(self):
+        """
+        Family. For MaxR, only gaussian.  For backward, ordinal and multinomial families are not supported
+
+        Type: ``Literal["auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma",
+        "tweedie", "negativebinomial"]``, defaults to ``"auto"``.
+        """
+        return self._parms.get("family")
+
+    @family.setter
+    def family(self, family):
+        assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
+        self._parms["family"] = family
+
+    @property
+    def link(self):
+        """
+        Link function.
+
+        Type: ``Literal["family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"]``, defaults to
+        ``"family_default"``.
+        """
+        return self._parms.get("link")
+
+    @link.setter
+    def link(self, link):
+        assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"))
+        self._parms["link"] = link
+
+    @property
+    def tweedie_variance_power(self):
+        """
+        Tweedie variance power
+
+        Type: ``float``, defaults to ``0.0``.
+        """
+        return self._parms.get("tweedie_variance_power")
+
+    @tweedie_variance_power.setter
+    def tweedie_variance_power(self, tweedie_variance_power):
+        assert_is_type(tweedie_variance_power, None, numeric)
+        self._parms["tweedie_variance_power"] = tweedie_variance_power
+
+    @property
+    def tweedie_link_power(self):
+        """
+        Tweedie link power
+
+        Type: ``float``, defaults to ``0.0``.
+        """
+        return self._parms.get("tweedie_link_power")
+
+    @tweedie_link_power.setter
+    def tweedie_link_power(self, tweedie_link_power):
+        assert_is_type(tweedie_link_power, None, numeric)
+        self._parms["tweedie_link_power"] = tweedie_link_power
+
+    @property
+    def theta(self):
+        """
+        Theta
+
+        Type: ``float``, defaults to ``0.0``.
+        """
+        return self._parms.get("theta")
+
+    @theta.setter
+    def theta(self, theta):
+        assert_is_type(theta, None, numeric)
+        self._parms["theta"] = theta
 
     @property
     def solver(self):
@@ -1008,7 +1120,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def nparallelism(self):
         """
-        number of models to build in parallel.  Default to 0.0 which is adaptive to the system capability
+        number of models to build in parallel.  Defaults to 0.0 which is adaptive to the system capability
 
         Type: ``int``, defaults to ``0``.
         """
@@ -1022,7 +1134,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
     @property
     def max_predictor_number(self):
         """
-        Maximum number of predictors to be considered when building GLM models.  Defaiult to 1.
+        Maximum number of predictors to be considered when building GLM models.  Defaults to 1.
 
         Type: ``int``, defaults to ``1``.
         """
@@ -1034,18 +1146,49 @@ class H2OModelSelectionEstimator(H2OEstimator):
         self._parms["max_predictor_number"] = max_predictor_number
 
     @property
+    def min_predictor_number(self):
+        """
+        For mode = 'backward' only.  Minimum number of predictors to be considered when building GLM models starting
+        with all predictors to be included.  Defaults to 1.
+
+        Type: ``int``, defaults to ``1``.
+        """
+        return self._parms.get("min_predictor_number")
+
+    @min_predictor_number.setter
+    def min_predictor_number(self, min_predictor_number):
+        assert_is_type(min_predictor_number, None, int)
+        self._parms["min_predictor_number"] = min_predictor_number
+
+    @property
     def mode(self):
         """
-        Mode: used to choose model selection algorithm to use,
+        Mode: Used to choose model selection algorithms to use.  Options include 'allsubsets' for all subsets, 'maxr'
+        for MaxR, 'backward' for backward selection
 
-        Type: ``Literal["allsubsets", "maxr"]``, defaults to ``"maxr"``.
+        Type: ``Literal["allsubsets", "maxr", "backward"]``, defaults to ``"maxr"``.
         """
         return self._parms.get("mode")
 
     @mode.setter
     def mode(self, mode):
-        assert_is_type(mode, None, Enum("allsubsets", "maxr"))
+        assert_is_type(mode, None, Enum("allsubsets", "maxr", "backward"))
         self._parms["mode"] = mode
+
+    @property
+    def p_values_threshold(self):
+        """
+        For mode='backward' only.  If specified, will stop the model building process when all coefficientsp-values drop
+        below this threshold
+
+        Type: ``float``, defaults to ``0.0``.
+        """
+        return self._parms.get("p_values_threshold")
+
+    @p_values_threshold.setter
+    def p_values_threshold(self, p_values_threshold):
+        assert_is_type(p_values_threshold, None, numeric)
+        self._parms["p_values_threshold"] = p_values_threshold
 
 
     def coef_norm(self, predictor_size=None):
@@ -1060,6 +1203,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
             return None
         else:
             model_numbers = len(model_ids)
+            mode = self.get_params()['mode']
             if predictor_size==None:
                 coefs = [None]*model_numbers
                 for index in range(0, model_numbers):
@@ -1068,12 +1212,17 @@ class H2OModelSelectionEstimator(H2OEstimator):
                     if tbl is not None:
                         coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
                 return coefs
-            if predictor_size > model_numbers:
+            max_pred_numbers = len(self._model_json["output"]["best_model_predictors"][model_numbers-1])
+            if predictor_size > max_pred_numbers:
                 raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
             if predictor_size == 0:
                 raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
 
-            one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+            if mode=='backward':
+                offset = max_pred_numbers - predictor_size
+                one_model = h2o.get_model(model_ids[model_numbers-1-offset]['name'])
+            else:
+                one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
             tbl = one_model._model_json["output"]["coefficients_table"]
             if tbl is not None:
                 return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
@@ -1090,6 +1239,7 @@ class H2OModelSelectionEstimator(H2OEstimator):
             return None
         else:
             model_numbers = len(model_ids)
+            mode = self.get_params()['mode']
             if predictor_size==None:
                 coefs = [None]*model_numbers
                 for index in range(0, model_numbers):
@@ -1098,12 +1248,17 @@ class H2OModelSelectionEstimator(H2OEstimator):
                     if tbl is not None:
                         coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
                 return coefs
-            if predictor_size > model_numbers:
+            max_pred_numbers = len(self._model_json["output"]["best_model_predictors"][model_numbers-1])
+            if predictor_size > max_pred_numbers:
                 raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
             if predictor_size == 0:
                 raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
 
-            one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+            if mode=='backward':
+                offset = max_pred_numbers - predictor_size
+                one_model = h2o.get_model(model_ids[model_numbers-1-offset]['name'])
+            else:
+                one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
             tbl = one_model._model_json["output"]["coefficients_table"]
             if tbl is not None:
                 return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}

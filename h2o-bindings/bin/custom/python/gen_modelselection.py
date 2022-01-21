@@ -11,6 +11,7 @@ def class_extensions():
             return None
         else:
             model_numbers = len(model_ids)
+            mode = self.get_params()['mode']
             if predictor_size==None:
                 coefs = [None]*model_numbers
                 for index in range(0, model_numbers):
@@ -19,12 +20,17 @@ def class_extensions():
                     if tbl is not None:
                         coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
                 return coefs
-            if predictor_size > model_numbers:
+            max_pred_numbers = len(self._model_json["output"]["best_model_predictors"][model_numbers-1])
+            if predictor_size > max_pred_numbers:
                 raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
             if predictor_size == 0:
                 raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
 
-            one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+            if mode=='backward':
+                offset = max_pred_numbers - predictor_size
+                one_model = h2o.get_model(model_ids[model_numbers-1-offset]['name'])
+            else:
+                one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
             tbl = one_model._model_json["output"]["coefficients_table"]
             if tbl is not None:
                 return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
@@ -41,6 +47,7 @@ def class_extensions():
             return None
         else:
             model_numbers = len(model_ids)
+            mode = self.get_params()['mode']
             if predictor_size==None:
                 coefs = [None]*model_numbers
                 for index in range(0, model_numbers):
@@ -49,12 +56,17 @@ def class_extensions():
                     if tbl is not None:
                         coefs[index] =  {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
                 return coefs
-            if predictor_size > model_numbers:
+            max_pred_numbers = len(self._model_json["output"]["best_model_predictors"][model_numbers-1])
+            if predictor_size > max_pred_numbers:
                 raise H2OValueError("predictor_size (predictor subset size) cannot exceed the total number of predictors used.")
             if predictor_size == 0:
                 raise H2OValueError("predictor_size (predictor subset size) must be between 0 and the total number of predictors used.")
 
-            one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
+            if mode=='backward':
+                offset = max_pred_numbers - predictor_size
+                one_model = h2o.get_model(model_ids[model_numbers-1-offset]['name'])
+            else:
+                one_model = h2o.get_model(model_ids[predictor_size-1]['name'])
             tbl = one_model._model_json["output"]["coefficients_table"]
             if tbl is not None:
                 return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
