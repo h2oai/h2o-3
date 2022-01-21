@@ -39,6 +39,7 @@ public class PredictCsv {
   private final boolean predictContributions;
   private final boolean returnGLRMReconstruct;
   private final int glrmIterNumber;
+  private final boolean outputHeader;
 
   // Model instance
   private EasyPredictModelWrapper modelWrapper;
@@ -46,7 +47,8 @@ public class PredictCsv {
   private PredictCsv(
           String inputCSVFileName, String outputCSVFileName, 
           boolean useDecimalOutput, char separator, boolean setInvNumNA, 
-          boolean getTreePath, boolean predictContributions, boolean returnGLRMReconstruct, int glrmIterNumber) {
+          boolean getTreePath, boolean predictContributions, boolean returnGLRMReconstruct, int glrmIterNumber,
+          boolean outputHeader) {
     this.inputCSVFileName = inputCSVFileName;
     this.outputCSVFileName = outputCSVFileName;
     this.useDecimalOutput = useDecimalOutput;
@@ -56,6 +58,7 @@ public class PredictCsv {
     this.predictContributions = predictContributions;
     this.returnGLRMReconstruct = returnGLRMReconstruct;
     this.glrmIterNumber = glrmIterNumber;
+    this.outputHeader = outputHeader;
   }
 
   public static void main(String[] args) {
@@ -149,7 +152,7 @@ public class PredictCsv {
   }
 
   private void writeTreePathNames(BufferedWriter output) throws Exception {
-    String[] columnNames = ((SharedTreeMojoModel) modelWrapper.getModel()).getDecisionPathNames();
+    String[] columnNames = ((SharedTreeMojoModel) modelWrapper.m).getDecisionPathNames();
     writeColumnNames(output, columnNames);
   }
 
@@ -172,38 +175,40 @@ public class PredictCsv {
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
 
     // Emit outputCSV column names.
-    switch (category) {
-      case Binomial:
-      case Multinomial:
-      case Regression:
-        if (getTreePath) {
-          writeTreePathNames(output);
-        } else if (predictContributions) {
-          writeContributionNames(output);
-        } else
-          writeHeader(modelWrapper.getModel().getOutputNames(), output);
-        break;
+    if (outputHeader) {
+      switch (category) {
+        case Binomial:
+        case Multinomial:
+        case Regression:
+          if (getTreePath) {
+            writeTreePathNames(output);
+          } else if (predictContributions) {
+            writeContributionNames(output);
+          } else
+            writeHeader(modelWrapper.m.getOutputNames(), output);
+          break;
 
-      case DimReduction:  // will write factor or the predicted value depending on what the user wants
-        if (returnGLRMReconstruct) {
-          int datawidth;
-          String[] colnames = this.modelWrapper.getModel().getNames();
-          datawidth = ((GlrmMojoModel) modelWrapper.getModel())._permutation.length;
-          int lastData = datawidth - 1;
-          for (int index = 0; index < datawidth; index++) {  // add the numerical column names
-            output.write("reconstr_" + colnames[index]);
+        case DimReduction:  // will write factor or the predicted value depending on what the user wants
+          if (returnGLRMReconstruct) {
+            int datawidth;
+            String[] colnames = this.modelWrapper.m.getNames();
+            datawidth = ((GlrmMojoModel) modelWrapper.m)._permutation.length;
+            int lastData = datawidth - 1;
+            for (int index = 0; index < datawidth; index++) {  // add the numerical column names
+              output.write("reconstr_" + colnames[index]);
 
-            if (index < lastData)
-              output.write(',');
-          }
-        } else
-          writeHeader(modelWrapper.getModel().getOutputNames(), output);
-        break;
+              if (index < lastData)
+                output.write(',');
+            }
+          } else
+            writeHeader(modelWrapper.m.getOutputNames(), output);
+          break;
 
-      default:
-        writeHeader(modelWrapper.getModel().getOutputNames(), output);
+        default:
+          writeHeader(modelWrapper.m.getOutputNames(), output);
+      }
+      output.write("\n");
     }
-    output.write("\n");
 
     // Loop over inputCSV one row at a time.
     //
@@ -432,14 +437,14 @@ public class PredictCsv {
   }
 
   private void checkMissingColumns(final String[] parsedColumnNamesArr) {
-    final String[] modelColumnNames = modelWrapper.getModel()._names;
+    final String[] modelColumnNames = modelWrapper.m._names;
     final Set<String> parsedColumnNames = new HashSet<>(parsedColumnNamesArr.length);
     Collections.addAll(parsedColumnNames, parsedColumnNamesArr);
 
     List<String> missingColumns = new ArrayList<>();
     for (String columnName : modelColumnNames) {
 
-      if (!parsedColumnNames.contains(columnName) && !columnName.equals(modelWrapper.getModel()._responseColumn)) {
+      if (!parsedColumnNames.contains(columnName) && !columnName.equals(modelWrapper.m._responseColumn)) {
         missingColumns.add(columnName);
       } else {
         parsedColumnNames.remove(columnName);
@@ -549,6 +554,7 @@ public class PredictCsv {
     private boolean predictContributions;   // enable tree models to predict contributions instead of regular predictions
     private boolean returnGLRMReconstruct;  // for GLRM, return x factor by default unless set this to true
     private int glrmIterNumber = -1;        // for GLRM, default to 100.
+    private boolean outputHeader = true;    // should we write-out header to output files?
 
     // For Model Loading
     private int loadType = 0; // 0: load pojo, 1: load mojo, 2: load model, -1: special value when PredictCsv is used embedded and instance of Model is passed directly
@@ -558,12 +564,12 @@ public class PredictCsv {
 
     private PredictCsv newPredictCsv() {
       return new PredictCsv(inputCSVFileName, outputCSVFileName, useDecimalOutput, separator, setInvNumNA,
-              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber);
+              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber, outputHeader);
     }
 
     private PredictCsv newConcurrentPredictCsv(int id) {
       return new PredictCsv(inputCSVFileName, outputCSVFileName + "." + id, useDecimalOutput, separator, setInvNumNA,
-              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber);
+              getTreePath, predictContributions, returnGLRMReconstruct, glrmIterNumber, outputHeader);
     }
 
     private void parseArgs(String[] args) {
@@ -614,6 +620,9 @@ public class PredictCsv {
               break;
             case "--testConcurrent":
               testConcurrent = Integer.parseInt(sarg);
+              break;
+            case "--outputHeader":
+              outputHeader = Boolean.parseBoolean(sarg);
               break;
             default:
               System.out.println("ERROR: Unknown command line argument: " + s);
