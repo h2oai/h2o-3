@@ -19,29 +19,6 @@ import java.util.stream.IntStream;
 import static hex.genmodel.utils.MathUtils.combinatorial;
 
 public class ModelSelectionUtils {
-    /**
-     * Given the number of predictors in the training frame and the maximum predictor number, we are going to calculate
-     * the number of models that we need to build in order to find:
-     * - best model with 1 predictor;
-     * - best model with 2 predictors;
-     * ...
-     * - best model with naxPredictorNumber.
-     * 
-     * This basically boils down to calculating the following:
-     * combination(numPredictors, 1) + combination(numPredictors, 2) + ... + combination(numPredictors, maxPredictorNumber)
-     * 
-     * @param numPredictors: number of predictors in the training frame
-     * @param maxPredictorNumber: maximum number of predictors of interest
-     * @return an integer that is the number of models that are going to be built
-     */
-    public static int calculateModelNumber(int numPredictors, int maxPredictorNumber) {
-        int modelNumber = 0;
-        for (int index = 1; index <= maxPredictorNumber; index++) {
-            modelNumber += combinatorial(numPredictors, index);
-        }
-        return modelNumber;
-    }
-    
     public static Frame[] generateTrainingFrames(ModelSelectionModel.ModelSelectionParameters parms, int predNum, String[] predNames,
                                                  int numModels, String foldColumn) {
         int maxPredNum = predNames.length;
@@ -145,7 +122,52 @@ public class ModelSelectionUtils {
         }
         return trainFramesList.stream().toArray(Frame[]::new);
     }
+    
+    public static int findMinAbs(List<Double> zList) {
+        int size = zList.size();
+        double minValue = Double.MAX_VALUE;
+        int minIndex = -1;
+        for (int index=0; index<size; index++) {
+            if (minValue > Math.abs(zList.get(index))) {
+                minIndex = index;
+                minValue = Math.abs(zList.get(index));
+            }
+        }
+        return minIndex;
+    }
+    
+    public static String[][] shrinkStringArray(String[][] array, int numModels) {
+        int arrLen = array.length-1;
+        int offset = numModels-1;
+        String[][] newArray =new String[numModels][];
+        for (int index=0; index < numModels; index++)
+            newArray[offset-index] = array[arrLen-index].clone();
+        return newArray;
+    }
+    
+    public static double[][] shrinkDoubleArray(double[][] array, int numModels) {
+        int arrLen = array.length-1;
+        int offset = numModels-1;
+        double[][] newArray =new double[numModels][];
+        for (int index=0; index < numModels; index++)
+            newArray[offset-index] = array[arrLen-index].clone();
+        return newArray;
+    }
 
+    public static Key[] shrinkKeyArray(Key[] array, int numModels) {
+        int arrLen = array.length;
+        Key[] newArray = new Key[numModels];
+        System.arraycopy(array, (arrLen-numModels), newArray, 0, numModels);
+        return newArray;
+    }
+    
+    public static String joinDouble(double[] val) {
+        int arrLen = val.length; // skip the intercept terms
+        String[] strVal = new String[arrLen];
+        for (int index=0; index < arrLen; index++)
+            strVal[index] = Double.toString(val[index]);
+        return String.join(", ", strVal);
+    }
     /**
      * Given an array GLMModel built, find the one with the highest R2 value that exceeds lastBestR2.  If found, return
      * the index where the best model is.  Else return -1
@@ -183,7 +205,6 @@ public class ModelSelectionUtils {
             setParamField(parms, params[index], false, field1, Collections.emptyList());
             setParamField(parms, params[index], true, field2, Collections.emptyList());
             params[index]._train = trainingFrames[index]._key;
-            params[index]._family = parms._family;
             params[index]._nfolds = nfolds;
             params[index]._fold_column = foldColumn;
             params[index]._fold_assignment = foldAssignment;
@@ -252,7 +273,9 @@ public class ModelSelectionUtils {
     public static String[] extractPredictorNames(ModelSelectionModel.ModelSelectionParameters parms, DataInfo dinfo, 
                                             String foldColumn) {
         List<String> frameNames = Arrays.stream(dinfo._adaptedFrame.names()).collect(Collectors.toList());
-        frameNames.remove(parms._response_column);
+        String[] nonResponseCols = parms.getNonPredictors();
+        for (String col : nonResponseCols)
+            frameNames.remove(col);
         if (foldColumn != null && frameNames.contains(foldColumn))
             frameNames.remove(foldColumn);
         return frameNames.stream().toArray(String[]::new);

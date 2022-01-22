@@ -40,4 +40,4 @@ testModelSelectionCoeffs <- function() {
   }
 }
 
-doTest("ModelSelection with allsubsets, mZE: test h2o.coef() and h2o.coef_norm()", testModelSelectionCoeffs)
+doTest("ModelSelection with allsubsets, maxr: test h2o.coef() and h2o.coef_norm()", testModelSelectionCoeffs)

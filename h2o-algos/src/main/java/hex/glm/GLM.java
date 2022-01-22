@@ -2107,7 +2107,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           DataInfo.TransformType transform = activeData._predictor_transform;
           activeData.setPredictorTransform(DataInfo.TransformType.NONE);
           Gram g = new GLMIterationTask(_job._key, activeData, new GLMWeightsFun(_parms), beta_nostd).doAll(activeData._adaptedFrame)._gram;
-          activeData.setPredictorTransform(transform); // just in case, restore the trasnform
+          activeData.setPredictorTransform(transform); // just in case, restore the transform
           g.mul(_parms._obj_reg);
           chol = g.cholesky(null);
           beta = beta_nostd;
