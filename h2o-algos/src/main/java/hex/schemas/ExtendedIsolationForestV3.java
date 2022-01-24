@@ -17,6 +17,8 @@ public class ExtendedIsolationForestV3 extends ModelBuilderSchema<
                 "ignored_columns",
                 "ignore_const_cols",
                 "categorical_encoding",
+                "score_each_iteration",
+                "score_tree_interval",
 
                 // Extended Isolation Forest specific
                 "ntrees",
@@ -37,5 +39,8 @@ public class ExtendedIsolationForestV3 extends ModelBuilderSchema<
 
         @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
         public long seed;
+
+        @API(help="Score the model after every so many trees. Disabled if set to 0.", level = API.Level.secondary, gridable = false)
+        public int score_tree_interval;
     }
 }

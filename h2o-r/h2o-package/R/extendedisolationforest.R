@@ -11,6 +11,8 @@
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
+#' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ntrees Number of Extended Isolation Forest trees. Defaults to 100.
 #' @param sample_size Number of randomly sampled observations used to train each Extended Isolation Forest tree. Defaults to 256.
 #' @param extension_level Maximum is N - 1 (N = numCols). Minimum is 0. Extended Isolation Forest with extension_Level = 0 behaves like
@@ -53,6 +55,8 @@ h2o.extendedIsolationForest <- function(training_frame,
                                         model_id = NULL,
                                         ignore_const_cols = TRUE,
                                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                        score_each_iteration = FALSE,
+                                        score_tree_interval = 0,
                                         ntrees = 100,
                                         sample_size = 256,
                                         extension_level = 0,
@@ -73,6 +77,10 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_tree_interval))
+    parms$score_tree_interval <- score_tree_interval
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(sample_size))
@@ -90,6 +98,8 @@ h2o.extendedIsolationForest <- function(training_frame,
                                                         x,
                                                         ignore_const_cols = TRUE,
                                                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                                        score_each_iteration = FALSE,
+                                                        score_tree_interval = 0,
                                                         ntrees = 100,
                                                         sample_size = 256,
                                                         extension_level = 0,
@@ -115,6 +125,10 @@ h2o.extendedIsolationForest <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(score_tree_interval))
+    parms$score_tree_interval <- score_tree_interval
   if (!missing(ntrees))
     parms$ntrees <- ntrees
   if (!missing(sample_size))
