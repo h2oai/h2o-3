@@ -1,7 +1,7 @@
 ModelSelection
 --------------
 
-To help users select the best predictor subsets from their datasets for model building, we have implemented the ModelSelection toolbox. There are currently two modes to select the predictor subsets:
+We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented three modes to select the predictor subsets:
 
 1. ``mode = "allsubsets"`` where all possible combinations of predictor subsets are generated for a given subset size. A model is built for each subset and the one with the highest :math:`R^2` is returned. The best subsets are also returned for subset size :math:`1, 2, ..., n`. This mode guarantees to return the predictor subset with the highest :math:`R^2` value at the cost of computation complexity.
 2. ``mode = "maxr"`` where a sequential replacement method is used to find the best subsets for subset size of :math:`1, 2, ..., n`. However, the predictor subsets are not guaranteed to have the highest :math:`R^2`` value.
@@ -63,7 +63,6 @@ Defining a ModelSelection Model
    - If the family is **AUTO** (default),
 
       - and the response is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
-      - and the response is **Enum** with cardinality > 2, then the family is automatically determined as **multinomial**.
       - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
@@ -167,7 +166,7 @@ Defining a ModelSelection Model
 
 - **min_predictor_number**: For ``mode = "backward"`` only.  Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. Defaults to ``1``.
 
-- **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop below this threshold. Defaults to ``0.0``.
+- **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
 
 
 Understanding ModelSelection ``mode = allsubsets``
@@ -177,7 +176,7 @@ Setting the H2O ModelSelection ``mode = allsubsets`` guarantees the return of th
 
 For each predictor subset size :math:`x`:
 
-- If there are :math:`n` predictors and we are looking at using :math:`x` predictors, all combinations of :math:`x` from :math:`n` predictors are first generated;
+- For :math:`n` predictors and using :math:`x` predictors, first generate all possible combinations of :math:`x` predictors out of the :math:`n` predictors;
 - for each element in the combination of :math:`x` predictors: generate the training frame, build the model, and look at the :math:`R^2` value of the model;
 - the best :math:`R^2` value, the predictor names, and the ``model_id`` of the best models are stored in arrays as well as H2OFrame;
 - access functions are written in Java/R/Python to extract coefficients associated with the models with the best :math:`R^2` values.
@@ -206,7 +205,7 @@ The H2O ModelSelection ``mode = maxr`` is implemented using the sequential repla
 
   a. fixing the second predictor, choose a different predictor for the first predictor from the remaining predictors *C, D, ..., Z* (skipping predictor *A* as it was chosen already by forward step; *B* is taken as the second predictor). Then, build a GLM model for each new subset of (*CB, DB, EB, ..., ZB*). Save the model with the highest :math:`R^2` (for example, {*DB*}) from all models built with predictor subsets (*CB, DB, EB, ..., ZB*);
   b. fixing the first predictor, choose a different second predictor from the remaining predictor subset. Then, build a GLM model for each new subset generated. Save the model with the highest :math:`R^2` from all models built;
-  c. compare the :math:`R^2` value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest :math:`R^2`. If the best model is built with {*AB*}, we are done because steps 4(a) and 4(b) generated no improvement. If the best model is built with {*DB*}, repeat steps 4(a), 4(b), and 4(c) until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.
+  c. compare the :math:`R^2` value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest :math:`R^2`. If the best model is built with {*AB*}, proceed to step 5 because steps 4(a) and 4(b) generated no improvement. If the best model is built with {*DB*}, repeat steps 4(a), 4(b), and 4(c) until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.  
 
 5. Start with the best :math:`n` predictor subset and forward step for :math:`n` predictor subsets:
 
