@@ -114,8 +114,20 @@ public abstract class MetricTest extends TestUtil {
             }
         };
         task.doAll(frame.types(), frame);
-        return task.outputFrame(frame.names(), frame.domains());
+        Frame outputFrame  = task.outputFrame(Key.make(), frame.names(), frame.domains());
+        DKV.put(outputFrame);
+        return outputFrame;
     }
+    
+    protected void addRandomColumn(Frame frame, String columnName) {
+        Frame random = TestUtil.generateRealOnly(1, (int) frame.numRows(), 0, 42);
+        random.setNames(new String[]{columnName});
+        DKV.put(random);
+        Scope.track(random);
+        frame.add(random);
+    }
+    
+ 
 
     protected ModelMetrics calculateMetricsViaIndependentBuilder(
             Model model, 

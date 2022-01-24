@@ -86,13 +86,15 @@ public class XGBoostMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.gaussian;
-            parms._offset_column = "ID";
+            parms._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);
@@ -106,14 +108,17 @@ public class XGBoostMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
             dataset.toCategoricalCol(response);
+            
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.bernoulli;
-            parms._offset_column = "ID";
+            parms._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);
@@ -127,14 +132,16 @@ public class XGBoostMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
             dataset.toCategoricalCol(response);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
-            parms._offset_column = "ID";
+            parms._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);
@@ -155,7 +162,6 @@ public class XGBoostMetricTest extends MetricTest {
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.gaussian;
-            parms._weights_column = "ID";
             parms._weights_column = "variWeight";
             parms._ignored_columns = new String[] {"constWeight"};
 
@@ -177,8 +183,6 @@ public class XGBoostMetricTest extends MetricTest {
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
-            parms._distribution = DistributionFamily.bernoulli;
-            parms._weights_column = "ID";
             parms._weights_column = "variWeight";
             parms._ignored_columns = new String[] {"constWeight"};
 

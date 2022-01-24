@@ -101,12 +101,15 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
+
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);
@@ -120,13 +123,16 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
+
             dataset.toCategoricalCol(response);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.bernoulli;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);
@@ -140,13 +146,16 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
+
             dataset.toCategoricalCol(response);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);

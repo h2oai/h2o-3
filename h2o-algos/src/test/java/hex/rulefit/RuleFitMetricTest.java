@@ -85,12 +85,14 @@ public class RuleFitMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, ruleFitConstructor, tolerance);
@@ -104,13 +106,16 @@ public class RuleFitMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
+
             dataset.toCategoricalCol(response);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.bernoulli;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, ruleFitConstructor, tolerance);
@@ -124,13 +129,16 @@ public class RuleFitMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
+
             dataset.toCategoricalCol(response);
 
             RuleFitModel.RuleFitParameters params = new RuleFitModel.RuleFitParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, ruleFitConstructor, tolerance);
@@ -180,7 +188,7 @@ public class RuleFitMetricTest extends MetricTest {
         }
     }
 
-    @Ignore // RuleFitMOJOWriter throws NPE, investigate why
+    @Ignore // https://h2oai.atlassian.net/browse/PUBDEV-8544 RuleFitMOJOWriter throws NPE
     public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
         Scope.enter();
         try {

@@ -86,12 +86,15 @@ public class DeepLearningMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            String offsetColumn = "offset";
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv", new int[]{0}));
+            addRandomColumn(dataset, offsetColumn);
+
 
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
-            params._offset_column = "ID";
+            params._offset_column = offsetColumn;
 
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
