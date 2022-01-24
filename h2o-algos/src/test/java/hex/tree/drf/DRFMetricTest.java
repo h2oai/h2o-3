@@ -63,7 +63,7 @@ public class DRFMetricTest extends MetricTest {
         }
     }
 
-    @Ignore // TODO: Investigate why hit ratios are different
+    @Test
     public void testIndependentModelMetricsCalculation_multinomial() {
         Scope.enter();
         try {

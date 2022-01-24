@@ -261,17 +261,18 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
     double[/*K*/] _hits;            // the number of hits for hitratio, length: K
     int _K;               // TODO: Let user set K
     double _logloss;
+    transient double[] _priorDistribution;
 
     public IndependentMetricBuilderOrdinal() {}
 
-    public IndependentMetricBuilderOrdinal( int nclasses, String[] domain ) {
+    public IndependentMetricBuilderOrdinal( int nclasses, String[] domain, double[] priorDistribution) {
       super(nclasses,domain);
       _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domain.length][domain.length];
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
+      _priorDistribution = priorDistribution;
     }
-
-    public transient double [] _priorDistribution;
+    
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
     @Override public double[] perRow(double ds[], float[] yact) { return perRow(ds, yact, 1, 0); }

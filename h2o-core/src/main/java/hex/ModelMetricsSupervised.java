@@ -87,12 +87,12 @@ public class ModelMetricsSupervised extends ModelMetrics {
           if (aucTypeObject != null) {
             aucType = MultinomialAucType.valueOf((String)aucTypeObject);
           }
-          return new ModelMetricsMultinomial.IndependentMetricBuilderMultinomial(numberOfClasses, responseDomain, aucType);
+          return new ModelMetricsMultinomial.IndependentMetricBuilderMultinomial(numberOfClasses, responseDomain, aucType, mojoModel._priorClassDistrib);
         case Regression:
           Distribution distribution = getDistribution(distributionFamily, attributes);
           return new ModelMetricsRegression.IndependentMetricBuilderRegression(distribution);
         case Ordinal:
-          return new ModelMetricsOrdinal.IndependentMetricBuilderOrdinal(numberOfClasses, responseDomain);
+          return new ModelMetricsOrdinal.IndependentMetricBuilderOrdinal(numberOfClasses, responseDomain, mojoModel._priorClassDistrib);
         default:
           throw new RuntimeException(String.format("Model category {0} is not supported for supervised metric calculation.", mojoModel._category));
       }

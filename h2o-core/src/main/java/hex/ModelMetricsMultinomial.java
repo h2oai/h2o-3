@@ -387,11 +387,13 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     AUC2.AUCBuilder[/*nclasses*/][/*nclasses*/] _ovoAucs;
     AUC2.AUCBuilder[/*nclasses*/] _ovrAucs;
     MultinomialAucType _aucType;
+    transient double[] _priorDistribution;
 
     public IndependentMetricBuilderMultinomial() {}
 
-    public IndependentMetricBuilderMultinomial(int nclasses, String[] domain, MultinomialAucType aucType) {
+    public IndependentMetricBuilderMultinomial(int nclasses, String[] domain, MultinomialAucType aucType, double[] priorDistribution) {
       super(nclasses,domain);
+      _priorDistribution = priorDistribution;
       int domainLength = domain.length;
       _cm = domain.length > ConfusionMatrix.maxClasses() ? null : new double[domainLength][domainLength];
       _K = Math.min(10,_nclasses);
@@ -413,8 +415,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         }
       }
     }
-
-    public transient double [] _priorDistribution;
+    
     // Passed a float[] sized nclasses+1; ds[0] must be a prediction.  ds[1...nclasses-1] must be a class
     // distribution;
     @Override public double[] perRow(double ds[], float[] yact) { return perRow(ds, yact, 1, 0); }

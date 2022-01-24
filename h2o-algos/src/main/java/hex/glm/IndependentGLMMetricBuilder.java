@@ -53,12 +53,10 @@ public class IndependentGLMMetricBuilder extends IndependentMetricBuilderSupervi
             _metricBuilder = new IndependentMetricBuilderBinomial(domain, glmf._family.toDistributionFamily());
             break;
           case multinomial:
-            _metricBuilder = new IndependentMetricBuilderMultinomial(domain.length, domain, aucType);
-            ((IndependentMetricBuilderMultinomial) _metricBuilder)._priorDistribution = ymu;
+            _metricBuilder = new IndependentMetricBuilderMultinomial(domain.length, domain, aucType, ymu);
             break;
           case ordinal:
-            _metricBuilder = new IndependentMetricBuilderOrdinal(domain.length, domain);
-            ((IndependentMetricBuilderOrdinal) _metricBuilder)._priorDistribution = ymu;
+            _metricBuilder = new IndependentMetricBuilderOrdinal(domain.length, domain, ymu);
             break;
           default:
             _metricBuilder = new IndependentMetricBuilderRegression();
