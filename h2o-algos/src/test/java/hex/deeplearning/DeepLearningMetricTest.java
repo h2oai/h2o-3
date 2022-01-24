@@ -35,8 +35,7 @@ public class DeepLearningMetricTest extends MetricTest {
             params._distribution = DistributionFamily.gaussian;
             
             final double tolerance = 0.000001;
-            final boolean skipTrainingDataset = true;
-            testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance, skipTrainingDataset);
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
         } finally {
             Scope.exit();
         }
@@ -74,8 +73,7 @@ public class DeepLearningMetricTest extends MetricTest {
             params._distribution = DistributionFamily.multinomial;
             
             final double tolerance = 0.000001;
-            final boolean skipTrainingDataset = true; // TODO: investigate why AUC is different on training dataset.
-            testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance, skipTrainingDataset);
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
         } finally {
             Scope.exit();
         }
@@ -160,8 +158,8 @@ public class DeepLearningMetricTest extends MetricTest {
             params._ignored_columns = new String[] {"constWeight"};
 
             final double tolerance = 0.000001;
-            final boolean skipTrainingDataset = true; // TODO: investigate why AUC is different on training dataset.
-            testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance, skipTrainingDataset);
+
+            testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
         } finally {
             Scope.exit();
         }
@@ -176,7 +174,7 @@ public class DeepLearningMetricTest extends MetricTest {
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._autoencoder = true;
             params._hidden = new int[]{ 3 };
-            params._reproducible = true;
+            params._reproducible = false;
 
             final double tolerance = 0.000001;
             final Function2<Frame, Model, Vec[]> actualVectorsGetter = (frame, model) -> frame.vecs();
