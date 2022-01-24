@@ -445,6 +445,19 @@ Examples
       print(coeff_norm3)
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.37198951914000183, ‘DCAPS’: 0.1490515817762952, ‘PSA’: 0.25778793491797924}
 
+      # Using the above training information, build a model using mode = "backward":
+      bwModel = H2OModelSelectionEstimator(max_predictor_number=3, 
+                                           seed=12345, 
+                                           mode="backward")
+      bwModel.train(x=predictors, y=response, training_frame=prostate)
+      ModelSelection Model Summary: summary
+                        coefficient_names               z_values                                                                     p_values
+      ----------------- ------------------------------- ---------------------------------------------------------------------------  ----------------------------------------------------------------------------------------
+      with 1 predictors CAPSULE, Intercept              9.899643676508614, 92.43746760936982                                         1.070331637158796E-20, 1.3321139829486397E-261
+      with 2 predictors CAPSULE, PSA, Intercept         7.825700947986458, 5.733056921838707, 86.91622746127426                      5.144662722557474E-14, 2.023486352710146E-8, 1.7241718600984578E-251
+      with 3 predictors CAPSULE, DCAPS, PSA, Intercept  7.275417885570092, 2.964750742738588, 4.992785143892783, 30.274880599946904  2.0273323955515335E-12, 0.0032224082063575395, 9.124834372427609E-7, 7.417923313036E-103
+
+
 
 
 References
