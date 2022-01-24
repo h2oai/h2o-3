@@ -57,7 +57,6 @@ from h2o.estimators import H2OGradientBoostingEstimator, H2ODeepLearningEstimato
 from h2o.utils.typechecks import is_type
 from h2o.utils.shared_utils import temp_ctr  # unused in this file  but exposed here for symmetry with rest_ctr
 
-__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
 
 class TemporaryDirectory:
 
@@ -396,7 +395,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, separator
         h2o.download_csv(test[x], in_csv)
 
         # hack: the PredictCsv driver can't handle quoted strings, so remove them
-        f = open(in_csv, "r+", **__open_kwargs)
+        f = open(in_csv, "r+")
         csv = f.read()
         csv = re.sub('\"', "", csv)
         csv = re.sub(",", separator, csv)       # replace with arbitrary separator for input dataset
@@ -2983,11 +2982,11 @@ def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     :param hyper_parameters: dict containing hyper-parameters used
     """
     # save hyper-parameter file in test directory
-    with open(os.path.join(dir1, json_filename), 'w', **__open_kwargs) as test_file:
+    with open(os.path.join(dir1, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
 
     # save hyper-parameter file in sandbox
-    with open(os.path.join(dir2, json_filename), 'w', **__open_kwargs) as test_file:
+    with open(os.path.join(dir2, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
 
 
@@ -4165,7 +4164,7 @@ def write_H2OFrame_2_SVMLight(filename, h2oFrame):
     :param h2oFrame:
     :return:
     '''
-    fwriteFile = open(filename, 'w', **__open_kwargs)
+    fwriteFile = open(filename, 'w')
     ncol = h2oFrame.ncol
     nrow = h2oFrame.nrow
     fdataframe = h2oFrame.as_data_frame(use_pandas=False)
@@ -4190,7 +4189,7 @@ def write_H2OFrame_2_ARFF(filenameWithPath, filename, h2oFrame, uuidVecs, uuidNa
     :return:
     '''
 
-    fwriteFile = open(filenameWithPath, 'w', **__open_kwargs)
+    fwriteFile = open(filenameWithPath, 'w')
     nrow = h2oFrame.nrow
 
     # write the arff headers here
