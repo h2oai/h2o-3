@@ -10,6 +10,7 @@ import hex.genmodel.MojoReaderBackendFactory;
 import org.junit.Assert;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.fp.Function2;
 
@@ -97,6 +98,23 @@ public abstract class MetricTest extends TestUtil {
         ByteArrayInputStream inputStream = new ByteArrayInputStream(mojoData);
         return MojoReaderBackendFactory.createReaderBackend(inputStream, MojoReaderBackendFactory.CachingStrategy.MEMORY);
         
+    }
+
+    protected Frame dropNA(Frame frame, int filteredColumn) {
+        MRTask task = new MRTask() {
+            @Override
+            public void map(Chunk[] cs, NewChunk[] nc) {
+                for (int rowId = 0;  rowId < cs[filteredColumn].len(); rowId++) {
+                    if(!cs[filteredColumn].isNA(rowId)) {
+                        for(int colId = 0;  colId < cs.length; colId++) {
+                            nc[colId].addNum(cs[colId].atd(rowId));
+                        }
+                    }
+                }
+            }
+        };
+        task.doAll(frame.types(), frame);
+        return task.outputFrame(frame.names(), frame.domains());
     }
 
     protected ModelMetrics calculateMetricsViaIndependentBuilder(

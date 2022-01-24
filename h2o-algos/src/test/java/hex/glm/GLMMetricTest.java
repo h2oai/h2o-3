@@ -160,12 +160,13 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);
@@ -179,13 +180,14 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.bernoulli;
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);
@@ -199,13 +201,14 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);
@@ -219,13 +222,14 @@ public class GLMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GLMModel.GLMParameters params = new GLMModel.GLMParameters();
             params._response_column = response;
             params._family = GLMModel.GLMParameters.Family.ordinal;
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, glmConstructor, tolerance);

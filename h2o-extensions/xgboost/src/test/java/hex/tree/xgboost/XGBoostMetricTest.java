@@ -5,9 +5,10 @@ import hex.ModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.MRTask;
 import water.MetricTest;
 import water.Scope;
-import water.fvec.Frame;
+import water.fvec.*;
 
 import java.util.function.Function;
 
@@ -147,13 +148,16 @@ public class XGBoostMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame rawDataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
+            Frame dataset = Scope.track(dropNA(rawDataset, rawDataset.find(response)));
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.gaussian;
             parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);
@@ -167,7 +171,7 @@ public class XGBoostMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
@@ -175,6 +179,8 @@ public class XGBoostMetricTest extends MetricTest {
             parms._response_column = response;
             parms._distribution = DistributionFamily.bernoulli;
             parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000005;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);
@@ -188,14 +194,17 @@ public class XGBoostMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
-            dataset.toCategoricalCol(response);
+            Frame rawDataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
+            rawDataset.toCategoricalCol(response);
+            Frame dataset = Scope.track(dropNA(rawDataset, rawDataset.find(response)));
+
 
             XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, xgBoostConstructor, tolerance);

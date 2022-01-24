@@ -63,7 +63,7 @@ public class DRFMetricTest extends MetricTest {
         }
     }
 
-    @Ignore// TODO: Investigate why hit ratios are different
+    @Ignore // TODO: Investigate why hit ratios are different
     public void testIndependentModelMetricsCalculation_multinomial() {
         Scope.enter();
         try {
@@ -89,13 +89,14 @@ public class DRFMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
 
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.gaussian;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             final double tolerance = 0.000001;
             final boolean ignoreTrainingMetrics = true;
@@ -110,14 +111,15 @@ public class DRFMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.bernoulli;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             final double tolerance = 0.000001;
             final boolean ignoreTrainingMetrics = true;
@@ -127,19 +129,20 @@ public class DRFMetricTest extends MetricTest {
         }
     }
 
-    @Ignore // TODO: Investigate why hit ratios are different 
+    @Test
     public void testIndependentModelMetricsCalculationWithWeightColumn_multinomial() {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             final double tolerance = 0.000001;
             final boolean ignoreTrainingMetrics = true;

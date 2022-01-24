@@ -127,13 +127,14 @@ public class GBMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
 
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.gaussian;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, gbmConstructor, tolerance);
@@ -147,14 +148,15 @@ public class GBMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.bernoulli;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, gbmConstructor, tolerance);
@@ -168,14 +170,15 @@ public class GBMMetricTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._ntrees = 10;
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
-            parms._weights_column = "ID";
+            parms._weights_column = "variWeight";
+            parms._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, gbmConstructor, tolerance);

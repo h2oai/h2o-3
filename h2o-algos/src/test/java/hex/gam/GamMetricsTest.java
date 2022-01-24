@@ -222,13 +222,14 @@ public class GamMetricsTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
 
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
             params._gam_columns = new String[][]{{"PSA"}};
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
@@ -242,14 +243,15 @@ public class GamMetricsTest extends MetricTest {
         Scope.enter();
         try {
             String response = "CAPSULE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.bernoulli;
             params._gam_columns = new String[][]{{"PSA"}};
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
@@ -263,14 +265,15 @@ public class GamMetricsTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
             params._gam_columns = new String[][]{{"PSA"}};
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
@@ -284,14 +287,15 @@ public class GamMetricsTest extends MetricTest {
         Scope.enter();
         try {
             String response = "AGE";
-            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate.csv"));
+            Frame dataset = Scope.track(parseTestFile("smalldata/prostate/prostate_NA_weights.csv"));
             dataset.toCategoricalCol(response);
 
             GAMModel.GAMParameters params = new GAMModel.GAMParameters();
             params._response_column = response;
             params._family = GLMModel.GLMParameters.Family.ordinal;
             params._gam_columns = new String[][]{{"PSA"}};
-            params._weights_column = "ID";
+            params._weights_column = "variWeight";
+            params._ignored_columns = new String[] {"constWeight"};
 
             double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, gamConstructor, tolerance);
