@@ -84,7 +84,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
             this.thresholds_and_metric_scores = new TwoDimTableV3().fillFromImpl(thresholdsByMetrics);
             
             // fill AUUC table
-            String[] rowHeaders = new String[]{"AUUC value"};
+            String[] rowHeaders = new String[]{"AUUC value", "AUUC random value"};
             String[] metricNames = EnumUtils.getNames(AUUCType.class);
             colHeaders = ArrayUtils.remove(metricNames, Arrays.asList(metricNames).indexOf("AUTO"));
             types = new String[metricsLength];
@@ -96,9 +96,11 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
             TwoDimTable auucs = new TwoDimTable("AUUC table", "All types of AUUC", rowHeaders, colHeaders, types, formats, "AUUC type" );
             for(i = 0; i < metricsLength; i++) {
                 auucs.set(0, i, auuc.auucByType(metrics[i]));
+                auucs.set(1, i, auuc.auucRandomByType(metrics[i]));
             }
             this.auuc_table = new TwoDimTableV3().fillFromImpl(auucs);
 
+            rowHeaders = new String[]{"Qini value"};
             TwoDimTable qinis = new TwoDimTable("Qini values table", "All types of Qini values", rowHeaders, colHeaders, types, formats, "Qini values type" );
             for(i = 0; i < metricsLength; i++) {
                 qinis.set(0, i, auuc.qiniByType(metrics[i]));

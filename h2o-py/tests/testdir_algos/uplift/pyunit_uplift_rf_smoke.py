@@ -8,7 +8,7 @@ from h2o.estimators import H2OUpliftRandomForestEstimator
 
 
 def uplift_train_predict(uplift_metric, x_names, treatment_column, response_column, train_h2o, seed):
-    print("uplift_metric {0}".format(uplift_metric))
+    print("train_predict: uplift_metric {0}".format(uplift_metric))
     uplift_model = H2OUpliftRandomForestEstimator(
         ntrees=10,
         max_depth=5,
@@ -27,8 +27,8 @@ def uplift_train_predict(uplift_metric, x_names, treatment_column, response_colu
     return prediction['uplift_predict'].as_data_frame(use_pandas=True)["uplift_predict"]
 
 
-def uplift_train_plot(uplift_metric, x_names, treatment_column, response_column, train_h2o, seed):
-    print("uplift_metric {0}".format(uplift_metric))
+def uplift_train_performance_and_plot(uplift_metric, x_names, treatment_column, response_column, train_h2o, seed):
+    print("train_performance: uplift_metric {0}".format(uplift_metric))
     uplift_model = H2OUpliftRandomForestEstimator(
         ntrees=10,
         max_depth=5,
@@ -45,8 +45,9 @@ def uplift_train_plot(uplift_metric, x_names, treatment_column, response_column,
     perf = uplift_model.model_performance()
     perf.plot_uplift(plot=True, metric="gain")
     n, uplift = perf.plot_uplift(plot=False, metric="gain")
+    print(perf)
     print(uplift)
-    return uplift
+    return perf, uplift
 
 
 def uplift_random_forest_smoke():
@@ -73,9 +74,9 @@ def uplift_random_forest_smoke():
     assert 0.08 < uplift_predict_chi.mean() < 0.09, \
         "Not expected output: Mean prediction is suspiciously different. " + str(uplift_predict_chi.mean())
     
-    uplift_kl = uplift_train_plot("KL", x_names, treatment_column, response_column, train_h2o, seed)
-    uplift_euc = uplift_train_plot("euclidean", x_names, treatment_column, response_column, train_h2o, seed)
-    uplift_chi = uplift_train_plot("chi_squared", x_names, treatment_column, response_column, train_h2o, seed)
+    perf_kl,  uplift_kl = uplift_train_performance_and_plot("KL", x_names, treatment_column, response_column, train_h2o, seed)
+    perf_euc,  uplift_euc = uplift_train_performance_and_plot("euclidean", x_names, treatment_column, response_column, train_h2o, seed)
+    perf_chi, uplift_chi = uplift_train_performance_and_plot("chi_squared", x_names, treatment_column, response_column, train_h2o, seed)
 
     assert 93 < mean(uplift_kl) < 94, \
         "Not expected output: Mean uplift is suspiciously different. " + str(mean(uplift_kl))
@@ -85,6 +86,24 @@ def uplift_random_forest_smoke():
 
     assert 405 < mean(uplift_chi) < 406, \
         "Not expected output: Mean uplift is suspiciously different. " + str(mean(uplift_chi))
+    
+    assert 398 < perf_kl.auuc() < 399, \
+        "Not expected output: AUUC is suspiciously different. " + str(perf_kl.auuc())
+    
+    assert 9 < perf_kl.qini() < 10, \
+        "Not expected output: Qini is suspiciously different. " + str(perf_kl.gini())
+    
+    assert 403 < perf_euc.auuc() < 404, \
+        "Not expected output: AUUC is suspiciously different. " + str(perf_euc.auuc())
+
+    assert 14 < perf_euc.qini() < 15, \
+        "Not expected output: Qini is suspiciously different. " + str(perf_euc.gini())
+
+    assert 409 < perf_chi.auuc() < 410, \
+        "Not expected output: AUUC is suspiciously different. " + str(perf_chi.auuc())
+
+    assert 19 < perf_chi.qini() < 20, \
+        "Not expected output: Qini is suspiciously different. " + str(perf_chi.gini())
     
     
 if __name__ == "__main__":

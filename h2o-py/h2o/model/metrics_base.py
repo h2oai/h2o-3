@@ -207,6 +207,11 @@ class MetricsBase(h2o_meta()):
         
         if metric_type in types_w_uplift:
             print("AUUC: " + str(self.auuc()))
+            if self._metric_json["auuc_table"] is not None:
+                self._metric_json["auuc_table"].show()
+            print("Qini: " + str(self.qini()))
+            if self._metric_json["qini_table"] is not None:
+                self._metric_json["qini_table"].show()
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))

@@ -228,6 +228,11 @@ public class AUUC extends Iced{
         return auuc(idx);
     }
     
+    public double auucRandomByType(AUUCType type){
+        int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
+        return auucRandom(idx);
+    }
+    
     public double qiniByType(AUUCType type){
         int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
         return qini(idx);

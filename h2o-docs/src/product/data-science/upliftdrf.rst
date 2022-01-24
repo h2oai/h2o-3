@@ -202,6 +202,8 @@ By default, the following output displays:
    time, predictions, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Default AUUC metric** calculated based on ``auuc_type`` parameter
 -  **AUUC table** which contains all computed AUUC types (qini, lift, gain)
+-  **Default Qini value** calculated based on ``auuc_type`` parameter
+-  **Qini table** which contains all computed Qini values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
 
@@ -235,6 +237,17 @@ For some observation groups the results should be NaN. In this case, the results
 .. image:: /images/uplift_curve_qini.png
    :width: 640px
    :height: 480px
+
+
+Qini value calculation
+~~~~~~~~~~~~~~~~~~~~~~
+
+Qini value is calculated as the difference between the AUUC and area under the random uplift curve (random AUUC). The random AUUC is computed as diagonal from zero to overall gain uplift. See the plot below. 
+
+.. image:: /images/qini_value.png
+   :width: 640px
+   :height: 480px
+
 
 Examples
 ~~~~~~~~

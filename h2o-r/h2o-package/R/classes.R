@@ -652,6 +652,9 @@ setMethod("show", "H2OBinomialUpliftMetrics", function(object) {
     cat("Default AUUC:  ", object@metrics$AUUC, "\n", sep="")
     cat("All types of AUUC:  ", "\n", sep="")
     print(object@metrics$auuc_table)
+    cat("Default Qini value: ", object@metrics$qini, "\n", sep="")
+    cat("All types of Qini values:  ", "\n", sep="")
+    print(object@metrics$qini_table)
 })
 
 #' @rdname H2OModelMetrics-class
