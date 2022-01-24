@@ -19,6 +19,8 @@ from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
 import sphinx_rtd_theme
 
+__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
@@ -67,7 +69,7 @@ author = u'h2o'
 #
 # The short X.Y version.
 if os.path.exists("project_version"):
-    f = open("project_version", "r", encoding='utf-8')
+    f = open("project_version", "r", **__open_kwargs)
     version = f.readline().strip()
 else:
     version = "AnonDeveloperBuild"
