@@ -39,24 +39,11 @@ public class KmeansMetricTest extends MetricTest {
             
             final double tolerance = 0.0001;
             final Function2<Frame, Model, Vec[]> actualVectorsGetter = (frame, model) -> {
-                KMeansModel kMeansModel = (KMeansModel)model; 
-                MRTask standardizationTask  = new MRTask() {
-                    @Override
-                    public void map(Chunk[] chunks, NewChunk[] newChunks) {
-                        for (int chunkId = 0; chunkId < chunks.length; chunkId++) {
-                            for (int rowId = 0; rowId < chunks[chunkId]._len; ++rowId) {
-                                double value = chunks[chunkId].atd(rowId);
-                                double standardized = Kmeans_preprocessData(
-                                    value,
-                                    chunkId,
-                                    kMeansModel._output._normSub,
-                                    kMeansModel._output._normMul,
-                                    kMeansModel._output._mode);
-                                newChunks[chunkId].addNum(standardized);
-                            }
-                        }
-                    }
-                };
+                KMeansModel kMeansModel = (KMeansModel)model;
+                StandardizationTask standardizationTask  = new StandardizationTask(
+                    kMeansModel._output._normSub,
+                    kMeansModel._output._normMul,
+                    kMeansModel._output._mode);
                 standardizationTask.doAll(new byte[] {Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,}, frame.vecs());
                 return AppendableVec.closeAll(standardizationTask.appendables());
             };
@@ -64,6 +51,31 @@ public class KmeansMetricTest extends MetricTest {
             testIndependentlyCalculatedMetrics(dataset, params, kmeansConstructor, actualVectorsGetter, tolerance, ignoreTrainingMetrics);
         } finally {
             Scope.exit();
+        }
+    }
+    
+    class StandardizationTask extends MRTask<StandardizationTask> {
+
+        double[] _normSub;
+        double[] _normMul;
+        int[] _mode;
+        
+        public StandardizationTask(double[] normSub, double[] normMul, int[] mode) {
+            _normSub = normSub;
+            _normMul = normMul;
+            _mode = mode;
+        }
+        
+        
+        @Override
+        public void map(Chunk[] chunks, NewChunk[] newChunks) {
+            for (int chunkId = 0; chunkId < chunks.length; chunkId++) {
+                for (int rowId = 0; rowId < chunks[chunkId]._len; ++rowId) {
+                    double value = chunks[chunkId].atd(rowId);
+                    double standardized = Kmeans_preprocessData(value, chunkId, _normSub, _normMul, _mode);
+                    newChunks[chunkId].addNum(standardized);
+                }
+            }
         }
     }
 }
