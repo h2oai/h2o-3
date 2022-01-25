@@ -24,7 +24,7 @@ public class KmeansMetricTest extends MetricTest {
     };
 
     @BeforeClass
-    public static void setup() { stall_till_cloudsize(2); }
+    public static void setup() { stall_till_cloudsize(1); }
 
     @Test
     public void testIndependentModelMetricsCalculation() {
@@ -38,7 +38,7 @@ public class KmeansMetricTest extends MetricTest {
             params._k = 3;
             params._user_points = init._key;
             
-            final double tolerance = 0.0001;
+            final double tolerance = 0.000001;
             final Function2<Frame, Model, Vec[]> actualVectorsGetter = (frame, model) -> {
                 KMeansModel kMeansModel = (KMeansModel)model;
                 StandardizationTask standardizationTask  = new StandardizationTask(
