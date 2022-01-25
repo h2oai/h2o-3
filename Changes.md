@@ -2,6 +2,43 @@
 
 ## H2O
 
+### Zorn (3.36.0.2) - 1/24/2022
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html</a>
+
+#### Bug
+
+- [[PUBDEV-8540]](https://h2oai.atlassian.net/browse/PUBDEV-8540) - Updated XGBoostMojoModel to only consider the number of built trees, not the value of ``ntrees``.
+- [[PUBDEV-8537]](https://h2oai.atlassian.net/browse/PUBDEV-8537) - Fixed issue in AutoEncoder’s early stopping automatic selection by setting ``AUTO = MSE`` instead of ``deviance``.
+- [[PUBDEV-8530]](https://h2oai.atlassian.net/browse/PUBDEV-8530) - Fixed MOJO imports to retain information on weights column.
+- [[PUBDEV-8519]](https://h2oai.atlassian.net/browse/PUBDEV-8519) - Fixed XGBoost errors on Infogram by improving support for XGBoost.
+- [[PUBDEV-8517]](https://h2oai.atlassian.net/browse/PUBDEV-8517) - Fixed MOJO import automatically re-using original Model ID for current release cycle.
+- [[PUBDEV-8513]](https://h2oai.atlassian.net/browse/PUBDEV-8513) - Fixed import of Parquet files from S3.
+- [[PUBDEV-8507]](https://h2oai.atlassian.net/browse/PUBDEV-8507) - Fixed `h2o.group_by` warning present in documentation example caused by function only reading the first column when several are provided.
+- [[PUBDEV-8488]](https://h2oai.atlassian.net/browse/PUBDEV-8488) - Added check to ensure that a model supports MOJOs to prevent production of bad MOJOs.
+- [[PUBDEV-8483]](https://h2oai.atlassian.net/browse/PUBDEV-8483) - Fixed Python warnings before model training when training with offset, weights, and fold columns.
+- [[PUBDEV-8481]](https://h2oai.atlassian.net/browse/PUBDEV-8481) - Fixed MOJO upload in Python.
+- [[PUBDEV-8460]](https://h2oai.atlassian.net/browse/PUBDEV-8460) - Fixed error in uploading pandas DataFrame to H2O by enforcing `uft-8` encoding.
+- [[PUBDEV-8386]](https://h2oai.atlassian.net/browse/PUBDEV-8386) - Customized FormAuthenticator to use relative redirects.
+
+
+#### Improvement
+
+- [[PUBDEV-8521]](https://h2oai.atlassian.net/browse/PUBDEV-8521) - Removed numpy dependency for Infogram.
+
+#### New Feature
+
+- [[PUBDEV-8428]](https://h2oai.atlassian.net/browse/PUBDEV-8428) - Added backward selection method for ModelSelection. 
+
+#### Task
+
+- [[PUBDEV-8542]](https://h2oai.atlassian.net/browse/PUBDEV-8542) - Added support to PredictCsv for testing concurrent predictions.
+
+#### Docs
+
+- [[PUBDEV-8527]](https://h2oai.atlassian.net/browse/PUBDEV-8527) -  Added backward mode documentation to ModelSelection.
+- [[PUBDEV-8468]](https://h2oai.atlassian.net/browse/PUBDEV-8468) - Updated Kubernetes Headless Service and StatefulSet documentation.
+
 ### Zorn (3.36.0.1) - 12/29/2021
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.html</a>
@@ -52,7 +89,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/1/index.h
 - [[PUBDEV-8327]](https://h2oai.atlassian.net/browse/PUBDEV-8327) - Fixed bullet list formatting issues. 
 - [[PUBDEV-7903]](https://h2oai.atlassian.net/browse/PUBDEV-7903) - Updated R Reference Guide list.
 
-### Zizler (3.34.0.8) - 1/13/2021
+### Zizler (3.34.0.8) - 1/13/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zizler/8/index.html</a>
 
