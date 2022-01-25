@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zorn (3.36.0.2) - 1/24/2022
+### Zorn (3.36.0.2) - 1/25/2022
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.html</a>
 
