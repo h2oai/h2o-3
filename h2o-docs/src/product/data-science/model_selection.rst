@@ -1,10 +1,11 @@
 ModelSelection
 --------------
 
-To help users select the best predictor subsets from their datasets for model building, we have implemented the ModelSelection toolbox. There are currently two modes to select the predictor subsets:
+We implemented the ModelSelection toolbox based on GLM at H2O to help users select the best predictor subsets from their dataset for model building. We have currently implemented three modes to select the predictor subsets:
 
 1. ``mode = "allsubsets"`` where all possible combinations of predictor subsets are generated for a given subset size. A model is built for each subset and the one with the highest :math:`R^2` is returned. The best subsets are also returned for subset size :math:`1, 2, ..., n`. This mode guarantees to return the predictor subset with the highest :math:`R^2` value at the cost of computation complexity.
 2. ``mode = "maxr"`` where a sequential replacement method is used to find the best subsets for subset size of :math:`1, 2, ..., n`. However, the predictor subsets are not guaranteed to have the highest :math:`R^2`` value.
+3. ``mode = "backward"`` where a model is built starting with all predictors. The predictor with the smallest absolute z-value (or z-score) is dropped after each model is built. This process repeats until only one predictor remains or until the number of predictors equal to ``min_predictor_number`` is reached. The model build can also be stopped using ``p_values_threshold``. 
 
 This model only supports GLM regression families. 
 
@@ -17,7 +18,7 @@ Defining a ModelSelection Model
 
    -  For a regression model only, this column must be numeric (**Real** or **Int**).
 
-- **mode**: (Required) Specify the model selection algorithm to use. This can be set to either **maxr** (default) or **allsubsets**.
+- **mode**: (Required) Specify the model selection algorithm to use. This can be set to either **maxr** (default), **allsubsets**, or **backward**.
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
@@ -48,6 +49,29 @@ Defining a ModelSelection Model
 -  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation weights, which are used for bias correction. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. 
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+-  `family <algo-params/family.html>`__: Specify the model type. For ``maxr`` and ``allsubsets``, only **gaussian** is supported. For ``backward``, all but **ordinal** and **multinomial** are supported.
+
+   -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). 
+   -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
+   -  If the family is **quasibinomial**, the response must be numeric.
+   -  If the family is **poisson**, the response must be numeric and non-negative (**Int**).
+   -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
+   -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
+   -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
+   - If the family is **AUTO** (default),
+
+      - and the response is **Enum** with cardinality = 2, then the family is automatically determined as **binomial**.
+      - and the response is numeric (**Real** or **Int**), then the family is automatically determined as **gaussian**.
+
+-  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
+   specified for **Family**) Specify the Tweedie variance power (defaults to 0).
+
+-  `tweedie_link_power <algo-params/tweedie_link_power.html>`__: (Only applicable if *Tweedie* is specified
+   for **Family**) Specify the Tweedie link power (defaults to 0).
+
+-  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 0.  
 
 -  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family. AUTO (default) will set the solver based on the given data and other parameters.
 
@@ -140,6 +164,10 @@ Defining a ModelSelection Model
 
 - **max_predictor_number**: Maximum number of predictors to be considered when building GLM models. Defaults to 1.
 
+- **min_predictor_number**: For ``mode = "backward"`` only.  Minimum number of predictors to be considered when building GLM models starting with all predictors to be included. Defaults to ``1``.
+
+- **p_values_threshold**: For ``mode = "backward"`` only. If specified, will stop the model building process when all coefficient p-values drop to or below this threshold. Defaults to ``0.0``.
+
 
 Understanding ModelSelection ``mode = allsubsets``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -148,7 +176,7 @@ Setting the H2O ModelSelection ``mode = allsubsets`` guarantees the return of th
 
 For each predictor subset size :math:`x`:
 
-- If there are :math:`n` predictors and we are looking at using :math:`x` predictors, all combinations of :math:`x` from :math:`n` predictors are first generated;
+- For :math:`n` predictors and using :math:`x` predictors, first generate all possible combinations of :math:`x` predictors out of the :math:`n` predictors;
 - for each element in the combination of :math:`x` predictors: generate the training frame, build the model, and look at the :math:`R^2` value of the model;
 - the best :math:`R^2` value, the predictor names, and the ``model_id`` of the best models are stored in arrays as well as H2OFrame;
 - access functions are written in Java/R/Python to extract coefficients associated with the models with the best :math:`R^2` values.
@@ -177,7 +205,7 @@ The H2O ModelSelection ``mode = maxr`` is implemented using the sequential repla
 
   a. fixing the second predictor, choose a different predictor for the first predictor from the remaining predictors *C, D, ..., Z* (skipping predictor *A* as it was chosen already by forward step; *B* is taken as the second predictor). Then, build a GLM model for each new subset of (*CB, DB, EB, ..., ZB*). Save the model with the highest :math:`R^2` (for example, {*DB*}) from all models built with predictor subsets (*CB, DB, EB, ..., ZB*);
   b. fixing the first predictor, choose a different second predictor from the remaining predictor subset. Then, build a GLM model for each new subset generated. Save the model with the highest :math:`R^2` from all models built;
-  c. compare the :math:`R^2` value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest :math:`R^2`. If the best model is built with {*AB*}, we are done because steps 4(a) and 4(b) generated no improvement. If the best model is built with {*DB*}, repeat steps 4(a), 4(b), and 4(c) until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.
+  c. compare the :math:`R^2` value from the models built with forward step, step 4(a), and step 4(b) and choose the subset with the highest :math:`R^2`. If the best model is built with {*AB*}, proceed to step 5 because steps 4(a) and 4(b) generated no improvement. If the best model is built with {*DB*}, repeat steps 4(a), 4(b), and 4(c) until no improvement is found. For the two predictor case, the first 4(b) can be skipped since it is already done in the forward step.  
 
 5. Start with the best :math:`n` predictor subset and forward step for :math:`n` predictor subsets:
 
@@ -193,6 +221,58 @@ The H2O ModelSelection ``mode = maxr`` is implemented using the sequential repla
   b. from all the *n* best models found from step 6(a), if the best :math:`R^2` value has improved from the forward step or the previous 6(a), return to 6(a). If no improvement is found, break and just take the best :math:`R^2` model as the one to save.
 
 Again, the best :math:`R^2` value, the predictor names, and the ``model_id`` of the best models are stored in arrays as well as H2OFrame. Additionally, coefficients associated with the models built with all the predictor subset sizes are available and accessible as well.
+
+Understanding ModelSelection ``mode = backward``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. A model with all predictors is built;
+2. the z-values of all coefficients (except ``intercept``) are considered. The coefficient with the smallest z-value magnitude is eliminated; 
+3. a new model is built with the remaining predictors;
+4. steps 2 and 3 are repeated until 
+
+    a. no predictors are left, 
+    b. ``min_predictor_number - 1`` predictors are left, or 
+    c. ``p_values_threshold`` condition is satisfied.
+
+To increase flexibility in the model building process, you can stop the model building process by specifying a ``p_values_threshold``. When the ``p_values`` of all predictors (except ``intercept``) are :math:`\leq` ``p_values_threshold``, the model building process will stop as well.
+
+Interpreting a ModelSelection Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Result Frame
+''''''''''''
+
+To help you understand your model, a result frame is generated at the end of the building process. For ``maxr`` and ``allsubsets`` modes, the result frame will contain:
+
+- **model_name**: string describing how many predictors are used to build the model
+- **model_id**: model ID of the GLM model built. You can use this model ID to obtain the original GLM model and perform scoring or anything else you want to do with an H2O model
+- **best_r2_value**: the highest :math:`R^2` value from the predictor subsets of a fixed size
+- **predictor_names**: names of the predictors used to build the model
+
+For ``backward`` mode, the result frame will contain:
+
+- **model_name**: string describing how many predictors are used to build the model
+- **model_id**: model ID of the GLM model built. You can use this model ID to obtain the original GLM model and perform scoring or anything else you want to do with an H2O model
+- **z_values**: z-values of all coefficients of the GLM model
+- **p_values**: p-values of all coefficients of the GLM model
+- **coefficient_names**: coefficients (including ``intercept``) of the GLM model
+
+Model Coefficients
+''''''''''''''''''
+
+The coefficients of each model built for each predictor size are available. You can see how to access the coefficients in the `Examples <#examples>`__ section.
+
+Cross-Validation
+''''''''''''''''
+
+ModelSelection supports cross-validation and the use of the validation dataset for ``mode = "maxr"`` and ``mode = "allsubsets"``. Only ``family = gaussian`` is supported.
+
+For ``mode = "backward"``, cross-validation is not supported as the model selection process depends on training z-values and p-values. All GLM families are supported except for ``ordinal`` and ``multinomial``. 
+
+Model Scoring
+'''''''''''''
+
+The model IDs of all models built for each predictor subset size are stored in the result frame. These IDs can be used to obtain the original models. They can be used for scoring just like any returned H2O models.
 
 
 Examples
@@ -365,6 +445,19 @@ Examples
       print(coeff_norm3)
       # {‘Intercept’: 6.38421052631579, ‘CAPSULE’: 0.37198951914000183, ‘DCAPS’: 0.1490515817762952, ‘PSA’: 0.25778793491797924}
 
+      # Using the above training information, build a model using mode = "backward":
+      bwModel = H2OModelSelectionEstimator(max_predictor_number=3, 
+                                           seed=12345, 
+                                           mode="backward")
+      bwModel.train(x=predictors, y=response, training_frame=prostate)
+      ModelSelection Model Summary: summary
+                        coefficient_names               z_values                                                                     p_values
+      ----------------- ------------------------------- ---------------------------------------------------------------------------  ----------------------------------------------------------------------------------------
+      with 1 predictors CAPSULE, Intercept              9.899643676508614, 92.43746760936982                                         1.070331637158796E-20, 1.3321139829486397E-261
+      with 2 predictors CAPSULE, PSA, Intercept         7.825700947986458, 5.733056921838707, 86.91622746127426                      5.144662722557474E-14, 2.023486352710146E-8, 1.7241718600984578E-251
+      with 3 predictors CAPSULE, DCAPS, PSA, Intercept  7.275417885570092, 2.964750742738588, 4.992785143892783, 30.274880599946904  2.0273323955515335E-12, 0.0032224082063575395, 9.124834372427609E-7, 7.417923313036E-103
+
+
 
 
 References
@@ -372,5 +465,6 @@ References
 
 .. _ref1:
 
-1. Alan Miller, Subset Selection in Regression, section 3.5, Second Edition, 2002 Chapman &
-Hall/CRC.
+1. Alan Miller, Subset Selection in Regression, section 3.5, Second Edition, 2002 Chapman & Hall/CRC.
+
+2. Trevor Hastie, Robert Tibshirani, Jerome Friedman, The Elements of Statistical Learning, Section 3.3.2, Second Edition, Springer, 2008.
