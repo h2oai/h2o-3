@@ -76,7 +76,7 @@ public class DRFMetricTest extends MetricTest {
             parms._response_column = response;
             parms._distribution = DistributionFamily.multinomial;
 
-            final double tolerance = 0.000001;
+            final double tolerance = 0.00001;
             final boolean ignoreTrainingMetrics = true;
             testIndependentlyCalculatedSupervisedMetrics(dataset, parms, drfConstructor, tolerance, ignoreTrainingMetrics);
         } finally {
