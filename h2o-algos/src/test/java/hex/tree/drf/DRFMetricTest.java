@@ -9,12 +9,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.fp.Function;
 
-import java.util.function.Function;
 
 public class DRFMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> drfConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> drfConstructor = parameters -> {
         DRFModel.DRFParameters drfParameters = (DRFModel.DRFParameters)parameters;
         return new DRF(drfParameters);
     };

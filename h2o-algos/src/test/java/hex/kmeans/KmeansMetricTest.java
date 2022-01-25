@@ -9,21 +9,22 @@ import water.MetricTest;
 import water.Scope;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.fp.Function;
 import water.util.fp.Function2;
 
-import java.util.function.Function;
+
 
 import static hex.genmodel.GenModel.Kmeans_preprocessData;
 
 public class KmeansMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> kmeansConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> kmeansConstructor = parameters -> {
         KMeansModel.KMeansParameters kmeansParameters = (KMeansModel.KMeansParameters)parameters;
         return new KMeans(kmeansParameters);
     };
 
     @BeforeClass
-    public static void setup() { stall_till_cloudsize(1); }
+    public static void setup() { stall_till_cloudsize(2); }
 
     @Test
     public void testIndependentModelMetricsCalculation() {

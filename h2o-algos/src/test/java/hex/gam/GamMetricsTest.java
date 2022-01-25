@@ -15,9 +15,9 @@ import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.RandomUtils;
+import water.util.fp.Function;
 
 import java.util.Random;
-import java.util.function.Function;
 
 import static hex.gam.GamTestPiping.massageFrame;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;

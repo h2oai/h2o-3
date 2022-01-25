@@ -8,12 +8,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.fp.Function;
 
-import java.util.function.Function;
 
 public class GBMMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> gbmConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> gbmConstructor = parameters -> {
         GBMModel.GBMParameters gbmParameters = (GBMModel.GBMParameters)parameters;
         return new GBM(gbmParameters);
     };

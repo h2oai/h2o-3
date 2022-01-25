@@ -8,12 +8,12 @@ import org.junit.Test;
 import water.MetricTest;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.fp.Function;
 
-import java.util.function.Function;
 
 public class GLMMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> glmConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> glmConstructor = parameters -> {
         GLMModel.GLMParameters glmParameters = (GLMModel.GLMParameters)parameters;
         return new GLM(glmParameters);
     };

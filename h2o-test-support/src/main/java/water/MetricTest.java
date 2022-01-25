@@ -12,13 +12,13 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.fp.Function;
 import water.util.fp.Function2;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.function.Function;
 
 public abstract class MetricTest extends TestUtil {
     static class CalculateMetricsViaIndependentBuilderTask extends MRTask<CalculateMetricsViaIndependentBuilderTask> {

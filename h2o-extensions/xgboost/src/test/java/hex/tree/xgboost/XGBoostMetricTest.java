@@ -9,12 +9,12 @@ import water.MRTask;
 import water.MetricTest;
 import water.Scope;
 import water.fvec.*;
+import water.util.fp.Function;
 
-import java.util.function.Function;
 
 public class XGBoostMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> xgBoostConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> xgBoostConstructor = parameters -> {
         XGBoostModel.XGBoostParameters xgBoostParameters = (XGBoostModel.XGBoostParameters)parameters;
         return new XGBoost(xgBoostParameters);
     };

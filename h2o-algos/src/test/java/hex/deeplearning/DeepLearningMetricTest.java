@@ -9,13 +9,12 @@ import org.junit.Test;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.fp.Function;
 import water.util.fp.Function2;
-
-import java.util.function.Function;
 
 public class DeepLearningMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> dlConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> dlConstructor = parameters -> {
         DeepLearningModel.DeepLearningParameters dlParameters = (DeepLearningModel.DeepLearningParameters)parameters;
         return new DeepLearning(dlParameters);
     };

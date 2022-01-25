@@ -11,12 +11,12 @@ import org.junit.Test;
 import water.MetricTest;
 import water.Scope;
 import water.fvec.Frame;
+import water.util.fp.Function;
 
-import java.util.function.Function;
 
 public class RuleFitMetricTest extends MetricTest {
     
-    private Function<Model.Parameters, ModelBuilder> ruleFitConstructor =  parameters -> {
+    private Function<Model.Parameters, ModelBuilder> ruleFitConstructor = parameters -> {
         RuleFitModel.RuleFitParameters ruleFitParameters = (RuleFitModel.RuleFitParameters)parameters;
         return new RuleFit(ruleFitParameters);
     };
