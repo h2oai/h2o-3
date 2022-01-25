@@ -15,6 +15,7 @@ import tokenize
 from future.builtins.misc import open
 
 ROOT_DIR = "../../h2o-py/h2o"
+__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
 
 def test(x):
     """identity."""
@@ -40,7 +41,7 @@ def find_magic_in_file(filename):
     :param filename: file to search
     :returns: a tuple containing the spell and then maybe some extra words (or None if no magic present)
     """
-    with open(filename, "rt", encoding="utf-8") as f:
+    with open(filename, "rt", **__open_kwargs) as f:
         for line in f:
             if line.startswith("#"):
                 comment = line[1:].strip()
@@ -58,7 +59,7 @@ def parse_python_file(filename):
 
 
 
-    with open(filename, "rt", encoding="utf-8") as f:
+    with open(filename, "rt", **__open_kwargs) as f:
         tokens = list(tokenize.generate_tokens(f.readline))
         tokens = normalize_tokens(tokens)
         module = ChunkCode(tokens, 0, len(tokens))
@@ -72,7 +73,7 @@ def main():
     # magic_files = {}
     for filename in locate_files(ROOT_DIR):
         print("Processing %s" % filename)
-        with open(filename, "rt", encoding='utf-8') as f:
+        with open(filename, "rt", **__open_kwargs) as f:
             tokens = list(tokenize.generate_tokens(f.readline))
             text1 = tokenize.untokenize(tokens)
             ntokens = normalize_tokens(tokens)
