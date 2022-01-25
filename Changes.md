@@ -36,6 +36,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zorn/2/index.h
 
 #### Docs
 
+- [[PUBDEV-8527]](https://h2oai.atlassian.net/browse/PUBDEV-8527) -  Added backward mode documentation to ModelSelection.
 - [[PUBDEV-8468]](https://h2oai.atlassian.net/browse/PUBDEV-8468) - Updated Kubernetes Headless Service and StatefulSet documentation.
 
 ### Zorn (3.36.0.1) - 12/29/2021
