@@ -24,7 +24,7 @@ public abstract class MetricTest extends TestUtil {
     static class CalculateMetricsViaIndependentBuilderTask extends MRTask<CalculateMetricsViaIndependentBuilderTask> {
 
         private ModelMetrics.IndependentMetricBuilder _metricBuilder;
-        private Model _model;
+        private byte[] _mojoData;
         private ModelMetrics _resultMetrics = null;
         private int _nPredictions;
         private int _nActual;
@@ -36,12 +36,12 @@ public abstract class MetricTest extends TestUtil {
         }
 
         CalculateMetricsViaIndependentBuilderTask(
-                Model model,
+                byte[] mojoData,
                 int nPredictions,
                 int nActual,
                 boolean isOffsetCol,
                 boolean isWeightCol) {
-            _model = model;
+            _mojoData = mojoData;
             _nPredictions = nPredictions;
             _nActual = nActual;
             _isOffsetCol = isOffsetCol;
@@ -56,12 +56,9 @@ public abstract class MetricTest extends TestUtil {
         
         @Override
         protected void setupLocal() {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            _model.getMojo().writeTo(outputStream);
-            byte[] mojoData = outputStream.toByteArray();
             try {
-                MojoModel mojoModel = ModelMojoReader.readFrom(getReaderBackend(mojoData), true);
-                _metricBuilder = (ModelMetrics.IndependentMetricBuilder)ModelMojoReader.readMetricBuilder(mojoModel, getReaderBackend(mojoData));
+                MojoModel mojoModel = ModelMojoReader.readFrom(getReaderBackend(_mojoData), true);
+                _metricBuilder = (ModelMetrics.IndependentMetricBuilder)ModelMojoReader.readMetricBuilder(mojoModel, getReaderBackend(_mojoData));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -159,9 +156,13 @@ public abstract class MetricTest extends TestUtil {
         System.arraycopy(actualVectors, 0, vectorsForCalculation, predictionVectors.length, actualVectors.length);
         System.arraycopy(offsetCol, 0, vectorsForCalculation, predictionVectors.length + actualVectors.length, offsetCol.length);
         System.arraycopy(weightCol, 0, vectorsForCalculation, predictionVectors.length + actualVectors.length + offsetCol.length, weightCol.length);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        model.getMojo().writeTo(outputStream);
+        byte[] mojoData = outputStream.toByteArray();
         
         CalculateMetricsViaIndependentBuilderTask calculationTask = new CalculateMetricsViaIndependentBuilderTask(
-            model,
+            mojoData,
             predictionVectors.length,
             actualVectors.length,
             offsetCol.length > 0,
