@@ -58,6 +58,6 @@ def test_train_verbosity():
 
 
 pu.run_tests([
-    # test_event_log,
+    test_event_log,
     test_train_verbosity
 ])
