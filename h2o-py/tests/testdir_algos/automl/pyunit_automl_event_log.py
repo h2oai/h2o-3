@@ -53,7 +53,7 @@ def test_train_verbosity():
         make_aml('error').train(y=ds.target, training_frame=ds.train)
     
     if disabled is not None:  # no check in Py2 
-        print(len(disabled.out), len(debug.out), len(info.out), len(warn.out), len(error.out))
+        print(len(disabled.out), len(error.out), len(warn.out), len(info.out), len(debug.out))
         assert len(disabled.out) <= len(error.out) <= len(warn.out) < len(info.out) < len(debug.out)
 
 
