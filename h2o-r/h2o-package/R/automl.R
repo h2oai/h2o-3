@@ -422,7 +422,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   try({
       if (job$progress > ifelse(is.null(state$last_job_progress), 0, state$last_job_progress)) {
         project_name <- job$dest$name
-        events <- .automl.fetch_state(project_name, properties=list())$json$event_log_table
+        events <- .automl.fetch_state(project_name, properties=list(), verbosity=verbosity)$json$event_log_table
         last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
         if (nrow(events) > last_nrows) {
           for (row in (last_nrows+1):nrow(events)) {
@@ -461,9 +461,11 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   return(frame)
 }
 
-.automl.fetch_state <- function(run_id, properties=NULL) {
+.automl.fetch_state <- function(run_id, properties=NULL, verbosity=NULL) {
   # GET AutoML job and leaderboard for project
-  state_json <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
+  params <- list()
+  if (!is.null(verbosity)) params$verbosity <- verbosity
+  state_json <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id), .params=params)
   project_name <- state_json$project_name
   automl_id <- state_json$automl_id$name
   is_leaderboard_empty <- all(dim(state_json$leaderboard_table) == c(1, 1)) && state_json$leaderboard_table[1, 1] == ""
