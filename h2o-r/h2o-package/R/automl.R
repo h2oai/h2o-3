@@ -426,7 +426,9 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
         last_nrows <- ifelse(is.null(state$last_events_nrows), 0, state$last_events_nrows)
         if (nrow(events) > last_nrows) {
           for (row in (last_nrows+1):nrow(events)) {
-            cat(paste0("\n", events[row, 'timestamp'], ': ', events[row, 'message']))
+            ts <- events[row, 'timestamp']
+            msg <- events[row, 'message']
+            if (any(nzchar(c(ts, msg)))) cat(paste0("\n", ts, ': ', msg))
           }
           state$last_events_nrows <- nrow(events)
         }
