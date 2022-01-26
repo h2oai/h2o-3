@@ -1,8 +1,11 @@
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.model import ModelBase
+from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
 

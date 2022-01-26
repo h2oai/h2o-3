@@ -36,17 +36,28 @@ def test_train_verbosity():
                                                 stopping_tolerance=0.01,  # triggers a warning event log message
                                                 seed=1234,
                                                 verbosity=verbosity)
-    print("verbosity off")
-    make_aml().train(y=ds.target, training_frame=ds.train)
-    print("verbosity debug")
-    make_aml('debug').train(y=ds.target, training_frame=ds.train)
-    print("verbosity info")
-    make_aml('info').train(y=ds.target, training_frame=ds.train)
-    print("verbosity warn")
-    make_aml('warn').train(y=ds.target, training_frame=ds.train)
+    print("\n\nverbosity off")
+    with pu.capture_print() as disabled:
+        make_aml().train(y=ds.target, training_frame=ds.train)
+    print("\n\nverbosity debug")
+    with pu.capture_print() as debug:
+        make_aml('debug').train(y=ds.target, training_frame=ds.train)
+    print("\n\nverbosity info")
+    with pu.capture_print() as info:
+        make_aml('info').train(y=ds.target, training_frame=ds.train)
+    print("\n\nverbosity warn")
+    with pu.capture_print() as warn:
+        make_aml('warn').train(y=ds.target, training_frame=ds.train)
+    print("\n\nverbosity error")
+    with pu.capture_print() as error:
+        make_aml('error').train(y=ds.target, training_frame=ds.train)
+    
+    if disabled is not None:  # no check in Py2 
+        print(len(disabled.out), len(debug.out), len(info.out), len(warn.out), len(error.out))
+        assert len(disabled.out) <= len(error.out) <= len(warn.out) < len(info.out) < len(debug.out)
 
 
 pu.run_tests([
-    test_event_log,
+    # test_event_log,
     test_train_verbosity
 ])

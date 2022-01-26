@@ -1,13 +1,12 @@
 # Py2 compat
 from __future__ import print_function
-
-import matplotlib
 from future import standard_library
 
 standard_library.install_aliases()
 from past.builtins import basestring
 
 # standard lib
+from contextlib import contextmanager
 import copy
 import datetime
 from decimal import *
@@ -37,6 +36,7 @@ except:
     from io import StringIO  # py3
     
 # 3rd parties
+import matplotlib
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
@@ -46,6 +46,7 @@ import scipy.special
 sys.path.insert(1, "../../")
 
 import h2o
+from h2o.utils.compatibility import PY2
 from h2o.model.binomial import H2OBinomialModel
 from h2o.model.clustering import H2OClusteringModel
 from h2o.model.multinomial import H2OMultinomialModel
@@ -104,6 +105,9 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(**kwargs)
 
+    def __getitem__(self, item):
+        return self.__dict__.get(item)
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -123,6 +127,43 @@ class Namespace:
 def ns(**kwargs):
     return Namespace(**kwargs)
 
+
+@contextmanager
+def capture_print(default_print_enabled=True, capture_print_to_files=False):
+    if PY2:
+        yield None  # disabling for Py2, because Py2 sucks (I don't manage to change builtin print)
+        return
+
+    import builtins
+    ori_print = builtins.print
+    captures = ns(out=[], err=[])
+
+    def new_print(*args, **kwargs):  # using **kwargs instead of explicit keyword arguments to make Py2.7 happy
+        sep = kwargs.get('sep', ' ')
+        end = kwargs.get('end', '\n')
+        file = kwargs.get('file')
+        
+        if not capture_print_to_files and file not in [None, sys.stdout, sys.stderr]:
+            return ori_print(*args, **kwargs)
+
+        cap_name = ('out' if file in [None, sys.stdout]
+                    else 'err' if file is sys.stderr 
+                    else file.name)
+        
+        cap = captures.__dict__.get(cap_name)
+        if cap is None:
+            cap = captures.__dict__[cap_name] = []
+        entry = sep.join(map(str, args))+end  # concatenate args as normal print would do
+        cap.append(entry)
+        if default_print_enabled:
+            ori_print(*args, **kwargs)
+
+    try:
+        builtins.print = new_print
+        yield captures
+    finally:
+        builtins.print = ori_print
+    
 
 def gen_random_uuid(numberUUID):
     uuidVec = numberUUID*[None]
