@@ -32,6 +32,7 @@ public class DeepLearningMetricTest extends MetricTest {
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
+            params._reproducible = true;
             
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
@@ -51,6 +52,7 @@ public class DeepLearningMetricTest extends MetricTest {
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.bernoulli;
+            params._reproducible = true;
             
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
@@ -70,6 +72,7 @@ public class DeepLearningMetricTest extends MetricTest {
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._response_column = response;
             params._distribution = DistributionFamily.multinomial;
+            params._reproducible = true;
             
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
@@ -92,6 +95,7 @@ public class DeepLearningMetricTest extends MetricTest {
             params._response_column = response;
             params._distribution = DistributionFamily.gaussian;
             params._offset_column = offsetColumn;
+            params._reproducible = true;
 
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
@@ -113,6 +117,7 @@ public class DeepLearningMetricTest extends MetricTest {
             params._distribution = DistributionFamily.gaussian;
             params._weights_column = "variWeight";
             params._ignored_columns = new String[] {"constWeight"};
+            params._reproducible = true;
 
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
@@ -134,6 +139,7 @@ public class DeepLearningMetricTest extends MetricTest {
             params._distribution = DistributionFamily.bernoulli;
             params._weights_column = "variWeight";
             params._ignored_columns = new String[] {"constWeight"};
+            params._reproducible = true;
 
             final double tolerance = 0.000001;
             testIndependentlyCalculatedSupervisedMetrics(dataset, params, dlConstructor, tolerance);
@@ -155,6 +161,7 @@ public class DeepLearningMetricTest extends MetricTest {
             params._distribution = DistributionFamily.multinomial;
             params._weights_column = "variWeight";
             params._ignored_columns = new String[] {"constWeight"};
+            params._reproducible = true;
 
             final double tolerance = 0.000001;
 
@@ -173,7 +180,7 @@ public class DeepLearningMetricTest extends MetricTest {
             DeepLearningModel.DeepLearningParameters params = new DeepLearningModel.DeepLearningParameters();
             params._autoencoder = true;
             params._hidden = new int[]{ 3 };
-            params._reproducible = false;
+            params._reproducible = true;
 
             final double tolerance = 0.000001;
             final Function2<Frame, Model, Vec[]> actualVectorsGetter = (frame, model) -> frame.vecs();

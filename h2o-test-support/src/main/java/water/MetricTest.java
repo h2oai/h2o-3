@@ -24,6 +24,7 @@ public abstract class MetricTest extends TestUtil {
     static class CalculateMetricsViaIndependentBuilderTask extends MRTask<CalculateMetricsViaIndependentBuilderTask> {
 
         private ModelMetrics.IndependentMetricBuilder _metricBuilder;
+        private Model _model;
         private ModelMetrics _resultMetrics = null;
         private int _nPredictions;
         private int _nActual;
@@ -35,16 +36,35 @@ public abstract class MetricTest extends TestUtil {
         }
 
         CalculateMetricsViaIndependentBuilderTask(
-                ModelMetrics.IndependentMetricBuilder metricBuilder,
+                Model model,
                 int nPredictions,
                 int nActual,
                 boolean isOffsetCol,
                 boolean isWeightCol) {
-            _metricBuilder = metricBuilder;
+            _model = model;
             _nPredictions = nPredictions;
             _nActual = nActual;
             _isOffsetCol = isOffsetCol;
             _isWeightCol = isWeightCol;
+        }
+
+        private MojoReaderBackend getReaderBackend(byte[] mojoData) throws IOException {
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(mojoData);
+            return MojoReaderBackendFactory.createReaderBackend(inputStream, MojoReaderBackendFactory.CachingStrategy.MEMORY);
+
+        }
+        
+        @Override
+        protected void setupLocal() {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            _model.getMojo().writeTo(outputStream);
+            byte[] mojoData = outputStream.toByteArray();
+            try {
+                MojoModel mojoModel = ModelMojoReader.readFrom(getReaderBackend(mojoData), true);
+                _metricBuilder = (ModelMetrics.IndependentMetricBuilder)ModelMojoReader.readMetricBuilder(mojoModel, getReaderBackend(mojoData));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -93,12 +113,6 @@ public abstract class MetricTest extends TestUtil {
             _resultMetrics = _metricBuilder.makeModelMetrics();
         }
     }
-    
-    private MojoReaderBackend getReaderBackend(byte[] mojoData) throws IOException {
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(mojoData);
-        return MojoReaderBackendFactory.createReaderBackend(inputStream, MojoReaderBackendFactory.CachingStrategy.MEMORY);
-        
-    }
 
     protected Frame dropNA(Frame frame, int filteredColumn) {
         MRTask task = new MRTask() {
@@ -133,17 +147,7 @@ public abstract class MetricTest extends TestUtil {
             Model model, 
             Frame frame, 
             Function2<Frame, Model, Vec[]> actualVectorsGetter) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        model.getMojo().writeTo(outputStream);
-        byte[] mojoData = outputStream.toByteArray();
-        MojoReaderBackend readerBackend;
-        ModelMetrics.IndependentMetricBuilder metricBuilder;
-        try {
-            MojoModel mojoModel = ModelMojoReader.readFrom(getReaderBackend(mojoData), true);
-            metricBuilder = (ModelMetrics.IndependentMetricBuilder)ModelMojoReader.readMetricBuilder(mojoModel, getReaderBackend(mojoData));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
         Frame predictions = Scope.track(model.score(frame));
         Vec[] predictionVectors = predictions.vecs();
         Vec[] actualVectors = actualVectorsGetter.apply(frame, model);
@@ -157,7 +161,7 @@ public abstract class MetricTest extends TestUtil {
         System.arraycopy(weightCol, 0, vectorsForCalculation, predictionVectors.length + actualVectors.length + offsetCol.length, weightCol.length);
         
         CalculateMetricsViaIndependentBuilderTask calculationTask = new CalculateMetricsViaIndependentBuilderTask(
-            metricBuilder,
+            model,
             predictionVectors.length,
             actualVectors.length,
             offsetCol.length > 0,
