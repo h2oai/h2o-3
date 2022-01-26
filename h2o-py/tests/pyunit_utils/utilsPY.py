@@ -130,6 +130,24 @@ def ns(**kwargs):
 
 @contextmanager
 def capture_print(default_print_enabled=True, capture_print_to_files=False):
+    """
+    Captures calls to print and store each printed entry into an array.
+    All captures are accessible from the object yielded by this context manager for further inspection:
+     - prints to `stdout` are accessible from its `out` property.
+     - prints to `stderr` are accessible from its `err` property.
+     - prints to file (if enabled) are accessible from the file name property.
+    
+    :param default_print_enabled: True if the default print behaviour is maintained. Defaults to True.
+    :param capture_print_to_files: True if usages of print(..., file=foo) should also be handled. Defaults to False.
+    :return: a namespace with a key for each output stream.
+    :examples:
+    
+    >>> with capture_print() as p:
+    ...     print("Hey")
+    ...     print("You")
+    ... assert len(p.out) == 2
+    ... assert p.out == ["Hey\\n", "You\\n"]
+    """
     if PY2:
         yield None  # disabling for Py2, because Py2 sucks (I don't manage to change builtin print)
         return
