@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
 public class Word2VecMojoReaderTest {
 
   @Test
-  public void readModelData(final boolean readModelMetadata) throws Exception {
+  public void readModelData() throws Exception {
     TestedWord2VecMojoReader reader = new TestedWord2VecMojoReader();
 
     reader.readModelData(false);

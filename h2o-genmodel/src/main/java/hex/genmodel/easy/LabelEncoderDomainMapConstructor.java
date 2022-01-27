@@ -16,10 +16,10 @@ public class LabelEncoderDomainMapConstructor extends DomainMapConstructor {
     Map<Integer, CategoricalEncoder> domainMap = new HashMap<>();
     String[] columnNames = _m.getNames();
     for (int i = 0; i < columnNames.length; i++) {
-      String colName = i < _m.getNumCols() ? columnNames[i] : _m._responseColumn;
+      String colName = columnNames[i];
       Integer colIndex = _columnNameToIndex.get(colName);
       String[] domainValues = _m.getOrigDomainValues()[i];
-      if (domainValues != null) {
+      if (domainValues != null && colIndex != null) {
         domainMap.put(colIndex, new LabelEncoder(colIndex, domainValues));
       }
     }
