@@ -73,6 +73,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "max_runtime_secs",
             "custom_metric_func",
             "num_knots",  // array: number of knots for each predictor
+            "spline_orders",  // order of I-splines
             "knot_ids", // string array storing frame keys that contains knot location
             "gam_columns",  // array: predictor column names array
             "standardize_tp_gam_cols", // standardize TP gam columns before transformation
@@ -229,6 +230,9 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
 
     @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
     public int[] num_knots;
+
+    @API(help = "Order of I-splines used for gam predictors", level = Level.critical, gridable = true)
+    public int[] spline_orders;
 
     @API(help = "Arrays of predictor column names for gam for smoothers using single or multiple predictors like " +
             "{{'c1'},{'c2','c3'},{'c4'},...}", required = true, level = Level.critical, gridable = true)

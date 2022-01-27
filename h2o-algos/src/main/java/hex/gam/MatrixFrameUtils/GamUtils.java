@@ -260,7 +260,7 @@ public class GamUtils {
     parms._M = MemoryManager.malloc4(thinPlateNum);
     int countThinPlate = 0;
     for (int index = 0; index < numGamCols; index++) {
-      if (parms._bs[index] == 1) { // todo: add in bs==2 when it is supported
+      if (parms._bs[index] == 1) {
         int d = parms._gam_columns[index].length;
         parms._m[countThinPlate] = calculatem(d);
         parms._M[countThinPlate] = calculateM(d, parms._m[countThinPlate]);
@@ -390,19 +390,22 @@ public class GamUtils {
     return gamVecs;
   }
   
-  // move CS spline smoothers to the front and TP spline smoothers to the back for arrays:
-  // gam_columns, bs, scale, num_knots
-  public static void sortGAMParameters(GAMParameters parms, int csNum, int tpNum) {
+  /**
+   * move CS spline smoothers to the front and TP spline smoothers to the back for arrays:
+   * gam_columns, bs, scale, num_knots.
+   * The array knots have already been moved with CS spline/I-spline in the front and TP splines in the back
+   */
+  public static void sortGAMParameters(GAMParameters parms, int singlePredictorSmootherNum) {
     int gamColNum = parms._gam_columns.length;
     int csIndex = 0;
-    int tpIndex = csNum;
+    int tpIndex = singlePredictorSmootherNum;
     parms._gam_columns_sorted = new String[gamColNum][];
     parms._num_knots_sorted = MemoryManager.malloc4(gamColNum);
     parms._scale_sorted = MemoryManager.malloc8d(gamColNum);
     parms._bs_sorted = MemoryManager.malloc4(gamColNum);
     parms._gamPredSize = MemoryManager.malloc4(gamColNum);
     for (int index = 0; index < gamColNum; index++) {
-      if (parms._bs[index] == 0) { // cubic spline
+      if (parms._bs[index] == 0 || parms._bs[index] == 2) { // cubic spline
         parms._gam_columns_sorted[csIndex] = parms._gam_columns[index].clone();
         parms._num_knots_sorted[csIndex] = parms._num_knots[index];
         parms._scale_sorted[csIndex] = parms._scale[index];

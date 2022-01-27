@@ -205,6 +205,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
 
     // the following parameters are for GAM
     public int[] _num_knots; // array storing number of knots per smoother
+    public int[] _spline_orders;  // storing I-spline orders for each predictor
     public int[] _num_knots_sorted;
     public int[] _num_knots_tp; // store num_knots for thin plate regression
     public String[] _knot_ids;  // store frame keys that contain knots location for each smoother in gam_X;
@@ -213,8 +214,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public int[] _gamPredSize;  // store size of predictors for gam smoother
     public int[] _m;  // parameter related to gamPredSize;
     public int[] _M;  // size of polynomial basis for thin plate regression smoothers
-    public int[] _bs; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = thin plate regression with SVD
-    public int[] _bs_sorted; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = thin plate regression with SVD
+    public int[] _bs; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = monotone I-spline
+    public int[] _bs_sorted; // choose spline function for gam column, 0 = cr, 1 = thin plate regression with knots, 2 = monotone I-spline
     public double[] _scale;  // array storing scaling values to control wriggliness of fit
     public double[] _scale_sorted;
     public boolean _saveZMatrix = false;  // if asserted will save Z matrix
