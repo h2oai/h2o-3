@@ -97,10 +97,7 @@ public final class PersistS3 extends Persist {
       AWSCredentialsProvider[] defaultProviders = new AWSCredentialsProvider[]{
               new H2ODynamicCredentialsProvider(),
               new H2OArgCredentialsProvider(),
-              new InstanceProfileCredentialsProvider(),
-              new EnvironmentVariableCredentialsProvider(),
-              new SystemPropertiesCredentialsProvider(),
-              new ProfileCredentialsProvider()
+              new DefaultAWSCredentialsProviderChain() // use constructor instead of getInstance to be compatible with older versions on Hadoop
       };
       if (customProviderClassName == null) {
         return defaultProviders;
