@@ -13,9 +13,10 @@ import sys
 import tokenize
 
 from future.builtins.misc import open
+from future.utils import PY2
 
 ROOT_DIR = "../../h2o-py/h2o"
-__open_kwargs = {}
+__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
 
 def test(x):
     """identity."""

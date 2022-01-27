@@ -18,8 +18,9 @@ import recommonmark
 from recommonmark.transform import AutoStructify
 from recommonmark.parser import CommonMarkParser
 import sphinx_rtd_theme
+from future.utils import PY2
 
-__open_kwargs = {}
+__open_kwargs = {} if PY2 else {'encoding': 'utf-8'}
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
