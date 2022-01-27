@@ -3,6 +3,7 @@ package water.persist;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Rule;
@@ -15,16 +16,19 @@ import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FileUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.net.URL;
+import java.util.*;
 import java.util.function.Consumer;
 
 import static junit.framework.TestCase.assertEquals;
@@ -530,6 +534,38 @@ public class PersistS3Test extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testGeneratePresignedURL() throws IOException {
+    checkEnv();
+    
+    Date expiration = new Date(new Date().getTime() + 360_0000); // in 6 minutes
+    URL url = new PersistS3().generatePresignedUrl("s3://test.0xdata.com/h2o-unit-tests/iris.csv", expiration);
+
+    String httpsUrl = url.toString();
+    assertEquals("https", httpsUrl.substring(0, 5).toLowerCase());
+
+    final String httpUrl = "http" + httpsUrl.substring(5);
+    final byte[] bytes;
+    try (InputStream is = new URL(httpUrl).openStream()) {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      IOUtils.copyLarge(is, baos);
+      bytes = baos.toByteArray();
+    }
+
+    assertNotNull(bytes);
+    assertEquals(4551, bytes.length);
+  }
+
+  @Test
+  public void testRapidPresign() {
+    checkEnv();
+
+    Val val = Rapids.exec("(s3.generate.presigned.URL 's3://test.0xdata.com/h2o-unit-tests/iris.csv' 3600000)");
+    assertTrue(val.isStr());
+
+    assertTrue(val.getStr().toLowerCase().startsWith("https"));
   }
 
   private static void checkEnv() {

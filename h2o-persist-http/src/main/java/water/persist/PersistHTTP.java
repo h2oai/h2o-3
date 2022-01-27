@@ -159,17 +159,18 @@ public class PersistHTTP extends PersistEagerHTTP {
 
     boolean lazyLoadEnabled = Boolean.parseBoolean(System.getProperty(ENABLE_LAZY_LOAD_KEY, "true"));
     if (lazyLoadEnabled) {
+      long length = -1L;
       try {
         URI source = URI.create(path);
-        long length = useLazyLoad(source);
-        if (length >= 0) {
-          final Key destination_key = HTTPFileVec.make(path, length);
-          files.add(path);
-          keys.add(destination_key.toString());
-          return;
-        }
+        length = useLazyLoad(source);
       } catch (Exception e) {
         Log.debug("Failed to detect range support for " + path, e);
+      }
+      if (length >= 0) {
+        final Key<?> destination_key = HTTPFileVec.make(path, length);
+        files.add(path);
+        keys.add(destination_key.toString());
+        return;
       }
     } else
       Log.debug("HTTP lazy load disabled by user.");
