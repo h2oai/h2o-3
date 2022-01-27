@@ -29,12 +29,12 @@ def test_display_mode():
     gbm.train(y=y, training_frame=train)
 
     assert isinstance(gbm.ice_plot(train, 'title').figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'title', display_mode="ice").figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'title', display_mode="pdp").figure(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.ice_plot(train, 'title', show_pdp=True).figure(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.ice_plot(train, 'title', show_pdp=False).figure(), matplotlib.pyplot.Figure)
 
     assert isinstance(gbm.ice_plot(train, 'age').figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'age', display_mode="ice").figure(), matplotlib.pyplot.Figure)
-    assert isinstance(gbm.ice_plot(train, 'age', display_mode="pdp").figure(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.ice_plot(train, 'age', show_pdp=True).figure(), matplotlib.pyplot.Figure)
+    assert isinstance(gbm.ice_plot(train, 'age', show_pdp=False).figure(), matplotlib.pyplot.Figure)
     matplotlib.pyplot.close("all")
 
 

@@ -1238,7 +1238,7 @@ def ice_plot(
         figsize=(16, 9),  # type: Union[Tuple[float], List[float]]
         colormap="plasma",  # type: str
         save_plot_path=None,  # type: Optional[str]
-        display_mode="both"  # type: Literal["both", "ice", "pdp"]
+        show_pdp=True  # type: bool
 ):  # type: (...) -> plt.Figure
     """
     Plot Individual Conditional Expectations (ICE) for each decile
@@ -1257,7 +1257,7 @@ def ice_plot(
     :param figsize: figure size; passed directly to matplotlib
     :param colormap: colormap name
     :param save_plot_path: a path to save the plot via using mathplotlib function savefig
-    :param display_mode: option to turn on/off PDP line or the individual lines. One of "both" (default), "ice", "pdp"
+    :param show_pdp: option to turn on/off PDP line. Defaults to True.
     :returns: object that contains the resulting matplotlib figure (can be accessed using result.figure())
 
     :examples:
@@ -1284,7 +1284,6 @@ def ice_plot(
     >>> # Create the individual conditional expectations plot
     >>> gbm.ice_plot(test, column="alcohol")
     """
-    assert_is_type(display_mode, None, Enum("both", "ice", "pdp"))
     plt = get_matplotlib_pyplot(False, raise_if_not_available=True)
     if target is not None:
         if isinstance(target, (list, tuple)):
@@ -1310,30 +1309,30 @@ def ice_plot(
             factor_map = _factor_mapper(NumpyFrame(frame[column]).from_factor_to_num(column))
 
         plt.figure(figsize=figsize)
-        if display_mode == "both" or display_mode == "ice":
-            deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
-            colors = plt.get_cmap(colormap, 11)(list(range(11)))
-            for i, index in enumerate(deciles):
-                tmp = NumpyFrame(
-                    model.partial_plot(
-                        frame,
-                        cols=[column],
-                        plot=False,
-                        row_index=index,
-                        targets=target,
-                        nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
-                    )[0]
-                )
-                encoded_col = tmp.columns[0]
-                if is_factor:
-                    plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
-                                color=[colors[i]],
-                                label="{}th Percentile".format(i * 10))
-                else:
-                    plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
-                             label="{}th Percentile".format(i * 10))
 
-        if display_mode == "both" or display_mode == "pdp":
+        deciles = [int(round(frame.nrow * dec / 10)) for dec in range(11)]
+        colors = plt.get_cmap(colormap, 11)(list(range(11)))
+        for i, index in enumerate(deciles):
+            tmp = NumpyFrame(
+                model.partial_plot(
+                    frame,
+                    cols=[column],
+                    plot=False,
+                    row_index=index,
+                    targets=target,
+                    nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
+                )[0]
+            )
+            encoded_col = tmp.columns[0]
+            if is_factor:
+                plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"],
+                            color=[colors[i]],
+                            label="{}th Percentile".format(i * 10))
+            else:
+                plt.plot(tmp[encoded_col], tmp["mean_response"], color=colors[i],
+                         label="{}th Percentile".format(i * 10))
+
+        if show_pdp:
             tmp = NumpyFrame(
                 model.partial_plot(
                     frame,
@@ -1343,7 +1342,7 @@ def ice_plot(
                     nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
                 )[0]
             )
-            if display_mode == "pdp":
+            if show_pdp:
                 encoded_col = tmp.columns[0]
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",

@@ -25,8 +25,8 @@ ice_plot_display_mode <- function() {
   for (col in cols_to_test) {
     if (col != "name") { # a string column
        expect_ggplot(h2o.ice_plot(gbm, train, col))
-       expect_ggplot(h2o.ice_plot(gbm, train, col, display_mode="ice"))
-       expect_ggplot(h2o.ice_plot(gbm, train, col, display_mode="pdp"))
+       expect_ggplot(h2o.ice_plot(gbm, train, col, show_pdp=FALSE))
+       expect_ggplot(h2o.ice_plot(gbm, train, col, show_pdp=TRUE))
     }
   }
 }

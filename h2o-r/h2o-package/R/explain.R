@@ -2339,7 +2339,7 @@ h2o.pd_multi_plot <- function(object,
 #' @param target If multinomial, plot PDP just for \code{target} category.  Character string.
 #' @param max_levels An integer specifying the maximum number of factor levels to show.
 #'                   Defaults to 30.
-#' @param display_mode Option to turn on/off PDP line or the individual lines. One of "both" (default), "ice", "pdp"
+#' @param show_pdp Option to turn on/off PDP line. Defaults to TRUE.
 #'
 #' @return A ggplot2 object
 #' @examples
@@ -2373,7 +2373,7 @@ h2o.ice_plot <- function(model,
                          column,
                          target = NULL,
                          max_levels = 30,
-                         display_mode = "both") {
+                         show_pdp = TRUE) {
   .check_for_ggplot2("3.3.0")
   # Used by tidy evaluation in ggplot2, since rlang is not required #' @importFrom rlang hack can't be used
   .data <- NULL
@@ -2440,7 +2440,7 @@ h2o.ice_plot <- function(model,
     )
     y_range <- range(results$mean_response)
 
-    if (display_mode == "both" || display_mode == "pdp") {
+    if (show_pdp == TRUE) {
       pdp <-
         as.data.frame(h2o.partialPlot(models_info$get_model(models_info$model),
                                       newdata,
@@ -2507,13 +2507,12 @@ h2o.ice_plot <- function(model,
       theme_part +
       theme_part2
 
-    if (display_mode == "both" || display_mode == "ice") {
-      ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name))
-      color_spec <- ggplot2::scale_color_viridis_d(option = "plasma")
+    ice_part <- geom_point_or_line(!is.numeric(newdata[[column]]), ggplot2::aes(group = .data$name))
+    color_spec <- ggplot2::scale_color_viridis_d(option = "plasma")
 
-      q <- q + ice_part + color_spec
-    }
-    if (display_mode == "both" || display_mode == "pdp") {
+    q <- q + ice_part + color_spec
+
+    if (show_pdp == TRUE) {
       pdp_part <- geom_point_or_line(!is.numeric(newdata[[column]]),
                                      if (is.factor(pdp[[col_name]])) {
                                        ggplot2::aes(shape = "Partial Dependence", group = "Partial Dependence")
