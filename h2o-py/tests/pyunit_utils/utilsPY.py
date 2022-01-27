@@ -198,8 +198,8 @@ def capture_output(default_output_enabled=True):
     ...     print("You")
     ...     warnings.warn("Pozor!")
     ... assert len(c.out.lines) == 2
-    ... assert c.out == ["Hey", "You"]
-    --- assert "Pozor!" in c.err.text
+    ... assert c.out.lines == ["Hey", "You"]
+    ... assert "Pozor!" in c.err.text
     """
     
     with _CaptureStream("stdout", default_output_enabled) as out:
