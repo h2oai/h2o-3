@@ -1433,13 +1433,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         >>> cars_gbm.plot(type="pr")
         
         """
-
+        assert type in ["roc", "pr", "gains_lift"]
         if type == "roc":
             return self._plot_roc(server, save_plot_path, plot)
         elif type == "pr":
             return self._plot_pr(server, save_plot_path, plot)
-        elif type == "gainslift":
-            return self.plot_gainslift(server=server, save_plot_path=save_plot_path, plot=plot)
+        elif type == "gains_lift":
+            return self.plot_gains_lift(server=server, save_plot_path=save_plot_path, plot=plot)
     
     def _plot_roc(self, server=False, save_to_file=None, plot=True):
         if plot:
@@ -1774,36 +1774,46 @@ class H2OBinomialModelMetrics(MetricsBase):
         return None
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot_gainslift(self, server=False, save_plot_path=None, plot=True, **kwargs):
+    def plot_gains_lift(self, type="both", server=False, save_plot_path=None, plot=True, **kwargs):
         """
         Plot Gains/Lift curves.
 
+        :param type: one of "both", "gains", "lift". Defaults to "both".
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
         :param save_plot_path: filename to save the plot to
         :param plot: True to plot curve, False to get a gains lift table
 
         :returns: Gains lift table + the resulting plot (can be accessed using result.figure())
         """
+        type = type.lower()
+        assert type in ["both", "gains", "lift"]
         gl = self.gains_lift()
         if plot:
             plt = get_matplotlib_pyplot(server)
             if plt is None:
                 return decorate_plot_result(figure=RAISE_ON_FIGURE_ACCESS)
-
+            title = []
+            ylab = []
             x = gl['cumulative_data_fraction']
             yccr = gl['cumulative_capture_rate']
             ycl = gl['cumulative_lift']
             plt = get_matplotlib_pyplot(server=False, raise_if_not_available=True)
             fig = plt.figure(figsize=(10, 10))
             plt.grid(True)
-            plt.plot(x, yccr, zorder=10, label='cumulative capture rate')
-            plt.plot(x, ycl, zorder=10, label='cumulative lift')
+            if type in ["both", "gains"]:
+                plt.plot(x, yccr, zorder=10, label='cumulative capture rate')
+                title.append("Gains")
+                ylab.append('cumulative capture rate')
+            if type in ["both", "lift"]:
+                plt.plot(x, ycl, zorder=10, label='cumulative lift')
+                title.append("Lift")
+                ylab.append('cumulative lift')
             plt.legend(loc=4, fancybox=True, framealpha=0.5)
             plt.xlim(0, None)
             plt.ylim(0, None)
             plt.xlabel('cumulative data fraction')
-            plt.ylabel('cumulative capture rate, cumulative lift')
-            plt.title('Gains/Lift')
+            plt.ylabel(", ".join(ylab))
+            plt.title(" / ".join(title))
             if not server:
                 plt.show()
             if save_plot_path is not None:  # only save when a figure is actually plotted
