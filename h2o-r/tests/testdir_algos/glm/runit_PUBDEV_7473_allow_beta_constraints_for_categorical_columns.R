@@ -12,7 +12,6 @@ testProstate <- function() {
     lowerbound <- c(0.1, -0.5, -0.3, -0.4, -0.2, -0.5, -0.5)#rep(-1, times = length(myX))
     upperbound <- c(0.5, 0.5, 0.3, 0.4, 0.5, 0.5, 0.5)#rep(1, times = length(myX))
     betaConstraints <- data.frame(names = myX, lower_bounds = lowerbound, upper_bounds = upperbound)
-
     glm <- h2o.glm(x = myX, y = "CAPSULE", training_frame = prostate_train, family = "gaussian", alpha = 0,
     beta_constraints = betaConstraints)
 

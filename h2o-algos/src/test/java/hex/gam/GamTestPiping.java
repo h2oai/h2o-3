@@ -87,16 +87,22 @@ public class GamTestPiping extends TestUtil {
     }
   }
   
+  public static Frame genFrameKnots(double[][] knots) {
+    Frame knotsFrame = generateRealOnly(1, knots.length, 0);
+    Scope.track(knotsFrame);
+    new ArrayUtils.CopyArrayToFrame(0,0,knots.length, knots).doAll(knotsFrame);
+    return knotsFrame;
+  }
+  
   // adding test to build models multiple times with knots from a frame
   @Test
   public void testKnotsFromFrameMultipleRuns() {
     try {
       Scope.enter();
-      Frame knotsFrame = generateRealOnly(1, 5, 0);
-      Scope.track(knotsFrame);
       final double[][] knots = new double[][]{{-1.9990569949269443}, {-0.9814307533427584}, {0.025991586992542004},
               {1.0077098743127828}, {1.999422899675758}};
-      new ArrayUtils.CopyArrayToFrame(0,0,knots.length, knots).doAll(knotsFrame);
+      Frame knotsFrame = genFrameKnots(knots);
+      String[] knotsKey = new String[]{knotsFrame._key.toString()};
       DKV.put(knotsFrame);
       Scope.track(knotsFrame);
 
@@ -106,14 +112,14 @@ public class GamTestPiping extends TestUtil {
               Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
               "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
               true, new double[]{1}, new double[]{0}, new double[]{0}, false,
-              new String[]{knotsFrame._key.toString()},null, true);
+              knotsKey,null, true);
       Scope.track_generic(model);
       double mse1 = model._output._training_metrics.mse();
       model = getModel(gaussian,
               Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
               "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
               true, new double[]{1}, new double[]{0}, new double[]{0}, false,
-              new String[]{knotsFrame._key.toString()},null, true);
+              knotsKey,null, true);
       Scope.track_generic(model);
       double mse2 = model._output._training_metrics.mse();
       assertTrue(Math.abs(mse1-mse2) < 1e-6);
@@ -121,7 +127,7 @@ public class GamTestPiping extends TestUtil {
               Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
               "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
               true, new double[]{1}, new double[]{0}, new double[]{0}, false,
-              new String[]{knotsFrame._key.toString()},null, true);
+              knotsKey,null, true);
       Scope.track_generic(model);
       double mse3 = model._output._training_metrics.mse();
       assertTrue(Math.abs(mse1-mse3) < 1e-6);
@@ -135,21 +141,19 @@ public class GamTestPiping extends TestUtil {
   public void testKnotsFromFrame() {
     try {
       Scope.enter();
-      Frame knotsFrame = generateRealOnly(1, 5, 0);
-      Scope.track(knotsFrame);
       final double[][] knots = new double[][]{{-1.9990569949269443}, {-0.9814307533427584}, {0.025991586992542004}, 
               {1.0077098743127828}, {1.999422899675758}};
-      new ArrayUtils.CopyArrayToFrame(0,0,knots.length, knots).doAll(knotsFrame);
+      Frame knotsFrame = genFrameKnots(knots);
       DKV.put(knotsFrame);
       Scope.track(knotsFrame);
-
+      String[] knotsKey = new String[]{knotsFrame._key.toString()};
       String[] ignoredCols = new String[]{"C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"};
       String[][] gamCols = new String[][]{{"C6"}};
       final GAMModel model = getModel(gaussian,
               Scope.track(parseTestFile("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")),
               "C11", gamCols, ignoredCols, new int[]{5}, new int[]{0}, false,
-              true, new double[]{1}, new double[]{0}, new double[]{0}, false, 
-              new String[]{knotsFrame._key.toString()},null, true);
+              true, new double[]{1}, new double[]{0}, new double[]{0}, false,
+              knotsKey,null, true);
       Scope.track_generic(model);
       final double[][] rBinvD = new double[][]{{1.5605080,
               -3.5620961, 2.5465468, -0.6524143, 0.1074557}, {-0.4210098, 2.5559955, -4.3258597, 2.6228736,

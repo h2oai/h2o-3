@@ -279,6 +279,10 @@ public class TestUtil extends Iced {
   }
 
   protected static Frame generateRealOnly(int numCols, int numRows, double missingfrac, long seed) {
+     return generateRealWithRangeOnly(numCols, numRows, missingfrac, seed, 100);
+  }
+
+  protected static Frame generateRealWithRangeOnly(int numCols, int numRows, double missingfrac, long seed, long range) {
     CreateFrame cf = new CreateFrame();
     cf.rows = numRows;
     cf.cols = numCols;
@@ -289,8 +293,10 @@ public class TestUtil extends Iced {
     cf.string_fraction = 0;
     cf.has_response = false;
     cf.missing_fraction = missingfrac;
+    cf.real_range = range;
     cf.seed = seed;
-    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed);
+    System.out.println("Createframe parameters: rows: " + numRows + " cols:" + numCols + " seed: " + cf.seed + 
+            " range: "+range);
     return cf.execImpl().get();
   }
 

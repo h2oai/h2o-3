@@ -1,13 +1,21 @@
 package hex.glm;
 
+import water.DKV;
+import water.Key;
 import water.MemoryManager;
+import water.Scope;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static water.fvec.Vec.T_NUM;
+import static water.fvec.Vec.T_STR;
 
 public class GLMUtils {
 
@@ -32,6 +40,32 @@ public class GLMUtils {
       }
     }
     return gamColIndices;
+  }
+
+  public static Frame expandedCatCS(Frame beta_constraints, GLMModel.GLMParameters parms) {
+    byte[] csByteType = new byte[]{T_STR, T_NUM, T_NUM};
+    String[] bsColNames = beta_constraints.names();
+    Frame betaCSCopy = beta_constraints.deepCopy(Key.make().toString());
+    betaCSCopy.replace(0, betaCSCopy.vec(0).toStringVec()).remove();
+    DKV.put(betaCSCopy);
+    FrameUtils.ExpandCatBetaConstraints expandCatBS = new FrameUtils.ExpandCatBetaConstraints(beta_constraints,
+            parms.train()).doAll(csByteType, betaCSCopy, true);
+    Frame csWithEnum = expandCatBS.outputFrame(Key.make(), bsColNames, null);
+    betaCSCopy.delete();
+    return csWithEnum;
+  }
+
+  public static boolean findEnumInBetaCS(Frame betaCS, GLMModel.GLMParameters parms) {
+    List<String> colNames = Arrays.asList(parms.train().names());
+    String[] types = parms.train().typesStr();
+    Vec v = betaCS.vec("names");
+    int nRow = (int) betaCS.numRows();
+    for (int index=0; index<nRow; index++) {
+      int colIndex = colNames.indexOf(v.stringAt(index));
+      if (colIndex >= 0 && "Enum".equals(types[colIndex]))
+        return true;
+    }
+    return false;
   }
   
   public static GLM.GLMGradientInfo copyGInfo(GLM.GLMGradientInfo ginfo) {

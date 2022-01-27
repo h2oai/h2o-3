@@ -129,7 +129,7 @@ public class AddTPKnotsGamColumns {
               Vec.T_NUM, _predictVec);                    // generate polynomial basis T as in 3.2
       Frame thinPlatePolyBasis = thinPlatePoly.outputFrame(null, polyNames, null);
       thinPlateFrame.add(thinPlatePolyBasis.names(), thinPlatePolyBasis.removeAll());         // concatenate Xcs and T
-      thinPlateFrame = ThinPlateDistanceWithKnots.applyTransform(thinPlateFrame, colNameStub+"center_",
+      thinPlateFrame = ThinPlateDistanceWithKnots.applyTransform(thinPlateFrame, colNameStub+"center",
               _parms, _zT, _numKnotsM1);                  // generate Xz as in 3.4
       _gamFrameKeysCenter[_thinPlateGamColIndex] = thinPlateFrame._key;
       DKV.put(thinPlateFrame);

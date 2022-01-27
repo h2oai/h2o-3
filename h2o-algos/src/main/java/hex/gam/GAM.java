@@ -5,7 +5,8 @@ import hex.gam.GAMModel.GAMParameters;
 import hex.gam.GamSplines.ThinPlateDistanceWithKnots;
 import hex.gam.GamSplines.ThinPlatePolynomialWithKnots;
 import hex.gam.MatrixFrameUtils.GamUtils;
-import hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn;
+import hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn;
+import hex.gam.MatrixFrameUtils.GenISplineGamOneColumn;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
@@ -16,22 +17,26 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.ParseDataset;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.util.ArrayUtils;
 import water.util.IcedHashSet;
 import water.util.Log;
-import water.util.TwoDimTable;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static hex.gam.GAMModel.adaptValidFrame;
 import static hex.gam.GamSplines.ThinPlateRegressionUtils.*;
 import static hex.gam.MatrixFrameUtils.GAMModelUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.*;
 import static hex.gam.MatrixFrameUtils.GamUtils.AllocateType.*;
-import static hex.gam.MatrixFrameUtils.GenerateGamMatrixOneColumn.generateZTransp;
+import static hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn.centralizeFrame;
+import static hex.gam.MatrixFrameUtils.GenCSSplineGamOneColumn.generateZTransp;
 import static hex.genmodel.utils.ArrayUtils.flat;
 import static hex.glm.GLMModel.GLMParameters.Family.multinomial;
 import static hex.glm.GLMModel.GLMParameters.Family.ordinal;
@@ -43,9 +48,11 @@ import static water.util.ArrayUtils.subtract;
 
 
 public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
+  private static final int MIN_ISPLINE_NUM_KNOTS = 3;
   private double[][][] _knots; // Knots for splines
   private int _thinPlateSmoothersWithKnotsNum = 0;
   private int _cubicSplineNum = 0;
+  private int _iSplineNum = 0;
   double[][] _gamColMeansRaw; // store raw gam column means in gam_column_sorted order and only for thin plate smoothers
   public double[][] _oneOGamColStd;
   public double[] _penaltyScale;
@@ -108,17 +115,20 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     double[][][] knots = new double[numGamCols][][]; // 1st index into gam column, 2nd index number of knots for the row
     boolean allNull = _parms._knot_ids == null;
     int csInd = 0;
-    int tpInd = _cubicSplineNum;
-    int gamIndex; // index into the sorted arrays with CS front, TP back.
+    int isInd = _cubicSplineNum;
+    int tpInd = _cubicSplineNum+_iSplineNum;
+    int gamIndex; // index into the sorted arrays with CS/I-splines front, TP back.
     for (int outIndex = 0; outIndex < _parms._gam_columns.length; outIndex++) { // go through each gam_column group
       String tempKey = allNull ? null : _parms._knot_ids[outIndex]; // one knot_id for each smoother
       if (_parms._bs[outIndex] == 1) // thin plate regression
         gamIndex = tpInd++;
-      else
+      else if (_parms._bs[outIndex] == 0)
         gamIndex = csInd++;
+      else // I-spline
+        gamIndex = isInd++;
       knots[gamIndex] = new double[_parms._gam_columns[outIndex].length][];
-      if (tempKey != null && (tempKey.length() > 0)) {  // read knots location from Frame given by user      
-        final Frame knotFrame = DKV.getGet(Key.make(tempKey));
+      if (tempKey != null) {  // read knots location from Frame given by user      
+        final Frame knotFrame = DKV.getGet(tempKey);
         double[][] knotContent = new double[(int) knotFrame.numRows()][_parms._gam_columns[outIndex].length];
         final ArrayUtils.FrameToArray f2a = new ArrayUtils.FrameToArray(0,
                 _parms._gam_columns[outIndex].length - 1, knotFrame.numRows(), knotContent);
@@ -129,7 +139,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           knots[gamIndex][innerIndex] = new double[knotContent.length];
           System.arraycopy(knotCTranspose[innerIndex], 0, knots[gamIndex][innerIndex], 0,
                   knots[gamIndex][innerIndex].length);
-          if (knotCTranspose.length == 1 && _parms._bs[outIndex] == 0) // only check for order to single smoothers
+          if (knotCTranspose.length == 1 && (_parms._bs[outIndex] == 0 || _parms._bs[outIndex] == 2)) // only check for order to single smoothers
             failVerifyKnots(knots[gamIndex][innerIndex], outIndex);
         }
         _parms._num_knots[outIndex] = knotContent.length;
@@ -137,7 +147,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       } else {  // current column knot key is null, we will use default method to generate knots
         final Frame predictVec = new Frame(_parms._gam_columns[outIndex], 
                 _parms.train().vecs(_parms._gam_columns[outIndex]));
-        if (_parms._bs[outIndex] == 0) {
+        if (_parms._bs[outIndex] == 0 || _parms._bs[outIndex] == 2) {
           knots[gamIndex][0] = generateKnotsOneColumn(predictVec, _parms._num_knots[outIndex]);
           failVerifyKnots(knots[gamIndex][0], outIndex);
         } else {  // generate knots for multi-predictor smoothers
@@ -146,13 +156,15 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
     }
-    return knots;
+    return knots; // CS/I-splines come first, TP is at the back
   }
   
   // this function will check and make sure the knots location specified in knots are valid in the following sense:
   // 1. They do not contain NaN
   // 2. They are sorted in ascending order.
   public void failVerifyKnots(double[] knots, int gam_column_index) {
+    if (_parms._bs[gam_column_index] == 2 && knots.length < MIN_ISPLINE_NUM_KNOTS)
+      error("knots_id", "number of knots specified in knots_id must >= 3 for I-splines.");
     for (int index = 0; index < knots.length; index++) {
       if (Double.isNaN(knots[index])) {
         error("gam_columns/knots_id", String.format("Knots generated by default or specified in knots_id " +
@@ -228,7 +240,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
     if (_parms._scale == null)
       setDefaultScale(_parms);
-    setGamPredSize(_parms, _cubicSplineNum);
+    setGamPredSize(_parms, _cubicSplineNum+_iSplineNum);
     if (_thinPlateSmoothersWithKnotsNum > 0)
       setThinPlateParameters(_parms, _thinPlateSmoothersWithKnotsNum); // set the m, M for thin plate regression smoothers
     checkOrChooseNumKnots(); // check valid num_knot assignment or choose num_knots
@@ -248,7 +260,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 " not match.");
     }
     _knots = generateKnotsFromKeys(); // generate knots and verify that they are given correctly
-    sortGAMParameters(_parms, _cubicSplineNum, _thinPlateSmoothersWithKnotsNum); // move cubic spline to the front and thin plate to the back
+    sortGAMParameters(_parms, _cubicSplineNum, _iSplineNum); // move cubic spline to the front and thin plate to the back
     checkThinPlateParams();
     if (_parms._saveZMatrix && ((_train.numCols() - 1 + _parms._num_knots.length) < 2))
       error("_saveZMatrix", "can only be enabled if the number of predictors plus" +
@@ -286,7 +298,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       return;
     
     _parms._num_knots_tp = new int[_thinPlateSmoothersWithKnotsNum];
-    System.arraycopy(_parms._num_knots_sorted, _cubicSplineNum, _parms._num_knots_tp, 0,
+    System.arraycopy(_parms._num_knots_sorted, _cubicSplineNum+_iSplineNum, _parms._num_knots_tp, 0,
             _thinPlateSmoothersWithKnotsNum);
     int tpIndex = 0;
     for (int index = 0; index < _parms._gam_columns.length; index++) {
@@ -299,16 +311,33 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       }
     }
   }
-  
-  // set default num_knots to 10 for gam_columns where there is no knot_id specified for CS smoothers
-  // for TP smoothers, default is set to be max of 10 or _M+2.
+
+  /**
+   * set default num_knots to 10 for gam_columns where there is no knot_id specified for CS smoothers
+   * for TP smoothers, default is set to be max of 10 or _M+2.
+   * for I-splines, default set to 3 which is minimum.
+   */
   public void checkOrChooseNumKnots() {
     if (_parms._num_knots == null)
-      _parms._num_knots = new int[_parms._gam_columns.length];  // different columns may have different
+      _parms._num_knots = new int[_parms._gam_columns.length];  // different columns may have different num knots
+    if (_parms._spline_orders == null) {
+      _parms._spline_orders = new int[_parms._gam_columns.length];
+      Arrays.fill(_parms._spline_orders, 3);
+    } else {
+      for (int index=0; index<_parms._spline_orders.length; index++)
+        if (_parms._bs[index]==2 && _parms._spline_orders[index] < 1)
+          error("spline_orders", "GAM I-spline spline_orders must be >= 1");
+    }
     int tpCount = 0;
     for (int index = 0; index < _parms._num_knots.length; index++) {  // set zero value _num_knots
       if (_parms._knot_ids == null || (_parms._knot_ids != null && _parms._knot_ids[index] == null)) {  // knots are not specified
         int numKnots = _parms._num_knots[index];
+        if (_parms._bs[index] == 2) {
+          if (_parms._num_knots[index] == 0)
+            _parms._num_knots[index] = 3;
+          else if (_parms._num_knots[index] < 3)
+            error("num_knots", " must >= 3 for I-splines.");
+        }
         int naSum = 0;
         for (int innerIndex = 0; innerIndex < _parms._gam_columns[index].length; innerIndex++) {
           naSum += _parms.train().vec(_parms._gam_columns[index][innerIndex]).naCnt();
@@ -320,12 +349,16 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
             defaultRows = Math.max(defaultRows, _parms._M[tpCount] + 2);
             tpCount++;
           }
+          if (_parms._bs[index] == 2)
+            defaultRows = MIN_ISPLINE_NUM_KNOTS;
           _parms._num_knots[index] = eligibleRows < defaultRows ? (int) eligibleRows : defaultRows;
         } else {  // num_knots assigned by user and check to make sure it is legal
           if (numKnots > eligibleRows) {
-            error("_num_knots", " number of knots specified in _num_knots: "+numKnots+" for smoother" +
+            error("num_knots", " number of knots specified in num_knots: "+numKnots+" for smoother" +
                     " with first predictor "+_parms._gam_columns[index][0]+".  Reduce _num_knots.");
           }
+          if (_parms._bs[index] == 0 && _parms._num_knots[index] < 3)
+            error("num_knots", " number of knots specified in num_knots "+numKnots+" for cs splines must be >= 3.");
         }
       }
     }
@@ -339,11 +372,16 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     for (int index = 0; index < _parms._gam_columns.length; index++) {
       if (_parms._bs != null) { // check and make sure the correct bs type is chosen
         if (_parms._gam_columns[index].length > 1 && _parms._bs[index] != 1)
-          error("bs", "Smother with multiple predictors can only use bs = 1");
+          error("bs", "Smoother with multiple predictors can only use bs = 1");
         if (_parms._bs[index] == 1)
           _thinPlateSmoothersWithKnotsNum++; // record number of thin plate
         if (_parms._bs[index] == 0)
           _cubicSplineNum++;
+        if (_parms._bs[index] == 2) {
+          if (multinomial.equals(_parms._family) || ordinal.equals(_parms._family))
+            error("family", "multinomial and ordinal families cannot be used with I-splines.");
+          _iSplineNum++;
+        }
 
         for (int innerIndex = 0; innerIndex < _parms._gam_columns[index].length; innerIndex++) {
           String cname = _parms._gam_columns[index][innerIndex];
@@ -390,12 +428,10 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     public int[] _numKnots;           // store number of knots per smoother
     String[][] _gamColNames;          // store column names of all smoothers before any processing
     String[][] _gamColNamesCenter;    // gamColNames after centering is performed.
-    Key<Frame>[] _gamFrameKeys;
     Key<Frame>[] _gamFrameKeysCenter;
     double[][] _gamColMeans;          // store gam column means without centering.
     int[][][] _allPolyBasisList;      // store polynomial basis function for all TP smoothers
     DataInfo _dinfo = null;
-    
     /***
      * This method will take the _train that contains the predictor columns and response columns only and add to it
      * the following:
@@ -411,12 +447,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       _zTranspose = GamUtils.allocate3DArray(numGamFrame, _parms, firstOneLess);  // for centering for all smoothers 
       _penaltyMat = _parms._savePenaltyMat?GamUtils.allocate3DArray(numGamFrame, _parms, sameOrig):null;
       _penaltyMatCenter = GamUtils.allocate3DArray(numGamFrame, _parms, bothOneLess);
-      if (_cubicSplineNum > 0)
+      removeCenteringIS(_penaltyMatCenter, _parms);
+      if (_cubicSplineNum > 0)  // CS-spline only
         _binvD = GamUtils.allocate3DArrayCS(_cubicSplineNum, _parms, firstTwoLess);
       _numKnots = MemoryManager.malloc4(numGamFrame);
       _gamColNames = new String[numGamFrame][];
       _gamColNamesCenter = new String[numGamFrame][];
-      _gamFrameKeys = new Key[numGamFrame];
       _gamFrameKeysCenter = new Key[numGamFrame];
       _gamColMeans = new double[numGamFrame][];   // means of gamified columns
       _penaltyScale = new double[numGamFrame];
@@ -522,11 +558,61 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         double[][] penaltyCenter = ArrayUtils.multArrArr(ArrayUtils.multArrArr(ztranspose, expandPenaltyCS),
                 ArrayUtils.transpose(ztranspose));
         copy2DArray(penaltyCenter, _penaltyMatCenter[_gamColIndex]);
-        thinPlateFrame = ThinPlateDistanceWithKnots.applyTransform(thinPlateFrame, colNameStub+"center_", 
+        thinPlateFrame = ThinPlateDistanceWithKnots.applyTransform(thinPlateFrame, colNameStub+"center", 
                 _parms, ztranspose, _numKnotsM1);          // generate Xz as in 3.4
         _gamFrameKeysCenter[_gamColIndex] = thinPlateFrame._key;
         DKV.put(thinPlateFrame);
         System.arraycopy(thinPlateFrame.names(), 0, _gamColNamesCenter[_gamColIndex], 0, _numKnotsM1);
+      }
+    }
+    
+    public class ISplineSmoother extends RecursiveAction {
+      final Frame _predictVec;
+      final int _numKnots;  // not counting knot duplication here
+      final int _order;
+      final double[] _knots;  // not counting knot duplication here
+      final boolean _savePenaltyMat;
+      final String[] _newColNames;
+      final int _gamColIndex; // gam column order from user input
+      final int _singlePredSplineInd; // gam column index after moving tp to the back
+      final int _splineType;
+      
+      public ISplineSmoother(Frame gamPred, GAMParameters parms, int gamColIndex, String[] gamColNames, double[] knots,
+                             int singlePredInd) {
+        _predictVec = gamPred;
+        _numKnots = parms._num_knots_sorted[gamColIndex];
+        _knots = knots;
+        _order = parms._spline_orders_sorted[gamColIndex];
+        _savePenaltyMat = parms._savePenaltyMat;
+        _newColNames = gamColNames;
+        _gamColIndex = gamColIndex;
+        _singlePredSplineInd = singlePredInd;
+        _splineType = parms._bs_sorted[gamColIndex];
+      }
+
+      @Override
+      protected void compute() {
+        // generate GAM basis functions
+        int order = _parms._spline_orders_sorted[_gamColIndex];
+        int numBasis = _knots.length+order-2;
+        int totKnots = numBasis + order;
+        GenISplineGamOneColumn oneGAMCol = new GenISplineGamOneColumn(_parms, _knots, _gamColIndex, _predictVec, 
+                numBasis, totKnots);
+        oneGAMCol.doAll(oneGAMCol._numBasis, Vec.T_NUM, _predictVec);
+        if (_savePenaltyMat) {
+          copy2DArray(oneGAMCol._penaltyMat, _penaltyMat[_gamColIndex]);
+          _penaltyScale[_gamColIndex] = oneGAMCol._s_scale;
+        }
+        // extract generated gam columns
+        Frame oneGamifiedColumn = oneGAMCol.outputFrame(Key.make(), _newColNames, null);
+        for (int index=0; index<numBasis; index++)
+          _gamColMeans[_gamColIndex][index] = oneGamifiedColumn.vec(index).mean();
+        copy2DArray(generateZTransp(oneGamifiedColumn, numBasis), _zTranspose[_gamColIndex]); // copy transpose(Z)
+        DKV.put(oneGamifiedColumn);
+        _gamFrameKeysCenter[_gamColIndex] = oneGamifiedColumn._key;
+        System.arraycopy(oneGamifiedColumn.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
+                numBasis);
+        copy2DArray(oneGAMCol._penaltyMat, _penaltyMatCenter[_gamColIndex]);
       }
     }
     
@@ -539,12 +625,11 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       final String[] _newColNames;
       final double[] _knots;
       final GAMParameters _parms;
-      final AllocateType _fileMode;
       final int _gamColIndex;
-      final int _csIndex;
+      final int _singlePredSplineInd;
       
       public CubicSplineSmoother(Frame predV, GAMParameters parms, int gamColIndex, String[] gamColNames, double[] knots,
-                                 AllocateType fileM, int csInd) {
+                                 int csInd) {
         _predictVec = predV;
         _numKnots = parms._num_knots_sorted[gamColIndex];
         _numKnotsM1 = _numKnots-1;
@@ -554,24 +639,23 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _knots = knots;
         _parms = parms;
         _gamColIndex = gamColIndex;
-        _fileMode = fileM;
-        _csIndex = csInd;
+        _singlePredSplineInd = csInd;
       }
 
       @Override
       protected void compute() {
-        GenerateGamMatrixOneColumn genOneGamCol = new GenerateGamMatrixOneColumn(_splineType, _numKnots,
+        GenCSSplineGamOneColumn genOneGamCol = new GenCSSplineGamOneColumn(_splineType, _numKnots,
                 _knots, _predictVec).doAll(_numKnots, Vec.T_NUM, _predictVec);
         if (_savePenaltyMat) {                                  // only save this for debugging
           copy2DArray(genOneGamCol._penaltyMat, _penaltyMat[_gamColIndex]); // copy penalty matrix
           _penaltyScale[_gamColIndex] = genOneGamCol._s_scale;  // penaltyMat is scaled by 1/_s_scale
         }
         Frame oneAugmentedColumnCenter = genOneGamCol.outputFrame(Key.make(), _newColNames,
-                null);
+                null);  // one gamified frame
         for (int index = 0; index < _numKnots; index++)
           _gamColMeans[_gamColIndex][index] = oneAugmentedColumnCenter.vec(index).mean();
         oneAugmentedColumnCenter = genOneGamCol.centralizeFrame(oneAugmentedColumnCenter,
-                _predictVec.name(0) + "_" + _splineType + "_center_", _parms);
+                _predictVec.name(0) + "_" + _splineType + "_center", _parms);
         copy2DArray(genOneGamCol._ZTransp, _zTranspose[_gamColIndex]); // copy transpose(Z)
         double[][] transformedPenalty = ArrayUtils.multArrArr(ArrayUtils.multArrArr(genOneGamCol._ZTransp,
                 genOneGamCol._penaltyMat), ArrayUtils.transpose(genOneGamCol._ZTransp));  // transform penalty as zt*S*z
@@ -580,7 +664,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         DKV.put(oneAugmentedColumnCenter);
         System.arraycopy(oneAugmentedColumnCenter.names(), 0, _gamColNamesCenter[_gamColIndex], 0,
                 _numKnotsM1);
-        copy2DArray(genOneGamCol._bInvD, _binvD[_csIndex]);
+        copy2DArray(genOneGamCol._bInvD, _binvD[_singlePredSplineInd]);
       }
     }
 
@@ -588,19 +672,28 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       final int numGamFrame = _parms._gam_columns.length; // number of smoothers to generate
       RecursiveAction[] generateGamColumn = new RecursiveAction[numGamFrame];
       int thinPlateInd = 0;
-      int csInd = 0;
+      int singlePredictorSmootherInd = 0;
       Frame trainFrame = _parms.train();
       for (int index = 0; index < numGamFrame; index++) { // generate smoothers/splines
         final Frame predictVec = prepareGamVec(index, _parms, trainFrame);// extract predictors from frame
-        final int numKnots = _parms._num_knots_sorted[index];
+        // numKnots for I-spline will be the number of basis
+        final int numKnots = _parms._bs_sorted[index] == 2 ? 
+                _parms._num_knots_sorted[index] + _parms._spline_orders_sorted[index] - 2 : 
+                _parms._num_knots_sorted[index];
         final int numKnotsM1 = numKnots - 1;
-        if (_parms._bs_sorted[index] == 0) {  // for CS smoothers
+        if (_parms._bs_sorted[index] == 0 || _parms._bs_sorted[index] == 2) {  // for CS or I-spline smoothers
           _gamColNames[index] = generateGamColNames(index, _parms);
-          _gamColNamesCenter[index] = new String[numKnotsM1];
           _gamColMeans[index] = new double[numKnots];
-          generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],
-                  _knots[index][0], firstTwoLess, csInd++);
-        } else {  // TP splines with knots
+          if (_parms._bs_sorted[index] == 0) { // cs spline
+            _gamColNamesCenter[index] = new String[numKnotsM1];
+            generateGamColumn[index] = new CubicSplineSmoother(predictVec, _parms, index, _gamColNames[index],
+                    _knots[index][0], singlePredictorSmootherInd++);
+          } else { // I-splines
+            _gamColNamesCenter[index] = new String[numKnots];
+            generateGamColumn[index] = new ISplineSmoother(predictVec, _parms, index, _gamColNames[index],
+                    _knots[index][0], singlePredictorSmootherInd++);
+          }
+        }  else {  // TP splines with knots
           final int kPlusM = _parms._num_knots_sorted[index]+_parms._M[thinPlateInd];
           _gamColNames[index] = new String[kPlusM];
           _gamColNamesCenter[index] = new String[numKnotsM1];
@@ -613,6 +706,54 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
       }
       ForkJoinTask.invokeAll(generateGamColumn);
+      if (_iSplineNum > 0 && !_parms._betaConstraintsOff) { // set up coefficient constraints >= 0 for I-splines
+        Frame constraintF = genConstraints();
+        Scope.track(constraintF);
+        if (_parms._beta_constraints != null) {
+          DKV.put(constraintF);
+          Frame origConstraints = DKV.getGet(_parms._beta_constraints);
+          String tree = "(rbind "+origConstraints.getKey().toString()+" "+constraintF.getKey().toString()+" )";
+          Val val = Rapids.exec(tree);
+          Frame newConstraints = new Frame(val.getFrame());
+          DKV.put(newConstraints);
+          Scope.track(newConstraints);
+          _parms._beta_constraints = newConstraints._key;
+        } else {
+          _parms._beta_constraints = constraintF._key;
+          DKV.put(constraintF);
+        }
+      }
+    }
+
+    /**
+     * For all gamified columns with I-spline, put in beta constraints to make sure the coefficients are non-negative.
+     * @return
+     */
+    public Frame genConstraints() {
+      int numGamCols = _parms._gam_columns.length;
+      String[] colNames = new String[]{"names", "lower_bounds", "upper_bounds"};
+      Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+      List<String> gamColNames = new ArrayList<>();
+      
+      for (int index=0; index<numGamCols; index++) {
+        if (_parms._bs_sorted[index] == 2)   // I-splines
+          gamColNames.addAll(Arrays.asList(_gamColNamesCenter[index]));
+      }
+      int numConstraints = gamColNames.size();
+      if (numConstraints > 0) {
+        String[] constraintNames = gamColNames.stream().toArray(String[]::new);
+        double[] lowerBounds = new double[numConstraints];
+        double[] upperBounds = new double[numConstraints];
+        for (int index = 0; index < numConstraints; index++) {
+          upperBounds[index] = Double.MAX_VALUE;
+          lowerBounds[index] = 0.0;
+        }
+        Vec gamNames = Scope.track(Vec.makeVec(constraintNames, vg.addVec()));
+        Vec lowBounds = Scope.track(Vec.makeVec(lowerBounds, vg.addVec()));
+        Vec upBounds = Scope.track(Vec.makeVec(upperBounds, vg.addVec()));
+        return new Frame(Key.<Frame>make(), colNames, new Vec[]{gamNames, lowBounds, upBounds});
+      }
+      return null;
     }
 
     void verifyGamTransformedFrame(Frame gamTransformed) {
@@ -641,7 +782,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       
       if (valid() != null)  // transform the validation frame if present
         _valid = rebalance(adaptValidFrame(_parms.valid(), _valid,  _parms, _gamColNamesCenter, _binvD,
-                _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd), 
+                _zTranspose, _knots, _zTransposeCS, _allPolyBasisList, _gamColMeansRaw, _oneOGamColStd, _cubicSplineNum), 
                 false, _result+".temporary.valid");
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
       Frame newValidFrame = _valid == null ? null : new Frame(_valid);
@@ -779,6 +920,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._output._knots = _knots;
       model._output._numKnots = _numKnots;
       model._cubicSplineNum = _cubicSplineNum;
+      model._iSplineNum = _iSplineNum;
       model._thinPlateSmoothersWithKnotsNum = _thinPlateSmoothersWithKnotsNum;
       model._output._gamColMeansRaw = _gamColMeansRaw;
       model._output._oneOGamColStd = _oneOGamColStd;
@@ -804,7 +946,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       copyGLMCoeffs(glm, model, _parms, nclasses());  // copy over coefficient names and generate coefficients as beta = z*GLM_beta
       copyGLMtoGAMModel(model, glm, _parms, valid()!=null);  // copy over fields from glm model to gam model
       if (_cvOn) {
+        _parms._betaConstraintsOff = true;
         copyCVGLMtoGAMModel(model, glm, _parms, _foldColumn);  // copy over fields from cross-validation
+        _parms._betaConstraintsOff = false;
         _parms._nfolds = _foldColumn == null ? _glmNFolds : 0;  // restore original cross-validation parameter values
         _parms._fold_assignment = _foldAssignment;
         _parms._fold_column = _foldColumn;

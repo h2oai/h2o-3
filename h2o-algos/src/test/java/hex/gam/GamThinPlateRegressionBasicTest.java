@@ -396,7 +396,8 @@ public class GamThinPlateRegressionBasicTest extends TestUtil {
       train.replace((10), train.vec(10).toCategoricalVec()).remove();
       DKV.put(train);
       GAMParameters params = new GAMParameters();
-      params._knot_ids = new String[]{knotsFrame1._key.toString(), knotsFrame2._key.toString(), knotsFrame3._key.toString()};
+      params._knot_ids = new String[]{knotsFrame1._key.toString(), knotsFrame2._key.toString(), 
+              knotsFrame3._key.toString()};
       params._bs = new int[]{0,1,0};
       params._response_column = "C11";
       params._ignored_columns = ignoredCols;
