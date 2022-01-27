@@ -13,7 +13,6 @@ from h2o.estimators import *
 
 
 def test_display_mode():
-    import matplotlib
     train = h2o.upload_file(pyunit_utils.locate("smalldata/titanic/titanic_expanded.csv"))
     y = "fare"
 
