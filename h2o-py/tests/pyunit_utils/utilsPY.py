@@ -192,7 +192,7 @@ def capture_output(default_output_enabled=True):
     :return: a namespace with a key for each output stream.
     :examples:
     
-    >>> with capture_ouput() as c:
+    >>> with capture_output() as c:
     ...     import warnings
     ...     print("Hey")
     ...     print("You")
