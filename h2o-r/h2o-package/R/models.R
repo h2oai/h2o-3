@@ -3767,6 +3767,7 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @seealso \code{\link{predict}} for generating prediction frames,
 #'          \code{\link{h2o.performance}} for creating
 #'          \linkS4class{H2OModelMetrics}.
+#' @alias h2o.gains_lift
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3786,6 +3787,10 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 setGeneric("h2o.gainsLift", function(object, ...) {})
+
+#' @rdname h2o.gainsLift
+#' @export
+h2o.gains_lift <- function(object, ...) h2o.gainsLift(object, ...)
 
 #' @rdname h2o.gainsLift
 #' @export
