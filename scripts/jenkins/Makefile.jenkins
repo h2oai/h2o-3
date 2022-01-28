@@ -320,7 +320,7 @@ test-package-java:
 		h2o-clustering/tests/ \
 		scripts/run.py h2o-py/tests_rest_smoke scripts/test-xgb-gpu-smoke.sh \
 		scripts/jenkins/hadoop/ \
-		sort_crash.csv tests/doOnlyJunitSmokeTestList \
+		tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
 	find . -name "*.gradle" | zip -q -r test-package-java \
 	    -x h2o-web/* \

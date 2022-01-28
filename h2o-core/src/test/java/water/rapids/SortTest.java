@@ -205,7 +205,7 @@ public class SortTest extends TestUtil {
     Scope.enter();
     Frame fr=null, sorted=null;
     try {
-      fr = parseTestFile("sort_crash.csv");
+      fr = parseTestFile("smalldata/synthetic/sort_crash.csv");
       sorted = fr.sort(new int[]{0});
       Scope.track(fr);
       Scope.track(sorted);
