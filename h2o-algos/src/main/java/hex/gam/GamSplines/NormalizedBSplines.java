@@ -11,18 +11,15 @@ public class NormalizedBSplines {
     private final int _nKnots;   // number of knots of multiplicity 1
     private final List<Double> _knots;
     private final int _totKnots;    // number of knots including duplication at beginning and end
-    private final int _totBasisFuncs;
-    private BSplineBasis[] _basisFuncs;
+    public final int _totBasisFuncs;
+    public final BSplineBasis[] _basisFuncs;
     
-    public NormalizedBSplines(int m, int N, double[] knots) {
+    public NormalizedBSplines(int m, double[] knots) {
         _m = m;
-        _nKnots = N;
+        _nKnots = knots.length;
         _totKnots = _nKnots +2*_m-2;
         _totBasisFuncs = _nKnots +_m-2;
-        if (N == knots.length)
-            _knots = fillKnots(knots, m, N);
-        else  // array already contains knot duplicates
-            _knots = Arrays.stream(knots).boxed().collect(Collectors.toList());
+        _knots = fillKnots(knots, m);
         _basisFuncs = genBasisFunctions(_totBasisFuncs, _m, _knots);
         
     }
@@ -49,7 +46,7 @@ public class NormalizedBSplines {
     }
     
     private static class BSplineBasis {
-        private List<Double> _knots;    // knots over which basis function is non-zero, expanded
+        public List<Double> _knots;     // knots over which basis function is non-zero, expanded
         private double[] _numerator;    // only length 2
         private double[] _oneOverdenominator;  // only length 2
         private BSplineBasis _first;  // first part of basis function

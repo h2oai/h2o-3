@@ -322,15 +322,20 @@ public class GamUtils {
     return predictVec;
   }
 
-  public static String[] generateGamColNames(int gam_col_index, GAMParameters parms) {
-    String[] newColNames = new String[parms._num_knots_sorted[gam_col_index]];
-    StringBuffer nameStub = new StringBuffer();
-    int numPredictors = parms._gam_columns_sorted[gam_col_index].length;
+  public static String[] generateGamColNames(int gamColIndex, GAMParameters parms) {
+    String[] newColNames = null;
+    if (parms._bs_sorted[gamColIndex] == 0)
+      newColNames = new String[parms._num_knots_sorted[gamColIndex]];
+    else
+      newColNames = new String[parms._num_knots_sorted[gamColIndex]+parms._spline_orders_sorted[gamColIndex]+1-2];
+
+/*    StringBuffer nameStub = new StringBuffer();
+    int numPredictors = parms._gam_columns_sorted[gamColIndex].length;
     for (int predInd = 0; predInd < numPredictors; predInd++) {
-      nameStub.append(parms._gam_columns_sorted[gam_col_index][predInd]+"_");
-    }
-    String stubName = nameStub.toString();
-    for (int knotIndex = 0; knotIndex < parms._num_knots_sorted[gam_col_index]; knotIndex++) {
+      nameStub.append(parms._gam_columns_sorted[gamColIndex][predInd]+"_");
+    }*/
+    String stubName = parms._gam_columns_sorted[gamColIndex][0]+"_";
+    for (int knotIndex = 0; knotIndex < newColNames.length; knotIndex++) {
       newColNames[knotIndex] = stubName+knotIndex;
     }
     return newColNames;
@@ -397,20 +402,22 @@ public class GamUtils {
    */
   public static void sortGAMParameters(GAMParameters parms, int singlePredictorSmootherNum) {
     int gamColNum = parms._gam_columns.length;
-    int csIndex = 0;
+    int csIsIndex = 0;
     int tpIndex = singlePredictorSmootherNum;
     parms._gam_columns_sorted = new String[gamColNum][];
     parms._num_knots_sorted = MemoryManager.malloc4(gamColNum);
     parms._scale_sorted = MemoryManager.malloc8d(gamColNum);
     parms._bs_sorted = MemoryManager.malloc4(gamColNum);
     parms._gamPredSize = MemoryManager.malloc4(gamColNum);
+    parms._spline_orders_sorted = MemoryManager.malloc4(gamColNum);
     for (int index = 0; index < gamColNum; index++) {
       if (parms._bs[index] == 0 || parms._bs[index] == 2) { // cubic spline
-        parms._gam_columns_sorted[csIndex] = parms._gam_columns[index].clone();
-        parms._num_knots_sorted[csIndex] = parms._num_knots[index];
-        parms._scale_sorted[csIndex] = parms._scale[index];
-        parms._gamPredSize[csIndex] = parms._gam_columns_sorted[csIndex].length;
-        parms._bs_sorted[csIndex++] = parms._bs[index];
+        parms._gam_columns_sorted[csIsIndex] = parms._gam_columns[index].clone();
+        parms._num_knots_sorted[csIsIndex] = parms._num_knots[index];
+        parms._scale_sorted[csIsIndex] = parms._scale[index];
+        parms._gamPredSize[csIsIndex] = parms._gam_columns_sorted[csIsIndex].length;
+        parms._bs_sorted[csIsIndex] = parms._bs[index];
+        parms._spline_orders_sorted[csIsIndex++] = parms._spline_orders[index];
       } else {  // thin plate
         parms._gam_columns_sorted[tpIndex] = parms._gam_columns[index].clone();
         parms._num_knots_sorted[tpIndex] = parms._num_knots[index];

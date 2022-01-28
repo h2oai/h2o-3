@@ -2,23 +2,22 @@ package hex.gam.GamSplines;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class NBSplinesUtils {
     
-    public static List<Double> fillKnots(double[] knots, int m, int N) {
+    public static List<Double> fillKnots(double[] knots, int m) {
         List<Double> knotsNew = new ArrayList<>();
         int upperBound = m-1;
         for (int index=0; index < upperBound; index++)    // m lower knots, all equal value
             knotsNew.add(knots[0]);
-        upperBound = knots.length;
-        for (int index=0; index < upperBound; index++) // N-2 interior knots
+        int knotLen = knots.length;
+        for (int index=0; index < knotLen; index++) // N-2 interior knots
             knotsNew.add(knots[index]);
         double upperVal = knots[knots.length-1];
         for (int index=0; index < upperBound; index++)
             knotsNew.add(upperVal);
-        assert knotsNew.size()==N+2*m-2:"knots length is incorrect";
+        assert knotsNew.size()==knots.length+2*m-2:"knots length is incorrect";
         return knotsNew;
     }
 

@@ -201,11 +201,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     // internal parameter, handle with care. GLM will stop when there is more than this number of active predictors (after strong rule screening)
     public int _max_active_predictors = -1; // not used in GAM, copied over to GLM params
     public boolean _generate_scoring_history = false; // if true, will generate GLM scoring history but will slow algo down
-
-
+    
     // the following parameters are for GAM
     public int[] _num_knots; // array storing number of knots per smoother
     public int[] _spline_orders;  // storing I-spline orders for each predictor
+    public int[] _spline_orders_sorted;
     public int[] _num_knots_sorted;
     public int[] _num_knots_tp; // store num_knots for thin plate regression
     public String[] _knot_ids;  // store frame keys that contain knots location for each smoother in gam_X;

@@ -15,7 +15,7 @@ import water.util.ArrayUtils;
 
 import static hex.genmodel.algos.gam.GamUtilsCubicRegression.locateBin;
 
-public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColumn> {
+public class GenCSSplineGamOneColumn extends MRTask<GenCSSplineGamOneColumn> {
   int _splineType;
   public int _numKnots;      // number of knots
   public double[][] _bInvD;  // store inv(B)*D
@@ -27,7 +27,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   double[] _maxAbsRowSum; // store maximum row sum
   public double _s_scale;
 
-  public GenerateGamMatrixOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
+  public GenCSSplineGamOneColumn(int splineType, int numKnots, double[] knots, Frame gamx) {
     _splineType = splineType;
     _numKnots = numKnots;
      CubicRegressionSplines crSplines = new CubicRegressionSplines(numKnots, knots);
@@ -75,7 +75,7 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   }
 
   @Override
-  public void reduce(GenerateGamMatrixOneColumn other) {
+  public void reduce(GenCSSplineGamOneColumn other) {
     ArrayUtils.add(_maxAbsRowSum, other._maxAbsRowSum);
   }
 
