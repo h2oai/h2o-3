@@ -596,7 +596,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     } else if (m._output.isMultinomialClassifier()) { // multinomial
       return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) { // regression
-      return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
+      return new String[] {"rmse", "mse", "mae", "rmsle", "mean_residual_deviance"};
     }
     return new String[0];
   }
