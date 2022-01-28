@@ -30,31 +30,42 @@ def test_event_log():
 
 def test_train_verbosity():
     ds = import_dataset()
-    make_aml = lambda verbosity=None: H2OAutoML(project_name="test_train_verbosity",
+    make_aml = lambda verbosity=None: H2OAutoML(project_name="test_train_verbosity_%s" % verbosity,
                                                 keep_cross_validation_predictions=True,
                                                 max_models=2,
                                                 stopping_tolerance=0.01,  # triggers a warning event log message
                                                 seed=1234,
                                                 verbosity=verbosity)
     print("\n\nverbosity off")
-    with pu.capture_print() as disabled:
+    with pu.capture_output() as disabled:
         make_aml().train(y=ds.target, training_frame=ds.train)
     print("\n\nverbosity debug")
-    with pu.capture_print() as debug:
+    with pu.capture_output() as debug:
         make_aml('debug').train(y=ds.target, training_frame=ds.train)
     print("\n\nverbosity info")
-    with pu.capture_print() as info:
+    with pu.capture_output() as info:
         make_aml('info').train(y=ds.target, training_frame=ds.train)
     print("\n\nverbosity warn")
-    with pu.capture_print() as warn:
+    with pu.capture_output() as warn:
         make_aml('warn').train(y=ds.target, training_frame=ds.train)
     print("\n\nverbosity error")
-    with pu.capture_print() as error:
+    with pu.capture_output() as error:
         make_aml('error').train(y=ds.target, training_frame=ds.train)
     
-    if disabled is not None:  # no check in Py2 
-        print(len(disabled.out), len(error.out), len(warn.out), len(info.out), len(debug.out))
-        assert len(disabled.out) <= len(error.out) <= len(warn.out) < len(info.out) < len(debug.out)
+    print(len(disabled.out.lines), len(error.out.lines), len(warn.out.lines), len(info.out.lines), len(debug.out.lines))
+    assert len(disabled.out.lines) <= len(error.out.lines) <= len(warn.out.lines) < len(info.out.lines) < len(debug.out.lines)
+    assert "Project: test_train_verbosity_None" not in disabled.out.text
+    assert "Project: test_train_verbosity_error" not in error.out.text
+    assert "Project: test_train_verbosity_warn" not in warn.out.text
+    assert "Project: test_train_verbosity_info" in info.out.text
+    assert "Project: test_train_verbosity_debug" in debug.out.text
+
+    assert "Stopping tolerance set by the user is" not in error.out.text
+    assert "Stopping tolerance set by the user is" in warn.out.text
+    assert "AutoML duration" not in warn.out.text
+    assert "AutoML duration" in info.out.text
+    assert "Time assigned for" not in info.out.text
+    assert "Time assigned for" in debug.out.text
 
 
 pu.run_tests([

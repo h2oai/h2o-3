@@ -30,6 +30,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -566,6 +567,18 @@ public class PersistS3Test extends TestUtil {
     assertTrue(val.isStr());
 
     assertTrue(val.getStr().toLowerCase().startsWith("https"));
+  }
+
+  @Test
+  public void testCredentialsProviderContainsAwsDefault() {
+    AWSCredentialsProvider[] providers = PersistS3.H2OAWSCredentialsProviderChain.constructProviderChain();
+    List<String> providerClasses = Arrays.stream(providers)
+            .map(Object::getClass).map(Class::getName)
+            .collect(Collectors.toList());
+    assertEquals(Arrays.asList(
+            "water.persist.PersistS3$H2ODynamicCredentialsProvider", 
+            "water.persist.PersistS3$H2OArgCredentialsProvider", 
+            "com.amazonaws.auth.DefaultAWSCredentialsProviderChain"), providerClasses);
   }
 
   private static void checkEnv() {

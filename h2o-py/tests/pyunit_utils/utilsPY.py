@@ -14,6 +14,7 @@ import fnmatch
 from functools import reduce
 import imp
 import importlib
+import io
 import json
 import math
 import os
@@ -128,60 +129,83 @@ def ns(**kwargs):
     return Namespace(**kwargs)
 
 
+class _XStringIO(io.StringIO):
+    
+    def __init__(self, alt=None):
+        super(_XStringIO, self).__init__()
+        self._alt = alt
+        
+    def write(self, s):
+        if PY2:
+            s = unicode(s)
+        if self._alt is not None:
+            self._alt.write(s)
+        return super(_XStringIO, self).write(s)
+    
+    def flush(self):
+        if self._alt is not None:
+            self._alt.flush()
+        return super(_XStringIO, self).flush()
+    
+    @property
+    def encoding(self):
+        return self._alt.encoding if self._alt else sys.getdefaultencoding()
+        
+    @property
+    def lines(self):
+        return self.getvalue().splitlines()
+    
+    @property
+    def text(self):
+        return self.getvalue()
+
+
+class _CaptureStream(object):  # inspired by Py3 contextlib._RedirectStream
+
+    def __init__(self, stream=None, captured_stream_enabled=True):
+        self._stream = stream
+        self._new_target = None
+        self._captured_stream_enabled = captured_stream_enabled
+        # We use a list of old targets to make this CM re-entrant
+        self._old_targets = []
+
+    def __enter__(self):
+        old_target = getattr(sys, self._stream)
+        self._old_targets.append(old_target)
+        self._new_target = _XStringIO(old_target if self._captured_stream_enabled else None)
+        setattr(sys, self._stream, self._new_target)
+        return self._new_target
+
+    def __exit__(self, exctype, excinst, exctb):
+        setattr(sys, self._stream, self._old_targets.pop())
+
+
 @contextmanager
-def capture_print(default_print_enabled=True, capture_print_to_files=False):
+def capture_output(default_output_enabled=True):
     """
-    Captures calls to print and store each printed entry into an array.
+    Captures writes to stdout and stderr
     All captures are accessible from the object yielded by this context manager for further inspection:
      - prints to `stdout` are accessible from its `out` property.
      - prints to `stderr` are accessible from its `err` property.
-     - prints to file (if enabled) are accessible from the file name property.
     
-    :param default_print_enabled: True if the default print behaviour is maintained. Defaults to True.
-    :param capture_print_to_files: True if usages of print(..., file=foo) should also be handled. Defaults to False.
+    :param default_output_enabled: True if the default print behaviour is maintained. Defaults to True.
     :return: a namespace with a key for each output stream.
     :examples:
     
-    >>> with capture_print() as p:
+    >>> with capture_output() as c:
+    ...     import warnings
     ...     print("Hey")
     ...     print("You")
-    ... assert len(p.out) == 2
-    ... assert p.out == ["Hey\\n", "You\\n"]
+    ...     warnings.warn("Pozor!")
+    ... assert len(c.out.lines) == 2
+    ... assert c.out.lines == ["Hey", "You"]
+    ... assert "Pozor!" in c.err.text
     """
-    if PY2:
-        yield None  # disabling for Py2, because Py2 sucks (I don't manage to change builtin print)
-        return
-
-    import builtins
-    ori_print = builtins.print
-    captures = ns(out=[], err=[])
-
-    def new_print(*args, **kwargs):  # using **kwargs instead of explicit keyword arguments to make Py2.7 happy
-        sep = kwargs.get('sep', ' ')
-        end = kwargs.get('end', '\n')
-        file = kwargs.get('file')
-        
-        if not capture_print_to_files and file not in [None, sys.stdout, sys.stderr]:
-            return ori_print(*args, **kwargs)
-
-        cap_name = ('out' if file in [None, sys.stdout]
-                    else 'err' if file is sys.stderr 
-                    else file.name)
-        
-        cap = captures.__dict__.get(cap_name)
-        if cap is None:
-            cap = captures.__dict__[cap_name] = []
-        entry = sep.join(map(str, args))+end  # concatenate args as normal print would do
-        cap.append(entry)
-        if default_print_enabled:
-            ori_print(*args, **kwargs)
-
-    try:
-        builtins.print = new_print
-        yield captures
-    finally:
-        builtins.print = ori_print
     
+    with _CaptureStream("stdout", default_output_enabled) as out:
+        with _CaptureStream("stderr", default_output_enabled) as err:
+            yield ns(out=out, err=err)
+
 
 def gen_random_uuid(numberUUID):
     uuidVec = numberUUID*[None]
