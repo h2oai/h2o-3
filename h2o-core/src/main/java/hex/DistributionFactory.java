@@ -389,7 +389,7 @@ class HuberDistribution extends Distribution {
         if (Math.abs(y - f) <= _huberDelta) {
             return w * (y - f) * (y - f); // same as wMSE
         } else {
-            return (2 * w * Math.abs(y - f) - _huberDelta) * _huberDelta; // (2 * wMAE - delta) * delta
+            return w * (2 * Math.abs(y - f) - _huberDelta) * _huberDelta; // w * (2 * MAE - delta) * delta
         }
     }
 
