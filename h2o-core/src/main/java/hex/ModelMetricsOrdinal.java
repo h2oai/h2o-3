@@ -50,15 +50,14 @@ public class ModelMetricsOrdinal extends ModelMetricsSupervised {
   @Override public float[] hr() { return _hit_ratios; }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsOrdinal specificOther = (ModelMetricsOrdinal) other;
-
-    boolean result = resultFromSupport &&
-      ComparisonUtils.compareValuesUpToTolerance(this.logloss(), specificOther.logloss(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.hr(), specificOther.hr(), proportionalTolerance);
-      // CM not supported yet.
+    
+    result.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss(), proportionalTolerance);
+    result.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance);
+    result.compareValuesUpToTolerance("hr", this.hr(), specificOther.hr(), proportionalTolerance);
+    // CM not supported yet.
     return result;
   }
 

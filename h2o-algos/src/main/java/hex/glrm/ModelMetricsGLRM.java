@@ -26,15 +26,14 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
   }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsGLRM specificOther = (ModelMetricsGLRM) other;
-
-    boolean result = resultFromSupport &&
-            ComparisonUtils.compareValuesUpToTolerance(this._numerr, specificOther._numerr, proportionalTolerance) &&
-            ComparisonUtils.compareValuesUpToTolerance(this._caterr, specificOther._caterr, proportionalTolerance) &&
-            _numcnt == specificOther._numcnt &&
-            _catcnt == specificOther._catcnt;
+    
+    result.compareValuesUpToTolerance("numerr", this._numerr, specificOther._numerr, proportionalTolerance);
+    result.compareValuesUpToTolerance("caterr", this._caterr, specificOther._caterr, proportionalTolerance);
+    result.compare("numcnt", this._numcnt, specificOther._numcnt);
+    result.compare("catcnt", this._catcnt, specificOther._catcnt);
     return result;
   }
 

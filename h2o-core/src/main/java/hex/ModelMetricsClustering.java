@@ -45,16 +45,15 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
   }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsClustering specificOther = (ModelMetricsClustering) other;
-
-    boolean result = resultFromSupport &&
-      ComparisonUtils.compareValuesUpToTolerance(this.totss(), specificOther.totss(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.tot_withinss(), specificOther.tot_withinss(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.betweenss(), specificOther.betweenss(), proportionalTolerance) &&
-      Arrays.equals(this._size, specificOther._size) &&
-      ComparisonUtils.compareValuesUpToTolerance(this._withinss, specificOther._withinss, proportionalTolerance);
+    
+    result.compareValuesUpToTolerance("totss", this.totss(), specificOther.totss(), proportionalTolerance);
+    result.compareValuesUpToTolerance("tot_withinss", this.tot_withinss(), specificOther.tot_withinss(), proportionalTolerance);
+    result.compareValuesUpToTolerance("betweenss", this.betweenss(), specificOther.betweenss(), proportionalTolerance);
+    result.compare("size", this._size, specificOther._size);
+    result.compareValuesUpToTolerance("withinss", this._withinss, specificOther._withinss, proportionalTolerance);
             
     return result;
   }

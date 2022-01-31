@@ -32,11 +32,11 @@ public class ModelMetricsSupervised extends ModelMetrics {
   }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSuper = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
+    result.compareValuesUpToTolerance("r2", this.r2(), ((ModelMetricsSupervised)other).r2(), proportionalTolerance);
     
-    return resultFromSuper &&
-      ComparisonUtils.compareValuesUpToTolerance(this.r2(), ((ModelMetricsSupervised)other).r2(), proportionalTolerance);
+    return result;
   }
 
   abstract public static class MetricBuilderSupervised<T extends MetricBuilderSupervised<T>> extends MetricBuilder<T> {

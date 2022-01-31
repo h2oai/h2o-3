@@ -54,15 +54,14 @@ public class ModelMetricsRegressionCoxPH extends ModelMetricsRegression {
   }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsRegressionCoxPH specificOther = (ModelMetricsRegressionCoxPH) other;
 
-    boolean result = resultFromSupport &&
-      ComparisonUtils.compareValuesUpToTolerance(this.concordance(), specificOther.concordance(), proportionalTolerance) &&
-      this.concordant() == specificOther.concordant() &&
-      this.discordant() == specificOther.discordant() &&
-      this.tiedY() == specificOther.tiedY();      
+    result.compareValuesUpToTolerance("concordance", this.concordance(), specificOther.concordance(), proportionalTolerance);
+    result.compare("concordant", this.concordant(), specificOther.concordant());
+    result.compare("discordant", this.discordant(), specificOther.discordant());
+    result.compare("tiedY", this.tiedY(), specificOther.tiedY());
     return result;
   }
 

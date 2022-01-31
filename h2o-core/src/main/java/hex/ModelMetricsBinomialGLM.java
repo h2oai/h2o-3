@@ -1,6 +1,7 @@
 package hex;
 
 import water.fvec.Frame;
+import water.util.ComparisonUtils;
 
 public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLMMetrics {
   public final long _nullDegressOfFreedom;
@@ -57,12 +58,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
   }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsBinomialGLM specificOther = (ModelMetricsBinomialGLM) other;
-
-    boolean result = resultFromSupport &&
-            GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance);
+    
+    result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
     return result;
   }
   
@@ -121,12 +121,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     }
 
     @Override
-    public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-      boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+      ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
       ModelMetricsMultinomialGLM specificOther = (ModelMetricsMultinomialGLM) other;
-
-      boolean result = resultFromSupport &&
-              GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance);
+      
+      result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
       return result;
     }
   }
@@ -186,12 +185,11 @@ public class ModelMetricsBinomialGLM extends ModelMetricsBinomial implements GLM
     }
 
     @Override
-    public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-      boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+    public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+      ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
       ModelMetricsOrdinalGLM specificOther = (ModelMetricsOrdinalGLM) other;
-
-      boolean result = resultFromSupport &&
-              GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance);
+      
+      result.merge(GLMMetrics.compareMetricsUpToTolerance(this, specificOther, proportionalTolerance));
       return result;
     }
   }

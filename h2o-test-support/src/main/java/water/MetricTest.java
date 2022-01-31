@@ -12,6 +12,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.ComparisonUtils;
 import water.util.fp.Function;
 import water.util.fp.Function2;
 
@@ -185,9 +186,10 @@ public abstract class MetricTest extends TestUtil {
             Assert.assertTrue(
                     "Unexpected type of training metrics",
                     expectedTrainingMetrics.getClass() == trainingMetrics.getClass());
+            ComparisonUtils.AccumulatedComparisonResult trainingResult = expectedTrainingMetrics.isEqualUpToTolerance(trainingMetrics, tolerance);
             Assert.assertTrue(
-                    "Training metrics are not equal upto proportional tolerance " + tolerance,
-                    expectedTrainingMetrics.isEqualUpToTolerance(trainingMetrics, tolerance));
+                    "Training metrics are not equal upto proportional tolerance " + tolerance + ". " + trainingResult,
+                    trainingResult.isEqual());
         }
 
         if (validationFrame != null) {
@@ -197,9 +199,10 @@ public abstract class MetricTest extends TestUtil {
             Assert.assertTrue(
                     "Unexpected type of validation metrics",
                     expectedValidationMetrics.getClass() == validationMetrics.getClass());
+            ComparisonUtils.AccumulatedComparisonResult validationResult = expectedValidationMetrics.isEqualUpToTolerance(validationMetrics, tolerance);
             Assert.assertTrue(
-                    "Validation metrics are not equal upto proportional tolerance " + tolerance,
-                    expectedValidationMetrics.isEqualUpToTolerance(validationMetrics, tolerance));
+                    "Validation metrics are not equal upto proportional tolerance "+ tolerance + ". " + validationResult,
+                    validationResult.isEqual());
         }
     }
 

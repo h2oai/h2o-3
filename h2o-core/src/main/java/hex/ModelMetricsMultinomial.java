@@ -81,17 +81,16 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
   }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsMultinomial specificOther = (ModelMetricsMultinomial) other;
-
-    boolean result = resultFromSupport &&
-      ComparisonUtils.compareValuesUpToTolerance(this.auc(), specificOther.auc(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.pr_auc(), specificOther.pr_auc(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.logloss(), specificOther.logloss(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.hr(), specificOther.hr(), proportionalTolerance);
-      // CM not supported yet.
+    
+    result.compareValuesUpToTolerance("auc", this.auc(), specificOther.auc(), proportionalTolerance);
+    result.compareValuesUpToTolerance("pr_auc", this.pr_auc(), specificOther.pr_auc(), proportionalTolerance);
+    result.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss(), proportionalTolerance);
+    result.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance);
+    result.compareValuesUpToTolerance("hr", this.hr(), specificOther.hr(), proportionalTolerance);
+    // CM not supported yet.
     return result;
   }
 

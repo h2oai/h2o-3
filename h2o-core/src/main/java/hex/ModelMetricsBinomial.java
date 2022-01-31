@@ -81,17 +81,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public double lift_top_group() { return gainsLift().response_rates[0] / gainsLift().avg_response_rate; }
 
   @Override
-  public boolean isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) { 
-    boolean resultFromSupport = super.isEqualUpToTolerance(other, proportionalTolerance);
+  public ComparisonUtils.AccumulatedComparisonResult isEqualUpToTolerance(ModelMetrics other, double proportionalTolerance) {
+    ComparisonUtils.AccumulatedComparisonResult result = super.isEqualUpToTolerance(other, proportionalTolerance);
     ModelMetricsBinomial specificOther = (ModelMetricsBinomial)other;
     
-    boolean result = resultFromSupport &&
-      ComparisonUtils.compareValuesUpToTolerance(this.auc(), specificOther.auc(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.pr_auc(), specificOther.pr_auc(), proportionalTolerance) &&
-      //ComparisonUtils.compareValuesUpToTolerance(this.lift_top_group(), specificOther.lift_top_group(), proportionalTolerance) && // not supported yet
-      ComparisonUtils.compareValuesUpToTolerance(this.logloss(), specificOther.logloss(), proportionalTolerance) &&
-      ComparisonUtils.compareValuesUpToTolerance(this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance);
-      // CM, Gainslift, auc_obj are not supported yet.
+    result.compareValuesUpToTolerance("auc", this.auc(), specificOther.auc(), proportionalTolerance);
+    result.compareValuesUpToTolerance("pr_auc", this.pr_auc(), specificOther.pr_auc(), proportionalTolerance);
+    //ComparisonUtils.compareValuesUpToTolerance(this.lift_top_group(), specificOther.lift_top_group(), proportionalTolerance) && // not supported yet
+    result.compareValuesUpToTolerance("logloss", this.logloss(), specificOther.logloss(), proportionalTolerance);
+    result.compareValuesUpToTolerance("mean_per_class_error", this.mean_per_class_error(), specificOther.mean_per_class_error(), proportionalTolerance);
+    // CM, Gainslift, auc_obj are not supported yet.
     return result;
   }
 
