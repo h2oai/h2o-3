@@ -1404,7 +1404,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         return metrics
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot(self, type="roc", server=False, save_plot_path=None, plot=True, **kwargs):
+    def plot(self, type="roc", server=False, save_plot_path=None, plot=True):
         """
         Produce the desired metric plot.
 
@@ -1774,7 +1774,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         return None
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot_gains_lift(self, type="both", server=False, save_plot_path=None, plot=True, **kwargs):
+    def plot_gains_lift(self, type="both", server=False, save_plot_path=None, plot=True):
         """
         Plot Gains/Lift curves.
 

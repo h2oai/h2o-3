@@ -854,7 +854,7 @@ class H2OBinomialModel(ModelBase):
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
 
     @deprecated_params({'save_to_file': 'save_plot_path'})
-    def plot_gains_lift(self, type="both", xval=False, server=False, save_plot_path=None, plot=True, **kwargs):
+    def plot_gains_lift(self, type="both", xval=False, server=False, save_plot_path=None, plot=True):
         """
         Plot Gains/Lift curves.
 

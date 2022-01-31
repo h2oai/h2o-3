@@ -3799,13 +3799,13 @@ setMethod("h2o.gainsLift", "H2OModel", function(object, newdata, valid=FALSE, xv
   if( missing(newdata) ) {
     if( valid ) {
       if( is.null(model.parts$vm) ) return( invisible(.warn.no.validation()) )
-      else                          return( h2o.gainsLift(model.parts$vm) )
+      else                          return( h2o.gainsLift(model.parts$vm, ...) )
     }
     if ( xval ) {
       if( is.null(model.parts$xm) ) return( invisible(.warn.no.cross.validation()))
-      else                          return( h2o.gainsLift(model.parts$xm) )
+      else                          return( h2o.gainsLift(model.parts$xm, ...) )
     }
-    return( h2o.gainsLift(model.parts$tm) )
+    return( h2o.gainsLift(model.parts$tm, ...) )
   } else {
     if( valid ) stop("Cannot have both `newdata` and `valid=TRUE`", call.=FALSE)
     if( xval )  stop("Cannot have both `newdata` and `xval=TRUE`", call.=FALSE)
