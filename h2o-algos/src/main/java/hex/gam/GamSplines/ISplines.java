@@ -35,13 +35,32 @@ public class ISplines {
     }
     
     public void gamifyVal(double[] gamifiedResults, double val) {
-        double[] temp = gamifiedResults;
         if (gamifiedResults == null)
-            temp = new double[_numIBasis];
+            gamifiedResults = new double[_numIBasis];
         
-        final double tempVal = Math.min(Math.max(_minKnot, val), _maxKnot);
-        double lowerKnot = _knotsOriginal.stream().filter(x -> x<=tempVal).reduce((first, second)->second).get();
-        double upperKnot = _knotsOriginal.stream().filter(x -> x>=tempVal).findFirst().get(); 
+        for (int basisInd = 0; basisInd < _numIBasis; basisInd++) {
+            if (val < _iSplines[basisInd]._knots.get(0))
+                gamifiedResults[basisInd] = 0;
+            else if (val >= _iSplines[basisInd]._knots.get(_order))
+                gamifiedResults[basisInd] = 1;
+            else 
+                gamifiedResults[basisInd] = sumNBSpline(basisInd, val);
+        }
+    }
+    
+    public double sumNBSpline(int startIndex, double val) {
+        double gamifiedVal = 0;
+        int maxBasisInd = Math.min(startIndex+_order, _bSplines._basisFuncs.length);
+        for (int basisInd = startIndex; basisInd < maxBasisInd; basisInd++) {
+            if (val < _bSplines._basisFuncs[basisInd]._knots.get(0)) {
+                break;  // no more basis function to be activated
+            } else if (val >= _bSplines._basisFuncs[basisInd]._knots.get(_order)) {
+                gamifiedVal += 1;
+            } else {
+                gamifiedVal += NormalizedBSplines.BSplineBasis.evaluate(val, _bSplines._basisFuncs[basisInd]);
+            }
+        }
+        return gamifiedVal;
     }
     
     private static class ISplineBasis {
@@ -52,7 +71,7 @@ public class ISplines {
         public ISplineBasis(int basisInd, int order, NormalizedBSplines bSplines) {
             _NSplineBasisStartIndex = basisInd;
             _order = order;
-            //_knots = bSplines._basisFuncs[basisInd]._knots;
+            _knots = new ArrayList<>(bSplines._basisFuncs[basisInd]._knots);
         }
     }
 }

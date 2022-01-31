@@ -2,6 +2,7 @@ package hex.gam.GamSplines;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class NBSplinesUtils {
@@ -25,7 +26,7 @@ public class NBSplinesUtils {
      * This method is used to extract the knots over which a basis function is supposed to be non-zero.
      */
     public static List<Double> extractKnots(int index, int order, List<Double> knots) {
-        List<Double> newKnots = new ArrayList<Double>();
+        List<Double> newKnots = new ArrayList<>();
         int[] validIndices = IntStream.rangeClosed(index, index+order).toArray();
         for (int ind : validIndices)
             newKnots.add(knots.get(ind));
@@ -50,8 +51,12 @@ public class NBSplinesUtils {
             oneOverDenominator[0] = 1;
             oneOverDenominator[1] = 1;
         } else {
-            oneOverDenominator[0] = 1.0/(knots.get(index+order-1)-knots.get(index));
-            oneOverDenominator[1] = 1.0/(knots.get(index+order)-knots.get(index+1));
+            double tempDenom = knots.get(index+order-1)-knots.get(index);
+            oneOverDenominator[0] = tempDenom==0 
+                    ? 0 : 1.0/tempDenom;
+            tempDenom = knots.get(index+order)-knots.get(index+1);
+            oneOverDenominator[1] = tempDenom==0
+                    ? 0 : 1.0/tempDenom;
         }
         return oneOverDenominator;
     }
