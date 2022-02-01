@@ -115,8 +115,8 @@ Where:
 +-------------------+-------------------------------------------------------------------------------------------+
 | Huber             | :math:`f= \begin{cases} w\times(y-f)^2 & \text{for } \mid{y-f}\mid \leq HuberDelta &      |
 |                   | \text{(Equivalent to wMSE)} \\                                                            |
-|                   | 2\times w\times(\mid{y-f}\mid -HuberDelta)\times HuberDelta & \text{for } y \leq f &      |
-|                   | \text{(Equivalent to wMAE)} \\\end{cases}`                                                |
+|                   | w\times(2 \times \mid{y-f}\mid - HuberDelta)\times HuberDelta & \text{for } y \leq f &    |
+|                   | \text{(Equivalent to w * (2 * MAE - delta) * delta)} \\\end{cases}`                       |
 +-------------------+-------------------------------------------------------------------------------------------+
 | Modified_Huber    | :math:`\text{With } z=(2\times y-1)\times f \\                                            |
 |                   | f= \begin{cases}-4\times w\times z & \text{for } z\leq 1 \\                               |

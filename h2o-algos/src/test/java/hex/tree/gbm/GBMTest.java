@@ -3146,7 +3146,7 @@ public class GBMTest extends TestUtil {
       // Build a POJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(pred, res, 1e-15));
       Assert.assertEquals( 1485, ((ModelMetricsRegression)gbm._output._training_metrics)._MSE,50);
-      Assert.assertTrue(Math.abs(((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance - 256.88) < 1);
+      Assert.assertEquals(289, ((ModelMetricsRegression)gbm._output._training_metrics)._mean_residual_deviance, 1);
 
     } finally {
       parms._train.remove();
@@ -3289,7 +3289,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       Assert.assertEquals(4.447062185,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
-      Assert.assertEquals(1.962926332,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(2.488248962,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
 
     } finally {
       if (tfr != null) tfr.delete();
@@ -3316,7 +3316,7 @@ public class GBMTest extends TestUtil {
       gbm = new GBM(parms).trainModel().get();
 
       Assert.assertEquals(4.8056900203,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
-      Assert.assertEquals(2.0080997,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(2.5683696486,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
 
     } finally {
       if (tfr != null) tfr.delete();
