@@ -73,6 +73,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
 //                new ModelSize(model._key)
                 new AlgoName(model),
+                new Distribution(model),
                 new ModelProvider(model, step),
                 new ModelStep(model, step),
                 new ModelGroup(model, step),
