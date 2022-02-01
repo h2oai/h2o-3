@@ -3,7 +3,6 @@ package hex.tree;
 import hex.genmodel.utils.DistributionFamily;
 import water.H2O.H2OCountedCompleter;
 import water.MRTask;
-import water.fvec.Frame;
 
 /**  Score and Build Histogram
  *
@@ -56,10 +55,6 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _workIdx = workIdx;
     _nidIdx = nidIdx;
     _treatmentIdx = treatmentIdx;
-  }
-
-  public ScoreBuildHistogram dfork2(byte[] types, Frame fr, boolean run_local) {
-    return dfork(types,fr,run_local);
   }
 
   /** Marker for already decided row. */
