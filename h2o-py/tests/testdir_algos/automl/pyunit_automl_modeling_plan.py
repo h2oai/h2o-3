@@ -33,6 +33,7 @@ def test_bad_modeling_plan_using_full_syntax():
             dict(name="GBM", alias='all_steps')
         ])
     except AssertionError as e:
+        print(e)
         assert "alias must be one of ['all', 'defaults', 'grids']" in str(e)
 
     try:
