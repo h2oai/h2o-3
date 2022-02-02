@@ -62,7 +62,7 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
                         GenModel pojoModel, Key<Frame> pojoSource) {
         super(selfKey, parms, output);
         _algoName = "pojo";
-        _genModelSource = new PojoModelSource(pojoSource, pojoModel);
+        _genModelSource = new PojoModelSource(selfKey.toString(), pojoSource, pojoModel);
         _output = new GenericModelOutput(ModelDescriptorBuilder.makeDescriptor(pojoModel));
     }
 
@@ -397,15 +397,17 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     private static class PojoModelSource extends GenModelSource<PojoModelSource> {
-        PojoModelSource(Key<Frame> pojoSource, GenModel pojoModel) {
+        final String _model_id; 
+        PojoModelSource(String modelId, Key<Frame> pojoSource, GenModel pojoModel) {
             super(pojoSource, pojoModel);
+            _model_id = modelId;
         }
 
         @Override
         GenModel reconstructGenModel(ByteVec bv) {
             Key<Frame> pojoKey = getSourceKey();
             try {
-                return PojoLoader.loadPojoFromSourceCode(bv, pojoKey);
+                return PojoLoader.loadPojoFromSourceCode(bv, pojoKey, _model_id);
             } catch (IOException e) {
                 throw new RuntimeException("Unable to load POJO source code from Vec " + pojoKey);
             }
