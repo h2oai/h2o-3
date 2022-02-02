@@ -163,6 +163,10 @@ def repr2(x):
     return s
 
 
+def _is_py2_unicode(s):
+    return PY2 and type(s) is _native_unicode
+    
+
 class PList(list):
     """
     Wrapper for printable lists ensuring that the list is printed/represented the same way in Py2 and Py3
@@ -172,8 +176,8 @@ class PList(list):
         super(PList, self).__init__(arr)
         
     def __str__(self):
-        return str([str(it) for it in self])
+        return str([str(it) if _is_py2_unicode(it) else it for it in self])
     
     def __repr__(self):
-        return repr([str(it) for it in self])
+        return repr([str(it) if _is_py2_unicode(it) else it for it in self])
     
