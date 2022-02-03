@@ -398,8 +398,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double[] preds = null;
       double[] treatment = null;
       final int maxWorkId = _allocator.getMaxId(id);
+      boolean initialized = false;
       for(int i = _allocator.allocateWork(id); i < maxWorkId; i = _allocator.allocateWork(id)) {
-        if (cs == null) { // chunk data cache doesn't exist yet
+        if (!initialized) { // chunk data cache doesn't exist yet
+          initialized = true;
           if (_respIdx >= 0)
             resp = MemoryManager.malloc8d(_maxChunkSz);
           if (_predsIdx >= 0)
@@ -419,6 +421,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       double [] ys = ScoreBuildHistogram2.this._ys[id];
       final int hcslen = _lh.length;
       boolean extracted = false;
+      Object chunk_data = null;
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols, _col) >= 0) {
@@ -428,7 +431,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if (hi == lo || h == null) continue; // Ignore untracked columns in this split
           if (h._vals == null) h.init();
           if (! extracted) {
-            cs = h.extractData(_chks[id][_col], cs, len, _maxChunkSz);
+            chunk_data = h.extractData(_chks[id][_col], cs, len, _maxChunkSz);
+            if (cs == null && chunk_data instanceof Chunk) {
+              cs = new double[_maxChunkSz + 1];
+            }
             if (h._vals_dim >= 6) {
               _chks[id][_respIdx].getDoubles(resp, 0, len);
               if (h._vals_dim == 7) {
@@ -441,7 +447,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             }
             extracted = true;
           }
-          h.updateHisto(ws, resp, cs, ys, preds, rs, hi, lo, treatment);
+          h.updateHisto(ws, resp, chunk_data, ys, preds, rs, hi, lo, treatment, cs instanceof double[] ? (double[]) cs : null);
         }
       }
       return cs;

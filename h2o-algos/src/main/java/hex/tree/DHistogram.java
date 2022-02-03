@@ -530,12 +530,18 @@ public final class DHistogram extends Iced<DHistogram> {
     return Math.max(0, (wYY(b) - wY(b)* wY(b)/n)/(n-1)); //not strictly consistent with what is done elsewhere (use n instead of n-1 to get there)
   }
 
-  void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
+  void updateHisto(double[] ws, double[] resp, Object cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment, double[] CACHE){
     if (_intOpt) {
       assert treatment == null : "Integer-optimized histograms cannot be used when treatment is provided";
       updateHistoInt(ws, (int[]) cs, ys, rows, hi, lo);
-    } else
-      updateHisto(ws, resp, (Chunk) cs, ys, preds, rows, hi, lo, treatment);
+    } else {
+      Chunk c = (Chunk) cs;
+      for (int r = lo; r < hi; ++r) {
+        final int k = rows[r];
+        CACHE[r] = c.atd(k);
+      }
+      updateHisto(ws, resp, CACHE, ys, preds, rows, hi, lo, treatment);
+    }
   }
 
   /**
@@ -554,16 +560,15 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    * @param treatment treatment column data           
    */
-  void updateHisto(double[] ws, double resp[], Chunk cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
+  void updateHisto(double[] ws, double[] resp, double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
 
     for(int r = lo; r< hi; ++r) {
-      final int k = rows[r];
-      final double weight = ws == null ? 1 : ws[k];
+      final double weight = ws == null ? 1 : ws[rows[r]];
       if (weight == 0)
         continue; // Needed for DRF only
-      final double col_data = cs.atd(k);
+      final double col_data = cs[r];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
       final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
@@ -577,7 +582,8 @@ public final class DHistogram extends Iced<DHistogram> {
       _vals[binDimStart + 0] += weight;
       _vals[binDimStart + 1] += wy;
       _vals[binDimStart + 2] += wyy;
-      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) {
+      if (_vals_dim >= 5 && !Double.isNaN(resp[rows[r]])) {
+        int k = rows[r];
         if (_dist._family.equals(DistributionFamily.quantile)) {
           _vals[binDimStart + 3] += _dist.deviance(weight, y, _pred1);
           _vals[binDimStart + 4] += _dist.deviance(weight, y, _pred2);
@@ -594,6 +600,7 @@ public final class DHistogram extends Iced<DHistogram> {
       }
       if(_useUplift) {
         // Note: Only for binomial, response should be (0, 1)
+        int k = rows[r];
         double t = treatment[k];
         double rs = resp[k];
         int binDimStartUplift = _valsDimUplift * b;
@@ -671,7 +678,6 @@ public final class DHistogram extends Iced<DHistogram> {
     if (_intOpt)
       chk.getIntegers((int[])cache, 0, len, INT_NA);
     else {
-      chk.touchMem();
       return chk;
     }
     return cache;

@@ -191,7 +191,7 @@ public class DHistogramTest extends TestUtil {
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 42L, null, null, false, false, null);
     histoOpt.init();
 
-    histoOpt.updateHisto(weights, null, dataInt, ys, null, rows, N, 0, null);
+    histoOpt.updateHisto(weights, null, dataInt, ys, null, rows, N, 0, null, new double[1000]);
 
     // optimization OFF
     DHistogram histo = new DHistogram("intOpt-off", 1000, 1024, (byte) 1, 0, 1000, false, false, -0.001,
