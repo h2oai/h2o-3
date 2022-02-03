@@ -335,7 +335,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         if modeling_plan is None:
             return None
 
-        supported_aliases = ['all', 'defaults', 'grids']
+        supported_aliases = PList(['all', 'defaults', 'grids'])
 
         def assert_is_step_def(sd):
             assert 'name' in sd, "each definition must have a 'name' key"
