@@ -535,7 +535,7 @@ public final class DHistogram extends Iced<DHistogram> {
       assert treatment == null : "Integer-optimized histograms cannot be used when treatment is provided";
       updateHistoInt(ws, (int[]) cs, ys, rows, hi, lo);
     } else
-      updateHisto(ws, resp, (double[]) cs, ys, preds, rows, hi, lo, treatment);
+      updateHisto(ws, resp, (Chunk) cs, ys, preds, rows, hi, lo, treatment);
   }
 
   /**
@@ -554,7 +554,7 @@ public final class DHistogram extends Iced<DHistogram> {
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    * @param treatment treatment column data           
    */
-  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
+  void updateHisto(double[] ws, double resp[], Chunk cs, double[] ys, double[] preds, int[] rows, int hi, int lo, double[] treatment){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
 
@@ -563,7 +563,7 @@ public final class DHistogram extends Iced<DHistogram> {
       final double weight = ws == null ? 1 : ws[k];
       if (weight == 0)
         continue; // Needed for DRF only
-      final double col_data = cs[k];
+      final double col_data = cs.atd(k);
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
       final double y = ys[r]; // uses absolute indexing, ys is optimized for sequential access
@@ -670,8 +670,10 @@ public final class DHistogram extends Iced<DHistogram> {
     }
     if (_intOpt)
       chk.getIntegers((int[])cache, 0, len, INT_NA);
-    else
-      chk.getDoubles((double[])cache, 0, len);
+    else {
+      chk.touchMem();
+      return chk;
+    }
     return cache;
   }
 

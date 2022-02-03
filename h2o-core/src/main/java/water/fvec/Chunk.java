@@ -146,6 +146,14 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   /** Read-only length of chunk (number of rows). */
   public int len() { return _len; }
 
+  public byte touchMem() {
+    byte sum = 0; 
+    for (int i = 0; i < _mem.length; i++) {
+      sum += _mem[i];
+    }
+    return sum;
+  }
+  
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
   private transient Chunk _chk2;
   /** Exposed for internal testing only.  Not a publically visible API. */
