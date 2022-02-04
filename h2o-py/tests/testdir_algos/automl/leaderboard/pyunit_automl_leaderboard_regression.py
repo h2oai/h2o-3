@@ -80,7 +80,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     first = [m for m in base if 'XGBoost_1' in m]
     others = [m for m in base if m not in first]
     check_model_property(first, 'stopping_metric', True, None) #if stopping_rounds == 0, actual value of stopping_metric is set to None
-    check_model_property(others, 'stopping_metric', True, "RMSE")
+    check_model_property(others, 'stopping_metric', True, "deviance")
 
 
 def test_AUTO_stopping_metric_with_custom_sorting_metric_regression():
@@ -99,7 +99,7 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric_regression():
 
     check_leaderboard(aml, exclude_algos, ["rmse", "mse", "mae", "rmsle", "mean_residual_deviance"], "rmse")
     base = get_partitioned_model_names(aml.leaderboard).base
-    check_model_property(base, 'stopping_metric', True, "RMSE")
+    check_model_property(base, 'stopping_metric', True, "deviance")
 
 
 pu.run_tests([

@@ -370,7 +370,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (parms._stopping_metric == StoppingMetric.AUTO) {
             String sort_metric = getSortMetric();
             parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
-                    : sort_metric.equals("auc") ? StoppingMetric.logloss
+                    : sort_metric.equals("auc")  ? StoppingMetric.logloss
+                    : sort_metric.equals("rmse") ? StoppingMetric.deviance
                     : metricValueOf(sort_metric);
         }
 
