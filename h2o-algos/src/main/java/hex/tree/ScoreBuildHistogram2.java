@@ -111,11 +111,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     _hcsMonitor = dp.makeDHistogramMonitor(treeNum, k, leaf);
   }
 
-  @Override
-  public ScoreBuildHistogram dfork2(byte[] types, Frame fr, boolean run_local) {
+  void dfork2(Frame fr) {
     _fr2 = fr;
-    dfork((Key[])null);
-    return this;
+    asyncExecOnAllNodes();
   }
 
   @Override public void map(Chunk [] chks){
