@@ -67,8 +67,11 @@ public class ComparisonUtils {
         }
         
         public AccumulatedComparisonResult merge(AccumulatedComparisonResult other) {
-            if (_differences == null) _differences = other._differences;
-            if (other._differences != null) _differences.addAll(other._differences);
+            if (_differences == null) {
+                _differences = other._differences;
+            } else if (other._differences != null) {
+                _differences.addAll(other._differences);
+            }
             return this;
         }
         
