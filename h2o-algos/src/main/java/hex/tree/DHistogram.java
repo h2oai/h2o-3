@@ -133,7 +133,7 @@ public final class DHistogram extends Iced<DHistogram> {
 
   protected double  _min2, _maxIn; // Min/Max, _maxIn is Inclusive.
   public HistogramType _histoType; //whether ot use random split points
-  transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
+  transient double[] _splitPts; // split points between _min and _maxEx (either random or based on quantiles)
   transient int _zeroSplitPntPos;
   public final boolean _checkFloatSplits;
   transient float[] _splitPtsFloat;
@@ -162,7 +162,7 @@ public final class DHistogram extends Iced<DHistogram> {
     Left(4),     //test time NA should go left
     Right(5);    //test time NA should go right
 
-    private int value;
+    private final int value;
     NASplitDir(int v) { this.value = v; }
     public int value() { return value; }
   }
