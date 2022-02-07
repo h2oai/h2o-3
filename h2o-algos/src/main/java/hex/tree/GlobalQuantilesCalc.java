@@ -16,13 +16,27 @@ class GlobalQuantilesCalc {
     /**
      * Calculates split points for histogram type = QuantilesGlobal.
      * 
-     * @param fr (adapted) training frame
-     * @param weightsColumn name of column containing observation weights (optional) 
+     * @param trainFr (adapted) training frame
+     * @param weightsColumn name of column containing observation weights (optional)
+     * @param prior optional pre-existing split points for some columns
      * @param N number of bins
      * @param nbins_top_level number of top-level bins
      * @return array of split points for each feature column of the input training frame
      */
-    static double[][] splitPoints(Frame fr, String weightsColumn, final int N, int nbins_top_level) {
+    static double[][] splitPoints(Frame trainFr, String weightsColumn, double[][] prior, final int N, int nbins_top_level) {
+        final Frame fr = new Frame();
+        final int[] frToTrain = new int[trainFr.numCols()];
+        for (int i = 0; i < trainFr.numCols(); ++i) {
+            if (prior != null && prior[i] == null) {
+                continue;
+            }
+            if (!trainFr.vec(i).isNumeric() || trainFr.vec(i).isCategorical() || 
+                    trainFr.vec(i).isBinary() || trainFr.vec(i).isConst()) {
+                continue;
+            }
+            frToTrain[fr.numCols()] = i;
+            fr.add(trainFr.name(i), trainFr.vec(i));
+        }
         Key<Frame> rndKey = Key.make();
         DKV.put(rndKey, fr);
         QuantileModel qm = null;
@@ -39,13 +53,14 @@ class GlobalQuantilesCalc {
             job.remove();
             double[][] origQuantiles = qm._output._quantiles;
             //pad the quantiles until we have nbins_top_level bins
-            double[][] splitPoints = new double[origQuantiles.length][];
-            for (int i = 0; i < origQuantiles.length; ++i) {
-                if (!fr.vec(i).isNumeric() || fr.vec(i).isCategorical() || fr.vec(i).isBinary() || origQuantiles[i].length <= 1) {
+            double[][] splitPoints = new double[trainFr.numCols()][];
+            for (int q = 0; q < origQuantiles.length; q++) {
+                if (origQuantiles[q].length <= 1) {
                     continue;
                 }
+                final int i = frToTrain[q];
                 // make the quantiles split points unique
-                splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[i], fr.vec(i).min(), fr.vec(i).max());
+                splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[q], fr.vec(q).min(), fr.vec(q).max());
                 if (splitPoints[i].length <= 1) //not enough split points left - fall back to regular binning
                     splitPoints[i] = null;
                 else

@@ -263,7 +263,7 @@ public abstract class SharedTree<
 
         // Compute the print-out response domain; makes for nicer printouts
         assert (_nclass > 1 && actualDomain != null) || (_nclass==1 && actualDomain==null);
-        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a name to class 0   
+        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a nam to class 0   
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
@@ -320,15 +320,26 @@ public abstract class SharedTree<
         if (_parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal
                 || _parms._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
           _job.update(1, "Computing top-level histogram split-points.");
-          final double[][] splitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, _parms._nbins, _parms._nbins_top_level);
+          Timer tt = new Timer();
+          final double[][] ss = LowCardinalitySplitPoints.calculateLowCardinalitySplitPoints(_train, _parms._nbins);
+          LOG.info("Calculating top-level histogram split-points took " + tt);
+
+          Timer t = new Timer();
+          final double[][] splitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, ss, _parms._nbins, _parms._nbins_top_level);
           Futures fs = new Futures();
           for (int i = 0; i < splitPoints.length; i++) {
             Key<DHistogram.HistoQuantiles> key = getGlobalQuantilesKey(i);
-            if (splitPoints[i] != null && key != null) {
-              DKV.put(new DHistogram.HistoQuantiles(key, splitPoints[i]), fs);
+            if (key == null)
+              continue;
+            boolean useQuantiles = ss[i] == null;
+            double[] sp = useQuantiles ? ss[i] : splitPoints[i];
+            if (sp != null) {
+              DKV.put(new DHistogram.HistoQuantiles(key, sp, useQuantiles), fs);
             }
           }
           fs.blockForPending();
+          LOG.info("Calculating top-level histogram split-points took " + t);
+          System.out.println("prcak");
         }
 
         // Also add to the basic working Frame these sets:

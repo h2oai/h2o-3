@@ -169,9 +169,14 @@ public final class DHistogram extends Iced<DHistogram> {
 
   static class HistoQuantiles extends Keyed<HistoQuantiles> {
     public HistoQuantiles(Key<HistoQuantiles> key, double[] splitPts) {
+      this(key, splitPts, true);
+    }
+    public HistoQuantiles(Key<HistoQuantiles> key, double[] splitPts, boolean canRefine) {
       super(key);
       this.splitPts = splitPts;
+      this.canRefine = canRefine;
     }
+    boolean canRefine;
     double[/*nbins*/] splitPts;
   }
 
@@ -333,11 +338,11 @@ public final class DHistogram extends Iced<DHistogram> {
       if (_globalQuantilesKey != null) {
         HistoQuantiles hq = DKV.getGet(_globalQuantilesKey);
         if (hq != null) {
-          _splitPts = ((HistoQuantiles) DKV.getGet(_globalQuantilesKey)).splitPts;
+          _splitPts = hq.splitPts;
           if (_splitPts!=null) {
             if (LOG.isTraceEnabled()) LOG.trace("Obtaining global splitPoints: " + Arrays.toString(_splitPts));
             _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
-            if (_splitPts.length > 1 && _splitPts.length < _nbin)
+            if (hq.canRefine && _splitPts.length > 1 && _splitPts.length < _nbin)
               _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
             if (_splitPts.length <= 1) {
               _splitPts = null; //abort, fall back to uniform binning
