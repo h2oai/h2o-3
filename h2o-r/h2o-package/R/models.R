@@ -1363,8 +1363,7 @@ h2o.thresholds_and_metric_scores <- function(object, train=FALSE, valid=FALSE) {
 
 #' Retrieve the default Qini value
 #'
-#' Retrieves the Qini value from an \linkS4class{H2OBinomialUpliftMetrics}. The type of Qini value depends on auuc_type which
-#' was set before training. If you need specific Qini value, see h2o.qini_table function.
+#' Retrieves the Qini value from an \linkS4class{H2OBinomialUpliftMetrics}. If you need specific AECU value, see h2o.aecu_table function.
 #' If "train" and "valid" parameters are FALSE (default), then the training Qini value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of Qini values are returned, where the names are "train", "valid".
 #'
@@ -1417,15 +1416,15 @@ h2o.qini <- function(object, train=FALSE, valid=FALSE) {
     invisible(NULL)
 }
 
-#' Retrieve the all types of Qini value in a table
+#' Retrieve the all types of AECU (average excess cumulative uplift) value in a table
 #'
-#' Retrieves the all types of Qini value in a table from an \linkS4class{H2OBinomialUpliftMetrics}.
-#' If "train" and "valid" parameters are FALSE (default), then the training Qini values are returned. If more
-#' than one parameter is set to TRUE, then a named vector of Qini values are returned, where the names are "train", "valid".
+#' Retrieves the all types of AECU value in a table from an \linkS4class{H2OBinomialUpliftMetrics}.
+#' If "train" and "valid" parameters are FALSE (default), then the training AECU values are returned. If more
+#' than one parameter is set to TRUE, then a named vector of AECU values are returned, where the names are "train", "valid".
 #'
 #' @param object An \linkS4class{H2OBinomialUpliftMetrics}
-#' @param train Retrieve the training Qini values table
-#' @param valid Retrieve the validation Qini values table
+#' @param train Retrieve the training AECU values table
+#' @param valid Retrieve the validation AECU values table
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -1439,27 +1438,27 @@ h2o.qini <- function(object, train=FALSE, valid=FALSE) {
 #'                                        ntrees=10, max_depth=5, treatment_column="treatment", 
 #'                                        auuc_type="AUTO")
 #' perf <- h2o.performance(model, train=TRUE) 
-#' h2o.qini_table(perf)
+#' h2o.aecu_table(perf)
 #' }
 #' @export
-h2o.qini_table <- function(object, train=FALSE, valid=FALSE) {
-    if( is(object, "H2OModelMetrics") ) return( object@metrics$qini_table )
+h2o.aecu_table <- function(object, train=FALSE, valid=FALSE) {
+    if( is(object, "H2OModelMetrics") ) return( object@metrics$aecu_table )
     if( is(object, "H2OModel") ) {
         model.parts <- .model.parts(object)
         if ( !train && !valid ) {
-            metric <- model.parts$tm@metrics$qini_table
+            metric <- model.parts$tm@metrics$aecu_table
             if ( !is.null(metric) ) return(metric)
         }
         v <- c()
         v_names <- c()
         if ( train ) {
-            v <- c(v,model.parts$tm@metrics$qini_table)
+            v <- c(v,model.parts$tm@metrics$aecu_table)
             v_names <- c(v_names,"train")
         }
         if ( valid ) {
             if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
             else {
-                v <- c(v,model.parts$vm@metrics$qini_table)
+                v <- c(v,model.parts$vm@metrics$aecu_table)
                 v_names <- c(v_names,"valid")
             }
         }
@@ -1468,7 +1467,7 @@ h2o.qini_table <- function(object, train=FALSE, valid=FALSE) {
             if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
         }
     }
-    warning(paste0("No Qini table for ", class(object)))
+    warning(paste0("No AECU table for ", class(object)))
     invisible(NULL)
 }
 

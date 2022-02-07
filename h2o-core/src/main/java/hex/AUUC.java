@@ -35,11 +35,11 @@ public class AUUC extends Iced{
     
     public static final int NBINS = 1000;
 
-    public final AUUCType _auucType;
-    public final int _auucTypeIndx;
-    public double[] _auucs;
-    public double[] _auucsRandom;
-    public double[] _qini;
+    public final AUUCType _auucType;     // default auuc metric
+    public final int _auucTypeIndx;      // default auuc metric index
+    public double[] _auucs;              // areas under random uplif curve for all metrics
+    public double[] _auucsRandom;        // areas under random uplift curve for all metrics
+    public double[] _aecu;               // average excess cumulative uplift (auuc - auuc random)
     
     public double threshold( int idx ) { return _ths[idx]; }
     public long treatment( int idx ) { return _treatment[idx]; }
@@ -108,7 +108,7 @@ public class AUUC extends Iced{
         if (trueProbabilities) {
             _auucs = computeAuucs();
             _auucsRandom = computeAuucsRandom();
-            _qini = computeQini();
+            _aecu = computeAecu();
             _maxIdx = _auucType.maxCriterionIdx(this);
         } else {
             _maxIdx = 0;
@@ -215,12 +215,12 @@ public class AUUC extends Iced{
         return auucs;
     }
     
-    private double[] computeQini(){
-        double[] qini = new double[_auucs.length];
+    private double[] computeAecu(){
+        double[] aecu = new double[_auucs.length];
         for(int i = 0; i < _auucs.length; i++){
-            qini[i] = auuc(i) - auucRandom(i);
+            aecu[i] = auuc(i) - auucRandom(i);
         }
-        return qini;
+        return aecu;
     }
     
     public double auucByType(AUUCType type){
@@ -233,9 +233,9 @@ public class AUUC extends Iced{
         return auucRandom(idx);
     }
     
-    public double qiniByType(AUUCType type){
+    public double aecuByType(AUUCType type){
         int idx = Arrays.asList(AUUC.AUUCType.VALUES).indexOf(type);
-        return qini(idx);
+        return aecu(idx);
     }
 
     public double auuc(int idx){ return _auucs[idx]; }
@@ -248,9 +248,11 @@ public class AUUC extends Iced{
 
     public double auucRandom(){ return auucRandom(_auucTypeIndx); }
     
-    public double qini(int idx) { return _qini[idx];}
+    public double aecu(int idx) { return _aecu[idx];}
     
-    public double qini(){ return qini(_auucTypeIndx);}
+    public double aecu(){ return aecu(_auucTypeIndx);}
+    
+    public double qini(){ return aecuByType(AUUCType.qini);}
 
     private static class AUUCImpl extends MRTask<AUUCImpl> {
         final double[] _thresholds;

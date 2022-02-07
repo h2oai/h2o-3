@@ -16,7 +16,7 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
     @API(help="The default AUUC for this scoring run.", direction=API.Direction.OUTPUT)
     public double AUUC;
 
-    @API(help="The default Qini value for this scoring run.", direction=API.Direction.OUTPUT)
+    @API(help="The Qini value for this scoring run.", direction=API.Direction.OUTPUT)
     public double qini;
 
     @API(help="The class labels of the response.", direction=API.Direction.OUTPUT)
@@ -28,8 +28,8 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
     @API(help = "Table of all types of AUUC.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
     public TwoDimTableV3 auuc_table;
 
-    @API(help = "Table of all types of Qini values.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
-    public TwoDimTableV3 qini_table;
+    @API(help = "Table of all types of AECU values.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
+    public TwoDimTableV3 aecu_table;
 
     @Override
     public S fillFromImpl(ModelMetricsBinomialUplift modelMetrics) {
@@ -93,19 +93,19 @@ public class ModelMetricsBinomialUpliftV3<I extends ModelMetricsBinomialUplift, 
                 types[i] = "double";
                 formats[i] = "%f";
             }
-            TwoDimTable auucs = new TwoDimTable("AUUC table", "All types of AUUC", rowHeaders, colHeaders, types, formats, "AUUC type" );
+            TwoDimTable auucs = new TwoDimTable("AUUC table", "All types of AUUC value", rowHeaders, colHeaders, types, formats, "Uplift type" );
             for(i = 0; i < metricsLength; i++) {
                 auucs.set(0, i, auuc.auucByType(metrics[i]));
                 auucs.set(1, i, auuc.auucRandomByType(metrics[i]));
             }
             this.auuc_table = new TwoDimTableV3().fillFromImpl(auucs);
 
-            rowHeaders = new String[]{"Qini value"};
-            TwoDimTable qinis = new TwoDimTable("Qini values table", "All types of Qini values", rowHeaders, colHeaders, types, formats, "Qini values type" );
+            rowHeaders = new String[]{"AECU value"};
+            TwoDimTable qinis = new TwoDimTable("AECU values table", "All types of AECU value", rowHeaders, colHeaders, types, formats, "Uplift type" );
             for(i = 0; i < metricsLength; i++) {
-                qinis.set(0, i, auuc.qiniByType(metrics[i]));
+                qinis.set(0, i, auuc.aecuByType(metrics[i]));
             }
-            this.qini_table = new TwoDimTableV3().fillFromImpl(qinis);
+            this.aecu_table = new TwoDimTableV3().fillFromImpl(qinis);
         }
         return (S) this; 
     }

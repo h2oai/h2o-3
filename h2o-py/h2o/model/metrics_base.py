@@ -209,9 +209,9 @@ class MetricsBase(h2o_meta()):
             print("AUUC: " + str(self.auuc()))
             if self._metric_json["auuc_table"] is not None:
                 self._metric_json["auuc_table"].show()
-            print("Qini: " + str(self.qini()))
-            if self._metric_json["qini_table"] is not None:
-                self._metric_json["qini_table"].show()
+            print("Qini value: " + str(self.qini()))
+            if self._metric_json["aecu_table"] is not None:
+                self._metric_json["aecu_table"].show()
         
         if self.custom_metric_name():
             print("{}: {}".format(self.custom_metric_name(), self.custom_metric_value()))
@@ -1780,7 +1780,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
     
     def __init__(self, metric_json, on=None, algo=""):
         """
-          Create a new Binomial Metrics object (essentially a wrapper around some json)
+          Create a new Binomial Uplift  Metrics object (essentially a wrapper around some json)
 
           :param metric_json: A blob of json holding all of the needed information
           :param on: Metrics built on "training_data" or "validation_data" (default is "training_data")
@@ -1789,7 +1789,7 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         
     def auuc(self, metric=None):
         """
-        Retrieve area under uplift curve (AUUC) value.
+        Retrieve area under cumulative uplift curve (AUUC) value.
         
         :param metric AUUC metric type (None, "qini", "lift", "gain",
             default is None which means it takes default metric from model parameters) 
@@ -1823,12 +1823,10 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
                "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
             return self._metric_json['auuc_table'][metric][0]
 
-    def qini(self, metric=None):
+    def qini(self):
         """
-        Retrieve Qini value (area between Uplift curve and random curve).
+        Retrieve Qini value (area between Qini cumulative uplift curve and random curve)
         
-        :param metric AUUC metric type (None, "qini", "lift", "gain",
-            default is None which means it takes default metric from model parameters) 
         :returns: Qini value.
 
         :examples:
@@ -1852,12 +1850,40 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
         >>> uplift_model.qini()
         """
-        if metric is None:
-            return self._metric_json['qini']
-        else:
-            assert metric in ['qini', 'lift', 'gain'], \
-                "AUUC metric "+metric+" should be 'qini','lift' or 'gain'."
-            return self._metric_json['qini_table'][metric][0]
+        return self._metric_json['qini']
+
+    def aecu(self, metric="qini"):
+        """
+        Retrieve AECU value (average excess cumulative uplift - area between Uplift curve and random curve).
+        
+        :param metric AECU metric type (None, "qini", "lift", "gain",
+            default is "qini") 
+        :returns: AECU value.
+
+        :examples:
+        
+        >>> from h2o.estimators import H2OUpliftRandomForestEstimator
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/uplift/criteo_uplift_13k.csv")
+        >>> treatment_column = "treatment"
+        >>> response_column = "conversion"
+        >>> train[treatment_column] = train[treatment_column].asfactor()
+        >>> train[response_column] = train[response_column].asfactor()
+        >>> predictors = ["f1", "f2", "f3", "f4", "f5", "f6"]
+        >>>
+        >>> uplift_model = H2OUpliftRandomForestEstimator(ntrees=10, 
+        ...                                               max_depth=5,
+        ...                                               treatment_column=treatment_column,
+        ...                                               uplift_metric="qini",
+        ...                                               distribution="bernoulli",
+        ...                                               gainslift_bins=10,
+        ...                                               min_rows=10,
+        ...                                               auuc_type="gain")
+        >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
+        >>> uplift_model.aecu()
+        """
+        assert metric in ['qini', 'lift', 'gain'], \
+            "AECU metric "+metric+" should be 'qini','lift' or 'gain'."
+        return self._metric_json['aecu_table'][metric][0]
             
     def uplift(self, metric="AUTO"):
         """
@@ -2045,11 +2071,11 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         """
         return self._metric_json["auuc_table"]
 
-    def qini_table(self):
+    def eacu_table(self):
         """
-        Retrieve all types of Qini values in a table.
+        Retrieve all types of AECU values in a table.
          
-        :returns: a table of Qini values.
+        :returns: a table of AECU values.
     
         :examples:
          
@@ -2070,9 +2096,9 @@ class H2OBinomialUpliftModelMetrics(MetricsBase):
         ...                                               min_rows=10,
         ...                                               auuc_type="gain")
         >>> uplift_model.train(y=response_column, x=predictors, training_frame=train)
-        >>> uplift_model.qini_table()
+        >>> uplift_model.aecu_table()
         """
-        return self._metric_json["qini_table"]
+        return self._metric_json["aecu_table"]
 
     def plot_uplift(self, server=False, save_to_file=None, plot=True, metric="AUTO"):
         """
