@@ -1,6 +1,7 @@
 package hex;
 
 import hex.genmodel.AbstractMojoWriter;
+import water.Key;
 import water.api.SchemaServer;
 import water.api.StreamWriteOption;
 import water.api.StreamWriter;

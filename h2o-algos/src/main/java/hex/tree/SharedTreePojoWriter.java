@@ -3,6 +3,7 @@ package hex.tree;
 import hex.Model;
 import hex.PojoWriter;
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.DefaultCategoricalEncoding;
 import water.Key;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
@@ -48,11 +49,11 @@ public abstract class SharedTreePojoWriter implements PojoWriter {
         sb.ip("public boolean isSupervised() { return true; }").nl();
         sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
         sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
-        if (_encoding == CategoricalEncoding.Eigen) {
+        if (_encoding == DefaultCategoricalEncoding.Eigen) {
             sb.ip("public double[] getOrigProjectionArray() { return " + PojoUtils.toJavaDoubleArray(_output._orig_projection_array) + "; }").nl();
         }
-        if (_encoding != CategoricalEncoding.AUTO) {
-            sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." +
+        if (_encoding != DefaultCategoricalEncoding.AUTO) {
+            sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.DefaultCategoricalEncoding." +
                     _encoding.name() + "; }").nl();
         }
         return sb;
