@@ -332,7 +332,7 @@ public abstract class SharedTree<
             if (key == null)
               continue;
             boolean useQuantiles = ss[i] == null;
-            double[] sp = useQuantiles ? ss[i] : splitPoints[i];
+            double[] sp = useQuantiles ? splitPoints[i] : ss[i];
             if (sp != null) {
               DKV.put(new DHistogram.HistoQuantiles(key, sp, useQuantiles), fs);
             }
