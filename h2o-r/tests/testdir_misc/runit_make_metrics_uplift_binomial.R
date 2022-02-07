@@ -57,7 +57,7 @@ test.make_metrics_uplift_binomial <- function() {
     aecu_table1 <- h2o.aecu_table(m1)
     
     expect_true(is.data.frame(aecu_table0))
-    expect_true(is.data.frame(eacu_table1))
+    expect_true(is.data.frame(aecu_table1))
  
     expect_equal(aecu_table0, aecu_table1)
 }

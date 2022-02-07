@@ -90,20 +90,20 @@ def uplift_random_forest_smoke():
     assert 398 < perf_kl.auuc() < 399, \
         "Not expected output: AUUC is suspiciously different. " + str(perf_kl.auuc())
     
-    assert 9 < perf_kl.qini() < 10, \
-        "Not expected output: Qini is suspiciously different. " + str(perf_kl.gini())
+    assert 5 < perf_kl.qini() < 6, \
+        "Not expected output: Qini is suspiciously different. " + str(perf_kl.qini())
     
     assert 403 < perf_euc.auuc() < 404, \
         "Not expected output: AUUC is suspiciously different. " + str(perf_euc.auuc())
 
-    assert 14 < perf_euc.qini() < 15, \
-        "Not expected output: Qini is suspiciously different. " + str(perf_euc.gini())
+    assert 7 < perf_euc.qini() < 8, \
+        "Not expected output: Qini is suspiciously different. " + str(perf_euc.qini())
 
     assert 409 < perf_chi.auuc() < 410, \
         "Not expected output: AUUC is suspiciously different. " + str(perf_chi.auuc())
 
-    assert 19 < perf_chi.qini() < 20, \
-        "Not expected output: Qini is suspiciously different. " + str(perf_chi.gini())
+    assert 9 < perf_chi.qini() < 10, \
+        "Not expected output: Qini is suspiciously different. " + str(perf_chi.qini())
     
     
 if __name__ == "__main__":

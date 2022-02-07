@@ -111,7 +111,7 @@ class CompareUpliftDrfWithCausalMl(unittest.TestCase):
         print("CausalML: %f H2O: %f diff: %f" % (auuc["causal"], auuc["h2o"], diff))
 
         # compare Qini calculation with CausalML
-        h2o_qini_qain_test = perf_test.qini(metric="qini")
+        h2o_qini_qain_test = perf_test.qini()
         print("Qini calculation:")
         diff = abs(qini["h2o"] - h2o_qini_qain_test)
         print("CausalML H2O: %f H2O: %f diff: %f" % (qini["h2o"], h2o_qini_qain_test, diff))

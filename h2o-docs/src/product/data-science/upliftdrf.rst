@@ -202,8 +202,8 @@ By default, the following output displays:
    time, predictions, AUUC, all AUUC types table, Thresholds and metric scores table)
 -  **Default AUUC metric** calculated based on ``auuc_type`` parameter
 -  **AUUC table** which contains all computed AUUC types (qini, lift, gain)
--  **Default Qini value** calculated based on ``auuc_type`` parameter
--  **Qini table** which contains all computed Qini values types (qini, lift, gain)
+-  **Qini value** Average excess cumulative uplift (AECU) for qini metric type
+-  **AECU table** which contains all computed AECU values types (qini, lift, gain)
 -  **Thresholds and metric scores table** which contains thresholds of predictions, cumulative number of observations for each bin and cumulative uplift values for all metrics (qini, lift, gain).
 -  **Uplift Curve plot** for given metric type (qini, lift, gain)
 
@@ -228,6 +228,8 @@ You can set the AUUC type to be computed:
 - Lift (``auuc_type="lift"``) :math:`\frac{TY1}{T} - \frac{CY1}{C}`
 - Gain (``auuc_type="gain"``) :math:`(\frac{TY1}{T} - \frac{CY1}{C}) * (T + C)` 
 
+In ``auuc`` the default AUUC is stored, however you can see also AUUC values for other AUUC types in ``auuc_table``.
+
 The resulting AUUC value is not normalized, so the result could be a positive number, but also a negative number. A higher number means better model.
 
 From the ``threshold_and_metric_scores`` table you can select the highest uplift to decide the optimal threshold for the final prediction. The number of bins in the table depends on ``auuc_nbins`` parameter, but should be less (it depends on distribution of predictions). The thresholds are created based on quantiles of predictions and are sorted from highest value to lowest. 
@@ -242,11 +244,17 @@ For some observation groups the results should be NaN. In this case, the results
 Qini value calculation
 ~~~~~~~~~~~~~~~~~~~~~~
 
-Qini value is calculated as the difference between the AUUC and area under the random uplift curve (random AUUC). The random AUUC is computed as diagonal from zero to overall gain uplift. See the plot below. 
+Qini value is calculated as the difference between the Qini AUUC and area under the random uplift curve (random AUUC). The random AUUC is computed as diagonal from zero to overall gain uplift. See the plot below. 
 
 .. image:: /images/qini_value.png
    :width: 640px
    :height: 480px
+   
+
+Average Excess Cumulative Uplift (AECU)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Qini value can be generalized for all AUUC metric types. So AECU for Qini metric is the same as Qini value, but the AECU can be also calculated for Gain and Lift metric type. These values are stored in ``aecu_table``.
 
 
 Examples
@@ -291,17 +299,29 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     # Eval performance:
     perf <- h2o.performance(uplift.model)
 
-    # Generate predictions on a validation set (if necessary):
+    # Generate predictions on a validation set (if necessary)
     predict <- h2o.predict(uplift.model, newdata = valid)
 
-    # Plot Uplift Curve:
+    # Plot Uplift Curve
     plot(perf, metric="gain")
     
-    # Get all AUUC types: 
+    # Get default AUUC value
+    print(h2o.auuc(perf))
+    
+    # Get AUUC value by AUUC type (metric)
+    print(h2o.auuc(perf, metric="lift"))
+    
+    # Get all AUUC types in a table
     print(h2o.auuc_table(perf))
     
-    # Threshold and metric scores
+    # Get threshold and metric scores
     print(h2o.thresholds_and_metric_scores(perf)) 
+    
+    # Get Qini value
+    print(h2o.qini(perf))
+        
+    # Get AECU values in a table
+    print(perf.aecu_table())
     
     
    .. code-tab:: python
@@ -341,17 +361,29 @@ Below is a simple example showing how to build an Uplift Random Forest model and
     # Eval performance:
     perf = uplift_model.model_performance()
 
-    # Generate predictions on a validation set (if necessary):
+    # Generate predictions on a validation set (if necessary)
     pred = uplift_model.predict(valid)
 
-    # Plot AUUC from performance:
+    # Plot AUUC plot from performance
     perf.plot_uplift(metric="gain", plot=True)    
     
-    # Get all AUUC table
+    # Get default AUUC (in this case Qini AUUC because auuc_type=qini)
+    print(perf.auuc())
+    
+    # Get AUUC value by AUUC type (metric)
+    print(perf.auuc(metric="lift"))
+    
+    # Get all AUUC values in a table
     print(perf.auuc_table())
     
     # Get thresholds and metric scores
     print(perf.thresholds_and_metric_scores())
+    
+    # Get Qini value
+    print(perf.qini())
+    
+    # Get AECU values in a table
+    print(perf.aecu_table())
 
 
 FAQ
