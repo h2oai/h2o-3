@@ -27,7 +27,7 @@ class GlobalQuantilesCalc {
         final Frame fr = new Frame();
         final int[] frToTrain = new int[trainFr.numCols()];
         for (int i = 0; i < trainFr.numCols(); ++i) {
-            if (prior != null && prior[i] == null) {
+            if (prior != null && prior[i] != null) {
                 continue;
             }
             if (!trainFr.vec(i).isNumeric() || trainFr.vec(i).isCategorical() || 

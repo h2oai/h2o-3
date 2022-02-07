@@ -34,9 +34,8 @@ public class HiggsTest extends TestUtil {
             parms._response_column = fr._names[idx];
             parms._ntrees = 50;
             parms._distribution = DistributionFamily.bernoulli;
-            parms._max_depth = 6;
-            parms._min_rows = 10;
-            parms._learn_rate = .2f;
+            parms._max_depth = 5;
+            parms._learn_rate = .1;
             parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal;
 
             GBM job = new GBM(parms);
