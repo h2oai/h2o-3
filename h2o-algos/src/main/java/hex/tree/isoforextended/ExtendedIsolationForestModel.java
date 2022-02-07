@@ -3,7 +3,6 @@ package hex.tree.isoforextended;
 import hex.Model;
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.tree.CompressedTree;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import hex.tree.isoforextended.isolationtree.CompressedIsolationTree;
 import org.apache.log4j.Logger;
@@ -156,5 +155,10 @@ public class ExtendedIsolationForestModel extends Model<ExtendedIsolationForestM
             ab.getKey(iTreeKey, fs);
         }
         return super.readAll_impl(ab,fs);
+    }
+
+    @Override
+    public ExtendedIsolationForestMojoWriter getMojo() {
+        return new ExtendedIsolationForestMojoWriter(this);
     }
 }
