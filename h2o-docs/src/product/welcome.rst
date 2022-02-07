@@ -460,6 +460,11 @@ Supported Versions
 -  ``-mapperXmx``, ``-nodes``, and ``-output`` are required
 -  Root permissions are not required - just unzip the H2O .zip file on any single node
 
+Java Requirements
+~~~~~~~~~~~~~~~~~
+
+Java support is different between H2O and Hadoop. Hadoop only supports `Java 8 and Java 11 <https://cwiki.apache.org/confluence/display/HADOOP/Hadoop+Java+Versions>`__. When running H2O on Hadoop, we recommend only running H2O on Java 8 or Java 11. 
+
 Prerequisite: Open Communication Paths
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
