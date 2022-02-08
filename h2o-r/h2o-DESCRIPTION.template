@@ -64,7 +64,8 @@ Suggests: ggplot2 (>= 3.3.0),
           IRdisplay,
           htmltools,
           plotly,
-          repr
+          repr,
+          curl
 Collate:
          'aggregator.R'
          'astfun.R'
