@@ -327,17 +327,21 @@ public abstract class SharedTree<
           Timer t = new Timer();
           final double[][] splitPoints = GlobalQuantilesCalc.splitPoints(_train, _parms._weights_column, ss, _parms._nbins, _parms._nbins_top_level);
           Futures fs = new Futures();
+          int qCnt = 0, uCnt = 0;
           for (int i = 0; i < splitPoints.length; i++) {
+            assert ss[i] == null || splitPoints[i] == null;
             Key<DHistogram.HistoQuantiles> key = getGlobalQuantilesKey(i);
             if (key == null)
               continue;
             boolean useQuantiles = ss[i] == null;
             double[] sp = useQuantiles ? splitPoints[i] : ss[i];
             if (sp != null) {
+              if (useQuantiles) { qCnt++; } else { uCnt++; }
               DKV.put(new DHistogram.HistoQuantiles(key, sp, useQuantiles), fs);
             }
           }
           fs.blockForPending();
+          LOG.info("Split-points are defined using " + uCnt + " unique sets of points and " + qCnt + " sets of quantile values.");
           LOG.info("Calculating top-level histogram split-points took " + t);
           System.out.println("prcak");
         }

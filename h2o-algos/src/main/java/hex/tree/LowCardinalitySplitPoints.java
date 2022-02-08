@@ -7,6 +7,9 @@ import water.util.IcedDouble;
 import water.util.IcedHashSet;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class LowCardinalitySplitPoints extends MRTask<LowCardinalitySplitPoints> {
 
@@ -38,11 +41,24 @@ public class LowCardinalitySplitPoints extends MRTask<LowCardinalitySplitPoints>
             }
             assert valsSize == vals.length;
             Arrays.sort(vals);
+            assert isUniqueSequence(vals);
             splitPoints[frToTrain[i]] = vals;
         }
         return splitPoints;
     }
-        
+
+    static boolean isUniqueSequence(double[] seq) {
+        if (seq.length == 1)
+            return true;
+        double lastValue = seq[0];
+        for (int i = 1; i < seq.length; i++) {
+            if (lastValue >= seq[i])
+                return false;
+            lastValue = seq[i];
+        }
+        return true;
+    }
+
     @SuppressWarnings("unchecked")
     private LowCardinalitySplitPoints(int maxCardinality, int nCols) {
         _maxCardinality = maxCardinality;
@@ -54,41 +70,50 @@ public class LowCardinalitySplitPoints extends MRTask<LowCardinalitySplitPoints>
 
     @Override
     public void map(Chunk[] cs) {
+        Set<IcedDouble> localValues = new HashSet<>(_maxCardinality);
         for (int col = 0; col < cs.length; col++) {
-            IcedHashSet<IcedDouble> values = _values[col];
-            if (values == null)
+            localValues.clear();
+            if (_values[col] == null)
                 continue;
             Chunk c = cs[col];
             IcedDouble wrapper = new IcedDouble();
             for (int i = 0; i < c._len; i++) {
-                if (c.isNA(i))
-                    continue;
                 double num = c.atd(i);
+                if (Double.isNaN(num))
+                    continue;
                 if (wrapper._val == num)
                     continue;
                 wrapper.setVal(num);
-                if (values.add(wrapper)) {
-                    if (values.size() > _maxCardinality) {
+                if (localValues.add(wrapper)) {
+                    if (localValues.size() > _maxCardinality) {
                         _values[col] = null;
                         break;
                     }
                     wrapper = new IcedDouble();
                 }
             }
+            merge(col, localValues);
+        }
+    }
+
+    private void merge(int col, Collection<IcedDouble> localValues) {
+        final Set<IcedDouble> allValues = _values[col];
+        if (allValues == null)
+            return;
+        allValues.addAll(localValues);
+        if (allValues.size() > _maxCardinality) {
+            _values[col] = null;
         }
     }
 
     @Override
     public void reduce(LowCardinalitySplitPoints mrt) {
-        if (mrt._values != _values) {
+        if (mrt._values != _values) { // merging with a result from a different node
             for (int col = 0; col < _values.length; col++) {
                 if (_values[col] == null || mrt._values[col] == null)
                     _values[col] = null;
                 else {
-                    _values[col].addAll(mrt._values[col]);
-                    if (_values[col].size() > _maxCardinality) {
-                        _values[col] = null;
-                    }
+                    merge(col, mrt._values[col]);
                 }
             }
         } // else: nothing to do on the same node
