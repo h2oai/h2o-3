@@ -310,7 +310,7 @@ public class DTree extends Iced {
      * @param parms user-given parameters (will use nbins, min_rows, etc.)
      * @return Array of histograms to be used for the next level of split finding
      */
-    public DHistogram[] nextLevelHistos(DHistogram currentHistos[], int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
+    public DHistogram[] nextLevelHistos(DHistogram[] currentHistos, int way, double splat, SharedTreeModel.SharedTreeParameters parms, Constraints cs) {
       double n = way==0 ? _n0 : _n1;
       if( n < parms._min_rows ) {
         if (LOG.isTraceEnabled()) LOG.trace("Not splitting: too few observations left: " + n);
@@ -324,12 +324,12 @@ public class DTree extends Iced {
 
       // Build a next-gen split point from the splitting bin
       int cnt=0;                  // Count of possible splits
-      DHistogram nhists[] = new DHistogram[currentHistos.length]; // A new histogram set
+      DHistogram[] nhists = new DHistogram[currentHistos.length]; // A new histogram set
       for(int j = 0; j< currentHistos.length; j++ ) { // For every column in the new split
         DHistogram h = currentHistos[j];            // old histogram of column
         if( h == null )
           continue;        // Column was not being tracked?
-        int adj_nbins      = Math.max(h.nbins()>>1,parms._nbins); //update number of bins dependent on level depth
+        final int adj_nbins      = Math.max(h.nbins()>>1,parms._nbins); //update number of bins dependent on level depth
 
         // min & max come from the original column data, since splitting on an
         // unrelated column will not change the j'th columns min/max.

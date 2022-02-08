@@ -138,7 +138,7 @@ public final class DHistogram extends Iced<DHistogram> {
   public final boolean _checkFloatSplits;
   transient float[] _splitPtsFloat;
   public final long _seed;
-  public transient boolean _hasQuantiles;
+  public transient boolean _absoluteSplitPts;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
 
 
@@ -271,7 +271,7 @@ public final class DHistogram extends Iced<DHistogram> {
     // out of range of any bin - however this binning call only happens during
     // model-building.
     int idx1;
-    double pos = _hasQuantiles ? col_data : ((col_data - _min) * _step);
+    double pos = _absoluteSplitPts ? col_data : ((col_data - _min) * _step);
     if (_splitPts != null) {
       idx1 = pos == 0.0 ? _zeroSplitPntPos : Arrays.binarySearch(_splitPts, pos);
       if (idx1 < 0) idx1 = -idx1 - 2;
@@ -298,7 +298,8 @@ public final class DHistogram extends Iced<DHistogram> {
   }
 
   public double binAt( int b ) {
-    if (_hasQuantiles) return _splitPts[b];
+    if (_absoluteSplitPts)
+      return _splitPts[b];
     return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
   }
 
@@ -344,7 +345,7 @@ public final class DHistogram extends Iced<DHistogram> {
               _histoType = HistogramType.UniformAdaptive;
             }
             else {
-              _hasQuantiles=true;
+              _absoluteSplitPts = true;
               _nbin = (char)_splitPts.length;
               if (LOG.isTraceEnabled()) LOG.trace("Refined splitPoints: " + Arrays.toString(_splitPts));
             }
