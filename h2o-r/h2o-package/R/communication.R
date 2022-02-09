@@ -149,7 +149,10 @@
                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
   if (! .__curlError) {
     httpStatusCode <- as.numeric(tmp$status_code)
-    httpStatusMessage <- strsplit(rawToChar(tmp$headers), "[\n\r]")[[1]][[1]] # FIXME: SHOWS THE WHOLE HTTP HEADER LIKE  "HTTP/1.1 200 OK"
+    httpStatusMessage <- sub(sprintf("HTTP.*?\\s%d\\s(.*?)\\s*$", httpStatusCode),
+                             "\\1",
+                             strsplit(rawToChar(tmp$headers), "[\n\r]")[[1]][[1]],
+                             perl = TRUE)
     if(binary){
       payload <- as(tmp$content, "raw") #Return binary payload as is for output such as MOJOs and genmodel.jar
     }else{
