@@ -1,7 +1,7 @@
 Admissible Machine Learning
 ===========================
 
-We have developed new tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent.
+We have developed new tools to aid in the design of *admissible learning algorithms* which are **efficient** (enjoy good predictive accuracy), **fair** (minimize discrimination against minority groups), and **interpretable** (provide mechanistic understanding) to the best possible extent. 
 
 Admissible ML introduces two methodological tools: 
 
