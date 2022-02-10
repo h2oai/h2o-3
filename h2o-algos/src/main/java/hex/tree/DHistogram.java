@@ -217,11 +217,12 @@ public final class DHistogram extends Iced<DHistogram> {
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
     _seed = seed;
-    while (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin) {
-      SharedTreeModel.SharedTreeParameters.HistogramType[] h = SharedTreeModel.SharedTreeParameters.HistogramType.values();
-      _histoType = h[(int)Math.abs(seed++ % h.length)];
+    if (_histoType == HistogramType.RoundRobin) {
+      HistogramType[] h = HistogramType.ROUND_ROBIN_CANDIDATES;
+      _histoType = h[(int)Math.abs(seed % h.length)];
     }
-    if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
+    assert _histoType != SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin;
+    if (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.AUTO)
       _histoType= SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
     assert(_histoType!= SharedTreeModel.SharedTreeParameters.HistogramType.RoundRobin);
     _globalQuantilesKey = globalQuantilesKey;
