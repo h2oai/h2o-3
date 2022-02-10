@@ -10,6 +10,7 @@ Admissible ML introduces two methodological tools:
 
 The Infogram and Admissible Machine Learning bring a new research direction to machine learning interpretability. You can find the theoretical foundations and several real-life examples of its utility in the `Admissible ML <https://arxiv.org/abs/2108.07380>`__ paper. Below we introduce the concepts at a high level and provide an example using the H2O Infogram implementation.
 
+
 Infogram
 --------
 
@@ -151,6 +152,7 @@ Infogram Example: UCI Credit
 This example below uses a `UCI Credit <https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients>`__ dataset from the UCI Machine Learning Repository.  It has 30k rows, representing customers, and 24 predictor variables, including several common `protected <https://www.consumerfinance.gov/fair-lending/>`__ attributes such as sex, age, and marital status.  This is a binary classification problem, aimed to estimate the probability of default in order to identify "credible or not credible" customers.
 
 Along with the demographic variables that are included in this dataset, there's a number of payment history variables, including previous bill and payment amounts.  On the surface, you may assume that payment history is not correlated with protected variables, but as we will see in the example below, most of the payment history variables provide a hidden pathway through the protected variables to the response.  Therefore, even if you remove the protected variables during training, the resulting model can still be discriminatory if any non-admissible bill/payment variables are included.  This is Example 9 from the `Admissible ML <https://arxiv.org/abs/2108.07380>`__ paper.
+
 
 The code below generates an infogram, and we plot the infogram and view the data in the admissible score frame.
 
