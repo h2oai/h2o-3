@@ -13,10 +13,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+
+import static hex.tree.SharedTreeModel.SharedTreeParameters.HistogramType;
 
 /** A Decision Tree, laid over a Frame of Vecs, and built distributed.
  *
@@ -390,7 +389,22 @@ public class DTree extends Iced {
         final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 || 
                 _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
 
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs, h._checkFloatSplits);
+        double[] customSplitPoints = h._customSplitPoints;
+        if (parms._histogram_type == HistogramType.UniformRobust && 
+                j != _col && // don't apply if we were able to split on the column with the current bins
+                GuidedSplitPoints.isApplicableTo(h)
+        ) {
+          final int nonEmptyBins = h.nonEmptyBins();
+          final double density = nonEmptyBins / ((double) h.nbins());
+
+          if (density <= GuidedSplitPoints.LOW_DENSITY_THRESHOLD) {
+            customSplitPoints = GuidedSplitPoints.makeSplitPoints(h, adj_nbins, min, maxEx);
+          }
+        }
+
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._intOpt, hasNAs,
+                h._seed*0xDECAF+(way+1), parms,
+                h._globalQuantilesKey, cs, h._checkFloatSplits, customSplitPoints);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
