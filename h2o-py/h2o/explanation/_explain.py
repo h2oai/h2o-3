@@ -1342,8 +1342,7 @@ def ice_plot(
                     nbins=20 if not is_factor else 1 + frame[column].nlevels()[0]
                 )[0]
             )
-            if show_pdp:
-                encoded_col = tmp.columns[0]
+            encoded_col = tmp.columns[0]
             if is_factor:
                 plt.scatter(factor_map(tmp.get(encoded_col)), tmp["mean_response"], color="k",
                             label="Partial Dependence")
